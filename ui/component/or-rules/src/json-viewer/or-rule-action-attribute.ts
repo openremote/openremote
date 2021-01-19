@@ -1,23 +1,21 @@
-import {customElement, html, LitElement, property, PropertyValues, css, TemplateResult} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
 import {getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {
     Asset,
-    AssetDescriptor,
     AssetQueryOrderBy$Property,
-    Attribute,
-    AttributeValueType,
-    MetaItemType,
+    AssetTypeInfo,
     RuleActionUpdateAttribute,
     RuleActionWriteAttribute,
-    ValueType
+    WellknownMetaItems,
+    WellknownValueTypes
 } from "@openremote/model";
 import manager, {AssetModelUtil, Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
-import { translate } from "@openremote/or-translate";
-import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
+import {translate} from "@openremote/or-translate";
+import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 
 // language=CSS
 const style = css`
@@ -52,7 +50,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     public config?: RulesConfig;
 
     @property({type: Object})
-    public assetDescriptors?: AssetDescriptor[];
+    public assetInfos?: AssetTypeInfo[];
 
     @property({type: Array, attribute: false})
     protected _assets?: Asset[];
@@ -85,7 +83,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         }
 
         const query = this.action.target.assets ? this.action.target.assets : this.action.target.matchedAssets ? this.action.target.matchedAssets : undefined;
-        const assetDescriptor = this.assetDescriptors ? this.assetDescriptors.find((ad) => ad.type === assetType) : undefined;
+        const assetDescriptor = this.assetInfos ? this.assetInfos.find((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name === assetType) : undefined;
 
         if (!assetDescriptor) {
             return html``;
@@ -106,35 +104,32 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
 
         const asset = idValue && idValue !== "*" ? this._assets.find(a => a.id === idValue) : undefined;
-        const showUpdateOptions = !this.config || !this.config.controls || !this.config.controls.hideActionUpdateOptions;
-        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(this.action.attributeName, assetDescriptor);
-        const attribute: Attribute | undefined = asset && this.action.attributeName ? Util.getAssetAttribute(asset, this.action.attributeName) : undefined;
-        const attributeValueDescriptor = attributeDescriptor && attributeDescriptor.valueDescriptor ? typeof attributeDescriptor.valueDescriptor === "string" ? AssetModelUtil.getAttributeValueDescriptor(attributeDescriptor.valueDescriptor as string) : attributeDescriptor.valueDescriptor : attribute ? AssetModelUtil.getAttributeValueDescriptor(attribute.type as string) : undefined;
+        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, this.action.attributeName);
 
         // Only RW attributes can be used in actions
-        let attributes: [string, string][];
-        if (asset) {
-            attributes = Util.getAssetAttributes(asset).filter((attr) => !Util.hasMetaItem(attr, MetaItemType.READ_ONLY.urn!))
+        let attributes: [string, string][] = [];
+
+        if (asset && asset.attributes) {
+            attributes = Object.values(asset.attributes).filter((attr) => !Util.getMetaValue(WellknownMetaItems.READONLY, attr))
                 .map((attr) => {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr);
-                    const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], false);
+                    const label = Util.getAttributeLabel(attr, descriptors[0], assetType, false);
                     return [attr.name!, label];
                 });
-        } else {
-            attributes = !assetDescriptor || !assetDescriptor.attributeDescriptors ? []
-                : assetDescriptor.attributeDescriptors.filter((ad) => !AssetModelUtil.hasMetaItem(ad, MetaItemType.READ_ONLY.urn!))
+        } else if (assetDescriptor) {
+            const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(assetDescriptor);
+
+            attributes = !assetTypeInfo || !assetTypeInfo.attributeDescriptors ? [] : assetTypeInfo.attributeDescriptors.filter((ad) => !Util.hasMetaItem(WellknownMetaItems.READONLY, ad))
                     .map((ad) => {
-                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, ad);
-                        const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
-                        return [ad.attributeName!, label];
+                        const label = Util.getAttributeLabel(undefined, descriptors[0], assetType, false);
+                        return [ad.name!, label];
                     });
         }
 
         let attributeInput: TemplateResult | undefined;
 
         if (this.action.attributeName) {
-            const label = (attributeValueDescriptor && (attributeValueDescriptor.valueType === ValueType.BOOLEAN || attributeValueDescriptor.name === AttributeValueType.BOOLEAN.name || attributeValueDescriptor.name === AttributeValueType.SWITCH_TOGGLE.name)) ? "" : i18next.t("value");
-            attributeInput = html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setActionAttributeValue(ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${label}" .assetType="${assetType}" .attributeDescriptor="${attributeDescriptor}" .attributeValueDescriptor="${attributeValueDescriptor}" .value="${this.action.value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
+            const label = descriptors[1] && (descriptors[1].name == WellknownValueTypes.BOOLEAN) ? "" : i18next.t("value");
+            attributeInput = html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setActionAttributeValue(ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${label}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${this.action.value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
         }
 
         return html`
@@ -151,15 +146,13 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     protected set _assetId(assetId: string) {
         const assetType = this._getAssetType();
 
+
         if (assetId === "*") {
             this.action.target!.assets = undefined;
             this.action.target = {
                 matchedAssets: {
                     types: [
-                        {
-                            predicateType: "string",
-                            value: assetType
-                        }
+                         assetType || ""
                     ]
                 }
             }
@@ -171,10 +164,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                         assetId
                     ],
                     types: [
-                        {
-                            predicateType: "string",
-                            value: assetType
-                        }
+                        assetType || ""
                     ]
                 }
             }
@@ -200,14 +190,9 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
     protected loadAssets(type: string) {
         manager.rest.api.AssetResource.queryAssets({
             types: [
-                {
-                    predicateType: "string",
-                    value: type
-                }
+                type
             ],
             select: {
-                excludeAttributeTimestamp: true,
-                excludeAttributeValue: true,
                 excludeParentInfo: true,
                 excludePath: true
             },

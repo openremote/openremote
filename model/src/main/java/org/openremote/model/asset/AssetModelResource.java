@@ -19,70 +19,74 @@
  */
 package org.openremote.model.asset;
 
-import jsinterop.annotations.JsType;
-import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+/**
+ * Resource for handling model requests and also providing server side validation of {@link Asset}s
+ */
+// TODO: Implement generic Asset<?> validation for assets and agents
 @Path("model")
-@JsType(isNative = true)
 public interface AssetModelResource {
 
     /**
-     * Retrieve asset descriptors {@link AssetDescriptor} present.
-     * <p>
+     * Retrieve the {@link AssetTypeInfo} of each {@link Asset} type available
+     * in this system or from a {@link org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a
+     * parentId is supplied, if it isn't then this instance is used, if it is and the {@link Asset} or one of its'
+     * ancestors resides on a {@link org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
      */
     @GET
-    @Path("asset/descriptors")
+    @Path("assetInfos")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    AssetDescriptor[] getAssetDescriptors(@BeanParam RequestParams requestParams);
-
-    @GET
-    @Path("agent/descriptors")
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    AgentDescriptor[] getAgentDescriptors(@BeanParam RequestParams requestParams);
+    AssetTypeInfo[] getAssetInfos(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
 
     /**
-     * Retrieve attribute type descriptors {@link AttributeDescriptor} present.
-     * <p>
+     * Retrieve the specific {@link AssetTypeInfo} of the specified} {@link
+     * Asset} type available in this system or from a {@link org.openremote.model.asset.impl.GatewayAsset} depending on
+     * whether or not a parentId * is supplied, if it isn't then this instance is used, if it is and the {@link Asset}
+     * or one of its' ancestors resides * on a {@link org.openremote.model.asset.impl.GatewayAsset} then that gateway
+     * instance is used.
      */
     @GET
-    @Path("attribute/typeDescriptors")
+    @Path("assetInfo/{assetType}")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    AttributeDescriptor[] getAttributeDescriptors(@BeanParam RequestParams requestParams);
+    AssetTypeInfo getAssetInfo(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @PathParam("assetType") String assetType);
 
     /**
-     * Retrieve attribute type descriptors {@link AttributeValueDescriptor} present.
-     * <p>
+     * Retrieve the asset descriptors {@link AssetDescriptor} available in this system or from a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a * parentId is supplied, if it isn't
+     * then this instance is used, if it is and the {@link Asset} or one of its' * ancestors resides on a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
      */
     @GET
-    @Path("attribute/valueDescriptors")
+    @Path("assetDescriptors")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    AttributeValueDescriptor[] getAttributeValueDescriptors(@BeanParam RequestParams requestParams);
+    AssetDescriptor<?>[] getAssetDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId, @QueryParam("parentType") String parentType);
 
     /**
-     * Retrieve meta type descriptors {@link MetaItemDescriptor} present.
-     * <p>
+     * Retrieve value descriptors {@link ValueDescriptor} available in this system or from a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a * parentId is supplied, if it isn't
+     * then this instance is used, if it is and the {@link Asset} or one of its' * ancestors resides on a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
      */
     @GET
-    @Path("metaItem/descriptors")
+    @Path("valueDescriptors")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    MetaItemDescriptor[] getMetaItemDescriptors(@BeanParam RequestParams requestParams);
+    ValueDescriptor<?>[] getValueDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    /**
+     * Retrieve meta descriptors {@link MetaItemDescriptor} available in this system or from a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} depending on whether or not a * parentId is supplied, if it isn't
+     * then this instance is used, if it is and the {@link Asset} or one of its' * ancestors resides on a {@link
+     * org.openremote.model.asset.impl.GatewayAsset} then that gateway instance is used.
+     */
+    @GET
+    @Path("metaItemDescriptors")
+    @Produces(APPLICATION_JSON)
+    MetaItemDescriptor<?>[] getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
 }

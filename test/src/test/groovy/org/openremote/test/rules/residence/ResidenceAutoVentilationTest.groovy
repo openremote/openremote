@@ -69,7 +69,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
         when: "auto ventilation is turned on"
         assetProcessingService.sendAttributeEvent(
-                new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", Values.create(true))
+                new AttributeEvent(managerTestSetup.apartment1Id, "ventilationAuto", true)
         )
 
         then: "the rule engines should settle"
@@ -80,7 +80,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         then: "auto ventilation should be on"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationAuto").get().getValueAsBoolean().get()
+            assert apartment.getAttribute("ventilationAuto").flatMap{it.value}.orElse(false)
             assert !apartment.getAttribute("ventilationLevel").get().getValue().isPresent()
         }
 
@@ -89,7 +89,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         for (i in 1..3) {
 
             def co2LevelIncrement = new AttributeEvent(
-                    managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(700 + i)
+                    managerTestSetup.apartment1LivingroomId, "co2Level", 700 + i
             )
             simulatorProtocol.putValue(co2LevelIncrement)
 
@@ -112,12 +112,12 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         then: "ventilation level of the apartment should be MEDIUM"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").get().getValueAsNumber().get() == 128d
+            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 128d
         }
 
         when: "CO2 is decreasing in a room"
         def co2LevelDecrement = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(500)
+                managerTestSetup.apartment1LivingroomId, "co2Level", 500
         )
         simulatorProtocol.putValue(co2LevelDecrement)
 
@@ -140,7 +140,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         then: "ventilation level of the apartment should be LOW"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").get().getValueAsNumber().get() == 64d
+            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 64d
         }
 
         when: "CO2 is increasing in a room"
@@ -148,7 +148,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         for (i in 1..3) {
 
             def co2LevelIncrement = new AttributeEvent(
-                    managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(1000 + i)
+                    managerTestSetup.apartment1LivingroomId, "co2Level", 1000 + i
             )
             simulatorProtocol.putValue(co2LevelIncrement)
 
@@ -171,12 +171,12 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         then: "ventilation level of the apartment should be HIGH"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").get().getValueAsNumber().get() == 255d
+            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 255d
         }
 
         when: "CO2 is decreasing in a room"
         def co2LevelDecrement2 = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(800)
+                managerTestSetup.apartment1LivingroomId, "co2Level", 800
         )
         simulatorProtocol.putValue(co2LevelDecrement2)
         conditions.eventually {
@@ -197,12 +197,12 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         then: "ventilation level of the apartment should be MEDIUM"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").get().getValueAsNumber().get() == 128d
+            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 128d
         }
 
         when: "CO2 is decreasing in a room"
         def co2LevelDecrement3 = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(500)
+                managerTestSetup.apartment1LivingroomId, "co2Level", 500
         )
         simulatorProtocol.putValue(co2LevelDecrement3)
         conditions.eventually {
@@ -223,7 +223,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
         then: "ventilation level of the apartment should be LOW"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("ventilationLevel").get().getValueAsNumber().get() == 64d
+            assert apartment.getAttribute("ventilationLevel").flatMap{it.value}.orElse(0d) == 64d
         }
 
         cleanup: "the static rules time variable is reset"

@@ -20,12 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.AttributeValueType;
-import org.openremote.model.util.EnumUtil;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.ValueDescriptor;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,14 +37,14 @@ public abstract class FeatureProcessor {
         protected final String name;
         protected final String displayName;
         protected final String linkName;
-        protected final AttributeValueDescriptor attributeValueDescriptor;
+        protected final ValueDescriptor<?> attributeValueDescriptor;
         protected final boolean readOnly;
 
         public PropertyDescriptor(
             String name,
             String displayName,
             String linkName,
-            AttributeValueDescriptor attributeValueDescriptor) {
+            ValueDescriptor<?> attributeValueDescriptor) {
             this(name, displayName, linkName, attributeValueDescriptor, false);
         }
 
@@ -57,7 +52,7 @@ public abstract class FeatureProcessor {
             String name,
             String displayName,
             String linkName,
-            AttributeValueDescriptor attributeValueDescriptor,
+            ValueDescriptor<?> attributeValueDescriptor,
             boolean readOnly) {
             this.name = name;
             this.displayName = displayName;
@@ -74,7 +69,7 @@ public abstract class FeatureProcessor {
             return displayName;
         }
 
-        public AttributeValueDescriptor getAttributeValueDescriptor() {
+        public ValueDescriptor<?> getAttributeValueDescriptor() {
             return attributeValueDescriptor;
         }
 
@@ -87,7 +82,7 @@ public abstract class FeatureProcessor {
         }
     }
 
-    public enum LedState implements DevicePropertyValue<LedState> {
+    public enum LedState {
         OFF(0x00),
         ON(0x80),
         SLOW(0x40),
@@ -95,7 +90,7 @@ public abstract class FeatureProcessor {
         VERYFAST(0x10);
 
         private static final LedState[] values = values();
-        private int code;
+        private final int code;
 
         LedState(int code) {
             this.code = code;
@@ -103,16 +98,6 @@ public abstract class FeatureProcessor {
 
         public int getCode() {
             return this.code;
-        }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            return EnumUtil.enumToValue(this, valueType);
-        }
-
-        @Override
-        public LedState getPropertyValue() {
-            return this;
         }
 
         public static LedState fromCode(int code) {
@@ -123,140 +108,6 @@ public abstract class FeatureProcessor {
             }
 
             return OFF;
-        }
-
-    }
-
-    public static class IntDevicePropertyValue implements DevicePropertyValue<Integer> {
-
-        public static final IntDevicePropertyValue ZERO = new IntDevicePropertyValue(0);
-        private int value;
-
-        public IntDevicePropertyValue(int value) {
-            this.value = value;
-        }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case OBJECT:
-                    return null;
-                case ARRAY:
-                    return null;
-                case STRING:
-                    return Values.create(Integer.toString(value));
-                case NUMBER:
-                    return Values.create(value);
-                case BOOLEAN:
-                    return value == 0 ? Values.create(false) : value == 1 ? Values.create(true) : null;
-            }
-
-            return null;
-        }
-
-        @Override
-        public Integer getPropertyValue() {
-            return value;
-        }
-    }
-
-    public static class DoubleDevicePropertyValue implements DevicePropertyValue<Double> {
-
-        public static final DoubleDevicePropertyValue ZERO = new DoubleDevicePropertyValue(0d);
-        private double value;
-
-        public DoubleDevicePropertyValue(double value) {
-            this.value = value;
-        }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case OBJECT:
-                    return null;
-                case ARRAY:
-                    return null;
-                case STRING:
-                    return Values.create(Double.toString(value));
-                case NUMBER:
-                    return Values.create(value);
-                case BOOLEAN:
-                    return value == 0d ? Values.create(false) : value == 1d ? Values.create(true) : null;
-            }
-
-            return null;
-        }
-
-        @Override
-        public Double getPropertyValue() {
-            return value;
-        }
-    }
-
-    public static class BooleanDevicePropertyValue implements DevicePropertyValue<Boolean> {
-
-        public static final BooleanDevicePropertyValue FALSE = new BooleanDevicePropertyValue(false);
-        public static final BooleanDevicePropertyValue TRUE = new BooleanDevicePropertyValue(true);
-        private boolean value;
-
-        public BooleanDevicePropertyValue(boolean value) {
-            this.value = value;
-        }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case OBJECT:
-                    return null;
-                case ARRAY:
-                    return null;
-                case STRING:
-                    return Values.create(Boolean.toString(value));
-                case NUMBER:
-                    return Values.create(value ? 1d : 0d);
-                case BOOLEAN:
-                    return Values.create(value);
-            }
-
-            return null;
-        }
-
-        @Override
-        public Boolean getPropertyValue() {
-            return value;
-        }
-    }
-
-    public static class StringDevicePropertyValue implements DevicePropertyValue<String> {
-
-        public static final StringDevicePropertyValue EMPTY = new StringDevicePropertyValue("");
-        private String value;
-
-        public StringDevicePropertyValue(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case OBJECT:
-                    return null;
-                case ARRAY:
-                    return null;
-                case STRING:
-                    return Values.create(value);
-                case NUMBER:
-                    return null;
-                case BOOLEAN:
-                    return Values.create(value);
-            }
-
-            return null;
-        }
-
-        @Override
-        public String getPropertyValue() {
-            return value;
         }
     }
 
@@ -276,7 +127,7 @@ public abstract class FeatureProcessor {
      * <p>
      * Once a processor returns a non null value then no other processors will be asked to handle the write
      */
-    public abstract List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value);
+    public abstract List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value);
 
     /**
      * Allows this feature processor to handle the inbound packet. If a processor handles a packet then it should set

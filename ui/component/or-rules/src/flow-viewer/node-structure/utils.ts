@@ -1,4 +1,4 @@
-import { Node, ValueType, NodeDataType, NodePosition, NodeConnection, NodeCollection, NodeType } from "@openremote/model";
+import {Node, NodeCollection, NodeDataType, NodePosition, NodeType, ValueDescriptor} from "@openremote/model";
 
 export class NodeUtilities {
     public static getNodeFromID(id: string, nodes: Node[]) {
@@ -18,11 +18,12 @@ export class NodeUtilities {
         }
     }
 
-    public static convertValueTypeToSocketType(value: ValueType): NodeDataType {
-        switch (value) {
-            case ValueType.BOOLEAN: return NodeDataType.BOOLEAN;
-            case ValueType.NUMBER: return NodeDataType.NUMBER;
-            case ValueType.STRING: return NodeDataType.STRING;
+    public static convertValueTypeToSocketType(value: ValueDescriptor): NodeDataType {
+        switch (value.jsonType) {
+            case "boolean": return NodeDataType.BOOLEAN;
+            case "number":
+            case "bigint": return NodeDataType.NUMBER;
+            case "string": return NodeDataType.STRING;
             default: return NodeDataType.ANY;
         }
     }

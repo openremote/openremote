@@ -20,10 +20,9 @@
 package org.openremote.manager.gateway;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.ProtocolClientEventService;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.web.ConnectionConstants;
@@ -31,26 +30,30 @@ import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.rules.RulesService;
+import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.ValueHolder;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.impl.GatewayAsset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.security.Tenant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
 import javax.websocket.Session;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -62,11 +65,16 @@ import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.*;
+import static org.openremote.manager.event.ClientEventService.ClientCredentials;
+import static org.openremote.manager.event.ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID;
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId;
-import static org.openremote.model.asset.AssetAttribute.attributeFromJson;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
+/**
+ * Manages {@link org.openremote.model.asset.impl.GatewayAsset}s in the local instance by creating Keycloak clients
+ * for them and handles the connection logic of gateways; it is the gateways responsibility to connect to this instance,
+ * it is then up to this instance to authenticate the gateway and to initiate synchronisation of gateway assets.
+ */
 public class GatewayService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
     public static final int PRIORITY = HIGH_PRIORITY + 100;
@@ -77,10 +85,53 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     protected ManagerIdentityService identityService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
-    protected ManagerExecutorService executorService;
+    protected RulesetStorageService rulesetStorageService;
+    protected RulesService rulesService;
+    protected ScheduledExecutorService executorService;
     protected final Map<String, GatewayConnector> gatewayConnectorMap = new HashMap<>();
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
+    protected List<String> tenantIds = new ArrayList<>();
+
+    @SuppressWarnings("unchecked")
+    public static Predicate isNotForGateway(GatewayService gatewayService) {
+        return exchange -> {
+            if (isPersistenceEventForEntityType(Asset.class).matches(exchange)) {
+                PersistenceEvent<Asset<?>> persistenceEvent = (PersistenceEvent<Asset<?>>)exchange.getIn().getBody(PersistenceEvent.class);
+                Asset<?> asset = persistenceEvent.getEntity();
+
+                // Check if asset parent is a gateway or a gateway descendant, if so ignore it
+                // Need to look at parent as this asset may not have been acknowledged by the gateway service yet
+                return gatewayService.getLocallyRegisteredGatewayId(asset.getId(), asset.getParentId()) == null;
+            }
+            if (isPersistenceEventForEntityType(Tenant.class).matches(exchange)) {
+                PersistenceEvent<Tenant> persistenceEvent = (PersistenceEvent<Tenant>)exchange.getIn().getBody(PersistenceEvent.class);
+                Tenant tenant = persistenceEvent.getEntity();
+
+                if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
+                    // Ruleset won't exist in storage so check cache
+                    return gatewayService.tenantIds.remove(tenant.getId());
+                }
+                Tenant localTenant = gatewayService.identityProvider.getTenant(tenant.getRealm());
+                if (localTenant != null && localTenant.getId().equals(tenant.getId())) {
+                    gatewayService.tenantIds.add(tenant.getId());
+                    return true;
+                }
+                return false;
+            }
+            if (isPersistenceEventForEntityType(Ruleset.class).matches(exchange)) {
+                PersistenceEvent<Ruleset> persistenceEvent = (PersistenceEvent<Ruleset>)exchange.getIn().getBody(PersistenceEvent.class);
+                Ruleset ruleset = persistenceEvent.getEntity();
+
+                if (persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE) {
+                    // Ruleset won't exist in storage so need to check engines
+                    return gatewayService.rulesService.isRulesetKnown(ruleset);
+                }
+                return gatewayService.rulesetStorageService.find(ruleset.getClass(), ruleset.getId()) != null;
+            }
+            return true;
+        };
+    }
 
     protected static boolean isGatewayClientId(String clientId) {
         return clientId != null && clientId.startsWith(GATEWAY_CLIENT_ID_PREFIX);
@@ -101,7 +152,9 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         assetProcessingService = container.getService(AssetProcessingService.class);
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
-        executorService = container.getService(ManagerExecutorService.class);
+        executorService = container.getExecutorService();
+        rulesetStorageService = container.getService(RulesetStorageService.class);
+        rulesService = container.getService(RulesService.class);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("Incoming edge gateway connections disabled: Not supported when not using Keycloak identity provider");
@@ -121,7 +174,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             return;
         }
 
-        List<Asset> gateways = assetStorageService.findAll(new AssetQuery().types(AssetType.GATEWAY));
+        List<GatewayAsset> gateways = assetStorageService.findAll(new AssetQuery().types(GatewayAsset.class))
+            .stream()
+            .map(asset -> (GatewayAsset)asset)
+            .collect(Collectors.toList());
         List<String> gatewayIds = gateways.stream().map(Asset::getId).collect(Collectors.toList());
         gateways = gateways.stream()
             .filter(gateway ->
@@ -134,8 +190,8 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             gateways.forEach(gateway -> {
 
                 // Check if client has been created
-                boolean hasClientId = gateway.getAttribute("clientId").map(a -> a.getValueAsString().isPresent()).orElse(false);
-                boolean hasClientSecret = gateway.getAttribute("clientSecret").map(a -> a.getValueAsString().isPresent()).orElse(false);
+                boolean hasClientId = gateway.getClientId().isPresent();
+                boolean hasClientSecret = gateway.getClientSecret().isPresent();
 
                 if (!hasClientId || !hasClientSecret) {
                     createGatewayClient(gateway);
@@ -146,7 +202,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 gatewayConnectorMap.put(gateway.getId(), connector);
 
                 // Get IDs of all assets under this gateway
-                List<Asset> gatewayAssets = assetStorageService
+                List<Asset<?>> gatewayAssets = assetStorageService
                     .findAll(
                         new AssetQuery()
                             .parents(gateway.getId())
@@ -175,24 +231,30 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 .filter(isPersistenceEventForEntityType(Asset.class))
                 .process(exchange -> {
                     @SuppressWarnings("unchecked")
-                    PersistenceEvent<Asset> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                    Asset eventAsset = persistenceEvent.getEntity();
+                    PersistenceEvent<Asset<?>> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                    Asset<?> eventAsset = persistenceEvent.getEntity();
 
                     if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
                         eventAsset = assetStorageService.find(eventAsset.getId(), true);
                     }
 
+                    if (eventAsset == null) {
+                        return;
+                    }
+
                     // Only gateways locally registered to this manager are of interest or gateway descendant assets
-                    if (eventAsset.getWellKnownType() == AssetType.GATEWAY
+                    if (eventAsset instanceof GatewayAsset
                         && (isLocallyRegisteredGateway(eventAsset.getId()) || getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId()) == null)) {
-                        processGatewayChange(eventAsset, persistenceEvent);
+
+                        processGatewayChange((GatewayAsset)eventAsset, persistenceEvent);
+
                     } else {
 
                         String gatewayId = getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId());
-
                         if (gatewayId != null) {
                             processGatewayChildAssetChange(gatewayId, eventAsset, persistenceEvent);
                         }
+
                     }
                 });
         }
@@ -226,7 +288,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     }
 
     @Override
-    public boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+    public boolean processAssetUpdate(EntityManager em, Asset<?> asset, Attribute<?> attribute, AttributeEvent.Source source) throws AssetProcessingException {
 
         // If the update was generated by a gateway then we don't want to process it here
         if (source == AttributeEvent.Source.GATEWAY) {
@@ -238,16 +300,19 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         if (connector != null) {
             LOG.fine("Attribute event for a locally registered gateway asset (Asset ID=" + asset.getId() + "): " + attribute);
 
+            GatewayAsset gatewayAsset = (GatewayAsset)asset;
+
             // This is a change to a locally registered gateway
-            if (attribute.getNameOrThrow().equals("disabled")) {
-                boolean disabled = attribute.getValueAsBoolean().orElse(false);
-                boolean isAlreadyDisabled = asset.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
+            if (GatewayAsset.DISABLED.getName().equals(attribute.getName())) {
+                boolean disabled = attribute.getValueAs(Boolean.class).orElse(false);
+                boolean isAlreadyDisabled = gatewayAsset.getDisabled().orElse(false);
+
                 if (disabled != isAlreadyDisabled) {
                     if (disabled) {
                         connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
-                        destroyGatewayClient(asset);
+                        destroyGatewayClient(gatewayAsset);
                     } else {
-                        createGatewayClient(asset);
+                        createGatewayClient(gatewayAsset);
                     }
                     connector.setDisabled(disabled);
                 }
@@ -256,22 +321,22 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             String gatewayId = assetIdGatewayIdMap.get(asset.getId());
 
             if (gatewayId != null) {
-                LOG.fine("Attribute event for a gateway descendant asset (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
+                LOG.fine("Attribute event for a gateway descendant asset (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                 connector = gatewayConnectorMap.get(gatewayId);
                 if (connector == null) {
-                    LOG.warning("Gateway not found for descendant asset, this should not happen!!! (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + ")");
+                    LOG.warning("Gateway not found for descendant asset, this should not happen!!! (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + ")");
                 } else {
                     if (!connector.isConnected()) {
-                        LOG.info("Gateway is not connected so attribute event for descendant asset will be dropped (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
+                        LOG.info("Gateway is not connected so attribute event for descendant asset will be dropped (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                         throw new AssetProcessingException(AssetProcessingException.Reason.GATEWAY_DISCONNECTED, "Gateway is not connected: Gateway ID=" + connector.gatewayId);
                     }
-                    LOG.fine("Attribute event for a gateway descendant asset being forwarded to the gateway (Asset ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
+                    LOG.fine("Attribute event for a gateway descendant asset being forwarded to the gateway (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
                     connector.sendMessageToGateway(
                         new AttributeEvent(
                             mapAssetId(gatewayId, asset.getId(), true),
-                            attribute.getNameOrThrow(),
+                            attribute.getName(),
                             attribute.getValue().orElse(null),
-                            attribute.getValueTimestamp().orElse(0L))
+                            attribute.getTimestamp().orElse(0L))
                             .setParentId(mapAssetId(gatewayId, asset.getParentId(), true)).setRealm(asset.getRealm()));
                 }
 
@@ -284,7 +349,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         return false;
     }
 
-    public Asset mergeGatewayAsset(String gatewayId, Asset asset) {
+    public <T extends Asset<?>> T mergeGatewayAsset(String gatewayId, T asset) {
         GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
 
         if (connector == null) {
@@ -422,7 +487,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         connector.disconnect();
     }
 
-    protected void processGatewayChange(Asset gateway, PersistenceEvent<Asset> persistenceEvent) {
+    protected void processGatewayChange(GatewayAsset gateway, PersistenceEvent<Asset<?>> persistenceEvent) {
 
         switch (persistenceEvent.getCause()) {
 
@@ -443,7 +508,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 connector.gateway = gateway;
 
                 // Check if disabled
-                boolean isNowDisabled = gateway.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
+                boolean isNowDisabled = gateway.getDisabled().orElse(false);
                 if (isNowDisabled) {
                     connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
                 }
@@ -457,11 +522,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     : -1;
                 if (attributeIndex >= 0) {
                     // Check if disabled attribute has changed
-                    boolean wasDisabled = attributeFromJson(persistenceEvent.getPreviousState("attributes"),
-                        gateway.getId(), "disabled").flatMap(AbstractValueHolder::getValueAsBoolean).orElse(false);
-                    boolean isDisabled = attributeFromJson(persistenceEvent.getCurrentState("attributes"),
-                        gateway.getId(), "disabled").flatMap(AbstractValueHolder::getValueAsBoolean).orElse(false);
-                    if (wasDisabled != isDisabled) {
+                    AttributeMap oldAttributes = persistenceEvent.getPreviousState("attributes");
+                    boolean wasDisabled = oldAttributes.getValue(GatewayAsset.DISABLED).orElse(false);
+
+                    if (wasDisabled != isNowDisabled) {
                         if (isNowDisabled) {
                             destroyGatewayClient(gateway);
                         } else {
@@ -490,7 +554,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
     }
 
-    protected void processGatewayChildAssetChange(String gatewayId, Asset childAsset, PersistenceEvent<Asset> persistenceEvent) {
+    protected void processGatewayChildAssetChange(String gatewayId, Asset<?> childAsset, PersistenceEvent<Asset<?>> persistenceEvent) {
         // The asset would have been modified by the gateway connector so all we need to do here is update the id map
         switch (persistenceEvent.getCause()) {
 
@@ -519,19 +583,23 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         return connected.get();
     }
 
-    protected void createGatewayClient(Asset gateway) {
+    protected void createGatewayClient(GatewayAsset gateway) {
 
         LOG.info("Creating gateway keycloak client for gateway id: " + gateway.getId());
 
         String clientId = GATEWAY_CLIENT_ID_PREFIX + gateway.getId();
-        String secret = gateway.getAttribute("clientSecret").flatMap(ValueHolder::getValueAsString).orElseGet(() -> UUID.randomUUID().toString());
+        String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
 
         try {
             clientEventService.addClientCredentials(new ClientCredentials(gateway.getRealm(), null, clientId, secret));
-            gateway.getAttribute("clientId").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(clientId)));
-            gateway.getAttribute("clientSecret").ifPresent(assetAttribute -> assetAttribute.setValue(Values.create(secret)));
-            try {
+
+            if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
+                gateway.setClientId(clientId);
+                gateway.setClientSecret(secret);
                 assetStorageService.merge(gateway);
+            }
+
+            try {
                 LOG.info("Created gateway keycloak client for gateway id: " + gateway.getId());
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Failed to merge registered gateway: " + gateway.getId(), e);
@@ -541,8 +609,8 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
     }
 
-    protected void destroyGatewayClient(Asset gateway) {
-        String id = gateway.getAttribute("clientId").flatMap(AssetAttribute::getValueAsString).orElse(null);
+    protected void destroyGatewayClient(GatewayAsset gateway) {
+        String id = gateway.getClientId().orElse(null);
         if (TextUtil.isNullOrEmpty(id)) {
             LOG.warning("Cannot find gateway keycloak client ID so cannot remove keycloak client for gateway: " + gateway.getId());
             return;

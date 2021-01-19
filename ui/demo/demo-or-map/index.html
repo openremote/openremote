@@ -36,11 +36,11 @@
     <h3>Demo</h3>
     <demo-snippet>
         <template>
-            <or-map type="RASTER" center="5.454250, 51.445990" style="height: 500px; width: 100%;">
-                <or-map-marker lat="51.445990" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
+            <or-map type="RASTER" center="4.470175, 51.923464" style="height: 500px; width: 100%;">
+                <or-map-marker lat="51.923464" lng="4.470175" class="marker" icon="or:logo-plain"></or-map-marker>
             </or-map>
-            <or-map id="vector" center="5.454250, 51.445990" style="height: 500px; width: 100%;">
-                <or-map-marker id="demo-marker" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
+            <or-map id="vector" center="4.470175, 51.923464" style="height: 500px; width: 100%;">
+                <or-map-marker id="demo-marker" lat="51.923464" lng="4.470175" class="marker" icon="or:logo-plain"></or-map-marker>
             </or-map>
         </template>
     </demo-snippet>
@@ -64,7 +64,7 @@ insert our 'bundle.js'.
     })();
 </script>
 <script src="modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
-<button onclick="document.getElementById('demo-marker').setAttribute('lat','51.445990');">Set Marker Latitude</button>
-<button onclick="document.getElementById('demo-marker').removeAttribute('lat');">Remove Marker Latitude</button>
+<button onclick="document.getElementById('demo-marker').lat = document.getElementById('demo-marker').lat + 0.001;">Move Marker Up</button>
+<button onclick="document.getElementById('demo-marker').lat = document.getElementById('demo-marker').lat - 0.001;">Move Marker Down</button>
 </body>
 </html>

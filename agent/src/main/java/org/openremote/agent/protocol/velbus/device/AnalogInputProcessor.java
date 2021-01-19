@@ -20,9 +20,6 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
-import org.openremote.model.util.EnumUtil;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.nio.charset.StandardCharsets;
@@ -32,14 +29,14 @@ import java.util.List;
 
 public class AnalogInputProcessor extends FeatureProcessor {
 
-    public enum SensorType implements DevicePropertyValue<SensorType> {
+    public enum SensorType {
         VOLTAGE(0x00, 0.00025),
         CURRENT(0x01, 0.000005),
         RESISTANCE(0x02, 0.25),
         PERIOD(0x03, 0.0000005);
 
-        private int code;
-        private double resolution;
+        private final int code;
+        private final double resolution;
 
         SensorType(int code, double resolution) {
             this.code = code;
@@ -63,25 +60,15 @@ public class AnalogInputProcessor extends FeatureProcessor {
 
             return VOLTAGE;
         }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            return EnumUtil.enumToValue(this, valueType);
-        }
-
-        @Override
-        public SensorType getPropertyValue() {
-            return this;
-        }
     }
 
-    public enum SensorMode implements DevicePropertyValue<SensorMode> {
+    public enum SensorMode {
         SAFE(0x00),
         NIGHT(0x10),
         DAY(0x20),
         COMFORT(0x30);
 
-        private int code;
+        private final int code;
 
         SensorMode(int code) {
             this.code = code;
@@ -100,43 +87,33 @@ public class AnalogInputProcessor extends FeatureProcessor {
 
             return SAFE;
         }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            return EnumUtil.enumToValue(this, valueType);
-        }
-
-        @Override
-        public SensorMode getPropertyValue() {
-            return this;
-        }
     }
 
-    protected static final String EmptySensorText = "               ";
+    protected static final String EMPTY_SENSOR_TEXT = "               ";
 
     protected static final List<PropertyDescriptor> METEO_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("rainfall", "Rainfall", "RAINFALL", AttributeValueType.RAINFALL, true),
-        new PropertyDescriptor("lightLevel", "Light Level", "LIGHT", AttributeValueType.BRIGHTNESS, true),
-        new PropertyDescriptor("windSpeed", "Wind Speed", "WIND", AttributeValueType.SPEED, true)
+        new PropertyDescriptor("rainfall", "Rainfall", "RAINFALL", ValueType.POSITIVE_NUMBER, true),
+        new PropertyDescriptor("lightLevel", "Light Level", "LIGHT", ValueType.POSITIVE_NUMBER, true),
+        new PropertyDescriptor("windSpeed", "Wind Speed", "WIND", ValueType.POSITIVE_INTEGER, true)
     );
 
     protected static final List<PropertyDescriptor> IO_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("sensor1", "Sensor 1", "SENSOR1", AttributeValueType.NUMBER, true),
-        new PropertyDescriptor("sensor2", "Sensor 2", "SENSOR2", AttributeValueType.NUMBER, true),
-        new PropertyDescriptor("sensor3", "Sensor 3", "SENSOR3", AttributeValueType.NUMBER, true),
-        new PropertyDescriptor("sensor4", "Sensor 4", "SENSOR4", AttributeValueType.NUMBER, true),
-        new PropertyDescriptor("sensor1Text", "Sensor 1 Text", "SENSOR1_TEXT", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor2Text", "Sensor 2 Text", "SENSOR2_TEXT", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor3Text", "Sensor 3 Text", "SENSOR3_TEXT", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor4Text", "Sensor 4 Text", "SENSOR4_TEXT", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor1Type", "Sensor 1 Type", "SENSOR1_TYPE", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor2Type", "Sensor 2 Type", "SENSOR2_TYPE", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor3Type", "Sensor 3 Type", "SENSOR3_TYPE", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor4Type", "Sensor 4 Type", "SENSOR4_TYPE", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor1Mode", "Sensor 1 Mode", "SENSOR1_MODE", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor2Mode", "Sensor 2 Mode", "SENSOR2_MODE", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor3Mode", "Sensor 3 Mode", "SENSOR3_MODE", AttributeValueType.STRING, true),
-        new PropertyDescriptor("sensor4Mode", "Sensor 4 Mode", "SENSOR4_MODE", AttributeValueType.STRING, true)
+        new PropertyDescriptor("sensor1", "Sensor 1", "SENSOR1", ValueType.NUMBER, true),
+        new PropertyDescriptor("sensor2", "Sensor 2", "SENSOR2", ValueType.NUMBER, true),
+        new PropertyDescriptor("sensor3", "Sensor 3", "SENSOR3", ValueType.NUMBER, true),
+        new PropertyDescriptor("sensor4", "Sensor 4", "SENSOR4", ValueType.NUMBER, true),
+        new PropertyDescriptor("sensor1Text", "Sensor 1 Text", "SENSOR1_TEXT", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor2Text", "Sensor 2 Text", "SENSOR2_TEXT", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor3Text", "Sensor 3 Text", "SENSOR3_TEXT", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor4Text", "Sensor 4 Text", "SENSOR4_TEXT", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor1Type", "Sensor 1 Type", "SENSOR1_TYPE", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor2Type", "Sensor 2 Type", "SENSOR2_TYPE", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor3Type", "Sensor 3 Type", "SENSOR3_TYPE", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor4Type", "Sensor 4 Type", "SENSOR4_TYPE", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor1Mode", "Sensor 1 Mode", "SENSOR1_MODE", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor2Mode", "Sensor 2 Mode", "SENSOR2_MODE", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor3Mode", "Sensor 3 Mode", "SENSOR3_MODE", ValueType.TEXT, true),
+        new PropertyDescriptor("sensor4Mode", "Sensor 4 Mode", "SENSOR4_MODE", ValueType.TEXT, true)
     );
 
     @Override
@@ -156,10 +133,10 @@ public class AnalogInputProcessor extends FeatureProcessor {
         if (device.getDeviceType() == VelbusDeviceType.VMB4AN) {
 
             // Initialise the text char arrays for sensors
-            device.setProperty("SENSOR1_TEXT", new StringDevicePropertyValue(EmptySensorText));
-            device.setProperty("SENSOR2_TEXT", new StringDevicePropertyValue(EmptySensorText));
-            device.setProperty("SENSOR3_TEXT", new StringDevicePropertyValue(EmptySensorText));
-            device.setProperty("SENSOR4_TEXT", new StringDevicePropertyValue(EmptySensorText));
+            device.setProperty("SENSOR1_TEXT", EMPTY_SENSOR_TEXT);
+            device.setProperty("SENSOR2_TEXT", EMPTY_SENSOR_TEXT);
+            device.setProperty("SENSOR3_TEXT", EMPTY_SENSOR_TEXT);
+            device.setProperty("SENSOR4_TEXT", EMPTY_SENSOR_TEXT);
 
             return Arrays.asList(
                 new VelbusPacket(device.getBaseAddress(), VelbusPacket.OutboundCommand.SENSOR_READOUT.getCode(), (byte) 0x08, (byte) 0x00),
@@ -177,7 +154,7 @@ public class AnalogInputProcessor extends FeatureProcessor {
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return null;
     }
 
@@ -206,9 +183,9 @@ public class AnalogInputProcessor extends FeatureProcessor {
                     int windValue = Math.abs((packet.getByte(5) << 8) + packet.getByte(6));
                     double wind = 0.1 * windValue;
                     double rain = 0.1 * rainValue;
-                    device.setProperty("RAINFALL", new DoubleDevicePropertyValue(rain));
-                    device.setProperty("LIGHT", new DoubleDevicePropertyValue(light));
-                    device.setProperty("WIND", new DoubleDevicePropertyValue(wind));
+                    device.setProperty("RAINFALL", rain);
+                    device.setProperty("LIGHT", light);
+                    device.setProperty("WIND", wind);
                     return true;
                 }
 
@@ -219,7 +196,7 @@ public class AnalogInputProcessor extends FeatureProcessor {
                     value = type.getResolution() * value;
                     String sensorName = "SENSOR" + channel;
 
-                    device.setProperty(sensorName, new DoubleDevicePropertyValue(value));
+                    device.setProperty(sensorName, value);
                     device.setProperty(sensorName + "_TYPE", type);
                     return true;
                 }
@@ -227,7 +204,7 @@ public class AnalogInputProcessor extends FeatureProcessor {
             case RAW_SENSOR_TEXT_STATUS:
                 if (device.getDeviceType() == VelbusDeviceType.VMB4AN) {
                     int channel = (packet.getByte(1) & 0xFF) - 7;
-                    String sensorText = (String)device.getPropertyValue("SENSOR" + channel + "_TEXT").getPropertyValue();
+                    String sensorText = (String)device.getPropertyValue("SENSOR" + channel + "_TEXT");
                     try {
                         byte[] textBytes = sensorText.getBytes(StandardCharsets. ISO_8859_1);
                         int pos = packet.getByte(2) & 0xFF;
@@ -245,10 +222,10 @@ public class AnalogInputProcessor extends FeatureProcessor {
                         }
                         sensorText = new String(textBytes, StandardCharsets.ISO_8859_1);
                     } catch (Exception e) {
-                        sensorText = EmptySensorText;
+                        sensorText = EMPTY_SENSOR_TEXT;
                     }
 
-                    device.setProperty("SENSOR" + channel + "_TEXT", new StringDevicePropertyValue(sensorText));
+                    device.setProperty("SENSOR" + channel + "_TEXT", sensorText);
                     return true;
                 }
         }

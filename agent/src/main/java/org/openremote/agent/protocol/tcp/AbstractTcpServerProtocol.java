@@ -20,107 +20,68 @@
 package org.openremote.agent.protocol.tcp;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.StringValue;
-import org.openremote.model.value.Values;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
  * This is an abstract protocol for creating TCP Server protocols. This allows TCP clients to connect and exchange data.
  * It is up to the concrete implementations whether or not linked {@link Attribute}s can be used with this protocol and
  * to define the semantics of these linked attributes.
- * <p>
- * <h1>Protocol Configurations</h1>
- * An instance is created by defining a {@link ProtocolConfiguration} with the following {@link MetaItem}s:
- * <ul>
- * <li>{@link #META_PROTOCOL_BIND_PORT} <b>(required)</b></li>
- * <li>{@link #META_PROTOCOL_BIND_ADDRESS}</li>
- * </ul>
  */
-public abstract class AbstractTcpServerProtocol<T extends AbstractTcpServer<U>, U> extends AbstractProtocol {
-
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":tcpServer";
-
-    /**
-     * Sets the port that this server will bind to.
-     */
-    public static final String META_PROTOCOL_BIND_PORT = PROTOCOL_NAME + ":bindPort";
-    /**
-     * Sets the network interface that this server will bind to; if not defined then the server
-     * will bind to all network interfaces.
-     */
-    public static final String META_PROTOCOL_BIND_ADDRESS = PROTOCOL_NAME + ":bindAddress";
+public abstract class AbstractTcpServerProtocol<R, S extends AbstractTcpServer<R>, T extends AbstractTcpServerProtocol<R, S, T, U, V>, U extends AbstractTcpServerAgent<U, T, V>, V extends AgentLink<?>> extends AbstractProtocol<U, V> {
 
     private static final Logger LOG = Logger.getLogger(AbstractTcpServerProtocol.class.getName());
-    protected final Map<AttributeRef, T> tcpServerMap = new HashMap<>();
+
+    protected S tcpServer;
+
+    public AbstractTcpServerProtocol(U agent) {
+        super(agent);
+    }
 
     @Override
-    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
+    protected void doStart(Container container) throws Exception {
 
-        int port = protocolConfiguration.getMetaItem(META_PROTOCOL_BIND_PORT)
-            .flatMap(AbstractValueHolder::getValueAsInteger)
-            .orElseThrow(() ->
-                 new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_BIND_PORT));
+        int port = getAgent().getBindPort().orElseThrow(() ->
+             new IllegalArgumentException("Missing or invalid attribute: " + AbstractTcpServerAgent.BIND_PORT));
 
-        Optional<StringValue> bindAddress = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_BIND_ADDRESS,
-            StringValue.class,
-            false,
-            true
-        );
+        String bindAddress = getAgent().getBindHost().orElse(null);
 
         LOG.info("Creating TCP server instance");
-        T tcpServer = createTcpServer(port, bindAddress.map(StringValue::getString).orElse(null), protocolConfiguration);
-        Consumer<ConnectionStatus> connectionStatusConsumer = connectionStatus ->
-                onServerConnectionStatusChanged(protocolRef, connectionStatus);
+        tcpServer = createTcpServer(port, bindAddress, agent);
+        Consumer<ConnectionStatus> connectionStatusConsumer = this::onServerConnectionStatusChanged;
         tcpServer.addConnectionStatusConsumer(connectionStatusConsumer);
-        tcpServerMap.put(protocolRef, tcpServer);
-        startTcpServer(protocolRef, tcpServer);
+        startTcpServer();
     }
 
-    protected void onServerConnectionStatusChanged(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        updateStatus(protocolRef, connectionStatus);
+    protected void onServerConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        setConnectionStatus(connectionStatus);
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
+    protected void doStop(Container container) throws Exception {
 
-        T tcpServer = tcpServerMap.remove(protocolRef);
         if (tcpServer == null) {
             return;
         }
 
         LOG.info("Removing TCP server instance");
         tcpServer.removeAllConnectionStatusConsumers();
-        stopTcpServer(protocolRef, tcpServer);
-        updateStatus(protocolRef, ConnectionStatus.DISCONNECTED);
+        stopTcpServer();
     }
 
-    protected abstract T createTcpServer(int port, String bindAddress, AssetAttribute protocolConfiguration);
+    protected abstract S createTcpServer(int port, String bindAddress, U agent);
 
-    protected void startTcpServer(AttributeRef protocolRef, T tcpServer) {
+    protected void startTcpServer() {
         LOG.info("Starting TCP server instance");
         tcpServer.start();
     }
 
-    protected void stopTcpServer(AttributeRef protocolRef, T tcpServer) {
+    protected void stopTcpServer() {
         LOG.info("Stopping TCP server instance");
         tcpServer.stop();
     }

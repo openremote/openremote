@@ -19,19 +19,17 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.openremote.model.attribute.AttributeType.LOCATION;
-
 public class LocationAttributePredicate extends AttributePredicate {
 
     public LocationAttributePredicate(GeofencePredicate geofencePredicate) {
-        super(new StringPredicate(AttributeType.LOCATION.getAttributeName()), geofencePredicate);
+        super(new StringPredicate(Asset.LOCATION), geofencePredicate);
     }
 
     public static List<GeofencePredicate> getLocationPredicates(LogicGroup<AttributePredicate> attributePredicates) {
@@ -40,7 +38,7 @@ public class LocationAttributePredicate extends AttributePredicate {
         attributePredicates.getItems().stream()
                 .filter(attributePredicate -> attributePredicate.name != null
                         && attributePredicate.name.match == AssetQuery.Match.EXACT
-                        && LOCATION.getAttributeName().equals(attributePredicate.name.value)
+                        && Asset.LOCATION.getName().equals(attributePredicate.name.value)
                         && attributePredicate.value instanceof GeofencePredicate)
                 .map(attributePredicate -> (GeofencePredicate) attributePredicate.value)
                 .forEach(geofences::add);

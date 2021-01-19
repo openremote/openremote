@@ -37,9 +37,10 @@ import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.idm.PublishedRealmRepresentation;
-import org.openremote.container.Container;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.web.*;
+import org.openremote.model.Container;
+import org.openremote.model.auth.OAuthPasswordGrant;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotFoundException;
@@ -221,11 +222,11 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         // and port that was used to obtain the token.
         ResteasyClientBuilder clientBuilder =
             new ProxyWebClientBuilder(externalServerUri.build().getHost(), externalServerUri.build().getPort())
-                .establishConnectionTimeout(
+                .connectTimeout(
                     getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
                 )
-                .socketTimeout(
+                .readTimeout(
                     getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
                 )
@@ -262,11 +263,14 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             return keycloakDeployment;
         };
 
-        ProxyHandler proxyHandler = new ProxyHandler(
-            new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(keycloakServiceUri.clone().replacePath("").build()),
-            getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
-            ResponseCodeHandler.HANDLE_404
-        ).setReuseXForwarded(true);
+        @SuppressWarnings("deprecation")
+        ProxyHandler proxyHandler = ProxyHandler.builder()
+            .setProxyClient(new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(keycloakServiceUri.clone().replacePath("").build()))
+            .setMaxRequestTime(getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT))
+            .setNext(ResponseCodeHandler.HANDLE_404)
+            .setReuseXForwarded(true)
+            .build();
+
         authProxyHandler = exchange -> {
             proxyHandler.handleRequest(exchange);
             // Let the client cache the keycloak.js file for 12 hours

@@ -13,6 +13,9 @@
     "@material/dialog": "^4.0.0",
     "@material/drawer": "^4.0.0",
     "@material/menu": "^4.0.0",
+    "@openremote/or-input": "^1.0.3",
+    "@openremote/core": "^1.0.3",
+    "@openremote/or-translate": "^1.0.3",
     "lit-element": "^2.4.0"
   },
   "devDependencies": {

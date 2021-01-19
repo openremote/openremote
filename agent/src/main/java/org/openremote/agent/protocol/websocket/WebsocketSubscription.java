@@ -22,6 +22,8 @@ package org.openremote.agent.protocol.websocket;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import java.io.Serializable;
+
 @JsonSubTypes({
     @JsonSubTypes.Type(value = WebsocketSubscription.class, name = WebsocketSubscription.TYPE),
     @JsonSubTypes.Type(value = WebsocketHttpSubscription.class, name = WebsocketHttpSubscription.TYPE)
@@ -31,12 +33,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     property = "type",
     defaultImpl = WebsocketSubscription.class
 )
-public class WebsocketSubscription<T> {
+public class WebsocketSubscription implements Serializable {
 
     public static final String TYPE = "websocket";
 
     public String type = TYPE;
-    public T body;
+    public Object body;
 
     public WebsocketSubscription() {
     }
@@ -45,7 +47,7 @@ public class WebsocketSubscription<T> {
         this.type = type;
     }
 
-    public WebsocketSubscription<T> body(T body) {
+    public WebsocketSubscription body(Object body) {
         this.body = body;
         return this;
     }

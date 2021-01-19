@@ -13,11 +13,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:electricityCharger"
-                    }
+                    "ElectricityChargerAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -25,7 +21,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "power"
+                          "value": "powerConsumption"
                         },
                         "value": {
                           "predicateType": "number",
@@ -43,11 +39,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:electricityCharger"
-                    }
+                    "ElectricityChargerAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -55,7 +47,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "power"
+                          "value": "powerConsumption"
                         },
                         "value": {
                           "predicateType": "number",
@@ -73,11 +65,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:electricityCharger"
-                    }
+                    "ElectricityChargerAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -85,7 +73,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "power"
+                          "value": "powerConsumption"
                         },
                         "value": {
                           "predicateType": "number",
@@ -103,11 +91,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:electricityCharger"
-                    }
+                    "ElectricityChargerAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -115,7 +99,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "power"
+                          "value": "powerConsumption"
                         },
                         "value": {
                           "predicateType": "number",

@@ -50,7 +50,7 @@ public class Device {
     /**
      * The event handlers registered for the device
      */
-    private List<EventHandler> eventHandlers;
+    private final List<EventHandler<?>> eventHandlers;
 
     /**
      * Construct the Device class
@@ -171,7 +171,7 @@ public class Device {
      * Get a list of event handlers for the device
      * @return A list of event handlers for the device
      */
-    public List<EventHandler> getEventHandlers(){
+    public List<EventHandler<?>> getEventHandlers(){
         return eventHandlers;
     }
 
@@ -179,7 +179,7 @@ public class Device {
      * Add an event handler to the device
      * @param eventHandler The event handler to add to the device
      */
-    public void addEventHandler(EventHandler eventHandler){
+    public void addEventHandler(EventHandler<?> eventHandler){
         this.eventHandlers.add(eventHandler);
     }
 
@@ -187,7 +187,7 @@ public class Device {
      * Remove an event handler from the device
      * @param eventHandler The event handler to remove from the device
      */
-    public void removeEventHandler(EventHandler eventHandler){
+    public void removeEventHandler(EventHandler<?> eventHandler){
         this.eventHandlers.remove(eventHandler);
     }
 
@@ -224,5 +224,4 @@ public class Device {
         if(isPlug()) return (Plug) this;
         return null;
     }
-
 }

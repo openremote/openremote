@@ -1,14 +1,18 @@
 import manager, {EventCallback, MapType, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
-import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
+import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
+import { OrInput, InputType, ValueInputProviderGenerator, ValueInputTemplateFunction } from "@openremote/or-input";
+import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {getMarkerIconAndColorFromAssetType} from "./markers/or-map-marker-asset";
+import { i18next } from "@openremote/or-translate";
 
 // Re-exports
-export {Util, LngLat};
+export {Util, LngLatLike};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
 export {Control, IControl, Map as MapGL} from "mapbox-gl";
@@ -63,7 +67,244 @@ declare global {
     }
 }
 
-export type ControlPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+export type ControlPosition = "top-right" | "top-left" | "bottom-right" | "bottom-left";
+
+export class CenterControl {
+    protected map?: MapGL;
+    protected elem?: HTMLElement;
+    public pos?: LngLatLike;
+
+    onAdd(map: MapGL): HTMLElement {
+        this.map = map;
+        const control = document.createElement("div");
+        control.classList.add("mapboxgl-ctrl");
+        control.classList.add("mapboxgl-ctrl-group");
+        const button = document.createElement("button");
+        button.className = "mapboxgl-ctrl-icon mapboxgl-ctrl-geolocate";
+        button.addEventListener("click", (ev) => map.flyTo({
+            center: this.pos,
+            zoom: map.getZoom()
+        }));
+        control.appendChild(button);
+        this.elem = control;
+        return control;
+    }
+
+    onRemove(map: MapGL) {
+        this.map = undefined;
+        this.elem = undefined;
+    }
+}
+
+const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
+
+function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
+    return (e: KeyboardEvent) => {
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+            const valStr = (e.target as OrInput).value as string;
+            let value: LngLat | undefined;
+
+            if (valStr) {
+                const lngLatArr = valStr.split(/[ ,]/).filter(v => !!v);
+                if (lngLatArr.length === 2) {
+                    value = new LngLat(
+                        Number.parseFloat(lngLatArr[0]),
+                        Number.parseFloat(lngLatArr[1])
+                    );
+                }
+            }
+            valueChangedHandler(value);
+        }
+    };
+}
+
+export class CoordinatesControl {
+
+    protected map?: MapGL;
+    protected elem?: HTMLElement;
+    protected input!: OrInput;
+    protected _readonly = false;
+    protected _value: any;
+    protected _valueChangedHandler: (value: LngLat | undefined) => void;
+
+    constructor(disabled: boolean = false, valueChangedHandler: (value: LngLat | undefined) => void) {
+        this._readonly = disabled;
+        this._valueChangedHandler = valueChangedHandler;
+    }
+
+    onAdd(map: MapGL): HTMLElement {
+        this.map = map;
+        const control = document.createElement("div");
+        control.classList.add("mapboxgl-ctrl");
+        control.classList.add("mapboxgl-ctrl-group");
+
+        const input = new OrInput();
+        input.type = InputType.TEXT;
+        input.outlined = true;
+        input.compact = true;
+        input.readonly = this._readonly;
+        input.icon = "crosshairs-gps";
+        input.value = this._value;
+        input.pattern = CoordinatesRegexPattern;
+        input.onkeyup = getCoordinatesInputKeyHandler(this._valueChangedHandler);
+
+        control.appendChild(input);
+        this.elem = control;
+        this.input = input;
+        return control;
+    }
+
+    onRemove(map: MapGL) {
+        this.map = undefined;
+        this.elem = undefined;
+    }
+
+    public set readonly(readonly: boolean) {
+        this._readonly = readonly;
+        if (this.input) {
+            this.input.readonly = readonly;
+        }
+    }
+
+    public set value(value: any) {
+        this._value = value;
+        if (this.input) {
+            this.input.value = value;
+        }
+    }
+}
+
+export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
+
+    const disabled = !!(options && options.disabled);
+    const readonly = !!(options && options.readonly);
+    const compact = !!(options && options.compact);
+    const centerControl = new CenterControl();
+    const coordinatesControl = new CoordinatesControl(disabled, valueChangeNotifier);
+
+    const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+        let pos: { lng: number, lat: number } | undefined;
+        let center: number[] | undefined;
+
+        if (value) {
+            pos = Util.getLngLat(value);
+            center = pos ? Object.values(pos) : undefined;
+        }
+
+        const centerStr = center ? center.join(", ") : undefined;
+        centerControl.pos = pos;
+        coordinatesControl.readonly = disabled || readonly || sending || loading;
+        coordinatesControl.value = centerStr;
+
+        const iconAndColor = getMarkerIconAndColorFromAssetType(assetDescriptor);
+
+        let dialog: OrMwcDialog | undefined;
+
+        const updateHandler = () => {
+            if (valueChangeNotifier) {
+                valueChangeNotifier(Util.getGeoJSONPoint(pos));
+            }
+        };
+
+        const setPos = (lngLat: LngLatLike | undefined) => {
+            if (readonly || disabled) {
+                return;
+            }
+
+            pos = Util.getLngLat(lngLat);
+
+            if (dialog) {
+                // We're in compact mode modal
+                const marker = dialog.shadowRoot!.getElementById("geo-json-point-marker") as OrMapMarker;
+                marker.lng = pos ? pos.lng : undefined;
+                marker.lat = pos ? pos.lat : undefined;
+                center = pos ? Object.values(pos) : undefined;
+                const centerStr = center ? center.join(", ") : undefined;
+                coordinatesControl.value = centerStr;
+            } else {
+                updateHandler();
+            }
+        };
+
+        let content = html`
+            <style>
+                or-map {
+                    border: #e5e5e5 1px solid;
+                    margin: 3px 0;
+                }
+            </style>
+            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
+                <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .colour="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
+            </or-map>
+        `;
+
+        if (compact) {
+            const mapContent = content;
+
+            const onClick = () => {
+                dialog = showDialog(
+                    {
+                        content: mapContent,
+                        styles: html`
+                            <style>
+                                or-map {
+                                    width: 600px !important;
+                                    height: 600px !important;
+                                }
+                            </style>
+                        `,
+                        actions: [
+                            {
+                                actionName: "none",
+                                content: i18next.t("none"),
+                                action: () => {
+                                    setPos(undefined);
+                                    updateHandler();
+                                }
+                            },
+                            {
+                                actionName: "ok",
+                                content: i18next.t("ok"),
+                                action: () => {
+                                    updateHandler();
+                                }
+                            },
+                            {
+                                default: true,
+                                actionName: "cancel",
+                                content: i18next.t("cancel")
+                            }
+                        ]
+                    });
+            };
+
+            content = html`
+                <style>
+                    #geo-json-point-input-compact-wrapper {
+                        display: table-cell;
+                    }
+                    #geo-json-point-input-compact-wrapper > * {
+                        vertical-align: middle;
+                    }
+                </style>
+                <div id="geo-json-point-input-compact-wrapper">
+                    <or-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
+                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @click="${onClick}"></or-input>
+                </div>
+            `;
+        }
+
+        return content;
+    };
+
+    return {
+        templateFunction: templateFunction,
+        supportsHelperText: false,
+        supportsLabel: false,
+        supportsSendButton: false
+    };
+}
+
 
 @customElement("or-map")
 export class OrMap extends LitElement {
@@ -134,7 +375,7 @@ export class OrMap extends LitElement {
     protected onManagerEvent = (event: OREvent) => {
         switch (event) {
             case OREvent.READY:
-                if (!manager.ready) {
+                if (manager.ready) {
                     this.loadMap();
                 }
                 break;

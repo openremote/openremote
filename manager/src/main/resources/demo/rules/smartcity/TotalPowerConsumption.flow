@@ -42,7 +42,7 @@
 					},
 					"value": {
 						"assetId": "3Mj9yiC6bcH4MoIYDY2T35",
-						"attributeName": "totalPower"
+						"attributeName": "powerTotal"
 					}
 				}
 			],
@@ -76,7 +76,7 @@
 					},
 					"value": {
 						"assetId": "4jBtdIZOtA7pLxPNSwWCVa",
-						"attributeName": "totalPower"
+						"attributeName": "powerTotal"
 					}
 				}
 			],
@@ -110,7 +110,7 @@
 					},
 					"value": {
 						"assetId": "6L8hVlM1fQ4dDHFM6HYA6O",
-						"attributeName": "totalPower"
+						"attributeName": "powerTotal"
 					}
 				}
 			],
@@ -144,7 +144,7 @@
 					},
 					"value": {
 						"assetId": "4oio0T4DX9lxeBsZVNIpEN",
-						"attributeName": "totalPower"
+						"attributeName": "powerTotal"
 					}
 				}
 			],
@@ -295,8 +295,8 @@
 						"type": "ASSET_ATTRIBUTE"
 					},
 					"value": {
-						"assetId": "642TlrE2HLMmRErWHC6NF6",
-						"attributeName": "totalPowerConsumers"
+						"assetId": "44ORIhkDVAlT97dYGUD9n5",
+						"attributeName": "powerTotalConsumers"
 					}
 				}
 			],

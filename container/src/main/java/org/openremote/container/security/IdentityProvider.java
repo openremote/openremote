@@ -20,7 +20,7 @@
 package org.openremote.container.security;
 
 import io.undertow.servlet.api.DeploymentInfo;
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 
 /**
  * SPI for implementations used by {@link IdentityService}.

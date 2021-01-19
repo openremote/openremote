@@ -38,7 +38,7 @@
                     },
                     "value": {
                         "assetId": "52kOB7c1Rs7WUxgfoCKf5B",
-                        "attributeName": "lightAllStatus"
+                        "attributeName": "onOff"
                     }
                 }
             ],
@@ -79,7 +79,7 @@
                     },
                     "value": {
                         "assetId": "54LS0LDCxIqVHnOCAVTK58",
-                        "attributeName": "lightStatus"
+                        "attributeName": "onOff"
                     }
                 }
             ],
@@ -113,7 +113,7 @@
                     },
                     "value": {
                         "assetId": "4vHXXX1zQEB6J27Kee8Nwf",
-                        "attributeName": "lightStatus"
+                        "attributeName": "onOff"
                     }
                 }
             ],
@@ -147,7 +147,7 @@
                     },
                     "value": {
                         "assetId": "57wYnE3LEpPLDfsBwnOHzk",
-                        "attributeName": "lightStatus"
+                        "attributeName": "onOff"
                     }
                 }
             ],
@@ -181,7 +181,7 @@
                     },
                     "value": {
                         "assetId": "61BNFNS5vTR2SCOLDXUBvX",
-                        "attributeName": "lightStatus"
+                        "attributeName": "onOff"
                     }
                 }
             ],
@@ -215,7 +215,7 @@
                     },
                     "value": {
                         "assetId": "6uE2d0t2SqZcXUtv9qnjq5",
-                        "attributeName": "lightStatus"
+                        "attributeName": "onOff"
                     }
                 }
             ],
@@ -249,7 +249,7 @@
                     },
                     "value": {
                         "assetId": "3uCPRjC6XTrx38xFG10FSb",
-                        "attributeName": "lightStatus"
+                        "attributeName": "onOff"
                     }
                 }
             ],

@@ -14,15 +14,8 @@ import {
 } from "lit-element";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {AssetAttribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueType} from "@openremote/model";
-import manager, {
-    AssetModelUtil,
-    DefaultColor2,
-    DefaultColor3,
-    DefaultColor4,
-    DefaultColor5,
-    Util
-} from "@openremote/core";
+import {Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
+import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
 import "@openremote/or-input";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
@@ -228,8 +221,11 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     @property({type: String})
     public assetType?: string;
 
+    @property({type: String})
+    public assetId?: string;
+
     @property({type: Object})
-    public attribute?: AssetAttribute;
+    public attribute?: Attribute<any>;
 
     @property({type: Object})
     public attributeRef?: AttributeRef;
@@ -261,7 +257,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
     protected _chart?: Chart;
-    protected _type?: ValueType | null;
+    protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
 
     connectedCallback() {
@@ -290,10 +286,14 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
         let reloadData = _changedProperties.has("period") || _changedProperties.has("fromTimestamp");
 
-        if (_changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
+        if (_changedProperties.has("assetId") || _changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
             this._type = undefined;
             this._cleanup();
             reloadData = true;
+        }
+
+        if (!this._type && this.attribute) {
+            this._type = AssetModelUtil.getValueDescriptor(this.attribute.type) || {};
         }
 
         if (reloadData) {
@@ -306,7 +306,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     render() {
 
-        const isChart = this._type === ValueType.NUMBER || this._type === ValueType.BOOLEAN;
+        const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
         const disabled = this._loading || !this._type;
 
         return html`
@@ -346,7 +346,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return;
         }
 
-        const isChart = this._type === ValueType.NUMBER || this._type === ValueType.BOOLEAN;
+        const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
 
         if (isChart) {
             if (!this._chart) {
@@ -470,11 +470,11 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     protected _getTableTemplate(): TemplateResult {
 
-        const assetType = this.assetType!;
-        const attributeName = this.attribute ? this.attribute.name! : this.attributeRef!.attributeName!;
+        const assetType = this.assetType;
+        const attributeName = this.attribute ? this.attribute.name! : this.attributeRef ? this.attributeRef!.name! : undefined;
         const attributeType = this.attribute ? this.attribute.type as string : undefined;
 
-        if (!this._data) {
+        if (!this._data || !assetType || !attributeName || !attributeType) {
             return html``;
         }
 
@@ -651,15 +651,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if (this._loading || this._type === null || !this.assetType || (!this.attribute && !this.attributeRef)) {
+        if (this._loading || this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef)) {
             return;
         }
 
         this._loading = true;
-        const assetId = this.attribute ? this.attribute.assetId! : this.attributeRef!.entityId!;
-        const attributeName = this.attribute ? this.attribute.name! : this.attributeRef!.attributeName!;
+        const assetId = this.assetId!;
+        const attributeName = this.attribute ? this.attribute.name! : this.attributeRef!.name!;
 
-        if (this._type === undefined) {
+        if (!this._type) {
             let attr = this.attribute;
 
             if (!attr) {
@@ -668,32 +668,22 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     select: {
                         excludeParentInfo: true,
                         excludePath: true,
-                        excludeAttributeMeta: true,
                         attributes: [
                             attributeName
                         ]
                     }
                 });
                 if (response.status === 200 && response.data.length > 0) {
-                    attr = Util.getAssetAttribute(response.data[0], attributeName);
+                    attr = response.data[0].attributes ? response.data[0].attributes[attributeName] : undefined;
                 }
             }
 
             if (attr) {
-                const attributeType = attr.type as string;
-                const attrDescriptor = AssetModelUtil.getAttributeValueDescriptor(attributeType, this.assetType, attributeName);
-
-                if (attrDescriptor && attrDescriptor.valueType) {
-                    this._type = attrDescriptor.valueType;
-                } else {
-                    this._type = null;
-                }
-            } else {
-                this._type = null;
+                this._type = AssetModelUtil.getValueDescriptor(attr.type) || {};
             }
         }
 
-        if (!this._type) {
+        if (!this._type || !this._type.name) {
             this._loading = false;
             return;
         }

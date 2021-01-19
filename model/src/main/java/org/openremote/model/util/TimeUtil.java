@@ -16,11 +16,13 @@
 
 package org.openremote.model.util;
 
-import javaemul.internal.annotations.GwtIncompatible;
+import org.openremote.model.Constants;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,74 +34,26 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
  * A helper class with utility methods for
  * time related operations.
  */
-@SuppressWarnings("NonJREEmulationClassesInClientCode")
-@GwtIncompatible
 public class TimeUtil {
 
     // Simple syntax
-    public static final Pattern SIMPLE = Pattern.compile("([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm]$)?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss]$))?\\s*((\\d+)[Ww])?\\s*((\\d+)[Mm][Nn])?\\s*((\\d+)[Yy])?");
-
-    private static final int SIM_SGN = 1;
-    private static final int SIM_DAY = 3;
-    private static final int SIM_HOU = 5;
-    private static final int SIM_MIN = 7;
-    private static final int SIM_SEC = 9;
-    private static final int SIM_MS = 11;
-    private static final int SIM_WK = 14;
-    private static final int SIM_MON = 16;
-    private static final int SIM_YR = 18;
-
-    private static final long SEC_MS = 1000;
-    private static final long MIN_MS = 60 * SEC_MS;
-    private static final long HOU_MS = 60 * MIN_MS;
-    private static final long DAY_MS = 24 * HOU_MS;
-    private static final long WK_MS = 7 * DAY_MS;
+    protected static final Pattern SIMPLE = Pattern.compile(Constants.ISO8601_DURATION_REGEXP);
 
     /**
      * Parses the given time duration String and returns the corresponding number of milliseconds.
      *
      * @throws NullPointerException if time is null
      */
-    public static long parseTimeDuration(String time) {
-        time = time.trim();
-        if (time.length() > 0) {
-            String trimmed = time.trim();
-            long result = 0;
-            if (trimmed.length() > 0) {
-                Matcher mat = SIMPLE.matcher(trimmed);
-                if (mat.matches()) {
-                    int years = (mat.group(SIM_YR) != null) ? Integer.parseInt(mat.group(SIM_YR)) : 0;
-                    int months = (mat.group(SIM_MON) != null) ? Integer.parseInt(mat.group(SIM_MON)) : 0;
-                    int weeks = (mat.group(SIM_WK) != null) ? Integer.parseInt(mat.group(SIM_WK)) : 0;
-                    int days = (mat.group(SIM_DAY) != null) ? Integer.parseInt(mat.group(SIM_DAY)) : 0;
-                    int hours = (mat.group(SIM_HOU) != null) ? Integer.parseInt(mat.group(SIM_HOU)) : 0;
-                    int min = (mat.group(SIM_MIN) != null) ? Integer.parseInt(mat.group(SIM_MIN)) : 0;
-                    int sec = (mat.group(SIM_SEC) != null) ? Integer.parseInt(mat.group(SIM_SEC)) : 0;
-                    int ms = (mat.group(SIM_MS) != null) ? Integer.parseInt(mat.group(SIM_MS)) : 0;
-                    long r = weeks * WK_MS + days * DAY_MS + hours * HOU_MS + min * MIN_MS + sec * SEC_MS + ms;
-                    if (years != 0 || months != 0) {
-                        LocalDateTime dateTime = LocalDateTime.now();
-                        LocalDateTime dateTime2 = dateTime.plusMonths(months);
-                        dateTime2 = dateTime2.plusYears(years);
-                        r += (dateTime2.toEpochSecond(ZoneOffset.UTC) - dateTime.toEpochSecond(ZoneOffset.UTC)) * 1000;
-                    }
-                    if (mat.group(SIM_SGN) != null && mat.group(SIM_SGN).equals("-")) {
-                        r = -r;
-                    }
-                    result = r;
-                } else if (isTimeDurationPositiveInfinity(trimmed)) {
-                    // positive infinity
-                    result = Long.MAX_VALUE;
-                } else if (isTimeDurationNegativeInfinity(trimmed)) {
-                    // negative infinity
-                    result = Long.MIN_VALUE;
-                } else {
-                    throw new RuntimeException("Error parsing time string: [ " + time + " ]");
-                }
+    public static long parseTimeDuration(String duration) {
+        try {
+            if (duration.startsWith("PT")) {
+                return Duration.parse(duration).toMillis();
             }
-            return result;
+            LocalDateTime start = LocalDateTime.now();
+            return start.until(start.plus(Period.parse(duration)), ChronoUnit.MILLIS);
+        } catch (DateTimeParseException e) {
+            throw new RuntimeException("Error parsing time duration string: [ " + duration + " ]");
         }
-        throw new RuntimeException("Empty parameters not allowed in: [" + time + "]");
     }
 
     public static boolean isTimeDuration(String time) {

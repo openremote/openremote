@@ -25,43 +25,36 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.AssetQuery.Select;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
-import org.openremote.model.security.Tenant;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
 import javax.persistence.OptimisticLockException;
+import javax.validation.ConstraintViolationException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
-import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
-import static org.openremote.container.Container.JSON;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
-import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_READ;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
 import static org.openremote.model.query.AssetQuery.Select.selectExcludePathAndAttributes;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import static org.openremote.model.value.MetaItemType.*;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
-    protected final static Asset[] EMPTY_ASSETS = new Asset[0];
+    protected final static Asset<?>[] EMPTY_ASSETS = new Asset<?>[0];
     protected final AssetStorageService assetStorageService;
     protected final MessageBrokerService messageBrokerService;
 
@@ -75,33 +68,33 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset[] getCurrentUserAssets(RequestParams requestParams) {
+    public Asset<?>[] getCurrentUserAssets(RequestParams requestParams) {
         try {
             if (isSuperUser()) {
-                return new Asset[0];
+                return new Asset<?>[0];
             }
 
             if (!isRestrictedUser()) {
-                List<Asset> result = assetStorageService.findAll(
+                List<Asset<?>> result = assetStorageService.findAll(
                     new AssetQuery()
                         .select(selectExcludePathAndAttributes())
                         .parents(new ParentPredicate(true))
                         .tenant(new TenantPredicate(getAuthenticatedRealm()))
                 );
-                return result.toArray(new Asset[result.size()]);
+                return result.toArray(new Asset<?>[0]);
             }
 
-            List<Asset> assets = assetStorageService.findAll(
+            List<Asset<?>> assets = assetStorageService.findAll(
                 new AssetQuery()
-                    .select(selectExcludePathAndAttributes().meta(ACCESS_RESTRICTED_READ))
+                    .select(selectExcludePathAndAttributes())
                     .userIds(getUserId())
             );
 
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
             // TODO: Should we forbid moving assets between realms?
-            Iterator<Asset> it = assets.iterator();
+            Iterator<Asset<?>> it = assets.iterator();
             while (it.hasNext()) {
-                Asset asset = it.next();
+                Asset<?> asset = it.next();
                 if (!asset.getRealm().equals(getAuthenticatedRealm())) {
                     LOG.warning("User '" + getUsername() + "' linked to asset in other realm, skipping: " + asset);
                     it.remove();
@@ -111,7 +104,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
-            return assets.toArray(new Asset[assets.size()]);
+            return assets.toArray(new Asset[0]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
@@ -154,7 +147,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         if (!identityService.getIdentityProvider().isUserInTenant(userId, realm))
             throw new WebApplicationException(BAD_REQUEST);
 
-        Asset asset;
+        Asset<?> asset;
         if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealm().equals(realm)) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -191,18 +184,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset getPartial(RequestParams requestParams, String assetId) {
+    public Asset<?> getPartial(RequestParams requestParams, String assetId) {
         return get(requestParams, assetId, false);
     }
 
     @Override
-    public Asset get(RequestParams requestParams, String assetId) {
+    public Asset<?> get(RequestParams requestParams, String assetId) {
         return get(requestParams, assetId, true);
     }
 
-    public Asset get(RequestParams requestParams, String assetId, boolean loadComplete) {
+    public Asset<?> get(RequestParams requestParams, String assetId, boolean loadComplete) {
         try {
-            Asset asset;
+            Asset<?> asset;
 
             // Check restricted
             if (isRestrictedUser()) {
@@ -233,9 +226,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void update(RequestParams requestParams, String assetId, Asset asset) {
+    public void update(RequestParams requestParams, String assetId, Asset<?> asset) {
         try {
-            Asset storageAsset = assetStorageService.find(assetId, true);
+            Asset<?> storageAsset = assetStorageService.find(assetId, true);
 
             if (storageAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
@@ -251,19 +244,22 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
+            if (!storageAsset.getType().equals(asset.getType())) {
+                LOG.fine("Cannot change asset's type: " + storageAsset);
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
             boolean isRestrictedUser = isRestrictedUser();
 
             // The asset that will ultimately be stored (override/ignore some values for restricted users)
-            Asset resultAsset = Asset.map(
-                asset,
-                storageAsset,
-                isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
-                storageAsset.getRealm(), // The realm can never change
-                isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change parent
-                storageAsset.getType(), // The type can never change
-                isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
-                isRestrictedUser ? storageAsset.getAttributes() : null // Restricted users need manual attribute merging (see below)
-            );
+            storageAsset.setVersion(asset.getVersion());
+
+            if (!isRestrictedUser) {
+                storageAsset.setName(asset.getName());
+                storageAsset.setParentId(asset.getParentId());
+                storageAsset.setAccessPublicRead(asset.isAccessPublicRead());
+                storageAsset.setAttributes(asset.getAttributes());
+            }
 
             // For restricted users, merge existing and updated attributes depending on write permissions
             if (isRestrictedUser) {
@@ -273,163 +269,135 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 }
 
                 // Merge updated with existing attributes
-                for (AssetAttribute updatedAttribute : asset.getAttributesList()) {
+                for (Attribute<?> updatedAttribute : asset.getAttributes().values()) {
 
                     // Proper validation happens on merge(), here we only need the name to continue
-                    String updatedAttributeName = updatedAttribute.getNameOrThrow();
-
-                    //Check if a well known attribute is added
-                    checkForWellKnownAttributes(asset);
+                    String updatedAttributeName = updatedAttribute.getName();
 
                     // Check if attribute is present on the asset in storage
-                    Optional<AssetAttribute> serverAttribute = resultAsset.getAttribute(updatedAttributeName);
+                    Optional<Attribute<?>> serverAttribute = storageAsset.getAttribute(updatedAttributeName);
                     if (serverAttribute.isPresent()) {
-                        AssetAttribute existingAttribute = serverAttribute.get();
+                        Attribute<?> existingAttribute = serverAttribute.get();
 
                         // If the existing attribute is not writable by restricted client, ignore it
-                        if (!existingAttribute.isAccessRestrictedWrite()) {
+                        if (!existingAttribute.getMetaValue(ACCESS_RESTRICTED_WRITE).orElse(false)) {
                             LOG.fine("Existing attribute not writable by restricted client, ignoring update of: " + updatedAttributeName);
                             continue;
                         }
 
                         // Merge updated with existing meta items (modifying a copy)
-                        Meta updatedMetaItems = updatedAttribute.getMeta();
-                        Meta existingMetaItems = existingAttribute.getMeta().copy();
+                        MetaMap updatedMetaItems = updatedAttribute.getMeta();
+                        // Ensure access meta is not modified
+                        updatedMetaItems.removeIf(mi -> {
+                            if (mi.getName().equals(ACCESS_RESTRICTED_READ.getName())) {
+                                return true;
+                            }
+                            if (mi.getName().equals(ACCESS_RESTRICTED_WRITE.getName())) {
+                                return true;
+                            }
+                            if (mi.getName().equals(ACCESS_PUBLIC_READ.getName())) {
+                                return true;
+                            }
+                            if (mi.getName().equals(ACCESS_PUBLIC_WRITE.getName())) {
+                                return true;
+                            }
+                            return false;
+                        });
 
-                        // Remove any writable existing meta items
-                        existingMetaItems.removeIf(AssetModelUtil::isMetaItemRestrictedWrite);
+                        MetaMap existingMetaItems = Values.clone(existingAttribute.getMeta());
 
-                        // Add any writable updated meta items
-                        updatedMetaItems.stream().filter(AssetModelUtil::isMetaItemRestrictedWrite).forEach(existingMetaItems::add);
+                        existingMetaItems.addOrReplace(updatedMetaItems);
 
                         // Replace existing with updated attribute
                         updatedAttribute.setMeta(existingMetaItems);
-                        resultAsset.replaceAttribute(updatedAttribute);
+                        storageAsset.getAttributes().addOrReplace(updatedAttribute);
 
                     } else {
 
-                        // An attribute added by a restricted user can only have meta items which are writable
-                        updatedAttribute.getMetaStream().forEach(metaItem -> {
-                            if (!AssetModelUtil.isMetaItemRestrictedWrite(metaItem)) {
-                                LOG.fine("Attribute has " + metaItem + " not writable by restricted client: " + updatedAttributeName);
-                                throw new WebApplicationException(
-                                    "Attribute has meta item not writable by restricted client: " + updatedAttributeName,
-                                    BAD_REQUEST
-                                );
-                            }
-                        });
-
                         // An attribute added by a restricted user must be readable by restricted users
-                        if (!updatedAttribute.isAccessRestrictedRead()) {
-                            updatedAttribute.addMeta(new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)));
-                        }
+                        updatedAttribute.addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true));
 
                         // An attribute added by a restricted user must be writable by restricted users
-                        if (!updatedAttribute.isAccessRestrictedWrite()) {
-                            updatedAttribute.addMeta(new MetaItem(MetaItemType.ACCESS_RESTRICTED_WRITE, Values.create(true)));
-                        }
+                        updatedAttribute.addOrReplaceMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true));
 
                         // Add the new attribute
-                        resultAsset.addAttributes(updatedAttribute);
+                        storageAsset.getAttributes().addOrReplace(updatedAttribute);
                     }
                 }
 
                 // Remove missing attributes
-                resultAsset.getAttributesList().removeIf(existingAttribute ->
-                    existingAttribute.getName().isPresent()
-                        && !asset.hasAttribute(existingAttribute.getName().get()) && existingAttribute.isAccessRestrictedWrite()
+                storageAsset.getAttributes().removeIf(existingAttribute ->
+                        !asset.hasAttribute(existingAttribute.getName()) && existingAttribute.getMetaValue(ACCESS_RESTRICTED_WRITE).orElse(false)
                 );
             }
 
-            // If attribute is type RULES_TEMPLATE_FILTER, enforce meta item RULE_STATE
-            // TODO Only done for update(Asset) and not create(Asset) as we don't need that right now
-            // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags is not great
-            resultAsset.getAttributesStream().forEach(attribute -> {
-                if (attribute.getType().map(attributeType -> attributeType == AttributeValueType.RULES_TEMPLATE_FILTER).orElse(false)
-                    && !attribute.hasMetaItem(MetaItemType.RULE_STATE)) {
-                    attribute.addMeta(new MetaItem(MetaItemType.RULE_STATE, Values.create(true)));
-                }
-            });
+//            // If attribute is type RULES_TEMPLATE_FILTER, enforce meta item RULE_STATE
+//            // TODO Only done for update(Asset) and not create(Asset) as we don't need that right now
+//            // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags is not great
+//            resultAsset .getAttributes().stream().forEach(attribute -> {
+//                if (attribute.getType().map(attributeType -> attributeType == ValueType.RULES_TEMPLATE_FILTER).orElse(false)
+//                    && !attribute.hasMetaItem(MetaItemType.RULE_STATE)) {
+//                    attribute.addMeta(new MetaItem<>(MetaItemType.RULE_STATE, true));
+//                }
+//            });
 
             // Store the result
-            assetStorageService.merge(resultAsset, isRestrictedUser ? getUsername() : null);
+            assetStorageService.merge(storageAsset, isRestrictedUser ? getUsername() : null);
 
         } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, FORBIDDEN);
+        } catch (ConstraintViolationException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         } catch (OptimisticLockException opEx) {
             throw new WebApplicationException("Refresh the asset from the server and try to update the changes again", opEx, CONFLICT);
         }
     }
 
-    private void checkForWellKnownAttributes(Asset asset) {
-        asset.getAttributesStream().forEach(assetAttribute -> {
-            AssetModelUtil.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
-                //Check if the type matches
-                if (!wellKnownAttribute.getValueDescriptor().equals(assetAttribute.getTypeOrThrow())) {
-                    throw new IllegalStateException(
-                        String.format("Well known attribute isn't of the correct type. Attribute name: %s. Expected type: %s",
-                            assetAttribute.name, wellKnownAttribute.getValueDescriptor().getName()));
-                }
-
-                //Check if the value is valid
-                wellKnownAttribute.getValueDescriptor()
-                    .getValidator().flatMap(v -> v.apply(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name))))
-                    .ifPresent(validationFailure -> {
-                        throw new IllegalStateException(
-                            String.format("Validation failed for %s with reason %s", assetAttribute.name, validationFailure.getReason().name())
-                        );
-                    });
-            });
-        });
-    }
-
     @Override
-    public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
+    public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String valueStr) {
         try {
-            try {
-                Value value = Values.instance()
-                    .parse(rawJson)
-                    .orElse(null); // When parsing literal JSON "null"
 
-                AttributeEvent event = new AttributeEvent(
-                    new AttributeRef(assetId, attributeName), value, timerService.getCurrentTimeMillis()
-                );
+            // JAX-RS converts a null to empty string so simple check here - means cannot actually send an empty string
+            // but not sure you would want to as really it conveys the same meaning as no value
+            if (TextUtil.isNullOrEmpty(valueStr)) {
+                valueStr = null;
+            }
 
-                LOG.info("Write attribute value request: " + event);
+            AttributeEvent event = new AttributeEvent(
+                new AttributeRef(assetId, attributeName), valueStr, timerService.getCurrentTimeMillis()
+            );
 
-                // Process asynchronously but block for a little while waiting for the result
-                Map<String, Object> headers = new HashMap<>();
-                headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
+            LOG.info("Write attribute value request: " + event);
 
-                if (isAuthenticated()) {
-                    headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+            // Process asynchronously but block for a little while waiting for the result
+            Map<String, Object> headers = new HashMap<>();
+            headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
+
+            if (isAuthenticated()) {
+                headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+            }
+            Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
+                AssetProcessingService.ASSET_QUEUE, event, headers
+            );
+
+            if (result instanceof AssetProcessingException) {
+                AssetProcessingException processingException = (AssetProcessingException) result;
+                switch (processingException.getReason()) {
+                    case ILLEGAL_SOURCE:
+                    case NO_AUTH_CONTEXT:
+                    case INSUFFICIENT_ACCESS:
+                        throw new WebApplicationException(FORBIDDEN);
+                    case ASSET_NOT_FOUND:
+                    case ATTRIBUTE_NOT_FOUND:
+                        throw new WebApplicationException(NOT_FOUND);
+                    case INVALID_AGENT_LINK:
+                    case ILLEGAL_AGENT_UPDATE:
+                    case INVALID_ATTRIBUTE_EXECUTE_STATUS:
+                    case INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE:
+                        throw new IllegalStateException(processingException);
+                    default:
+                        throw processingException;
                 }
-                Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
-                    AssetProcessingService.ASSET_QUEUE, event, headers
-                );
-
-                if (result instanceof AssetProcessingException) {
-                    AssetProcessingException processingException = (AssetProcessingException) result;
-                    switch (processingException.getReason()) {
-                        case ILLEGAL_SOURCE:
-                        case NO_AUTH_CONTEXT:
-                        case INSUFFICIENT_ACCESS:
-                            throw new WebApplicationException(FORBIDDEN);
-                        case ASSET_NOT_FOUND:
-                        case ATTRIBUTE_NOT_FOUND:
-                            throw new WebApplicationException(NOT_FOUND);
-                        case INVALID_AGENT_LINK:
-                        case ILLEGAL_AGENT_UPDATE:
-                        case INVALID_ATTRIBUTE_EXECUTE_STATUS:
-                        case INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE:
-                            throw new IllegalStateException(processingException);
-                        default:
-                            throw processingException;
-                    }
-                }
-
-            } catch (ValueException ex) {
-                throw new IllegalStateException("Error parsing JSON", ex);
             }
 
         } catch (IllegalStateException ex) {
@@ -438,7 +406,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset create(RequestParams requestParams, Asset asset) {
+    public Asset<?> create(RequestParams requestParams, Asset<?> asset) {
         try {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(FORBIDDEN);
@@ -457,45 +425,43 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            Asset newAsset = Asset.map(asset, new Asset());
+            Asset<?> newAsset = Values.clone(asset);
 
             // Allow client to set identifier
             if (asset.getId() != null) {
                 newAsset.setId(asset.getId());
             }
 
-            AssetModelUtil.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
-
-                // Add meta items to well known attributes if not present
-                newAsset.getAttributesStream().forEach(assetAttribute -> {
-                    if (assetDescriptor.getAttributeDescriptors() != null) {
-                        Arrays.stream(assetDescriptor.getAttributeDescriptors())
-                                .filter(attrDescriptor -> attrDescriptor.getAttributeName().equals(assetAttribute.getNameOrThrow()))
-                                .findFirst()
-                                .ifPresent(defaultAttribute -> {
-                                    if (defaultAttribute.getMetaItemDescriptors() != null) {
-                                        assetAttribute.addMeta(
-                                                Arrays.stream(defaultAttribute.getMetaItemDescriptors())
-                                                        .filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor))
-                                                        .map(MetaItem::new)
-                                                        .toArray(MetaItem[]::new)
-                                        );
-                                    }
-                                });
-                    }
-                });
-
-                // Add attributes for this well known asset if not present
-                if (assetDescriptor.getAttributeDescriptors() != null) {
-                    newAsset.addAttributes(
-                            Arrays.stream(assetDescriptor.getAttributeDescriptors()).filter(attributeDescriptor ->
-                                    !newAsset.hasAttribute(attributeDescriptor.getAttributeName())).map(AssetAttribute::new).toArray(AssetAttribute[]::new)
-                    );
-                }
-            });
-
-            //Check if a well known attribute is added
-            checkForWellKnownAttributes(asset);
+            // TODO: Decide on the below - clients should ensure the asset conforms to the asset descriptor and we shouldn't do any 'magic' here
+//            AssetModelUtil.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
+//
+//                // Add meta items to well known attributes if not present
+//                newAsset.getAttributes().stream().forEach(assetAttribute -> {
+//                    if (assetDescriptor.getAttributeDescriptors() != null) {
+//                        Arrays.stream(assetDescriptor.getAttributeDescriptors())
+//                                .filter(attrDescriptor -> attrDescriptor.getAttributeName().equals(assetAttribute.getName()))
+//                                .findFirst()
+//                                .ifPresent(defaultAttribute -> {
+//                                    if (defaultAttribute.getMetaItemDescriptors() != null) {
+//                                        assetAttribute.addMeta(
+//                                                Arrays.stream(defaultAttribute.getMetaItemDescriptors())
+//                                                        .filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor))
+//                                                        .map(MetaItem::new)
+//                                                        .toArray(MetaItem[]::new)
+//                                        );
+//                                    }
+//                                });
+//                    }
+//                });
+//
+//                // Add attributes for this well known asset if not present
+//                if (assetDescriptor.getAttributeDescriptors() != null) {
+//                    newAsset.addAttributes(
+//                            Arrays.stream(assetDescriptor.getAttributeDescriptors()).filter(attributeDescriptor ->
+//                                    !newAsset.hasAttribute(attributeDescriptor.getAttributeName())).map(Attribute::new).toArray(Attribute[]::new)
+//                    );
+//                }
+//            });
 
             return assetStorageService.merge(newAsset);
 
@@ -515,7 +481,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            List<Asset> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(selectExcludeAll()));
+            List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(selectExcludeAll()));
             if (assets == null || assets.size() != assetIds.size()) {
                 LOG.fine("Request to delete one or more invalid assets");
                 throw new WebApplicationException(BAD_REQUEST);
@@ -535,7 +501,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset[] queryAssets(RequestParams requestParams, AssetQuery query) {
+    public Asset<?>[] queryAssets(RequestParams requestParams, AssetQuery query) {
         try {
             if (query == null) {
                 return EMPTY_ASSETS;
@@ -567,12 +533,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 query.tenant(new TenantPredicate(realm));
             }
 
-            List<Asset> result = assetStorageService.findAll(query);
+            List<Asset<?>> result = assetStorageService.findAll(query);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
-            return result.toArray(new Asset[result.size()]);
+            return result.toArray(new Asset[0]);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
@@ -580,7 +546,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset[] queryPublicAssets(RequestParams requestParams, AssetQuery query) {
+    public Asset<?>[] queryPublicAssets(RequestParams requestParams, AssetQuery query) {
 
         String requestRealm = getRequestRealm();
 
@@ -603,27 +569,23 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         try {
-            List<Asset> result = assetStorageService.findAll(query);
+            List<Asset<?>> result = assetStorageService.findAll(query);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
-            return result.toArray(new Asset[result.size()]);
+            return result.toArray(new Asset[0]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
     }
 
     @Override
-    public Asset[] getPublicAssets(RequestParams requestParams, String q) {
-        AssetQuery assetQuery;
-        try {
-            assetQuery = JSON.readValue(q, AssetQuery.class);
-        } catch (IOException ex) {
-            throw new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST);
-        }
+    public Asset<?>[] getPublicAssets(RequestParams requestParams, String q) {
+        AssetQuery assetQuery = Values.parse(q, AssetQuery.class)
+            .orElseThrow(() -> new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST));
 
-        Asset[] result = queryPublicAssets(requestParams, assetQuery);
+        Asset<?>[] result = queryPublicAssets(requestParams, assetQuery);
 
         // Compress response (the request attribute enables the interceptor)
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");

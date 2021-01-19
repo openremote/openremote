@@ -20,25 +20,17 @@
 package org.openremote.manager.security;
 
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.i18n.I18NService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
-import org.openremote.model.http.ConstraintViolation;
-import org.openremote.model.http.ConstraintViolationReport;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.*;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
-import java.util.*;
+import javax.ws.rs.*;
+import java.util.Arrays;
+import java.util.Objects;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.http.BadRequestError.VIOLATION_EXCEPTION_HEADER;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 
@@ -106,15 +98,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void update(RequestParams requestParams, String realm, String userId, User user) {
-        ConstraintViolationReport violationReport;
-        if ((violationReport = isIllegalMasterAdminUserMutation(requestParams, realm, user)) != null) {
-            throw new WebApplicationException(
-                Response.status(BAD_REQUEST)
-                    .header(VIOLATION_EXCEPTION_HEADER, "true")
-                    .entity(violationReport)
-                    .build()
-            );
-        }
+
+        throwIfIllegalMasterAdminUserMutation(requestParams, realm, user);
+
         try {
             identityService.getIdentityProvider().updateUser(
                 realm, user
@@ -143,15 +129,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public void delete(RequestParams requestParams, String realm, String userId) {
-        ConstraintViolationReport violationReport;
-        if ((violationReport = isIllegalMasterAdminUserDeletion(requestParams, realm, userId)) != null) {
-            throw new WebApplicationException(
-                Response.status(BAD_REQUEST)
-                    .header(VIOLATION_EXCEPTION_HEADER, "true")
-                    .entity(violationReport)
-                    .build()
-            );
-        }
+        throwIfIllegalMasterAdminUserDeletion(requestParams, realm, userId);
+
         try {
             identityService.getIdentityProvider().deleteUser(
                 realm, userId
@@ -250,50 +229,28 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
     }
 
-    protected ConstraintViolationReport isIllegalMasterAdminUserDeletion(RequestParams requestParams, String realm, String userId) {
+    protected void throwIfIllegalMasterAdminUserDeletion(RequestParams requestParams, String realm, String userId) throws WebApplicationException {
         if (!realm.equals(MASTER_REALM))
-            return null;
+            return;
 
         if (!identityService.getIdentityProvider().isMasterRealmAdmin(
             userId
-        )) return null;
+        )) return;
 
-        ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
-        List<ConstraintViolation> violations = new ArrayList<>();
-        ConstraintViolation violation = new ConstraintViolation();
-        violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
-        violation.setMessage(validationMessages.getString("User.masterAdminDeleted"));
-        violations.add(violation);
-        ConstraintViolationReport report = new ConstraintViolationReport();
-        report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
-        return report;
+        throw new NotAllowedException("The master realm admin user cannot be deleted");
     }
 
-    protected ConstraintViolationReport isIllegalMasterAdminUserMutation(RequestParams requestParams, String realm, User user) {
+    protected void throwIfIllegalMasterAdminUserMutation(RequestParams requestParams, String realm, User user) throws WebApplicationException {
         if (!realm.equals(MASTER_REALM))
-            return null;
+            return;
 
         if (!identityService.getIdentityProvider().isMasterRealmAdmin(
             user.getId()
-        )) return null;
+        )) return;
 
-        ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
-
-        List<ConstraintViolation> violations = new ArrayList<>();
         if (user.getEnabled() == null || !user.getEnabled()) {
-            ConstraintViolation violation = new ConstraintViolation();
-            violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
-            violation.setPath("User.enabled");
-            violation.setMessage(validationMessages.getString("User.masterAdminDisabled"));
-            violations.add(violation);
+            throw new NotAllowedException("The master realm admin user cannot be disabled");
         }
-        if (violations.size() > 0) {
-            ConstraintViolationReport report = new ConstraintViolationReport();
-            report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
-            return report;
-        }
-        return null;
     }
-
 }
 

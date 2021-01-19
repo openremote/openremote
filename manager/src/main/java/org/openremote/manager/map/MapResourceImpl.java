@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.map;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.map.MapResource;
-import org.openremote.model.value.ObjectValue;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -39,7 +39,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public ObjectValue getSettings(RequestParams requestParams) {
+    public ObjectNode getSettings(RequestParams requestParams) {
         return mapService.getMapSettings(
             getRequestRealm(),
             requestParams.getRequestBaseUri()
@@ -47,7 +47,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public ObjectValue getSettingsJs(RequestParams requestParams) {
+    public ObjectNode getSettingsJs(RequestParams requestParams) {
         return mapService.getMapSettingsJs(
             getAuthenticatedRealm(),
             requestParams.getRequestBaseUri()

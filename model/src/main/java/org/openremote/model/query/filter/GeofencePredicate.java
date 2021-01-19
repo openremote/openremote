@@ -25,7 +25,6 @@ public abstract class GeofencePredicate implements ValuePredicate {
 
     public boolean negated;
 
-    // TODO: switch return type to location object
     @JsonIgnore
     public abstract double[] getCentrePoint();
 

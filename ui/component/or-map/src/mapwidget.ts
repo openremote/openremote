@@ -11,7 +11,7 @@ import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
-import {getLatLng, getLatLngBounds, getLngLat} from "./util";
+import {getLatLngBounds, getLngLat} from "./util";
 const mapboxJsStyles = require("!!raw-loader!mapbox.js/dist/mapbox.css");
 const mapboxGlStyles = require("!!raw-loader!mapbox-gl/dist/mapbox-gl.css");
 
@@ -30,7 +30,7 @@ export class MapWidget {
     protected _markersJs: Map<OrMapMarker, MarkerJS> = new Map();
     protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
     protected _viewSettings?: ViewSettings;
-    protected _center?: LngLat | LngLatLike;
+    protected _center?: LngLatLike;
     protected _zoom?: number;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
@@ -48,7 +48,7 @@ export class MapWidget {
         switch (this._type) {
             case MapType.RASTER:
                 if (this._mapJs) {
-                    const latLng = getLatLng(this._center) || (this._viewSettings ? getLatLng(this._viewSettings.center) : undefined);
+                    const latLng = getLngLat(this._center) || (this._viewSettings ? getLngLat(this._viewSettings.center) : undefined);
                     if (latLng) {
                         this._mapJs.setView(latLng, undefined, {pan: {animate: false}, zoom: {animate: false}});
                     }
@@ -200,10 +200,10 @@ export class MapWidget {
                     options.maxBounds = getLatLngBounds(this._viewSettings.bounds);
                 }
                 if (this._viewSettings.center) {
-                    options.center = getLatLng(this._viewSettings.center);
+                    options.center = getLngLat(this._viewSettings.center);
                 }
                 if (this._center) {
-                    options.center = getLatLng(this._center);
+                    options.center = getLngLat(this._center);
                 }
                 if (this._zoom) {
                     options.zoom = this._zoom + 1;

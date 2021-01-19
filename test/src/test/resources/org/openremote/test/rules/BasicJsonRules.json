@@ -11,11 +11,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:console"
-                    }
+                    "ConsoleAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -77,16 +73,12 @@
             "assets": {
               "parents": [
                 {
-                  "type": "urn:openremote:asset:residence",
+                  "type": "BuildingAsset",
                   "name": "Apartment 2"
                 }
               ],
               "types": [
-                {
-                  "predicateType": "string",
-                  "match": "EXACT",
-                  "value": "urn:openremote:asset:room"
-                }
+                "RoomAsset"
               ]
             }
           },
@@ -99,16 +91,12 @@
             "assets": {
               "parents": [
                 {
-                  "type": "urn:openremote:asset:residence",
+                  "type": "BuildingAsset",
                   "name": "Apartment 2"
                 }
               ],
               "types": [
-                {
-                  "predicateType": "string",
-                  "match": "EXACT",
-                  "value": "urn:openremote:asset:room"
-                }
+                "RoomAsset"
               ],
               "names": [
                 {
@@ -129,16 +117,12 @@
             "assets": {
               "parents": [
                 {
-                  "type": "urn:openremote:asset:residence",
+                  "type": "BuildingAsset",
                   "name": "Apartment 2"
                 }
               ],
               "types": [
-                {
-                  "predicateType": "string",
-                  "match": "EXACT",
-                  "value": "urn:openremote:asset:room"
-                }
+                "RoomAsset"
               ],
               "names": [
                 {

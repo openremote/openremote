@@ -43,17 +43,17 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
     }
 
     protected Cause cause;
-    protected Asset asset;
+    protected Asset<?> asset;
     protected String[] updatedProperties;
 
     @JsonCreator
-    public AssetEvent(@JsonProperty("cause") Cause cause, @JsonProperty("asset") Asset asset, @JsonProperty("updatedProperties") String[] updatedProperties) {
+    public AssetEvent(@JsonProperty("cause") Cause cause, @JsonProperty("asset") Asset<?> asset, @JsonProperty("updatedProperties") String[] updatedProperties) {
         this.cause = cause;
         this.asset = asset;
         this.updatedProperties = updatedProperties;
     }
 
-    public String getEntityId() {
+    public String getAssetId() {
         return asset.id;
     }
 
@@ -76,7 +76,7 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
         return cause;
     }
 
-    public Asset getAsset() {
+    public Asset<?> getAsset() {
         return asset;
     }
 

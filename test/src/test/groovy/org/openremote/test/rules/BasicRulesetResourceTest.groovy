@@ -5,12 +5,9 @@ import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
-import org.openremote.model.rules.AssetRuleset
-import org.openremote.model.rules.GlobalRuleset
-import org.openremote.model.rules.RulesResource
-import org.openremote.model.rules.TemporaryFact
-import org.openremote.model.rules.TenantRuleset
-import org.openremote.model.value.Values
+import org.openremote.model.attribute.MetaItem
+import org.openremote.model.rules.*
+import org.openremote.model.value.MetaItemType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -22,6 +19,7 @@ import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMI
 import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
+import static org.openremote.model.rules.Ruleset.Lang.SHOW_ON_LIST
 
 class BasicRulesetResourceTest extends Specification implements ManagerContainerTrait {
 
@@ -34,6 +32,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesService = container.getService(RulesService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "some test rulesets have been imported"
         def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakTestSetup, managerTestSetup)
@@ -51,7 +50,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(timeout: 10, delay: 0.2).eventually {
+        conditions.eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
         }
 
@@ -89,7 +88,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some apartment 2 demo rules"
         ruleDefinitions[0].lang == GROOVY
-        ruleDefinitions[0].meta.getBoolean("visible").orElse(false)
+        ruleDefinitions[0].meta.getValue(SHOW_ON_LIST).orElse(false)
 
         /* ############################################## WRITE ####################################### */
 
@@ -109,6 +108,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         globalRuleset.rules == "SomeRulesCode"
         globalRuleset.lang == GROOVY
 
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == globalRuleset.version
+        }
+
         when: "a global ruleset is updated"
         globalRuleset.name = "Renamed test global definition"
         globalRuleset.rules = "SomeRulesCodeModified"
@@ -123,6 +129,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         globalRuleset.name == "Renamed test global definition"
         globalRuleset.rules == "SomeRulesCodeModified"
 
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == globalRuleset.version
+        }
+
         when: "a global ruleset is deleted"
         rulesetResource.deleteGlobalRuleset(null, rulesetId)
         globalRuleset = rulesetResource.getGlobalRuleset(null, rulesetId)
@@ -130,6 +143,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "the result should be not found"
         WebApplicationException ex = thrown()
         ex.response.status == 404
+
+        and: "the ruleset should be removed from the engine"
+        conditions.eventually {
+            def deployment = rulesService.globalEngine.deployments.get(rulesetId)
+            assert deployment == null
+        }
 
         when: "a non-existent global ruleset is updated"
         rulesetResource.updateGlobalRuleset(null, 1234567890l, globalRuleset)
@@ -139,9 +158,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "a tenant ruleset is created in the authenticated realm"
-        def tenantRuleset = new TenantRuleset(keycloakTestSetup.masterTenant.realm, "Test tenant definition", GROOVY, "SomeRulesCode")
+        def tenantRuleset = new TenantRuleset(MASTER_REALM, "Test tenant definition", GROOVY, "SomeRulesCode")
         rulesetResource.createTenantRuleset(null, tenantRuleset)
-        rulesetId = rulesetResource.getTenantRulesets(null, keycloakTestSetup.masterTenant.realm, null, false)[1].id
+        rulesetId = rulesetResource.getTenantRulesets(null, MASTER_REALM, null, false)[1].id
         tenantRuleset = rulesetResource.getTenantRuleset(null, rulesetId)
         lastModified = tenantRuleset.lastModified
 
@@ -153,6 +172,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         tenantRuleset.name == "Test tenant definition"
         tenantRuleset.rules == "SomeRulesCode"
         tenantRuleset.realm == keycloakTestSetup.masterTenant.realm
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.tenantEngines.get(MASTER_REALM).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == tenantRuleset.version
+        }
 
         when: "a tenant ruleset is updated"
         tenantRuleset.name = "Renamed test tenant definition"
@@ -169,6 +195,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         tenantRuleset.rules == "SomeRulesCodeModified"
         tenantRuleset.realm == keycloakTestSetup.masterTenant.realm
 
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.tenantEngines.get(MASTER_REALM).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == tenantRuleset.version
+        }
+
         when: "a tenant ruleset is updated with an invalid realm"
         tenantRuleset.realm = "thisdoesnotexist"
         rulesetResource.updateTenantRuleset(null, rulesetId, tenantRuleset)
@@ -178,7 +211,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 400
 
         when: "a tenant ruleset is updated with an invalid id"
-        tenantRuleset.realm = keycloakTestSetup.masterTenant.realm
+        tenantRuleset.realm = MASTER_REALM
         tenantRuleset.id = 1234567890l
         rulesetResource.updateTenantRuleset(null, rulesetId, tenantRuleset)
 
@@ -201,6 +234,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 404
 
+        and: "the ruleset should be removed from the engine"
+        conditions.eventually {
+            def deployment = rulesService.tenantEngines.get(MASTER_REALM).deployments.get(rulesetId)
+            assert deployment == null
+        }
+
         when: "a tenant ruleset is created in a non-authenticated realm"
         tenantRuleset = new TenantRuleset(keycloakTestSetup.tenantBuilding.realm, "Test tenant definition", GROOVY, "SomeRulesCode")
         rulesetResource.createTenantRuleset(null, tenantRuleset)
@@ -216,6 +255,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         tenantRuleset.name == "Test tenant definition"
         tenantRuleset.rules == "SomeRulesCode"
         tenantRuleset.realm == keycloakTestSetup.tenantBuilding.realm
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.tenantEngines.get(keycloakTestSetup.tenantBuilding.realm).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == tenantRuleset.version
+        }
 
         when: "an asset ruleset is created in the authenticated realm"
         def assetRuleset = new AssetRuleset(managerTestSetup.smartOfficeId, "Test asset definition", GROOVY, "SomeRulesCode")
@@ -233,6 +279,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
 
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.assetEngines.get(managerTestSetup.smartOfficeId).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == assetRuleset.version
+        }
+
         when: "an asset ruleset is updated"
         assetRuleset.name = "Renamed test asset definition"
         assetRuleset.rules = "SomeRulesCodeModified"
@@ -247,6 +300,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.assetEngines.get(managerTestSetup.smartOfficeId).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == assetRuleset.version
+        }
 
         when: "an asset ruleset is updated with an invalid asset ID"
         assetRuleset.assetId = "thisdoesnotexist"
@@ -280,6 +340,11 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 404
 
+        and: "the ruleset should be removed from the engine"
+        conditions.eventually {
+            assert rulesService.assetEngines.get(managerTestSetup.smartOfficeId) == null
+        }
+
         when: "an asset ruleset is created in a non-authenticated realm"
         assetRuleset = new AssetRuleset(managerTestSetup.apartment2Id, "Test asset definition", GROOVY, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
@@ -296,6 +361,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.apartment2Id
 
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.assetEngines.get(managerTestSetup.apartment2Id).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == assetRuleset.version
+        }
+
         cleanup: "the static rules time variable is reset"
         TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS = expirationMillis
     }
@@ -310,6 +382,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesService = container.getService(RulesService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "some imported rulesets"
         def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakTestSetup, managerTestSetup)
@@ -327,7 +400,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(timeout: 10, delay: 0.2).eventually {
+        conditions.eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
         }
 
@@ -386,9 +459,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is created in the authenticated realm"
-        def tenantRuleset = new TenantRuleset(keycloakTestSetup.masterTenant.realm, "Test tenant definition", GROOVY, "SomeRulesCode")
+        def tenantRuleset = new TenantRuleset(MASTER_REALM, "Test tenant definition", GROOVY, "SomeRulesCode")
         rulesetResource.createTenantRuleset(null, tenantRuleset)
-        def rulesetId = rulesetResource.getTenantRulesets(null, keycloakTestSetup.masterTenant.realm, null, false)[1].id
+        def rulesetId = rulesetResource.getTenantRulesets(null, MASTER_REALM, null, false)[1].id
         tenantRuleset = rulesetResource.getTenantRuleset(null, rulesetId)
         def lastModified = tenantRuleset.lastModified
 
@@ -399,7 +472,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         tenantRuleset.name == "Test tenant definition"
         tenantRuleset.rules == "SomeRulesCode"
-        tenantRuleset.realm == keycloakTestSetup.masterTenant.realm
+        tenantRuleset.realm == MASTER_REALM
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.tenantEngines.get(MASTER_REALM).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == tenantRuleset.version
+        }
 
         when: "a tenant ruleset is updated"
         tenantRuleset.name = "Renamed test tenant definition"
@@ -415,6 +495,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         tenantRuleset.name == "Renamed test tenant definition"
         tenantRuleset.rules == "SomeRulesCodeModified"
         tenantRuleset.realm == keycloakTestSetup.masterTenant.realm
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.tenantEngines.get(MASTER_REALM).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == tenantRuleset.version
+        }
 
         when: "a tenant ruleset is updated with an invalid realm"
         tenantRuleset.realm = "thisdoesnotexist"
@@ -448,6 +535,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 404
 
+        and: "the ruleset should be removed from the engine"
+        conditions.eventually {
+            def deployment = rulesService.tenantEngines.get(MASTER_REALM).deployments.get(rulesetId)
+            assert deployment == null
+        }
+
         when: "a tenant ruleset is created in a non-authenticated realm"
         tenantRuleset = new TenantRuleset(keycloakTestSetup.tenantBuilding.realm, "Test tenant definition", GROOVY, "SomeRulesCode")
         rulesetResource.createTenantRuleset(null, tenantRuleset)
@@ -472,6 +565,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
 
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.assetEngines.get(managerTestSetup.smartOfficeId).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == assetRuleset.version
+        }
+
         when: "an asset ruleset is updated"
         assetRuleset.name = "Renamed test asset definition"
         assetRuleset.rules = "SomeRulesCodeModified"
@@ -486,6 +586,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.smartOfficeId
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.assetEngines.get(managerTestSetup.smartOfficeId).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == assetRuleset.version
+        }
 
         when: "an asset ruleset is updated with an invalid asset ID"
         assetRuleset.assetId = "thisdoesnotexist"
@@ -519,6 +626,11 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 404
 
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            assert rulesService.assetEngines.get(managerTestSetup.smartOfficeId) == null
+        }
+
         when: "an asset ruleset is created in a non-authenticated realm"
         assetRuleset = new AssetRuleset(managerTestSetup.apartment2Id, "Test asset definition", GROOVY, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
@@ -541,6 +653,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesService = container.getService(RulesService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "some imported rulesets"
         def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakTestSetup, managerTestSetup)
@@ -558,7 +671,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(timeout: 10, delay: 0.2).eventually {
+        conditions.eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
         }
 
@@ -688,6 +801,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesService = container.getService(RulesService.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "some imported rulesets"
         def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakTestSetup, managerTestSetup)
@@ -705,7 +819,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm, accessToken).proxy(RulesResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(timeout: 10, delay: 0.2).eventually {
+        conditions.eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
         }
 
@@ -804,7 +918,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
             managerTestSetup.apartment1Id,
             "Test asset definition",
             GROOVY, "SomeRulesCode")
-        .addMeta("visible", Values.create(true))
+        assetRuleset.getMeta().add(new MetaItem<>(MetaItemType.SHOW_ON_DASHBOARD, true))
         rulesetResource.createAssetRuleset(null, assetRuleset)
         def rulesetId = rulesetResource.getAssetRulesets(null, managerTestSetup.apartment1Id, null, false)[1].id
         assetRuleset = rulesetResource.getAssetRuleset(null, rulesetId)
@@ -818,7 +932,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
         assetRuleset.assetId == managerTestSetup.apartment1Id
-        assetRuleset.meta.getBoolean("visible").orElse(false)
+        assetRuleset.meta.getValue(MetaItemType.SHOW_ON_DASHBOARD).orElse(false)
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.assetEngines.get(managerTestSetup.apartment1Id).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == assetRuleset.version
+        }
 
         when: "an asset ruleset is updated"
         assetRuleset.name = "Renamed test asset definition"
@@ -834,6 +955,13 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
         assetRuleset.assetId == managerTestSetup.apartment1Id
+
+        and: "the ruleset should reach the engine"
+        conditions.eventually {
+            def deployment = rulesService.assetEngines.get(managerTestSetup.apartment1Id).deployments.get(rulesetId)
+            assert deployment != null
+            assert deployment.ruleset.version == assetRuleset.version
+        }
 
         when: "an asset ruleset is updated with a changed asset ID"
         assetRuleset.assetId = managerTestSetup.apartment3Id
@@ -875,7 +1003,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex = thrown()
         ex.response.status == 404
 
-        when: "an asset ruleset is created in the authenticated realm but on a forbidden asset "
+        and: "the ruleset should be removed from the engine"
+        conditions.eventually {
+            assert rulesService.assetEngines.get(managerTestSetup.apartment1Id) == null
+        }
+
+        when: "an asset ruleset is created in the authenticated realm but on a forbidden asset"
         assetRuleset = new AssetRuleset(managerTestSetup.apartment3Id, "Test asset definition", GROOVY, "SomeRulesCode")
         rulesetResource.createAssetRuleset(null, assetRuleset)
 

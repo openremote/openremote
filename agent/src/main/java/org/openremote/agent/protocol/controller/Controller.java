@@ -8,12 +8,7 @@ import java.util.stream.Collectors;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 
 /**
- * Controller class represent a Controller defined in a Manager Agent and store all sensors and commands linked to that Controller agent.
- *
- * <p>
- * Date : 19-Sep-18
- *
- * @author jerome.vervier
+ * Controller class represent a Controller defined in a Manager Agent and store all sensors and commands linked to that Controller agent
  */
 public class Controller {
 
@@ -29,9 +24,9 @@ public class Controller {
     private Map<AttributeRef, ControllerSensor> sensorsList = new HashMap<>();
     private Map<AttributeRef, ControllerCommand> commandsList = new HashMap<>();
 
-    public Controller(AttributeRef attributeRef) {
-        this.controllerConfigName = attributeRef.getAttributeName();
-        this.deviceId = DEVICE_ID_BASE + "_" + attributeRef.getAttributeName() + "_" + attributeRef.getEntityId();
+    public Controller(String agentId) {
+        this.controllerConfigName = agentId;
+        this.deviceId = DEVICE_ID_BASE + "_" + agentId;
     }
 
     public void addSensor(AttributeRef attributeRef, ControllerSensor sensor) {
@@ -59,17 +54,14 @@ public class Controller {
     }
 
     public void removeAttributeRef(AttributeRef attributeRef) {
-        withLock(ControllerProtocol.PROTOCOL_NAME + ":Controller::removeAttributeRef", () -> {
+        withLock(ControllerProtocol.PROTOCOL_DISPLAY_NAME + ":Controller::removeAttributeRef", () -> {
             this.commandsList.remove(attributeRef);
             this.sensorsList.remove(attributeRef);
         });
     }
 
     /**
-     * Collect every sensorName linked to a deviceName. Look into {@link #sensorsList}.
-     *
-     * @param deviceName device name for which we're looking for sensor's
-     * @return
+     * Collect every sensorName linked to a deviceName. Look into {@link #sensorsList}
      */
     public List<String> collectSensorNameLinkedToDeviceName(String deviceName) {
         return sensorsList.values()

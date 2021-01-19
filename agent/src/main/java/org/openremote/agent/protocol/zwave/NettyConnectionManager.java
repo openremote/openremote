@@ -19,29 +19,28 @@
  */
 package org.openremote.agent.protocol.zwave;
 
-import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.protocol.zwave.DefaultZWConnectionManager;
 import org.openremote.protocol.zwave.port.TransportLayer;
 import org.openremote.protocol.zwave.port.ZWavePortConfiguration;
 
 public class NettyConnectionManager extends DefaultZWConnectionManager {
 
-    public static NettyConnectionManager create(ZWavePortConfiguration configuration, IoClient<SerialDataPacket> messageProcessor) {
+    public static NettyConnectionManager create(ZWavePortConfiguration configuration, ZWSerialIoClient messageProcessor) {
         NettyConnectionManager mgr = new NettyConnectionManager(configuration, messageProcessor);
         mgr.createControllerAPI();
         mgr.addShutdownHook();
         return mgr;
     }
 
-    private final IoClient<SerialDataPacket> ioClient;
+    private final ZWSerialIoClient ioClient;
 
-    protected NettyConnectionManager(ZWavePortConfiguration configuration, IoClient<SerialDataPacket> ioClient) {
+    protected NettyConnectionManager(ZWavePortConfiguration configuration, ZWSerialIoClient ioClient) {
         super(configuration);
         this.ioClient = ioClient;
     }
 
     @Override
     protected TransportLayer createTransportLayer(ZWavePortConfiguration configuration) {
-        return new NettyTransportLayer(ioClient);
+        return ioClient;
     }
 }

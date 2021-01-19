@@ -9,6 +9,7 @@
     "./src"
   ],
   "references": [
+    { "path": "../or-input" },
     { "path": "../core" },
     { "path": "../or-translate" }
   ]

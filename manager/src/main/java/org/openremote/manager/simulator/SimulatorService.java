@@ -21,21 +21,26 @@ package org.openremote.manager.simulator;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.openremote.manager.agent.AgentService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.simulator.RequestSimulatorState;
+import org.openremote.model.simulator.SimulatorAttributeInfo;
 import org.openremote.model.simulator.SimulatorState;
 
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
 
@@ -46,10 +51,10 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(SimulatorService.class.getName());
 
+    protected AgentService agentService;
     protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
     protected ClientEventService clientEventService;
-    protected SimulatorProtocol simulatorProtocol;
 
     @Override
     public int getPriority() {
@@ -58,10 +63,10 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
+        agentService = container.getService(AgentService.class);
         managerIdentityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         clientEventService = container.getService(ClientEventService.class);
-        simulatorProtocol = container.getService(SimulatorProtocol.class);
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
             if (!subscription.isEventType(SimulatorState.class))
@@ -77,11 +82,6 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
         });
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-
-        // When a protocol instance has its values updated through linked attribute writes, publish a snapshot to all sessions
-        simulatorProtocol.setValuesChangedHandler(
-            protocolConfiguration -> publishSimulatorState(null, protocolConfiguration)
-        );
     }
 
     @Override
@@ -111,50 +111,56 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
                     return;
 
                 // TODO Should realm admins be able to work with simulators in their tenant?
-
-                for (AttributeRef protocolConfiguration : event.getConfigurations()) {
-                    publishSimulatorState(sessionKey, protocolConfiguration);
-                }
-            });
-
-        from(CLIENT_EVENT_TOPIC)
-            .routeId("FromClientSimulatorState")
-            .filter(body().isInstanceOf(SimulatorState.class))
-            .process(exchange -> {
-                SimulatorState event = exchange.getIn().getBody(SimulatorState.class);
-                LOG.fine("Handling from client: " + event);
-
-                AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-
-                // Superuser can get all
-                if (!authContext.isSuperUser())
-                    return;
-
-                // TODO Should realm admins be able to work with simulators in their tenant?
-
-                simulatorProtocol.updateSimulatorState(event);
+                publishSimulatorState(sessionKey, event.getAgentId());
             });
     }
 
-    protected void publishSimulatorState(String sessionKey, AttributeRef protocolConfiguration) {
-        LOG.fine("Attempting to publish simulator state: " + protocolConfiguration);
-        simulatorProtocol.getSimulatorState(protocolConfiguration).ifPresent(simulatorState -> {
+    protected void publishSimulatorState(String sessionKey, String agentId) {
+        LOG.fine("Attempting to publish simulator state: Agent ID=" + agentId);
+
+        Protocol<?> protocol = agentService.getProtocolInstance(agentId);
+
+        if (!(protocol instanceof SimulatorProtocol)) {
+            LOG.warning("Failed to publish simulator state, agent is not a simulator agent: Agent ID=" + agentId);
+            return;
+        }
+
+        SimulatorProtocol simulatorProtocol = (SimulatorProtocol)protocol;
+
+        SimulatorState simulatorState = getSimulatorState(simulatorProtocol);
+
+        if (sessionKey != null) {
+            clientEventService.sendToSession(sessionKey, simulatorState);
+        } else {
+            clientEventService.publishEvent(simulatorState);
+        }
+    }
+
+    /**
+     * Get info about all attributes linked to this instance (for frontend usage)
+     */
+    protected SimulatorState getSimulatorState(SimulatorProtocol protocolInstance) {
+        return withLockReturning(protocolInstance.getProtocolInstanceUri() + "::getSimulatorInfo", () -> {
+            LOG.info("Getting simulator info for protocol instance: " + protocolInstance);
+
             // We need asset names instead of identifiers for user-friendly display
-            simulatorState.updateAssetNames(assetIdAndNames -> {
-                String[] assetIds = assetIdAndNames.keySet().toArray(new String[0]);
-                List<String> assetNames = assetStorageService.findNames(assetIds);
-                for (int i = 0; i < assetIds.length; i++) {
-                    String assetId = assetIds[i];
-                    assetIdAndNames.put(assetId, assetNames.get(i));
-                }
-            });
-            if (sessionKey != null) {
-                clientEventService.sendToSession(sessionKey, simulatorState);
-            } else {
-                clientEventService.publishEvent(simulatorState);
+            List<String> linkedAssetIds = protocolInstance.getLinkedAttributes().keySet().stream().map(AttributeRef::getId).distinct().collect(Collectors.toList());
+            List<String> assetNames = assetStorageService.findNames(linkedAssetIds.toArray(new String[0]));
+
+            if (assetNames.size() != linkedAssetIds.size()) {
+                LOG.warning("Retrieved asset names don't match requested asset IDs");
+                return null;
             }
+
+            SimulatorAttributeInfo[] attributeInfos = protocolInstance.getLinkedAttributes().entrySet().stream().map(refAttributeEntry -> {
+                String assetName = assetNames.get(linkedAssetIds.indexOf(refAttributeEntry.getKey().getId()));
+                return new SimulatorAttributeInfo(assetName, refAttributeEntry.getKey().getId(), refAttributeEntry.getValue(), protocolInstance.getReplayMap().containsKey(refAttributeEntry.getKey()));
+            }).toArray(SimulatorAttributeInfo[]::new);
+
+            return new SimulatorState(protocolInstance.getAgent().getId(), attributeInfos);
         });
     }
+
 
     @Override
     public String toString() {

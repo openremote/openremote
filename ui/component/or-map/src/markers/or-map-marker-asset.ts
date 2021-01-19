@@ -1,21 +1,21 @@
 import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
-import {AttributeEvent, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause, Asset, MetaItemType, SharedEvent} from "@openremote/model";
+import {AttributeEvent, GeoJSONPoint, AssetEvent, AssetEventCause, Asset, SharedEvent, AssetDescriptor, WellknownAttributes} from "@openremote/model";
 import {subscribe} from "@openremote/core";
 import manager, {AssetModelUtil} from "@openremote/core";
 import {Util} from "@openremote/core";
 
-export function getMarkerIconAndColorFromAssetType(type: string | undefined): {icon: string, color: string | undefined} | undefined {
+export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | undefined} | undefined {
     if (!type) {
         return;
     }
 
-    const descriptor = AssetModelUtil.getAssetDescriptor(type);
-    const icon = descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon!;
+    const descriptor = typeof(type) !== "string" ? type : AssetModelUtil.getAssetDescriptor(type);
+    const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
     let color: string | undefined;
 
-    if (descriptor && descriptor.color) {
-        color = descriptor.color;
+    if (descriptor && descriptor.colour) {
+        color = descriptor.colour;
     }
 
     return {
@@ -83,7 +83,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         if (event.eventType === "attribute") {
             const attributeEvent = event as AttributeEvent;
 
-            if (attributeEvent.attributeState!.attributeRef!.attributeName === AttributeType.LOCATION.attributeName) {
+            if (attributeEvent.attributeState!.ref!.name === WellknownAttributes.LOCATION) {
                 this._updateLocation(attributeEvent.attributeState!.value as GeoJSONPoint);
                 return;
             }
@@ -109,7 +109,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
     protected onAssetChanged(asset?: Asset) {
         if (asset) {
-            const attr = Util.getAssetAttribute(asset, AttributeType.LOCATION.attributeName!);
+            const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
             this.type = asset.type;
         } else {

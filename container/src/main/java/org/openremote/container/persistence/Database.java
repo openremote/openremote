@@ -25,8 +25,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Properties;
 
 public interface Database {
 
@@ -35,12 +34,12 @@ public interface Database {
     /**
      * @return Persistence unit properties you want to use for this database (e.g. Hibernate dialect already set), will be passed into {@link #open}.
      */
-    Map<String, Object> createProperties();
+    Properties createProperties();
 
         /**
          * Modify persistence properties (e.g. set datasource) used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
          */
-        void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
+        void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
 
         void close();
 
@@ -51,21 +50,20 @@ public interface Database {
                 protected HikariDataSource hikariDataSource;
 
             @Override
-            public Map<String, Object> createProperties() {
-                Map<String, Object> properties = new HashMap<>();
+            public Properties createProperties() {
+                Properties properties = new Properties();
                 properties.put(AvailableSettings.DIALECT, PostgreSQL95Dialect.class.getName());
                 return properties;
             }
 
             @Override
-            public void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
+            public void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
                 hikariConfig = new HikariConfig();
                 hikariConfig.setRegisterMbeans(true);
                 hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME) ? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
                 hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
-                hikariConfig.addDataSourceProperty("currentSchema", "persistence");
                 hikariConfig.setUsername(username);
                 hikariConfig.setPassword(password);
                 hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);

@@ -19,7 +19,7 @@
  */
 package org.openremote.container.util;
 
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 
 import java.io.InputStream;
 import java.nio.file.Files;

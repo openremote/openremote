@@ -20,6 +20,7 @@
 package org.openremote.model.rules;
 
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.util.TsIgnore;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
  * Facade for writing rules RHS actions, supporting {@link UserQuery} within the scope
  * of the rule engine.
  */
+@TsIgnore
 public abstract class Users {
 
     abstract public Stream<String> getResults(UserQuery userQuery);

@@ -19,47 +19,98 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.openremote.model.asset.agent.AgentDescriptorImpl;
-import org.openremote.model.attribute.AttributeDescriptor;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.openremote.model.asset.agent.AgentDescriptor;
+import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.value.NameHolder;
 
-import java.util.Arrays;
-import java.util.Optional;
+import java.io.IOException;
 
 /**
- * Describes an {@link Asset} that can be added to the manager; the {@link #getType()} is the unique identifier.
+ * Describes an {@link Asset} that can be added to this instance; the {@link #getName()} must match the {@link Asset#type}
+ * with which it is associated. For a given {@link Asset} class only one {@link AssetDescriptor} is allowed, each concrete
+ * {@link Asset} class must have a corresponding {@link AssetDescriptor} and {@link AssetDescriptor}s are not allowed for
+ * abstract {@link Asset} classes. {@link AssetDescriptor} names are extracted using {@link Class#getSimpleName} of the
+ * {@link Asset} class, so each asset's simple class name must be unique to avoid clashes.
  * <p>
- * A custom project can add its own descriptors through {@link org.openremote.model.asset.AssetModelProvider}.
- * <p>
+ * {@link AssetDescriptor#getName} must be globally unique within the context of the manager it is registered with.
  */
-@JsonFormat(shape = JsonFormat.Shape.OBJECT)
-@JsonDeserialize(as = AssetDescriptorImpl.class)
-public interface AssetDescriptor {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "descriptorType")
+@JsonTypeName("asset")
+@JsonSubTypes({
+    @JsonSubTypes.Type(AgentDescriptor.class)
+})
+@JsonDeserialize(using = AssetDescriptor.AssetDescriptorDeserialiser.class)
+public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
 
-    @JsonProperty
-    String getName();
+    @TsIgnore
+    public static class AssetDescriptorDeserialiser extends StdDeserializer<AssetDescriptor<?>> {
 
-    @JsonProperty
-    String getType();
-
-    @JsonProperty
-    String getIcon();
-
-    @JsonProperty
-    String getColor();
-
-    @JsonProperty
-    AttributeDescriptor[] getAttributeDescriptors();
-
-    @JsonIgnore
-    static Optional<AttributeDescriptor> getAttributeDescriptor(AssetDescriptor descriptor, String attributeName) {
-        if (descriptor == null || descriptor.getAttributeDescriptors() == null) {
-            return Optional.empty();
+        public AssetDescriptorDeserialiser() {
+            super(AssetDescriptor.class);
         }
 
-        return Arrays.stream(descriptor.getAttributeDescriptors())
-            .filter(ad -> ad.getAttributeName().equals(attributeName))
-            .findFirst();
+        @Override
+        public AssetDescriptor<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+            String name = null;
+            JsonNode node = p.getCodec().readTree(p);
+
+            if (node.isTextual()) {
+                name = node.asText();
+            } else if (node.isObject()) {
+                name = node.get("name").asText();
+            }
+            return AssetModelUtil.getAssetDescriptor(name).orElse(null);
+        }
+    }
+
+    protected String name;
+    @JsonIgnore
+    protected Class<T> type;
+    protected String icon;
+    protected String colour;
+
+    AssetDescriptor() {}
+
+    /**
+     * Construct an instance using the {@link Class#getSimpleName} value of the specified type as the descriptor name,
+     * the {@link Class#getSimpleName} must therefore be unique enough to not clash with other {@link AssetDescriptor}s.
+     */
+    public AssetDescriptor(String icon, String colour, Class<T> type) {
+        this.name = type.getSimpleName();
+        this.icon = icon;
+        this.colour = colour;
+        this.type = type;
+    }
+
+    /**
+     * The unique name of this descriptor and corresponds to the simple class name of {@link #getType()}.
+     */
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public Class<T> getType() {
+        return type;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public String getColour() {
+        return colour;
     }
 }

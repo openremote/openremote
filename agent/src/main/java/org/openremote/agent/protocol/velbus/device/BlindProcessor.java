@@ -20,10 +20,9 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
@@ -37,44 +36,21 @@ import static org.openremote.model.util.TextUtil.toUpperCamelCase;
 
 public class BlindProcessor extends OutputChannelProcessor {
 
-    public enum ChannelState implements DevicePropertyValue<ChannelState> {
+    public enum ChannelState {
         UP,
         DOWN,
         HALT;
 
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case BOOLEAN:
-                    switch (this) {
-                        case DOWN:
-                            return Values.create(true);
-                        case UP:
-                            return Values.create(false);
-                        case HALT:
-                            return null;
-                    }
-                default:
-                    return EnumUtil.enumToValue(this, valueType);
-            }
-        }
-
-        @Override
-        public ChannelState getPropertyValue() {
-            return this;
-        }
-
-        public static Optional<ChannelState> fromValue(Value value) {
+        public static Optional<ChannelState> fromValue(Object value) {
             if (value == null) {
                 return Optional.of(HALT);
             }
 
-            switch (value.getType()) {
-                case BOOLEAN:
-                    return fromBoolean(Values.getBoolean(value).orElse(null));
-                default:
-                    return EnumUtil.enumFromValue(ChannelState.class, value);
+            if (Values.isBoolean(value.getClass())) {
+                return fromBoolean(Values.getBoolean(value).orElse(null));
             }
+
+            return EnumUtil.enumFromValue(ChannelState.class, value);
         }
 
         public static Optional<ChannelState> fromBoolean(Boolean value) {
@@ -88,7 +64,7 @@ public class BlindProcessor extends OutputChannelProcessor {
         }
     }
 
-    public enum ChannelSetting implements DevicePropertyValue<ChannelSetting> {
+    public enum ChannelSetting {
         NORMAL(0x00),
         INHIBITED(0x01),
         INHIBITED_DOWN(0x02),
@@ -97,7 +73,7 @@ public class BlindProcessor extends OutputChannelProcessor {
         FORCED_UP(0x05),
         LOCKED(0x06);
 
-        private int code;
+        private final int code;
 
         ChannelSetting(int code) {
             this.code = code;
@@ -105,16 +81,6 @@ public class BlindProcessor extends OutputChannelProcessor {
 
         public int getCode() {
             return this.code;
-        }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            return EnumUtil.enumToValue(this, valueType);
-        }
-
-        @Override
-        public ChannelSetting getPropertyValue() {
-            return this;
         }
 
         public static ChannelSetting fromCode(int code) {
@@ -128,37 +94,37 @@ public class BlindProcessor extends OutputChannelProcessor {
         }
     }
 
-    protected final static List<Pair<String, AttributeValueType>> CHANNEL_PROPERTIES = Arrays.asList(
+    protected final static List<Pair<String, ValueDescriptor<?>>> CHANNEL_PROPERTIES = Arrays.asList(
         // RW - ChannelState
-        new Pair<>("", AttributeValueType.STRING),
+        new Pair<>("", ValueType.TEXT),
         // R - ChannelSetting
-        new Pair<>("_SETTING", AttributeValueType.STRING),
+        new Pair<>("_SETTING", ValueType.TEXT),
         // R - Read LED status for up
-        new Pair<>("_LED_UP", AttributeValueType.STRING),
+        new Pair<>("_LED_UP", ValueType.TEXT),
        // R - Read LED status for down
-        new Pair<>("_LED_DOWN", AttributeValueType.STRING),
+        new Pair<>("_LED_DOWN", ValueType.TEXT),
         // RW - True/False
-        new Pair<>("_LOCKED", AttributeValueType.BOOLEAN),
+        new Pair<>("_LOCKED", ValueType.BOOLEAN),
         // RW - True/False
-        new Pair<>("_INHIBITED", AttributeValueType.BOOLEAN),
+        new Pair<>("_INHIBITED", ValueType.BOOLEAN),
         // W - Position 0-100% (0 = halt)
-        new Pair<>("_POSITION", AttributeValueType.NUMBER),
+        new Pair<>("_POSITION", ValueType.NUMBER),
         // W - Up for specified time in seconds (0 = halt, -1 = indefinitely)
-        new Pair<>("_UP", AttributeValueType.NUMBER),
+        new Pair<>("_UP", ValueType.NUMBER),
         // W - Down for specified time in seconds (0 = halt, -1 = indefinitely)
-        new Pair<>("_DOWN", AttributeValueType.NUMBER),
+        new Pair<>("_DOWN", ValueType.NUMBER),
         // W - Forced up for specified time in seconds (0 = halt, -1 = indefinitely)
-        new Pair<>("_FORCE_UP", AttributeValueType.NUMBER),
+        new Pair<>("_FORCE_UP", ValueType.NUMBER),
         // W - Forced down for specified time in seconds (0 = cancel, -1 = indefinitely)
-        new Pair<>("_FORCE_DOWN", AttributeValueType.NUMBER),
+        new Pair<>("_FORCE_DOWN", ValueType.NUMBER),
         // W - Lock (force off) for specified time in seconds (0 = unlock, -1 = indefinitely)
-        new Pair<>("_LOCK", AttributeValueType.NUMBER),
+        new Pair<>("_LOCK", ValueType.NUMBER),
         // W - Inhibit for specified time in seconds (0 = unlock, -1 = indefinitely)
-        new Pair<>("_INHIBIT", AttributeValueType.NUMBER),
+        new Pair<>("_INHIBIT", ValueType.NUMBER),
         // W - Inhibit up for specified time in seconds (0 = un-inhibit, -1 = indefinitely)
-        new Pair<>("_INHIBIT_UP", AttributeValueType.NUMBER),
+        new Pair<>("_INHIBIT_UP", ValueType.NUMBER),
         // W - Inhibit down for specified time in seconds (0 = un-inhibit, -1 = indefinitely)
-        new Pair<>("_INHIBIT_DOWN", AttributeValueType.NUMBER)
+        new Pair<>("_INHIBIT_DOWN", ValueType.NUMBER)
     );
 
     @Override
@@ -190,7 +156,7 @@ public class BlindProcessor extends OutputChannelProcessor {
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return getChannelNumberAndPropertySuffix(device, CHANNEL_REGEX, property)
             .map(
                 channelNumberAndPropertySuffix -> {
@@ -332,36 +298,33 @@ public class BlindProcessor extends OutputChannelProcessor {
     public boolean processReceivedPacket(VelbusDevice device, VelbusPacket packet) {
         VelbusPacket.InboundCommand packetCommand = VelbusPacket.InboundCommand.fromCode(packet.getCommand());
 
-        switch (packetCommand) {
-            case BLIND_STATUS:
+        if (packetCommand == VelbusPacket.InboundCommand.BLIND_STATUS) {// Extract channel info
+            int channelNumber = packet.getByte(1) & 0xFF;
 
-                // Extract channel info
-                int channelNumber = packet.getByte(1) & 0xFF;
+            int blindPos = device.getDeviceType() == VelbusDeviceType.VMB2BLE ? packet.getByte(5) & 0xFF : 0;
+            int stateValue = packet.getByte(3) & 0xFF;
+            ChannelState state = stateValue == 0 ? ChannelState.HALT : stateValue == 1 ? ChannelState.UP : ChannelState.DOWN;
+            LedState ledStateDown = LedState.fromCode(packet.getByte(4) & 0xFF);
+            LedState ledStateUp = LedState.fromCode(packet.getByte(4) << 4 & 0xFF);
+            ChannelSetting setting = ChannelSetting.fromCode(packet.getByte(6) & 0xFF);
+            boolean locked = setting == ChannelSetting.LOCKED;
+            boolean inhibited = setting == ChannelSetting.INHIBITED;
+            boolean inhibitedUp = setting == ChannelSetting.INHIBITED_UP;
+            boolean inhibitedDown = setting == ChannelSetting.INHIBITED_DOWN;
 
-                IntDevicePropertyValue blindPos = device.getDeviceType() == VelbusDeviceType.VMB2BLE ? new IntDevicePropertyValue(packet.getByte(5) & 0xFF) : IntDevicePropertyValue.ZERO;
-                int stateValue = packet.getByte(3) & 0xFF;
-                ChannelState state = stateValue == 0 ? ChannelState.HALT : stateValue == 1 ? ChannelState.UP : ChannelState.DOWN;
-                LedState ledStateDown = LedState.fromCode(packet.getByte(4) & 0xFF);
-                LedState ledStateUp = LedState.fromCode(packet.getByte(4) << 4 & 0xFF);
-                ChannelSetting setting = ChannelSetting.fromCode(packet.getByte(6) & 0xFF);
-                BooleanDevicePropertyValue locked = setting == ChannelSetting.LOCKED ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
-                BooleanDevicePropertyValue inhibited = setting == ChannelSetting.INHIBITED ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
-                BooleanDevicePropertyValue inhibitedUp = setting == ChannelSetting.INHIBITED_UP ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
-                BooleanDevicePropertyValue inhibitedDown = setting == ChannelSetting.INHIBITED_DOWN ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
+            // Push to device cache
+            device.setProperty("CH" + channelNumber, state);
+            device.setProperty("CH" + channelNumber + "_POSITION", blindPos);
+            device.setProperty("CH" + channelNumber + "_SETTING", setting);
+            device.setProperty("CH" + channelNumber + "_LED_DOWN", ledStateDown);
+            device.setProperty("CH" + channelNumber + "_LED_UP", ledStateUp);
+            device.setProperty("CH" + channelNumber + "_LOCKED", locked);
+            device.setProperty("CH" + channelNumber + "_INHIBITED", inhibited);
+            device.setProperty("CH" + channelNumber + "_INHIBITED_UP", inhibitedUp);
+            device.setProperty("CH" + channelNumber + "_INHIBITED_DOWN", inhibitedDown);
+            return true;
 
-                // Push to device cache
-                device.setProperty("CH" + channelNumber, state);
-                device.setProperty("CH" + channelNumber + "_POSITION", blindPos);
-                device.setProperty("CH" + channelNumber + "_SETTING", setting);
-                device.setProperty("CH" + channelNumber + "_LED_DOWN", ledStateDown);
-                device.setProperty("CH" + channelNumber + "_LED_UP", ledStateUp);
-                device.setProperty("CH" + channelNumber + "_LOCKED", locked);
-                device.setProperty("CH" + channelNumber + "_INHIBITED", inhibited);
-                device.setProperty("CH" + channelNumber + "_INHIBITED_UP", inhibitedUp);
-                device.setProperty("CH" + channelNumber + "_INHIBITED_DOWN", inhibitedDown);
-                return true;
-
-                // Don't use push button status as it only provides relay on/off info
+            // Don't use push button status as it only provides relay on/off info
 //            case PUSH_BUTTON_STATUS:
 //                // Update each of the dimmer channels
 //                int onByte = packet.getByte(1) & 0xFF;

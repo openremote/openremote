@@ -13,11 +13,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:group"
-                    }
+                    "GroupAsset"
                   ],
                   "attributes": {
                     "items": [

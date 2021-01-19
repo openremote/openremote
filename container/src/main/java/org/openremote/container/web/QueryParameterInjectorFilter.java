@@ -19,10 +19,13 @@
  */
 package org.openremote.container.web;
 
+import org.openremote.model.asset.agent.Protocol;
+
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -31,81 +34,68 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A filter for injecting query parameters into the request URI. If {@link #dynamicPlaceholderRegex} is set any request
- * passing through this filter will be checked for a property called {@link #DYNAMIC_VALUE} if set then any occurrence
- * of {@link #dynamicPlaceholderRegex} in the query parameter values will be replaced with the dynamic property value.
+ * A filter for injecting query parameters into the request URI. The query parameters are extracted from the request
+ * property {@link #QUERY_PARAMETERS_PROPERTY}. Any {@link Protocol#DYNAMIC_VALUE_PLACEHOLDER} in the query parameters
+ * will be replaced with the {@link #DYNAMIC_VALUE_PROPERTY} from the request. Any
+ * {@link Protocol#DYNAMIC_TIME_PLACEHOLDER_REGEXP} in the query parameters will be replaced with the current system
+ * time in the specified format with optional offset.
  */
+@Provider
 public class QueryParameterInjectorFilter implements ClientRequestFilter {
 
     /**
      * Set a property on the request using this name to inject dynamic string values into
      */
-    public static final String DYNAMIC_VALUE = QueryParameterInjectorFilter.class.getName() + ".dynamicValue";
-    protected MultivaluedMap<String, String> queryParameters;
-    protected String dynamicPlaceholderRegex;
-    protected boolean dynamic;
-    protected String dynamicTimePlaceHolderRegex;
+    public static final String DYNAMIC_VALUE_PROPERTY = QueryParameterInjectorFilter.class.getName() + ".dynamicValue";
 
-    public QueryParameterInjectorFilter(MultivaluedMap<String, String> queryParameters,
-                                        String dynamicPlaceholderRegex, String dynamicTimePlaceHolderRegex) {
-        this.queryParameters = queryParameters;
-        this.dynamicPlaceholderRegex = dynamicPlaceholderRegex;
-        this.dynamicTimePlaceHolderRegex = dynamicTimePlaceHolderRegex;
+    /**
+     * Set a property on the request using this name to inject query parameters; the value should be a {@link
+     * MultivaluedMap}.
+     */
+    public static final String QUERY_PARAMETERS_PROPERTY = QueryParameterInjectorFilter.class.getName() + ".params";
 
-        dynamic = queryParameters != null && dynamicPlaceholderRegex != null
-            && queryParameters
-            .entrySet()
-            .stream()
-            .anyMatch(paramNameAndValues ->
-                paramNameAndValues.getValue() != null
-                    && paramNameAndValues.getValue()
-                    .stream()
-                    .anyMatch(val -> val.matches(dynamicPlaceholderRegex)));
-    }
+    protected static final Pattern DYNAMIC_TIME_PATTERN = Pattern.compile(Protocol.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
 
+    @SuppressWarnings("unchecked")
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-        if (queryParameters != null) {
-            boolean dynamic = this.dynamic;
-            String dynamicValue = null;
 
-            if (dynamic) {
-                dynamicValue = (String) requestContext.getProperty(DYNAMIC_VALUE);
-                dynamic = dynamicValue != null;
-            }
+        MultivaluedMap<String, String> queryParameters = (MultivaluedMap<String, String>) requestContext.getProperty(QUERY_PARAMETERS_PROPERTY);
+        String dynamicValue = requestContext.getProperty(DYNAMIC_VALUE_PROPERTY) != null ? (String) requestContext.getProperty(DYNAMIC_VALUE_PROPERTY) : "";
 
-            UriBuilder uriBuilder = UriBuilder.fromUri(requestContext.getUri());
-            boolean finalDynamic = dynamic;
-            String finalDynamicValue = dynamicValue;
-
-            queryParameters.forEach((name, values) -> {
-                String[] valueArr = values.toArray(new String[values.size()]);
-                if (finalDynamic) {
-                    for (int i = 0; i < valueArr.length; i++) {
-                        valueArr[i] = valueArr[i].replaceAll(dynamicPlaceholderRegex, finalDynamicValue);
-                    }
-                }
-                if (dynamicTimePlaceHolderRegex != null) {
-                    for (int i = 0; i < valueArr.length; i++) {
-                        if (valueArr[i].matches(dynamicTimePlaceHolderRegex)) {
-                            Matcher matcher = Pattern.compile(dynamicTimePlaceHolderRegex).matcher(valueArr[i]);
-                            long millisToAdd = 0;
-                            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-                            if (matcher.find()) {
-                                if (matcher.groupCount() > 0) {
-                                    dateTimeFormatter = DateTimeFormatter.ofPattern(matcher.group(1));
-                                }
-                                if (matcher.groupCount() == 2) {
-                                    millisToAdd = Long.parseLong(matcher.group(2));
-                                }
-                            }
-                            valueArr[i] = dateTimeFormatter.format(Instant.now().plusMillis(millisToAdd).atZone(ZoneId.systemDefault()));
-                        }
-                    }
-                }
-                uriBuilder.queryParam(name, (Object[]) valueArr);
-            });
-            requestContext.setUri(uriBuilder.build());
+        if (queryParameters == null) {
+            return;
         }
+
+        UriBuilder uriBuilder = UriBuilder.fromUri(requestContext.getUri());
+
+        queryParameters.forEach((name, values) -> {
+
+            Object[] formattedValues = values.stream().map(v -> {
+                v = v.replaceAll(Protocol.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, dynamicValue);
+
+                Matcher matcher = DYNAMIC_TIME_PATTERN.matcher(v);
+
+                if (matcher.find()) {
+                    long millisToAdd = 0L;
+                    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
+                    if (matcher.groupCount() > 0) {
+                        dateTimeFormatter = DateTimeFormatter.ofPattern(matcher.group(1));
+                    }
+                    if (matcher.groupCount() == 2) {
+                        millisToAdd = Long.parseLong(matcher.group(2));
+                    }
+
+                    v = v.replaceAll(Protocol.DYNAMIC_TIME_PLACEHOLDER_REGEXP, dateTimeFormatter.format(Instant.now().plusMillis(millisToAdd).atZone(ZoneId.systemDefault())));
+                }
+
+                return v;
+            }).toArray();
+
+            uriBuilder.queryParam(name, formattedValues);
+        });
+
+        requestContext.setUri(uriBuilder.build());
     }
 }

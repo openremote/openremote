@@ -21,20 +21,19 @@ package org.openremote.manager.rules;
 
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import java.sql.Connection;
@@ -167,7 +166,7 @@ public class RulesetStorageService implements ContainerService {
     }
 
     protected <T extends Ruleset> void appendSelectString(StringBuilder sb, Class<T> rulesetType, RulesetQuery query) {
-        sb.append("SELECT R.ID, R.OBJ_VERSION, R.RULES_LANG, R.ENABLED, R.LAST_MODIFIED, R.CREATED_ON, R.NAME, R.META");
+        sb.append("SELECT R.ID, R.VERSION, R.RULES_LANG, R.ENABLED, R.LAST_MODIFIED, R.CREATED_ON, R.NAME, R.META");
 
         if (query.fullyPopulate) {
             sb.append(", R.RULES");
@@ -285,13 +284,13 @@ public class RulesetStorageService implements ContainerService {
 
         ruleset.setName(rs.getString("NAME"));
         ruleset.setId(rs.getLong("ID"));
-        ruleset.setVersion(rs.getLong("OBJ_VERSION"));
+        ruleset.setVersion(rs.getLong("VERSION"));
         ruleset.setLang(Ruleset.Lang.valueOf(rs.getString("RULES_LANG")));
         ruleset.setEnabled(rs.getBoolean("ENABLED"));
         ruleset.setLastModified(rs.getTimestamp("LAST_MODIFIED"));
         ruleset.setCreatedOn(rs.getTimestamp("CREATED_ON"));
         if (rs.getString("META") != null) {
-            ruleset.setMeta(Values.instance().<ObjectValue>parse(rs.getString("META")).orElse(null));
+            ruleset.setMeta(Values.parse(rs.getString("META"), MetaMap.class).orElse(null));
         }
         if (query.fullyPopulate) {
             ruleset.setRules(rs.getString("RULES"));

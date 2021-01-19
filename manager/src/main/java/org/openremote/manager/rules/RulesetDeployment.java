@@ -31,14 +31,13 @@ import org.jeasy.rules.api.Rules;
 import org.jeasy.rules.core.RuleBuilder;
 import org.kohsuke.groovy.sandbox.GroovyValueFilter;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
-import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.flow.NodeCollection;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.Values;
 
 import javax.script.*;
 import java.util.ArrayList;
@@ -46,12 +45,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.manager.rules.AssetQueryPredicate.getNextOrActiveFromTo;
 
 public class RulesetDeployment {
 
@@ -124,7 +124,7 @@ public class RulesetDeployment {
     final protected Rules rules = new Rules();
     final protected AssetStorageService assetStorageService;
     final protected TimerService timerService;
-    final protected ManagerExecutorService executorService;
+    final protected ScheduledExecutorService executorService;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
     final protected Notifications notificationsFacade;
@@ -139,7 +139,7 @@ public class RulesetDeployment {
     protected Pair<Long, Long> nextValidity;
 
     public RulesetDeployment(Ruleset ruleset, TimerService timerService,
-                             AssetStorageService assetStorageService, ManagerExecutorService executorService,
+                             AssetStorageService assetStorageService, ScheduledExecutorService executorService,
                              Assets assetsFacade, Users usersFacade, Notifications notificationsFacade,
                              HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         this.ruleset = ruleset;
@@ -152,11 +152,11 @@ public class RulesetDeployment {
         this.historicDatapointsFacade = historicDatapointsFacade;
         this.predictedDatapointsFacade = predictedDatapointsFacade;
 
-        if (ruleset.hasMeta(Ruleset.META_KEY_VALIDITY)) {
+        if (ruleset.getMeta().has(Ruleset.VALIDITY)) {
             validity = ruleset.getValidity();
 
             if (validity == null) {
-                RulesEngine.LOG.log(Level.SEVERE, "Ruleset has invalid validity value '" + ruleset.getMeta(Ruleset.META_KEY_VALIDITY) + "'");
+                RulesEngine.LOG.log(Level.SEVERE, "Ruleset has invalid validity value '" + ruleset.getMeta().get(Ruleset.VALIDITY) + "'");
             }
         }
     }
@@ -183,7 +183,7 @@ public class RulesetDeployment {
 
     public void updateValidity() {
         if (validity != null && !hasExpired()) {
-            Pair<Long, Long> fromTo = getNextOrActiveFromTo(validity, new Date(timerService.getCurrentTimeMillis()));
+            Pair<Long, Long> fromTo = validity.getNextOrActiveFromTo(new Date(timerService.getCurrentTimeMillis()));
             if (fromTo == null) {
                 nextValidity = new Pair<>(Long.MIN_VALUE, Long.MIN_VALUE);
             } else {
@@ -259,7 +259,7 @@ public class RulesetDeployment {
                     withLock(toString() + "::scheduledRuleActionFire", () -> {
                         scheduledRuleActions.removeIf(Future::isDone);
                         action.run();
-                    }), delayMillis);
+                    }), delayMillis, TimeUnit.MILLISECONDS);
             scheduledRuleActions.add(future);
         });
     }
@@ -456,7 +456,7 @@ public class RulesetDeployment {
     protected boolean compileRulesFlow(Ruleset ruleset, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, HistoricDatapoints historicDatapointsFacade, PredictedDatapoints predictedDatapointsFacade) {
         try {
             flowRulesBuilder = new FlowRulesBuilder(timerService, assetStorageService, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade);
-            NodeCollection nodeCollection = Container.JSON.readValue(ruleset.getRules(), NodeCollection.class);
+            NodeCollection nodeCollection = Values.JSON.readValue(ruleset.getRules(), NodeCollection.class);
             flowRulesBuilder.add(nodeCollection);
             for (Rule rule : flowRulesBuilder.build()) {
                 RulesEngine.LOG.info("Registering rule: " + rule.getName());

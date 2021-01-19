@@ -7,6 +7,8 @@ import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.model.asset.impl.BuildingAsset
+import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeExecuteStatus
 import org.openremote.model.rules.AssetRuleset
@@ -39,11 +41,14 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment1Engine
 
+        and: "the clock is stopped for testing purposes"
+        stopPseudoClock()
+
         and: "scenes are added to apartment1 rooms"
-        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id)
-        def apartment1Livingroom = assetStorageService.find(managerTestSetup.apartment1LivingroomId)
-        def apartment1Kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId)
-        def apartment1Hallway = assetStorageService.find(managerTestSetup.apartment1HallwayId)
+        def apartment1 = assetStorageService.find(managerTestSetup.apartment1Id) as BuildingAsset
+        def apartment1Livingroom = assetStorageService.find(managerTestSetup.apartment1LivingroomId) as RoomAsset
+        def apartment1Kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId) as RoomAsset
+        def apartment1Hallway = assetStorageService.find(managerTestSetup.apartment1HallwayId) as RoomAsset
         ManagerTestSetup.createDemoApartmentScenes(
             assetStorageService,
             apartment1,
@@ -67,31 +72,25 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
 
             // The macro should be ready
             def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            def executionStatus = AttributeExecuteStatus.fromString(
-                    asset.getAttribute("dayScene").get().getValueAsString().get()
-            ).get()
-            assert executionStatus == AttributeExecuteStatus.READY
+            assert asset.getAttribute("dayScene").flatMap{it.getValueAs(AttributeExecuteStatus.class)}.orElse(null) == AttributeExecuteStatus.READY
         }
 
         when: "the vacation days are set to 5"
         double fiveDaysInFuture = getClockTimeOf(container) + (5 * 24 * 60 * 60 * 1000)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerTestSetup.apartment1Id, "vacationUntil", Values.create(fiveDaysInFuture)
+                managerTestSetup.apartment1Id, "vacationUntil", fiveDaysInFuture
         ))
 
         then: "the DAY scene should be executed and scene timers disabled"
         conditions.eventually {
             def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            def executionStatus = AttributeExecuteStatus.fromString(
-                    asset.getAttribute("dayScene").get().getValueAsString().get()
-            ).get()
-            assert executionStatus == AttributeExecuteStatus.COMPLETED
-            assert !asset.getAttribute("sceneTimerEnabled").get().getValueAsBoolean().get()
+            assert asset.getAttribute("dayScene").flatMap{it.getValueAs(AttributeExecuteStatus.class)}.orElse(null) == AttributeExecuteStatus.COMPLETED
+            assert !asset.getAttribute("sceneTimerEnabled").flatMap{it.value}.orElse(false)
             DayOfWeek.values().each {
-                assert !asset.getAttribute("morningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("daySceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("eveningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("nightSceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert !asset.getAttribute("morningSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert !asset.getAttribute("daySceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert !asset.getAttribute("eveningSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert !asset.getAttribute("nightSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
             }
         }
 
@@ -101,13 +100,13 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
         then: "vacation mode is still on"
         conditions.eventually {
             def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert asset.getAttribute("vacationUntil").get().getValueAsNumber().get() == fiveDaysInFuture
-            assert !asset.getAttribute("sceneTimerEnabled").get().getValueAsBoolean().get()
+            assert asset.getAttribute("vacationUntil").flatMap{it.value}.orElse(0d) == fiveDaysInFuture
+            assert !asset.getAttribute("sceneTimerEnabled").flatMap{it.value}.orElse(false)
             DayOfWeek.values().each {
-                assert !asset.getAttribute("morningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("daySceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("eveningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("nightSceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert !asset.getAttribute("morningSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert !asset.getAttribute("daySceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert !asset.getAttribute("eveningSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert !asset.getAttribute("nightSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
             }
         }
 
@@ -118,12 +117,12 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
         conditions.eventually {
             def asset = assetStorageService.find(managerTestSetup.apartment1Id, true)
             assert !asset.getAttribute("vacationUntil").get().getValue().isPresent()
-            assert asset.getAttribute("sceneTimerEnabled").get().getValueAsBoolean().get()
+            assert asset.getAttribute("sceneTimerEnabled").flatMap{it.value}.orElse(false)
             DayOfWeek.values().each {
-                assert asset.getAttribute("morningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert asset.getAttribute("daySceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert asset.getAttribute("eveningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert asset.getAttribute("nightSceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert asset.getAttribute("morningSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert asset.getAttribute("daySceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert asset.getAttribute("eveningSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
+                assert asset.getAttribute("nightSceneEnabled" + it.name()).flatMap{it.value}.orElse(false)
             }
         }
 

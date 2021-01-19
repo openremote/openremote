@@ -21,11 +21,9 @@
 package org.openremote.model.flow.catalog;
 
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.Slot;
-import org.openremote.model.flow.catalog.CatalogCategory;
-import org.openremote.model.flow.catalog.ConsoleNodeDescriptor;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import java.util.Arrays;
@@ -40,7 +38,7 @@ public abstract class WidgetNodeDescriptor extends ConsoleNodeDescriptor {
     public static final String PROPERTY_COMPONENT = "component";
     public static final String WIDGET_EDITOR_COMPONENT = "or-node-editor-widget";
 
-    public static final ObjectValue WIDGET_INITIAL_PROPERTIES = Values.createObject()
+    public static final ObjectNode WIDGET_INITIAL_PROPERTIES = Values.JSON.createObjectNode()
         .put("positionX", 25)
         .put("positionY", 25)
         .put("positionZ", 0)
@@ -86,7 +84,7 @@ public abstract class WidgetNodeDescriptor extends ConsoleNodeDescriptor {
     }
 
     @Override
-    protected ObjectValue getInitialProperties() {
+    protected ObjectNode getInitialProperties() {
         return WIDGET_INITIAL_PROPERTIES;
     }
 

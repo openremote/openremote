@@ -20,264 +20,128 @@
 package org.openremote.agent.protocol.timer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.MetaItemType;
+import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.*;
+import org.openremote.model.asset.agent.Protocol;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import org.quartz.CronExpression;
 
 import javax.ws.rs.NotSupportedException;
 import java.text.ParseException;
-import java.util.*;
 import java.util.logging.Logger;
 
 import static java.util.logging.Level.FINER;
-import static org.openremote.agent.protocol.timer.TimerConfiguration.*;
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemFixedBoolean;
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This protocol can be used to trigger an {@link AttributeEvent} using a cron based timer.
  * <p>
- * A timer is defined by creating a {@link TimerConfiguration} attribute on an agent. A timer configuration consists of
- * the following Meta Items:
- * <ul>
- * <li>{@link #META_TIMER_CRON_EXPRESSION}: The cron expression of the timer</li>
- * <li>{@link #META_TIMER_ACTION}: The {@link AttributeState} that should be sent when the timer is triggered</li>
- * </ul>
- * <p>
- * {@link AssetAttribute}s can be linked to time triggers to read/write the trigger time and/or enable/disable the
- * trigger. A linked attribute must have a valid {@link MetaItemType#AGENT_LINK} Meta Item and
- * also a {@link #META_TIMER_VALUE_LINK} Meta Item to indicate what value of timer to link to {@link TimerValue}
+ * It is also possible to link {@link Attribute}s to this {@link Protocol} to allow reading information about the
+ * timer instance and also to allow altering the timer instance (e.g. altering what time a daily timer triggers).
  */
-public class TimerProtocol extends AbstractProtocol {
+public class TimerProtocol extends AbstractProtocol<TimerAgent, TimerAgent.TimerAgentLink> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TimerProtocol.class);
 
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":timer";
     public static final String PROTOCOL_DISPLAY_NAME = "Timer";
-    public static final String META_TIMER_CRON_EXPRESSION = PROTOCOL_NAME + ":cronExpression";
-    public static final String META_TIMER_ACTION = PROTOCOL_NAME + ":action";
-    public static final String META_TIMER_VALUE_LINK = PROTOCOL_NAME + ":link";
-    public static final String META_TIMER_DISABLED = PROTOCOL_NAME + ":disabled";
-    protected static final String VERSION = "1.0";
 
-    public static final MetaItemDescriptor META_PROTOCOL_TIMER_ACTION = new MetaItemDescriptorImpl(
-        META_TIMER_ACTION,
-        ValueType.OBJECT,
-            true,
-            null,
-            null,
-            null,
-            null,
-            false, null, null, null, false);
-
-    public static final MetaItemDescriptor META_PROTOCOL_TIMER_CRON_EXPRESSION = new MetaItemDescriptorImpl(
-        META_TIMER_CRON_EXPRESSION,
-        ValueType.STRING,
-            true,
-            null, // TODO Should use TextUtil.REGEXP_PATTERN_CRON_EXPRESSION
-        MetaItemDescriptor.PatternFailure.CRON_EXPRESSION.name(),
-            null,
-                null,
-                false, null, null, null);
-
-    public static final MetaItemDescriptor META_PROTOCOL_TIMER_DISABLED = metaItemFixedBoolean(
-        META_TIMER_DISABLED,
-        ACCESS_PRIVATE,
-        false);
-
-    public static final MetaItemDescriptor META_ATTRIBUTE_TIMER_VALUE_LINK = new MetaItemDescriptorImpl(
-        META_TIMER_VALUE_LINK,
-        ValueType.STRING,
-        true,
-        "^(" +
-            TimerValue.ENABLED + "|" +
-            TimerValue.CRON_EXPRESSION + "|" +
-            TimerValue.TIME +
-            ")$",
-        TimerValue.ENABLED + "|" +
-            TimerValue.CRON_EXPRESSION + "|" +
-            TimerValue.TIME,
-        null,
-        null,
-        false, null, null, null);
-
-    protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
-        META_PROTOCOL_TIMER_ACTION,
-        META_PROTOCOL_TIMER_CRON_EXPRESSION,
-        META_PROTOCOL_TIMER_DISABLED
-    );
-
-    protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
-        META_ATTRIBUTE_TIMER_VALUE_LINK
-    );
-
-    protected final Map<AttributeRef, CronExpressionParser> cronExpressionMap = new HashMap<>();
+    protected boolean active;
+    protected CronExpressionParser expressionParser;
     protected CronScheduler cronScheduler;
 
-    @Override
-    public String getProtocolName() {
-        return PROTOCOL_NAME;
+    public TimerProtocol(TimerAgent agent) {
+        super(agent);
     }
 
     @Override
-    public String getProtocolDisplayName() {
+    public String getProtocolName() {
         return PROTOCOL_DISPLAY_NAME;
     }
 
     @Override
-    public AssetAttribute getProtocolConfigurationTemplate() {
-        return super.getProtocolConfigurationTemplate()
-            .addMeta(
-                new MetaItem(META_TIMER_CRON_EXPRESSION, null),
-                new MetaItem(META_TIMER_ACTION, null)
-            );
+    public String getProtocolInstanceUri() {
+        return expressionParser != null ? expressionParser.buildCronExpression() : "";
     }
 
     @Override
-    public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
-        if (result.isValid()) {
-            TimerConfiguration.validateTimerConfiguration(protocolConfiguration, result);
-        }
-        return result;
-    }
+    protected void doStart(Container container) throws Exception {
 
-    @Override
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return PROTOCOL_META_ITEM_DESCRIPTORS;
-    }
-
-    @Override
-    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return new ArrayList<>(ATTRIBUTE_META_ITEM_DESCRIPTORS);
-    }
-
-    @Override
-    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-
-        // Verify that this is a valid Timer Configuration
-        if (!isValidTimerConfiguration(protocolConfiguration)) {
-            LOG.warning("Timer Configuration is not valid so it will be ignored: " + protocolRef);
-            updateStatus(protocolRef, ConnectionStatus.ERROR_CONFIGURATION);
-            return;
-        }
-
-        // Validate the cron expression
-        CronExpressionParser expressionParser = getCronExpression(protocolConfiguration)
-            .map(CronExpressionParser::new)
-            .orElse(null);
+        boolean isActive = agent.isTimerActive().orElse(true);
+        expressionParser = agent.getTimerCronExpression().orElse(null);
 
         if (expressionParser == null || !expressionParser.isValid()) {
             LOG.warning("Timer cron expression is missing or invalid");
-            updateStatus(protocolRef, ConnectionStatus.ERROR_CONFIGURATION);
-            return;
+            throw new IllegalArgumentException("Timer cron expression is missing or invalid");
         }
 
-        CronExpression cronExpression = createCronExpression(expressionParser.buildCronExpression());
+        updateActive(isActive);
+    }
 
-        if (cronExpression == null) {
-            LOG.warning("Timer cron expression is missing or invalid");
-            updateStatus(protocolRef, ConnectionStatus.ERROR_CONFIGURATION);
-            return;
-        }
-
-        cronExpressionMap.put(protocolRef, expressionParser);
-
-        if (!isTimerDisabled(protocolConfiguration)) {
-            getCronScheduler()
-                .addOrReplaceJob(
-                    getTimerId(protocolRef),
-                    cronExpression,
-                    () -> doTriggerAction(protocolConfiguration)
-                );
-            updateStatus(protocolRef, ConnectionStatus.CONNECTED);
-        } else {
-            updateStatus(protocolRef, ConnectionStatus.DISABLED);
+    @Override
+    protected void doStop(Container container) throws Exception {
+        if (expressionParser != null) {
+            expressionParser = null;
+            getCronScheduler().removeJob(getTimerId(agent));
         }
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        AttributeRef protocolConfigRef = protocolConfiguration.getReferenceOrThrow();
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, TimerAgent.TimerAgentLink agentLink) throws RuntimeException {
+        TimerValue timerValue = getOrThrowAgentLinkProperty(agentLink.getTimerValue(), "timer value");
 
-        if (cronExpressionMap.remove(protocolConfigRef) != null) {
-            getCronScheduler().removeJob(getTimerId(protocolConfigRef));
-        }
+        LOG.fine("Attribute is linked to timer value: " + timerValue);
+        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+        updateLinkedAttributeTimerValue(timerValue, attributeRef);
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
-        AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, TimerAgent.TimerAgentLink agentLink) {
+        // Nothing to do here
+    }
 
-        TimerValue timerValue = TimerConfiguration.getValue(attribute).orElse(null);
+    @Override
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, TimerAgent.TimerAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-        if (timerValue == null) {
-            LOG.warning("Attribute doesn't have a valid timer value so ignoring write request: " + attribute.getReferenceOrThrow());
-            return;
-        }
-
-        // Don't remove or alter any running timer just push update back through the system and wait for link/unlink
-        // protocol configuration method call
-        Optional<String> writeValue = event.
-            getValue()
-            .flatMap(Values::getString)
-            .flatMap(TextUtil::asNonNullAndNonEmpty);
+        // Should never be null as attribute would've only been linked if it has a valid timer value
+        TimerValue timerValue = getOrThrowAgentLinkProperty(agentLink.getTimerValue(), "timer value");
 
         switch (timerValue) {
-            case ENABLED:
+            case ACTIVE:
                 // check event value is a boolean
-                boolean enabled = Values.getBoolean(event.getValue()
-                    .orElse(null))
-                    .orElseThrow(() -> new IllegalStateException("Writing to protocol configuration CONNECTED property requires a boolean value"));
+                boolean active = Values.getBoolean(processedValue)
+                    .orElseThrow(() -> new IllegalStateException("Writing to agent active attribute requires a boolean value"));
 
-                if (enabled != isTimerDisabled(protocolConfiguration)) {
-                    LOG.finer("Timer enabled status is already: " + enabled);
+                if (this.active == active) {
+                    return;
                 } else {
-                    LOG.fine("Updating timer enabled status: " + enabled);
-                    updateLinkedProtocolConfiguration(
-                        protocolConfiguration,
-                        protocolConfig -> {
-                            if (!enabled) {
-                                protocolConfig.addMeta(META_PROTOCOL_TIMER_DISABLED);
-                            } else {
-                                protocolConfig.removeMeta(META_PROTOCOL_TIMER_DISABLED);
-                            }
-                        }
-                    );
+                    LOG.fine("Updating timer enabled status: " + active);
+                    updateActive(active);
+                    updateAgentAttribute(new AttributeState(agent.getId(), TimerAgent.TIMER_ACTIVE.getName(), active));
+                    updateLinkedAttributesTimerValues();
                 }
                 break;
             case CRON_EXPRESSION:
-                // Allow writing invalid cron expressions; mean that the trigger will stop working
-                // but that is handled gracefully
-                if (!writeValue.isPresent()) {
-                    LOG.warning("Send to actuator value for time trigger must be a non empty string");
-                    return;
-                }
-                updateTimerValue(new AttributeState(protocolConfiguration.getReferenceOrThrow(), Values.create(writeValue.get().trim())));
+                this.expressionParser = Values.getValueCoerced(processedValue, CronExpressionParser.class)
+                    .orElseThrow(() -> new IllegalStateException("Writing to agent cron expression attribute requires a string value"));
+                updateActive(agent.isTimerActive().orElse(true));
+                updateAgentAttribute(new AttributeState(agent.getId(), TimerAgent.TIMER_CRON_EXPRESSION.getName(), this.expressionParser));
+                updateLinkedAttributesTimerValues();
                 break;
             case TIME:
-                if (!writeValue.isPresent()) {
+                String writeValue = Values.getString(processedValue).orElse(null);
+                if (TextUtil.isNullOrEmpty(writeValue)) {
                     LOG.warning("Send to actuator value for time trigger must be a non empty string");
-                    return;
-                }
-                CronExpressionParser parser = cronExpressionMap.get(protocolConfiguration.getReferenceOrThrow());
-                if (parser == null) {
-                    LOG.info("Ignoring trigger update because current cron expression is invalid");
                     return;
                 }
 
-                String[] writeTimeValues = writeValue.get().trim().split(":");
+                String[] writeTimeValues = writeValue.trim().split(":");
                 Integer hours;
                 Integer minutes;
                 Integer seconds;
@@ -290,81 +154,89 @@ public class TimerProtocol extends AbstractProtocol {
                     return;
                 }
 
-                parser.setTime(hours, minutes, seconds);
-                updateTimerValue(new AttributeState(protocolConfiguration.getReferenceOrThrow(), Values.create(parser.buildCronExpression())));
+                expressionParser.setTime(hours, minutes, seconds);
+                updateActive(agent.isTimerActive().orElse(true));
+                updateAgentAttribute(new AttributeState(agent.getId(), TimerAgent.TIMER_CRON_EXPRESSION.getName(), this.expressionParser));
+                updateLinkedAttributesTimerValues();
                 break;
             default:
                 throw new NotSupportedException("Unsupported timer value: " + timerValue);
         }
     }
 
-    @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        TimerValue timerValue = TimerConfiguration.getValue(attribute).orElse(null);
+    protected void updateActive(boolean active) {
 
-        if (timerValue == null) {
-            LOG.warning("Attribute doesn't have a valid timer value: " + attribute.getReferenceOrThrow());
-            return;
+        CronExpression cronExpression = createCronExpression(expressionParser.buildCronExpression());
+        this.active = active && cronExpression != null;
+
+        if (cronExpression == null) {
+            LOG.warning("Timer cron expression is missing or invalid so timer will be inactive");
         }
 
-        LOG.fine("Attribute is linked to timer value: " + timerValue);
-
-        switch (timerValue) {
-            case ENABLED:
-                updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), Values.create(!isTimerDisabled(protocolConfiguration))));
-                break;
-            case CRON_EXPRESSION:
-            case TIME:
-                CronExpressionParser parser = cronExpressionMap.get(protocolConfiguration.getReferenceOrThrow());
-                if (parser == null) {
-                    LOG.info("Attribute is linked to an invalid timer so it will be ignored");
-                    return;
-                }
-
-                Value value = timerValue == TimerValue.CRON_EXPRESSION
-                    ? Values.create(parser.buildCronExpression())
-                    : Values.create(parser.getFormattedTime());
-
-                    updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), value));
-                break;
+        if (this.active) {
+            getCronScheduler()
+                .addOrReplaceJob(
+                    getTimerId(agent),
+                    cronExpression,
+                    this::doTriggerAction
+                );
+            setConnectionStatus(ConnectionStatus.CONNECTED);
+        } else {
+            getCronScheduler().removeJob(getTimerId(agent));
+            setConnectionStatus(ConnectionStatus.STOPPED);
         }
     }
 
-    @Override
-    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        // Nothing to do here
+    protected void updateLinkedAttributesTimerValues() {
+        linkedAttributes.entrySet()
+            .forEach(es -> {
+                TimerAgent.TimerAgentLink agentLink = getAgent().getAgentLink(es.getValue());
+                if (agentLink != null && agentLink.getId().equals(agent.getId()) && agentLink.getTimerValue().isPresent()) {
+                    updateLinkedAttributeTimerValue(agentLink.getTimerValue().get(), es.getKey());
+                }
+            });
+    }
+
+    protected void updateLinkedAttributeTimerValue(TimerValue timerValue, AttributeRef attributeRef) {
+        if (timerValue == null) {
+            return;
+        }
+
+        // Push current value through to the linked attribute
+        switch (timerValue) {
+            case ACTIVE:
+                updateLinkedAttribute(new AttributeState(attributeRef, active));
+                break;
+            case CRON_EXPRESSION:
+            case TIME:
+                if (expressionParser == null || !expressionParser.valid) {
+                    LOG.info("Attribute is linked to an invalid timer so cannot extract requested timer values");
+                    updateLinkedAttribute(new AttributeState(attributeRef));
+                    return;
+                }
+
+                String value = timerValue == TimerValue.CRON_EXPRESSION
+                    ? expressionParser.buildCronExpression()
+                    : expressionParser.getFormattedTime();
+
+                updateLinkedAttribute(new AttributeState(attributeRef, value));
+                break;
+        }
     }
 
     /**
      * Sends the trigger's attribute state into the processing chain
      */
-    protected void doTriggerAction(AssetAttribute triggerConfiguration) {
-        if (triggerConfiguration == null) {
-            LOG.fine("Cannot execute timer action as timer configuration cannot be found");
-            return;
-        }
-
-        LOG.info("Executing timer action: " + triggerConfiguration.getReferenceOrThrow());
-        getAction(triggerConfiguration)
-            .ifPresent(this::sendAttributeEvent);
-    }
-
-    /**
-     * Update the trigger's {@link #META_TIMER_CRON_EXPRESSION}
-     */
-    protected void updateTimerValue(AttributeState state) {
-        LOG.fine("Updating the timer value: " + state);
-
-        updateLinkedProtocolConfiguration(
-            getLinkedProtocolConfiguration(state.getAttributeRef()),
-            protocolConfig -> {
-                MetaItem.replaceMetaByName(
-                    protocolConfig.getMeta(),
-                    META_TIMER_CRON_EXPRESSION,
-                    state.getValue().orElse(null)
-                );
-            }
-        );
+    protected void doTriggerAction() {
+        agent.getTimerAction()
+            .map(action -> {
+                LOG.info("Executing timer action for protocol: " + this);
+                sendAttributeEvent(action);
+                return action;
+            }).orElseGet(() -> {
+                LOG.warning("Timer action is not set or is invalid so cannot execute: " + this);
+                return null;
+        });
     }
 
     protected CronScheduler getCronScheduler() {
@@ -376,13 +248,8 @@ public class TimerProtocol extends AbstractProtocol {
         return cronScheduler;
     }
 
-    @Override
-    public String getVersion() {
-        return VERSION;
-    }
-
-    protected static String getTimerId(AttributeRef timerRef) {
-        return timerRef.getEntityId() + ":" + timerRef.getAttributeName();
+    protected static String getTimerId(TimerAgent agent) {
+        return "TimerProtocol-" + agent.getId();
     }
 
     protected static CronExpression createCronExpression(String expression) {
@@ -394,9 +261,5 @@ public class TimerProtocol extends AbstractProtocol {
         }
 
         return cronExpression;
-    }
-
-    protected static boolean isTimerDisabled(Attribute protocolConfiguration) {
-        return protocolConfiguration.getMetaItem(META_TIMER_DISABLED).isPresent();
     }
 }

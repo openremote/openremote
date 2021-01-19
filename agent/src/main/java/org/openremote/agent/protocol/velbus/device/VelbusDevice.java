@@ -3,7 +3,6 @@ package org.openremote.agent.protocol.velbus.device;
 import org.openremote.agent.protocol.velbus.VelbusNetwork;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Value;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,8 +18,8 @@ public class VelbusDevice {
     public static int INITIALISATION_TIMEOUT_MILLISECONDS = 10000;
     protected int baseAddress;
     protected int[] subAddresses = new int[4]; // Max of 4 sub-addresses
-    protected final Map<String, DevicePropertyValue<?>> devicePropertyCache = new HashMap<>();
-    protected final Map<String, List<Consumer<DevicePropertyValue<?>>>> propertyValueConsumers = new ConcurrentHashMap<>();
+    protected final Map<String, Object> devicePropertyCache = new HashMap<>();
+    protected final Map<String, List<Consumer<Object>>> propertyValueConsumers = new ConcurrentHashMap<>();
     protected VelbusNetwork velbusNetwork;
     protected FeatureProcessor[] featureProcessors;
     protected boolean initialised;
@@ -158,12 +157,12 @@ public class VelbusDevice {
         }
     }
 
-    public void addPropertyValueConsumer(String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
+    public void addPropertyValueConsumer(String property, Consumer<Object> propertyValueConsumer) {
         if (property.isEmpty()) {
             return;
         }
 
-        List<Consumer<DevicePropertyValue<?>>> consumers = propertyValueConsumers
+        List<Consumer<Object>> consumers = propertyValueConsumers
             .computeIfAbsent(property, p -> new ArrayList<>());
 
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -175,7 +174,7 @@ public class VelbusDevice {
         propertyValueConsumer.accept(getPropertyValue(property));
     }
 
-    public void removePropertyValueConsumer(String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
+    public void removePropertyValueConsumer(String property, Consumer<Object> propertyValueConsumer) {
         if (property.isEmpty()) {
             return;
         }
@@ -190,14 +189,11 @@ public class VelbusDevice {
     }
 
     public void removeAllPropertyValueConsumers() {
-        propertyValueConsumers.forEach((prop, consumers) -> {
-            consumers.clear();
-        });
-
+        propertyValueConsumers.forEach((prop, consumers) -> consumers.clear());
         propertyValueConsumers.clear();
     }
 
-    public void writeProperty(String property, Value value) {
+    public void writeProperty(String property, Object value) {
         if (!isInitialisedAndValid()) {
             LOG.fine("Ignoring property write as device is not initialised and/or it is invalid");
             return;
@@ -277,7 +273,7 @@ public class VelbusDevice {
         }
     }
 
-    void setProperty(String property, DevicePropertyValue<?> value) {
+    void setProperty(String property, Object value) {
         property = property.toUpperCase();
         synchronized (devicePropertyCache) {
             devicePropertyCache.put(property, value);
@@ -285,14 +281,12 @@ public class VelbusDevice {
 
         // Notify linked consumers
         propertyValueConsumers.computeIfPresent(property, (prop, consumers) -> {
-            synchronized (consumers) {
-                consumers.forEach(consumer -> consumer.accept(value));
-            }
+            consumers.forEach(consumer -> consumer.accept(value));
             return consumers;
         });
     }
 
-    protected DevicePropertyValue getPropertyValue(String propertyName) {
+    protected Object getPropertyValue(String propertyName) {
         return devicePropertyCache.get(propertyName);
     }
 

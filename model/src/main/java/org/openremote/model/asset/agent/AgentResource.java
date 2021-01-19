@@ -19,149 +19,80 @@
  */
 package org.openremote.model.asset.agent;
 
-import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.AssetTreeNode;
-import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
+import org.openremote.model.protocol.ProtocolInstanceDiscovery;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
-import java.util.List;
-import java.util.Map;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
- * This resource is for Agent specific tasks; normal asset/attribute CRUD operations should still use
- * {@link AssetResource}.
- *
- *
- *
+ * This resource is for Agent specific tasks like import and discovery; normal asset/attribute CRUD operations should
+ * still use {@link AssetResource}.
  */
 @Path("agent")
-@JsType(isNative = true)
 public interface AgentResource {
 
     /**
-     * Retrieve all the protocols that the specified agent supports
+     * Do protocol instance ({@link Agent}) discovery for the specified agent type {@link AgentDescriptor}; the
+     * associated {@link Protocol} must implement {@link ProtocolInstanceDiscovery} otherwise an empty set of results
+     * will be returned. The {@link Asset} parent where the {@link Agent} will be added should be specified so the
+     * backend can determine if the {@link Agent} is being created on an Edge gateway instance or on this local
+     * instance.
+     *
+     * @return A list of {@link Agent}s that can be created to create a connection to the discovered instance(s).
      */
     @GET
-    @Path("protocol/{agentId}")
+    @Path("instanceDiscovery/{agentType}")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    ProtocolDescriptor[] getSupportedProtocols(
+    Agent<?, ?, ?>[] doProtocolInstanceDiscovery(
         @BeanParam RequestParams requestParams,
-        @PathParam("agentId") String agentId
-    );
-
-    /**
-     * Retrieve {@link org.openremote.model.asset.agent.ConnectionStatus} of all protocol configurations.
-     */
-    @GET
-    @Path("status/{agentId}")
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    List<AgentStatusEvent> getAgentStatus(
-        @BeanParam RequestParams requestParams,
-        @PathParam("agentId") String agentId
-    );
-
-    /**
-     * Retrieve all the protocols for all the agents
-     */
-    @GET
-    @Path("protocol")
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    Map<String, ProtocolDescriptor[]> getAllSupportedProtocols(
-        @BeanParam RequestParams requestParams
-    );
-
-    /**
-     * Retrieve discovered protocol configurations for the specified protocol on the specified agent
-     */
-    @GET
-    @Path("configuration/{agentId}/{protocolName}")
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    AssetAttribute[] getDiscoveredProtocolConfigurations(
-        @BeanParam RequestParams requestParams,
-        @PathParam("agentId") String agentId,
-        @PathParam("protocolName") String protocolName
-    );
-
-    /**
-     * Ask the appropriate protocol on the specified agent to validate the supplied {@link org.openremote.model.asset.agent.ProtocolConfiguration}
-     */
-    @POST
-    @Path("validate/{agentId}")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    AttributeValidationResult validateProtocolConfiguration(
-        @BeanParam RequestParams requestParams,
-        @PathParam("agentId") String agentId,
-        AssetAttribute protocolConfiguration
-    );
-
-    /**
-     * Get discovered linked attributes for the specified Agent
-     * and {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
-     * <p>
-     * Currently this request will automatically add the found {@link Asset}s to the DB as well as returning
-     * them in the response. The {@param parentId} is used to set where in the {@link Asset} tree the new assets are
-     * inserted.
-     */
-    @GET
-    @Path("search/{agentId}/{protocolConfigurationName}")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    AssetTreeNode[] searchForLinkedAttributes(
-        @BeanParam RequestParams requestParams,
-        @PathParam("agentId") String agentId,
-        @PathParam("protocolConfigurationName") String protocolConfigurationName,
         @QueryParam("parentId") String parentId,
+        @PathParam("agentType") String agentType,
         @QueryParam("realm") String realm
     );
 
     /**
-     * Get discovered linked attributes for the specified Agent
-     * and {@link org.openremote.model.asset.agent.ProtocolConfiguration} using the supplied {@link FileInfo}.
+     * Do {@link Asset} discovery for the specified {@link Agent}; the associated {@link Protocol} must implement {@link
+     * org.openremote.model.protocol.ProtocolAssetDiscovery} otherwise an empty set of results will be returned.
      * <p>
-     * Currently this request will automatically add the found {@link Asset}s to the DB as well as returning
-     * them in the response. The {@param parentId} is used to set where in the {@link Asset} tree the new assets are
-     * inserted.
-     * <b>NOTE:</b> The {@link FileInfo} should be a file that the protocol understands.
+     * Currently this request will automatically add the found {@link Asset}s to the system as children of the specified
+     * {@link Agent} as well as returning them in the response.
      */
-    @POST
-    @Path("import/{agentId}/{protocolConfigurationName}")
+    @GET
+    @Path("assetDiscovery/{agentId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    // TODO: File upload should use standard multipart mechanism
-    AssetTreeNode[] importLinkedAttributes(
+    AssetTreeNode[] doProtocolAssetDiscovery(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
-        @PathParam("protocolConfigurationName") String protocolConfigurationName,
-        @QueryParam("parentId") String parentId,
+        @QueryParam("realm") String realm
+    );
+
+    /**
+     * Do {@link Asset} import for the specified {@link Agent} using the supplied {@link FileInfo}; the associated
+     * {@link Protocol} must implement {@link org.openremote.model.protocol.ProtocolAssetImport} otherwise an empty set
+     * of results will be returned.
+     * <p>
+     * Currently this request will automatically add the found {@link Asset}s to the system as children of the specified
+     * {@link Agent} as well as returning them in the response.
+     * <b>NOTE:</b> The {@link FileInfo} must be a file that the protocol understands.
+     */
+    @POST
+    @Path("assetImport/{agentId}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    // TODO: File upload should use standard multipart mechanism
+    AssetTreeNode[] doProtocolAssetImport(
+        @BeanParam RequestParams requestParams,
+        @PathParam("agentId") String agentId,
         @QueryParam("realm") String realm,
         FileInfo fileInfo
     );

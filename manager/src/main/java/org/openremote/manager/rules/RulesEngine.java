@@ -19,13 +19,12 @@
  */
 package org.openremote.manager.rules;
 
+import org.jeasy.rules.api.RulesEngineParameters;
 import org.jeasy.rules.core.InferenceRulesEngine;
-import org.jeasy.rules.core.RulesEngineParameters;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.notification.NotificationService;
@@ -33,15 +32,15 @@ import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.facade.*;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.MetaItemType;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -59,9 +58,9 @@ public class RulesEngine<T extends Ruleset> {
      */
     public static final class AssetStateChangeEvent {
         public PersistenceEvent.Cause cause;
-        public AssetState assetState;
+        public AssetState<?> assetState;
 
-        public AssetStateChangeEvent(PersistenceEvent.Cause cause, AssetState assetState) {
+        public AssetStateChangeEvent(PersistenceEvent.Cause cause, AssetState<?> assetState) {
             this.cause = cause;
             this.assetState = assetState;
         }
@@ -105,7 +104,7 @@ public class RulesEngine<T extends Ruleset> {
     protected static BiConsumer<RulesEngine<?>, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
 
     final protected TimerService timerService;
-    final protected ManagerExecutorService executorService;
+    final protected ScheduledExecutorService executorService;
     final protected AssetStorageService assetStorageService;
     final protected ClientEventService clientEventService;
 
@@ -137,7 +136,7 @@ public class RulesEngine<T extends Ruleset> {
 
     public RulesEngine(TimerService timerService,
                        ManagerIdentityService identityService,
-                       ManagerExecutorService executorService,
+                       ScheduledExecutorService executorService,
                        AssetStorageService assetStorageService,
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
@@ -174,14 +173,14 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * @return a shallow copy of the asset state facts.
      */
-    public Set<AssetState> getAssetStates() {
+    public Set<AssetState<?>> getAssetStates() {
         return new HashSet<>(facts.getAssetStates());
     }
 
     /**
      * @return a shallow copy of the asset event facts.
      */
-    public List<TemporaryFact<AssetState>> getAssetEvents() {
+    public List<TemporaryFact<AssetState<?>>> getAssetEvents() {
         return new ArrayList<>(facts.getAssetEvents());
     }
 
@@ -283,7 +282,7 @@ public class RulesEngine<T extends Ruleset> {
      * @return <code>true</code> if this rules engine has no deployments.
      */
     public boolean removeRuleset(Ruleset ruleset) {
-        RulesetDeployment deployment = deployments.remove(ruleset.getId());
+        RulesetDeployment deployment = deployments.get(ruleset.getId());
 
         if (deployment == null) {
             LOG.finer("Ruleset cannot be retracted as it was never deployed: " + ruleset);
@@ -457,13 +456,14 @@ public class RulesEngine<T extends Ruleset> {
                         if ((facts.hasTemporaryFacts() || (hadTemporaryFactsBefore && !facts.hasTemporaryFacts()))
                             && !disableTemporaryFactExpiration) {
                             LOG.fine("Temporary facts require firing rules on: " + this);
-                            executorService.schedule(this::scheduleFire, 0);
+                            executorService.submit(this::scheduleFire);
                         } else if (!disableTemporaryFactExpiration) {
                             LOG.fine("No temporary facts present/changed when firing rules on: " + this);
                         }
 
                     }),
-                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
+                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                    TimeUnit.MILLISECONDS
                 );
             }
         });
@@ -544,27 +544,27 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void updateOrInsertAssetState(AssetState assetState, boolean insert) {
+    public void updateOrInsertAssetState(AssetState<?> assetState, boolean insert) {
         facts.putAssetState(assetState);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || (insert && assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName())));
+        trackLocationPredicates(trackLocationPredicates || (insert && assetState.getName().equals(Asset.LOCATION.getName())));
         notifyAssetStatesChanged(new AssetStateChangeEvent(insert ? PersistenceEvent.Cause.CREATE : PersistenceEvent.Cause.UPDATE, assetState));
         if (running) {
             scheduleFire();
         }
     }
 
-    public void removeAssetState(AssetState assetState) {
+    public void removeAssetState(AssetState<?> assetState) {
         facts.removeAssetState(assetState);
         // Make sure location predicate tracking is activated before notifying the deployments otherwise they won't report location predicates
-        trackLocationPredicates(trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName()));
+        trackLocationPredicates(trackLocationPredicates || assetState.getName().equals(Asset.LOCATION.getName()));
         notifyAssetStatesChanged(new AssetStateChangeEvent(PersistenceEvent.Cause.DELETE, assetState));
         if (running) {
             scheduleFire();
         }
     }
 
-    public void insertAssetEvent(String expires, AssetState assetState) {
+    public void insertAssetEvent(String expires, AssetState<?> assetState) {
         facts.insertAssetEvent(expires, assetState);
         if (running) {
             scheduleFire();
@@ -581,8 +581,8 @@ public class RulesEngine<T extends Ruleset> {
 
     protected void printSessionStats() {
         withLock(toString() + "::printSessionStats", () -> {
-            Collection<AssetState> assetStateFacts = facts.getAssetStates();
-            Collection<TemporaryFact<AssetState>> assetEventFacts = facts.getAssetEvents();
+            Collection<AssetState<?>> assetStateFacts = facts.getAssetStates();
+            Collection<TemporaryFact<AssetState<?>>> assetEventFacts = facts.getAssetEvents();
             Map<String, Object> namedFacts = facts.getNamedFacts();
             Collection<Object> anonFacts = facts.getAnonymousFacts();
             long temporaryFactsCount = facts.getTemporaryFacts().count();
@@ -668,7 +668,7 @@ public class RulesEngine<T extends Ruleset> {
     protected void schedulePause(RulesetDeployment deployment) {
         long delay = deployment.getValidTo() - timerService.getCurrentTimeMillis();
         LOG.info("Scheduling pause of ruleset at '" + new Date(deployment.getValidTo()).toString() + "' ("+ delay + "ms): " + deployment.ruleset.getName());
-        pauseTimers.put(deployment.getId(), executorService.schedule(() -> pauseRuleset(deployment), delay));
+        pauseTimers.put(deployment.getId(), executorService.schedule(() -> pauseRuleset(deployment), delay, TimeUnit.MILLISECONDS));
     }
 
     protected void pauseRuleset(RulesetDeployment deployment) {
@@ -698,7 +698,7 @@ public class RulesEngine<T extends Ruleset> {
     protected void scheduleUnpause(RulesetDeployment deployment) {
         long delay = deployment.getValidFrom() - timerService.getCurrentTimeMillis();
         LOG.info("Scheduling un-pause of ruleset at '" + new Date(deployment.getValidFrom()).toString() + "' ("+ delay + "ms): " + deployment.ruleset.getName());
-        unpauseTimers.put(deployment.getId(), executorService.schedule(() -> unPauseRuleset(deployment), delay));
+        unpauseTimers.put(deployment.getId(), executorService.schedule(() -> unPauseRuleset(deployment), delay, TimeUnit.MILLISECONDS));
     }
 
     protected void unPauseRuleset(RulesetDeployment deployment) {

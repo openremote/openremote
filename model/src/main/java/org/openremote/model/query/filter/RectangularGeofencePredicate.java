@@ -21,10 +21,14 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.ObjectValue;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Envelope;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.Values;
 
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class RectangularGeofencePredicate extends GeofencePredicate {
 
@@ -99,16 +103,34 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
         double y = (latMin + latMax) / 2;
         return new double[]{x, y};
     }
-
+    
     @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", name);
-        objectValue.put("latMin", latMin);
-        objectValue.put("lngMin", lngMin);
-        objectValue.put("latMax", latMax);
-        objectValue.put("lngMax", lngMax);
-        objectValue.put("negated", negated);
-        return objectValue;
+    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
+        return obj -> {
+            if (obj == null) return false;
+
+            Coordinate coordinate;
+
+            if (obj instanceof Coordinate) {
+                coordinate = (Coordinate)obj;
+            } else {
+                coordinate = Values.getValue(obj, GeoJSONPoint.class).map(GeoJSONPoint::getCoordinates).orElse(null);
+            }
+
+            if (coordinate == null) {
+                return false;
+            }
+
+            Envelope envelope = new Envelope(lngMin,
+                lngMax,
+                latMin,
+                latMax);
+
+            if (negated) {
+                return !envelope.contains(coordinate);
+            }
+
+            return envelope.contains(coordinate);
+        };
     }
 }

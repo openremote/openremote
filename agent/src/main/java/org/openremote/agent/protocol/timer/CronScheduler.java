@@ -32,15 +32,15 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
-class CronScheduler {
+public class CronScheduler {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, CronScheduler.class);
 
     protected static final int ALARM_UPDATE_DELAY_MS = 10000;
     protected final List<String> jobIds = new ArrayList<>();
-    protected final org.quartz.Scheduler scheduler;
+    protected static org.quartz.Scheduler scheduler;
 
-    public CronScheduler() {
+    static {
         org.quartz.Scheduler tempScheduler;
 
         // Set properties for cronScheduler factory
@@ -59,6 +59,9 @@ class CronScheduler {
         }
 
         scheduler = tempScheduler;
+    }
+
+    public CronScheduler() {
     }
 
     protected boolean isValid() {
@@ -82,6 +85,10 @@ class CronScheduler {
 
         Pair<JobDetail, CronTrigger> cronTrigger = createCronTrigger(id, expression, executeHandler);
 
+        if (cronTrigger == null) {
+            return;
+        }
+
         try {
             LOG.fine("Scheduling job: " + id);
             scheduler.scheduleJob(cronTrigger.key, cronTrigger.value);
@@ -99,11 +106,11 @@ class CronScheduler {
 
     protected void removeJob(String id) {
         try {
-            LOG.fine("Unscheduling job: " + id);
+            LOG.fine("Un-scheduling job: " + id);
             scheduler.unscheduleJob(TriggerKey.triggerKey(id));
             scheduler.deleteJob(JobKey.jobKey("cronJob1", id));
         } catch (SchedulerException e) {
-            LOG.log(Level.FINE, "Exception thrown whilst trying to unschedule cron job: " + id, e);
+            LOG.log(Level.FINE, "Exception thrown whilst trying to un-schedule cron job: " + id, e);
         } finally {
             jobIds.remove(id);
         }

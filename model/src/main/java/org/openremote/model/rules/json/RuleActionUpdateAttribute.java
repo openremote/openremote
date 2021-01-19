@@ -19,8 +19,6 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.value.Value;
-
 public class RuleActionUpdateAttribute extends RuleAction {
     public enum UpdateAction {
         ADD,
@@ -31,7 +29,7 @@ public class RuleActionUpdateAttribute extends RuleAction {
     }
 
     public String attributeName;
-    public Value value;
+    public Object value;
     public String key;
     public Integer index;
     public UpdateAction updateAction;

@@ -44,7 +44,7 @@ manager.init({
     autoLogin: true,
     keycloakUrl: "http://localhost:8080/auth",
     managerUrl: "http://localhost:8080",
-    realm: "master"
+    realm: "smartcity"
 }).then(() => {
     const app = document.getElementsByTagName("or-demo-app")[0] as App;
     app.loaded = true;

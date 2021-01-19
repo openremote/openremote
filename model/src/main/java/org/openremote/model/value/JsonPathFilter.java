@@ -22,11 +22,31 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.ParseContext;
+import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import org.openremote.model.util.TextUtil;
 
-import static org.openremote.model.value.RegexValueFilter.NAME;
+import java.util.Optional;
 
-@JsonTypeName(NAME)
-public class JsonPathFilter extends ValueFilter<Value> {
+/**
+ * This filter works on any type of data; when applying the filter the data should be converted to JSON representation
+ * using a tool like Jackson and then the JSON path expression should be applied to this JSON string.
+ */
+@JsonTypeName(JsonPathFilter.NAME)
+public class JsonPathFilter extends ValueFilter {
+
+    protected static ParseContext jsonPathParser = JsonPath.using(
+        Configuration.builder()
+        .jsonProvider(new JacksonJsonNodeJsonProvider())
+        .mappingProvider(new JacksonMappingProvider())
+        .build()
+                .addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL)
+        );
 
     public static final String NAME = "jsonPath";
 
@@ -49,7 +69,23 @@ public class JsonPathFilter extends ValueFilter<Value> {
     }
 
     @Override
-    public Class<Value> getValueType() {
-        return Value.class;
+    public Object filter(Object value) {
+        if (TextUtil.isNullOrEmpty(path)) {
+            return null;
+        }
+
+        String valueStr = Values.convert(value, String.class);
+
+        if (valueStr == null) {
+            return null;
+        }
+
+        Object obj = jsonPathParser.parse(valueStr).read(path);
+
+        if ((returnFirst || returnLast) && obj != null && Values.isArray(obj.getClass())) {
+            ArrayNode arrayNode = Values.convert(obj, ArrayNode.class);
+            obj = arrayNode.get(returnFirst ? 0 : arrayNode.size() - 1);
+        }
+        return obj;
     }
 }

@@ -22,11 +22,11 @@ package org.openremote.model.rules;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.gwt.core.shared.GwtIncompatible;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.ValueType;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -34,7 +34,7 @@ import javax.validation.constraints.Size;
 import java.util.Date;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 /**
@@ -43,7 +43,6 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @MappedSuperclass
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
     property = "type"
 )
 @JsonSubTypes({
@@ -132,6 +131,8 @@ public abstract class Ruleset {
                 ),
         FLOW(".json", "{\"name\":\"\", \"description\": \"\", \"nodes\":[], \"connections\":[]}");
 
+        public static final MetaItemDescriptor<Boolean> SHOW_ON_LIST = new MetaItemDescriptor<>("showOnList", ValueType.BOOLEAN);
+
         final String fileExtension;
         final String emptyRulesExample;
 
@@ -163,7 +164,7 @@ public abstract class Ruleset {
     protected Long id;
 
     @Version
-    @Column(name = "OBJ_VERSION", nullable = false)
+    @Column(name = "VERSION", nullable = false)
     protected long version;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -192,8 +193,8 @@ public abstract class Ruleset {
     protected Lang lang = Lang.GROOVY;
 
     @Column(name = "META", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
-    protected ObjectValue meta;
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    protected MetaMap meta;
 
     @Transient
     protected RulesetStatus status;
@@ -201,9 +202,9 @@ public abstract class Ruleset {
     @Transient
     protected String error;
 
-    public static final String META_KEY_CONTINUE_ON_ERROR = "urn:openremote:rule:meta:continueOnError";
-    public static final String META_KEY_VALIDITY = "urn:openremote:rule:meta:validity";
-    public static final String META_KEY_TRIGGER_ON_PREDICTED_DATA = "urn:openremote:rule:meta:triggerOnPredictedData";
+    public static final MetaItemDescriptor<Boolean> CONTINUE_ON_ERROR = new MetaItemDescriptor<>("continueOnError", ValueType.BOOLEAN);
+    public static final MetaItemDescriptor<CalendarEvent> VALIDITY = new MetaItemDescriptor<>("validity", ValueType.CALENDAR_EVENT);
+    public static final MetaItemDescriptor<Boolean> TRIGGER_ON_PREDICTED_DATA = new MetaItemDescriptor<>("triggerOnPredictedData", ValueType.BOOLEAN);
 
     protected Ruleset() {
     }
@@ -294,37 +295,16 @@ public abstract class Ruleset {
         return this;
     }
 
-    public ObjectValue getMeta() {
+    public MetaMap getMeta() {
+        if (meta == null) {
+            meta = new MetaMap();
+        }
         return meta;
     }
 
-    public Optional<Value> getMeta(String key) {
-        return meta != null ? meta.get(key) : Optional.empty();
-    }
-
-    public Ruleset setMeta(ObjectValue meta) {
+    public Ruleset setMeta(MetaMap meta) {
         this.meta = meta;
         return this;
-    }
-
-    public Ruleset addMeta(String key, Value value) {
-        if (meta == null) {
-            meta = Values.createObject();
-        }
-        meta.put(key, value);
-        return this;
-    }
-
-    public Ruleset removeMeta(String key) {
-        if (meta == null) {
-            return this;
-        }
-        meta.remove(key);
-        return this;
-    }
-
-    public boolean hasMeta(String key) {
-        return meta != null && meta.hasKey(key);
     }
 
     public RulesetStatus getStatus() {
@@ -346,54 +326,31 @@ public abstract class Ruleset {
     }
 
     public boolean isContinueOnError() {
-        return Values.getObject(meta).flatMap(objValue -> objValue.getBoolean(META_KEY_CONTINUE_ON_ERROR)).orElse(false);
+        return getMeta().get(CONTINUE_ON_ERROR).flatMap(MetaItem::getValue).orElse(false);
     }
 
     public Ruleset setContinueOnError(boolean continueOnError) {
-        if (meta == null) {
-            meta = Values.createObject();
-        }
-        if (!continueOnError) {
-            meta.remove(META_KEY_CONTINUE_ON_ERROR);
-        } else {
-            meta.put(META_KEY_CONTINUE_ON_ERROR, true);
-        }
+        getMeta().set(CONTINUE_ON_ERROR, continueOnError);
         return this;
     }
 
     @JsonIgnore
-    @GwtIncompatible
     public CalendarEvent getValidity() {
-        return Values.getObject(meta).flatMap(objValue -> objValue.getObject(META_KEY_VALIDITY)).flatMap(CalendarEvent::fromValue).orElse(null);
+        return getMeta().get(VALIDITY).flatMap(MetaItem::getValue).orElse(null);
     }
 
     @JsonIgnore
-    @GwtIncompatible
     public Ruleset setValidity(CalendarEvent calendarEvent) {
-        if (meta == null) {
-            meta = Values.createObject();
-        }
-        if (calendarEvent == null) {
-            meta.remove(META_KEY_VALIDITY);
-        } else {
-            meta.put(META_KEY_VALIDITY, calendarEvent.toValue());
-        }
+        getMeta().set(VALIDITY, calendarEvent);
         return this;
     }
 
     public boolean isTriggerOnPredictedData() {
-        return Values.getObject(meta).flatMap(objValue -> objValue.getBoolean(META_KEY_TRIGGER_ON_PREDICTED_DATA)).orElse(false);
+        return getMeta().get(TRIGGER_ON_PREDICTED_DATA).flatMap(MetaItem::getValue).orElse(false);
     }
 
     public Ruleset setTriggerOnPredictedData(boolean triggerOnPredictedData) {
-        if (meta == null) {
-            meta = Values.createObject();
-        }
-        if (!triggerOnPredictedData) {
-            meta.remove(META_KEY_TRIGGER_ON_PREDICTED_DATA);
-        } else {
-            meta.put(META_KEY_TRIGGER_ON_PREDICTED_DATA, true);
-        }
+        getMeta().set(TRIGGER_ON_PREDICTED_DATA, triggerOnPredictedData);
         return this;
     }
 }

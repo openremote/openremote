@@ -4,17 +4,17 @@ import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {
-    AssetDescriptor,
-    AssetType,
+    AssetTypeInfo,
     JsonRule,
+    RuleActionNotification,
     RuleActionUnion,
     RuleRecurrence,
-    RuleActionNotification
+    WellknownAssets
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-input";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {AssetModelUtil} from "@openremote/core";
+import {AssetModelUtil, Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
 import {translate} from "@openremote/or-translate";
@@ -22,7 +22,7 @@ import {translate} from "@openremote/or-translate";
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 
-function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): MenuItem[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): MenuItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
@@ -39,17 +39,17 @@ function getActionTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescri
 
     const menu: MenuItem[] = [];
 
-    if (addAssetTypes && assetDescriptors) {
-        menu.push(...assetDescriptors.map((ad) => {
+    if (addAssetTypes && assetInfos) {
+        menu.push(...assetInfos.map((assetTypeInfo) => {
 
-            const color = AssetModelUtil.getAssetDescriptorColor(ad);
-            const icon = AssetModelUtil.getAssetDescriptorIcon(ad);
+            const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
+            const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
             const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
 
             return {
-                text: i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()}),
-                value: ad.type,
-                icon: icon ? icon : AssetType.THING.icon,
+                text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
+                value: assetTypeInfo.assetDescriptor!.name,
+                icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                 styleMap: styleMap
             } as MenuItem;
         }));
@@ -205,7 +205,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
     public config?: RulesConfig;
 
     @property({type: Object, attribute: false})
-    public assetDescriptors?: AssetDescriptor[];
+    public assetInfos?: AssetTypeInfo[];
 
     protected get thenAllowAdd() {
         return !this.config || !this.config.controls || this.config.controls.hideThenAddAction !== true;
@@ -288,7 +288,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     default:
                         const ad = AssetModelUtil.getAssetDescriptor(type);
                         buttonIcon = AssetModelUtil.getAssetDescriptorIcon(ad);
-                        buttonColor = AssetModelUtil.getAssetDescriptorColor(ad) || buttonColor;
+                        buttonColor = AssetModelUtil.getAssetDescriptorColour(ad) || buttonColor;
                         break;
                 }
             }
@@ -302,7 +302,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     <div id="type" style="--or-input-color: #${buttonColor}">
                         ${getContentWithMenuTemplate(
                             html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
-                            getActionTypesMenu(this.config, this.assetDescriptors),
+                            getActionTypesMenu(this.config, this.assetInfos),
                             action.action,
                             (values: string[] | string) => this.setActionType(actions, action, values as string))}
                     </div>
@@ -316,13 +316,13 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     template = html`<span>WAIT NOT IMPLEMENTED</span>`;
                     break;
                 case ActionType.PUSH_NOTIFICATION:
-                    template = html`<or-rule-action-notification id="push-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.PUSH_NOTIFICATION}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                    template = html`<or-rule-action-notification id="push-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.PUSH_NOTIFICATION}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 case ActionType.EMAIL:
-                    template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-notification>`;
+                    template = html`<or-rule-action-notification id="email-notification" .rule="${this.rule}" .action="${action}" .actionType="${ActionType.EMAIL}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-notification>`;
                     break;
                 default:
-                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
+                    template = html`<or-rule-action-attribute .action="${action}" .targetTypeMap="${this.targetTypeMap}" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}"></or-rule-action-attribute>`;
                     break;
             }
         }
@@ -352,7 +352,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
                                 html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
-                                getActionTypesMenu(this.config, this.assetDescriptors),
+                                getActionTypesMenu(this.config, this.assetInfos),
                                 undefined,
                                 (values: string[] | string) => this.addAction(values as string))}
                             <span>${i18next.t("rulesEditorAddAction")}</span>
@@ -462,10 +462,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
             action.target = {
                 matchedAssets: {
                     types: [
-                        {
-                            predicateType: "string",
-                            value: value
-                        }
+                        value
                     ]
                 }
             };

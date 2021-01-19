@@ -19,12 +19,16 @@
  */
 package org.openremote.model.query;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.util.StdConverter;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.asset.AssetType;
-import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.query.filter.*;
+import org.openremote.model.util.AssetModelUtil;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 /**
@@ -36,22 +40,13 @@ public class AssetQuery {
     public static class Select {
 
         public String[] attributes;
-        public String[] meta;
         public boolean excludePath;
-        public boolean excludeAttributeMeta;
         public boolean excludeAttributes;
-        public boolean excludeAttributeValue;
-        public boolean excludeAttributeTimestamp;
-        public boolean excludeAttributeType;
         public boolean excludeParentInfo;
 
         public static Select selectExcludePathAndParentInfo() {
             return new Select()
                     .excludeAttributes(false)
-                    .excludeAttributeMeta(false)
-                    .excludeAttributeType(false)
-                    .excludeAttributeTimestamp(false)
-                    .excludeAttributeValue(false)
                     .excludePath(true)
                     .excludeParentInfo(true);
         }
@@ -65,10 +60,6 @@ public class AssetQuery {
         public static Select selectExcludeAll() {
             return new Select()
                     .excludeAttributes(true)
-                    .excludeAttributeMeta(true)
-                    .excludeAttributeType(true)
-                    .excludeAttributeValue(true)
-                    .excludeAttributeTimestamp(true)
                     .excludePath(true)
                     .excludeParentInfo(true);
         }
@@ -78,42 +69,8 @@ public class AssetQuery {
             return this;
         }
 
-        public Select meta(String... metaUrns) {
-            this.meta = metaUrns;
-            return this;
-        }
-
-        public Select meta(MetaItemDescriptor... meta) {
-            if (meta == null) {
-                this.meta = null;
-                return this;
-            }
-
-            return meta(Arrays.stream(meta).map(MetaItemDescriptor::getUrn).toArray(String[]::new));
-        }
-
         public Select excludeAttributes(boolean exclude) {
             this.excludeAttributes = exclude;
-            return this;
-        }
-
-        public Select excludeAttributeMeta(boolean exclude) {
-            this.excludeAttributeMeta = exclude;
-            return this;
-        }
-
-        public Select excludeAttributeType(boolean exclude) {
-            this.excludeAttributeType = exclude;
-            return this;
-        }
-
-        public Select excludeAttributeValue(boolean exclude) {
-            this.excludeAttributeValue = exclude;
-            return this;
-        }
-
-        public Select excludeAttributeTimestamp(boolean exclude) {
-            this.excludeAttributeTimestamp = exclude;
             return this;
         }
 
@@ -131,10 +88,6 @@ public class AssetQuery {
         public String toString() {
             return getClass().getSimpleName() + "{" +
                     "excludeAttributes=" + excludeAttributes +
-                    ", excludeAttributeMeta=" + excludeAttributeMeta +
-                    ", excludeAttributeValue=" + excludeAttributeValue +
-                    ", excludeAttributeTimestamp=" + excludeAttributeTimestamp +
-                    ", excludeAttributeType=" + excludeAttributeType +
                     ", excludePath=" + excludePath +
                     ", excludeParentInfo=" + excludeParentInfo +
                     ", attributeNames=" + Arrays.toString(attributes) +
@@ -225,12 +178,34 @@ public class AssetQuery {
         GREATER_EQUALS,
         LESS_THAN,
         LESS_EQUALS,
-        BETWEEN
-    }
+        BETWEEN;
 
-    public enum NumberType {
-        DOUBLE,
-        INTEGER
+        public <T> boolean compare(Comparator<T> comparator, T x, T y) {
+            return compare(comparator, x, y, null);
+        }
+
+        public <T> boolean compare(Comparator<T> comparator, T x, T y, T z) {
+            // Get null friendly comparator
+            comparator = Comparator.nullsFirst(comparator);
+            int comparatorResult = comparator.compare(x, y);
+
+            switch (this) {
+                case EQUALS:
+                    return comparatorResult == 0;
+                case GREATER_THAN:
+                    return comparatorResult > 0;
+                case GREATER_EQUALS:
+                    return comparatorResult >= 0;
+                case LESS_THAN:
+                    return comparatorResult < 0;
+                case LESS_EQUALS:
+                    return comparatorResult <= 0;
+                case BETWEEN:
+                    int comparatorResultUpper = comparator.compare(x, z);
+                    return comparatorResult >= 0 && comparatorResultUpper < 1;
+            }
+            return false;
+        }
     }
 
     public boolean recursive;
@@ -244,12 +219,29 @@ public class AssetQuery {
     public PathPredicate[] paths;
     public TenantPredicate tenant;
     public String[] userIds;
-    public StringPredicate[] types;
+    @JsonSerialize(contentConverter = AssetClassToStringConverter.class)
+    @JsonDeserialize(contentConverter = StringToAssetClassConverter.class)
+    public Class<? extends Asset<?>>[] types;
     public LogicGroup<AttributePredicate> attributes;
-    public MetaPredicate[] attributeMeta;
     // Ordering
     public OrderBy orderBy;
     public int limit;
+
+    public static class AssetClassToStringConverter extends StdConverter<Class<? extends Asset<?>>, String> {
+
+        @Override
+        public String convert(Class<? extends Asset<?>> value) {
+            return value.getSimpleName();
+        }
+    }
+
+    public static class StringToAssetClassConverter extends StdConverter<String, Class<? extends Asset<?>>> {
+
+        @Override
+        public Class<? extends Asset<?>> convert(String value) {
+            return AssetModelUtil.getAssetDescriptor(value).map(AssetDescriptor::getType).orElse(null);
+        }
+    }
 
     public AssetQuery() {
     }
@@ -301,7 +293,17 @@ public class AssetQuery {
         return this;
     }
 
-    public AssetQuery parents(AssetType... assetTypes) {
+    @SafeVarargs
+    public final AssetQuery parents(Class<? extends Asset<?>>...assetTypes) {
+        if (assetTypes == null || assetTypes.length == 0) {
+            this.names = null;
+            return this;
+        }
+        this.parents = Arrays.stream(assetTypes).map(assetType -> new ParentPredicate().type(assetType)).toArray(ParentPredicate[]::new);
+        return this;
+    }
+
+    public AssetQuery parents(AssetDescriptor<?>... assetTypes) {
         if (assetTypes == null || assetTypes.length == 0) {
             this.names = null;
             return this;
@@ -330,28 +332,27 @@ public class AssetQuery {
         return this;
     }
 
-    public AssetQuery types(StringPredicate... typePredicates) {
-        this.types = typePredicates;
-        return this;
-    }
-
-    public AssetQuery types(String... types) {
+    @SuppressWarnings("unchecked")
+    public AssetQuery types(AssetDescriptor<? extends Asset<?>>... types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;
         }
 
-        this.types = Arrays.stream(types).map(StringPredicate::new).toArray(StringPredicate[]::new);
+        this.types = Arrays.stream(types).map(AssetDescriptor::getType)
+            .toArray(size -> (Class<? extends Asset<?>>[])new Class<?>[size]);
+
         return this;
     }
 
-    public AssetQuery types(AssetDescriptor... types) {
+    @SafeVarargs
+    public final <T extends Asset<?>> AssetQuery types(Class<T>... types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;
         }
 
-        this.types = Arrays.stream(types).map(at -> new StringPredicate(at.getType())).toArray(StringPredicate[]::new);
+        this.types = types;
         return this;
     }
 
@@ -371,13 +372,13 @@ public class AssetQuery {
     }
 
     public AssetQuery attributeNames(String... attributeNames) {
-        LogicGroup<AttributePredicate> predicateLogicGroup = new LogicGroup<>(Arrays.stream(attributeNames).map(AttributePredicate::new).collect(Collectors.toList()));
+        LogicGroup<AttributePredicate> predicateLogicGroup = new LogicGroup<>(Arrays.stream(attributeNames).map(name -> new AttributePredicate(name, null)).collect(Collectors.toList()));
         predicateLogicGroup.operator = LogicGroup.Operator.OR;
         return attributes(predicateLogicGroup);
     }
 
     public AssetQuery attributeName(String attributeName) {
-        return attributes(new AttributePredicate(attributeName));
+        return attributes(new AttributePredicate(attributeName, null));
     }
 
     public AssetQuery attributeValue(String name, ValuePredicate valuePredicate) {
@@ -412,11 +413,6 @@ public class AssetQuery {
         return attributeValue(name, new NumberPredicate(d, operator));
     }
 
-    public AssetQuery attributeMeta(MetaPredicate... attributeMetaPredicates) {
-        this.attributeMeta = attributeMetaPredicates;
-        return this;
-    }
-
     public AssetQuery orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
         return this;
@@ -427,14 +423,13 @@ public class AssetQuery {
         return getClass().getSimpleName() + "{" +
                 "select=" + select +
                 ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
-                ", name=" + names +
-                ", parent=" + parents +
-                ", path=" + paths +
+                ", name=" + Arrays.toString(names) +
+                ", parent=" + Arrays.toString(parents) +
+                ", path=" + Arrays.toString(paths) +
                 ", tenant=" + tenant +
-                ", userId='" + userIds + '\'' +
-                ", type=" + types +
+                ", userId='" + Arrays.toString(userIds) + '\'' +
+                ", type=" + Arrays.toString(types) +
                 ", attribute=" + (attributes != null ? attributes.toString() : "null") +
-                ", attributeMeta=" + Arrays.toString(attributeMeta) +
                 ", orderBy=" + orderBy +
                 ", recursive=" + recursive +
                 '}';

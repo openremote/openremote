@@ -11,7 +11,7 @@ import {
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
-import {Asset, AssetEvent, AssetEventCause, AttributeEvent, AttributeType, MetaItemType} from "@openremote/model";
+import {Asset, AssetEvent, AssetEventCause, AttributeEvent, GeoJSONPoint, Attribute, WellknownMetaItems, WellknownAttributes} from "@openremote/model";
 import {getAssetsRoute} from "./page-assets";
 import {Page, router} from "../types";
 import {AppStateKeyed} from "../app";
@@ -50,7 +50,7 @@ const pageMapSlice = createSlice({
         },
         attributeEventReceived(state: MapState, action: PayloadAction<AttributeEvent>) {
             let assets = state.assets;
-            const assetId = action.payload.attributeState.attributeRef.entityId;
+            const assetId = action.payload.attributeState.ref.id;
             const index = assets.findIndex((asst) => asst.id === assetId);
             let asset = index >= 0 ? assets[index] : null;
 
@@ -110,72 +110,6 @@ export function getMapRoute(assetId?: string) {
     return route;
 }
 
-const subscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => async (dispatch) => {
-
-    try {
-        const result = await manager.rest.api.AssetResource.queryAssets({
-            select: {
-                excludeAttributes: true,
-                excludeParentInfo: true,
-                excludePath: true
-            }
-        });
-
-        if (result.data) {
-            const ids = result.data.map(
-                asset => asset.id
-            );
-
-            const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, true, (event) => {
-                dispatch(assetEventReceived(event));
-            });
-
-            if (!this.isConnected) {
-                manager.events.unsubscribe(assetSubscriptionId);
-                return;
-            }
-
-            dispatch(setAssetSubscriptionId(assetSubscriptionId));
-
-            const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(ids, false, (event) => {
-                dispatch(attributeEventReceived(event));
-            });
-
-            if (!this.isConnected) {
-                manager.events.unsubscribe(attributeSubscriptionId);
-                return;
-            }
-
-            dispatch(setAttributeSubscriptionId(attributeSubscriptionId));
-        }
-
-    } catch (e) {
-        console.error("Failed to subscribe to assets", e)
-    }
-};
-
-const unsubscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => (dispatch, getState) => {
-    if (getState().map.assetSubscriptionId) {
-        manager.events.unsubscribe(getState().map.assetSubscriptionId);
-        dispatch(setAssetSubscriptionId(null));
-    }
-    if (getState().map.attributeSubscriptionId) {
-        manager.events.unsubscribe(getState().map.attributeSubscriptionId);
-        dispatch(setAttributeSubscriptionId(null));
-    }
-};
-
-const mapCardConfig: MapAssetCardConfig = {
-    default: {
-            exclude: ["userNotes"]
-    },
-    assetTypes: {
-        "urn:openremote:asset:iems:weather": {
-            exclude: ["location"]
-        }
-    }
-};
-
 @customElement("page-map")
 export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
@@ -228,6 +162,72 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
     protected _assetSelector = (state: S) => state.map.assets;
     protected _paramsSelector = (state: S) => state.app.params;
 
+    protected subscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => async (dispatch) => {
+
+        try {
+            const result = await manager.rest.api.AssetResource.queryAssets({
+                select: {
+                    excludeAttributes: true,
+                    excludeParentInfo: true,
+                    excludePath: true
+                }
+            });
+
+            if (result.data) {
+                const ids = result.data.map(
+                    asset => asset.id
+                );
+
+                const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, true, (event) => {
+                    dispatch(assetEventReceived(event));
+                });
+
+                if (!this.isConnected) {
+                    manager.events.unsubscribe(assetSubscriptionId);
+                    return;
+                }
+
+                dispatch(setAssetSubscriptionId(assetSubscriptionId));
+
+                const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(ids, false, (event) => {
+                    dispatch(attributeEventReceived(event));
+                });
+
+                if (!this.isConnected) {
+                    manager.events.unsubscribe(attributeSubscriptionId);
+                    return;
+                }
+
+                dispatch(setAttributeSubscriptionId(attributeSubscriptionId));
+            }
+
+        } catch (e) {
+            console.error("Failed to subscribe to assets", e)
+        }
+    };
+
+    protected unsubscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => (dispatch, getState) => {
+        if (getState().map.assetSubscriptionId) {
+            manager.events.unsubscribe(getState().map.assetSubscriptionId);
+            dispatch(setAssetSubscriptionId(null));
+        }
+        if (getState().map.attributeSubscriptionId) {
+            manager.events.unsubscribe(getState().map.attributeSubscriptionId);
+            dispatch(setAttributeSubscriptionId(null));
+        }
+    };
+
+    protected mapCardConfig: MapAssetCardConfig = {
+        default: {
+            exclude: ["userNotes"]
+        },
+        assetTypes: {
+            "urn:openremote:asset:iems:weather": {
+                exclude: ["location"]
+            }
+        }
+    };
+
     protected _getMapAssets = createSelector(
         [this._assetSelector],
         (assets) => {
@@ -259,14 +259,14 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
         return html`
             
-            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config ? this.config : mapCardConfig}" .asset="${this._currentAsset}"></or-map-asset-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config ? this.config : this.mapCardConfig}" .asset="${this._currentAsset}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map">
                 ${
                     this._assets.filter((asset) => {
-                        const attr = Util.getAssetAttribute(asset, AttributeType.LOCATION.attributeName!);
-                        const showOnMapMeta = Util.getFirstMetaItem(attr, MetaItemType.SHOW_ON_DASHBOARD.urn!);
-                        return showOnMapMeta && showOnMapMeta.value;
+                        const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
+                        const showOnMap = !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr); 
+                        return showOnMap;
                     }).map((asset) => {
                         return html`
                             <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}"></or-map-marker-asset>
@@ -281,14 +281,14 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         super.connectedCallback();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        this._store.dispatch(subscribeAssets());
+        this._store.dispatch(this.subscribeAssets());
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        this._store.dispatch(unsubscribeAssets());
+        this._store.dispatch(this.unsubscribeAssets());
     }
 
     stateChanged(state: S) {

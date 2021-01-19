@@ -13,11 +13,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:microphone"
-                    }
+                    "MicrophoneAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -25,7 +21,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "microphoneLevel"
+                          "value": "soundLevel"
                         },
                         "value": {
                           "predicateType": "number",
@@ -48,11 +44,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:microphone"
-                    }
+                    "MicrophoneAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -60,7 +52,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "microphoneLevel"
+                          "value": "soundLevel"
                         },
                         "value": {
                           "predicateType": "number",
@@ -78,11 +70,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:peopleCounter"
-                    }
+                    "PeopleCounterAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -90,7 +78,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "peopleCountGrowth"
+                          "value": "countGrowthMinute"
                         },
                         "value": {
                           "predicateType": "number",
@@ -118,15 +106,12 @@
                 "2JA9oLQDHY0pjVHnGJMS35"
               ],
               "types": [
-                {
-                  "predicateType": "string",
-                  "value": "urn:openremote:asset:light"
-                }
+                "LightAsset"
               ]
             }
           },
           "value": 60,
-          "attributeName": "lightDimLevel"
+          "attributeName": "brightness"
         },
         {
           "action": "write-attribute",
@@ -136,15 +121,12 @@
                 "3BSvaTREZX2MLjuE8bkM16"
               ],
               "types": [
-                {
-                  "predicateType": "string",
-                  "value": "urn:openremote:asset:light"
-                }
+                "LightAsset"
               ]
             }
           },
           "value": 75,
-          "attributeName": "lightDimLevel"
+          "attributeName": "brightness"
         },
         {
           "action": "write-attribute",
@@ -154,15 +136,12 @@
                 "2motXSzult66RsYrImPTdf"
               ],
               "types": [
-                {
-                  "predicateType": "string",
-                  "value": "urn:openremote:asset:light"
-                }
+                "LightAsset"
               ]
             }
           },
           "value": 70,
-          "attributeName": "lightDimLevel"
+          "attributeName": "brightness"
         }
       ],
       "name": "Station: Crowded square"

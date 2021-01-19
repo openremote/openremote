@@ -1,18 +1,14 @@
-import {Asset, AssetQuery, AssetQueryMatch} from "@openremote/model";
+import {Asset, AssetQuery, AssetQueryMatch, WellknownAssets} from "@openremote/model";
 import manager from "@openremote/core";
 
-export async function getApartment1Asset(): Promise<Asset | undefined> {
+export async function getBuildingAsset(): Promise<Asset | undefined> {
     const query: AssetQuery = {
         names: [{
             predicateType: "string",
             match: AssetQueryMatch.EXACT,
-            value: "Apartment 1"
+            value: "De Rotterdam"
         }],
-        types: [{
-            predicateType: "string",
-            match: AssetQueryMatch.EXACT,
-            value: "urn:openremote:asset:residence"
-        }],
+        types: [WellknownAssets.BUILDINGASSET],
         select: {
             excludePath: true,
             excludeAttributes: true,
@@ -24,7 +20,57 @@ export async function getApartment1Asset(): Promise<Asset | undefined> {
     const assets = response.data;
 
     if (assets.length !== 1) {
-        console.log("Failed to retrieve the 'Apartment 1' asset");
+        console.log("Failed to retrieve the asset");
+        return;
+    }
+    return assets[0];
+}
+
+export async function getElectricityConsumerAsset(): Promise<Asset | undefined> {
+    const query: AssetQuery = {
+        names: [{
+            predicateType: "string",
+            match: AssetQueryMatch.EXACT,
+            value: "Consumption Erasmianum"
+        }],
+        types: [WellknownAssets.ELECTRICITYCONSUMERASSET],
+        select: {
+            excludePath: true,
+            excludeAttributes: false,
+            excludeParentInfo: true
+        }
+    };
+
+    const response = await manager.rest.api.AssetResource.queryAssets(query);
+    const assets = response.data;
+
+    if (assets.length !== 1) {
+        console.log("Failed to retrieve the asset");
+        return;
+    }
+    return assets[0];
+}
+
+export async function getElectricityChargerAsset(): Promise<Asset | undefined> {
+    const query: AssetQuery = {
+        names: [{
+            predicateType: "string",
+            match: AssetQueryMatch.EXACT,
+            value: "Charger 1 Markthal"
+        }],
+        types: [WellknownAssets.ELECTRICITYCHARGERASSET],
+        select: {
+            excludePath: true,
+            excludeAttributes: false,
+            excludeParentInfo: true
+        }
+    };
+
+    const response = await manager.rest.api.AssetResource.queryAssets(query);
+    const assets = response.data;
+
+    if (assets.length !== 1) {
+        console.log("Failed to retrieve the asset");
         return;
     }
     return assets[0];

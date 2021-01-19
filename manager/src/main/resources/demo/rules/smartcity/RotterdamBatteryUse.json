@@ -13,11 +13,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:building"
-                    }
+                    "BuildingAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -53,15 +49,12 @@
                 "6bzhox7vxOKpKQ5yX5Ysoh"
               ],
               "types": [
-                {
-                  "predicateType": "string",
-                  "value": "urn:openremote:asset:electricityStorage"
-                }
+                "ElectricityStorageAsset"
               ]
             }
           },
           "value": 18,
-          "attributeName": "setPointPower"
+          "attributeName": "powerSetpoint"
         }
       ],
       "name": "De Rotterdam: Battery use"

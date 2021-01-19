@@ -19,11 +19,12 @@
  */
 package org.openremote.manager.rules;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.notification.EmailNotificationMessage;
@@ -37,10 +38,11 @@ import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
-import org.openremote.model.value.*;
+import org.openremote.model.value.Values;
 import org.quartz.CronExpression;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -49,11 +51,9 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.container.Container.JSON;
-import static org.openremote.container.Container.LOG;
-import static org.openremote.container.util.Util.distinctByKey;
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
+import static org.openremote.model.value.Values.distinctByKey;
 
 public class JsonRulesBuilder extends RulesBuilder {
 
@@ -79,10 +79,10 @@ public class JsonRulesBuilder extends RulesBuilder {
         AssetQuery.OrderBy orderBy;
         int limit;
         LogicGroup<AttributePredicate> attributePredicates = null;
-        Predicate<AssetState> assetStatePredicate = null;
-        Set<AssetState> unfilteredAssetStates = new HashSet<>();
-        Set<AssetState> previouslyMatchedAssetStates = new HashSet<>();
-        Set<AssetState> previouslyUnmatchedAssetStates;
+        Predicate<AssetState<?>> assetStatePredicate = null;
+        Set<AssetState<?>> unfilteredAssetStates = new HashSet<>();
+        Set<AssetState<?>> previouslyMatchedAssetStates = new HashSet<>();
+        Set<AssetState<?>> previouslyUnmatchedAssetStates;
         Predicate<Long> timePredicate;
         RuleConditionEvaluationResult lastEvaluationResult;
 
@@ -213,29 +213,29 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return;
             }
 
-            List<AssetState> matchedAssetStates;
-            List<AssetState> unmatchedAssetStates = Collections.emptyList();
+            List<AssetState<?>> matchedAssetStates;
+            List<AssetState<?>> unmatchedAssetStates = Collections.emptyList();
             Collection<String> unmatchedAssetIds = Collections.emptyList();
 
             if (attributePredicates == null) {
                 matchedAssetStates = new ArrayList<>(unfilteredAssetStates);
             } else {
 
-                Map<Boolean, List<AssetState>> results;
+                Map<Boolean, List<AssetState<?>>> results;
                 boolean isAndGroup = attributePredicates.operator == null || attributePredicates.operator == LogicGroup.Operator.AND;
 
                 if (isAndGroup) {
 
                     // ANDs need to be applied in the context of an entire asset as don't make any sense otherwise
                     results = new HashMap<>();
-                    ArrayList<AssetState> matched = new ArrayList<>();
-                    ArrayList<AssetState> unmatched = new ArrayList<>();
+                    ArrayList<AssetState<?>> matched = new ArrayList<>();
+                    ArrayList<AssetState<?>> unmatched = new ArrayList<>();
                     results.put(true, matched);
                     results.put(false, unmatched);
 
                     unfilteredAssetStates.stream().collect(Collectors.groupingBy(AssetState::getId)).forEach((id, states) -> {
 
-                        Map<Boolean, List<AssetState>> assetResults = states.stream().collect(Collectors.groupingBy(assetStatePredicate::test));
+                        Map<Boolean, List<AssetState<?>>> assetResults = states.stream().collect(Collectors.groupingBy(assetStatePredicate::test));
                         matched.addAll(assetResults.getOrDefault(true, Collections.emptyList()));
                         unmatched.addAll(assetResults.getOrDefault(false, Collections.emptyList()));
                     });
@@ -280,7 +280,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             matchedAssetStates.removeIf(previouslyMatchedAssetStates::contains);
 
             // Select unique asset states based on asset id
-            Stream<AssetState> matchedAssetStateStream = matchedAssetStates.stream().filter(distinctByKey(AssetState::getId));
+            Stream<AssetState<?>> matchedAssetStateStream = matchedAssetStates.stream().filter(distinctByKey(AssetState::getId));
 
             // Order asset states before applying limit
             if (orderBy != null) {
@@ -294,7 +294,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             if (trackUnmatched) {
                 // Select unique asset states based on asset id
-                Stream<AssetState> unmatchedAssetStateStream = unmatchedAssetStates.stream().filter(distinctByKey(AssetState::getId));
+                Stream<AssetState<?>> unmatchedAssetStateStream = unmatchedAssetStates.stream().filter(distinctByKey(AssetState::getId));
 
                 // Filter out unmatched asset ids that are in the matched list
                 unmatchedAssetIds = unmatchedAssetStateStream
@@ -329,12 +329,12 @@ public class JsonRulesBuilder extends RulesBuilder {
      */
     static class RuleConditionEvaluationResult {
         boolean matches;
-        Collection<AssetState> matchedAssetStates;
-        Collection<AssetState> unmatchedAssetStates;
+        Collection<AssetState<?>> matchedAssetStates;
+        Collection<AssetState<?>> unmatchedAssetStates;
         Collection<String> matchedAssetIds;
         Collection<String> unmatchedAssetIds;
 
-        public RuleConditionEvaluationResult(boolean matches, Collection<AssetState> matchedAssetStates, Collection<String> matchedAssetIds, Collection<AssetState> unmatchedAssetStates, Collection<String> unmatchedAssetIds) {
+        public RuleConditionEvaluationResult(boolean matches, Collection<AssetState<?>> matchedAssetStates, Collection<String> matchedAssetIds, Collection<AssetState<?>> unmatchedAssetStates, Collection<String> unmatchedAssetIds) {
             this.matches = matches;
             this.matchedAssetStates = matchedAssetStates;
             this.matchedAssetIds = matchedAssetIds;
@@ -482,13 +482,13 @@ public class JsonRulesBuilder extends RulesBuilder {
     final protected Notifications notificationsFacade;
     final protected HistoricDatapoints historicDatapointsFacade;
     final protected PredictedDatapoints predictedDatapointsFacade;
-    final protected ManagerExecutorService executorService;
+    final protected ScheduledExecutorService executorService;
     final protected BiConsumer<Runnable, Long> scheduledActionConsumer;
     final protected Map<String, RuleState> ruleStateMap = new HashMap<>();
     final protected JsonRule[] jsonRules;
 
     public JsonRulesBuilder(Ruleset ruleset, TimerService timerService,
-                            AssetStorageService assetStorageService, ManagerExecutorService executorService,
+                            AssetStorageService assetStorageService, ScheduledExecutorService executorService,
                             Assets assetsFacade, Users usersFacade, Notifications notificationsFacade,
                             HistoricDatapoints historicDatapoints, PredictedDatapoints predictedDatapoints,
                             BiConsumer<Runnable, Long> scheduledActionConsumer) throws Exception {
@@ -506,7 +506,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_ID, Long.toString(ruleset.getId()));
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_NAME, ruleset.getName());
 
-        JsonRulesetDefinition jsonRulesetDefinition = JSON.readValue(rulesStr, JsonRulesetDefinition.class);
+        JsonRulesetDefinition jsonRulesetDefinition = Values.parse(rulesStr, JsonRulesetDefinition.class).orElse(null);
 
         if (jsonRulesetDefinition == null || jsonRulesetDefinition.rules == null || jsonRulesetDefinition.rules.length == 0) {
             throw new IllegalArgumentException("No rules within ruleset so nothing to start: " + ruleset);
@@ -739,24 +739,20 @@ public class JsonRulesBuilder extends RulesBuilder {
                     if (!TextUtil.isNullOrEmpty(body)) {
                         if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                             // Need to clone the notification
-                            try {
-                                notification = JSON.readValue(JSON.writeValueAsString(notification), Notification.class);
-                                String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml);
-                                body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
+                            notification = Values.clone(notification);
+                            String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml);
+                            body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
 
-                                if (isEmail) {
-                                    EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
-                                    if (isHtml) {
-                                        email.setHtml(body);
-                                    } else {
-                                        email.setText(body);
-                                    }
-                                } else if (isPush) {
-                                    PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
-                                    pushNotificationMessage.setBody(body);
+                            if (isEmail) {
+                                EmailNotificationMessage email = (EmailNotificationMessage) notification.getMessage();
+                                if (isHtml) {
+                                    email.setHtml(body);
+                                } else {
+                                    email.setText(body);
                                 }
-                            } catch (JsonProcessingException e) {
-                                LOG.warning("Failed to clone notification so cannot insert asset info");
+                            } else if (isPush) {
+                                PushNotificationMessage pushNotificationMessage = (PushNotificationMessage) notification.getMessage();
+                                pushNotificationMessage.setBody(body);
                             }
                         }
                     }
@@ -862,12 +858,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             // Look for the current value within the asset state facts (asset/attribute has to be in scope of this rule engine and have a rule state meta item)
-            List<AssetState> matchingAssetStates = matchingAssetIds
+            List<AssetState<?>> matchingAssetStates = matchingAssetIds
                 .stream()
                 .map(assetId ->
                         facts.getAssetStates()
                                 .stream()
-                                .filter(state -> state.getId().equals(assetId) && state.getAttributeName().equals(attributeUpdateAction.attributeName))
+                                .filter(state -> state.getId().equals(assetId) && state.getName().equals(attributeUpdateAction.attributeName))
                                 .findFirst().orElseGet(() -> {
                                     log(Level.WARNING, "Failed to find attribute in rule states for attribute update: " + new AttributeRef(assetId, attributeUpdateAction.attributeName));
                                     return null;
@@ -883,60 +879,61 @@ public class JsonRulesBuilder extends RulesBuilder {
             return new RuleActionExecution(() ->
 
                 matchingAssetStates.forEach(assetState -> {
-                    ValueType valueType = assetState.getValue().map(Value::getType).orElseGet(() -> assetState.getAttributeValueType() != null ? assetState.getAttributeValueType().getValueType() : null);
-                    Value value = assetState.getValue().orElse(null);
+                    Object value = assetState.getValue().orElse(null);
+                    Class<?> valueType = assetState.getType().getType();
+                    boolean isArray = Values.isArray(valueType);
 
-                    if (!(valueType == ValueType.ARRAY || valueType == ValueType.OBJECT)) {
+                    if (!isArray && !Values.isObject(valueType)) {
                         log(Level.WARNING, "Rule action target asset cannot determine value type or incompatible value type for attribute: " + assetState);
                     } else {
 
+                        // Convert value to JSON Node to easily manipulate it
+                        value = isArray ? Values.convert(value, ArrayNode.class) : Values.convert(value, ObjectNode.class);
+
                         switch (attributeUpdateAction.updateAction) {
                             case ADD:
-                                if (valueType.equals(ValueType.ARRAY)) {
-                                    value = value == null ? Values.createArray() : value;
-                                    ((ArrayValue) value).add(attributeUpdateAction.value);
+                                if (isArray) {
+                                    value = value == null ? Values.JSON.createArrayNode() : value;
+                                    ((ArrayNode)value).add(Values.convert(attributeUpdateAction.value, JsonNode.class));
                                 } else {
-                                    value = value == null ? Values.createObject() : value;
-                                    ((ObjectValue) value).put(attributeUpdateAction.key, attributeUpdateAction.value);
+                                    value = value == null ? Values.JSON.createObjectNode() : value;
+                                    ((ObjectNode) value).set(attributeUpdateAction.key, Values.convert(attributeUpdateAction.value, JsonNode.class));
                                 }
                                 break;
                             case ADD_OR_REPLACE:
                             case REPLACE:
-                                if (valueType.equals(ValueType.ARRAY)) {
-                                    value = value == null ? Values.createArray() : value;
-                                    ArrayValue arrayValue = (ArrayValue) value;
+                                if (isArray) {
+                                    value = value == null ? Values.JSON.createArrayNode() : value;
+                                    ArrayNode arrayValue = (ArrayNode) value;
 
-                                    if (attributeUpdateAction.index != null && arrayValue.length() >= attributeUpdateAction.index) {
-                                        arrayValue.set(attributeUpdateAction.index, attributeUpdateAction.value);
+                                    if (attributeUpdateAction.index != null && arrayValue.size() >= attributeUpdateAction.index) {
+                                        arrayValue.set(attributeUpdateAction.index, Values.convert(attributeUpdateAction.value, JsonNode.class));
                                     } else {
-                                        arrayValue.add(attributeUpdateAction.value);
+                                        arrayValue.add(Values.convert(attributeUpdateAction.value, JsonNode.class));
                                     }
                                 } else {
-                                    value = value == null ? Values.createObject() : value;
+                                    value = value == null ? Values.JSON.createObjectNode() : value;
                                     if (!TextUtil.isNullOrEmpty(attributeUpdateAction.key)) {
-                                        ((ObjectValue) value).put(attributeUpdateAction.key, attributeUpdateAction.value);
+                                        ((ObjectNode) value).set(attributeUpdateAction.key, Values.convert(attributeUpdateAction.value, JsonNode.class));
                                     } else {
-                                        try {
-                                            log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + JSON.writeValueAsString(attributeUpdateAction));
-                                        } catch (JsonProcessingException ignored) {
-                                        }
+                                        log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + Values.asJSON(attributeUpdateAction));
                                     }
                                 }
                                 break;
                             case DELETE:
                                 if(value != null) {
-                                    if (valueType.equals(ValueType.ARRAY)) {
-                                        ((ArrayValue) value).remove(attributeUpdateAction.index);
+                                    if (isArray) {
+                                        ((ArrayNode) value).remove(attributeUpdateAction.index);
                                     } else {
-                                        ((ObjectValue) value).remove(attributeUpdateAction.key);
+                                        ((ObjectNode) value).remove(attributeUpdateAction.key);
                                     }
                                 }
                                 break;
                             case CLEAR:
-                                if (valueType.equals(ValueType.ARRAY)) {
-                                    value = Values.createArray();
+                                if (isArray) {
+                                    value = Values.JSON.createArrayNode();
                                 } else {
-                                    value = Values.createObject();
+                                    value = Values.JSON.createObjectNode();
                                 }
                                 break;
                         }
@@ -961,10 +958,10 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         // Extract asset states for matched asset IDs
-        Map<String, Set<AssetState>> assetStates = ruleEvaluationResult.conditionStateMap.values().stream()
+        Map<String, Set<AssetState<?>>> assetStates = ruleEvaluationResult.conditionStateMap.values().stream()
             .filter(conditionState -> conditionState.lastEvaluationResult.matches)
             .flatMap(conditionState -> {
-                Collection<AssetState> as = useUnmatched
+                Collection<AssetState<?>> as = useUnmatched
                     ? conditionState.lastEvaluationResult.unmatchedAssetStates
                     : conditionState.lastEvaluationResult.matchedAssetStates;
                 return as.stream();
@@ -980,11 +977,11 @@ public class JsonRulesBuilder extends RulesBuilder {
                 sb.append("<tr><td>");
                 sb.append(assetState.getId());
                 sb.append("</td><td>");
+                sb.append(assetState.getAssetName());
+                sb.append("</td><td>");
                 sb.append(assetState.getName());
                 sb.append("</td><td>");
-                sb.append(assetState.getAttributeName());
-                sb.append("</td><td>");
-                sb.append(assetState.getValue().map(Value::toString).orElse(""));
+                sb.append(assetState.getValue().flatMap(Values::asJSON).orElse(""));
                 sb.append("</td></tr>");
             }));
             sb.append("</table>");
@@ -993,11 +990,11 @@ public class JsonRulesBuilder extends RulesBuilder {
             assetStates.forEach((key, value) -> value.forEach(assetState -> {
                 sb.append(assetState.getId());
                 sb.append("\t\t");
+                sb.append(assetState.getAssetName());
+                sb.append("\t\t");
                 sb.append(assetState.getName());
                 sb.append("\t\t");
-                sb.append(assetState.getAttributeName());
-                sb.append("\t\t");
-                sb.append(assetState.getValue().map(Value::toString).orElse(""));
+                sb.append(assetState.getValue().map(v -> Values.convert(v, String.class)).orElse(""));
             }));
         }
 

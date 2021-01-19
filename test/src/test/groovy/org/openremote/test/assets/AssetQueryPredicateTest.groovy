@@ -8,15 +8,15 @@ import org.openremote.model.query.filter.RectangularGeofencePredicate
 import spock.lang.Specification
 
 import java.util.function.Predicate
+import java.util.function.Supplier
 
 class AssetQueryPredicateTest extends Specification {
 
     def "Rectangular Geofence Test"() {
         given:
         GeofencePredicate geofencePredicate = new RectangularGeofencePredicate(51.440914, 5.421723, 51.442755, 5.425151)
-        GeofencePredicate geofencePredicateNegated = new RectangularGeofencePredicate(51.440914, 5.421723, 51.442755, 5.425151).negate()
-        Predicate<Coordinate> coordinatePredicate = AssetQueryPredicate.asPredicate(geofencePredicate)
-        Predicate<Coordinate> coordinatePredicateNegated = AssetQueryPredicate.asPredicate(geofencePredicateNegated)
+        def coordinatePredicate = geofencePredicate.asPredicate({ -> System.currentTimeMillis() })
+        def coordinatePredicateNegated = coordinatePredicate.negate()
 
         expect:
         coordinatePredicate.test(new Coordinate(5.423, 51.441))
@@ -27,8 +27,8 @@ class AssetQueryPredicateTest extends Specification {
         given:
         GeofencePredicate geofencePredicate = new RadialGeofencePredicate(100, 51.423, 5.441)
         GeofencePredicate geofencePredicateNegated = new RadialGeofencePredicate(100, 51.423, 5.441).negate()
-        Predicate<Coordinate> coordinatePredicate = AssetQueryPredicate.asPredicate(geofencePredicate)
-        Predicate<Coordinate> coordinatePredicateNegated = AssetQueryPredicate.asPredicate(geofencePredicateNegated)
+        def coordinatePredicate = geofencePredicate.asPredicate({ -> System.currentTimeMillis() })
+        def coordinatePredicateNegated = coordinatePredicate.negate()
 
         expect:
         coordinatePredicate.test(new Coordinate(5.441, 51.423))

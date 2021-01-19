@@ -28,92 +28,44 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.CharsetUtil;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.Protocol;
-import org.openremote.container.Container;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.agent.Protocol;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
-import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is an abstract {@link org.openremote.agent.protocol.Protocol} for protocols that require an {@link IoClient}.
+ * This is an abstract {@link Protocol} for protocols that require an {@link IoClient}.
  */
-public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends AbstractProtocol {
+public abstract class AbstractIoClientProtocol<T extends AbstractIoClientProtocol<T, U, V, W, X>, U extends IoAgent<U, T, X>, V, W extends IoClient<V>, X extends AgentLink<?>> extends AbstractProtocol<U, X> {
 
     /**
-     * List of protocol {@link MetaItem}s that are used by generic (string based) IO client protocols
+     * Supplies a set of encoders/decoders that convert from/to {@link String} to/from {@link ByteBuf} based on the generic protocol {@link Attribute}s
      */
-    public static final List<MetaItemDescriptor> PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS = Arrays.asList(
-        META_PROTOCOL_CHARSET,
-        META_PROTOCOL_MAX_LENGTH,
-        META_PROTOCOL_DELIMITER,
-        META_PROTOCOL_STRIP_DELIMITER,
-        META_PROTOCOL_CONVERT_BINARY,
-        META_PROTOCOL_CONVERT_HEX
-    );
+    public static Supplier<ChannelHandler[]> getGenericStringEncodersAndDecoders(AbstractNettyIoClient<String, ?> client, IoAgent<?, ?, ?> agent) {
 
-    /**
-     * Supplies a set of encoders/decoders that convert from/to {@link String} to/from {@link ByteBuf} based on the generic protocol {@link MetaItem}s
-     */
-    public static Supplier<ChannelHandler[]> getGenericStringEncodersAndDecoders(AbstractNettyIoClient<String, ?> client, AssetAttribute protocolConfiguration) {
+        boolean hexMode = agent.getMessageConvertHex().orElse(false);
+        boolean binaryMode = agent.getMessageConvertBinary().orElse(false);
+        Charset charset = agent.getMessageCharset().map(Charset::forName).orElse(CharsetUtil.UTF_8);
+        int maxLength = agent.getMessageMaxLength().orElse(Integer.MAX_VALUE);
+        String[] delimiters = agent.getMessageDelimiters().orElse(new String[0]);
+        boolean stripDelimiter = agent.getMessageStripDelimiter().orElse(false);
 
-        boolean hexMode = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_CONVERT_HEX,
-            false,
-            false
-        ).flatMap(Values::getBoolean).orElse(false);
-
-        boolean binaryMode = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_CONVERT_BINARY,
-            false,
-            false
-        ).flatMap(Values::getBoolean).orElse(false);
-
-        Charset charset = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_CHARSET,
-            false,
-            true
-        ).flatMap(Values::getString).map(Charset::forName).orElse(CharsetUtil.UTF_8);
-
-        int maxLength = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_MAX_LENGTH,
-            false,
-            false
-        ).flatMap(Values::getIntegerCoerced).orElse(Integer.MAX_VALUE);
-
-        List<String> delimiters = Arrays.stream(protocolConfiguration.getMetaItems(META_PROTOCOL_DELIMITER.getUrn()))
-            .map(metaItem -> metaItem.getValueAsString().orElse(null))
-            .filter(str -> !Objects.isNull(str))
-            .collect(Collectors.toList());
-
-        boolean stripDelimiter = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_STRIP_DELIMITER,
-            false,
-            false
-        ).flatMap(Values::getBoolean).orElse(false);
-
-        Supplier<ChannelHandler[]> encoderDecoderProvider = () -> {
+        return () -> {
             List<ChannelHandler> encodersDecoders = new ArrayList<>();
 
             if (hexMode || binaryMode) {
@@ -122,15 +74,14 @@ public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends
                         String.class,
                         client,
                         (msg, out) -> {
-                            byte[] bytes = hexMode ? Protocol.bytesFromHexString(msg) : Protocol.bytesFromBinaryString(msg);
+                            byte[] bytes = hexMode ? ProtocolUtil.bytesFromHexString(msg) : ProtocolUtil.bytesFromBinaryString(msg);
                             out.writeBytes(bytes);
                         }
                     ));
 
-                if (!delimiters.isEmpty()) {
-                    ByteBuf[] byteDelimiters = delimiters
-                        .stream()
-                        .map(delim -> Unpooled.wrappedBuffer(hexMode ? Protocol.bytesFromHexString(delim) : Protocol.bytesFromBinaryString(delim)))
+                if (delimiters.length > 0) {
+                    ByteBuf[] byteDelimiters = Arrays.stream(delimiters)
+                        .map(delim -> Unpooled.wrappedBuffer(hexMode ? ProtocolUtil.bytesFromHexString(delim) : ProtocolUtil.bytesFromBinaryString(delim)))
                         .toArray(ByteBuf[]::new);
                     encodersDecoders.add(new DelimiterBasedFrameDecoder(maxLength, stripDelimiter, byteDelimiters));
                 } else {
@@ -144,16 +95,15 @@ public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends
                         (byteBuf, messages) -> {
                             byte[] bytes = new byte[byteBuf.readableBytes()];
                             byteBuf.readBytes(bytes);
-                            String msg = hexMode ? Protocol.bytesToHexString(bytes) : Protocol.bytesToBinaryString(bytes);
+                            String msg = hexMode ? ProtocolUtil.bytesToHexString(bytes) : ProtocolUtil.bytesToBinaryString(bytes);
                             messages.add(msg);
                         }
                     )
                 );
             } else {
                 encodersDecoders.add(new StringEncoder(charset));
-                if (!delimiters.isEmpty()) {
-                    ByteBuf[] byteDelimiters = delimiters
-                        .stream()
+                if (delimiters.length > 0) {
+                    ByteBuf[] byteDelimiters = Arrays.stream(delimiters)
                         .map(delim -> Unpooled.wrappedBuffer(delim.getBytes(charset)))
                         .toArray(ByteBuf[]::new);
                     encodersDecoders.add(new DelimiterBasedFrameDecoder(maxLength, stripDelimiter, byteDelimiters));
@@ -166,142 +116,89 @@ public abstract class AbstractIoClientProtocol<T, U extends IoClient<T>> extends
 
             return encodersDecoders.toArray(new ChannelHandler[0]);
         };
-
-        return encoderDecoderProvider;
     }
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractIoClientProtocol.class);
-    protected final Map<AttributeRef, ProtocolIoClient<T, U>> protocolIoClientMap = new HashMap<>();
+    protected ProtocolIoClient<V, W> client;
 
-    public class ProtocolIoClient<T, U extends IoClient<T>> {
-        public AttributeRef protocolRef;
-        public U client;
-        public BiConsumer<AttributeRef, ConnectionStatus> connectionStatusConsumer;
-        public BiConsumer<AttributeRef, T> messageConsumer;
+    protected AbstractIoClientProtocol(U agent) {
+        super(agent);
+    }
 
-        public ProtocolIoClient(AttributeRef protocolRef, U client, BiConsumer<AttributeRef, ConnectionStatus> connectionStatusConsumer, BiConsumer<AttributeRef, T> messageConsumer) {
-            this.protocolRef = protocolRef;
-            this.client = client;
-            this.connectionStatusConsumer = connectionStatusConsumer;
-            this.messageConsumer = messageConsumer;
-        }
-
-        public void connect() {
-            client.addConnectionStatusConsumer(status -> {
-                if (connectionStatusConsumer != null) {
-                    connectionStatusConsumer.accept(protocolRef, status);
-                }
-            });
-
-            client.addMessageConsumer(msg -> {
-                if (messageConsumer != null) {
-                    messageConsumer.accept(protocolRef, msg);
-                }
-            });
-
-            LOG.info("Connecting IO client");
-            client.connect();
-        }
-
-        protected void disconnect() {
-            client.removeAllMessageConsumers();
-            client.removeAllConnectionStatusConsumers();
-            LOG.info("Disconnecting IO client");
-            client.disconnect();
-        }
-
-        protected synchronized void send(T message) {
-            LOG.fine("Sending message to IO client: " + client.getClientUri());
-            client.sendMessage(message);
-        }
+    @Override
+    public String getProtocolInstanceUri() {
+        return client != null ? client.ioClient.getClientUri() : "";
     }
 
     @Override
     protected void doStop(Container container) throws Exception {
-        super.doStop(container);
-        protocolIoClientMap.forEach((ref, client) -> client.disconnect());
+        if (client != null) {
+            LOG.fine("Stopping IO client for protocol: " + this);
+            client.disconnect();
+        }
+        client = null;
     }
 
     @Override
-    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-
-        ProtocolIoClient<T, U> protocolIoClient = null;
-
+    protected void doStart(Container container) throws Exception {
         try {
-            protocolIoClient = createProtocolClient(protocolConfiguration);
-            LOG.fine("Created IO client '" + protocolIoClient.client.getClientUri() + "' for protocol configuration: " + protocolRef);
-            protocolIoClient.connect();
+            client = createIoClient();
+            LOG.fine("Created IO client '" + client.ioClient.getClientUri() + "' for protocol: " + this);
+            client.connect();
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create IO client for protocol Configuration: " + protocolConfiguration, e);
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR);
-        } finally {
-            if (protocolIoClient != null) {
-                protocolIoClientMap.put(protocolRef, protocolIoClient);
-            }
+            LOG.log(Level.SEVERE, "Failed to create IO client for protocol: " + this, e);
+            setConnectionStatus(ConnectionStatus.ERROR);
         }
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-        ProtocolIoClient<T, U> protocolIoClient = protocolIoClientMap.remove(protocolRef);
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, X agentLink, AttributeEvent event, Object processedValue) {
 
-        if (protocolIoClient != null) {
-            LOG.fine("Removed IO client '" + protocolIoClient.client.getClientUri() + "' for protocol configuration: " + protocolRef);
-            protocolIoClient.disconnect();
-        }
-    }
-
-    @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
-        ProtocolIoClient<T, U> protocolIoClient = protocolIoClientMap.get(protocolConfiguration.getReferenceOrThrow());
-        AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
-
-        if (protocolIoClient == null || attribute == null) {
+        if (client == null || attribute == null) {
             return;
         }
 
-        T message = createWriteMessage(protocolConfiguration, attribute, event, processedValue);
+        V message = createWriteMessage(attribute, agent.getAgentLink(attribute), event, processedValue);
 
         if (message == null) {
-            LOG.fine("No message produced for attribute event so not sending to IO client '" + protocolIoClient.client.getClientUri() + "': " + event);
+            LOG.fine("No message produced for attribute event so not sending to IO client '" + client.ioClient.getClientUri() + "': " + event);
             return;
         }
 
-        protocolIoClient.send(message);
+        client.send(message);
     }
 
-    protected ProtocolIoClient<T, U> createProtocolClient(AssetAttribute protocolConfiguration) throws Exception {
-        final AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-        U client = createIoClient(protocolConfiguration);
-        Supplier<ChannelHandler[]> encoderDecoderProvider = getEncoderDecoderProvider(client, protocolConfiguration);
+    protected ProtocolIoClient<V, W> createIoClient() throws Exception {
+        W client = doCreateIoClient();
+        ProtocolIoClient<V, W> protocolIoClient = new ProtocolIoClient<>(client, this::onConnectionStatusChanged, this::onMessageReceived);
+        this.client = protocolIoClient;
+        Supplier<ChannelHandler[]> encoderDecoderProvider = getEncoderDecoderProvider();
         client.setEncoderDecoderProvider(encoderDecoderProvider);
-        return new ProtocolIoClient<>(protocolRef, client, this::onConnectionStatusChanged, this::onMessageReceived);
+        return protocolIoClient;
     }
 
     /**
      * Called when the {@link IoClient} {@link ConnectionStatus} changes
      */
-    protected void onConnectionStatusChanged(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        updateStatus(protocolRef, connectionStatus);
+    protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        setConnectionStatus(connectionStatus);
     }
 
     /**
-     * Should return an instance of {@link IoClient} for the supplied protocolConfiguration; the configuration of
+     * Should return an instance of {@link IoClient} for the linked {@link Agent}; the configuration of
      * encoders/decoders is handled by the separate call to {@link #getEncoderDecoderProvider}
      */
-    protected abstract U createIoClient(AssetAttribute protocolConfiguration) throws Exception;
+    protected abstract W doCreateIoClient() throws Exception;
 
-    protected abstract Supplier<ChannelHandler[]> getEncoderDecoderProvider(U client, AssetAttribute protocolConfiguration);
+    protected abstract Supplier<ChannelHandler[]> getEncoderDecoderProvider();
 
     /**
      * Called when the {@link IoClient} receives a message from the server
      */
-    protected abstract void onMessageReceived(AttributeRef protocolRef, T message);
+    protected abstract void onMessageReceived(V message);
 
     /**
      * Generate the actual message to send to the {@link IoClient} for this {@link AttributeEvent}
      */
-    protected abstract T createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue);
+    protected abstract V createWriteMessage(Attribute<?> attribute, X agentLink, AttributeEvent event, Object processedValue);
 }

@@ -20,10 +20,9 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
@@ -34,51 +33,26 @@ import java.util.stream.IntStream;
 
 import static org.openremote.agent.protocol.velbus.VelbusPacket.InboundCommand.DIMMER_STATUS;
 import static org.openremote.agent.protocol.velbus.VelbusPacket.OutboundCommand.*;
-import static org.openremote.model.util.TextUtil.toLowerCamelCase;
-import static org.openremote.model.util.TextUtil.toProperCase;
-import static org.openremote.model.util.TextUtil.toUpperCamelCase;
+import static org.openremote.model.util.TextUtil.*;
 
 public class AnalogOutputProcessor extends OutputChannelProcessor {
 
-    public enum ChannelState implements DevicePropertyValue<ChannelState> {
+    public enum ChannelState {
         OFF,
         ON,
         LAST,
         HALT;
 
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case BOOLEAN:
-                    switch (this) {
-                        case ON:
-                            return Values.create(true);
-                        case OFF:
-                            return Values.create(false);
-                        case LAST:
-                            return null;
-                    }
-                default:
-                    return EnumUtil.enumToValue(this, valueType);
-            }
-        }
-
-        @Override
-        public ChannelState getPropertyValue() {
-            return this;
-        }
-
-        public static Optional<ChannelState> fromValue(Value value) {
+        public static Optional<ChannelState> fromValue(Object value) {
             if (value == null) {
                 return Optional.of(LAST);
             }
 
-            switch (value.getType()) {
-                case BOOLEAN:
-                    return fromBoolean(Values.getBoolean(value).orElse(null));
-                default:
-                    return EnumUtil.enumFromValue(ChannelState.class, value);
+            if (value instanceof Boolean) {
+                return fromBoolean((Boolean)value);
             }
+
+            return EnumUtil.enumFromValue(ChannelState.class, value);
         }
 
         public static Optional<ChannelState> fromBoolean(Boolean value) {
@@ -96,29 +70,29 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
     protected final static String IO_PREFIX = "OUTPUT";
     protected static final Pattern IO_CHANNEL_REGEX = Pattern.compile("^OUTPUT(\\d+)(.*$|$)");
 
-    protected final static List<Pair<String, AttributeValueType>> CHANNEL_PROPERTIES = Arrays.asList(
+    protected final static List<Pair<String, ValueDescriptor<?>>> CHANNEL_PROPERTIES = Arrays.asList(
         // RW - ChannelState
-        new Pair<>("", AttributeValueType.STRING),
+        new Pair<>("", ValueType.TEXT),
         // R - ChannelSetting
-        new Pair<>("_SETTING", AttributeValueType.STRING),
+        new Pair<>("_SETTING", ValueType.TEXT),
         // R - Read LED status
-        new Pair<>("_LED", AttributeValueType.STRING),
+        new Pair<>("_LED", ValueType.TEXT),
         // RW - True/False
-        new Pair<>("_LOCKED", AttributeValueType.BOOLEAN),
+        new Pair<>("_LOCKED", ValueType.BOOLEAN),
         // RW - True/False
-        new Pair<>("_INHIBITED", AttributeValueType.BOOLEAN),
+        new Pair<>("_INHIBITED", ValueType.BOOLEAN),
         // W - Dim level and speed (LEVEL:SPEED)
-        new Pair<>("_LEVEL_AND_SPEED", AttributeValueType.STRING),
+        new Pair<>("_LEVEL_AND_SPEED", ValueType.TEXT),
         // RW - Dim level 0-100% (-1 to stop current dimming)
-        new Pair<>("_LEVEL", AttributeValueType.NUMBER),
+        new Pair<>("_LEVEL", ValueType.NUMBER),
         // W - On for specified time in seconds (0 to cancel)
-        new Pair<>("_ON", AttributeValueType.NUMBER),
+        new Pair<>("_ON", ValueType.NUMBER),
         // W - Forced on for specified time in seconds (0 to cancel)
-        new Pair<>("_FORCE_ON", AttributeValueType.NUMBER),
+        new Pair<>("_FORCE_ON", ValueType.NUMBER),
         // W - Lock (force off) for specified time in seconds (0 to unlock)
-        new Pair<>("_LOCK", AttributeValueType.NUMBER),
+        new Pair<>("_LOCK", ValueType.NUMBER),
         // W - Inhibit for specified time in seconds (0 to un-inhibit)
-        new Pair<>("_INHIBIT", AttributeValueType.NUMBER)
+        new Pair<>("_INHIBIT", ValueType.NUMBER)
     );
 
     @Override
@@ -131,12 +105,12 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
 
     @Override
     public List<PropertyDescriptor> getPropertyDescriptors(VelbusDeviceType deviceType) {
-        List<Pair<String, AttributeValueType>> propertySuffixes = new ArrayList<>(CHANNEL_PROPERTIES);
+        List<Pair<String, ValueDescriptor<?>>> propertySuffixes = new ArrayList<>(CHANNEL_PROPERTIES);
         final String chPrefix = deviceType == VelbusDeviceType.VMB4AN ? "Output " : "CH";
 
         if (deviceType == VelbusDeviceType.VMB4AN) {
-            propertySuffixes.add(new Pair<>("_VALUE", AttributeValueType.NUMBER));
-            propertySuffixes.add(new Pair<>("_VALUE_AND_SPEED", AttributeValueType.STRING));
+            propertySuffixes.add(new Pair<>("_VALUE", ValueType.NUMBER));
+            propertySuffixes.add(new Pair<>("_VALUE_AND_SPEED", ValueType.TEXT));
         }
 
         int channelCount = deviceType == VelbusDeviceType.VMB4AN ? 4 : ChannelProcessor.getMaxChannelNumber(deviceType);
@@ -161,7 +135,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return getChannelNumberAndPropertySuffix(device, device.getDeviceType() == VelbusDeviceType.VMB4AN ? IO_CHANNEL_REGEX : CHANNEL_REGEX, property)
             .map(
                 channelNumberAndPropertySuffix -> {
@@ -292,26 +266,26 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                 // Extract channel info
                 // DIMMER_STATUS command is only used on 1 channel dimmer modules
                 int channelNumber = 1;
-                IntDevicePropertyValue level;
+                int level;
                 String levelPropertyName = deviceType == VelbusDeviceType.VMB4AN ? "_VALUE" : "_LEVEL";
 
                 if (packetCommand != DIMMER_STATUS) {
                     if (device.getDeviceType() == VelbusDeviceType.VMB4AN) {
                         channelNumber = (packet.getByte(1) & 0xFF) - 11;
-                        level = new IntDevicePropertyValue((packet.getByte(3) << 8) + packet.getByte(4));
+                        level = (packet.getByte(3) << 8) + packet.getByte(4);
                     } else {
                         channelNumber = (int) (Math.log((packet.getByte(1) & 0xFF)) / Math.log(2)) + 1;
-                        level = new IntDevicePropertyValue(packet.getByte(3) & 0xFF);
+                        level = packet.getByte(3) & 0xFF;
                     }
                 } else {
-                    level = new IntDevicePropertyValue(packet.getByte(3) & 0xFF);
+                    level = packet.getByte(3) & 0xFF;
                 }
 
                 ChannelSetting setting = packetCommand == DIMMER_STATUS ? ChannelSetting.NORMAL : ChannelSetting.fromCode(packet.getByte(2) & 0x03);
-                ChannelState state = level.getPropertyValue() > 0 ? ChannelState.ON : ChannelState.OFF;
+                ChannelState state = level > 0 ? ChannelState.ON : ChannelState.OFF;
                 LedState ledState = packetCommand == DIMMER_STATUS ? LedState.fromCode(packet.getByte(3) & 0xFF) : LedState.fromCode(packet.getByte(4) & 0xFF);
-                BooleanDevicePropertyValue locked = setting == ChannelSetting.LOCKED ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
-                BooleanDevicePropertyValue inhibited = setting == ChannelSetting.INHIBITED ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
+                boolean locked = setting == ChannelSetting.LOCKED;
+                boolean inhibited = setting == ChannelSetting.INHIBITED;
 
                 // Push to device cache
                 device.setProperty(getChannelPrefix(deviceType) + channelNumber, state);
@@ -323,7 +297,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                 return true;
             case DIMMER_LEVEL_STATUS:
                 channelNumber = (int) (Math.log((packet.getByte(1) & 0xFF)) / Math.log(2)) + 1;
-                level = new IntDevicePropertyValue(packet.getByte(2) & 0xFF);
+                level = packet.getByte(2) & 0xFF;
                 device.setProperty(getChannelPrefix(deviceType) + channelNumber + "_LEVEL", level);
                 return true;
             case PUSH_BUTTON_STATUS:
@@ -420,38 +394,40 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
         return null;
     }
 
-    protected Optional<Pair<Integer, Integer>> getLevelAndSpeedFromValue(Value value) {
+    protected Optional<Pair<Integer, Integer>> getLevelAndSpeedFromValue(Object value) {
         if (value == null) {
             return Optional.empty();
         }
 
-        switch (value.getType()) {
+        if (Values.isString(value.getClass())) {
+            return Values.getString(value)
+                .map(levelSpeedStr -> {
+                    String[] levelSpeedArr = levelSpeedStr.split("(?<=\\d):(?=\\d)");
+                    if (levelSpeedArr.length == 2) {
+                        int level = Integer.parseInt(levelSpeedArr[0]);
+                        int speed = Integer.parseInt(levelSpeedArr[1]);
+                        return new Pair<>(level, speed);
+                    }
+                    return null;
+                });
+        }
 
-            case OBJECT:
-                return Values.getObject(value)
-                    .map(obj -> {
-                        Optional<Integer> level = Values.getIntegerCoerced(obj.get("level").orElse(null));
-                        Optional<Integer> speed = Values.getIntegerCoerced(obj.get("speed").orElse(null));
-                        return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
-                    });
-            case ARRAY:
-                return Values.getArray(value)
-                    .map(arr -> {
-                        Optional<Integer> level = Values.getIntegerCoerced(arr.get(0).orElse(null));
-                        Optional<Integer> speed = Values.getIntegerCoerced(arr.get(1).orElse(null));
-                        return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
-                    });
-            case STRING:
-                return Values.getString(value)
-                    .map(levelSpeedStr -> {
-                       String[] levelSpeedArr = levelSpeedStr.split("(?<=\\d):(?=\\d)");
-                       if (levelSpeedArr.length == 2) {
-                           int level = Integer.parseInt(levelSpeedArr[0]);
-                           int speed = Integer.parseInt(levelSpeedArr[1]);
-                           return new Pair<>(level, speed);
-                       }
-                       return null;
-                    });
+        if (Values.isArray(value.getClass())) {
+            return Values.asJSONArray(value)
+                .map(arr -> {
+                    Optional<Integer> level = Values.getIntegerCoerced(arr.get(0));
+                    Optional<Integer> speed = Values.getIntegerCoerced(arr.get(1));
+                    return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
+                });
+        }
+
+        if (Values.isObject(value.getClass())) {
+            return Values.asJSONObject(value)
+                .map(obj -> {
+                    Optional<Integer> level = Values.getIntegerCoerced(obj.get("level"));
+                    Optional<Integer> speed = Values.getIntegerCoerced(obj.get("speed"));
+                    return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
+                });
         }
 
         return Optional.empty();

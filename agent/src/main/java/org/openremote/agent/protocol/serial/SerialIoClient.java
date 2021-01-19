@@ -21,7 +21,6 @@ package org.openremote.agent.protocol.serial;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.util.TextUtil;
@@ -41,8 +40,7 @@ public class SerialIoClient<T> extends AbstractNettyIoClient<T, NrJavaSerialAddr
     protected int baudRate;
     public static int DEFAULT_BAUD_RATE = 38400;
 
-    public SerialIoClient(String port, Integer baudRate, ProtocolExecutorService executorService) {
-        super(executorService);
+    public SerialIoClient(String port, Integer baudRate) {
         TextUtil.requireNonNullAndNonEmpty(port);
         this.port = port;
         this.baudRate = baudRate == null ? DEFAULT_BAUD_RATE : baudRate;

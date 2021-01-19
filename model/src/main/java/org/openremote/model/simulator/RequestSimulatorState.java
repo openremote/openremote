@@ -19,39 +19,23 @@
  */
 package org.openremote.model.simulator;
 
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.Arrays;
-
 /**
- * A client sends this event to the server to request {@link SimulatorState}, expecting
- * the server to answer "soon". If the server decides that the client doesn't have the
- * right permissions, or if anything else is not in order (e.g. the protocol configuration
- * doesn't exist), the server might not react at all.
- * <p>
- * If no attribute names and only an asset identifier are provided, all attributes
- * of the asset, accessible by the client, will be read/returned.
+ * A client sends this event to the server to request {@link SimulatorState} for the specified {@link Agent} expecting
+ * the server to answer "soon". If the server decides that the client doesn't have the right permissions, or if anything
+ * else is not in order (e.g. the agent doesn't exist), the server might not react at all.
  */
 public class RequestSimulatorState extends SharedEvent {
 
-    protected AttributeRef[] configurations;
+    protected String agentId;
 
-    protected RequestSimulatorState() {
+    public RequestSimulatorState(String agentId) {
+        this.agentId = agentId;
     }
 
-    public RequestSimulatorState(AttributeRef... configurations) {
-        this.configurations = configurations;
-    }
-
-    public AttributeRef[] getConfigurations() {
-        return configurations;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "simulatorConfigurations=" + Arrays.toString(configurations) +
-            '}';
+    public String getAgentId() {
+        return agentId;
     }
 }

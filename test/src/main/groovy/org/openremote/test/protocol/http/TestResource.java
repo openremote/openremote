@@ -33,9 +33,9 @@ public interface TestResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    void postAsset(Asset asset);
+    void postAsset(Asset<?> asset);
 
     @GET
     @Produces(APPLICATION_JSON)
-    Asset getAsset(@QueryParam("assetId") String assetId);
+    Asset<?> getAsset(@QueryParam("assetId") String assetId);
 }

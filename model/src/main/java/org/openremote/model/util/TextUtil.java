@@ -19,18 +19,14 @@
  */
 package org.openremote.model.util;
 
-import com.google.gwt.regexp.shared.RegExp;
-
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 public class TextUtil {
 
-    public static final String URN_PATTERN = "^urn:[a-zA-Z0-9][a-zA-Z0-9-]{0,31}:([a-zA-Z0-9()+,\\-.:=@;$_!*']|%[0-9a-f]{2})+$";
-    public static final RegExp URN_REGEXP = RegExp.compile(URN_PATTERN);
-    public static final Predicate<String> URN_VALIDATOR  = name -> !isNullOrEmpty(name) && URN_REGEXP.test(name);
     public static final String REGEXP_PATTERN_INTEGER = "^(-?[1-9]\\d*|0)$";
     public static final String REGEXP_PATTERN_INTEGER_POSITIVE = "^\\d+$";
     public static final String REGEXP_PATTERN_INTEGER_NEGATIVE = "^(-[1-9]\\d*|0)$";
@@ -46,8 +42,8 @@ public class TextUtil {
     public static final String REGEXP_PATTERN_BASIC_HTTP_URL = "^(http|https)://.+$";
     public static final String REGEXP_PATTERN_STRING_NON_EMPTY = "(.|\\s)*\\S(.|\\s)*";
     public static final String REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE = "^\\S+$";
-    public static final RegExp REGEXP_INTEGER_POSITIVE = RegExp.compile(REGEXP_PATTERN_INTEGER_POSITIVE);
-    public static final Predicate<String> INTEGER_POSITIVE_VALIDATOR = name -> !isNullOrEmpty(name) && REGEXP_INTEGER_POSITIVE.test(name);
+    public static final Pattern REGEXP_INTEGER_POSITIVE = Pattern.compile(REGEXP_PATTERN_INTEGER_POSITIVE);
+    public static final Predicate<String> INTEGER_POSITIVE_VALIDATOR = name -> !isNullOrEmpty(name) && REGEXP_INTEGER_POSITIVE.matcher(name).matches();
 
     // TODO Unused, doesn't work for "0 30 8 ? * FRI *
     public static final String REGEXP_PATTERN_CRON_EXPRESSION = "^\\\\s*($|#|\\\\w+\\\\s*=|(\\\\?|\\\\*|(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?(?:,(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?)*)\\\\s+(\\\\?|\\\\*|(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?(?:,(?:[0-5]?\\\\d)(?:(?:-|\\/|\\\\,)(?:[0-5]?\\\\d))?)*)\\\\s+(\\\\?|\\\\*|(?:[01]?\\\\d|2[0-3])(?:(?:-|\\/|\\\\,)(?:[01]?\\\\d|2[0-3]))?(?:,(?:[01]?\\\\d|2[0-3])(?:(?:-|\\/|\\\\,)(?:[01]?\\\\d|2[0-3]))?)*)\\\\s+(\\\\?|\\\\*|(?:0?[1-9]|[12]\\\\d|3[01])(?:(?:-|\\/|\\\\,)(?:0?[1-9]|[12]\\\\d|3[01]))?(?:,(?:0?[1-9]|[12]\\\\d|3[01])(?:(?:-|\\/|\\\\,)(?:0?[1-9]|[12]\\\\d|3[01]))?)*)\\\\s+(\\\\?|\\\\*|(?:[1-9]|1[012])(?:(?:-|\\/|\\\\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\\/|\\\\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\\\\?|\\\\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\\\\s+(\\\\?|\\\\*|(?:[0-6])(?:(?:-|\\/|\\\\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|\\/|\\\\,|#)(?:[0-6]))?(?:L)?)*|\\\\?|\\\\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\\\\s)+(\\\\?|\\\\*|(?:|\\\\d{4})(?:(?:-|\\/|\\\\,)(?:|\\\\d{4}))?(?:,(?:|\\\\d{4})(?:(?:-|\\/|\\\\,)(?:|\\\\d{4}))?)*))$";
@@ -218,10 +214,6 @@ public class TextUtil {
         }
 
         return str;
-    }
-
-    public static boolean isValidURN(String name) {
-        return URN_VALIDATOR.test(name);
     }
 
     public static String toLowerCamelCase(String s) {

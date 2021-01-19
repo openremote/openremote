@@ -2,25 +2,16 @@ package org.openremote.agent.protocol.knx;
 
 import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.asset.AssetTreeNode;
-import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
-import org.openremote.container.util.CodecUtil;
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.ValidationFailure;
+import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
-import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.AssetTreeNode;
+import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.*;
-import org.openremote.model.file.FileInfo;
+import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueDescriptor;
 import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.datapoint.CommandDP;
 import tuwien.auto.calimero.datapoint.Datapoint;
@@ -36,266 +27,88 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
  * This protocol is used to connect to a KNX bus via an IP interface.
  */
-public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttributeImport {
+public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgent.KNXAgentLink> implements ProtocolAssetImport {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXProtocol.class);
-
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":knx";
     public static final String PROTOCOL_DISPLAY_NAME = "KNX";
 
-    //Protocol specific configuration meta items
-    /**
-     * IP address of the KNX gateway to connect to in TUNNEL mode. Optional if {@link #META_KNX_IP_CONNECTION_TYPE} is ROUTING.<br>
-     * In ROUTING mode, the IP address specifies the multicast group to join.
-     */
-    public static final String META_KNX_GATEWAY_HOST = PROTOCOL_NAME + ":gatewayHost";
-    
-    /**
-     * The KNX gateway port to connect to in TUNNEL mode. Not used in ROUTING mode.<br>
-     * Default: 3671
-     */
-    public static final String META_KNX_GATEWAY_PORT = PROTOCOL_NAME + ":gatewayPort";
-    
-    /**
-     * <code>TRUE</code> to use network address translation in TUNNELLING mode, <code>FALSE</code>
-     * to use the default (non aware) mode; parameter is ignored for ROUTING<br>
-     * Default: <code>FALSE</code>
-     */
-    public static final String META_KNX_GATEWAY_USENAT = PROTOCOL_NAME + ":useNAT";
-    
-    /**
-     * ServiceMode mode of communication to open, <code>connectionType</code> is one of TUNNELLING or ROUTING<br>
-     * Default: TUNNELLING
-     */
-    public static final String META_KNX_IP_CONNECTION_TYPE = PROTOCOL_NAME + ":connectionType";
-    
-    /**
-     * Device individual address to use as source address in KNX messages.<br>
-     * Default: 0.0.0
-     */
-    public static final String META_KNX_LOCAL_BUS_ADDRESS = PROTOCOL_NAME + ":localBusAddress";
-    
-    /**
-     * Local IP address or hostname to establish connection from.<br>
-     * Default: hostname
-     */
-    public static final String META_KNX_LOCAL_HOST = PROTOCOL_NAME + ":localhost";
-    
-    
-    //Attribute specific configuration meta items
-    public static final String META_KNX_DPT = PROTOCOL_NAME + ":dpt";
-    public static final String META_KNX_STATUS_GA = PROTOCOL_NAME + ":statusGA";
-    public static final String META_KNX_ACTION_GA = PROTOCOL_NAME + ":actionGA";
+    protected KNXConnection connection;
+    final protected Map<AttributeRef, Datapoint> attributeActionMap = new HashMap<>();
+    final protected Map<AttributeRef, StateDP> attributeStatusMap = new HashMap<>();
 
-    protected static final String VERSION = "1.0";
-
-    public static final String REGEXP_GROUP_ADDRESS = "^\\d{1,3}/\\d{1,3}/\\d{1,3}$";
-    public static final String REGEXP_BUS_ADDRESS = "^\\d\\.\\d\\.\\d$";
-    public static final String REGEXP_DPT = "^\\d{1,3}\\.\\d{1,3}$";
-    public static final String PATTERN_FAILURE_CONNECTION_TYPE = "TUNNELLING|ROUTING";
-    public static final String PATTERN_FAILURE_DPT = "KNX DPT (e.g. 1.001)";
-    public static final String PATTERN_FAILURE_GROUP_ADDRESS = "KNX Group Address (e.g. 1/1/1)";
-
-    protected static final List<MetaItemDescriptor> PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl(META_KNX_GATEWAY_HOST, ValueType.STRING, false, null, null, 1, null, false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_GATEWAY_PORT, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(), 1, null, false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_GATEWAY_USENAT, ValueType.BOOLEAN, false, null, null, 1, Values.create(false), false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_IP_CONNECTION_TYPE, ValueType.STRING, false, "^(TUNNELLING|ROUTING)$", PATTERN_FAILURE_CONNECTION_TYPE, 1, Values.create("TUNNELLING"), false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_LOCAL_BUS_ADDRESS, ValueType.STRING, false, REGEXP_BUS_ADDRESS, "0.0.0", 1, null, false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_LOCAL_HOST, ValueType.STRING, false, null, null, 1, null, false, null, null, null)
-    );
-
-    protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl(META_KNX_DPT, ValueType.STRING, true, REGEXP_DPT, PATTERN_FAILURE_DPT, 1, null, false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_STATUS_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, null, false, null, null, null),
-        new MetaItemDescriptorImpl(META_KNX_ACTION_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, Values.create(false), false, null, null, null)
-    );
-
-    final protected Map<String, KNXConnection> knxConnections = new HashMap<>();
-    final protected Map<AttributeRef, Consumer<ConnectionStatus>> statusConsumerMap = new HashMap<>();
-    final protected Map<AttributeRef, Pair<KNXConnection, Datapoint>> attributeActionMap = new HashMap<>();
-    final protected Map<AttributeRef, Pair<KNXConnection, StateDP>> attributeStatusMap = new HashMap<>();
-    
-    @Override
-    public String getProtocolName() {
-        return PROTOCOL_NAME;
+    public KNXProtocol(KNXAgent agent) {
+        super(agent);
     }
 
     @Override
-    public String getProtocolDisplayName() {
+    public String getProtocolName() {
         return PROTOCOL_DISPLAY_NAME;
     }
 
     @Override
-    public String getVersion() {
-        return VERSION;
+    protected void doStart(Container container) throws Exception {
+
+        boolean isNat = agent.isNATMode().orElse(false);
+        boolean isRouting = agent.isRoutingMode().orElse(false);
+        String gatewayAddress = agent.getHost().orElseThrow(() -> {
+            String msg = "No KNX gateway IP address provided for protocol: " + this;
+            LOG.info(msg);
+            return new IllegalArgumentException(msg);
+        });
+
+        String bindAddress = agent.getBindHost().orElse(null);
+        Integer gatewayPort = agent.getPort().orElse(3671);
+        String messageSourceAddress = agent.getMessageSourceAddress().orElse("0.0.0");
+
+        connection = new KNXConnection(gatewayAddress, bindAddress, gatewayPort, messageSourceAddress, isRouting, isNat);
+        connection.addConnectionStatusConsumer(this::setConnectionStatus);
+        connection.connect();
     }
 
     @Override
-    public AssetAttribute getProtocolConfigurationTemplate() {
-        return super.getProtocolConfigurationTemplate()
-            .addMeta(
-                new MetaItem(META_KNX_IP_CONNECTION_TYPE, Values.create("TUNNELLING")),
-                new MetaItem(META_KNX_GATEWAY_HOST, null)
-            );
-    }
-
-    @Override
-    public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
-        if (result.isValid()) {
-            boolean ipFound = false;
-
-            if (protocolConfiguration.getMeta() != null && !protocolConfiguration.getMeta().isEmpty()) {
-                for (int i = 0; i < protocolConfiguration.getMeta().size(); i++) {
-                    MetaItem actionMetaItem = protocolConfiguration.getMeta().get(i);
-                    if (isMetaNameEqualTo(actionMetaItem, META_KNX_IP_CONNECTION_TYPE)) {
-                        String connectionType = actionMetaItem.getValueAsString().orElse("TUNNELLING");
-                        if (!connectionType.equals("TUNNELLING") && !connectionType.equals("ROUTING")) {
-                            result.addMetaFailure(
-                                new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH, PATTERN_FAILURE_CONNECTION_TYPE)
-                            );
-                        }
-
-                        ipFound = "ROUTING".equals(connectionType);
-                    } else if (isMetaNameEqualTo(actionMetaItem, META_KNX_GATEWAY_HOST)) {
-                        ipFound = true;
-                        if (isNullOrEmpty(actionMetaItem.getValueAsString().orElse(null))) {
-                            result.addMetaFailure(
-                                new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED, ValueType.STRING.name())
-                            );
-                        }
-                    }
-                }
-            }
-
-            if (!ipFound) {
-                result.addMetaFailure(
-                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, META_KNX_GATEWAY_HOST)
-                );
-            }
-        }
-
-        return result;
-    }
-
-    @Override
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS;
-    }
-
-    @Override
-    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return new ArrayList<>(ATTRIBUTE_META_ITEM_DESCRIPTORS);
-    }
-
-    @Override
-    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        String connectionType = protocolConfiguration.getMetaItem(META_KNX_IP_CONNECTION_TYPE).flatMap(AbstractValueHolder::getValueAsString).orElse("TUNNELLING");
-        if (!connectionType.equals("TUNNELLING") && !connectionType.equals("ROUTING")) {
-            LOG.severe("KNX connectionType can either be 'TUNNELLING' or 'ROUTING' for protocol configuration: " + protocolConfiguration);
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR_CONFIGURATION);
-            return;
-        }
-        
-        Optional<String> gatewayIpParam = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString);
-        // RT: KNXConnection constructor implies gateway IP is always required so removed TUNNELLING only check here
-        if (!gatewayIpParam.isPresent()) {
-            LOG.severe("No KNX gateway IP address provided for protocol configuration: " + protocolConfiguration);
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR_CONFIGURATION);
-            return;
-        }
-
-        String localIp = protocolConfiguration.getMetaItem(META_KNX_LOCAL_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
-        Integer remotePort = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_PORT).flatMap(AbstractValueHolder::getValueAsInteger).orElse(3671);
-        String localKNXAddress = protocolConfiguration.getMetaItem(META_KNX_LOCAL_BUS_ADDRESS).flatMap(AbstractValueHolder::getValueAsString).orElse("0.0.0");
-        Boolean useNat = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_USENAT).flatMap(AbstractValueHolder::getValueAsBoolean).orElse(Boolean.FALSE);
-        
-        AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-
-        synchronized (knxConnections) {
-            Consumer<ConnectionStatus> statusConsumer = status -> updateStatus(protocolRef, status);
-
-            KNXConnection knxConnection = knxConnections.computeIfAbsent(
-                            gatewayIpParam.get(), gatewayIp ->
-                    new KNXConnection(gatewayIp, connectionType, executorService, localIp, remotePort, useNat, localKNXAddress)
-            );
-            knxConnection.addConnectionStatusConsumer(statusConsumer);
-            knxConnection.connect();
-
-            synchronized (statusConsumerMap) {
-                statusConsumerMap.put(protocolRef, statusConsumer);
-            }
+    protected void doStop(Container container) throws Exception {
+        if (connection != null) {
+            connection.removeConnectionStatusConsumer(this::setConnectionStatus);
+            connection.disconnect();
         }
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-
-        Consumer<ConnectionStatus> statusConsumer;
-        synchronized (statusConsumerMap) {
-            statusConsumer = statusConsumerMap.get(protocolConfiguration.getReferenceOrThrow());
-        }
-
-        String gatewayIp = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse("");
-        synchronized (knxConnections) {
-            KNXConnection knxConnection = knxConnections.get(gatewayIp);
-            if (knxConnection != null) {
-                if (!isKNXConnectionStillUsed(knxConnection)) {
-                    knxConnection.removeConnectionStatusConsumer(statusConsumer);
-                    knxConnection.disconnect();
-                    knxConnections.remove(gatewayIp);
-                }
-            }
-        }
-    }
-
-    @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        String gatewayIp = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_HOST).flatMap(AbstractValueHolder::getValueAsString).orElse("");
-        final AttributeRef attributeRef = attribute.getReferenceOrThrow();
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, KNXAgent.KNXAgentLink agentLink) throws RuntimeException {
+        final AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
         // Check there is a META_KNX_DPT
-        Optional<String> dpt = attribute.getMetaItem(META_KNX_DPT).flatMap(AbstractValueHolder::getValueAsString);
-        if (!dpt.isPresent()) {
-            LOG.severe("No META_KNX_DPT for protocol attribute: " + attributeRef);
-            return;
-        }
+        String dpt = getOrThrowAgentLinkProperty(agentLink.getDpt(), "DPT");
 
-        Optional<String> statusGA = attribute.getMetaItem(META_KNX_STATUS_GA).flatMap(AbstractValueHolder::getValueAsString);
-        Optional<String> actionGA = attribute.getMetaItem(META_KNX_ACTION_GA).flatMap(AbstractValueHolder::getValueAsString);
+        Optional<String> statusGA = agentLink.getStatusGroupAddress();
+        Optional<String> actionGA = agentLink.getActionGroupAddress();
 
         if (!statusGA.isPresent() && !actionGA.isPresent()) {
             LOG.warning("No status group address or action group address provided so nothing to do for protocol attribute: " + attributeRef);
             return;
         }
 
-        KNXConnection knxConnection = getConnection(gatewayIp);
-
-        if (knxConnection == null) {
-            // Means that the protocol configuration is disabled
-            return;
-        }
-
-        // If this attribute relates to a read groupthen start monitoring that measurement and broadcast any changes to the value
+        // If this attribute relates to a read group then start monitoring that measurement and broadcast any changes to the value
         statusGA.ifPresent(groupAddress -> {
             try {
-                addStatusDatapoint(attributeRef, knxConnection, groupAddress, dpt.get());
+                addStatusDatapoint(attributeRef, groupAddress, dpt);
             } catch (KNXFormatException e) {
                 LOG.severe("Give action group address is invalid for protocol attribute: " + attributeRef + " - " + e.getMessage());
             }
@@ -304,7 +117,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         // If this attribute relates to an action then store it
         actionGA.ifPresent(groupAddress -> {
             try {
-                addActionDatapoint(attributeRef, knxConnection, groupAddress, dpt.get());
+                addActionDatapoint(attributeRef, groupAddress, dpt);
             } catch (KNXFormatException e) {
                 LOG.severe("Give action group address is invalid for protocol attribute: " + attributeRef + " - " + e.getMessage());
             }
@@ -313,8 +126,8 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
 
     @Override
-    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        final AttributeRef attributeRef = attribute.getReferenceOrThrow();
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, KNXAgent.KNXAgentLink agentLink) {
+        final AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
         // If this attribute is registered for status updates then un-subscribe it
         removeStatusDatapoint(attributeRef);
@@ -324,44 +137,29 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
-        if (!protocolConfiguration.isEnabled()) {
-            LOG.fine("Protocol configuration is disabled so ignoring write request");
-            return;
-        }
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, KNXAgent.KNXAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         synchronized (attributeActionMap) {
-            Pair<KNXConnection, Datapoint> controlInfo = attributeActionMap.get(event.getAttributeRef());
+            Datapoint datapoint = attributeActionMap.get(event.getAttributeRef());
 
-            if (controlInfo == null) {
+            if (datapoint == null) {
                 LOG.fine("Attribute isn't linked to a KNX datapoint so cannot process write: " + event);
                 return;
             }
 
-            controlInfo.key.sendCommand(controlInfo.value, event.getValue());
+            connection.sendCommand(datapoint, event.getValue());
 
             // We assume KNX actuator will send new status on relevant status group address which will be picked up by listener and updates the state again later
             updateLinkedAttribute(event.getAttributeState());
         }
     }
 
-    protected KNXConnection getConnection(String gatewayIp) {
-        synchronized (knxConnections) {
-            return knxConnections.get(gatewayIp);
-        }
-    }
-    
-    protected void addActionDatapoint(AttributeRef attributeRef, KNXConnection knxConnection, String groupAddress, String dpt) throws KNXFormatException {
+    protected void addActionDatapoint(AttributeRef attributeRef, String groupAddress, String dpt) throws KNXFormatException {
         synchronized (attributeActionMap) {
-            Pair<KNXConnection, Datapoint> controlInfo = attributeActionMap.get(attributeRef);
-            if (controlInfo != null) {
-                return;
-            }
-
-            Datapoint datapoint = new CommandDP(new GroupAddress(groupAddress), attributeRef.getAttributeName());
+            Datapoint datapoint = new CommandDP(new GroupAddress(groupAddress), attributeRef.getName());
             datapoint.setDPT(0, dpt);
 
-            attributeActionMap.put(attributeRef, new Pair<>(knxConnection, datapoint));
+            attributeActionMap.put(attributeRef, datapoint);
             LOG.info("Attribute registered for sending commands: " + attributeRef + " with datapoint: " + datapoint);
         }
     }
@@ -372,168 +170,147 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         }
     }
 
-    protected void addStatusDatapoint(AttributeRef attributeRef, KNXConnection knxConnection, String groupAddress, String dpt) throws KNXFormatException {
+    protected void addStatusDatapoint(AttributeRef attributeRef, String groupAddress, String dpt) throws KNXFormatException {
         synchronized (attributeStatusMap) {
-            Pair<KNXConnection, StateDP> controlInfo = attributeStatusMap.get(attributeRef);
-            if (controlInfo != null) {
-                return;
-            }
-
-            StateDP datapoint = new StateDP(new GroupAddress(groupAddress), attributeRef.getAttributeName(), 0, dpt);
-            knxConnection.addDatapointValueConsumer(datapoint, value -> handleKNXValueChange(attributeRef, value));
+            StateDP datapoint = new StateDP(new GroupAddress(groupAddress), attributeRef.getName(), 0, dpt);
+            connection.addDatapointValueConsumer(datapoint, value -> handleKNXValueChange(attributeRef, value));
            
-            attributeStatusMap.put(attributeRef, new Pair<>(knxConnection, datapoint));
+            attributeStatusMap.put(attributeRef, datapoint);
             LOG.info("Attribute registered for status updates: " + attributeRef + " with datapoint: " + datapoint);
         }
     }
     
-    protected void handleKNXValueChange(AttributeRef attributeRef, Value value) {
+    protected void handleKNXValueChange(AttributeRef attributeRef, Object value) {
         LOG.fine("KNX protocol received value '" + value + "' for : " + attributeRef);
         updateLinkedAttribute(new AttributeState(attributeRef, value));
     }
     
     protected void removeStatusDatapoint(AttributeRef attributeRef) {
         synchronized (attributeStatusMap) {
-            Pair<KNXConnection, StateDP> controlInfo = attributeStatusMap.remove(attributeRef);
-            if (controlInfo != null) {
-                controlInfo.key.removeDatapointValueConsumer(controlInfo.value);
+            StateDP statusDP = attributeStatusMap.remove(attributeRef);
+            if (statusDP != null) {
+                connection.removeDatapointValueConsumer(statusDP);
             }
         }
-    }
-    
-    
-    public Map<AttributeRef, Pair<KNXConnection, Datapoint>> getAttributeActionMap() {
-        return attributeActionMap;
-    }
-
-    protected boolean isKNXConnectionStillUsed(KNXConnection knxConnection) {
-        boolean clientStillUsed;
-
-        synchronized (attributeStatusMap) {
-            clientStillUsed = attributeStatusMap.values().stream().anyMatch(p -> p.key == knxConnection);
-        }
-
-        if (!clientStillUsed) {
-            synchronized (attributeActionMap) {
-                clientStillUsed = attributeActionMap.values().stream().anyMatch(p -> p.key == knxConnection);
-            }
-        }
-
-        return clientStillUsed;
     }
 
     @Override
-    public AssetTreeNode[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
-        ZipInputStream zin = null;
-
-        try {
-            boolean fileFound = false;
-            byte[] data = CodecUtil.decodeBase64(fileInfo.getContents());
-            zin = new ZipInputStream(new ByteArrayInputStream(data));
-            ZipEntry zipEntry = zin.getNextEntry();
-            while (zipEntry != null) {
-                if (zipEntry.getName().endsWith("/0.xml")) {
-                    fileFound = true;
-                    break;
-                }
-                zipEntry = zin.getNextEntry();
-            }
-
-            if (!fileFound) {
-                String msg = "Failed to find '0.xml' in project file";
-                LOG.info(msg);
-                throw new IllegalStateException(msg);
-            }
-
-            // Create a transform factory instance.
-            TransformerFactory tfactory = new net.sf.saxon.TransformerFactoryImpl();
-
-            // Create a transformer for the stylesheet.
-            InputStream inputStream = KNXProtocol.class.getResourceAsStream("/org/openremote/agent/protocol/knx/ets_calimero_group_name.xsl");
-            String xsd = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            xsd = xsd.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
-            LOG.warning(xsd);
-            Transformer transformer = tfactory.newTransformer(new StreamSource(new StringReader(xsd)));
-
-            // Set the URIResolver
-            transformer.setURIResolver(new EtsFileUriResolver(data));
-
-            // Transform the source XML
-            String xml = IOUtils.toString(zin, StandardCharsets.UTF_8);
-            xml = xml.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
-            LOG.warning(xml);
-            StringWriter writer = new StringWriter();
-            StringReader reader = new StringReader(xml);
-            transformer.transform(new StreamSource(reader), new StreamResult(writer));
-            xml = writer.toString();
-
-            // we use a map of state-based data points and read from the transformed xml
-            final DatapointMap<StateDP> datapoints = new DatapointMap<>();
-            try (final XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(new StringReader(xml))) {
-                datapoints.load(r);
-            } catch (final KNXMLException e) {
-                String msg = "Error loading parsed ETS file: " + e.getMessage();
-                LOG.warning(msg);
-                throw new IllegalStateException(msg, e);
-            }
-
-            MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
-            Map<String, Asset> createdAssets = new HashMap<>();
-            for (StateDP dp : datapoints.getDatapoints()) {
-                if (dp.getName().endsWith("#A")) {
-                    createAsset(dp, false, agentLink, createdAssets);
-                } else if (dp.getName().endsWith("#S")) {
-                    createAsset(dp, true, agentLink, createdAssets);
-                } else if (dp.getName().endsWith("#SA") || dp.getName().endsWith("#AS")) {
-                    createAsset(dp, false, agentLink, createdAssets);
-                    createAsset(dp, true, agentLink, createdAssets);
-                } else {
-                    LOG.info("Only group addresses ending on #A, #S, #AS or #SA will be imported. Ignoring: " + dp.getName());
-                }
-            }
-
-            return createdAssets.values().stream().map(AssetTreeNode::new).toArray(AssetTreeNode[]::new);
-
-        } catch (Exception e) {
-            throw new IllegalStateException("ETS import error", e);
-        } finally {
-            if (zin != null) {
-                try {
-                    zin.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+    public String getProtocolInstanceUri() {
+        return "knx://" + connection;
     }
-    
-    protected void createAsset(StateDP datapoint, boolean isStatusGA, MetaItem agentLink, Map<String, Asset> createdAssets) throws KNXException {
+
+    @Override
+    public Future<Void> startAssetImport(byte[] fileData, Consumer<AssetTreeNode[]> assetConsumer) {
+        return executorService.submit(() -> {
+            ZipInputStream zin = null;
+
+            try {
+                boolean fileFound = false;
+                zin = new ZipInputStream(new ByteArrayInputStream(fileData));
+                ZipEntry zipEntry = zin.getNextEntry();
+                while (zipEntry != null) {
+                    if (zipEntry.getName().endsWith("/0.xml")) {
+                        fileFound = true;
+                        break;
+                    }
+                    zipEntry = zin.getNextEntry();
+                }
+
+                if (!fileFound) {
+                    String msg = "Failed to find '0.xml' in project file";
+                    LOG.info(msg);
+                    throw new IllegalStateException(msg);
+                }
+
+                // Create a transform factory instance.
+                TransformerFactory tfactory = new net.sf.saxon.TransformerFactoryImpl();
+
+                // Create a transformer for the stylesheet.
+                InputStream inputStream = KNXProtocol.class.getResourceAsStream("/org/openremote/agent/protocol/knx/ets_calimero_group_name.xsl");
+                String xsd = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+                xsd = xsd.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
+                LOG.warning(xsd);
+                Transformer transformer = tfactory.newTransformer(new StreamSource(new StringReader(xsd)));
+
+                // Set the URIResolver
+                transformer.setURIResolver(new EtsFileUriResolver(fileData));
+
+                // Transform the source XML
+                String xml = IOUtils.toString(zin, StandardCharsets.UTF_8);
+                xml = xml.trim().replaceFirst("^([\\W]+)<","<"); // Get weird behaviour sometimes without this
+                LOG.warning(xml);
+                StringWriter writer = new StringWriter();
+                StringReader reader = new StringReader(xml);
+                transformer.transform(new StreamSource(reader), new StreamResult(writer));
+                xml = writer.toString();
+
+                // we use a map of state-based data points and read from the transformed xml
+                final DatapointMap<StateDP> datapoints = new DatapointMap<>();
+                try (final XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(new StringReader(xml))) {
+                    datapoints.load(r);
+                } catch (final KNXMLException e) {
+                    String msg = "Error loading parsed ETS file: " + e.getMessage();
+                    LOG.warning(msg);
+                    throw new IllegalStateException(msg, e);
+                }
+
+                Map<String, Asset<?>> createdAssets = new HashMap<>();
+                for (StateDP dp : datapoints.getDatapoints()) {
+                    if (dp.getName().endsWith("#A")) {
+                        createAsset(dp, false, createdAssets);
+                    } else if (dp.getName().endsWith("#S")) {
+                        createAsset(dp, true, createdAssets);
+                    } else if (dp.getName().endsWith("#SA") || dp.getName().endsWith("#AS")) {
+                        createAsset(dp, false, createdAssets);
+                        createAsset(dp, true, createdAssets);
+                    } else {
+                        LOG.info("Only group addresses ending on #A, #S, #AS or #SA will be imported. Ignoring: " + dp.getName());
+                    }
+                }
+
+                assetConsumer.accept(createdAssets.values().stream().map(AssetTreeNode::new).toArray(AssetTreeNode[]::new));
+
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "ETS import error", e);
+            } finally {
+                if (zin != null) {
+                    try {
+                        zin.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }, null);
+    }
+
+    protected void createAsset(StateDP datapoint, boolean isStatusGA, Map<String, Asset<?>> createdAssets) {
         String name = datapoint.getName().substring(0, datapoint.getName().length()-3);
         String assetName = name.replaceAll(" -.*-", "");
-        Asset asset;
+        Asset<?> asset;
+
         if (createdAssets.containsKey(assetName)) {
             asset = createdAssets.get(assetName);
         } else {
-            asset = new Asset(assetName, AssetType.THING);
+            asset = new ThingAsset(assetName);
         }
 
         String attrName = assetName.replaceAll(" ", "");
-        AttributeValueType type = TypeMapper.toAttributeType(datapoint);
+        ValueDescriptor<?> type = TypeMapper.toAttributeType(datapoint);
 
-        AssetAttribute attr = asset.getAttribute(attrName).orElse(new AssetAttribute(attrName, type).setMeta(
-                        new MetaItem(MetaItemType.LABEL, Values.create(name)),
-                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create(datapoint.getDPT())),
-                        agentLink
+        KNXAgent.KNXAgentLink agentLink = new KNXAgent.KNXAgentLink(
+            agent.getId(),
+            datapoint.getDPT(),
+            !isStatusGA ? datapoint.getMainAddress().toString() : null,
+            isStatusGA ? datapoint.getMainAddress().toString() : null);
+
+        Attribute<?> attr = asset.getAttributes().get(attrName).orElse(new Attribute<>(attrName, type).addMeta(
+                        new MetaItem<>(MetaItemType.LABEL, name),
+                        new MetaItem<>(AGENT_LINK, agentLink)
         ));
-        if (isStatusGA) {
-            attr.addMeta(new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create(datapoint.getMainAddress().toString())));
-        } else {
-            attr.addMeta(new MetaItem(KNXProtocol.META_KNX_ACTION_GA, Values.create(datapoint.getMainAddress().toString())));
-        }
 
-        if (!asset.hasAttribute(attrName)) {
-            asset.addAttributes(attr);
-        }
+        asset.getAttributes().addOrReplace(attr);
+
         createdAssets.put(assetName, asset);
     }
 

@@ -22,7 +22,6 @@ package org.openremote.model.datapoint;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.value.Value;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -43,11 +42,11 @@ public class AssetDatapoint extends Datapoint {
         super(stateEvent);
     }
 
-    public AssetDatapoint(AttributeRef attributeRef, Value value, long timestamp) {
+    public AssetDatapoint(AttributeRef attributeRef, Object value, long timestamp) {
         super(attributeRef, value, timestamp);
     }
 
-    public AssetDatapoint(String entityId, String attributeName, Value value, long timestamp) {
-        super(entityId, attributeName, value, timestamp);
+    public AssetDatapoint(String assetId, String attributeName, Object value, long timestamp) {
+        super(assetId, attributeName, value, timestamp);
     }
 }

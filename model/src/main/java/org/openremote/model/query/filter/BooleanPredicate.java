@@ -19,8 +19,10 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
+
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class BooleanPredicate implements ValuePredicate {
 
@@ -34,17 +36,21 @@ public class BooleanPredicate implements ValuePredicate {
         this.value = value;
     }
 
-    public static BooleanPredicate fromObjectValue(ObjectValue objectValue) {
-        BooleanPredicate booleanPredicate = new BooleanPredicate();
-        booleanPredicate.value = objectValue
-            .getBoolean("value")
-            .orElseThrow(() -> new IllegalArgumentException("value missing for BooleanPredicate"));
-        return booleanPredicate;
-    }
-
     public BooleanPredicate value(boolean value) {
         this.value = value;
         return this;
+    }
+
+    @Override
+    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
+        return obj -> {
+            Boolean bool = Values.getValueCoerced(obj, Boolean.class).orElse(null);
+            if (bool == null) {
+                return false;
+            }
+
+            return bool == value;
+        };
     }
 
     @Override
@@ -52,13 +58,5 @@ public class BooleanPredicate implements ValuePredicate {
         return getClass().getSimpleName() + "{" +
             "predicate=" + value +
             '}';
-    }
-
-    @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", name);
-        objectValue.put("value", Values.create(value));
-        return objectValue;
     }
 }

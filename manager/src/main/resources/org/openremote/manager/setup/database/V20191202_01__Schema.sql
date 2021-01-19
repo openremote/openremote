@@ -16,22 +16,22 @@ create sequence OPENREMOTE_SEQUENCE
  */
 
 create table ASSET (
-  ID                 varchar(43)              not null,
+  ID                 varchar(22)              not null,
   ATTRIBUTES         jsonb,
   CREATED_ON         timestamp with time zone not null,
   NAME               varchar(1023)            not null,
-  PARENT_ID          varchar(36),
+  PARENT_ID          varchar(22),
   REALM              varchar(255)             not null,
-  ASSET_TYPE         varchar(255)             not null,
+  TYPE               varchar(255)             not null,
   ACCESS_PUBLIC_READ boolean                  not null,
-  OBJ_VERSION        int8                     not null,
+  VERSION            int8                     not null,
   primary key (ID),
   check (ID != PARENT_ID)
 );
 
 create table ASSET_DATAPOINT (
   TIMESTAMP      timestamp                  not null,
-  ENTITY_ID      varchar(36)                not null,
+  ENTITY_ID      varchar(22)                not null,
   ATTRIBUTE_NAME varchar(255)               not null,
   VALUE          jsonb                      not null,
   primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
@@ -45,7 +45,7 @@ create table GLOBAL_RULESET (
   NAME          varchar(255)             not null,
   RULES         text                     not null,
   RULES_LANG    varchar(255)             not null,
-  OBJ_VERSION   int8                     not null,
+  VERSION       int8                     not null,
   META          jsonb,
   primary key (ID)
 );
@@ -58,7 +58,7 @@ create table ASSET_RULESET (
   NAME                  varchar(255)             not null,
   RULES                 text                     not null,
   RULES_LANG            varchar(255)             not null default 'GROOVY',
-  OBJ_VERSION           int8                     not null,
+  VERSION               int8                     not null,
   ASSET_ID              char(22)                 not null,
   ACCESS_PUBLIC_READ    boolean                  not null default false,
   META                  jsonb,
@@ -73,7 +73,7 @@ create table TENANT_RULESET (
   NAME                  varchar(255)             not null,
   RULES                 text                     not null,
   RULES_LANG            varchar(255)             not null default 'GROOVY',
-  OBJ_VERSION           int8                     not null,
+  VERSION               int8                     not null,
   REALM                 varchar(255)             not null,
   ACCESS_PUBLIC_READ    boolean                  not null default false,
   META                  jsonb,

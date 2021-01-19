@@ -85,7 +85,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public RulesEngineInfo getAssetEngineInfo(RequestParams requestParams, String assetId) {
-        Asset asset = assetStorageService.find(assetId, false);
+        Asset<?> asset = assetStorageService.find(assetId, false);
 
         if (asset == null)
             return null;
@@ -170,7 +170,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, String assetId, List<Ruleset.Lang> languages, boolean fullyPopulate) {
-        Asset asset = assetStorageService.find(assetId, false);
+        Asset<?> asset = assetStorageService.find(assetId, false);
         if (asset == null)
             return new AssetRuleset[0];
 
@@ -323,7 +323,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (assetId == null || assetId.length() == 0) {
             throw new WebApplicationException("Missing asset identifier value", BAD_REQUEST);
         }
-        Asset asset = assetStorageService.find(assetId, false);
+        Asset<?> asset = assetStorageService.find(assetId, false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -343,7 +343,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Asset asset = assetStorageService.find(ruleset.getAssetId(), false);
+        Asset<?> asset = assetStorageService.find(ruleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -362,7 +362,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Asset asset = assetStorageService.find(existingRuleset.getAssetId(), false);
+        Asset<?> asset = assetStorageService.find(existingRuleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -388,7 +388,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (ruleset == null) {
             return;
         }
-        Asset asset = assetStorageService.find(ruleset.getAssetId(), false);
+        Asset<?> asset = assetStorageService.find(ruleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -403,7 +403,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public GeofenceDefinition[] getAssetGeofences(@BeanParam RequestParams requestParams, String assetId) {
-        Asset asset;
+        Asset<?> asset;
 
         asset = assetStorageService.find(
             new AssetQuery()

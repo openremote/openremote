@@ -44,7 +44,7 @@ public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
     }
 
     @Override
-    public ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef, DatapointInterval interval, long fromTimestamp, long toTimestamp) {
+    public ValueDatapoint<?>[] getValueDataPoints(AttributeRef attributeRef, DatapointInterval interval, long fromTimestamp, long toTimestamp) {
         return assetDatapointService.getValueDatapoints(attributeRef, interval, fromTimestamp, toTimestamp);
     }
 }

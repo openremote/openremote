@@ -20,9 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
@@ -35,12 +33,12 @@ import static org.openremote.agent.protocol.velbus.VelbusPacket.OutboundCommand.
 
 public class RelayProcessor extends OutputChannelProcessor {
 
-    enum ChannelState implements DevicePropertyValue<ChannelState> {
+    enum ChannelState {
         OFF(0x00),
         ON(0x01),
         INTERMITTENT(0x03);
 
-        private int code;
+        private final int code;
 
         ChannelState(int code) {
             this.code = code;
@@ -48,28 +46,6 @@ public class RelayProcessor extends OutputChannelProcessor {
 
         public int getCode() {
             return this.code;
-        }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case BOOLEAN:
-                    switch (this) {
-                        case ON:
-                            return Values.create(true);
-                        case OFF:
-                            return Values.create(false);
-                        case INTERMITTENT:
-                            return null;
-                    }
-                default:
-                    return EnumUtil.enumToValue(this, valueType);
-            }
-        }
-
-        @Override
-        public ChannelState getPropertyValue() {
-            return this;
         }
 
         public static ChannelState fromCode(int code) {
@@ -82,17 +58,16 @@ public class RelayProcessor extends OutputChannelProcessor {
             return OFF;
         }
 
-        public static Optional<ChannelState> fromValue(Value value) {
+        public static Optional<ChannelState> fromValue(Object value) {
             if (value == null) {
                 return Optional.empty();
             }
 
-            switch (value.getType()) {
-                case BOOLEAN:
-                    return fromBoolean(Values.getBoolean(value).orElse(null));
-                default:
-                    return EnumUtil.enumFromValue(ChannelState.class, value);
+            if (Values.isBoolean(value.getClass())) {
+                return fromBoolean(Values.getBoolean(value).orElse(null));
             }
+
+            return EnumUtil.enumFromValue(ChannelState.class, value);
         }
 
         public static Optional<ChannelState> fromBoolean(Boolean value) {
@@ -107,56 +82,56 @@ public class RelayProcessor extends OutputChannelProcessor {
     }
 
     protected final static List<PropertyDescriptor> SUPPORTED_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("ch1State", "CH1", "CH1", AttributeValueType.STRING),
-        new PropertyDescriptor("ch2State", "CH2", "CH2", AttributeValueType.STRING),
-        new PropertyDescriptor("ch3State", "CH3", "CH3", AttributeValueType.STRING),
-        new PropertyDescriptor("ch4State", "CH4", "CH4", AttributeValueType.STRING),
-        new PropertyDescriptor("ch5State", "CH5", "CH5", AttributeValueType.STRING),
-        new PropertyDescriptor("ch1Setting", "CH1 Setting", "CH1_SETTING", AttributeValueType.STRING),
-        new PropertyDescriptor("ch2Setting", "CH2 Setting", "CH2_SETTING", AttributeValueType.STRING),
-        new PropertyDescriptor("ch3Setting", "CH3 Setting", "CH3_SETTING", AttributeValueType.STRING),
-        new PropertyDescriptor("ch4Setting", "CH4 Setting", "CH4_SETTING", AttributeValueType.STRING),
-        new PropertyDescriptor("ch5Setting", "CH5 Setting", "CH5_SETTING", AttributeValueType.STRING),
-        new PropertyDescriptor("ch1Locked", "CH1 Locked", "CH1_LOCKED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch2Locked", "CH2 Locked", "CH2_LOCKED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch3Locked", "CH3 Locked", "CH3_LOCKED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch4Locked", "CH4 Locked", "CH4_LOCKED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch5Locked", "CH5 Locked", "CH5_LOCKED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch1Inhibited", "CH1 Inhibited", "CH1_INHIBITED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch2Inhibited", "CH2 Inhibited", "CH2_INHIBITED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch3Inhibited", "CH3 Inhibited", "CH3_INHIBITED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch4Inhibited", "CH4 Inhibited", "CH4_INHIBITED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch5Inhibited", "CH5 Inhibited", "CH5_INHIBITED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("ch1LedState", "CH1 LED State", "CH1_LED", AttributeValueType.STRING),
-        new PropertyDescriptor("ch2LedState", "CH2 LED State", "CH2_LED", AttributeValueType.STRING),
-        new PropertyDescriptor("ch3LedState", "CH3 LED State", "CH3_LED", AttributeValueType.STRING),
-        new PropertyDescriptor("ch4LedState", "CH4 LED State", "CH4_LED", AttributeValueType.STRING),
-        new PropertyDescriptor("ch5LedState", "CH5 LED State", "CH5_LED", AttributeValueType.STRING),
-        new PropertyDescriptor("ch1OnSeconds", "CH1 On (s)", "CH1_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch2OnSeconds", "CH2 On (s)", "CH2_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch3OnSeconds", "CH3 On (s)", "CH3_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch4OnSeconds", "CH4 On (s)", "CH4_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch5OnSeconds", "CH5 On (s)", "CH5_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch1IntermittentSeconds", "CH1 Intermittent (s)", "CH1_INTERMITTENT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch2IntermittentSeconds", "CH2 Intermittent (s)", "CH2_INTERMITTENT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch3IntermittentSeconds", "CH3 Intermittent (s)", "CH3_INTERMITTENT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch4IntermittentSeconds", "CH4 Intermittent (s)", "CH4_INTERMITTENT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch5IntermittentSeconds", "CH5 Intermittent (s)", "CH5_INTERMITTENT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch1LockSeconds", "CH1 Lock (s)", "CH1_LOCK", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch2LockSeconds", "CH2 Lock (s)", "CH2_LOCK", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch3LockSeconds", "CH3 Lock (s)", "CH3_LOCK", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch4LockSeconds", "CH4 Lock (s)", "CH4_LOCK", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch5LockSeconds", "CH5 Lock (s)", "CH5_LOCK", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch1ForceOnSeconds", "CH1 Force On (s)", "CH1_FORCE_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch2ForceOnSeconds", "CH2 Force On (s)", "CH2_FORCE_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch3ForceOnSeconds", "CH3 Force On (s)", "CH3_FORCE_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch4ForceOnSeconds", "CH4 Force On (s)", "CH4_FORCE_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch5ForceOnSeconds", "CH5 Force On (s)", "CH5_FORCE_ON", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch1InhibitSeconds", "CH1 Inhibit (s)", "CH1_INHIBIT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch2InhibitSeconds", "CH2 Inhibit (s)", "CH2_INHIBIT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch3InhibitSeconds", "CH3 Inhibit (s)", "CH3_INHIBIT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch4InhibitSeconds", "CH4 Inhibit (s)", "CH4_INHIBIT", AttributeValueType.NUMBER),
-        new PropertyDescriptor("ch5InhibitSeconds", "CH5 Inhibit (s)", "CH5_INHIBIT", AttributeValueType.NUMBER)
+        new PropertyDescriptor("ch1State", "CH1", "CH1", ValueType.TEXT),
+        new PropertyDescriptor("ch2State", "CH2", "CH2", ValueType.TEXT),
+        new PropertyDescriptor("ch3State", "CH3", "CH3", ValueType.TEXT),
+        new PropertyDescriptor("ch4State", "CH4", "CH4", ValueType.TEXT),
+        new PropertyDescriptor("ch5State", "CH5", "CH5", ValueType.TEXT),
+        new PropertyDescriptor("ch1Setting", "CH1 Setting", "CH1_SETTING", ValueType.TEXT),
+        new PropertyDescriptor("ch2Setting", "CH2 Setting", "CH2_SETTING", ValueType.TEXT),
+        new PropertyDescriptor("ch3Setting", "CH3 Setting", "CH3_SETTING", ValueType.TEXT),
+        new PropertyDescriptor("ch4Setting", "CH4 Setting", "CH4_SETTING", ValueType.TEXT),
+        new PropertyDescriptor("ch5Setting", "CH5 Setting", "CH5_SETTING", ValueType.TEXT),
+        new PropertyDescriptor("ch1Locked", "CH1 Locked", "CH1_LOCKED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch2Locked", "CH2 Locked", "CH2_LOCKED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch3Locked", "CH3 Locked", "CH3_LOCKED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch4Locked", "CH4 Locked", "CH4_LOCKED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch5Locked", "CH5 Locked", "CH5_LOCKED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch1Inhibited", "CH1 Inhibited", "CH1_INHIBITED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch2Inhibited", "CH2 Inhibited", "CH2_INHIBITED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch3Inhibited", "CH3 Inhibited", "CH3_INHIBITED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch4Inhibited", "CH4 Inhibited", "CH4_INHIBITED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch5Inhibited", "CH5 Inhibited", "CH5_INHIBITED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch1LedState", "CH1 LED State", "CH1_LED", ValueType.TEXT),
+        new PropertyDescriptor("ch2LedState", "CH2 LED State", "CH2_LED", ValueType.TEXT),
+        new PropertyDescriptor("ch3LedState", "CH3 LED State", "CH3_LED", ValueType.TEXT),
+        new PropertyDescriptor("ch4LedState", "CH4 LED State", "CH4_LED", ValueType.TEXT),
+        new PropertyDescriptor("ch5LedState", "CH5 LED State", "CH5_LED", ValueType.TEXT),
+        new PropertyDescriptor("ch1OnSeconds", "CH1 On (s)", "CH1_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch2OnSeconds", "CH2 On (s)", "CH2_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch3OnSeconds", "CH3 On (s)", "CH3_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch4OnSeconds", "CH4 On (s)", "CH4_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch5OnSeconds", "CH5 On (s)", "CH5_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch1IntermittentSeconds", "CH1 Intermittent (s)", "CH1_INTERMITTENT", ValueType.NUMBER),
+        new PropertyDescriptor("ch2IntermittentSeconds", "CH2 Intermittent (s)", "CH2_INTERMITTENT", ValueType.NUMBER),
+        new PropertyDescriptor("ch3IntermittentSeconds", "CH3 Intermittent (s)", "CH3_INTERMITTENT", ValueType.NUMBER),
+        new PropertyDescriptor("ch4IntermittentSeconds", "CH4 Intermittent (s)", "CH4_INTERMITTENT", ValueType.NUMBER),
+        new PropertyDescriptor("ch5IntermittentSeconds", "CH5 Intermittent (s)", "CH5_INTERMITTENT", ValueType.NUMBER),
+        new PropertyDescriptor("ch1LockSeconds", "CH1 Lock (s)", "CH1_LOCK", ValueType.NUMBER),
+        new PropertyDescriptor("ch2LockSeconds", "CH2 Lock (s)", "CH2_LOCK", ValueType.NUMBER),
+        new PropertyDescriptor("ch3LockSeconds", "CH3 Lock (s)", "CH3_LOCK", ValueType.NUMBER),
+        new PropertyDescriptor("ch4LockSeconds", "CH4 Lock (s)", "CH4_LOCK", ValueType.NUMBER),
+        new PropertyDescriptor("ch5LockSeconds", "CH5 Lock (s)", "CH5_LOCK", ValueType.NUMBER),
+        new PropertyDescriptor("ch1ForceOnSeconds", "CH1 Force On (s)", "CH1_FORCE_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch2ForceOnSeconds", "CH2 Force On (s)", "CH2_FORCE_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch3ForceOnSeconds", "CH3 Force On (s)", "CH3_FORCE_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch4ForceOnSeconds", "CH4 Force On (s)", "CH4_FORCE_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch5ForceOnSeconds", "CH5 Force On (s)", "CH5_FORCE_ON", ValueType.NUMBER),
+        new PropertyDescriptor("ch1InhibitSeconds", "CH1 Inhibit (s)", "CH1_INHIBIT", ValueType.NUMBER),
+        new PropertyDescriptor("ch2InhibitSeconds", "CH2 Inhibit (s)", "CH2_INHIBIT", ValueType.NUMBER),
+        new PropertyDescriptor("ch3InhibitSeconds", "CH3 Inhibit (s)", "CH3_INHIBIT", ValueType.NUMBER),
+        new PropertyDescriptor("ch4InhibitSeconds", "CH4 Inhibit (s)", "CH4_INHIBIT", ValueType.NUMBER),
+        new PropertyDescriptor("ch5InhibitSeconds", "CH5 Inhibit (s)", "CH5_INHIBIT", ValueType.NUMBER)
     );
 
     @Override
@@ -172,7 +147,7 @@ public class RelayProcessor extends OutputChannelProcessor {
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return getChannelNumberAndPropertySuffix(device, CHANNEL_REGEX, property)
             .map(
                 channelNumberAndPropertySuffix -> {
@@ -281,8 +256,8 @@ public class RelayProcessor extends OutputChannelProcessor {
 
                 device.setProperty("CH" + channelNumber, state);
                 device.setProperty("CH" + channelNumber + "_SETTING", setting);
-                device.setProperty("CH" + channelNumber + "_LOCKED", setting == ChannelSetting.LOCKED ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                device.setProperty("CH" + channelNumber + "_INHIBITED", setting == ChannelSetting.INHIBITED ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
+                device.setProperty("CH" + channelNumber + "_LOCKED", setting == ChannelSetting.LOCKED);
+                device.setProperty("CH" + channelNumber + "_INHIBITED", setting == ChannelSetting.INHIBITED);
                 device.setProperty("CH" + channelNumber + "_LED", ledStatus);
                 return true;
         }

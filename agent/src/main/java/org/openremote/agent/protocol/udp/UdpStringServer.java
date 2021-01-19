@@ -24,7 +24,6 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import org.openremote.agent.protocol.ProtocolExecutorService;
 
 import java.net.InetSocketAddress;
 
@@ -39,8 +38,8 @@ public class UdpStringServer extends AbstractUdpServer<String> {
     protected int maxFrameLength;
     protected boolean stripDelimiter;
 
-    public UdpStringServer(ProtocolExecutorService executorService, InetSocketAddress localAddress, String delimiter, int maxFrameLength, boolean stripDelimiter) {
-        super(executorService, localAddress);
+    public UdpStringServer(InetSocketAddress localAddress, String delimiter, int maxFrameLength, boolean stripDelimiter) {
+        super(localAddress);
         this.delimiter = delimiter;
         this.maxFrameLength = maxFrameLength;
         this.stripDelimiter = stripDelimiter;

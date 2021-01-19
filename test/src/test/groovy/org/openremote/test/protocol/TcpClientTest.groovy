@@ -27,9 +27,7 @@ import org.openremote.agent.protocol.io.AbstractNettyIoClient
 import org.openremote.agent.protocol.tcp.TcpIoClient
 import org.openremote.agent.protocol.tcp.TcpStringServer
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.test.ManagerContainerTrait
-
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -44,12 +42,11 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container is started"
-        def container = startContainer(defaultConfig(), Collections.singletonList(new ManagerExecutorService()))
-        def protocolExecutorService = container.getService(ManagerExecutorService.class)
+        def container = startContainer(defaultConfig(), [])
 
         and: "a simple TCP echo server"
         def echoServerPort = findEphemeralPort()
-        def echoServer = new TcpStringServer(protocolExecutorService, new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
+        def echoServer = new TcpStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         echoServer.addMessageConsumer({
             message, channel, sender -> echoServer.sendMessage(message)
         })
@@ -57,8 +54,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         and: "a simple TCP client"
         TcpIoClient<String> client = new TcpIoClient<String>(
                 "127.0.0.1",
-                echoServerPort,
-                protocolExecutorService)
+                echoServerPort)
         client.setEncoderDecoderProvider({
             [new StringEncoder(CharsetUtil.UTF_8),
             new StringDecoder(CharsetUtil.UTF_8),

@@ -1,6 +1,5 @@
 package org.openremote.test.rules
 
-
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.manager.rules.RulesLoopException
 import org.openremote.manager.rules.RulesService
@@ -9,21 +8,21 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
-import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
+import static org.openremote.model.rules.RulesetStatus.*
 
 class BasicRulesDeploymentTest extends Specification implements ManagerContainerTrait {
 
@@ -54,7 +53,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         ).token
 
         expect: "the rules engines to be ready"
-        new PollingConditions(timeout: 10, delay: 0.2).eventually {
+        conditions.eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
         }
 
@@ -238,7 +237,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             "Throw Failure Exception",
             GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text)
-            .addMeta(Ruleset.META_KEY_CONTINUE_ON_ERROR, Values.create(true))
+        ruleset.getMeta().add(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the tenants A rule engine should run with one deployment as error"
@@ -257,7 +256,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             "Looping error",
             GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
-            .addMeta(Ruleset.META_KEY_CONTINUE_ON_ERROR, Values.create(true))
+        ruleset.getMeta().add(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the tenants A rule engine should have an error"

@@ -21,21 +21,18 @@ package org.openremote.model.console;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.util.Map;
-import java.util.Optional;
+import java.io.Serializable;
 
-public class ConsoleProvider {
+public class ConsoleProvider implements Serializable {
     protected String version;
     protected boolean requiresPermission;
     protected boolean hasPermission;
     protected boolean success;
     protected boolean enabled;
     protected boolean disabled;
-    protected ObjectValue data;
+    protected ObjectNode data;
 
     @JsonCreator
     public ConsoleProvider(@JsonProperty("version") String version,
@@ -44,7 +41,7 @@ public class ConsoleProvider {
                            @JsonProperty("success") boolean success,
                            @JsonProperty("enabled") boolean enabled,
                            @JsonProperty("disabled") boolean disabled,
-                           @JsonProperty("data") ObjectValue data) {
+                           @JsonProperty("data") ObjectNode data) {
         this.version = version;
         this.requiresPermission = requiresPermission;
         this.hasPermission = hasPermission;
@@ -78,56 +75,7 @@ public class ConsoleProvider {
         return disabled;
     }
 
-    public ObjectValue getData() {
+    public ObjectNode getData() {
         return data;
-    }
-
-    public static Optional<ConsoleProvider> fromValue(Value value) {
-        return Values.getObject(value).flatMap(obj -> {
-            Optional<String> version = obj.getString("version");
-            Optional<Boolean> requiresPermission = obj.getBoolean("requiresPermission");
-            if (!version.isPresent() || !requiresPermission.isPresent()) {
-                return Optional.empty();
-            }
-
-            boolean hasPermission = obj.getBoolean("hasPermission").orElse(!requiresPermission.get());
-            boolean enabled = obj.getBoolean("enabled").orElse(false);
-            boolean disabled = obj.getBoolean("disabled").orElse(false);
-            boolean success = obj.getBoolean("success").orElse(false);
-            ObjectValue data = obj.getObject("data").orElse(null);
-
-            return Optional.of(new ConsoleProvider(version.get(), requiresPermission.get(), hasPermission, success, enabled, disabled, data));
-        });
-    }
-
-    public Value toValue() {
-        ObjectValue obj = Values.createObject();
-        obj.put("version", getVersion());
-        obj.put("requiresPermission", isRequiresPermission());
-        obj.put("hasPermission", isHasPermission());
-        obj.put("enabled", isEnabled());
-        obj.put("disabled", isDisabled());
-        if (data != null) {
-            obj.put("data", getData());
-        }
-
-        return obj;
-    }
-
-    public static Value toValue(ConsoleProvider provider) {
-        return provider.toValue();
-    }
-
-    public static Value toValue(Map<String, ConsoleProvider> providerMap) {
-        if (providerMap == null || providerMap.isEmpty()) {
-            return null;
-        }
-
-        ObjectValue obj = Values.createObject();
-        providerMap.forEach((providerName, provider) ->
-            obj.put(providerName, provider.toValue())
-        );
-
-        return obj;
     }
 }

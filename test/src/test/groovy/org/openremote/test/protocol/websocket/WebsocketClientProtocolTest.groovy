@@ -19,28 +19,38 @@
  */
 package org.openremote.test.protocol.websocket
 
-import org.openremote.agent.protocol.Protocol
-import org.openremote.container.web.OAuthPasswordGrant
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
+import org.openremote.agent.protocol.websocket.WebsocketClientAgent
 import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
 import org.openremote.agent.protocol.websocket.WebsocketHttpSubscription
 import org.openremote.agent.protocol.websocket.WebsocketSubscription
-import org.openremote.container.Container
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.Constants
-import org.openremote.model.asset.*
+import org.openremote.model.asset.AssetFilter
+import org.openremote.model.asset.ReadAttributeEvent
+import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.attribute.*
+import org.openremote.model.asset.agent.Protocol
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.MetaItem
+import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.event.TriggeredEventSubscription
 import org.openremote.model.event.shared.EventSubscription
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.StringPredicate
-import org.openremote.model.value.*
+import org.openremote.model.value.JsonPathFilter
+import org.openremote.model.value.RegexValueFilter
+import org.openremote.model.value.SubStringValueFilter
+import org.openremote.model.value.ValueFilter
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -58,14 +68,17 @@ import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMI
 import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
-import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
+import static org.openremote.model.value.MetaItemType.AGENT_LINK
+import static org.openremote.model.value.ValueType.NUMBER
 
 class WebsocketClientProtocolTest extends Specification implements ManagerContainerTrait {
 
     @Shared
     def mockServer = new ClientRequestFilter() {
 
-        private boolean subscriptionDone = false
+        private boolean agentSubscriptionDone = false
+        private boolean attribute1SubscriptionDone = false
+        private boolean attribute2SubscriptionDone = false
 
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
@@ -88,13 +101,19 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        AssetQuery assetQuery = Container.JSON.readValue(bodyStr, AssetQuery.class)
+                        AssetQuery assetQuery = Values.JSON.readValue(bodyStr, AssetQuery.class)
                         if (assetQuery != null && assetQuery.ids != null && assetQuery.ids.size() == 1) {
-                            subscriptionDone = true
+                            agentSubscriptionDone = true
                             requestContext.abortWith(Response.ok().build())
                             return
                         }
                     }
+                    break
+                case "https://mockapi/targetTemperature":
+                    attribute1SubscriptionDone = true
+                    break
+                case "https://mockapi/co2Level":
+                    attribute2SubscriptionDone = true
                     break
             }
 
@@ -103,183 +122,194 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
     }
 
     @SuppressWarnings("GroovyAccessibility")
-    def "Check websocket client protocol configuration and linked attribute deployment"() {
+    def "Check websocket client protocol and linked attribute deployment"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
-        def websocketClientProtocol = container.getService(WebsocketClientProtocol.class)
-        def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def clientEventService = container.getService(ClientEventService.class)
 
         when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
-        if (!websocketClientProtocol.client.configuration.isRegistered(mockServer)) {
-            websocketClientProtocol.client.register(mockServer, Integer.MAX_VALUE)
+        if (!WebsocketClientProtocol.resteasyClient.configuration.isRegistered(mockServer)) {
+            WebsocketClientProtocol.resteasyClient.register(mockServer, Integer.MAX_VALUE)
         }
 
-        and: "an agent with a websocket client protocol configuration is created to connect to this tests manager"
-        def agent = new Asset()
-        agent.setRealm(Constants.MASTER_REALM)
-        agent.setName("Test Agent")
-        agent.setType(AssetType.AGENT)
-        agent.setAttributes(
-            initProtocolConfiguration(new AssetAttribute("protocolConfig"), WebsocketClientProtocol.PROTOCOL_NAME)
-                .addMeta(
-                    new MetaItem(
-                        WebsocketClientProtocol.META_PROTOCOL_CONNECT_URI,
-                        Values.create("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=master")
-                    ),
-                    new MetaItem(
-                        Protocol.META_PROTOCOL_OAUTH_GRANT,
-                        new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
-                            KEYCLOAK_CLIENT_ID,
-                            null,
-                            null,
-                            MASTER_REALM_ADMIN_USER,
-                            getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)).toObjectValue()
-                    ),
-                    new MetaItem(
-                        WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.parse(
-                            Container.JSON.writeValueAsString(Arrays.asList(
-                                new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new EventSubscription(
-                                        AttributeEvent.class,
-                                        new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
-                                        "1",
-                                        null))),
-                                new WebsocketHttpSubscription()
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .method(WebsocketHttpSubscription.Method.POST)
-                                    .headers(Values.<ObjectValue>parse(/{"header1": "header1Value1", "header2": ["header2Value1","header2Value2"]}/).get())
-                                    .uri("https://mockapi/assets")
-                                    .body(
-                                        Container.JSON.writeValueAsString(new AssetQuery().ids(managerTestSetup.apartment1LivingroomId))
-                                    )
-                            ))
-                        ).orElse(null)
+        and: "a Websocket client agent is created to connect to this tests manager"
+        def agent = new WebsocketClientAgent("Test agent")
+            .setRealm(Constants.MASTER_REALM)
+            .setConnectUri("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=master")
+            .setOAuthGrant(new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
+                KEYCLOAK_CLIENT_ID,
+                null,
+                null,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)))
+            .setConnectSubscriptions([
+                new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Values.asJSON(
+                    new EventSubscription(
+                        AttributeEvent.class,
+                        new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
+                        "1",
+                        null)).orElse(null)),
+                new WebsocketHttpSubscription()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .method(WebsocketHttpSubscription.Method.POST)
+                    .headers(new HashMap<String, List<String>>([
+                        "header1" : ["header1Value1"],
+                        "header2" : ["header2Value1", "header2Value2"]
+                    ]))
+                    .uri("https://mockapi/assets")
+                    .body(
+                        Values.asJSON(new AssetQuery().ids(managerTestSetup.apartment1LivingroomId)).orElse(null)
                     )
-                )
-        )
+                ] as WebsocketSubscription[]
+            )
 
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
-        then: "the protocol should authenticate and the connection status should become CONNECTED"
+        then: "the protocol should authenticate and the agent status should become CONNECTED"
         conditions.eventually {
-            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig"))
-            assert status == ConnectionStatus.CONNECTED
+            agent = assetStorageService.find(agent.id, Agent.class)
+            assert agent.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
         and: "the subscriptions should have been executed"
         conditions.eventually {
-            assert mockServer.subscriptionDone
+            assert mockServer.agentSubscriptionDone
         }
 
-        when: "an asset is created with attributes linked to the protocol configuration"
-        def asset = new Asset("Test Asset", AssetType.THING, agent)
-        asset.setAttributes(
-            // write attribute value
-            new AssetAttribute("readWriteTargetTemp", AttributeValueType.NUMBER)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(Protocol.META_ATTRIBUTE_WRITE_VALUE, Values.create("\'" + SharedEvent.MESSAGE_PREFIX +
-                        Container.JSON.writeValueAsString(new AttributeEvent(
-                            managerTestSetup.apartment1LivingroomId,
-                            "targetTemperature",
-                            Values.create(0.12345))).replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER) + "\'")),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
-                        Values.convertToValue(
+        when: "an asset is created with attributes linked to the agent"
+        def asset = new ThingAsset("Test Asset")
+            .setParent(agent)
+            .addOrReplaceAttributes(
+                // write attribute value
+                new Attribute<>("readWriteTargetTemp", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new WebsocketClientAgent.WebsocketClientAgentLink(agent.id)
+                            .setWriteValue(SharedEvent.MESSAGE_PREFIX +
+                                Values.asJSON(new AttributeEvent(
+                                    managerTestSetup.apartment1LivingroomId,
+                                    "targetTemperature",
+                                    0.12345))
+                                    .orElse(Values.NULL_LITERAL)
+                                        .replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER)
+                            )
+                        .setMessageMatchFilters(
+                            [
+                                new RegexValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX + "(.*)", true, false).setMatchGroup(1),
+                                new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                            ] as ValueFilter[]
+                        )
+                        .setMessageMatchPredicate(
+                            new StringPredicate("targetTemperature")
+                        )
+                        .setValueFilters(
                             [
                                 new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
+                                new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"targetTemperature\")].attributeState.value", true, false)
                             ] as ValueFilter[]
-                            , Container.JSON.writer()).orElse(null)),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
-                        new StringPredicate(AssetQuery.Match.CONTAINS, true, "targetTemperature").toModelValue()),
-                    new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.convertToValue(
+                        )
+                        .setWebsocketSubscriptions(
                             [
-                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"targetTemperature\")].attributeState.value", true, false)
-                            ] as ValueFilter[]
-                            , Container.JSON.writer()).orElse(null)),
-                    new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.convertToValue(
-                            [
-                                new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature")
-                                ))
-                            ], Container.JSON.writer()).orElse(null))
-                ),
-            new AssetAttribute("readCo2Level", AttributeValueType.NUMBER)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                        new MetaItem(MetaItemType.READ_ONLY),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_FILTERS,
-                        Values.convertToValue(
-                            [
-                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..attributeState.attributeRef.attributeName", false, false)
-                            ] as ValueFilter[]
-                            , Container.JSON.writer()).orElse(null)),
-                    new MetaItem(WebsocketClientProtocol.META_ATTRIBUTE_MATCH_PREDICATE,
-                        new StringPredicate(AssetQuery.Match.CONTAINS, "co2Level").toModelValue()),
-                    new MetaItem(Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.convertToValue(
-                            [
-                                new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
-                                new JsonPathFilter("\$..events[?(@.attributeState.attributeRef.attributeName == \"co2Level\")].attributeState.value", true, false),
-                            ] as ValueFilter[]
-                            , Container.JSON.writer()).orElse(null)),
-                    new MetaItem(WebsocketClientProtocol.META_SUBSCRIPTIONS,
-                        Values.convertToValue(
-                            [
-                                new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(
-                                    new ReadAssetAttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level")
-                                ))
-                            ]
-                            , Container.JSON.writer()).orElse(null))
-                )
+                                new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Values.asJSON(
+                                    new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature")
+                                ).orElse(null)),
+                                new WebsocketHttpSubscription()
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .method(WebsocketHttpSubscription.Method.GET)
+                                    .uri("https://mockapi/targetTemperature")
+                            ] as WebsocketSubscription[]
+                        ))
+                    ),
+                new Attribute<>("readCo2Level", NUMBER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new WebsocketClientAgent.WebsocketClientAgentLink(agent.id)
+                            .setMessageMatchFilters(
+                                [
+                                    new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
+                                    new JsonPathFilter("\$..attributeState.ref.name", true, false)
+                                ] as ValueFilter[]
+                            )
+                            .setMessageMatchPredicate(
+                                new StringPredicate("co2Level")
+                            )
+                            .setValueFilters(
+                                [
+                                    new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
+                                    new JsonPathFilter("\$..events[?(@.attributeState.ref.name == \"co2Level\")].attributeState.value", true, false),
+                                ] as ValueFilter[]
+                            )
+                            .setWebsocketSubscriptions(
+                                [
+                                    new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Values.asJSON(
+                                        new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level")
+                                    ).orElse(null)),
+                                    new WebsocketHttpSubscription()
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .method(WebsocketHttpSubscription.Method.GET)
+                                        .uri("https://mockapi/co2Level")
+                                ] as WebsocketSubscription[]
+                            ))
+                    )
         )
 
         and: "the asset is merged into the asset service"
         asset = assetStorageService.merge(asset)
 
-        then: "the linked attributes should have no initial values"
+        then: "the attribute websocket subscriptions should have been executed"
+        conditions.eventually {
+            assert mockServer.attribute1SubscriptionDone
+            assert mockServer.attribute2SubscriptionDone
+        }
+
+        when: "the source attribute are updated"
+        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature", 99d))
+        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(new AttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level", 50d))
+
+        then: "the values should be stored in the database"
+        conditions.eventually {
+            def livingRoom = assetStorageService.find(managerTestSetup.apartment1LivingroomId)
+            assert livingRoom != null
+            assert livingRoom.getAttribute("targetTemperature", Double.class).flatMap{it.value}.orElse(0d) == 99d
+            assert livingRoom.getAttribute("co2Level", Integer.class).flatMap{it.value}.orElse(0i) == 50i
+        }
+
+        then: "the linked attributes should also have the updated values of the subscribed attributes"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert !asset.getAttribute("readCo2Level").get().value.isPresent()
-            assert !asset.getAttribute("readWriteTargetTemp").get().value.isPresent()
+            assert asset.getAttribute("readCo2Level").get().getValue().orElse(null) == 50d
+            assert asset.getAttribute("readWriteTargetTemp").get().getValue().orElse(null) == 99d
         }
 
         when: "a linked attribute value is updated"
         def attributeEvent = new AttributeEvent(asset.id,
             "readWriteTargetTemp",
-            Values.create(19.5))
+            19.5)
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the linked targetTemperature attribute should contain this written value (it should have been written to the target temp attribute and then read back again)"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("readWriteTargetTemp").flatMap{it.getValueAsNumber()}.orElse(null) == 19.5d
+            assert asset.getAttribute("readWriteTargetTemp", Double.class).flatMap{it.getValue()}.orElse(null) == 19.5d
         }
 
         when: "the co2level changes"
         def co2LevelIncrement = new AttributeEvent(
-            managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(600)
+            managerTestSetup.apartment1LivingroomId, "co2Level", 600
         )
-        simulatorProtocol.putValue(co2LevelIncrement)
+        ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(co2LevelIncrement)
 
         then: "the linked co2Level attribute should get the new value"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("readCo2Level").flatMap{it.getValueAsNumber()}.orElse(null) == 600d
+            assert asset.getAttribute("readCo2Level").flatMap{it.getValue()}.orElse(null) == 600d
         }
     }
 }

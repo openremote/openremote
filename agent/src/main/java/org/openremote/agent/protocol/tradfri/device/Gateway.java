@@ -30,7 +30,7 @@ public class Gateway {
     /**
      * The event handlers registered for the device
      */
-    private List<EventHandler> eventHandlers;
+    private final List<EventHandler<?>> eventHandlers;
 
     /**
      * Construct the Gateway class
@@ -176,7 +176,7 @@ public class Gateway {
      * Get a list of event handlers for the IKEA TRÅDFRI gateway
      * @return A list of event handlers for the IKEA TRÅDFRI gateway
      */
-    public List<EventHandler> getEventHandlers(){
+    public List<EventHandler<?>> getEventHandlers(){
         return eventHandlers;
     }
 
@@ -185,7 +185,7 @@ public class Gateway {
      * @param eventHandler The event handler to add to the IKEA TRÅDFRI gateway
      *                     @since 1.0.0
      */
-    public void addEventHandler(EventHandler eventHandler){
+    public void addEventHandler(EventHandler<?> eventHandler){
         this.eventHandlers.add(eventHandler);
     }
 
@@ -193,7 +193,7 @@ public class Gateway {
      * Remove an event handler from the IKEA TRÅDFRI gateway
      * @param eventHandler The event handler to remove from the IKEA TRÅDFRI gateway
      */
-    public void removeEventHandler(EventHandler eventHandler){
+    public void removeEventHandler(EventHandler<?> eventHandler){
         this.eventHandlers.remove(eventHandler);
     }
 

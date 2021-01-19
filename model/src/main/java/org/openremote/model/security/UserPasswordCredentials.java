@@ -19,24 +19,15 @@
  */
 package org.openremote.model.security;
 
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
-
-import java.util.Optional;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UserPasswordCredentials {
-
-    public static final String USERNAME_KEY = "username";
-    public static final String PASSWORD_KEY = "password";
     protected String username;
     protected String password;
 
-    protected UserPasswordCredentials() {
-    }
-
-    public UserPasswordCredentials(String username, String password) {
+    @JsonCreator
+    public UserPasswordCredentials(@JsonProperty("username") String username, @JsonProperty("password") String password) {
         this.username = username;
         this.password = password;
     }
@@ -47,34 +38,5 @@ public class UserPasswordCredentials {
 
     public String getPassword() {
         return password;
-    }
-
-    public ObjectValue toObjectValue() {
-        ObjectValue value = Values.createObject();
-        value.put(USERNAME_KEY, Values.create(getUsername()));
-        value.put(PASSWORD_KEY, Values.create(getPassword()));
-        return value;
-    }
-
-    public static boolean isUserPasswordCredentials(AbstractValueHolder valueHolder) {
-        return valueHolder != null
-            && valueHolder.getValueAsObject().filter(UserPasswordCredentials::isUserPasswordCredentials).isPresent();
-    }
-
-    public static boolean isUserPasswordCredentials(Value value) {
-        return Values.getObject(value)
-            .filter(objectValue ->
-                    objectValue.getString(USERNAME_KEY).filter(s -> !s.isEmpty()).isPresent()
-                    && objectValue.getString(PASSWORD_KEY).filter(s -> !s.isEmpty()).isPresent()
-            ).isPresent();
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    public static Optional<UserPasswordCredentials> fromValue(Value value) {
-        return Values.getObject(value)
-            .filter(UserPasswordCredentials::isUserPasswordCredentials)
-            .map(objectValue ->
-                new UserPasswordCredentials(objectValue.getString(USERNAME_KEY).get(), objectValue.getString(PASSWORD_KEY).get())
-            );
     }
 }

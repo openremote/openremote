@@ -22,10 +22,15 @@ package org.openremote.model.rules;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.util.TsIgnore;
 
+/**
+ * Facade for historic data points in rules
+ */
+@TsIgnore
 public abstract class HistoricDatapoints {
 
-    public abstract ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef,
+    public abstract ValueDatapoint<?>[] getValueDataPoints(AttributeRef attributeRef,
                                                         DatapointInterval interval,
                                                         long fromTimestamp,
                                                         long toTimestamp);

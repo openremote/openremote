@@ -1,15 +1,34 @@
 package org.openremote.model.apps;
 
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.ObjectValue;
-
 import javax.persistence.*;
+import java.io.Serializable;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
 @Table(name = "CONSOLE_APP_CONFIG")
 public class ConsoleAppConfig {
+
+    public static class AppLink implements Serializable {
+        protected String displayText;
+        protected String pageLink;
+
+        protected AppLink() {}
+
+        public AppLink(String displayText, String pageLink) {
+            this.displayText = displayText;
+            this.pageLink = pageLink;
+        }
+
+        public String getDisplayText() {
+            return displayText;
+        }
+
+        public String getPageLink() {
+            return pageLink;
+        }
+    }
 
     public enum MenuPosition {
         BOTTOM_LEFT,
@@ -21,7 +40,7 @@ public class ConsoleAppConfig {
     public ConsoleAppConfig() {
     }
 
-    public ConsoleAppConfig(String realm, String initialUrl, String url, Boolean menuEnabled, MenuPosition menuPosition, String menuImage, String primaryColor, String secondaryColor, ArrayValue links) {
+    public ConsoleAppConfig(String realm, String initialUrl, String url, Boolean menuEnabled, MenuPosition menuPosition, String menuImage, String primaryColor, String secondaryColor, AppLink[] links) {
         this.realm = realm;
         this.initialUrl = initialUrl;
         this.url = url;
@@ -64,6 +83,6 @@ public class ConsoleAppConfig {
     protected String secondaryColor;
 
     @Column(name = "LINKS", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_ARRAY_TYPE)
-    protected ArrayValue links;
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    protected AppLink[] links;
 }

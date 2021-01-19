@@ -66,7 +66,7 @@ public class UsersFacade<T extends Ruleset> extends Users {
             userQuery.tenantPredicate = null;
             String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalArgumentException("Asset ID missing: " + rulesEngineId));
 
-            // Asset must be this engines asset or a child
+            // Asset<?> must be this engines asset or a child
             if (userQuery.assetPredicate != null) {
                 if (assetId.equals(userQuery.assetPredicate.id)) {
                     userQuery.pathPredicate = null;

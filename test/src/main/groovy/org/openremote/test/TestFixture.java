@@ -22,7 +22,11 @@ package org.openremote.test;
 import org.openremote.container.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAsset;
+import org.openremote.model.gateway.GatewayConnection;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.TenantRuleset;
 import org.spockframework.runtime.extension.AbstractGlobalExtension;
 
 import java.util.List;
@@ -34,10 +38,11 @@ public class TestFixture extends AbstractGlobalExtension {
 
     // Store the container here to allow stopping it after all tests run
     protected static Container container;
-    public static List<Ruleset> globalRulesets;
-    public static List<Ruleset> tenantRulesets;
-    public static List<Ruleset> assetRulesets;
-    public static List<Asset> assets;
+    public static List<GlobalRuleset> globalRulesets;
+    public static List<TenantRuleset> tenantRulesets;
+    public static List<AssetRuleset> assetRulesets;
+    public static List<GatewayConnection> gatewayConnections;
+    public static List<Asset<?>> assets;
     public static List<UserAsset> userAssets;
 
     @Override

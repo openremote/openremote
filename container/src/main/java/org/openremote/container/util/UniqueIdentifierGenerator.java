@@ -44,7 +44,7 @@ public class UniqueIdentifierGenerator implements IdentifierGenerator {
     @Override
     public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
         if (object instanceof IdentifiableEntity) {
-            IdentifiableEntity identifiableEntity = (IdentifiableEntity) object;
+            IdentifiableEntity<?> identifiableEntity = (IdentifiableEntity<?>) object;
             if (identifiableEntity.getId() != null)
                 return identifiableEntity.getId();
         }

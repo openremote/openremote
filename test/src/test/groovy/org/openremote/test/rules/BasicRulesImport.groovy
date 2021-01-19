@@ -4,15 +4,16 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
-import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.model.attribute.MetaItem
+import org.openremote.model.attribute.MetaMap
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
-import org.openremote.model.value.Values
 
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
+import static org.openremote.model.rules.Ruleset.Lang.SHOW_ON_LIST
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 
 class BasicRulesImport {
@@ -83,7 +84,7 @@ class BasicRulesImport {
             "Some apartment 2 demo rules",
             GROOVY,
             getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text)
-            .addMeta("visible", Values.create(true))
+        .setMeta(new MetaMap(Collections.singletonList(new MetaItem<>(SHOW_ON_LIST))))
         apartment2RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
@@ -100,8 +101,8 @@ class BasicRulesImport {
                                ManagerTestSetup managerTestSetup) {
 
         globalEngine = rulesService.globalEngine
-        globalEngine.disableTemporaryFactExpiration = true
         assert globalEngine != null
+        globalEngine.disableTemporaryFactExpiration = true
         assert globalEngine.isRunning()
         assert globalEngine.deployments.size() == 1
         assert globalEngine.deployments.values().any { it -> it.name == "Some global demo rules" && it.status == DEPLOYED }

@@ -77,7 +77,7 @@ open class ORLoginViewController: UIViewController {
         self.orViewController.loadURL(url: url)
     }
     
-    open func updateAssetAttribute(assetId : String, attributeName : String, rawJson : String) {
-        self.orViewController.updateAssetAttribute(assetId: assetId, attributeName: attributeName, rawJson: rawJson)
+    open func updateAttribute(assetId : String, attributeName : String, rawJson : String) {
+        self.orViewController.updateAttribute(assetId: assetId, attributeName: attributeName, rawJson: rawJson)
     }
 }

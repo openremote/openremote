@@ -66,7 +66,7 @@
 					},
 					"value": {
 						"assetId": "2tLAEBGjmRCu1KrdJn9T2Z",
-						"attributeName": "occupiedSpaces"
+						"attributeName": "spacesOccupied"
 					}
 				}
 			],
@@ -100,7 +100,7 @@
 					},
 					"value": {
 						"assetId": "1yuaW634x1LqumPTwGxvyg",
-						"attributeName": "occupiedSpaces"
+						"attributeName": "spacesOccupied"
 					}
 				}
 			],
@@ -134,7 +134,7 @@
 					},
 					"value": {
 						"assetId": "3D49AxXerrIycM8gNd0zlK",
-						"attributeName": "occupiedSpaces"
+						"attributeName": "spacesOccupied"
 					}
 				}
 			],
@@ -168,7 +168,7 @@
 					},
 					"value": {
 						"assetId": "1yuaW634x1LqumPTwGxvyg",
-						"attributeName": "totalSpaces"
+						"attributeName": "spacesTotal"
 					}
 				}
 			],
@@ -202,7 +202,7 @@
 					},
 					"value": {
 						"assetId": "2tLAEBGjmRCu1KrdJn9T2Z",
-						"attributeName": "totalSpaces"
+						"attributeName": "spacesTotal"
 					}
 				}
 			],
@@ -236,7 +236,7 @@
 					},
 					"value": {
 						"assetId": "3D49AxXerrIycM8gNd0zlK",
-						"attributeName": "totalSpaces"
+						"attributeName": "spacesTotal"
 					}
 				}
 			],
@@ -530,7 +530,7 @@
 					},
 					"value": {
 						"assetId": "7UUzmvnTuLdjVpTb8MnjSX",
-						"attributeName": "totalOccupancy"
+						"attributeName": "occupancyTotal"
 					}
 				}
 			],

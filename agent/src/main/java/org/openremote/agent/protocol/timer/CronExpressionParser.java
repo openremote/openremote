@@ -19,10 +19,13 @@
  */
 package org.openremote.agent.protocol.timer;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.quartz.CronExpression;
 
+import java.io.Serializable;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.logging.Level;
@@ -35,7 +38,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * uses all protected methods and class is final).
  *
  */
-public class CronExpressionParser {
+public class CronExpressionParser implements Serializable {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, CronExpressionParser.class);
 
@@ -131,6 +134,7 @@ public class CronExpressionParser {
     protected boolean compatible = true;
     protected boolean valid;
 
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public CronExpressionParser(String cronExpression) {
         valid = CronExpression.isValidExpression(cronExpression);
         originalCronExpression = cronExpression;
@@ -164,6 +168,7 @@ public class CronExpressionParser {
         return valid;
     }
 
+    @JsonValue
     public String buildCronExpression() {
         if (!isCompatible()) {
             return originalCronExpression;

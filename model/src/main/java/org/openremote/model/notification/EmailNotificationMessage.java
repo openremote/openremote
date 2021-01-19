@@ -22,8 +22,6 @@ package org.openremote.model.notification;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
@@ -54,16 +52,6 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
 
         public String getAddress() {
             return address;
-        }
-
-        public ArrayValue toValue() {
-            ArrayValue arrayValue = Values.createArray();
-            if (!TextUtil.isNullOrEmpty(name)) {
-                arrayValue.add(Values.create(name));
-            }
-
-            arrayValue.add(Values.create(address));
-            return arrayValue;
         }
 
         @Override
@@ -254,40 +242,5 @@ public class EmailNotificationMessage extends AbstractNotificationMessage {
 
         to.addAll(recipients);
         return this;
-    }
-
-    @Override
-    public ObjectValue toValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("from", from != null ? from.toValue() : null);
-        objectValue.put("subject", Values.create(subject));
-
-        if (replyTo != null) {
-            objectValue.put("replyTo", replyTo.toValue());
-        }
-
-        if (!TextUtil.isNullOrEmpty(text)) {
-            objectValue.put("text", Values.create(text));
-        }
-        if (!TextUtil.isNullOrEmpty(html)) {
-            objectValue.put("html", Values.create(html));
-        }
-        if (to != null) {
-            ArrayValue arrayValue = Values.createArray();
-            to.stream().map(Recipient::toValue).forEach(arrayValue::add);
-            objectValue.put("to", arrayValue);
-        }
-        if (cc != null) {
-            ArrayValue arrayValue = Values.createArray();
-            cc.stream().map(Recipient::toValue).forEach(arrayValue::add);
-            objectValue.put("cc", arrayValue);
-        }
-        if (bcc != null) {
-            ArrayValue arrayValue = Values.createArray();
-            bcc.stream().map(Recipient::toValue).forEach(arrayValue::add);
-            objectValue.put("bcc", arrayValue);
-        }
-
-        return objectValue;
     }
 }

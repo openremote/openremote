@@ -12,8 +12,7 @@ import {
     EventSubscription,
     ReadAssetsEvent,
     SharedEvent,
-    TriggeredEventSubscription,
-    Attribute
+    TriggeredEventSubscription
 } from "@openremote/model";
 
 export enum EventProviderStatus {
@@ -259,7 +258,7 @@ abstract class EventProviderImpl implements EventProvider {
         };
 
         const isAttributeRef = ids && typeof ids[0] !== "string";
-        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((id) => id.entityId!) : ids as string[] | null;
+        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((ref) => ref.id!) : ids as string[] | null;
 
         if (assetIds && assetIds.length > 0) {
             subscription.filter = {
@@ -318,14 +317,14 @@ abstract class EventProviderImpl implements EventProvider {
         }
 
         const isAttributeRef = typeof ids[0] !== "string";
-        const assetIds = isAttributeRef ? [...new Set((ids as AttributeRef[]).map((id) => id.entityId!))] : [...new Set(ids as string[])];
+        const assetIds = isAttributeRef ? [...new Set((ids as AttributeRef[]).map((ref) => ref.id!))] : [...new Set(ids as string[])];
         const attributes = isAttributeRef ? ids as AttributeRef[] : undefined;
         const subscriptionId = "AttributeEvent" + EventProviderImpl._subscriptionCounter++;
 
         // Check if we have an existing subscription for each asset, otherwise create one
         const assetSubscriptions = assetIds.map(
             (assetId) => {
-                const assetAttributes = attributes ? attributes.filter((attributeRef) => attributeRef.entityId === assetId) : undefined;
+                const assetAttributes = attributes ? attributes.filter((ref) => ref.id === assetId) : undefined;
                 let info = this._assetSubscriptionMap.get(assetId);
                 let promise: Promise<any> = Promise.resolve(assetId);
 
@@ -353,11 +352,11 @@ abstract class EventProviderImpl implements EventProvider {
                         // Keep cached asset in sync
                         if (assetSubscription.asset) {
                             if (evt.attributeState!.deleted) {
-                                delete assetSubscription.asset.attributes![evt.attributeState!.attributeRef!.attributeName!];
+                                delete assetSubscription.asset.attributes![evt.attributeState!.ref!.name!];
                             } else {
-                                const attr = assetSubscription.asset.attributes![evt.attributeState!.attributeRef!.attributeName!] as Attribute;
+                                const attr = assetSubscription.asset.attributes![evt.attributeState!.ref!.name!];
                                 attr.value = evt.attributeState!.value;
-                                attr.valueTimestamp = evt.timestamp;
+                                attr.timestamp = evt.timestamp;
                             }
                         }
 
@@ -393,7 +392,7 @@ abstract class EventProviderImpl implements EventProvider {
 
                 info.callbacks.set(subscriptionId, (evt) => {
                     if (assetAttributes) {
-                        if (assetAttributes.find((attributeRef) => evt.attributeState!.attributeRef!.attributeName === attributeRef.attributeName)) {
+                        if (assetAttributes.find((attributeRef) => evt.attributeState!.ref!.name === attributeRef.name)) {
                             callback(evt);
                         }
                     } else {
@@ -411,17 +410,16 @@ abstract class EventProviderImpl implements EventProvider {
             assetIds.forEach((assetId) => {
                 const info = this._assetSubscriptionMap.get(assetId);
                 if (info && info.asset) {
-                    Object.entries(info.asset.attributes!).forEach(([attributeName, v]) => {
-                        const attr = v as Attribute;
-                        if (!attributes || attributes.find((attributeRef) => attributeRef.entityId === info.asset!.id && attributeRef.attributeName === attributeName)) {
+                    Object.entries(info.asset.attributes!).forEach(([attributeName, attr]) => {
+                        if (!attributes || attributes.find((ref) => ref.id === info.asset!.id && ref.name === attributeName)) {
                             callback({
                                 eventType: "attribute",
-                                timestamp: attr.valueTimestamp,
+                                timestamp: attr.timestamp,
                                 attributeState: {
                                     value: attr.value,
-                                    attributeRef: {
-                                        entityId: assetId,
-                                        attributeName: attributeName
+                                    ref: {
+                                        id: assetId,
+                                        name: attributeName
                                     }
                                 }
                             });

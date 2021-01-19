@@ -19,11 +19,9 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.util.Pair;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -33,50 +31,45 @@ import java.util.Optional;
  * <code>null</code> is a valid {@link #value}.
  * </p>
  */
-public class AttributeState {
+public class AttributeState implements Serializable {
 
-    protected AttributeRef attributeRef;
-    protected Value value;
+    @JsonProperty
+    protected AttributeRef ref;
+    protected Object value;
     protected boolean deleted;
 
-    protected AttributeState() {
+    AttributeState() {}
+
+    public AttributeState(String assetId, Attribute<?> attribute) {
+        this(assetId, attribute.getName(), attribute.getValue().orElse(null));
     }
 
-    public AttributeState(String entityId, String attributeName, Value value) {
-        this(new AttributeRef(entityId, attributeName), value);
+    public AttributeState(String assetId, String attributeName, Object value) {
+        this(new AttributeRef(assetId, attributeName), value);
     }
 
-    /**
-     * Sets the {@link #value} to <code>null</code>.
-     */
-    public AttributeState(String entityId, String attributeName) {
-        this(new AttributeRef(entityId, attributeName), null);
-    }
-
-    /**
-     * @param value can be <code>null</code> if the attribute has no value.
-     */
-    public AttributeState(AttributeRef attributeRef, Value value) {
-        this.attributeRef = Objects.requireNonNull(attributeRef);
+    public AttributeState(AttributeRef ref, Object value) {
+        this.ref = Objects.requireNonNull(ref);
         this.value = value;
     }
 
     /**
      * Sets the {@link #value} to <code>null</code>.
      */
-    public AttributeState(AttributeRef attributeRef) {
-        this(attributeRef, null);
+    public AttributeState(AttributeRef ref) {
+        this(ref, null);
     }
 
-    public AttributeRef getAttributeRef() {
-        return attributeRef;
+    public AttributeRef getRef() {
+        return ref;
     }
 
-    public Optional<Value> getValue() {
-        return Optional.ofNullable(value);
+    @SuppressWarnings("unchecked")
+    public <T> Optional<T> getValue() {
+        return Optional.ofNullable(value).map(v -> (T)v);
     }
 
-    public void setValue(Value value) {
+    public void setValue(Object value) {
         this.value = value;
     }
 
@@ -84,41 +77,12 @@ public class AttributeState {
         return deleted;
     }
 
-    public ObjectValue toObjectValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("attributeRef", getAttributeRef().toArrayValue());
-        getValue().ifPresent(v -> objectValue.put("value", value));
-        if (deleted) {
-            objectValue.put("deleted", Values.create(true));
-        }
-        return objectValue;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "attributeRef=" + attributeRef +
+            "ref=" + ref +
             ", value=" + value +
             ", deleted=" + deleted +
             '}';
-    }
-
-    public static boolean isAttributeState(Value value) {
-        return Values.getObject(value)
-            .flatMap(objectValue -> objectValue.get("attributeRef"))
-            .filter(AttributeRef::isAttributeRef)
-            .isPresent();
-    }
-
-    public static Optional<AttributeState> fromValue(Value value) {
-        return Values.getObject(value)
-            .filter(AttributeState::isAttributeState)
-            .map(objectValue -> new Pair<>(
-                    AttributeRef.fromValue(objectValue.get("attributeRef").get()),
-                    objectValue.get("value")
-                )
-            )
-            .filter(pair -> pair.key.isPresent())
-            .map(pair -> new AttributeState(pair.key.get(), pair.value.orElse(null)));
     }
 }

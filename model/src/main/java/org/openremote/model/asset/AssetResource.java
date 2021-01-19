@@ -19,24 +19,22 @@
  */
 package org.openremote.model.asset;
 
-import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.value.MetaItemType;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
-
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
- * Asset access rules:
+ * Asset<?> access rules:
  * <ul>
  * <li>
  * The superuser (the admin in the master realm) may access all assets.
@@ -62,14 +60,14 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * </ul>
  */
 @Path("asset")
-@JsType(isNative = true)
 public interface AssetResource {
 
+    @TsIgnore
     class Util {
         public static final String WRITE_ATTRIBUTE_HTTP_METHOD = "PUT";
 
         public static String getWriteAttributeUrl(AttributeRef attributeRef) {
-            return "/asset/" + attributeRef.getEntityId() + "/attribute/" + attributeRef.getAttributeName();
+            return "/asset/" + attributeRef.getId() + "/attribute/" + attributeRef.getName();
         }
     }
 
@@ -85,10 +83,8 @@ public interface AssetResource {
     @GET
     @Path("user/current")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    Asset[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
+    Asset<?>[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
 
     /**
      * Retrieve links between assets and users.
@@ -106,9 +102,7 @@ public interface AssetResource {
     @GET
     @Path("user/link")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
     UserAsset[] getUserAssetLinks(@BeanParam RequestParams requestParams,
                                   @QueryParam("realm") String realm,
                                   @QueryParam("userId") String userId,
@@ -125,9 +119,7 @@ public interface AssetResource {
     @POST
     @Path("user/link")
     @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
     void createUserAsset(@BeanParam RequestParams requestParams, UserAsset userAsset);
 
     /**
@@ -142,9 +134,7 @@ public interface AssetResource {
      */
     @DELETE
     @Path("link/{realm}/{userId}/{assetId}")
-    @SuccessStatusCode(204)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
     void deleteUserAsset(@BeanParam RequestParams requestParams,
                          @PathParam("realm") String realm,
                          @PathParam("userId") String userId,
@@ -159,10 +149,8 @@ public interface AssetResource {
     @GET
     @Path("{assetId}")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    Asset get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+    Asset<?> get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
      * Same as {@link #get} but only returns a partially loaded asset (no attributes or path)
@@ -170,10 +158,8 @@ public interface AssetResource {
     @GET
     @Path("partial/{assetId}")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    Asset getPartial(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+    Asset<?> getPartial(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
      * Updates the asset. Regular users can only update assets in their authenticated realm, the superuser can update
@@ -188,10 +174,8 @@ public interface AssetResource {
     @PUT
     @Path("{assetId}")
     @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(204)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @Valid Asset asset);
+    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @Valid Asset<?> asset);
 
     /**
      * Updates an attribute of an asset. Regular users can only update assets in their authenticated realm, the
@@ -212,9 +196,7 @@ public interface AssetResource {
     @PUT
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @SuppressWarnings("unusable-by-js")
-    void writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, String rawJson);
+    void writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, String valueStr);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a globally unique string value,
@@ -227,10 +209,8 @@ public interface AssetResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    Asset create(@BeanParam RequestParams requestParams, @Valid Asset asset);
+    Asset<?> create(@BeanParam RequestParams requestParams, @Valid Asset<?> asset);
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete
@@ -239,9 +219,7 @@ public interface AssetResource {
      */
     @DELETE
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
     void delete(@BeanParam RequestParams requestParams, @QueryParam("assetId") List<String> assetIds);
 
     /**
@@ -257,10 +235,8 @@ public interface AssetResource {
     @Path("query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    Asset[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
+    Asset<?>[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
      * Retrieve public assets using an {@link AssetQuery}.
@@ -271,9 +247,7 @@ public interface AssetResource {
     @Path("public/query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    Asset[] queryPublicAssets(@BeanParam RequestParams requestParams, AssetQuery query);
+    Asset<?>[] queryPublicAssets(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
      * Retrieve public assets using an {@link AssetQuery} as a JSON serialized query parameter.
@@ -283,7 +257,5 @@ public interface AssetResource {
     @GET
     @Path("public/query")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    Asset[] getPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
+    Asset<?>[] getPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
 }

@@ -22,109 +22,51 @@ package org.openremote.agent.protocol.event;
 import org.apache.camel.Exchange;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.ProtocolClientEventService;
-import org.openremote.container.Container;
 import org.openremote.container.web.ConnectionConstants;
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.StringValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 import static org.apache.camel.builder.Builder.body;
 import static org.apache.camel.builder.Builder.header;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.agent.protocol.ProtocolClientEventService.*;
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemArray;
-import static org.openremote.model.attribute.MetaItemDescriptorImpl.metaItemString;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_STRING_NON_EMPTY;
 
 /**
  * This protocol is for pub-sub devices to connect to the manager client event broker (MQTT or websocket);
- * attributes then linked to this protocol can be written to/read by the devices.
+ * attributes then linked to this protocol can be written to/read by the devices. The protocol handles the
+ * creation of a Keycloak client that allows client secret 'authentication' for machines therefore this protocol
+ * requires the Keycloak identity provider.
  */
-public class ClientEventProtocol extends AbstractProtocol {
+public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, AgentLink.Default> {
 
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":clientEvent";
     public static final String PROTOCOL_DISPLAY_NAME = "Client Event";
-    public static final String PROTOCOL_VERSION = "1.0";
-    public static final String CLIENT_ID_PREFIX = "ClientEvent-";
+    public static final String CLIENT_ID_PREFIX = "ClientEventProtocol-";
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ClientEventProtocol.class);
 
-    public static final MetaItemDescriptor META_PROTOCOL_CLIENT_SECRET = metaItemString(
-        PROTOCOL_NAME + ":clientSecret",
-        ACCESS_PRIVATE,
-        true,
-        REGEXP_PATTERN_STRING_NON_EMPTY,
-        MetaItemDescriptor.PatternFailure.STRING_EMPTY);
-
-    public static final MetaItemDescriptor META_PROTOCOL_CLIENT_ROLES = metaItemArray(
-            PROTOCOL_NAME + ":clientRoles",
-            ACCESS_PRIVATE,
-            false,
-            null);
-
-    protected Map<String, AssetAttribute> clientIdProtocolConfigMap = new HashMap<>();
+    public ClientEventProtocol(ClientEventAgent agent) {
+        super(agent);
+    }
 
     @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
+    public void doStart(Container container) throws Exception {
+        LOG.info("Creating client credentials for: " + this);
+
         protocolClientEventService.addExchangeInterceptor(this::onMessageIntercept);
-    }
 
-    @Override
-    protected void doStop(Container container) throws Exception {
-        super.doStop(container);
-        protocolClientEventService.removeExchangeInterceptor(this::onMessageIntercept);
-    }
+        String clientId = CLIENT_ID_PREFIX + agent.getId();
 
-    @Override
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return Collections.singletonList(
-            META_PROTOCOL_CLIENT_SECRET
-        );
-    }
-
-    @Override
-    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-
-        LOG.info("Creating client credentials for: " + protocolConfiguration);
-        AttributeRef attributeRef = protocolConfiguration.getReferenceOrThrow();
-        String clientId = CLIENT_ID_PREFIX + attributeRef.getEntityId();
-
-        String clientSecret = protocolConfiguration.getMetaItem(META_PROTOCOL_CLIENT_SECRET.getUrn())
-            .flatMap(AbstractValueHolder::getValueAsString)
-            .orElse(UUID.randomUUID().toString());
-
-        ClientRole[] roles = protocolConfiguration.getMetaItem(META_PROTOCOL_CLIENT_ROLES.getUrn())
-            .flatMap(AbstractValueHolder::getValueAsArray)
-            .flatMap(arrayValue ->
-                Values.getArrayElements(
-                        arrayValue,
-                        StringValue.class,
-                        true,
-                        false,
-                        StringValue::getString))
-            .map(list -> list.stream().map(ClientRole::valueOf).toArray(ClientRole[]::new))
-            .orElse(null);
+        String clientSecret = agent.getClientSecret().orElse(UUID.randomUUID().toString());
+        ClientRole[] roles = agent.getClientRoles().orElse(null);
 
         ProtocolClientEventService.ClientCredentials clientCredentials =
             new ProtocolClientEventService.ClientCredentials(
@@ -135,48 +77,38 @@ public class ClientEventProtocol extends AbstractProtocol {
             );
 
         protocolClientEventService.addClientCredentials(clientCredentials);
-        clientIdProtocolConfigMap.put(clientId, protocolConfiguration);
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        LOG.info("Removing client credentials for: " + protocolConfiguration);
-        clientIdProtocolConfigMap.values().remove(protocolConfiguration);
-        AttributeRef attributeRef = protocolConfiguration.getReferenceOrThrow();
-        protocolClientEventService.removeClientCredentials(agent.getRealm(), CLIENT_ID_PREFIX + attributeRef.getEntityId() + ":" + attributeRef.getAttributeName());
+    protected void doStop(Container container) throws Exception {
+        LOG.info("Removing client credentials for: " + this);
+        protocolClientEventService.removeExchangeInterceptor(this::onMessageIntercept);
+        protocolClientEventService.removeClientCredentials(agent.getRealm(), CLIENT_ID_PREFIX + agent.getId());
     }
 
     @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) throws Exception {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) throws RuntimeException {
         // Nothing to do here
     }
 
     @Override
-    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
         // Nothing to do here
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
-        // We'll get here when an attribute event is pushed through the processing chain as with all protocols it won't
-        // make it to the end of the processing chain, and won't reach the client so we write it through immediately
-        // so it will be sent to the client
-        updateLinkedAttribute(new AttributeState(event.getAttributeRef(), processedValue));
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, AgentLink.Default agentLink, AttributeEvent event, Object processedValue) {
+        // Nothing to do here
     }
 
     @Override
     public String getProtocolName() {
-        return PROTOCOL_NAME;
-    }
-
-    @Override
-    public String getProtocolDisplayName() {
         return PROTOCOL_DISPLAY_NAME;
     }
 
     @Override
-    public String getVersion() {
-        return PROTOCOL_VERSION;
+    public String getProtocolInstanceUri() {
+        return "clientEvent://" + agent.getId();
     }
 
     protected void onMessageIntercept(Exchange exchange) {
@@ -186,22 +118,13 @@ public class ClientEventProtocol extends AbstractProtocol {
             return;
         }
 
-        AssetAttribute protocolConfiguration = clientIdProtocolConfigMap.get(clientId);
-
-        if (protocolConfiguration == null) {
-            LOG.info("Message received from a client for an unlinked protocol configuration, requesting disconnect");
-            protocolClientEventService.closeSession(getSessionKey(exchange));
-            stopMessage(exchange);
-            return;
-        }
-
         if (header(ConnectionConstants.SESSION_OPEN).matches(exchange)) {
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.CONNECTED);
+            LOG.info("Client connected: " + this);
             return;
         }
 
         if (or(header(ConnectionConstants.SESSION_CLOSE), header(ConnectionConstants.SESSION_CLOSE_ERROR)).matches(exchange)) {
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
+            LOG.info("Client disconnected: " + this);
             return;
         }
 
@@ -210,7 +133,7 @@ public class ClientEventProtocol extends AbstractProtocol {
                 // Inbound attribute event is essentially a protocol sensor update
 
                 AttributeEvent attributeEvent = exchange.getIn().getBody(AttributeEvent.class);
-                AssetAttribute linkedAttribute = getLinkedAttribute(attributeEvent.getAttributeRef());
+                Attribute<?> linkedAttribute = getLinkedAttributes().get(attributeEvent.getAttributeRef());
 
                 if (linkedAttribute == null) {
                     LOG.info("Message received from a client for an unlinked attribute, so ignoring");
@@ -226,6 +149,6 @@ public class ClientEventProtocol extends AbstractProtocol {
     }
 
     protected boolean isThisClient(String clientId) {
-        return clientId != null && clientId.startsWith(CLIENT_ID_PREFIX);
+        return Objects.equals(CLIENT_ID_PREFIX + agent.getId(), clientId);
     }
 }

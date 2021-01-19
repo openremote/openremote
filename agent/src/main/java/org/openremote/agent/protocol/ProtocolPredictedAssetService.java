@@ -19,13 +19,12 @@
  */
 package org.openremote.agent.protocol;
 
-import org.openremote.container.ContainerService;
+import org.openremote.model.ContainerService;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.value.Value;
 
 public interface ProtocolPredictedAssetService extends ContainerService {
 
-    void updateValue(AttributeRef attributeRef, Value value, long timestamp);
+    void updateValue(AttributeRef attributeRef, Object value, long timestamp);
 
-    void updateValue(String assetId, String attributeName, Value value, long timestamp);
+    void updateValue(String assetId, String attributeName, Object value, long timestamp);
 }

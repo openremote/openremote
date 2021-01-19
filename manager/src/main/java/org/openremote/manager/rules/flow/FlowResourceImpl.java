@@ -17,19 +17,19 @@ public class FlowResourceImpl extends ManagerWebResource implements FlowResource
 
     public FlowResourceImpl(TimerService timerService, ManagerIdentityService identityService) {
         super(timerService, identityService);
-        for (Node node : Arrays.stream(NodeModel.values()).map(c -> c.getDefinition()).toArray(Node[]::new)) {
-            LOG.info("Node found: " + node.getName());
+        for (Node node : Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new)) {
+            LOG.finest("Node found: " + node.getName());
         }
     }
 
     @Override
     public Node[] getAllNodeDefinitions(RequestParams requestParams) {
-        return Arrays.stream(NodeModel.values()).map(c -> c.getDefinition()).toArray(Node[]::new);
+        return Arrays.stream(NodeModel.values()).map(NodeModel::getDefinition).toArray(Node[]::new);
     }
 
     @Override
     public Node[] getAllNodeDefinitionsByType(RequestParams requestParams, NodeType type) {
-        return Arrays.stream(NodeModel.values()).filter((n) -> n.getDefinition().getType().equals(type)).map(c -> c.getDefinition()).toArray(Node[]::new);
+        return Arrays.stream(NodeModel.values()).filter((n) -> n.getDefinition().getType().equals(type)).map(NodeModel::getDefinition).toArray(Node[]::new);
     }
 
     @Override

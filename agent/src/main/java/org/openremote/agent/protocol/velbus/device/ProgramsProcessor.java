@@ -20,10 +20,8 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
@@ -34,13 +32,13 @@ import static org.openremote.agent.protocol.velbus.AbstractVelbusProtocol.LOG;
 
 public class ProgramsProcessor extends ChannelProcessor {
 
-    enum Program implements DevicePropertyValue<Program> {
+    enum Program {
         NONE(0x00),
         SUMMER(0x01),
         WINTER(0x02),
         HOLIDAY(0x03);
 
-        private int code;
+        private final int code;
 
         Program(int code) {
             this.code = code;
@@ -49,8 +47,6 @@ public class ProgramsProcessor extends ChannelProcessor {
         public int getCode() {
             return this.code;
         }
-
-
 
         @Override
         public String toString() {
@@ -66,34 +62,24 @@ public class ProgramsProcessor extends ChannelProcessor {
 
             return NONE;
         }
-
-        @Override
-        public Value toValue(ValueType valueType) {
-            return EnumUtil.enumToValue(this, valueType);
-        }
-
-        @Override
-        public Program getPropertyValue() {
-            return this;
-        }
     }
 
     protected static final String PROGRAM_STEPS_ENABLED_SUFFIX = "_PROGRAM_STEPS_ENABLED";
     protected static final String PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX = "_PROGRAM_STEPS_DISABLED_SECONDS";
     protected static final List<PropertyDescriptor> STATIC_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("allProgramStepsEnabled", "All Program Steps Enabled", "ALL" + PROGRAM_STEPS_ENABLED_SUFFIX, AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("allProgramStepsDisableSeconds", "All Program Steps Disable (s)", "ALL" + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, AttributeValueType.NUMBER),
-        new PropertyDescriptor("sunriseEnabled", "Sunrise Enabled", "SUNRISE_ENABLED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("sunsetEnabled", "Sunset Enabled", "SUNSET_ENABLED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("alarm1Enabled", "Alarm 1 Enabled", "ALARM1_ENABLED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("alarm2Enabled", "Alarm 2 Enabled", "ALARM2_ENABLED", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("alarm1Master", "Alarm 1 Master", "ALARM1_MASTER", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("alarm2Master", "Alarm 2 Master", "ALARM2_MASTER", AttributeValueType.BOOLEAN),
-        new PropertyDescriptor("alarm1WakeTime", "Alarm 1 Wake Time", "ALARM1_WAKE_TIME", AttributeValueType.STRING),
-        new PropertyDescriptor("alarm2WakeTime", "Alarm 2 Wake Time", "ALARM2_WAKE_TIME", AttributeValueType.STRING),
-        new PropertyDescriptor("alarm1BedTime", "Alarm 1 Bed Time", "ALARM1_BED_TIME", AttributeValueType.STRING),
-        new PropertyDescriptor("alarm2BedTime", "Alarm 2 Bed Time", "ALARM2_BED_TIME", AttributeValueType.STRING),
-        new PropertyDescriptor("program", "Current Program", "Program", AttributeValueType.STRING)
+        new PropertyDescriptor("allProgramStepsEnabled", "All Program Steps Enabled", "ALL" + PROGRAM_STEPS_ENABLED_SUFFIX, ValueType.BOOLEAN),
+        new PropertyDescriptor("allProgramStepsDisableSeconds", "All Program Steps Disable (s)", "ALL" + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, ValueType.NUMBER),
+        new PropertyDescriptor("sunriseEnabled", "Sunrise Enabled", "SUNRISE_ENABLED", ValueType.BOOLEAN),
+        new PropertyDescriptor("sunsetEnabled", "Sunset Enabled", "SUNSET_ENABLED", ValueType.BOOLEAN),
+        new PropertyDescriptor("alarm1Enabled", "Alarm 1 Enabled", "ALARM1_ENABLED", ValueType.BOOLEAN),
+        new PropertyDescriptor("alarm2Enabled", "Alarm 2 Enabled", "ALARM2_ENABLED", ValueType.BOOLEAN),
+        new PropertyDescriptor("alarm1Master", "Alarm 1 Master", "ALARM1_MASTER", ValueType.BOOLEAN),
+        new PropertyDescriptor("alarm2Master", "Alarm 2 Master", "ALARM2_MASTER", ValueType.BOOLEAN),
+        new PropertyDescriptor("alarm1WakeTime", "Alarm 1 Wake Time", "ALARM1_WAKE_TIME", ValueType.TEXT),
+        new PropertyDescriptor("alarm2WakeTime", "Alarm 2 Wake Time", "ALARM2_WAKE_TIME", ValueType.TEXT),
+        new PropertyDescriptor("alarm1BedTime", "Alarm 1 Bed Time", "ALARM1_BED_TIME", ValueType.TEXT),
+        new PropertyDescriptor("alarm2BedTime", "Alarm 2 Bed Time", "ALARM2_BED_TIME", ValueType.TEXT),
+        new PropertyDescriptor("program", "Current Program", "Program", ValueType.TEXT)
     );
 
 
@@ -103,8 +89,8 @@ public class ProgramsProcessor extends ChannelProcessor {
         List<PropertyDescriptor> properties = new ArrayList<>(maxChannelNumber * 2 + STATIC_PROPERTIES.size());
 
         for (int i=1; i<=maxChannelNumber; i++) {
-            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsEnabled", "CH" + i + " Program Steps Enabled", "CH" + i + PROGRAM_STEPS_ENABLED_SUFFIX, AttributeValueType.BOOLEAN));
-            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsDisableSeconds", "CH" + i + " Program Steps Disable (s)", "CH" + i + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, AttributeValueType.NUMBER));
+            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsEnabled", "CH" + i + " Program Steps Enabled", "CH" + i + PROGRAM_STEPS_ENABLED_SUFFIX, ValueType.BOOLEAN));
+            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsDisableSeconds", "CH" + i + " Program Steps Disable (s)", "CH" + i + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, ValueType.NUMBER));
         }
 
         properties.addAll(STATIC_PROPERTIES);
@@ -126,7 +112,7 @@ public class ProgramsProcessor extends ChannelProcessor {
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
 
         Optional<Pair<Integer, String>> channelNumberAndPropertySuffix = getChannelNumberAndPropertySuffix(device, CHANNEL_REGEX, property);
 
@@ -169,8 +155,8 @@ public class ProgramsProcessor extends ChannelProcessor {
         if (property.equals("SUNRISE_ENABLED") || property.equals("SUNSET_ENABLED")) {
             return Values.getBooleanCoerced(value)
                 .map(enabled -> {
-                    boolean sunriseEnabled = device.getPropertyValue("SUNRISE_ENABLED") != null && ((BooleanDevicePropertyValue)device.getPropertyValue("SUNRISE_ENABLED")).getPropertyValue();
-                    boolean sunsetEnabled = device.getPropertyValue("SUNSET_ENABLED") != null && ((BooleanDevicePropertyValue)device.getPropertyValue("SUNSET_ENABLED")).getPropertyValue();
+                    boolean sunriseEnabled = device.getPropertyValue("SUNRISE_ENABLED") != null && ((Boolean)device.getPropertyValue("SUNRISE_ENABLED"));
+                    boolean sunsetEnabled = device.getPropertyValue("SUNSET_ENABLED") != null && ((Boolean)device.getPropertyValue("SUNSET_ENABLED"));
 
                     if (property.equals("SUNRISE_ENABLED")) {
                         sunriseEnabled = enabled;
@@ -187,8 +173,8 @@ public class ProgramsProcessor extends ChannelProcessor {
                     }
 
                     // Push new values into the device cache so they are instantly available
-                    device.setProperty("SUNRISE_ENABLED", sunriseEnabled ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                    device.setProperty("SUNSET_ENABLED", sunsetEnabled ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
+                    device.setProperty("SUNRISE_ENABLED", sunriseEnabled);
+                    device.setProperty("SUNSET_ENABLED", sunsetEnabled);
 
                     return Collections.singletonList(
                       new VelbusPacket(device.getBaseAddress(), VelbusPacket.OutboundCommand.SET_SUNRISE_SUNSET.getCode(), VelbusPacket.PacketPriority.LOW, (byte)0xFF, (byte)sunriseSunsetByte)
@@ -226,10 +212,10 @@ public class ProgramsProcessor extends ChannelProcessor {
                         return null;
                     }
 
-                    boolean enabled = ((BooleanDevicePropertyValue)device.getPropertyValue(alarmEnabledProperty)).getPropertyValue();
-                    String wakeTime = ((StringDevicePropertyValue)device.getPropertyValue(alarmWakeTimeProperty)).getPropertyValue();
-                    String bedTime = ((StringDevicePropertyValue)device.getPropertyValue(alarmBedTimeProperty)).getPropertyValue();
-                    boolean isGlobal = ((BooleanDevicePropertyValue)device.getPropertyValue(alarmMasterProperty)).getPropertyValue();
+                    boolean enabled = Optional.ofNullable((Boolean)device.getPropertyValue(alarmEnabledProperty)).orElse(false);
+                    String wakeTime = ((String)device.getPropertyValue(alarmWakeTimeProperty));
+                    String bedTime = ((String)device.getPropertyValue(alarmBedTimeProperty));
+                    boolean isGlobal = Optional.ofNullable((Boolean)device.getPropertyValue(alarmMasterProperty)).orElse(false);
 
                     if ("ENABLED".equals(alarmProperty)) {
                         Optional<Boolean> setEnabled = Values.getBooleanCoerced(value);
@@ -277,13 +263,13 @@ public class ProgramsProcessor extends ChannelProcessor {
                     }
 
                     // Update property values and also send memory read request to ensure update occurred
-                    device.setProperty(alarmEnabledProperty, enabled ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                    device.setProperty(alarmWakeTimeProperty, new StringDevicePropertyValue(wakeTime));
-                    device.setProperty(alarmBedTimeProperty, new StringDevicePropertyValue(bedTime));
+                    device.setProperty(alarmEnabledProperty, enabled);
+                    device.setProperty(alarmWakeTimeProperty, wakeTime);
+                    device.setProperty(alarmBedTimeProperty, bedTime);
 
                     device.velbusNetwork.scheduleTask(() -> {
                         List<VelbusPacket> packets = getStatusRequestPackets(device);
-                        device.velbusNetwork.sendPackets(packets.toArray(new VelbusPacket[packets.size()]));
+                        device.velbusNetwork.sendPackets(packets.toArray(new VelbusPacket[0]));
                     }, 500);
 
                     return Collections.singletonList(
@@ -333,7 +319,7 @@ public class ProgramsProcessor extends ChannelProcessor {
                 }
 
                 for (int i=startChannel; i<startChannel+8; i++) {
-                    BooleanDevicePropertyValue programEnabled = (programByte & 0x01) == 0 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
+                    boolean programEnabled = (programByte & 0x01) == 0;
                     programByte = programByte >>> 1;
 
                     device.setProperty("CH" + i + PROGRAM_STEPS_ENABLED_SUFFIX, programEnabled);
@@ -342,23 +328,22 @@ public class ProgramsProcessor extends ChannelProcessor {
                 boolean allEnabled = true;
 
                 for (int i=1; i<=maxChannelNumber; i++) {
-                    DevicePropertyValue channelStepsEnabledProperty = device.getPropertyValue("CH" + i + PROGRAM_STEPS_ENABLED_SUFFIX);
-                    BooleanDevicePropertyValue isChannelEnabled = (BooleanDevicePropertyValue)channelStepsEnabledProperty;
-                    if (isChannelEnabled != null && !isChannelEnabled.getPropertyValue()) {
+                    boolean isChannelEnabled = Optional.ofNullable((Boolean)device.getPropertyValue("CH" + i + PROGRAM_STEPS_ENABLED_SUFFIX)).orElse(true);
+                    if (!isChannelEnabled) {
                         allEnabled = false;
                         break;
                     }
                 }
-                device.setProperty("ALL" + PROGRAM_STEPS_ENABLED_SUFFIX, allEnabled ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
+                device.setProperty("ALL" + PROGRAM_STEPS_ENABLED_SUFFIX, allEnabled);
 
                 if (startChannel == 1) {
                     device.setProperty("PROGRAM", Program.fromCode(alarmByte & 0x03));
-                    device.setProperty("ALARM1_ENABLED", (alarmByte & 0x04) == 0x04 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                    device.setProperty("ALARM2_ENABLED", (alarmByte & 0x10) == 0x10 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                    device.setProperty("ALARM1_MASTER", (alarmByte & 0x08) == 0x08 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                    device.setProperty("ALARM2_MASTER", (alarmByte & 0x20) == 0x20 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                    device.setProperty("SUNRISE_ENABLED", (alarmByte & 0x40) == 0x40 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
-                    device.setProperty("SUNSET_ENABLED", (alarmByte & 0x80) == 0x80 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE);
+                    device.setProperty("ALARM1_ENABLED", (alarmByte & 0x04) == 0x04);
+                    device.setProperty("ALARM2_ENABLED", (alarmByte & 0x10) == 0x10);
+                    device.setProperty("ALARM1_MASTER", (alarmByte & 0x08) == 0x08);
+                    device.setProperty("ALARM2_MASTER", (alarmByte & 0x20) == 0x20);
+                    device.setProperty("SUNRISE_ENABLED", (alarmByte & 0x40) == 0x40);
+                    device.setProperty("SUNSET_ENABLED", (alarmByte & 0x80) == 0x80);
                 }
 
                 // Note this packet command is used by several processors so don't return true
@@ -386,8 +371,8 @@ public class ProgramsProcessor extends ChannelProcessor {
                 int bedMins = packet.getByte(6) & 0xFF;
                 String wakeTime = String.format("%02d:%02d", wakeHours, wakeMins);
                 String bedTime = String.format("%02d:%02d", bedHours, bedMins);
-                device.setProperty("ALARM" + alarmNumber + "_WAKE_TIME", new StringDevicePropertyValue(wakeTime));
-                device.setProperty("ALARM" + alarmNumber + "_BED_TIME", new StringDevicePropertyValue(bedTime));
+                device.setProperty("ALARM" + alarmNumber + "_WAKE_TIME", wakeTime);
+                device.setProperty("ALARM" + alarmNumber + "_BED_TIME", bedTime);
                 return true;
         }
 

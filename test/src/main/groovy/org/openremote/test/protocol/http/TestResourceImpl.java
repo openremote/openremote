@@ -26,15 +26,15 @@ import java.util.List;
 
 public class TestResourceImpl implements TestResource {
 
-    public List<Asset> postedAssets = new ArrayList<>();
+    public List<Asset<?>> postedAssets = new ArrayList<>();
 
     @Override
-    public void postAsset(Asset asset) {
+    public void postAsset(Asset<?> asset) {
         postedAssets.add(asset);
     }
 
     @Override
-    public Asset getAsset(String assetId) {
+    public Asset<?> getAsset(String assetId) {
         return postedAssets.stream().filter(asset -> asset.getId().equals(assetId)).findFirst().orElse(null);
     }
 }

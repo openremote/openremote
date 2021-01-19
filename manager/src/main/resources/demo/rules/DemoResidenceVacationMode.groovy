@@ -2,6 +2,7 @@ package demo.rules
 
 import groovy.transform.ToString
 import org.openremote.manager.rules.RulesBuilder
+import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.AttributePredicate
 import org.openremote.model.query.filter.StringPredicate
@@ -11,7 +12,6 @@ import org.openremote.model.rules.Assets
 
 import java.util.logging.Logger
 
-import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.query.AssetQuery.Operator.GREATER_THAN
 import static org.openremote.model.query.AssetQuery.Operator.LESS_EQUALS
 import static org.openremote.model.attribute.AttributeExecuteStatus.REQUEST_START
@@ -31,7 +31,7 @@ rules.add()
         .when(
         { facts ->
             facts.matchAssetState(
-                    new AssetQuery().types(RESIDENCE)
+                    new AssetQuery().types(BuildingAsset)
                             .attributeValue("vacationUntil", GREATER_THAN, facts.clock.timestamp)
             ).filter { residenceWithVacationUntil ->
                 facts.match(VacationMode).noneMatch {
@@ -39,7 +39,7 @@ rules.add()
                 }
             }.findFirst().map { residenceWithoutVacationMode ->
                 facts.bind("residenceId", residenceWithoutVacationMode.id)
-                        .bind("vacationUntil", residenceWithoutVacationMode.valueAsNumber.get())
+                        .bind("vacationUntil", residenceWithoutVacationMode.value.get())
                 true
             }.orElse(false)
         })
@@ -63,10 +63,10 @@ rules.add()
         .when(
         { facts ->
             facts.matchAssetState(
-                    new AssetQuery().types(RESIDENCE)
+                    new AssetQuery().types(BuildingAsset)
                             .attributeValue("vacationUntil", LESS_EQUALS, facts.clock.timestamp)
             ).filter { residenceWithVacationUntilInPast ->
-                residenceWithVacationUntilInPast.getValueAsNumber().isPresent()
+                residenceWithVacationUntilInPast.getValueAs(Double.class).isPresent()
             }.filter { residenceWithVacationUntilInPast ->
                 facts.match(VacationMode).noneMatch {
                     vacationMode -> vacationMode.residenceId == residenceWithVacationUntilInPast.id
@@ -79,7 +79,7 @@ rules.add()
         .then(
         { facts ->
             AssetState residence = facts.bound("residence")
-            LOG.info("Vacation ended in residence: " + residence.name)
+            LOG.info("Vacation ended in residence: " + residence.assetName)
             facts.updateAssetState(residence.id, "vacationUntil")
             assets.dispatch(residence.id, "enableSceneTimer", REQUEST_START)
         })
@@ -90,11 +90,11 @@ rules.add()
         { facts ->
             facts.matchFirst(VacationMode) { vacationMode ->
                 facts.matchFirstAssetState(
-                        new AssetQuery().types(RESIDENCE)
+                        new AssetQuery().types(BuildingAsset)
                                 .ids(vacationMode.residenceId)
                                 .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueNotEmptyPredicate()))
                 ).map { residence ->
-                    vacationMode.until != residence.valueAsNumber.get()
+                    vacationMode.until != residence.value.get()
                 }.orElse(false)
             }.map { vacationMode ->
                 facts.bind("vacationMode", vacationMode)
@@ -114,7 +114,7 @@ rules.add()
         { facts ->
             facts.matchFirst(VacationMode) { vacationMode ->
                 !facts.matchFirstAssetState(
-                        new AssetQuery().types(RESIDENCE)
+                        new AssetQuery().types(BuildingAsset)
                                 .ids(vacationMode.residenceId)
                                 .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueNotEmptyPredicate()))).isPresent()
             }.map { vacationMode ->

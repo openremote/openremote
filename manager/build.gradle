@@ -13,7 +13,6 @@ dependencies {
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
 
     compile "org.mnode.ical4j:ical4j:$ical4jVersion"
-    compile "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
 
     compile "net.jafama:jafama:$jafamaVersion"
     compile "org.geotools:gt-main:$geotoolsVersion"

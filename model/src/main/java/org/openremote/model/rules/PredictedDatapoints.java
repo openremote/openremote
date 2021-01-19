@@ -22,23 +22,27 @@ package org.openremote.model.rules;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.value.Value;
+import org.openremote.model.util.TsIgnore;
 
+/**
+ * Facade for predicted datapoints in rules
+ */
+@TsIgnore
 public abstract class PredictedDatapoints {
 
 
-    public abstract ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef,
+    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                         String truncate,
                                                         String interval,
                                                         long fromTimestamp,
                                                         long toTimestamp);
 
 
-    public abstract ValueDatapoint[] getValueDataPoints(AttributeRef attributeRef,
+    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                         DatapointInterval interval,
                                                         long fromTimestamp,
                                                         long toTimestamp);
 
-    public abstract void updateValue(String assetId, String attributeName, Value value, long timestamp);
-    public abstract void updateValue(AttributeRef attributeRef, Value value, long timestamp);
+    public abstract void updateValue(String assetId, String attributeName, Object value, long timestamp);
+    public abstract void updateValue(AttributeRef attributeRef, Object value, long timestamp);
 }

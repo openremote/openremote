@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.notification;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.asset.AssetStorageService;
@@ -30,7 +31,7 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
 import java.util.Collections;
@@ -144,14 +145,14 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public void notificationAcknowledged(RequestParams requestParams, String targetId, Long notificationId, Value acknowledgement) {
+    public void notificationAcknowledged(RequestParams requestParams, String targetId, Long notificationId, JsonNode acknowledgement) {
         if (notificationId == null) {
             throw new WebApplicationException("Missing notification ID", BAD_REQUEST);
         }
 
         SentNotification sentNotification = notificationService.getSentNotification(notificationId);
         verifyAccess(sentNotification, targetId);
-        notificationService.setNotificationAcknowleged(notificationId, acknowledgement == null ? null : acknowledgement.toString());
+        notificationService.setNotificationAcknowleged(notificationId, acknowledgement == null ? null : Values.asJSON(acknowledgement).orElse(null));
     }
 
     protected void verifyAccess(SentNotification sentNotification, String targetId) {
@@ -178,7 +179,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             }
 
             // Check asset is public read amd not linked to any users
-            Asset asset = assetStorageService.find(sentNotification.getTargetId(), false, AssetQuery.Access.PUBLIC);
+            Asset<?> asset = assetStorageService.find(sentNotification.getTargetId(), false, AssetQuery.Access.PUBLIC);
             if (asset == null) {
                 LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
                 throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);
@@ -209,7 +210,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                     }
                     break;
                 case ASSET:
-                    Asset asset = assetStorageService.find(sentNotification.getTargetId(), false);
+                    Asset<?> asset = assetStorageService.find(sentNotification.getTargetId(), false);
                     if (asset == null) {
                         LOG.fine("DENIED: User request to update a notification sent to an asset that doesn't exist");
                         throw new WebApplicationException("Asset not found", NOT_FOUND);

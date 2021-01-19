@@ -20,14 +20,12 @@
 package org.openremote.container.persistence;
 
 import org.apache.commons.io.IOUtils;
-import org.hibernate.hql.internal.antlr.SqlStatementLexer;
-import org.hibernate.hql.internal.antlr.SqlStatementParser;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractor;
+import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
+import org.hibernate.tool.hbm2ddl.SingleLineSqlCommandExtractor;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
-import java.util.List;
 
 /**
  * Load and parse import SQL files, either the whole file as a single statement if its first line
@@ -41,26 +39,12 @@ public class EnhancedImportSqlCommandExtractor implements ImportSqlCommandExtrac
         try {
             String sql = IOUtils.toString(reader);
             if (sql.startsWith("-- importOneStatementOnly")) {
-                return new String[] {sql};
+                return new SingleLineSqlCommandExtractor().extractCommands(reader);
             } else {
-                return extractMultiLine(new StringReader(sql));
+                return new MultipleLinesSqlCommandExtractor().extractCommands(reader);
             }
         } catch (IOException e) {
             throw new org.hibernate.tool.hbm2ddl.ImportScriptException("Error during import script parsing.", e);
         }
-    }
-
-    protected String[] extractMultiLine(Reader reader) {
-        final SqlStatementLexer lexer = new SqlStatementLexer(reader);
-        final SqlStatementParser parser = new SqlStatementParser(lexer);
-        try {
-            parser.script(); // Parse script.
-            parser.throwExceptionIfErrorOccurred();
-        } catch (Exception e) {
-            throw new org.hibernate.tool.hbm2ddl.ImportScriptException("Error during import script parsing.", e);
-        }
-        List<String> statementList = parser.getStatementList();
-        String[] result = statementList.toArray(new String[statementList.size()]);
-        return result;
     }
 }

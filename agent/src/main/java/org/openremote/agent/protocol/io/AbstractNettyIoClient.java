@@ -22,8 +22,8 @@ package org.openremote.agent.protocol.io;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
-import org.openremote.agent.protocol.ProtocolExecutorService;
-import org.openremote.container.util.Util;
+import org.openremote.container.Container;
+import org.openremote.model.util.Retry;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -161,17 +161,17 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     protected final List<Consumer<T>> messageConsumers = new ArrayList<>();
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
-    protected ChannelFuture channelFuture;
+    protected ChannelFuture channelStartFuture;
     protected Channel channel;
     protected Bootstrap bootstrap;
     protected EventLoopGroup workerGroup;
-    protected ProtocolExecutorService executorService;
-    protected Util.Retry connectRetry;
+    protected ScheduledExecutorService executorService;
+    protected Retry connectRetry;
     protected boolean permanentError;
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
 
-    protected AbstractNettyIoClient(ProtocolExecutorService executorService) {
-        this.executorService = executorService;
+    protected AbstractNettyIoClient() {
+        this.executorService = Container.EXECUTOR_SERVICE;
     }
 
     @Override
@@ -210,7 +210,7 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     }
 
     protected void scheduleDoConnect() {
-        connectRetry = new Util.Retry("Connect to '" + getClientUri() + "'", executorService, () -> {
+        connectRetry = new Retry("Connect to '" + getClientUri() + "'", executorService, () -> {
             boolean success = false;
             try {
                 success = doConnect().get();
@@ -256,30 +256,11 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         });
 
         // Start and store the channel
-        channelFuture = startChannel();
-        channel = channelFuture.channel();
-        CompletableFuture<Boolean> connectedFuture = new CompletableFuture<>();
+        channelStartFuture = startChannel();
+        channel = channelStartFuture.channel();
 
-        // Add channel callback - this gets called when the channel connects or when channel encounters an error
-        channelFuture.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) {
-                synchronized (AbstractNettyIoClient.this) {
-                    channelFuture.removeListener(this);
-
-                    if (connectionStatus != ConnectionStatus.CONNECTING) {
-                        return;
-                    }
-
-                    if (future.isSuccess()) {
-                        LOG.log(Level.INFO, "Connected: " + getClientUri());
-                    } else if (future.cause() != null) {
-                        LOG.log(Level.WARNING, "Connection error: " + getClientUri(), future.cause());
-                    }
-                    connectedFuture.complete(future.isSuccess());
-                }
-            }
-        });
+        // Create connected future
+        CompletableFuture<Boolean> connectedFuture = createConnectedFuture();
 
         // Add closed callback
         channel.closeFuture().addListener(future -> {
@@ -294,6 +275,29 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
         });
 
         return connectedFuture;
+    }
+
+    protected CompletableFuture<Boolean> createConnectedFuture() {
+        CompletableFuture<Boolean> connectedFuture = new CompletableFuture<>();
+        channelStartFuture.addListener(future -> onConnectedFutureComplete(future, connectedFuture));
+        return connectedFuture;
+    }
+
+    protected void onConnectedFutureComplete(io.netty.util.concurrent.Future<? super Void> future, CompletableFuture<Boolean> connectedFuture) {
+        synchronized (this) {
+
+            if (connectionStatus != ConnectionStatus.CONNECTING) {
+                return;
+            }
+
+            if (future.isSuccess()) {
+                LOG.log(Level.INFO, "Connected: " + getClientUri());
+            } else if (future.cause() != null) {
+                LOG.log(Level.WARNING, "Connection error: " + getClientUri(), future.cause());
+            }
+
+            connectedFuture.complete(future.isSuccess());
+        }
     }
 
     @Override
@@ -318,9 +322,9 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
 
     protected void doDisconnect() {
         try {
-            if (channelFuture != null) {
-                channelFuture.cancel(true);
-                channelFuture = null;
+            if (channelStartFuture != null) {
+                channelStartFuture.cancel(true);
+                channelStartFuture = null;
             }
 
             // Close the channel
@@ -408,30 +412,6 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
      */
     protected void initChannel(Channel channel) {
         // Below is un-necessary as channel listener handles this
-//        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-//            @Override
-//            public void channelActive(ChannelHandlerContext ctx) throws Exception {
-//                synchronized (AbstractNettyIoClient.this) {
-//                    LOG.fine("Connected: " + getClientUri());
-//                    onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-//                }
-//                super.channelActive(ctx);
-//            }
-//
-//            @Override
-//            public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-//                synchronized (AbstractNettyIoClient.this) {
-//                    if (connectionStatus != ConnectionStatus.DISCONNECTING) {
-//                        // This is a connection failure so ignore as reconnect logic will handle it
-//                        return;
-//                    }
-//
-//                    LOG.fine("Disconnected: " + getClientUri());
-//                    onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
-//                }
-//                super.channelInactive(ctx);
-//            }
-//        });
         addEncodersDecoders(channel);
     }
 

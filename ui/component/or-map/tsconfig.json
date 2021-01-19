@@ -13,6 +13,7 @@
     { "path": "../rest" },
     { "path": "../model" },
     { "path": "../or-translate" },
+    { "path": "../or-mwc-components" },
     { "path": "../or-icon" },
     { "path": "../or-input" }
   ]

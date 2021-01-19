@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query;
 
-import org.openremote.model.query.filter.MetaPredicate;
+import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.rules.Ruleset;
 
 import java.util.Arrays;
@@ -27,7 +27,7 @@ import java.util.Arrays;
 public class RulesetQuery {
 
     public long[] ids;
-    public MetaPredicate[] meta;
+    public NameValuePredicate[] meta;
     public int limit;
     public Ruleset.Lang[] languages;
     public boolean fullyPopulate;
@@ -44,7 +44,7 @@ public class RulesetQuery {
         return this;
     }
 
-    public RulesetQuery setMeta(MetaPredicate...meta) {
+    public RulesetQuery setMeta(NameValuePredicate...meta) {
         this.meta = meta;
         return this;
     }

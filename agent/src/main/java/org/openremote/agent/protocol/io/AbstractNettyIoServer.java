@@ -25,7 +25,7 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.openremote.agent.protocol.ProtocolExecutorService;
+import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -33,7 +33,9 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -44,15 +46,14 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 /**
  * Abstract implementation of {@link IoServer} that uses the Netty library.
  */
-// TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
 @SuppressWarnings("unchecked")
-public abstract class AbstractNettyIoServer<T, U extends Channel, V extends AbstractBootstrap, W extends SocketAddress> implements IoServer<T, U, W> {
+public abstract class AbstractNettyIoServer<T, U extends Channel, V extends AbstractBootstrap<?,?>, W extends SocketAddress> implements IoServer<T, U, W> {
 
     protected final static int INITIAL_RECONNECT_DELAY_MILLIS = 1000;
     protected final static int MAX_RECONNECT_DELAY_MILLIS = 60000;
     protected final static int RECONNECT_BACKOFF_MULTIPLIER = 2;
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyIoServer.class);
-    protected final ProtocolExecutorService executorService;
+    protected final ScheduledExecutorService executorService;
     protected int clientLimit = 0; // 0 means no limit
     protected V bootstrap;
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
@@ -63,11 +64,11 @@ public abstract class AbstractNettyIoServer<T, U extends Channel, V extends Abst
     protected final List<IoServerMessageConsumer<T, U, W>> messageConsumers = new ArrayList<>();
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
     protected final List<BiConsumer<U, ConnectionStatus>> clientConnectionStatusConsumers = new ArrayList<>();
-    protected ScheduledFuture reconnectTask;
+    protected ScheduledFuture<?> reconnectTask;
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
 
-    public AbstractNettyIoServer(ProtocolExecutorService executorService) {
-        this.executorService = executorService;
+    public AbstractNettyIoServer() {
+        this.executorService = Container.EXECUTOR_SERVICE;
     }
 
     @Override
@@ -88,10 +89,10 @@ public abstract class AbstractNettyIoServer<T, U extends Channel, V extends Abst
         try {
             bootstrap = createAndConfigureBootstrap();
 
-            bootstrap.handler(new ChannelInitializer() {
+            bootstrap.handler(new ChannelInitializer<U>() {
                 @Override
-                public void initChannel(Channel channel) {
-                    AbstractNettyIoServer.this.initChannel((U)channel);
+                public void initChannel(U channel) {
+                    AbstractNettyIoServer.this.initChannel(channel);
                 }
             });
 
@@ -439,7 +440,7 @@ public abstract class AbstractNettyIoServer<T, U extends Channel, V extends Abst
                     start();
                 }
             }
-        }, reconnectDelayMilliseconds);
+        }, reconnectDelayMilliseconds, TimeUnit.MILLISECONDS);
     }
 
 

@@ -12,9 +12,9 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
-import {DefaultColor4, DefaultColor8, Util} from "@openremote/core";
+import {DefaultColor4, DefaultColor8, Util, AssetModelUtil} from "@openremote/core";
 import i18next from "i18next";
-import moment from "moment";
+import { ValueFormat, ValueFormatStyleRepresentation, AssetDescriptor, ValueDescriptorHolder, ValueDescriptor, WellknownValueTypes, MetaHolder, WellknownMetaItems, ValueHolder, NameHolder, Attribute, ValueConstraint, AttributeDescriptor, ValueConstraintSize, ValueConstraintPattern, ValueConstraintMax, ValueConstraintMin, ValueConstraintAllowedValues, ValueConstraintPastOrPresent, ValueConstraintPast, ValueConstraintFuture, ValueConstraintFutureOrPresent, ValueConstraintNotNull, ValueConstraintNotBlank, ValueConstraintNotEmpty, NameValueHolder } from "@openremote/model";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
@@ -73,6 +73,7 @@ export enum InputType {
     JSON = "json",
     MONTH = "month",
     NUMBER = "number",
+    BIG_INT = "big-int",
     PASSWORD = "password",
     RADIO = "radio",
     SWITCH = "switch",
@@ -84,8 +85,250 @@ export enum InputType {
     URL = "url",
     WEEK = "week",
     SELECT = "select",
-    LIST = "list"
+    LIST = "list",
+    CRON = "cron",
+    DURATION = "duration",
+    DURATION_TIME = "duration-time",
+    DURATION_PERIOD = "duration-period"
 }
+
+export interface ValueInputProviderOptions {
+    label?: string;
+    readonly?: boolean;
+    disabled?: boolean;
+    compact?: boolean;
+}
+
+export interface ValueInputProvider {
+    templateFunction: ValueInputTemplateFunction;
+    supportsHelperText: boolean;
+    supportsLabel: boolean;
+    supportsSendButton: boolean;
+}
+
+export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult) | undefined;
+
+export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: any | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+
+function inputTypeSupportsButton(inputType: InputType): boolean {
+    return inputType === InputType.NUMBER
+        || inputType === InputType.BIG_INT
+        || inputType === InputType.TELEPHONE
+        || inputType === InputType.TEXT
+        || inputType === InputType.PASSWORD
+        || inputType === InputType.DATE
+        || inputType === InputType.DATETIME
+        || inputType === InputType.EMAIL
+        || inputType === InputType.JSON
+        || inputType === InputType.MONTH
+        || inputType === InputType.TEXTAREA
+        || inputType === InputType.TIME
+        || inputType === InputType.URL
+        || inputType === InputType.WEEK;
+}
+
+function inputTypeSupportsHelperText(inputType: InputType) {
+    return inputTypeSupportsButton(inputType) || inputType === InputType.SELECT;
+}
+
+function inputTypeSupportsLabel(inputType: InputType) {
+    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX || inputType === InputType.SWITCH;
+}
+
+export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: any | undefined) => void, options: ValueInputProviderOptions) => {
+
+    let inputType = InputType.JSON;
+    let step: number | undefined;
+    let pattern: string | undefined;
+    let min: any;
+    let max: any;
+    let required: boolean | undefined;
+    let selectOptions: [string, string][] | undefined;
+
+    const assetType = typeof assetDescriptor === "string" ? assetDescriptor : assetDescriptor.name;
+    const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
+    const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
+
+    // Determine input type
+    switch (valueDescriptor.name) {
+        case WellknownValueTypes.TEXT:
+        case WellknownValueTypes.EMAIL:
+        case WellknownValueTypes.UUID:
+        case WellknownValueTypes.ASSETID:
+        case WellknownValueTypes.HOSTORIPADDRESS:
+        case WellknownValueTypes.IPADDRESS:
+            inputType = Util.getMetaValue(WellknownMetaItems.MULTILINE, valueHolder, valueHolderDescriptor) === true ? InputType.TEXTAREA : InputType.TEXT;
+            break;
+        case WellknownValueTypes.BOOLEAN:
+            if (format && format.asNumber) {
+                inputType = InputType.NUMBER;
+                step = 1;
+                min = 0;
+                max = 1;
+                break;
+            }
+            if (format && (format.asOnOff || format.asOpenClosed)) {
+                inputType = InputType.SWITCH;
+            } else {
+                inputType = InputType.CHECKBOX;
+            }
+
+            if (format && format.asMomentary) {
+                inputType = InputType.BUTTON_MOMENTARY;
+            }
+            break;
+        case WellknownValueTypes.BIGNUMBER:
+        case WellknownValueTypes.NUMBER:
+        case WellknownValueTypes.POSITIVEINTEGER:
+        case WellknownValueTypes.POSITIVENUMBER:
+        case WellknownValueTypes.LONG:
+        case WellknownValueTypes.INTEGER:
+        case WellknownValueTypes.BYTE:
+        case WellknownValueTypes.INTEGERBYTE:
+        case WellknownValueTypes.DIRECTION:
+        case WellknownValueTypes.TCPIPPORTNUMBER:
+            if (valueDescriptor.name === WellknownValueTypes.BYTE || valueDescriptor.name === WellknownValueTypes.INTEGERBYTE) {
+                min = 0;
+                max = 255;
+                step = 1;
+            } else if (valueDescriptor.name === WellknownValueTypes.INTEGER || valueDescriptor.name === WellknownValueTypes.LONG) {
+                step = 1;
+            }
+            if (format && format.asDate) {
+                inputType = InputType.DATETIME;
+            } else if (format && format.asBoolean) {
+                inputType = InputType.CHECKBOX;
+            } else {
+                inputType = InputType.NUMBER;
+            }
+            break;
+        case WellknownValueTypes.BIGINTEGER:
+            inputType = InputType.BIG_INT;
+            step = 1;
+            break;
+        case WellknownValueTypes.COLOURRGB:
+        case WellknownValueTypes.COLOURRGBA:
+        case WellknownValueTypes.COLOURRGBW:
+        case WellknownValueTypes.COLOURRGBAW:
+            inputType = InputType.COLOUR;
+            break;
+        case WellknownValueTypes.DATEANDTIME:
+        case WellknownValueTypes.TIMESTAMP:
+        case WellknownValueTypes.TIMESTAMPISO8601:
+            inputType = InputType.DATETIME;
+            break;
+        case WellknownValueTypes.TIMERCRONEXPRESSION:
+            inputType = InputType.CRON;
+            break;
+        case WellknownValueTypes.TIMEDURATIONISO8601:
+            inputType = InputType.DURATION_TIME;
+            break;
+        case WellknownValueTypes.PERIODDURATIONISO8601:
+            inputType = InputType.DURATION_PERIOD;
+            break;
+        case WellknownValueTypes.TIMEANDPERIODDURATIONISO8601:
+            inputType = InputType.DURATION;
+            break;
+    }
+
+    // Apply any constraints
+    const sizeConstraint = constraints && constraints.find(c => c.type === "size") as ValueConstraintSize;
+    const patternConstraint = constraints && constraints.find(c => c.type === "pattern") as ValueConstraintPattern;
+    const minConstraint = constraints && constraints.find(c => c.type === "min") as ValueConstraintMin;
+    const maxConstraint = constraints && constraints.find(c => c.type === "max") as ValueConstraintMax;
+    const allowedValuesConstraint = constraints && constraints.find(c => c.type === "allowedValues") as ValueConstraintAllowedValues;
+    const pastConstraint = constraints && constraints.find(c => c.type === "past") as ValueConstraintPast;
+    const pastOrPresentConstraint = constraints && constraints.find(c => c.type === "pastOrPresent") as ValueConstraintPastOrPresent;
+    const futureConstraint = constraints && constraints.find(c => c.type === "future") as ValueConstraintFuture;
+    const futureOrPresentConstraint = constraints && constraints.find(c => c.type === "futureOrPresent") as ValueConstraintFutureOrPresent;
+    const notEmptyConstraint = constraints && constraints.find(c => c.type === "notEmpty") as ValueConstraintNotEmpty;
+    const notBlankConstraint = constraints && constraints.find(c => c.type === "notBlank") as ValueConstraintNotBlank;
+    const notNullConstraint = constraints && constraints.find(c => c.type === "notNull") as ValueConstraintNotNull;
+
+    if (sizeConstraint) {
+        min = sizeConstraint.min;
+        max = sizeConstraint.max;
+    }
+    if (sizeConstraint) {
+        min = sizeConstraint.min;
+        max = sizeConstraint.max;
+    }
+    if (minConstraint) {
+        min = minConstraint.min;
+    }
+    if (maxConstraint) {
+        max = maxConstraint.max;
+    }
+    if (patternConstraint) {
+        pattern = patternConstraint.regexp;
+    }
+    if (notNullConstraint) {
+        required = true;
+    }
+    if (notBlankConstraint && !pattern) {
+        pattern = "\\S+";
+    } else if (notEmptyConstraint && !pattern) {
+        pattern = ".+";
+    }
+    if (allowedValuesConstraint && allowedValuesConstraint.allowedValues) {
+        const allowedLabels = allowedValuesConstraint.allowedValueNames && allowedValuesConstraint.allowedValueNames.length === allowedValuesConstraint.allowedValues.length ? allowedValuesConstraint.allowedValueNames : undefined;
+        selectOptions = allowedValuesConstraint.allowedValues.map((v, i) => {
+            const label = allowedLabels ? allowedLabels[i] : typeof v === "string" ? Util.getAllowedValueLabel(v) : "" + i;
+            return ["" + v, label || "" + v];
+        });
+    }
+
+    if (inputType === InputType.DATETIME) {
+        if (pastConstraint || pastOrPresentConstraint) {
+            min = undefined;
+            max = new Date();
+        } else if (futureConstraint || futureOrPresentConstraint) {
+            min = new Date();
+            max = undefined;
+        }
+
+        // Refine the input type based on formatting
+        if (format) {
+            if (format.timeStyle && !format.dateStyle) {
+                inputType = InputType.TIME;
+            } else if (format.dateStyle && !format.timeStyle) {
+                inputType = InputType.DATE;
+            }
+        }
+    }
+
+    if (inputType === InputType.NUMBER && format && format.resolution) {
+        step = format.resolution;
+    }
+
+    const supportsHelperText = inputTypeSupportsHelperText(inputType);
+    const supportsLabel = inputTypeSupportsLabel(inputType);
+    const supportsSendButton = inputTypeSupportsButton(inputType);
+    const readonly = options.readonly;
+
+    const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+
+        const disabled = options.disabled || loading || sending;
+        const label = supportsLabel ? options.label : undefined;
+
+        return html`<or-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
+            .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}"
+            .options="${selectOptions}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
+            .helperText="${helperText}" .helperPersistent="${true}"
+        }}" @or-input-changed="${(e: OrInputChangedEvent) => {
+            e.stopPropagation();
+            valueChangeNotifier(e.detail.value);
+        }}"></or-input>`
+    };
+
+    return {
+        templateFunction: templateFunction,
+        supportsHelperText: supportsHelperText,
+        supportsSendButton: supportsSendButton,
+        supportsLabel: supportsLabel
+    };
+}
+
 
 // language=CSS
 const style = css`
@@ -338,8 +581,8 @@ export class OrInput extends LitElement {
     @property({type: Boolean})
     public rounded: boolean = false;
 
-    @property({type: String})
-    public format?: string;
+    @property({type: Object})
+    public format?: ValueFormat;
 
     @property({type: Boolean})
     public disableSliderNumberInput: boolean = false;
@@ -479,15 +722,7 @@ export class OrInput extends LitElement {
                             "mdc-select--with-leading-icon": !!this.icon
                         };
 
-                        let optsList: [string, string][] | undefined;
-                        if (this.options && this.options.length > 0) {
-                            if (Array.isArray(this.options[0])) {
-                                optsList = this.options as [string, string][];
-                            } else {
-                                optsList = (this.options as string[]).map((option) => [option, option]);
-                            }
-                        }
-    
+                        let optsList = this.resolveOptions(this.options);
                         this._selectedIndex = -1;
                         return html`
                             <div id="component" class="mdc-list mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
@@ -513,14 +748,7 @@ export class OrInput extends LitElement {
                         "mdc-select--with-leading-icon": !!this.icon
                     };
 
-                    let opts: [string, string][] | undefined;
-                    if (this.options && this.options.length > 0) {
-                        if (Array.isArray(this.options[0])) {
-                            opts = this.options as [string, string][];
-                        } else {
-                            opts = (this.options as string[]).map((option) => [option, option]);
-                        }
-                    }
+                    let opts = this.resolveOptions(this.options);
                     const value = opts && opts.find(([optValue, optDisplay], index) => this.value === optValue);
                     const valueLabel = value ? value[1] : typeof this.value === "string" ? this.value : "";
                     this._selectedIndex = -1;
@@ -613,15 +841,7 @@ export class OrInput extends LitElement {
                 }
                 case InputType.CHECKBOX_LIST:
 
-                    let optsRadio: [string, string][] | undefined;
-                    if (this.options && this.options.length > 0) {
-                        if (Array.isArray(this.options[0])) {
-                            optsRadio = this.options as [string, string][];
-                        } else {
-                            optsRadio = (this.options as string[]).map((option) => [option, option]);
-                        }
-                    }
-
+                    let optsRadio = this.resolveOptions(this.options);
                     this._selectedIndex = -1;
                     return html`
                             <div class="mdc-checkbox-list">
@@ -685,61 +905,41 @@ export class OrInput extends LitElement {
                 case InputType.TEXTAREA:
                 case InputType.JSON: {
                     // The following HTML input types require the values as specially formatted strings
-                    const valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? "" : this.value, this.min, this.max];
+                    let valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? "" : this.value, this.min, this.max];
 
-                    if (valMinMax.some((v) => v !== undefined && v !== null && typeof (v) !== "string")) {
+                    if (valMinMax.some((v) => typeof (v) !== "string")) {
 
                         if (this.type === InputType.JSON) {
                             valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? (typeof valMinMax[0] === "string" ? valMinMax[0] : JSON.stringify(valMinMax[0], null, 2)) : "";
                         } else {
-                            let format: string | undefined;
-                            let requiresDate = false;
+
+                            let format = this.format ? {...this.format} : {};
 
                             switch (this.type) {
                                 case InputType.TIME:
-                                    requiresDate = true;
-                                    format = "HH:mm";
+                                    format.asDate = true;
+                                    format.hour12 = false;
+                                    format.timeStyle = this.step && this.step < 60 ? ValueFormatStyleRepresentation.MEDIUM : ValueFormatStyleRepresentation.SHORT;
                                     break;
                                 case InputType.DATE:
-                                    requiresDate = true;
-                                    format = "YYYY-MM-DD";
+                                    format.asDate = true;
+                                    format.momentJsFormat = "YYYY-MM-DD";
                                     break;
                                 case InputType.WEEK:
-                                    requiresDate = true;
-                                    format = "YYYY-[W]WW";
+                                    format.asDate = true;
+                                    format.momentJsFormat = "YYYY-[W]WW";
                                     break;
                                 case InputType.MONTH:
-                                    requiresDate = true;
-                                    format = "YYYY-MM";
+                                    format.asDate = true;
+                                    format.momentJsFormat = "YYYY-MM";
                                     break;
                                 case InputType.DATETIME:
-                                    requiresDate = true;
-                                    format = "YYYY-MM-DDTHH:mm";
+                                    format.asDate = true;
+                                    format.momentJsFormat = "YYYY-MM-DDTHH:mm";
                                     break;
-                                default:
-                                    // Allow custom formats to be used for other input types
-                                    format = this.format;
                             }
 
-                            if (format) {
-                                const formatter = Util.getAttributeValueFormatter();
-
-                                valMinMax.forEach((val, i) => {
-                                    if (requiresDate) {
-                                        if (typeof (val) === "number") {
-                                            // Assume UNIX timestamp in ms
-                                            const offset = (new Date()).getTimezoneOffset() * 60000;
-                                            val = new Date(val - offset);
-                                        }
-                                        if (val instanceof Date) {
-                                            val = moment(val).format(format);
-                                        }
-                                    } else if (val) {
-                                        val = formatter(val, format);
-                                    }
-                                    valMinMax[i] = val;
-                                });
-                            }
+                            valMinMax = valMinMax.map((val) => Util.getValueAsString(val, () => format)) as [any,any,any];
                         }
                     }
 
@@ -788,6 +988,10 @@ export class OrInput extends LitElement {
                             step="${ifDefined(this.step)}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
                             .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
+                            @keyup="${(e: KeyboardEvent) => {
+                                if ((e.code === "Enter" || e.code === "NumpadEnter")) {
+                                    this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value);
+                                }}}"
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
@@ -841,6 +1045,14 @@ export class OrInput extends LitElement {
         }
 
         return html`<span>INPUT TYPE NOT IMPLEMENTED</span>`;
+    }
+
+    protected _getFormat(): ValueFormat | undefined {
+        if (this.format) {
+            return this.format;
+        }
+
+
     }
 
     protected updated(_changedProperties: PropertyValues): void {
@@ -1017,5 +1229,19 @@ export class OrInput extends LitElement {
         if (elem && elem.value) {
             return elem.value;
         }
+    }
+
+    protected resolveOptions(options: string[] | [string, string][] | undefined): [string, string][] | undefined {
+        let resolved: [string, string][] | undefined;
+
+        if (options && options.length > 0) {
+            if (Array.isArray(options[0])) {
+                resolved = options as [string, string][];
+            } else {
+                resolved = (options as string[]).map((option) => [option, option]);
+            }
+        }
+
+        return resolved;
     }
 }

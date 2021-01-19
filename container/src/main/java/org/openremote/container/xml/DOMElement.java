@@ -36,9 +36,8 @@ import java.util.List;
  * XML implementation in the JDK will not get forced by Larry to fix their ugly code and APIs. Yes, it'
  * s unlikely but one can dream...
  * </p>
- *
- * @author Christian Bauer
  */
+@SuppressWarnings("rawtypes")
 public abstract class DOMElement<CHILD extends DOMElement, PARENT extends DOMElement> {
 
     public final Builder<PARENT> PARENT_BUILDER;

@@ -20,6 +20,8 @@
 package org.openremote.container.web;
 
 import org.jboss.resteasy.util.BasicAuthHelper;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.OAuthRefreshTokenGrant;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
@@ -123,7 +125,7 @@ public class OAuthFilter implements ClientRequestFilter {
 
         return authTarget
             .request(MediaType.APPLICATION_JSON_TYPE)
-            .post(Entity.entity(new Form(refreshGrant.valueMap), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+            .post(Entity.entity(new Form(refreshGrant.asMultivaluedMap()), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
     protected Response requestToken() throws SocketException {
@@ -133,7 +135,7 @@ public class OAuthFilter implements ClientRequestFilter {
         if (oAuthGrant.isBasicAuthHeader()) {
             builder.header(HttpHeaders.AUTHORIZATION, BasicAuthHelper.createHeader(oAuthGrant.getClientId(), oAuthGrant.getClientSecret()));
         }
-        return builder.post(Entity.entity(new Form(oAuthGrant.valueMap), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+        return builder.post(Entity.entity(new Form(oAuthGrant.asMultivaluedMap()), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
     }
 
     @Override

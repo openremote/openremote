@@ -21,7 +21,6 @@ package org.openremote.container.web;
 
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,7 @@ public class HeaderInjectorFilter implements ClientRequestFilter {
 
     protected Set<Map.Entry<String, List<String>>> headers;
 
-    public HeaderInjectorFilter(MultivaluedMap<String, String> headers) {
+    public HeaderInjectorFilter(Map<String, List<String>> headers) {
         this.headers = headers.entrySet();
     }
 

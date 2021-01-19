@@ -20,8 +20,8 @@
 package org.openremote.model.asset;
 
 import org.hibernate.annotations.Formula;
-import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.attribute.MetaItemType;
+import org.openremote.model.AssetModelProvider;
+import org.openremote.model.value.MetaItemType;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -36,16 +36,15 @@ import java.util.Date;
  * <ul>
  * <li>
  * When a restricted client reads assets, only dynamic attributes with
- * {@link MetaItemType#ACCESS_RESTRICTED_READ} and attribute meta items with {@link MetaItemDescriptor.Access#restrictedRead}
- * are included. A restricted client may submit a query for public assets and dynamic attributes with
- * {@link MetaItemType#ACCESS_PUBLIC_READ} and meta items with {@link MetaItemDescriptor.Access#publicRead}.
+ * {@link MetaItemType#ACCESS_RESTRICTED_READ} are included.
+ * A restricted client may submit a query for public assets and dynamic attributes with
+ * {@link MetaItemType#ACCESS_PUBLIC_READ}.
  * </li>
  * <li>
- * When a restricted client updates existing assets, new dynamic attributes can be added, but
- * only attributes with {@link MetaItemType#ACCESS_RESTRICTED_WRITE} can be updated or deleted. Any new attributes
- * are automatically set with {@link MetaItemType#ACCESS_RESTRICTED_READ} and {@link MetaItemType#ACCESS_RESTRICTED_WRITE},
- * thus ensuring that a restricted client can fully access its own attributes. Any added, updated, or removed meta
- * items of attributes must be {@link MetaItemDescriptor.Access#restrictedWrite}.
+ * When a restricted client updates existing assets, new attributes can be added, but
+ * only attributes with {@link MetaItemType#ACCESS_RESTRICTED_WRITE} can be updated or deleted; note Access meta items
+ * cannot be modified. Any new attributes are automatically set with {@link MetaItemType#ACCESS_RESTRICTED_READ} and
+ * {@link MetaItemType#ACCESS_RESTRICTED_WRITE}, thus ensuring that a restricted client can fully access its own attributes.
  * </li>
  * <li>
  * A restricted client can not create or delete assets. A restricted client can not change the name, parent, or

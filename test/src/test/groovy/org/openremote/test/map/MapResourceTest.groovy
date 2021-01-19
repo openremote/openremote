@@ -2,6 +2,7 @@ package org.openremote.test.map
 
 import groovy.json.JsonSlurper
 import org.openremote.model.map.MapResource
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
@@ -38,7 +39,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         mapSettings != null
 
         and: "JSON content is valid"
-        def json = new JsonSlurper().parseText(mapSettings.toJson())
+        def json = new JsonSlurper().parseText(Values.asJSON(mapSettings).orElse("null"))
         json.options != null
         json.options.default != null
         json.options.default.center.size() == 2

@@ -62,6 +62,10 @@ public enum SyslogCategory {
         true,
         "GatewayService",
         "GatewayConnector"
+    ),
+    MODEL_AND_VALUES(
+        "Model and Value",
+        true
     );
 
     protected final String categoryLabel;
@@ -130,7 +134,7 @@ public enum SyslogCategory {
         return null;
     }
 
-    public static Logger getLogger(SyslogCategory category, Class loggerName) {
+    public static Logger getLogger(SyslogCategory category, Class<?> loggerName) {
         return getLogger(category, loggerName.getName());
     }
 

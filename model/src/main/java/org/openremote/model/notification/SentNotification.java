@@ -19,14 +19,11 @@
  */
 package org.openremote.model.notification;
 
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
-
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 
-import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
@@ -63,8 +60,8 @@ public class SentNotification {
     protected String sourceId;
 
     @Column(name = "MESSAGE", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
-    protected ObjectValue message;
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    protected AbstractNotificationMessage message;
 
     @Column(name = "ERROR", length = 4096)
     protected String error;
@@ -156,11 +153,11 @@ public class SentNotification {
         return this;
     }
 
-    public ObjectValue getMessage() {
-        return message == null ? message = Values.createObject() : message;
+    public AbstractNotificationMessage getMessage() {
+        return message;
     }
 
-    public SentNotification setMessage(ObjectValue message) {
+    public SentNotification setMessage(AbstractNotificationMessage message) {
         this.message = message;
         return this;
     }

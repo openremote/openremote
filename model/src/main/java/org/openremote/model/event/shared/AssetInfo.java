@@ -21,7 +21,7 @@ package org.openremote.model.event.shared;
 
 public interface AssetInfo {
 
-    String getEntityId();
+    String getAssetId();
 
     String getRealm();
 

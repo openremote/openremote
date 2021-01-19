@@ -23,10 +23,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-public class ZWPacketEncoder extends MessageToByteEncoder<SerialDataPacket> {
+public class ZWPacketEncoder extends MessageToByteEncoder<byte[]> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, SerialDataPacket message, ByteBuf buf) throws Exception {
-        buf.writeBytes(message.getData());
+    protected void encode(ChannelHandlerContext ctx, byte[] message, ByteBuf buf) throws Exception {
+        buf.writeBytes(message);
     }
 }

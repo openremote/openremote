@@ -1,18 +1,13 @@
 package org.openremote.test.failure
 
-
-import org.openremote.manager.rules.RulesEngine
-import org.openremote.manager.rules.RulesFacts
-import org.openremote.manager.rules.RulesLoopException
-import org.openremote.manager.rules.RulesService
-import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.rules.*
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TemporaryFact
-import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -145,7 +140,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
             "Failure Ruleset",
             Ruleset.Lang.GROOVY,
             getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text)
-            .addMeta(Ruleset.META_KEY_CONTINUE_ON_ERROR, Values.create(true))
+        ruleset.getMeta().addOrReplace(new MetaItem<>(Ruleset.CONTINUE_ON_ERROR, true))
         ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine should have an error (first firing after initial asset state insert)"

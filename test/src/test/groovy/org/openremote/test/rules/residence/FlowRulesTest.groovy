@@ -41,20 +41,20 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerTestSetup.apartment1LivingroomId,
                 "targetTemperature",
-                Values.create(startTemperature)
+                startTemperature
         ))
 
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerTestSetup.apartment1Bedroom1Id,
                 "targetTemperature",
-                Values.create(0)
+                0
         ))
 
         when: "a valid node collection is added"
         String json = getClass().getResource("/org/openremote/test/rules/BasicFlowRules.json").text
         json = json.replaceAll("%LIVING ROOM ID%", managerTestSetup.apartment1LivingroomId)
         json = json.replaceAll("%BEDROOM ID%", managerTestSetup.apartment1Bedroom1Id)
-        NodeCollection realCollection = container.JSON.readValue(json, NodeCollection.class)
+        NodeCollection realCollection = Values.JSON.readValue(json, NodeCollection.class)
         def ruleset = (new GlobalRuleset(
                 realCollection.name,
                 Ruleset.Lang.FLOW,
@@ -73,7 +73,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def bedroomTargetTemp = assetStorageService.
                     find(managerTestSetup.apartment1Bedroom1Id).
-                    getAttribute("targetTemperature").get().getValueAsNumber().get()
+                    getAttribute("targetTemperature").flatMap{it.value}.orElse(0d)
             assert bedroomTargetTemp.intValue() == (startTemperature.intValue() + 10) : ("it was actually " +  bedroomTargetTemp.intValue())//convert to int considering floating point inaccuracy
         }
 

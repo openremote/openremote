@@ -20,10 +20,8 @@
 package org.openremote.agent.protocol.velbus;
 
 import org.openremote.agent.protocol.io.IoClient;
-import org.openremote.agent.protocol.velbus.device.DevicePropertyValue;
 import org.openremote.agent.protocol.velbus.device.VelbusDevice;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.value.Value;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,11 +35,11 @@ public class VelbusNetwork {
     protected final Integer timeInjectionIntervalSeconds;
     protected IoClient<VelbusPacket> client;
     protected final Queue<VelbusPacket> messageQueue = new ArrayDeque<>();
-    protected List<ScheduledFuture> scheduledTasks = new ArrayList<>();
-    protected ScheduledFuture timeInjector;
+    protected List<ScheduledFuture<?>> scheduledTasks = new ArrayList<>();
+    protected ScheduledFuture<?> timeInjector;
     protected VelbusDevice[] devices = new VelbusDevice[254];
     protected VelbusDevice[] subAddressDevices = new VelbusDevice[254];
-    protected ScheduledFuture queueProcessingTask;
+    protected ScheduledFuture<?> queueProcessingTask;
     protected ScheduledExecutorService executorService;
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
 
@@ -139,16 +137,16 @@ public class VelbusNetwork {
             }
 
             // Initialise the devices
-            for (int i=0; i<devices.length; i++) {
-                if (devices[i] != null) {
-                    devices[i].initialise();
+            for (VelbusDevice device : devices) {
+                if (device != null) {
+                    device.initialise();
                 }
             }
         } else {
             // Reset the devices
-            for (int i=0; i<devices.length; i++) {
-                if (devices[i] != null) {
-                    devices[i].reset();
+            for (VelbusDevice device : devices) {
+                if (device != null) {
+                    device.reset();
                 }
             }
             // Clear out sub device registrations
@@ -188,7 +186,7 @@ public class VelbusNetwork {
         }
     }
 
-    public void addPropertyValueConsumer(int deviceAddress, String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
+    public void addPropertyValueConsumer(int deviceAddress, String property, Consumer<Object> propertyValueConsumer) {
         if (deviceAddress < 1 || deviceAddress > 254) {
             LOG.warning("Invalid device address: " + deviceAddress);
             return;
@@ -210,7 +208,7 @@ public class VelbusNetwork {
         }
     }
 
-    public void removePropertyValueConsumer(int deviceAddress, String property, Consumer<DevicePropertyValue<?>> propertyValueConsumer) {
+    public void removePropertyValueConsumer(int deviceAddress, String property, Consumer<Object> propertyValueConsumer) {
         if (deviceAddress < 1 || deviceAddress > 254) {
             LOG.warning("Invalid device address: " + deviceAddress);
             return;
@@ -224,15 +222,14 @@ public class VelbusNetwork {
     }
 
     protected void removeAllDevices() {
-        for (int i=0; i<devices.length; i++) {
-            VelbusDevice device = devices[i];
+        for (VelbusDevice device : devices) {
             if (device != null) {
                 device.removeAllPropertyValueConsumers();
             }
         }
     }
 
-    public void writeProperty(int deviceAddress, String property, Value value) {
+    public void writeProperty(int deviceAddress, String property, Object value) {
         if (getConnectionStatus() != ConnectionStatus.CONNECTED) {
             return;
         }
@@ -297,7 +294,7 @@ public class VelbusNetwork {
         client.sendMessage(packet);
     }
 
-    public ScheduledFuture scheduleTask(Runnable runnable, int delayMillis) {
+    public ScheduledFuture<?> scheduleTask(Runnable runnable, int delayMillis) {
         // Remove old completed tasks
         scheduledTasks.removeIf(Future::isDone);
 

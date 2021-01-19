@@ -1,5 +1,5 @@
 /*
- * Copyright 2019, OpenRemote Inc.
+ * Copyright 2020, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,75 +19,128 @@
  */
 package org.openremote.manager.asset;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.apache.camel.builder.RouteBuilder;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.gateway.GatewayService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.asset.AssetModelProvider;
-import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ServiceLoader;
-import java.util.logging.Logger;
-
+// TODO: Implement model client event support
 /**
- * This service populates the descriptors in {@link org.openremote.model.util.AssetModelUtil} by looking for
- * {@link AssetModelProvider}s through {@link ServiceLoader}.
+ * A service for abstracting {@link org.openremote.model.util.AssetModelUtil} and handling local model requests vs
+ * {@link org.openremote.model.asset.impl.GatewayAsset} model requests. It also manages the {@link
+ * org.openremote.model.asset.AssetModelResource} and provides support for model requests via the client event bus.
  */
-public class AssetModelService implements ContainerService {
+public class AssetModelService extends RouteBuilder implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(AssetModelService.class.getName());
-    protected final List<AssetModelProvider> assetModelProviders = new ArrayList<>();
+    protected ManagerIdentityService identityService;
+    protected ClientEventService clientEventService;
+    protected GatewayService gatewayService;
+
+    @Override
+    public void configure() throws Exception {
+//        // React if a client wants to read assets and attributes
+//        from(CLIENT_EVENT_TOPIC)
+//            .routeId("FromClientReadRequests")
+//            .filter(
+//                or(body().isInstanceOf(ReadAssetsEvent.class), body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAttributeEvent.class)))
+//            .choice()
+//            .when(body().isInstanceOf(ReadAssetEvent.class))
+//            .end();
+    }
 
     @Override
     public int getPriority() {
-        return Integer.MIN_VALUE + 10;
+        return ContainerService.DEFAULT_PRIORITY;
     }
 
     @Override
     public void init(Container container) throws Exception {
-        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
+
+        identityService = container.getService(ManagerIdentityService.class);
+        clientEventService = container.getService(ClientEventService.class);
+        gatewayService = container.getService(GatewayService.class);
+
+        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> false);
+
+        container.getService(ManagerWebService.class).getApiSingletons().add(
+            new AssetModelResourceImpl(
+                container.getService(TimerService.class),
+                identityService,
+                this
+            )
+        );
+
+        container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
     @Override
     public void start(Container container) throws Exception {
 
-        List<AgentDescriptor> agentDescriptors = new ArrayList<>();
-        List<AssetDescriptor> assetDescriptors = new ArrayList<>();
-        List<AttributeDescriptor> attributeDescriptors = new ArrayList<>();
-        List<AttributeValueDescriptor> attributeValueDescriptors = new ArrayList<>();
-        List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>();
-
-        assetModelProviders.forEach(assetModelProvider -> {
-            LOG.fine("Adding asset model descriptors of provider: " + assetModelProvider.getClass().getName());
-
-            agentDescriptors.addAll(Arrays.asList(assetModelProvider.getAgentDescriptors()));
-            assetDescriptors.addAll(Arrays.asList(assetModelProvider.getAssetDescriptors()));
-            attributeDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeDescriptors()));
-            attributeValueDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeValueDescriptors()));
-            metaItemDescriptors.addAll(Arrays.asList(assetModelProvider.getMetaItemDescriptors()));
-        });
-
-        AssetModelUtil.setAgentDescriptors(agentDescriptors.toArray(new AgentDescriptor[0]));
-        AssetModelUtil.setAssetDescriptors(assetDescriptors.toArray(new AssetDescriptor[0]));
-        AssetModelUtil.setAttributeDescriptors(attributeDescriptors.toArray(new AttributeDescriptor[0]));
-        AssetModelUtil.setAttributeValueDescriptors(attributeValueDescriptors.toArray(new AttributeValueDescriptor[0]));
-        AssetModelUtil.setMetaItemDescriptors(metaItemDescriptors.toArray(new MetaItemDescriptor[0]));
     }
 
     @Override
     public void stop(Container container) throws Exception {
+
     }
 
-    public void addAssetModelProvider(AssetModelProvider assetModelProvider) {
-        // Model providers should be singletons so make sure no duplicate instances of the same class
-        if (assetModelProviders.stream().noneMatch(asm -> asm.getClass() == assetModelProvider.getClass())) {
-            this.assetModelProviders.add(assetModelProvider);
+    public AssetTypeInfo[] getAssetInfos(String parentId, String parentType) {
+
+        if (!TextUtil.isNullOrEmpty(parentId) && gatewayService.getLocallyRegisteredGatewayId(parentId, null) != null) {
+            // TODO: Asset is on a gateway so need to get model info from the gateway instance
+            return new AssetTypeInfo[0];
         }
+
+        return AssetModelUtil.getAssetInfos(parentType);
+    }
+
+    public AssetTypeInfo getAssetInfo(String parentId, String assetType) {
+
+        if (!TextUtil.isNullOrEmpty(parentId) && gatewayService.getLocallyRegisteredGatewayId(parentId, null) != null) {
+            // TODO: Asset is on a gateway so need to get model info from the gateway instance
+            return null;
+        }
+
+        return AssetModelUtil.getAssetInfo(assetType).orElse(null);
+    }
+
+    public AssetDescriptor<?>[] getAssetDescriptors(String parentId, String parentType) {
+
+        if (!TextUtil.isNullOrEmpty(parentId) && gatewayService.getLocallyRegisteredGatewayId(parentId, null) != null) {
+            // TODO: Asset is on a gateway so need to get model info from the gateway instance
+            return new AssetDescriptor[0];
+        }
+
+        return AssetModelUtil.getAssetDescriptors(parentType);
+    }
+
+    public ValueDescriptor<?>[] getValueDescriptors(String parentId) {
+
+        if (!TextUtil.isNullOrEmpty(parentId) && gatewayService.getLocallyRegisteredGatewayId(parentId, null) != null) {
+            // TODO: Asset is on a gateway so need to get model info from the gateway instance
+            return new ValueDescriptor<?>[0];
+        }
+
+        return AssetModelUtil.getValueDescriptors();
+    }
+
+    public MetaItemDescriptor<?>[] getMetaItemDescriptors(String parentId) {
+
+        if (!TextUtil.isNullOrEmpty(parentId) && gatewayService.getLocallyRegisteredGatewayId(parentId, null) != null) {
+            // TODO: Asset is on a gateway so need to get model info from the gateway instance
+            return new MetaItemDescriptor<?>[0];
+        }
+
+        return AssetModelUtil.getMetaItemDescriptors();
     }
 }

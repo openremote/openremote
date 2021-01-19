@@ -22,16 +22,20 @@ package org.openremote.model.calendar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gwt.core.shared.GwtIncompatible;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.util.StdConverter;
+import net.fortuna.ical4j.model.DateList;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.Pair;
 
+import java.io.Serializable;
+import java.text.ParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Optional;
+import java.util.logging.Level;
 
 /**
  * Represents an event that occurs at a point in time with a {@link #start}, {#link #end} and optional
@@ -76,11 +80,19 @@ import java.util.Optional;
 }
  * }</pre></blockquote>
  */
-public class CalendarEvent {
+public class CalendarEvent implements Serializable {
     protected Date start;
     protected Date end;
-    @JsonIgnore
+    @JsonSerialize(converter = RecurStringConverter.class)
     protected Recur recurrence;
+
+    public static class RecurStringConverter extends StdConverter<Recur, String> {
+
+        @Override
+        public String convert(Recur value) {
+            return value.toString();
+        }
+    }
 
     @JsonCreator
     public CalendarEvent(@JsonProperty("start") Date start, @JsonProperty("end") Date end, @JsonProperty("recurrence") String recurrence) {
@@ -93,6 +105,10 @@ public class CalendarEvent {
         this.start = start;
         this.end = end;
         this.recurrence = recur;
+    }
+
+    public CalendarEvent(Date start, Date end) {
+        this(start, end, (Recur)null);
     }
 
     public CalendarEvent(Date start, Date end, Recur recurrence) {
@@ -109,49 +125,45 @@ public class CalendarEvent {
         return end;
     }
 
-    @JsonIgnore
     public Recur getRecurrence() {
         return recurrence;
     }
 
-    // TODO: Remove once GWT removed
-    @JsonProperty("recurrence")
-    protected String getRecurrenceInternal() {
-        return recurrence != null ? recurrence.toString() : null;
-    }
+    public Pair<Long, Long> getNextOrActiveFromTo(Date when) {
 
-    @GwtIncompatible
-    public static Optional<CalendarEvent> fromValue(Value value) {
-        if (value == null || value.getType() != ValueType.OBJECT) {
-            return Optional.empty();
+        if (getEnd() == null) {
+            return new Pair<>(getStart().getTime(), Long.MAX_VALUE);
         }
 
-        ObjectValue objectValue = (ObjectValue) value;
-        Optional<Long> start = objectValue.get("start").flatMap(Values::getLongCoerced);
-        Optional<Long> end = objectValue.get("end").flatMap(Values::getLongCoerced);
-        Optional<Recur> recurrence = objectValue.get("recurrence").flatMap(Values::getString).map(str -> {
-            try {
-                return new Recur(str);
-            } catch (Exception e) {
+        if (getStart().before(when) && getEnd().after(when) && (getEnd().getTime()-when.getTime() > 1000)) {
+            return new Pair<>(getStart().getTime(), getEnd().getTime());
+        }
+
+        Recur recurrence = getRecurrence();
+
+        if (recurrence == null) {
+            if (getEnd().before(when)) {
                 return null;
             }
-        });
-
-        return start.map(aLong -> new CalendarEvent(new Date(aLong),
-            end.map(Date::new).orElse(null), recurrence.orElse(null)));
-    }
-
-    @GwtIncompatible
-    public Value toValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("start", start.getTime());
-        if (end != null) {
-            objectValue.put("end", end.getTime());
-        }
-        if (recurrence != null) {
-            objectValue.put("recurrence", recurrence.toString());
+            return new Pair<>(getStart().getTime(), getEnd().getTime());
         }
 
-        return objectValue;
+        long whenMillis = when.toInstant().minus(getEnd().getTime() - getStart().getTime(), ChronoUnit.MILLIS).toEpochMilli();
+        DateList matches = recurrence.getDates(new net.fortuna.ical4j.model.DateTime(getStart()), new net.fortuna.ical4j.model.DateTime(whenMillis), new net.fortuna.ical4j.model.DateTime(Long.MAX_VALUE), net.fortuna.ical4j.model.parameter.Value.DATE_TIME, 2);
+
+        if (matches.isEmpty()) {
+            return null;
+        }
+
+        long endTime = matches.get(0).getTime() + (getEnd().getTime()- getStart().getTime());
+
+        if (endTime <= when.getTime()) {
+            if (matches.size() == 2) {
+                return new Pair<>(matches.get(1).getTime(), matches.get(1).getTime() + (getEnd().getTime()- getStart().getTime()));
+            }
+            return null;
+        }
+
+        return new Pair<>(matches.get(0).getTime(), endTime);
     }
 }

@@ -165,7 +165,7 @@ open class ORViewcontroller : UIViewController {
         }
     }
     
-    open func updateAssetAttribute(assetId : String, attributeName : String, rawJson : String) {
+    open func updateAttribute(assetId : String, attributeName : String, rawJson : String) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {

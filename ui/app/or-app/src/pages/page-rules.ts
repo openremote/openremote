@@ -1,7 +1,7 @@
 import {css, customElement, html, property} from "lit-element";
 import "@openremote/or-rules";
 import {ActionTargetType, RulesConfig} from "@openremote/or-rules";
-import {AssetType, NotificationTargetType, RulesetLang} from "@openremote/model";
+import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {AppStateKeyed} from "../app";
 import {Page} from "../types";
@@ -43,10 +43,7 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
         descriptors: {
             all: {
                 excludeAssets: [
-                    AssetType.CITY.type!,
-                    AssetType.AREA.type!,
-                    AssetType.FLOOR.type!,
-                    AssetType.AGENT.type!
+                    WellknownAssets.CITYASSET
                 ]
             }
         },

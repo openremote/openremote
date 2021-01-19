@@ -1,5 +1,5 @@
 import { LitElement, property, customElement, html, css, TemplateResult } from "lit-element";
-import { Node, PickerType, AssetAttributeInternalValue, AssetState, MetaItemType, Asset, NodeDataType } from "@openremote/model";
+import { Node, PickerType, AttributeInternalValue, AssetState, WellknownMetaItems, Asset, NodeDataType } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { OrInputChangedEvent } from "@openremote/or-input";
 import rest from "@openremote/rest";
@@ -10,6 +10,7 @@ import { project, modal } from "./flow-editor";
 import { NodeUtilities } from "../node-structure";
 import { translate, i18next } from "@openremote/or-translate";
 import { PickerStyle } from "../styles/picker-styles";
+import { Util, AssetModelUtil } from "@openremote/core";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -88,7 +89,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 e.detail.allow = false;
                 return;
             }
-            const value: AssetAttributeInternalValue = {
+            const value: AttributeInternalValue = {
                 assetId: e.detail.detail.newNodes[0].asset!.id,
                 attributeName: "nothing yet"
             };
@@ -104,7 +105,8 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         const response = await rest.api.AssetResource.queryAssets({
             ids: [this.internal.value.assetId],
             select: {
-                excludeAttributes: false, excludeAttributeMeta: false
+                excludeParentInfo: true,
+                excludePath: true
             }
         });
 
@@ -117,12 +119,8 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         if (this.selectedAsset.attributes != null) {
             this.attributeNames = [];
             for (const att of Object.keys(this.selectedAsset.attributes)) {
-                const meta = (this.selectedAsset.attributes[att] as AssetState).meta;
-                if (!meta) { continue; }
-                if (meta.find((m) => m.name === MetaItemType.RULE_STATE.urn && m.value === true)) {
-                    const foundLabel = meta.find((b) => b.name === MetaItemType.LABEL.urn && b.value);
-                    let label = att;
-                    if (foundLabel) { label = foundLabel.value; }
+                if (!!Util.getMetaValue(WellknownMetaItems.RULESTATE, this.selectedAsset.attributes[att])) {
+                    const label = Util.getAttributeLabel(this.selectedAsset.attributes[att], undefined, this.selectedAsset.type!, true)
                     this.attributeNames.push({
                         name: att,
                         label
@@ -144,14 +142,12 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         this.assetIntialised = true;
     }
 
-    private async setSocketTypeDynamically(value: AssetAttributeInternalValue) {
+    private async setSocketTypeDynamically(value: AttributeInternalValue) {
         const results = (await rest.api.AssetResource.queryAssets({
             ids: [value.assetId!],
             select: {
-                excludeAttributeTimestamp: false,
-                excludeAttributeValue: false,
-                excludeAttributeType: false,
-                excludeAttributes: false,
+                excludeParentInfo: true,
+                excludePath: true,
                 attributes: [
                     value.attributeName!
                 ]
@@ -165,9 +161,9 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         if (results[0].attributes == null) { return; }
         try {
             const relevantAttribute = results[0].attributes[value.attributeName!];
-            const descriptors = (await rest.api.AssetModelResource.getAttributeValueDescriptors()).data;
+            const descriptors = AssetModelUtil.getValueDescriptors();
             const relevantDescriptor = descriptors.find((c) => c.name === relevantAttribute.type);
-            socket.type = NodeUtilities.convertValueTypeToSocketType(relevantDescriptor!.valueType!);
+            socket.type = NodeUtilities.convertValueTypeToSocketType(relevantDescriptor!);
         } catch (e) {
             console.error(e);
         }
@@ -189,7 +185,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                     html`<span>${i18next.t("noRuleStateAttributes", "No rule state attributes")}</span>` :
                     html`        
                 <select id="attribute-select" style="margin-top: 10px" @input="${async (e: any) => {
-                            const value: AssetAttributeInternalValue = {
+                            const value: AttributeInternalValue = {
                                 assetId: this.selectedAsset.id,
                                 attributeName: e.target.value
                             };

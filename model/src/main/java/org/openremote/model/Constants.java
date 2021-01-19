@@ -19,6 +19,9 @@
  */
 package org.openremote.model;
 
+import org.openremote.model.util.TsIgnore;
+
+@TsIgnore
 public interface Constants {
 
     String KEYCLOAK_CLIENT_ID = "openremote";
@@ -42,14 +45,11 @@ public interface Constants {
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 60; // 1 minute
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
-    String PERSISTENCE_JSON_VALUE_TYPE = "json_value";
-    String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
-    String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
-    String PERSISTENCE_STRING_ARRAY_TYPE = "string_array";
+    String PERSISTENCE_JSON_VALUE_TYPE = "jsonb";
+    String PERSISTENCE_STRING_ARRAY_TYPE = "string-array";
     String NAMESPACE = "urn:openremote";
-    String PROTOCOL_NAMESPACE = NAMESPACE + ":protocol";
     String ASSET_NAMESPACE = NAMESPACE + ":asset";
-    String AGENT_ASSET_NAMESPACE = ASSET_NAMESPACE + ":agent";
+    String AGENT_NAMESPACE = NAMESPACE + ":agent";
     String ASSET_META_NAMESPACE = ASSET_NAMESPACE + ":meta";
     String DEFAULT_DATETIME_FORMAT ="dd. MMM yyyy HH:mm:ss zzz";
     String DEFAULT_DATETIME_FORMAT_MILLIS ="dd. MMM yyyy HH:mm:ss:SSS zzz";
@@ -66,45 +66,71 @@ public interface Constants {
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
     String SETUP_EMAIL_FROM_DEFAULT = "no-reply@openremote.io";
     String REQUEST_HEADER_REALM = "Auth-Realm";
+    String ASSET_ID_REGEXP = "^[0-9A-Za-z]{22}$";
+    String UUID_REGEXP = "[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}";
+    String EMAIL_REGEXP = "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])";
+    String ISO8601_DURATION_REGEXP = "^P(?!$)((\\d+Y)|(\\d+\\.\\d+Y$))?((\\d+M)|(\\d+\\.\\d+M$))?((\\d+W)|(\\d+\\.\\d+W$))?((\\d+D)|(\\d+\\.\\d+D$))?(T(?=\\d)((\\d+H)|(\\d+\\.\\d+H$))?((\\d+M)|(\\d+\\.\\d+M$))?(\\d+(\\.\\d+)?S)?)??$";
+    String ISO8601_DATETIME_REGEXP = "^(?:[1-9]\\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:Z|[+-][01]\\d:[0-5]\\d)$";
+    String HOSTNAME_OR_IP_REGEXP = "(^\\s*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\\s*$)|(^\\s*((?=.{1,255}$)[0-9A-Za-z](?:(?:[0-9A-Za-z]|\\b-){0,61}[0-9A-Za-z])?(?:\\.[0-9A-Za-z](?:(?:[0-9A-Za-z]|\\b-){0,61}[0-9A-Za-z])?)*\\.?)\\s*$)|(^\\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:)))(%.+)?\\s*$)";
+    String IP_REGEXP = "(^\\s*((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))\\s*$)|(^\\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:)))(%.+)?\\s*$)";
 
-    String UNITS_TEMPERATURE_CELSIUS = "CELSIUS";
-    String UNITS_TEMPERATURE_FAHRENHEIT = "FAHRENHEIT";
-    String UNITS_TIME_HOURS = "HOURS";
-    String UNITS_TIME_MINUTES = "MINUTES";
-    String UNITS_TIME_SECONDS = "SECONDS";
-    String UNITS_TIME_MILLISECONDS = "MILLISECONDS";
-    String UNITS_SPEED_KNOTS = "SPEED_KNOTS";
-    String UNITS_SPEED_KILOMETERS_HOUR = "SPEED_KMPH";
-    String UNITS_SPEED_MILES_HOUR = "SPEED_MIPH";
-    String UNITS_SPEED_METRES_SECOND = "SPEED_MPS";
-    String UNITS_SOUND_DECIBELS = "DECIBELS";
-    String UNITS_DISTANCE_KILOMETRES = "DISTANCE_KM";
-    String UNITS_DISTANCE_MILES = "DISTANCE_MI";
-    String UNITS_DISTANCE_METRES = "DISTANCE_M";
-    String UNITS_DISTANCE_CENTIMETRES = "DISTANCE_CM";
-    String UNITS_DISTANCE_MILLIMETRES = "DISTANCE_MM";
-    String UNITS_FLOW_LPM = "FLOW_LPM";
-    String UNITS_EUR_PER_KILOWATT_HOUR = "EUR_PER_KWH";
-    String UNITS_EUR_PER_MONTH = "EUR_PER_MONTH";
-    String UNITS_GBP_PER_KILOWATT_HOUR = "GBP_PER_KWH";
-    String UNITS_GBP_PER_MONTH = "GBP_PER_MONTH";
-    String UNITS_CURRENCY_EUR = "CURRENCY_EUR";
-    String UNITS_CURRENCY_GBP = "CURRENCY_GBP";
-    String UNITS_POWER_KILOWATT = "POWER_KW";
-    String UNITS_POWER_WATT = "POWER_W";
-    String UNITS_POWER_KILOWATT_PEAK = "POWER_KWP";
-    String UNITS_POWER_PER_SQUARE_M = "POWER_PER_M2";
-    String UNITS_ENERGY_KILOWATT_HOUR = "ENERGY_KWH";
-    String UNITS_KILOGRAM_CARBON_PER_KILOWATT_HOUR = "KG_CARBON_PER_KWH";
-    String UNITS_MASS_KILOGRAM = "MASS_KG";
-    String UNITS_ANGLE_DEGREES = "ANGLE_DEGREES";
-    String UNITS_ANGLE_RADIANS = "ANGLE_RADIANS";
-    String UNITS_PERCENTAGE = "PERCENTAGE";
-    String UNITS_DENSITY_KILOGRAMS_CUBIC_M = "DENSITY_KG_M3";
-    String UNITS_DENSITY_MICROGRAMS_CUBIC_M = "DENSITY_UG_M3";
-    String UNITS_ON_OFF = "ON_OFF";
-    String UNITS_PRESSED_RELEASED = "PRESSED_RELEASED";
-    String UNITS_COUNT_PER_HOUR = "COUNT_PER_HOUR";
-    String UNITS_COUNT_PER_MINUTE = "COUNT_PER_MINUTE";
-    String UNITS_COUNT_PER_SECOND = "COUNT_PER_SECOND";
+    static String[] units(String...units) {
+        return units;
+    }
+
+    String UNITS_PER = "per";
+    String UNITS_SQUARED = "squared";
+    String UNITS_CUBED = "cubed";
+    String UNITS_PEAK = "peak";
+    String UNITS_MEGA = "mega";
+    String UNITS_KILO = "kilo";
+    String UNITS_CENTI = "centi";
+    String UNITS_MICRO = "micro";
+    String UNITS_MILLI = "milli";
+    String UNITS_PERCENTAGE = "percentage";
+    String UNITS_ACRE = "acre";
+    String UNITS_HECTARE = "hectare";
+    String UNITS_DECIBEL = "decibel";
+    String UNITS_DECIBEL_ATTENUATED = "decibel_attenuated";
+    String UNITS_KNOT = "knot";
+    String UNITS_CELSIUS = "celsius";
+    String UNITS_KELVIN = "kelvin";
+    String UNITS_FAHRENHEIT = "fahrenheit";
+    String UNITS_YEAR = "year";
+    String UNITS_MONTH = "month";
+    String UNITS_WEEK = "week";
+    String UNITS_DAY = "day";
+    String UNITS_HOUR = "hour";
+    String UNITS_MINUTE = "minute";
+    String UNITS_SECOND = "second";
+    String UNITS_METRE = "metre";
+    String UNITS_INCH = "inch";
+    String UNITS_FOOT = "foot";
+    String UNITS_YARD = "yard";
+    String UNITS_MILE = "mile";
+    String UNITS_MILE_SCANDINAVIAN = "mile_scandinavian";
+    String UNITS_GRAM = "gram";
+    String UNITS_OUNCE = "ounce";
+    String UNITS_MASS_POUND = "pound";
+    String UNITS_STONE = "stone";
+    String UNITS_DEGREE = "degree";
+    String UNITS_RADIAN = "radian";
+    String UNITS_LITRE = "litre";
+    String UNITS_GALLON = "gallon";
+    String UNITS_FLUID_OUNCE = "fluid_ounce";
+    String UNITS_JOULE = "joule";
+    String UNITS_BTU = "btu";
+    String UNITS_WATT = "watt";
+    String UNITS_LUX = "lux";
+    String UNITS_LUMEN = "lumen";
+    String UNITS_PASCAL = "pascal";
+    String UNITS_BAR = "bar";
+    String UNITS_IN_HG = "inch_mercury";
+    String UNITS_VOLT = "volt";
+    String UNITS_OHM = "ohm";
+    String UNITS_AMP = "amp";
+    String UNITS_HERTZ = "hertz";
+    String UNITS_RPM = "rpm";
+    String UNITS_PART_PER_MILLION = "ppm";
+    String UNITS_CARBON = "carbon";
 }

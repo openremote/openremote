@@ -55,7 +55,7 @@ public abstract class DOM {
 
     public abstract String getRootElementNamespace();
 
-    public abstract DOMElement getRoot(XPath xpath);
+    public abstract DOMElement<?,?> getRoot(XPath xpath);
 
     public abstract DOM copy();
 

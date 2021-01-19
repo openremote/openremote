@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.security;
 
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;

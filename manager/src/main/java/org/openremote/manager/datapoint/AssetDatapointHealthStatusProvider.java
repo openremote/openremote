@@ -19,14 +19,13 @@
  */
 package org.openremote.manager.datapoint;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
-import org.openremote.container.ContainerHealthStatusProvider;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.Values;
 
-public class AssetDatapointHealthStatusProvider implements ContainerHealthStatusProvider {
+public class AssetDatapointHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
     public static final String NAME = "datapoints";
     public static final String VERSION = "1.0";
@@ -63,8 +62,8 @@ public class AssetDatapointHealthStatusProvider implements ContainerHealthStatus
     }
 
     @Override
-    public Value getHealthStatus() {
-        ObjectValue value = Values.createObject();
+    public Object getHealthStatus() {
+        ObjectNode value = Values.JSON.createObjectNode();
         value.put("totalDatapoints", assetDatapointService.getDatapointsCount());
         return value;
     }

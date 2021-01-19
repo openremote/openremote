@@ -21,17 +21,19 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.openremote.model.value.ObjectValue;
+
+import java.io.Serializable;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @JsonSubTypes({
     @JsonSubTypes.Type(value = StringPredicate.class, name = StringPredicate.name),
     @JsonSubTypes.Type(value = BooleanPredicate.class, name = BooleanPredicate.name),
-    @JsonSubTypes.Type(value = StringArrayPredicate.class, name = StringArrayPredicate.name),
     @JsonSubTypes.Type(value = DateTimePredicate.class, name = DateTimePredicate.name),
     @JsonSubTypes.Type(value = NumberPredicate.class, name = NumberPredicate.name),
     @JsonSubTypes.Type(value = RadialGeofencePredicate.class, name = RadialGeofencePredicate.name),
     @JsonSubTypes.Type(value = RectangularGeofencePredicate.class, name = RectangularGeofencePredicate.name),
-    @JsonSubTypes.Type(value = ObjectValueKeyPredicate.class, name = ObjectValueKeyPredicate.name),
     @JsonSubTypes.Type(value = ArrayPredicate.class, name = ArrayPredicate.name),
     @JsonSubTypes.Type(value = ValueEmptyPredicate.class, name = ValueEmptyPredicate.name),
     @JsonSubTypes.Type(value = ValueNotEmptyPredicate.class, name = ValueNotEmptyPredicate.name),
@@ -41,7 +43,11 @@ import org.openremote.model.value.ObjectValue;
     use = JsonTypeInfo.Id.NAME,
     property = "predicateType"
 )
-public interface ValuePredicate {
+public interface ValuePredicate extends Serializable {
 
-    ObjectValue toModelValue();
+    static Predicate<Object> asPredicateOrTrue(Supplier<Long> currentMillisSupplier, ValuePredicate valuePredicate) {
+        return obj -> Optional.ofNullable(valuePredicate).map(vp -> vp.asPredicate(currentMillisSupplier).test(obj)).orElse(true);
+    }
+
+    Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier);
 }

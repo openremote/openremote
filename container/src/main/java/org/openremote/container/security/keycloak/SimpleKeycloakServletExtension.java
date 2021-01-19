@@ -69,7 +69,7 @@ public class SimpleKeycloakServletExtension implements ServletExtension {
         deploymentInfo.addOuterHandlerChainWrapper(new ServletPreAuthActionsHandler.Wrapper(deploymentContext, userSessionManagement));
         deploymentInfo.addAuthenticationMechanism(AUTH_MECHANISM, new AuthenticationMechanismFactory() {
             @Override
-            public AuthenticationMechanism create(String s, FormParserFactory formParserFactory, Map<String, String> stringStringMap) {
+            public AuthenticationMechanism create(String s, IdentityManager identityManager, FormParserFactory formParserFactory, Map<String, String> stringStringMap) {
                 return mech;
             }
         }); // authentication
@@ -97,14 +97,9 @@ public class SimpleKeycloakServletExtension implements ServletExtension {
         cookieConfig.setPath(deploymentInfo.getContextPath());
         deploymentInfo.setServletSessionConfig(cookieConfig);
         ChangeSessionId.turnOffChangeSessionIdOnLogin(deploymentInfo);
-        deploymentInfo.addListener(new ListenerInfo(UndertowNodesRegistrationManagementWrapper.class, new InstanceFactory<UndertowNodesRegistrationManagementWrapper>() {
-
-            @Override
-            public InstanceHandle<UndertowNodesRegistrationManagementWrapper> createInstance() throws InstantiationException {
-                UndertowNodesRegistrationManagementWrapper listener = new UndertowNodesRegistrationManagementWrapper(nodesRegistrationManagement);
-                return new ImmediateInstanceHandle<UndertowNodesRegistrationManagementWrapper>(listener);
-            }
-
+        deploymentInfo.addListener(new ListenerInfo(UndertowNodesRegistrationManagementWrapper.class, (InstanceFactory<UndertowNodesRegistrationManagementWrapper>) () -> {
+            UndertowNodesRegistrationManagementWrapper listener = new UndertowNodesRegistrationManagementWrapper(nodesRegistrationManagement);
+            return new ImmediateInstanceHandle<>(listener);
         }));
     }
 

@@ -24,11 +24,9 @@ import io.netty.handler.codec.string.StringDecoder
 import io.netty.handler.codec.string.StringEncoder
 import io.netty.util.CharsetUtil
 import io.netty.util.internal.SocketUtils
-import org.openremote.agent.protocol.ProtocolExecutorService
 import org.openremote.agent.protocol.io.AbstractNettyIoClient
 import org.openremote.agent.protocol.udp.UdpIoClient
 import org.openremote.agent.protocol.udp.UdpStringServer
-import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -48,12 +46,11 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
 
         and: "the container is started"
         def clientPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(), Collections.singletonList(new ManagerExecutorService()))
-        def protocolExecutorService = container.getService(ProtocolExecutorService.class)
+        def container = startContainer(defaultConfig(), [])
 
         and: "a simple UDP echo server"
         def echoServerPort = findEphemeralPort()
-        def echoServer = new UdpStringServer(protocolExecutorService, new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
+        def echoServer = new UdpStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         echoServer.addMessageConsumer({
             message, channel, sender ->
                 echoServer.sendMessage(message, sender)
@@ -69,8 +66,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         UdpIoClient<String> client = new UdpIoClient<String>(
                 "127.0.0.1",
                 echoServerPort,
-                clientPort,
-                protocolExecutorService)
+                clientPort)
         client.setEncoderDecoderProvider({
             [
                 new StringEncoder(CharsetUtil.UTF_8),

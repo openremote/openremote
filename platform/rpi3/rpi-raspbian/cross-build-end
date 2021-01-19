@@ -1,3 +1,0 @@
-#!/usr/bin/qemu-arm-static /bin/sh.real
-
-mv /bin/sh.real /bin/sh

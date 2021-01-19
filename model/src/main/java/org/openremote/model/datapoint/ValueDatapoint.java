@@ -21,9 +21,8 @@ package org.openremote.model.datapoint;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.Value;
 
-public class ValueDatapoint<T extends Value> {
+public class ValueDatapoint<T> {
 
     protected long timestamp;
     protected T value;

@@ -19,13 +19,11 @@
  */
 package org.openremote.manager.notification;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
@@ -190,13 +188,13 @@ public class EmailNotificationHandler implements NotificationHandler {
                         break;
                     case ASSET:
                         // Find descendant assets with email attribute
-                        List<Asset> assets = assetStorageService.findAll(
+                        List<Asset<?>> assets = assetStorageService.findAll(
                             new AssetQuery()
                                 .select(AssetQuery.Select.selectExcludePathAndParentInfo()
-                                    .attributes(AttributeType.EMAIL.getAttributeName()))
+                                    .attributes(Asset.EMAIL.getName()))
                                 .paths(new PathPredicate(targetId))
                                 .attributes(new AttributePredicate(
-                                    new StringPredicate(AttributeType.EMAIL.getAttributeName()),
+                                    new StringPredicate(Asset.EMAIL.getName()),
                                     new ValueNotEmptyPredicate())));
 
                         if (assets.isEmpty()) {
@@ -208,8 +206,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                             EmailNotificationMessage.Recipient recipient =
                                 new EmailNotificationMessage.Recipient(
                                     asset.getName(),
-                                    asset.getAttribute(AttributeType.EMAIL)
-                                        .flatMap(AbstractValueHolder::getValueAsString)
+                                    asset.getEmail()
                                         .orElse(null));
                             assetEmails.put(asset.getId(), recipient);
                         });
@@ -366,14 +363,12 @@ public class EmailNotificationHandler implements NotificationHandler {
             return assetEmails.get(assetId);
         }
 
-        Asset asset = assetStorageService.find(assetId);
+        Asset<?> asset = assetStorageService.find(assetId);
         if (asset == null) {
             return null;
         }
 
-        return new EmailNotificationMessage.Recipient(asset.getName(), asset.getAttribute(AttributeType.EMAIL)
-            .flatMap(AbstractValueHolder::getValueAsString)
-            .orElse(null));
+        return new EmailNotificationMessage.Recipient(asset.getName(), asset.getEmail().orElse(null));
     }
 
     protected EmailPopulatingBuilder buildEmailBuilder(long id, EmailNotificationMessage emailNotificationMessage) {

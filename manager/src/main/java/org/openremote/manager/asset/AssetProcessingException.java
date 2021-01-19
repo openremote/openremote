@@ -19,9 +19,10 @@
  */
 package org.openremote.manager.asset;
 
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.value.ValueType;
 
 /**
  * The reason why processing an {@link org.openremote.model.attribute.AttributeEvent} failed.
@@ -68,13 +69,12 @@ public class AssetProcessingException extends RuntimeException {
         LINKED_ATTRIBUTE_CONVERSION_FAILURE,
 
         /**
-         * Attributes of an {@link AssetType#AGENT} can not be individually updated.
+         * Attributes of an {@link Agent} can not be individually updated.
          */
         ILLEGAL_AGENT_UPDATE,
 
         /**
-         * Invalid {@link AttributeExecuteStatus} for {@link AssetAttribute#isExecutable()} attribute,
-         * must be {@link AttributeExecuteStatus#isWrite()}.
+         * Invalid {@link AttributeExecuteStatus} for {@link Attribute} of type {@link ValueType#EXECUTION_STATUS}.
          */
         INVALID_ATTRIBUTE_EXECUTE_STATUS,
 

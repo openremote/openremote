@@ -22,20 +22,20 @@ package org.openremote.model.geo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
+
+import java.io.Serializable;
 
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = GeoJSONFeatureCollection.class, name = GeoJSONFeatureCollection.TYPE),
-    @JsonSubTypes.Type(value = GeoJSONFeature.class, name = GeoJSONFeature.TYPE)
+    @JsonSubTypes.Type(GeoJSONFeatureCollection.class),
+    @JsonSubTypes.Type(GeoJSONFeature.class),
+    @JsonSubTypes.Type(GeoJSONGeometry.class)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "type"
+    property = "type",
+    include = JsonTypeInfo.As.EXISTING_PROPERTY
 )
-public abstract class GeoJSON {
+public abstract class GeoJSON implements Serializable {
 
     @JsonProperty
     protected String type;
@@ -43,6 +43,4 @@ public abstract class GeoJSON {
     protected GeoJSON(String type) {
         this.type = type;
     }
-
-    public abstract ObjectValue toValue();
 }

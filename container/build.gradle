@@ -16,10 +16,6 @@ dependencies {
     compile "com.google.guava:guava:$guavaVersion"
     compile "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
 
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
-
     compile "io.undertow:undertow-servlet:$undertowVersion"
     compile "io.undertow:undertow-websockets-jsr:$undertowVersion"
 
@@ -30,7 +26,7 @@ dependencies {
     compile("org.jboss.resteasy:resteasy-cache-core:$resteasyVersion") {
         exclude group: "org.infinispan"
     }
-    compile "org.jboss.resteasy:resteasy-validator-provider-11:$resteasyVersion"
+    compile "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
     compile "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersionAsyncHttpServlet"
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
@@ -58,6 +54,8 @@ dependencies {
         exclude group: "logkit"
         exclude group: "commons-logging"
     }
+
+    compile "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
 }
 
 jar {

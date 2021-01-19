@@ -1,25 +1,18 @@
-@org.hibernate.annotations.TypeDefs({
-    @org.hibernate.annotations.TypeDef(
+@TypeDefs({
+    @TypeDef(
         name = Constants.PERSISTENCE_JSON_VALUE_TYPE,
-        typeClass = ModelValuePersistentType.class
+        typeClass = JsonBinaryType.class
     ),
-    @org.hibernate.annotations.TypeDef(
-        name = Constants.PERSISTENCE_JSON_OBJECT_TYPE,
-        typeClass = ModelObjectValuePersistentType.class
-    ),
-    @org.hibernate.annotations.TypeDef(
-        name = Constants.PERSISTENCE_JSON_ARRAY_TYPE,
-        typeClass = ModelArrayValuePersistentType.class
-    ),
-    @org.hibernate.annotations.TypeDef(
+    @TypeDef(
         name = Constants.PERSISTENCE_STRING_ARRAY_TYPE,
-        typeClass = ArrayUserType.class
+        typeClass = StringArrayType.class
     )
 })
 
 package org.openremote.container.persistence;
 
-import org.openremote.container.json.ModelArrayValuePersistentType;
-import org.openremote.container.json.ModelObjectValuePersistentType;
-import org.openremote.container.json.ModelValuePersistentType;
+import com.vladmihalcea.hibernate.type.array.StringArrayType;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.TypeDefs;
 import org.openremote.model.Constants;

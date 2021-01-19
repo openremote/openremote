@@ -37,9 +37,7 @@ public class ZWPacketDecoder extends ByteToMessageDecoder {
                 data[i] = buf.readByte();
             }
             buf.discardReadBytes();
-
-            SerialDataPacket packet = new SerialDataPacket(data);
-            messages.add(packet);
+            messages.add(data);
         }
     }
 }

@@ -1,7 +1,7 @@
 import {css, customElement, html, LitElement, property, TemplateResult, unsafeCSS} from "lit-element";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions} from "@openremote/or-input";
 import i18next from "i18next";
-import {Asset, Attribute, MetaItem, ValueType} from "@openremote/model";
+import {Asset, Attribute, NameValueHolder} from "@openremote/model";
 import {AssetModelUtil, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-input";
 import {OrIcon} from "@openremote/or-icon";
@@ -189,7 +189,7 @@ export class OrEditAssetPanel extends LitElement {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${!this.asset.attributes ? `` : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getEditAttributeTemplate(this.asset.type!, attribute as Attribute);})}
+                        ${!this.asset.attributes ? `` : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getEditAttributeTemplate(this.asset.type!, attribute as Attribute<any>);})}
                         <tr>
                             <td colspan="4">
                                 <div class="item-add">
@@ -210,7 +210,7 @@ export class OrEditAssetPanel extends LitElement {
         `;
     }
 
-    protected _getEditAttributeTemplate(assetType: string, attribute: Attribute): TemplateResult {
+    protected _getEditAttributeTemplate(assetType: string, attribute: Attribute<any>): TemplateResult {
 
         const deleteAttribute = () => {
             delete this.asset.attributes![attribute.name!];
@@ -220,7 +220,7 @@ export class OrEditAssetPanel extends LitElement {
         return html`
             <tr class="mdc-data-table__row">
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
-                <td class="padded-cell mdc-data-table__cell">${attribute.type}</td>
+                <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
@@ -230,7 +230,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td colspan="4">
                     <div class="meta-item-container">
                         <div>
-                            ${!attribute.meta ? `` : attribute.meta.sort(Util.sortByString((metaItem) => metaItem.name!)).map((metaItem) => this._getMetaItemTemplate(attribute, metaItem))}
+                            ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
                         </div>
                         <div class="item-add">
                             <or-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-input>
@@ -246,66 +246,44 @@ export class OrEditAssetPanel extends LitElement {
         this.requestUpdate();
     }
 
-    protected _onAttributeModified(attribute: Attribute, newValue: any) {
+    protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {
         attribute.value = newValue;
-        attribute.valueTimestamp = undefined; // Clear timestamp so server will set this
+        attribute.timestamp = undefined; // Clear timestamp so server will set this
         this._onModified();
     }
 
-    protected _onMetaItemModified(metaItem: MetaItem, value: any) {
+    protected _onMetaItemModified(metaItem: NameValueHolder<any>, value: any) {
         metaItem.value = value;
         this._onModified();
     }
 
-    protected _getMetaItemTemplate(attribute: Attribute, metaItem: MetaItem): TemplateResult {
+    protected _getMetaItemTemplate(attribute: Attribute<any>, metaItem: NameValueHolder<any>): TemplateResult {
 
         const removeMetaItem = () => {
-            attribute.meta!.splice(attribute.meta!.indexOf(metaItem), 1);
+            delete attribute.meta![metaItem.name!];
             this._onModified();
         };
 
         const descriptor = AssetModelUtil.getMetaItemDescriptor(metaItem.name);
-        let valueType = descriptor ? descriptor .valueType : undefined;
-        let inputType = InputType.TEXT;
-        if (!valueType && metaItem.value !== undefined && metaItem.value !== null) {
-            switch (typeof metaItem.value) {
-                case "object":
-                    if (Array.isArray(metaItem.value)) {
-                        valueType = ValueType.ARRAY;
-                    } else {
-                        valueType = ValueType.OBJECT;
-                    }
-                    break;
-                case "boolean":
-                    valueType = ValueType.BOOLEAN;
-                    break;
-                case "number":
-                    valueType = ValueType.NUMBER;
-                    break;
-                case "string":
-                    valueType = ValueType.STRING;
-                    break;
+        let valueDescriptor = descriptor ? AssetModelUtil.getValueDescriptor(descriptor.type) : undefined;
+        let content: TemplateResult = html``;
+
+        if (!valueDescriptor) {
+            content = html`<p>NOT SUPPORTED</p>`;
+        } else {
+            const options: ValueInputProviderOptions = {
+                label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true)
+            };
+            const provider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (v: any) => this._onMetaItemModified(metaItem, v), options);
+
+            if (provider.templateFunction) {
+                content = provider.templateFunction(metaItem.value, false, false, false, false, undefined);
             }
         }
 
-        if (valueType) {
-            switch (valueType) {
-                case ValueType.NUMBER:
-                    inputType = InputType.NUMBER;
-                    break;
-                case ValueType.BOOLEAN:
-                    inputType = InputType.CHECKBOX;
-                    break;
-                case ValueType.ARRAY:
-                case ValueType.OBJECT:
-                    inputType = InputType.JSON;
-                    break;
-            }
-        }
-        const readonly = descriptor && !!descriptor.valueFixed;
         return html`
                 <div class="meta-item-wrapper">
-                    <or-input .label=${Util.getMetaItemLabel(metaItem.name!)} .type="${inputType}" .value="${metaItem.value}" @or-input-changed="${(e: OrInputChangedEvent) => this._onMetaItemModified(metaItem, e.detail.value)}" ?disabled="${readonly}"></or-input>
+                    ${content}
                     <button class="button-clear" @click="${removeMetaItem}"><or-icon icon="close-circle"></or-icon></input>
                 </div>
             `;
@@ -314,9 +292,9 @@ export class OrEditAssetPanel extends LitElement {
     protected _addAttribute() {
 
         const asset = this.asset!;
-        let attr: Attribute;
+        let attr: Attribute<any>;
 
-        const onAttributeChanged = (attribute: Attribute) => {
+        const onAttributeChanged = (attribute: Attribute<any>) => {
             const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && attribute.type);
             const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrInput;
             addBtn!.disabled = addDisabled;
@@ -364,14 +342,21 @@ export class OrEditAssetPanel extends LitElement {
         });
     }
 
-    protected _addMetaItems(attribute: Attribute) {
+    protected _addMetaItems(attribute: Attribute<any>) {
 
-        const metaItemList: (ListItem | null)[] = AssetModelUtil.getMetaItemDescriptors()
-            .filter((descriptor) => !attribute.meta!.some((m) => m.name === descriptor.urn))
+        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(this.asset!.type!);
+        if (!assetTypeInfo || !assetTypeInfo.metaItemDescriptors) {
+            return;
+        }
+
+        const meta = attribute.meta || {};
+
+        const metaItemList: (ListItem | null)[] = assetTypeInfo.metaItemDescriptors.map((metaName) => AssetModelUtil.getMetaItemDescriptor(metaName)!)
+            .filter((descriptor) => meta.hasOwnProperty(descriptor.name!))
             .map((descriptor) => {
                 return {
-                    text: Util.getMetaItemLabel(descriptor.urn!),
-                    value: descriptor.urn!,
+                    text: Util.getMetaLabel(undefined, descriptor, this.asset!.type!, true),
+                    value: descriptor.name!,
                     translate: false
                 };
             }).sort(Util.sortByString((item) => item.text));
@@ -411,17 +396,12 @@ export class OrEditAssetPanel extends LitElement {
                         const selectedItems = list ? list.selectedItems : undefined;
                         if (selectedItems) {
                             if (!attribute.meta) {
-                                attribute.meta = [];
+                                attribute.meta = {};
                             }
                             selectedItems.forEach((item) => {
-                                const descriptor = AssetModelUtil.getMetaItemDescriptors().find((descriptor) => descriptor.urn === item.value);
+                                const descriptor = AssetModelUtil.getMetaItemDescriptors().find((descriptor) => descriptor.name === item.value);
                                 if (descriptor) {
-                                    attribute.meta!.push(
-                                        {
-                                            name: descriptor.urn,
-                                            value: descriptor.initialValue
-                                        }
-                                    );
+                                    attribute.meta![descriptor.name!] = null;
                                     this._onModified();
                                 }
                             });

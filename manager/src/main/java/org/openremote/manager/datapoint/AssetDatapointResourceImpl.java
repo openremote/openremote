@@ -24,7 +24,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
@@ -52,7 +52,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public ValueDatapoint[] getDatapoints(@BeanParam RequestParams requestParams,
+    public ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
                                                  String assetId,
                                                  String attributeName,
                                                  DatapointInterval interval,
@@ -64,7 +64,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            Asset asset = assetStorageService.find(assetId, true);
+            Asset<?> asset = assetStorageService.find(assetId, true);
 
             if (asset == null) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -75,16 +75,15 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            AssetAttribute attribute = asset.getAttribute(attributeName).orElseThrow(() ->
+            Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
                 new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
-            return assetDatapointService.getValueDatapoints(
+            return assetDatapointService.getValueDatapoints(assetId,
                 attribute,
                 interval,
                 fromTimestamp,
-                toTimestamp
-            );
+                toTimestamp);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

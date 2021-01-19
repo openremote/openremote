@@ -31,10 +31,6 @@ import java.util.Map;
  * }
  * }
  * </pre></blockquote>
- * <p>
- * Date : 03-Sep-18
- *
- * @author jerome.vervier
  */
 public class ControllerCommandMapped extends ControllerCommand {
     private Map<String, String> actionCommandLink;

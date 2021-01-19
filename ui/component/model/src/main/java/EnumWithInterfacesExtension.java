@@ -12,8 +12,11 @@ import cz.habarta.typescript.generator.compiler.ModelCompiler;
 import cz.habarta.typescript.generator.compiler.ModelTransformer;
 import cz.habarta.typescript.generator.compiler.SymbolTable;
 import cz.habarta.typescript.generator.emitter.*;
+import cz.habarta.typescript.generator.parser.BeanModel;
+import cz.habarta.typescript.generator.parser.Model;
 import cz.habarta.typescript.generator.util.Pair;
 import cz.habarta.typescript.generator.util.Utils;
+import org.openremote.model.asset.Asset;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -210,11 +213,12 @@ public class EnumWithInterfacesExtension extends Extension {
                     }
                 }
 
-                return model.withoutEnums(matchedEnums);
+                return model.withRemovedEnums(matchedEnums);
             }
         }));
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void emitElements(Writer writer, Settings settings, boolean exportKeyword, TsModel model) {
 

@@ -1,11 +1,10 @@
 package org.openremote.agent.protocol.knx;
 
 import org.apache.commons.lang3.StringUtils;
-import org.openremote.agent.protocol.ProtocolExecutorService;
+import org.openremote.container.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.StateDP;
@@ -23,7 +22,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,37 +40,30 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     protected final static int RECONNECT_BACKOFF_MULTIPLIER = 2;
     protected ScheduledFuture<?> reconnectTask;
     protected int reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
-    
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
-    
-    protected final ProtocolExecutorService executorService;
+    protected final ScheduledExecutorService executorService;
+    protected final String gatewayAddress;
+    private final int gatewayPort;
+    private final boolean natMode;
+    private final String messageSourceAddress;
+    private final String bindAddress;
     protected final int port = 3671;
-    protected final String connectionType;
+    protected final boolean routingMode;
     protected KNXNetworkLink knxLink;
     protected ProcessCommunicator processCommunicator;
     protected final Map<GroupAddress, byte[]> groupAddressStateMap = new HashMap<>();
-    protected final Map<GroupAddress, List<Pair<StateDP, Consumer<Value>>>> groupAddressConsumerMap = new HashMap<>();
-
-    protected final String gatewayIp;
-    
-    private int remotePort;
-
-    private boolean useNat;
-
-    private String localKNXAddress;
-
-    private String localIp;
+    protected final Map<GroupAddress, List<Pair<StateDP, Consumer<Object>>>> groupAddressConsumerMap = new HashMap<>();
     
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXConnection.class);
     
-    public KNXConnection(String gatewayIp, String connectionType, ProtocolExecutorService executorService, String localIp, Integer remotePort, Boolean useNat, String localKNXAddress) {
-        this.gatewayIp = gatewayIp;
-        this.executorService = executorService;
-        this.connectionType =  connectionType;
-        this.localIp = localIp;
-        this.remotePort = remotePort;
-        this.useNat = useNat;
-        this.localKNXAddress = localKNXAddress;
+    public KNXConnection(String gatewayAddress, String bindAddress, Integer gatewayPort, String messageSourceAddress, boolean routingMode, boolean natMode) {
+        this.gatewayAddress = gatewayAddress;
+        this.executorService = Container.EXECUTOR_SERVICE;
+        this.routingMode = routingMode;
+        this.bindAddress = bindAddress;
+        this.gatewayPort = gatewayPort;
+        this.natMode = natMode;
+        this.messageSourceAddress = messageSourceAddress;
     }
 
     public synchronized void connect() {
@@ -81,23 +75,23 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
         InetSocketAddress localEndPoint;
-        InetSocketAddress remoteEndPoint = new InetSocketAddress(this.gatewayIp, this.remotePort);
+        InetSocketAddress remoteEndPoint = new InetSocketAddress(this.gatewayAddress, this.gatewayPort);
         try {
-            TPSettings tpSettings = new TPSettings(new IndividualAddress(this.localKNXAddress));
-            if (StringUtils.isNotBlank(this.localIp)) {
-                localEndPoint = new InetSocketAddress(this.localIp, 0);
+            TPSettings tpSettings = new TPSettings(new IndividualAddress(this.messageSourceAddress));
+            if (StringUtils.isNotBlank(this.bindAddress)) {
+                localEndPoint = new InetSocketAddress(this.bindAddress, 0);
             } else {
                 InetAddress localHost = InetAddress.getLocalHost();
                 localEndPoint = new InetSocketAddress(localHost, 0);
             }
-            if (this.connectionType.equals("TUNNELLING")) {
-                knxLink = KNXNetworkLinkIP.newTunnelingLink(localEndPoint, remoteEndPoint, this.useNat, tpSettings);
+            if (!routingMode) {
+                knxLink = KNXNetworkLinkIP.newTunnelingLink(localEndPoint, remoteEndPoint, this.natMode, tpSettings);
             } else {
                 knxLink = KNXNetworkLinkIP.newRoutingLink(localEndPoint.getAddress(), remoteEndPoint.getAddress(), tpSettings);
             }
             
             if (knxLink.isOpen()) {
-                LOG.fine("Successfully connected to: " + gatewayIp + ":" + port);
+                LOG.fine("Successfully connected to: " + gatewayAddress + ":" + port);
                 processCommunicator = new ProcessCommunicatorImpl(knxLink);
                 processCommunicator.addProcessListener(this);
                 knxLink.addLinkListener(this);
@@ -112,7 +106,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                     groupAddressConsumerMap.forEach((groupAddress, datapointConsumerList) -> {
                         if (!datapointConsumerList.isEmpty()) {
                             // Take first data point for the group address and request the value
-                            Pair<StateDP, Consumer<Value>> datapointConsumer = datapointConsumerList.get(0);
+                            Pair<StateDP, Consumer<Object>> datapointConsumer = datapointConsumerList.get(0);
                             getGroupAddressValue(datapointConsumer.key.getMainAddress(), datapointConsumer.key.getPriority());
                         }
                     });
@@ -170,11 +164,11 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         );
     }
     
-    public void sendCommand(Datapoint datapoint, Optional<Value> value) {
+    public void sendCommand(Datapoint datapoint, Optional<Object> value) {
         try {
             if (this.connectionStatus == ConnectionStatus.CONNECTED && value.isPresent()) {
                 LOG.fine("Sending to KNX action datapoint '" + datapoint + "': " + value);
-                Value val = value.get();
+                Object val = value.get();
                 DPTXlator translator = TypeMapper.toDPTXlator(datapoint, val);
                 processCommunicator.write(datapoint.getMainAddress(), translator);
             }
@@ -204,7 +198,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
             groupAddressConsumerMap.computeIfPresent(groupAddress, (ga, datapointAndConsumerList) -> {
                 datapointAndConsumerList.forEach(datapointAndConsumer -> {
                     StateDP datapoint = datapointAndConsumer.key;
-                    Consumer<Value> consumer = datapointAndConsumer.value;
+                    Consumer<Object> consumer = datapointAndConsumer.value;
                     updateConsumer(value, datapoint, consumer);
                 });
 
@@ -255,7 +249,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         knxLink = null;
 
         // Clear out the group address states
-        List<GroupAddress> groupAddresses = Arrays.asList(groupAddressStateMap.keySet().toArray(new GroupAddress[groupAddressStateMap.size()]));
+        List<GroupAddress> groupAddresses = Arrays.asList(groupAddressStateMap.keySet().toArray(new GroupAddress[0]));
         groupAddresses.forEach(groupAddress -> onGroupAddressUpdated(groupAddress, null));
 
         scheduleReconnect();
@@ -264,9 +258,9 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     /**
      * Add a consumer for the specified {@link StateDP}.
      */
-    public void addDatapointValueConsumer(StateDP datapoint, Consumer<Value> consumer) {
+    public void addDatapointValueConsumer(StateDP datapoint, Consumer<Object> consumer) {
         synchronized (groupAddressConsumerMap) {
-            List<Pair<StateDP, Consumer<Value>>> groupAddressConsumers = groupAddressConsumerMap
+            List<Pair<StateDP, Consumer<Object>>> groupAddressConsumers = groupAddressConsumerMap
                 .computeIfAbsent(datapoint.getMainAddress(), groupAddress -> new ArrayList<>());
 
             groupAddressConsumers.add(new Pair<>(datapoint, consumer));
@@ -319,13 +313,12 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         }
     }
 
-    protected void updateConsumer(byte[] data, StateDP datapoint, Consumer<Value> consumer) {
-        // Convert to OR Value and notify the consumer
-        Value value = null;
+    protected void updateConsumer(byte[] data, StateDP datapoint, Consumer<Object> consumer) {
+        Object value = null;
 
         if (data != null) {
             try {
-                value = TypeMapper.toORValue(datapoint, data);
+                value = TypeMapper.toValue(datapoint, data);
             } catch (Exception ex) {
                 LOG.log(Level.WARNING, "Couldn't translate Group address value to DPT type: " + datapoint, ex);
             }
@@ -356,6 +349,14 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                     connect();
                 }
             }
-        }, reconnectDelayMilliseconds);
+        }, reconnectDelayMilliseconds, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public String toString() {
+        return KNXConnection.class.getSimpleName() + "{" +
+            "gatewayAddress='" + gatewayAddress + '\'' +
+            ", gatewayPort=" + gatewayPort +
+            '}';
     }
 }

@@ -5,19 +5,22 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
-import sprintf from 'i18next-sprintf-postprocessor';
 import moment from "moment";
 import {
+    AgentDescriptor,
     AssetDescriptor,
-    AttributeDescriptor,
-    AttributeValueDescriptor,
-    MetaItemDescriptor,
-    User,
-    Role,
+    AssetTypeInfo,
     Attribute,
+    AttributeDescriptor,
     ConsoleAppConfig,
-    AssetType,
-    AgentDescriptor
+    MetaItemDescriptor,
+    Role,
+    User,
+    ValueDescriptor,
+    ValueDescriptorHolder,
+    ValueHolder,
+    WellknownAssets,
+    WellknownValueTypes
 } from "@openremote/model";
 import * as Util from "./util";
 import orIconSet from "./or-icon-set";
@@ -206,11 +209,11 @@ export class ORIconSets {
 
 export class AssetModelUtil {
 
-    public static _agentDescriptors: AgentDescriptor[] = [];
-    public static _assetDescriptors: AssetDescriptor[] = [];
-    public static _attributeDescriptors: AttributeDescriptor[] = [];
-    public static _attributeValueDescriptors: AttributeValueDescriptor[] = [];
-    public static _metaItemDescriptors: MetaItemDescriptor[] = [];
+    static _assetTypeInfos: AssetTypeInfo[] = [];
+    static _assetDescriptors: AssetDescriptor[] = [];
+    static _agentDescriptors: AgentDescriptor[] = [];
+    static _metaItemDescriptors: MetaItemDescriptor[] = [];
+    static _valueDescriptors: ValueDescriptor[] = [];
 
     public static getAgentDescriptors(): AgentDescriptor[] {
         return [...this._agentDescriptors];
@@ -220,182 +223,195 @@ export class AssetModelUtil {
         return [...this._assetDescriptors];
     }
 
-    public static getAttributeDescriptors(): AttributeDescriptor[] {
-        return [...this._attributeDescriptors];
-    }
-
-    public static getAttributeValueDescriptors(): AttributeValueDescriptor[] {
-        return [...this._attributeValueDescriptors];
-    }
-
     public static getMetaItemDescriptors(): MetaItemDescriptor[] {
         return [...this._metaItemDescriptors];
     }
 
-    public static getAssetDescriptor(type?: string): AssetDescriptor | undefined {
+    public static getValueDescriptors(): ValueDescriptor[] {
+        return [...this._valueDescriptors];
+    }
+
+    public static getAssetTypeInfos(): AssetTypeInfo[] {
+        return [...this._assetTypeInfos];
+    }
+
+    public static getAssetTypeInfo(type: string | AssetDescriptor | AssetTypeInfo): AssetTypeInfo | undefined {
         if (!type) {
             return;
         }
 
-        return this._assetDescriptors.find((assetDescriptor) => {
-            return assetDescriptor.type === type;
+        if ((type as AssetTypeInfo).assetDescriptor) {
+            return type as AssetTypeInfo;
+        }
+
+        if (typeof(type) !== "string") {
+            type = (type as AssetDescriptor).name!;
+        }
+
+        return this._assetTypeInfos.find((assetTypeInfo) => {
+            return assetTypeInfo.assetDescriptor!.name === type;
         });
     }
 
-    public static getAttributeDescriptor(attributeName?: string, assetTypeOrDescriptor?: string | AssetDescriptor): AttributeDescriptor | undefined {
+    public static getAssetDescriptor(type?: string | AssetDescriptor | AssetTypeInfo): AssetDescriptor | undefined {
+        if (!type) {
+            return;
+        }
+
+        if ((type as AssetTypeInfo).assetDescriptor) {
+            return (type as AssetTypeInfo).assetDescriptor;
+        }
+
+        if (typeof(type) !== "string") {
+            return type as AssetDescriptor;
+        }
+
+        return this._assetDescriptors.find((assetDescriptor) => {
+            return assetDescriptor.name === type;
+        });
+    }
+
+    public static getAttributeDescriptor(attributeName?: string, assetTypeOrDescriptor?: string | AssetDescriptor | AssetTypeInfo): AttributeDescriptor | undefined {
         if (!attributeName) {
             return;
         }
 
-        let descriptor = this._attributeDescriptors.find((attributeDescriptor) => {
-            return attributeDescriptor.attributeName === attributeName;
-        });
+        const assetTypeInfo = this.getAssetTypeInfo(assetTypeOrDescriptor || WellknownAssets.UNKNOWNASSET);
 
-        if (descriptor || !assetTypeOrDescriptor) {
-            return descriptor;
+        if (!assetTypeInfo || !assetTypeInfo.attributeDescriptors) {
+            return;
         }
 
-        let assetDescriptor: AssetDescriptor | undefined;
-        if ((assetTypeOrDescriptor as AssetDescriptor).name) {
-            assetDescriptor = assetTypeOrDescriptor as AssetDescriptor;
-        } else {
-            assetDescriptor = this.getAssetDescriptor(assetTypeOrDescriptor as string);
-        }
-        if (assetDescriptor && assetDescriptor.attributeDescriptors) {
-            descriptor = assetDescriptor.attributeDescriptors.find((ad) => ad.attributeName === attributeName);
-        }
-
-        return descriptor;
+        return assetTypeInfo.attributeDescriptors.find((attributeDescriptor) => attributeDescriptor.name === attributeName);
     }
 
-    public static getAttributeValueDescriptor(name?: string, attributeNameOrDescriptor?: string | AttributeDescriptor, assetTypeOrDescriptor?: string | AssetDescriptor): AttributeValueDescriptor | undefined {
+    public static getValueDescriptor(name?: string): ValueDescriptor | undefined {
         if (!name) {
             return;
         }
 
-        const descriptor = this._attributeValueDescriptors.find((attributeValueDescriptor) => {
-            return attributeValueDescriptor.name === name;
-        });
+        // If name ends with [] then it's an array value type so lookup the base type and then convert to array
+        let arrayDimensions: number | undefined;
 
-        if (descriptor || !attributeNameOrDescriptor) {
-            return descriptor;
+        if (name.endsWith("[]")) {
+            arrayDimensions = 0;
+            while(name.endsWith("[]")) {
+                name = name.substring(0, name.length - 2);
+                arrayDimensions++;
+            }
         }
+
+        // Value descriptor names are globally unique
+        let valueDescriptor = this._valueDescriptors.find((valueDescriptor) => valueDescriptor.name === name);
+        if (valueDescriptor && arrayDimensions) {
+            valueDescriptor = {...valueDescriptor, arrayDimensions: arrayDimensions};
+        }
+        return valueDescriptor;
+    }
+
+    public static resolveValueDescriptor(valueHolder: ValueHolder<any> | undefined, descriptorOrValueType: ValueDescriptorHolder | ValueDescriptor | string | undefined): ValueDescriptor | undefined {
+        let valueDescriptor: ValueDescriptor | undefined;
+
+        if (descriptorOrValueType) {
+            if (typeof(descriptorOrValueType) === "string") {
+                valueDescriptor = AssetModelUtil.getValueDescriptor(descriptorOrValueType);
+            }
+            if ((descriptorOrValueType as ValueDescriptor).jsonType) {
+                valueDescriptor = descriptorOrValueType as ValueDescriptor;
+            } else {
+                // Must be a value descriptor holder or value holder
+                valueDescriptor = AssetModelUtil.getValueDescriptor((descriptorOrValueType as ValueDescriptorHolder).type);
+            }
+        }
+
+        if (!valueDescriptor && valueHolder) {
+            // Try and determine the value descriptor based on the value type
+            valueDescriptor = this.resolveValueDescriptorFromValue(valueHolder.value);
+        }
+
+        return valueDescriptor;
+    }
+
+    public static resolveValueDescriptorFromValue(value: any): ValueDescriptor | undefined {
+        let valueDescriptor: ValueDescriptor | undefined;
+
+        if (value === null || value === undefined) {
+            return;
+        }
+
+        if (typeof value === "number") {
+            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.NUMBER);
+        } else if (typeof value === "string") {
+            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.TEXT);
+        } else if (typeof value === "boolean") {
+            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.BOOLEAN);
+        } else {
+            if (Array.isArray(value)) {
+                const v = (value as any[]).find(v => v !== undefined && v !== null);
+                const innerValueDescriptor = this.resolveValueDescriptorFromValue(v);
+                if (innerValueDescriptor) {
+                    valueDescriptor = {...innerValueDescriptor, arrayDimensions: 1};
+                }
+            } else if (value instanceof Date) {
+                valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.DATEANDTIME);
+            } else {
+                valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.JSONOBJECT);
+            }
+        }
+
+        return valueDescriptor;
+    }
+
+    public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeNameOrDescriptor: string | AttributeDescriptor | undefined, attribute?: Attribute<any>): [AttributeDescriptor | undefined, ValueDescriptor | undefined] {
         let attributeDescriptor: AttributeDescriptor | undefined;
-        if ((attributeNameOrDescriptor as AttributeDescriptor).attributeName) {
+        let valueDescriptor: ValueDescriptor | undefined;
+
+        if (attributeNameOrDescriptor && typeof attributeNameOrDescriptor !== "string") {
             attributeDescriptor = attributeNameOrDescriptor as AttributeDescriptor;
         } else {
-            attributeDescriptor = this.getAttributeDescriptor(attributeNameOrDescriptor as string, assetTypeOrDescriptor);
+            const assetTypeInfo = this.getAssetTypeInfo(assetType || WellknownAssets.UNKNOWNASSET);
+
+            if (!assetTypeInfo) {
+                return [undefined, undefined];
+            }
+
+            if (typeof (attributeNameOrDescriptor) === "string") {
+                attributeDescriptor = this.getAttributeDescriptor(attributeNameOrDescriptor as string, assetTypeInfo);
+            }
+
+            if (!attributeDescriptor && attribute) {
+                attributeDescriptor = {
+                    type: attribute.type,
+                    name: attribute.name,
+                    meta: attribute.meta
+                };
+            }
         }
+
         if (attributeDescriptor) {
-            return attributeDescriptor.valueDescriptor;
+            valueDescriptor = this.getValueDescriptor(attributeDescriptor.type);
         }
+
+        return [attributeDescriptor, valueDescriptor];
     }
 
-    public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeOrNameOrDescriptor: Attribute | string | AttributeDescriptor | undefined): [AttributeDescriptor | undefined, AttributeValueDescriptor | undefined] {
-        let attributeDescriptor: AttributeDescriptor | undefined;
-        let attributeValueDescriptor: AttributeValueDescriptor | undefined;
-        let attributeName: string | undefined;
-        let attributeTypeOrDescriptor: string | AttributeValueDescriptor | undefined;
-
-        if (typeof attributeOrNameOrDescriptor === "string") {
-            attributeName = attributeOrNameOrDescriptor;
-            attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attributeOrNameOrDescriptor, assetType);
-            attributeTypeOrDescriptor = attributeDescriptor ? attributeDescriptor.valueDescriptor : undefined;
-        } else if (attributeOrNameOrDescriptor) {
-            if ((attributeOrNameOrDescriptor as Attribute).type) {
-                attributeName = (attributeOrNameOrDescriptor as Attribute).name!;
-                attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attributeName, assetType);
-                attributeTypeOrDescriptor = (attributeOrNameOrDescriptor as Attribute).type;
-            } else {
-                attributeName = (attributeOrNameOrDescriptor as AttributeDescriptor).attributeName!;
-                attributeDescriptor = attributeOrNameOrDescriptor as AttributeDescriptor;
-                attributeTypeOrDescriptor = (attributeOrNameOrDescriptor as AttributeDescriptor).valueDescriptor;
-            }
-        }
-
-        if (attributeTypeOrDescriptor) {
-            if (typeof attributeTypeOrDescriptor === "string") {
-                attributeValueDescriptor = AssetModelUtil.getAttributeValueDescriptor(attributeTypeOrDescriptor, assetType, attributeName);
-            } else {
-                attributeValueDescriptor = attributeTypeOrDescriptor;
-            }
-        }
-
-        return [attributeDescriptor, attributeValueDescriptor];
-    }
-
-    public static getMetaItemDescriptor(urn?: string, attributeNameOrDescriptor?: string | AttributeDescriptor, assetTypeOrDescriptor?: string | AssetDescriptor): MetaItemDescriptor | undefined {
-        if (!urn) {
+    public static getMetaItemDescriptor(name?: string): MetaItemDescriptor | undefined {
+        if (!name) {
             return;
         }
 
-        let descriptor = this._metaItemDescriptors.find((metaItemDescriptor) => {
-            return metaItemDescriptor.urn === urn;
-        });
-
-        if (descriptor || !attributeNameOrDescriptor) {
-            return descriptor;
-        }
-
-        let attributeDescriptor: AttributeDescriptor | undefined;
-        if ((attributeNameOrDescriptor as AttributeDescriptor).attributeName) {
-            attributeDescriptor = attributeNameOrDescriptor as AttributeDescriptor;
-        } else {
-            attributeDescriptor = this.getAttributeDescriptor(attributeNameOrDescriptor as string, assetTypeOrDescriptor);
-        }
-        if (attributeDescriptor && attributeDescriptor.metaItemDescriptors) {
-            descriptor = attributeDescriptor.metaItemDescriptors.find((mid) => mid.urn === urn);
-        }
-
-        return descriptor;
+        // Meta item descriptor names are globally unique
+        return this._metaItemDescriptors.find((metaItemDescriptor) => metaItemDescriptor.name === name);
     }
 
-    public static attributeValueDescriptorsMatch(attributeValueDescriptor1: AttributeValueDescriptor, attributeValueDescriptor2: AttributeValueDescriptor) {
-        if (attributeValueDescriptor1 === attributeValueDescriptor2) {
-            return true;
-        }
-        if (!attributeValueDescriptor1 || !attributeValueDescriptor2) {
-            return false;
-        }
-        return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
+    public static getAssetDescriptorColour(typeOrDescriptor: string | AssetTypeInfo | AssetDescriptor | undefined, fallbackColor?: string): string | undefined {
+        const assetDescriptor = this.getAssetDescriptor(typeOrDescriptor);
+        return assetDescriptor && assetDescriptor.colour ? assetDescriptor.colour : fallbackColor;
     }
 
-    public static getMetaInitialValueFromMetaDescriptors(metaItemUrn: MetaItemDescriptor | string, metaItemDescriptors: MetaItemDescriptor[] | undefined): any | undefined {
-        if (!metaItemDescriptors) {
-            return;
-        }
-
-        const matchUrn = typeof metaItemUrn === "string" ? metaItemUrn : metaItemUrn.urn;
-        const metaItemDescriptor = metaItemDescriptors && metaItemDescriptors.find((mid) => mid && mid.urn === matchUrn);
-        if (metaItemDescriptor) {
-            return metaItemDescriptor.initialValue;
-        }
-    }
-
-    public static getMetaItemDescriptorInitialValue(metaItemDescriptor: MetaItemDescriptor, initialValue: any) {
-        if (metaItemDescriptor.valueFixed) {
-            return metaItemDescriptor;
-        }
-
-        const newMetaItem = JSON.parse(JSON.stringify(metaItemDescriptor)) as MetaItemDescriptor;
-        newMetaItem.initialValue = initialValue;
-        return newMetaItem;
-    }
-
-    public static getAssetDescriptorColor(descriptor: AssetDescriptor | undefined, fallbackColor?: string): string | undefined {
-        return descriptor && descriptor.color ? descriptor.color : fallbackColor;
-    }
-
-    public static getAssetDescriptorIcon(descriptor: AssetDescriptor | undefined, fallbackIcon?: string): string | undefined {
-        return descriptor && descriptor.icon ? descriptor.icon : fallbackIcon;
-    }
-
-    public static hasMetaItem(descriptor: AttributeDescriptor | undefined, name: string): boolean {
-        if (!descriptor || !descriptor.metaItemDescriptors) {
-            return false;
-        }
-
-        return !!descriptor.metaItemDescriptors.find((mid) => mid.urn === name);
+    public static getAssetDescriptorIcon(typeOrDescriptor: string | AssetTypeInfo | AssetDescriptor | undefined, fallbackIcon?: string): string | undefined {
+        const assetDescriptor = this.getAssetDescriptor(typeOrDescriptor);
+        return assetDescriptor && assetDescriptor.icon ? assetDescriptor.icon : fallbackIcon;
     }
 }
 
@@ -643,7 +659,7 @@ export class Manager implements EventProviderFactory {
 
         if (success) {
             success = await this.doDescriptorsInit();
-            await this.getConsoleAppConfig();
+            success = await this.getConsoleAppConfig();
         }
 
         // TODO: Reinstate this once websocket supports anonymous connections
@@ -656,6 +672,8 @@ export class Manager implements EventProviderFactory {
             }
             this._ready = true;
             this._emitEvent(OREvent.READY);
+        } else {
+            console.warn("Failed to initialise the manager");
         }
 
         this._displayRealm = config.realm;
@@ -744,7 +762,7 @@ export class Manager implements EventProviderFactory {
         }
 
         try {
-            await i18next.use(sprintf).use(i18nextXhr).init(initOptions);
+            await i18next.use(i18nextXhr).init(initOptions);
         } catch (e) {
             console.error(e);
             this._setError(ORError.TRANSLATION_ERROR);
@@ -760,17 +778,15 @@ export class Manager implements EventProviderFactory {
         }
 
         try {
-            const agentDescriptorResponse = await rest.api.AssetModelResource.getAgentDescriptors();
-            const assetDescriptorResponse = await rest.api.AssetModelResource.getAssetDescriptors();
-            const attributeDescriptorResponse = await rest.api.AssetModelResource.getAttributeDescriptors();
-            const attributeValueDescriptorResponse = await rest.api.AssetModelResource.getAttributeValueDescriptors();
+            const assetInfosResponse = await rest.api.AssetModelResource.getAssetInfos();
             const metaItemDescriptorResponse = await rest.api.AssetModelResource.getMetaItemDescriptors();
+            const valueDescriptorResponse = await rest.api.AssetModelResource.getValueDescriptors();
 
-            AssetModelUtil._agentDescriptors = agentDescriptorResponse.data;
-            AssetModelUtil._assetDescriptors = assetDescriptorResponse.data;
-            AssetModelUtil._attributeDescriptors = attributeDescriptorResponse.data;
-            AssetModelUtil._attributeValueDescriptors = attributeValueDescriptorResponse.data;
+            AssetModelUtil._assetTypeInfos = assetInfosResponse.data;
+            AssetModelUtil._agentDescriptors =  AssetModelUtil._assetTypeInfos.filter(info => info.assetDescriptor!.descriptorType === "agent").map(info => info.assetDescriptor as AgentDescriptor);
+            AssetModelUtil._assetDescriptors =  AssetModelUtil._assetTypeInfos.filter(info => info.assetDescriptor!.descriptorType === "asset").map(info => info.assetDescriptor!);
             AssetModelUtil._metaItemDescriptors = metaItemDescriptorResponse.data;
+            AssetModelUtil._valueDescriptors = valueDescriptorResponse.data;
         } catch (e) {
             console.error(e);
             return false;
@@ -876,10 +892,16 @@ export class Manager implements EventProviderFactory {
         }
     }
 
-    protected async getConsoleAppConfig(): Promise<void> {
-        const consoleAppConfigResponse = await this.rest.api.ConsoleAppResource.getAppConfig();
-        if(consoleAppConfigResponse.status === 200) {
-            this._consoleAppConfig = consoleAppConfigResponse.data;
+    protected async getConsoleAppConfig(): Promise<boolean> {
+        try {
+            const consoleAppConfigResponse = await this.rest.api.ConsoleAppResource.getAppConfig();
+            if (consoleAppConfigResponse.status === 200) {
+                this._consoleAppConfig = consoleAppConfigResponse.data;
+            }
+            return true;
+        } catch (e) {
+            this._setError(ORError.CONSOLE_ERROR);
+            return false;
         }
     }
 
@@ -1026,15 +1048,17 @@ export class Manager implements EventProviderFactory {
     }
 
     public getAuthorizationHeader(): string | undefined {
-        if (this._keycloak) {
-            return "Bearer " + this._keycloak.token;
+        if (!this.authenticated) {
+            return;
+        }
+
+        if (this.getKeycloakToken()) {
+            return "Bearer " + this.getKeycloakToken();
         }
 
         if (this.getBasicToken()) {
             return "Basic " + this.getBasicToken();
         }
-
-        return undefined;
     }
 
     public getKeycloakToken(): string | undefined {
@@ -1199,6 +1223,7 @@ export class Manager implements EventProviderFactory {
     protected _setError(error: ORError) {
         this._error = error;
         this._emitEvent(OREvent.ERROR);
+        console.log("Error set: " + error);
     }
 
     // TODO: Remove events logic once websocket supports anonymous connections

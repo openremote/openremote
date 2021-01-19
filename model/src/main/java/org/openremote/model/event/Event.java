@@ -26,7 +26,6 @@ import javax.persistence.MappedSuperclass;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import java.util.Date;
-import java.util.logging.Logger;
 
 /**
  * A timestamped event.
@@ -37,8 +36,6 @@ import java.util.logging.Logger;
  */
 @MappedSuperclass
 public abstract class Event {
-
-    private static final Logger LOG = Logger.getLogger(Event.class.getName());
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "TIMESTAMP", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
@@ -53,7 +50,7 @@ public abstract class Event {
 
     public static String getEventType(String simpleClassName) {
         String type = TextUtil.toLowerCaseDash(simpleClassName);
-        if (type.length() > 6 && type.substring(type.length() - 6).equals("-event"))
+        if (type.length() > 6 && type.endsWith("-event"))
             type = type.substring(0, type.length() - 6);
         return type;
     }

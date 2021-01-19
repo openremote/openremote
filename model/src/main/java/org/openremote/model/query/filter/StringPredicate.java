@@ -20,12 +20,14 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.NameHolder;
 import org.openremote.model.value.Values;
 
+import java.io.Serializable;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class StringPredicate implements ValuePredicate {
 
@@ -42,6 +44,10 @@ public class StringPredicate implements ValuePredicate {
         this.value = value;
     }
 
+    public StringPredicate(NameHolder nameProvider) {
+        this.value = nameProvider.getName();
+    }
+
     public StringPredicate(AssetQuery.Match match, String value) {
         this.match = match;
         this.value = value;
@@ -53,44 +59,30 @@ public class StringPredicate implements ValuePredicate {
         this.value = value;
     }
 
-    public static StringPredicate fromObjectValue(ObjectValue objectValue) {
-        StringPredicate stringPredicate = new StringPredicate();
-        objectValue.getString("match").ifPresent(match -> {
-            stringPredicate.match = AssetQuery.Match.valueOf(match);
-        });
-        objectValue.getBoolean("caseSensitive").ifPresent(caseSensitive -> {
-            stringPredicate.caseSensitive = caseSensitive;
-        });
-        objectValue.getBoolean("negate").ifPresent(negate -> {
-            stringPredicate.negate = negate;
-        });
-        objectValue.getString("value").ifPresent(value -> {
-            stringPredicate.value = value;
-        });
-        return stringPredicate;
-    }
+    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
+        return obj -> {
 
-    public static Predicate<String> asPredicate(StringPredicate predicate) {
-        return string -> {
-            if (string == null && predicate.value == null)
-                return !predicate.negate;
+            String string = Values.getValueCoerced(obj, String.class).orElse(null);
+
+            if (string == null && value == null)
+                return !negate;
             if (string == null)
-                return predicate.negate;
-            if (predicate.value == null)
-                return predicate.negate;
+                return negate;
+            if (value == null)
+                return negate;
 
-            String shouldMatch = predicate.caseSensitive ? predicate.value : predicate.value.toUpperCase(Locale.ROOT);
-            String have = predicate.caseSensitive ? string : string.toUpperCase(Locale.ROOT);
+            String shouldMatch = caseSensitive ? value : value.toUpperCase(Locale.ROOT);
+            String have = caseSensitive ? string : string.toUpperCase(Locale.ROOT);
 
-            switch (predicate.match) {
+            switch (match) {
                 case BEGIN:
-                    return predicate.negate != have.startsWith(shouldMatch);
+                    return negate != have.startsWith(shouldMatch);
                 case END:
-                    return predicate.negate != have.endsWith(shouldMatch);
+                    return negate != have.endsWith(shouldMatch);
                 case CONTAINS:
-                    return predicate.negate != have.contains(shouldMatch);
+                    return negate != have.contains(shouldMatch);
             }
-            return predicate.negate != have.equals(shouldMatch);
+            return negate != have.equals(shouldMatch);
         };
     }
 
@@ -121,20 +113,6 @@ public class StringPredicate implements ValuePredicate {
         return s;
     }
 
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", name);
-        if (match != null) {
-            objectValue.put("match", Values.create(match.toString()));
-        }
-        objectValue.put("caseSensitive", Values.create(caseSensitive));
-        objectValue.put("negate", Values.create(negate));
-        if (value != null) {
-            objectValue.put("value", Values.create(value));
-        }
-        return objectValue;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -155,11 +133,6 @@ public class StringPredicate implements ValuePredicate {
 
     @Override
     public boolean equals(Object obj) {
-        boolean eq = Objects.equals(this, obj);
-
-        if (eq) {
-             return true;
-        }
 
         if (!(obj instanceof StringPredicate)) {
             return false;

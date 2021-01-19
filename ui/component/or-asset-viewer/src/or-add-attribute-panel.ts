@@ -1,15 +1,15 @@
 import {customElement, html, LitElement, property, css} from "lit-element";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
-import {Asset, Attribute, AttributeValueDescriptor} from "@openremote/model";
+import {Asset, Attribute} from "@openremote/model";
 import {AssetModelUtil, Util} from "@openremote/core";
 import "@openremote/or-input";
 
-export class OrAddAttributePanelAttributeChangedEvent extends CustomEvent<Attribute> {
+export class OrAddAttributePanelAttributeChangedEvent extends CustomEvent<Attribute<any>> {
 
     public static readonly NAME = "or-add-attribute-panel-attribute-changed";
 
-    constructor(attribute: Attribute) {
+    constructor(attribute: Attribute<any>) {
         super(OrAddAttributePanelAttributeChangedEvent.NAME, {
             bubbles: true,
             composed: false,
@@ -30,7 +30,7 @@ export class OrAddAttributePanel extends LitElement {
     protected asset!: Asset;
 
     @property({attribute: false})
-    protected attribute: Attribute = {};
+    protected attribute: Attribute<any> = {};
 
     public static get styles() {
         return css`                        
@@ -49,21 +49,24 @@ export class OrAddAttributePanel extends LitElement {
 
     protected render() {
 
-        let attributeTypes: [string, string][] = AssetModelUtil.getAttributeDescriptors()
-            .filter((descriptor) => !this.asset.attributes![descriptor.attributeName!])
-            .sort(Util.sortByString((descriptor) => descriptor.attributeName!))
+        let attributeTypes: [string, string][] = (AssetModelUtil.getAssetTypeInfo(this.asset.type!)?.attributeDescriptors || [])
+            .filter((descriptor) => !this.asset.attributes![descriptor.name!])
+            .sort(Util.sortByString((descriptor) => descriptor.name!))
             .map((descriptor) => {
                 return [
-                    descriptor.attributeName!,
-                    Util.getAttributeLabel(undefined, descriptor, undefined, false)
+                    descriptor.name!,
+                    Util.getAttributeLabel(undefined, descriptor, this.asset.type, false)
                 ]
             });
         attributeTypes = [["@custom", i18next.t("custom")], ...attributeTypes];
 
-        const attributeValueTypes: [string, string][] = AssetModelUtil.getAttributeValueDescriptors()
-            .sort(Util.sortByString((descriptor) => descriptor.name!))
+        const attributeValueTypes: [string, string][] = (AssetModelUtil.getAssetTypeInfo(this.asset.type!)?.valueDescriptors || [])
+            .sort()
             .map((descriptor) => {
-                return [descriptor.name!, descriptor.name!];
+                return [
+                    descriptor,
+                    Util.getValueDescriptorLabel(descriptor)
+                ];
             });
 
         return html`
@@ -89,25 +92,19 @@ export class OrAddAttributePanel extends LitElement {
             nameInput!.classList.remove("hidden");
             typeInput!.classList.remove("hidden");
             this.attribute = {
-                meta: []
+                meta: {}
             };
         } else {
             nameInput!.classList.add("hidden");
             typeInput!.classList.add("hidden");
             const descriptor = AssetModelUtil.getAttributeDescriptor(name)!;
             this.attribute = {};
-            this.attribute.name = descriptor.attributeName;
-            this.attribute.value = descriptor.initialValue;
-            this.attribute.type = descriptor.valueDescriptor!.name as AttributeValueDescriptor; // TODO: Fix once asset model works properly
-            if (descriptor.metaItemDescriptors) {
-                this.attribute.meta = descriptor.metaItemDescriptors.filter((descriptor) => descriptor.required || (descriptor.hasOwnProperty("initialValue") && descriptor.initialValue !== null)).map((descriptor) => {
-                    return {
-                        name: descriptor.urn,
-                        value: descriptor.initialValue
-                    }
-                });
+            this.attribute.name = descriptor.name;
+            this.attribute.type = descriptor.type;
+            if (descriptor.meta) {
+                this.attribute.meta = JSON.parse(JSON.stringify(descriptor.meta));
             } else {
-                this.attribute.meta = [];
+                this.attribute.meta = {};
             }
         }
 

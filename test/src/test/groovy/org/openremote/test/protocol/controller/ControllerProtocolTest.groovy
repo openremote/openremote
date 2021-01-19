@@ -21,22 +21,19 @@ package org.openremote.test.protocol.controller
 
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
+import org.openremote.agent.protocol.controller.ControllerAgent
 import org.openremote.agent.protocol.controller.ControllerProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.Constants
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.attribute.MetaItemType
-import org.openremote.model.asset.AssetType
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItem
-import org.openremote.model.value.ObjectValue
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
@@ -50,11 +47,14 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriInfo
 
+import static org.openremote.model.value.ValueType.*
+import static org.openremote.model.value.MetaItemType.*
+
 @Ignore // Controller protocol doesn't cancel scheduled tasks and this test intermittently fails
 class ControllerProtocolTest extends Specification implements ManagerContainerTrait {
-    def CONTROLLER_PROTOCOL_ATTRIBUTE_NAME = "testcontrollerConfig"
-    def CONTROLLER_PROTOCOL_ATTRIBUTE_NAME2 = "testcontrollerConfig2"
-    def CONTROLLER_PROTOCOL_ATTRIBUTE_NAME3 = "testcontrollerConfig3"
+    def CONTROLLER_AGENT_NAME_1 = "Test controller 1"
+    def CONTROLLER_AGENT_NAME_2 = "Test controller 2"
+    def CONTROLLER_AGENT_NAME_3 = "Test controller 3"
 
     @SuppressWarnings("GroovyAccessibility")
     def "Check Controller connection"() {
@@ -144,7 +144,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
                                 def queryParams = uriInfo.getQueryParameters(true)
                                 if (queryParams.get("name").size() == 1 && queryParams.getFirst("name") == "my_command") {
                                     String bodyStr = (String)requestContext.getEntity()
-                                    ObjectValue body = Values.<ObjectValue>parse(bodyStr).orElse(null)
+                                    ObjectNode body = Values.parse(bodyStr).orElse(null)
 
                                     if (body != null && body.get("parameter").isPresent() && body.get("parameter").orElse(null).toString() == "a_parameter") {
                                         requestContext.abortWith(Response.ok().build())
@@ -172,7 +172,6 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
-        def controllerProtocol = container.getService(ControllerProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
@@ -182,47 +181,37 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
             controllerProtocol.client.register(mockController, Integer.MAX_VALUE)
         }
 
-        and: "an agent with a Controller protocol configuration is created"
-        def agent = new Asset()
-        agent.setRealm(Constants.MASTER_REALM)
-        agent.setName("Test Agent")
-        agent.setType(AssetType.AGENT)
-        agent.setAttributes(
-                ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute(CONTROLLER_PROTOCOL_ATTRIBUTE_NAME), ControllerProtocol.PROTOCOL_NAME)
-                        .addMeta(
-                        new MetaItem(
-                                ControllerProtocol.META_PROTOCOL_BASE_URI,
-                                Values.create("http://mockapi:8688/controller")
-                        )
-                )
-        )
-        agent = assetStorageService.merge(agent)
-        def controllerRef = agent.getAttribute(CONTROLLER_PROTOCOL_ATTRIBUTE_NAME).get().getReferenceOrThrow()
+        and: "a Controller agent1 is created"
+        def agent1 = new ControllerAgent(CONTROLLER_AGENT_NAME_1)
+            .setRealm(Constants.MASTER_REALM)
+            .setControllerURI("http://mockapi:8688/controller")
 
-        then: "the protocol should authenticate and start pinging the server and the connection status should become CONNECTED"
+        agent1 = assetStorageService.merge(agent1)
+
+        then: "the protocol instance should authenticate and start pinging the server and the connection status should become CONNECTED"
         conditions.eventually {
-            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME))
-            assert status == ConnectionStatus.CONNECTED
-            assert controllerProtocol.controllerHeartbeat.get(controllerRef).isCancelled()
+            assert agentService.getAgent(agent1.id) != null
+            assert agentService.getAgent(agent1.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert (ControllerProtocol)agentService.getProtocolInstance(agent1.id) != null
+            assert ((ControllerProtocol)agentService.getProtocolInstance(agent1.id)).controllerHeartbeat.isCancelled()
         }
 
-        when: "an asset is created with attributes linked to the controller protocol configuration"
-        def asset = new Asset("Test Asset", AssetType.THING, agent)
-        asset.setAttributes(
+        when: "an asset is created with attributes linked to the controller agent"
+        def asset = new ThingAsset("Test Asset")
+            .setParent(agent1)
+            .addOrReplaceAttributes(
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
-                new AssetAttribute("sensor", AttributeValueType.STRING)
-                        .addMeta(
-                        new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME).toArrayValue()),
-                        new MetaItem(ControllerProtocol.META_ATTRIBUTE_DEVICE_NAME, Values.create("MyDevice")),
-                        new MetaItem(ControllerProtocol.META_ATTRIBUTE_SENSOR_NAME, Values.create("my_sensor1a")),
-                        new MetaItem(MetaItemType.READ_ONLY, Values.create(true))
-                ),
-                new AssetAttribute("command", AttributeValueType.STRING)
-                        .addMeta(
-                        new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME).toArrayValue()),
-                        new MetaItem(ControllerProtocol.META_ATTRIBUTE_DEVICE_NAME, Values.create("MyDevice")),
-                        new MetaItem(ControllerProtocol.META_ATTRIBUTE_COMMAND_NAME, Values.create("my_command"))
-                )
+                new Attribute<>("sensor", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new ControllerAgent.ControllerAgentLink(agent1.id, "MyDevice")
+                            .setSensorName("my_sensor1a")),
+                        new MetaItem<>(READ_ONLY)
+                    ),
+                new Attribute<>("command", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new ControllerAgent.ControllerAgentLink(agent1.id, "MyDevice")
+                            .setCommandName("my_command"))
+                    )
         )
 
         and: "the asset is merged into the asset service"
@@ -240,78 +229,75 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
             assert controllerProtocol.pollingSensorList.size() == 1
             assert mockController.commandCount == 0
             assert mockController.pollCount > 0
-            assert newAsset.getAttribute("sensor").flatMap({it.getValueAsString()}).orElse("") == "newValue1a"
+            assert newAsset.getAttribute("sensor").flatMap({it.getValue()}).orElse("") == "newValue1a"
         }
 
-        when: "another protocol is added linked to an unavailable controller"
-        agent.addAttributes(ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute(CONTROLLER_PROTOCOL_ATTRIBUTE_NAME2), ControllerProtocol.PROTOCOL_NAME)
-                .addMeta(
-                new MetaItem(
-                        ControllerProtocol.META_PROTOCOL_BASE_URI,
-                        Values.create("http://disconnectedmockapi:8688/controller")
-                )
-        ))
+        when: "another agent is created that is linked to an unavailable controller"
+        def agent2 = new ControllerAgent(CONTROLLER_AGENT_NAME_1)
+            .setRealm(Constants.MASTER_REALM)
+            .setControllerURI("http://mockapi:8688/controller")
 
-        and: "the agent is added to the asset service"
-        agent = assetStorageService.merge(agent)
-        def controllerRef2 = assetStorageService.find(agent.id, true).getAttribute(CONTROLLER_PROTOCOL_ATTRIBUTE_NAME2).get().getReferenceOrThrow()
+        agent2 = assetStorageService.merge(agent2)
 
-        then: "the good protocol configuration should authenticate and start pinging the controller but the unavailable should remain DISCONNECTED"
+        then: "the new agent should be DISCONNECTED but the old agent should still show as CONNECTED"
         conditions.eventually {
-            def status2 = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME2))
-            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME))
-            assert status2 == ConnectionStatus.DISCONNECTED
-            assert status == ConnectionStatus.CONNECTED
-            assert !controllerProtocol.controllerHeartbeat.get(controllerRef2).isCancelled()
-            assert controllerProtocol.controllerHeartbeat.get(controllerRef).isCancelled()
+            assert agentService.getAgent(agent1.id) != null
+            assert agentService.getAgent(agent2.id) != null
+            assert agentService.getAgent(agent1.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert agentService.getAgent(agent2.id).getAgentStatus().orElse(null) == ConnectionStatus.DISCONNECTED
+            assert (ControllerProtocol)agentService.getProtocolInstance(agent1.id) != null
+            assert (ControllerProtocol)agentService.getProtocolInstance(agent2.id) != null
+            assert ((ControllerProtocol)agentService.getProtocolInstance(agent1.id)).controllerHeartbeat.isCancelled()
+            assert !((ControllerProtocol)agentService.getProtocolInstance(agent2.id)).controllerHeartbeat.isCancelled()
         }
 
-        when: "another protocol for command with map"
-        agent.removeAttribute(CONTROLLER_PROTOCOL_ATTRIBUTE_NAME2)
-        agent.addAttributes(ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute(CONTROLLER_PROTOCOL_ATTRIBUTE_NAME3), ControllerProtocol.PROTOCOL_NAME)
-                .addMeta(
-                new MetaItem(
-                        ControllerProtocol.META_PROTOCOL_BASE_URI,
-                        Values.create("http://mockapi:8688/controller")
-                )
-        ))
-
-        and: "the agent is added to the asset service"
-        agent = assetStorageService.merge(agent)
-        def controllerRef3 = assetStorageService.find(agent.id, true).getAttribute(CONTROLLER_PROTOCOL_ATTRIBUTE_NAME3).get().getReferenceOrThrow()
+        when: "this new agent is removed and another one added"
+        assetStorageService.delete([agent2.id])
+        def agent3 = new ControllerAgent(CONTROLLER_AGENT_NAME_3)
+            .setRealm(Constants.MASTER_REALM)
+            .setControllerURI("http://mockapi:8688/controller")
+        agent3 = assetStorageService.merge(agent3)
 
         then: "the protocol should authenticate and start pinging the server and the connection status should become CONNECTED"
         conditions.eventually {
-            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME))
-            def status3 = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME3))
-            assert status == ConnectionStatus.CONNECTED
-            assert status3 == ConnectionStatus.CONNECTED
-            assert controllerProtocol.controllerHeartbeat.get(controllerRef).isCancelled()
-            assert controllerProtocol.controllerHeartbeat.get(controllerRef3).isCancelled()
+            assert agentService.getAgent(agent1.id) != null
+            assert agentService.getAgent(agent2.id) == null
+            assert agentService.getAgent(agent3.id) != null
+            assert agentService.getAgent(agent1.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert agentService.getAgent(agent3.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert (ControllerProtocol)agentService.getProtocolInstance(agent1.id) != null
+            assert (ControllerProtocol)agentService.getProtocolInstance(agent2.id) == null
+            assert (ControllerProtocol)agentService.getProtocolInstance(agent3.id) != null
+            assert ((ControllerProtocol)agentService.getProtocolInstance(agent1.id)).controllerHeartbeat.isCancelled()
+            assert ((ControllerProtocol)agentService.getProtocolInstance(agent3.id)).controllerHeartbeat.isCancelled()
         }
 
-        when: "an asset is created with attributes linked to the controller protocol configuration"
-        def asset2 = new Asset("Test Asset2", AssetType.THING, agent)
-        asset2.setAttributes(
+        when: "an asset is created with attributes linked to the controller agent"
+        def asset2 = new ThingAsset("Test Asset2")
+            .setParent(agent3)
+            .addOrReplaceAttributes(
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
-                new AssetAttribute("command", AttributeValueType.STRING, Values.create("command1"))
-                        .addMeta(
-                        new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME3).toArrayValue()),
-                        new MetaItem(ControllerProtocol.META_ATTRIBUTE_DEVICE_NAME, Values.create("DeviceName2")),
-                        new MetaItem(ControllerProtocol.META_ATTRIBUTE_COMMANDS_MAP, Values.<ObjectValue>parse(/{"command1": "my_command", "command2": "wrong"}/).get())
+                new Attribute<>("command", TEXT, "command1")
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new ControllerAgent.ControllerAgentLink(agent3.id, "DeviceName2")
+                            .setCommandsMap(new HashMap<String, List<String>>([
+                                ("command1") : ["my_command"],
+                                ("command2") : ["wrong"]
+                            ]))
                         )
-        )
+                    )
+            )
         asset2 = assetStorageService.merge(asset2)
 
         then: "the asset should be linked to the protocol"
         conditions.eventually {
-            assert controllerProtocol.linkedAttributes.containsKey(new AttributeRef(asset2.id, CONTROLLER_PROTOCOL_ATTRIBUTE_NAME3))
+            assert controllerProtocol.linkedAttributes.containsKey(new AttributeRef(asset2.id, CONTROLLER_AGENT_NAME_3))
         }
 
         when: "a linked attribute value is updated"
         def attributeEvent = new AttributeEvent(asset2.id,
                 "command",
-                Values.create("command1"))
+                "command1")
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then:
@@ -333,7 +319,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
         and: "another linked attribute value is updated with a value"
         def attributeEvent3 = new AttributeEvent(asset.id,
                 "command",
-                Values.create("a_parameter"))
+                "a_parameter")
         assetProcessingService.sendAttributeEvent(attributeEvent3)
 
         then:

@@ -314,7 +314,7 @@ public abstract class DOMParser<D extends DOM> implements ErrorHandler, EntityRe
         return getXPathResult(dom.getW3CDocument(), xpath, expr, result);
     }
 
-    public Object getXPathResult(DOMElement element, XPath xpath, String expr, QName result) {
+    public Object getXPathResult(DOMElement<?,?> element, XPath xpath, String expr, QName result) {
         return getXPathResult(element.getW3CElement(), xpath, expr, result);
     }
 

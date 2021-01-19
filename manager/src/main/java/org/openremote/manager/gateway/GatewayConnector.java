@@ -22,9 +22,9 @@ package org.openremote.manager.gateway;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.impl.GatewayAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventRequestResponseWrapper;
 import org.openremote.model.event.shared.SharedEvent;
@@ -32,10 +32,11 @@ import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Values;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -51,7 +52,7 @@ import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
- * Handles all communication between a gateway representation in the local manager and the actual gateway
+ * Handles all communication between a gateway and the local manager
  */
 public class GatewayConnector {
 
@@ -66,9 +67,9 @@ public class GatewayConnector {
     protected final String realm;
     protected final String gatewayId;
     protected final AssetStorageService assetStorageService;
-    protected final ManagerExecutorService executorService;
+    protected final ScheduledExecutorService executorService;
     protected final AssetProcessingService assetProcessingService;
-    protected final Map<String, Asset> pendingAssetMerges = new HashMap<>();
+    protected final Map<String, Asset<?>> pendingAssetMerges = new HashMap<>();
     protected final AtomicReference<EventRequestResponseWrapper<DeleteAssetsRequestEvent>> pendingAssetDelete = new AtomicReference<>();
     protected List<AssetEvent> cachedAssetEvents;
     protected List<AttributeEvent> cachedAttributeEvents;
@@ -80,7 +81,7 @@ public class GatewayConnector {
     List<String> syncAssetIds;
     int syncIndex;
     int syncErrors;
-    Asset gateway;
+    GatewayAsset gateway;
     String expectedSyncResponseName;
 
     protected static List<Integer> ALPHA_NUMERIC_CHARACTERS = new ArrayList<>(62);
@@ -124,13 +125,13 @@ public class GatewayConnector {
     public GatewayConnector(
         AssetStorageService assetStorageService,
         AssetProcessingService assetProcessingService,
-        ManagerExecutorService executorService,
-        Asset gateway) {
+        ScheduledExecutorService executorService,
+        GatewayAsset gateway) {
 
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
         this.executorService = executorService;
-        boolean disabled = gateway.getAttribute("disabled").flatMap(AssetAttribute::getValueAsBoolean).orElse(false);
+        boolean disabled = gateway.getDisabled().orElse(false);
         this.realm = gateway.getRealm();
         this.gatewayId = gateway.getId();
         this.disabled = disabled;
@@ -159,7 +160,7 @@ public class GatewayConnector {
         initialSyncInProgress = true;
 
         LOG.info("Gateway connector starting: Gateway ID=" + gatewayId);
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, "status", Values.create(ConnectionStatus.CONNECTING.name())), AttributeEvent.Source.GATEWAY);
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTING), AttributeEvent.Source.GATEWAY);
 
         // Reinitialise state
         syncProcessorFuture = null;
@@ -194,7 +195,7 @@ public class GatewayConnector {
         }
 
         disconnectRunnable.run();
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, "status", Values.create(ConnectionStatus.DISCONNECTED.name())), AttributeEvent.Source.GATEWAY);
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED), AttributeEvent.Source.GATEWAY);
     }
 
     public boolean isConnected() {
@@ -229,10 +230,10 @@ public class GatewayConnector {
                 disconnect();
             }
             LOG.info("Gateway connector disabled: Gateway ID=" + gatewayId);
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, "status", Values.create(ConnectionStatus.DISABLED.name())), AttributeEvent.Source.GATEWAY);
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISABLED), AttributeEvent.Source.GATEWAY);
         } else {
             LOG.info("Gateway connector enabled: Gateway ID=" + gatewayId);
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, "status", Values.create(ConnectionStatus.DISCONNECTED.name())), AttributeEvent.Source.GATEWAY);
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.DISCONNECTED), AttributeEvent.Source.GATEWAY);
         }
     }
 
@@ -273,7 +274,7 @@ public class GatewayConnector {
         sendMessageToGateway(new EventRequestResponseWrapper<>(
             ASSET_READ_EVENT_NAME_INITIAL,
             new ReadAssetsEvent(new AssetQuery().select(selectExcludeAll()).recursive(true))));
-        syncProcessorFuture = executorService.schedule(this::onSyncAssetsTimeout, SYNC_TIMEOUT_MILLIS);
+        syncProcessorFuture = executorService.schedule(this::onSyncAssetsTimeout, SYNC_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -334,7 +335,7 @@ public class GatewayConnector {
                 )
             )
         );
-        syncProcessorFuture = executorService.schedule(this::requestAssets, SYNC_TIMEOUT_MILLIS);
+        syncProcessorFuture = executorService.schedule(this::requestAssets, SYNC_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 
     synchronized protected void onSyncAssetsResponse(String messageId, AssetsEvent e) {
@@ -357,7 +358,7 @@ public class GatewayConnector {
             Map<String, String> gatewayAssetIdParentIdMap = e.getAssets().stream()
                 .collect(HashMap::new, (m, v) -> m.put(v.getId(), v.getParentId()), HashMap::putAll);
 
-            ToIntFunction<Asset> assetLevelExtractor = asset -> {
+            ToIntFunction<Asset<?>> assetLevelExtractor = asset -> {
                 int level = 0;
                 String parentId = asset.getParentId();
                 while (parentId != null) {
@@ -384,15 +385,15 @@ public class GatewayConnector {
         } else {
 
             List<String> requestedAssetIds = syncAssetIds.stream().skip(syncIndex).limit(SYNC_ASSET_BATCH_SIZE).collect(Collectors.toList());
-            List<Asset> returnedAssets = e.getAssets();
+            List<Asset<?>> returnedAssets = e.getAssets();
 
             // Remove any assets that have been deleted since requested
             cachedAssetEvents.removeIf(
                 assetEvent -> {
-                    boolean remove = requestedAssetIds.stream().anyMatch(id -> id.equals(assetEvent.getEntityId()) && assetEvent.getCause() == AssetEvent.Cause.DELETE);
+                    boolean remove = requestedAssetIds.stream().anyMatch(id -> id.equals(assetEvent.getAssetId()) && assetEvent.getCause() == AssetEvent.Cause.DELETE);
                     if (remove) {
-                        syncAssetIds.remove(assetEvent.getEntityId());
-                        requestedAssetIds.remove(assetEvent.getEntityId());
+                        syncAssetIds.remove(assetEvent.getAssetId());
+                        requestedAssetIds.remove(assetEvent.getAssetId());
                     }
                     return remove;
                 });
@@ -412,10 +413,10 @@ public class GatewayConnector {
             // Merge returned assets ensuring the latest version of each is merged
             returnedAssets.stream()
                 .map(returnedAsset -> {
-                    final AtomicReference<Asset> latestAssetVersion = new AtomicReference<>(returnedAsset);
+                    final AtomicReference<Asset<?>> latestAssetVersion = new AtomicReference<>(returnedAsset);
                     cachedAssetEvents.removeIf(
                         assetEvent -> {
-                            boolean remove = assetEvent.getEntityId().equals(returnedAsset.getId()) && (assetEvent.getCause() == AssetEvent.Cause.UPDATE || assetEvent.getCause() == AssetEvent.Cause.READ);
+                            boolean remove = assetEvent.getAssetId().equals(returnedAsset.getId()) && (assetEvent.getCause() == AssetEvent.Cause.UPDATE || assetEvent.getCause() == AssetEvent.Cause.READ);
                             if (remove && assetEvent.getAsset().getVersion() > latestAssetVersion.get().getVersion()) {
                                 latestAssetVersion.set(assetEvent.getAsset());
                             }
@@ -435,16 +436,16 @@ public class GatewayConnector {
                 cachedAssetEvents.forEach(
                     assetEvent -> {
                         if (assetEvent.getCause() == AssetEvent.Cause.DELETE) {
-                            syncAssetIds.remove(assetEvent.getEntityId());
+                            syncAssetIds.remove(assetEvent.getAssetId());
                         } else if (assetEvent.getCause() == AssetEvent.Cause.CREATE) {
-                            syncAssetIds.add(assetEvent.getEntityId());
+                            syncAssetIds.add(assetEvent.getAssetId());
                             try {
                                 saveAssetLocally(assetEvent.getAsset());
                             } catch (Exception ex) {
                                 LOG.log(Level.SEVERE, "Failed to add new gateway asset (Gateway ID=" + gatewayId + ", Asset=" + assetEvent.getAsset(), ex);
                             }
                         } else {
-                            refreshAssets.add(assetEvent.getEntityId());
+                            refreshAssets.add(assetEvent.getAssetId());
                         }
                     }
                 );
@@ -454,9 +455,9 @@ public class GatewayConnector {
 
                 // Refresh attributes that have changed
                 cachedAttributeEvents.forEach(attributeEvent -> {
-                    String assetId = attributeEvent.getEntityId();
+                    String assetId = attributeEvent.getAssetId();
                     if (!refreshAssets.contains(assetId)) {
-                        LOG.info("1 or more gateway asset attribute values have changed so requesting the asset again (Gateway ID=" + gatewayId + ", Asset ID=" + assetId);
+                        LOG.info("1 or more gateway asset attribute values have changed so requesting the asset again (Gateway ID=" + gatewayId + ", Asset<?> ID=" + assetId);
                         refreshAssets.add(assetId);
                     }
                 });
@@ -472,7 +473,7 @@ public class GatewayConnector {
     protected void deleteObsoleteLocalAssets() {
 
         // Find obsolete local assets
-        List<Asset> localAssets = assetStorageService.findAll(
+        List<Asset<?>> localAssets = assetStorageService.findAll(
             new AssetQuery()
                 .select(selectExcludeAll())
                 .recursive(true)
@@ -496,13 +497,14 @@ public class GatewayConnector {
         initialSyncInProgress = false;
         cachedAssetEvents.clear();
         cachedAttributeEvents.clear();
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, "status", Values.create(ConnectionStatus.CONNECTED.name())), AttributeEvent.Source.GATEWAY);
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gatewayId, GatewayAsset.STATUS, ConnectionStatus.CONNECTED), AttributeEvent.Source.GATEWAY);
     }
 
-    protected Asset mergeGatewayAsset(Asset asset, boolean isUpdate) {
+    @SuppressWarnings("unchecked")
+    protected <T extends Asset<?>> T mergeGatewayAsset(T asset, boolean isUpdate) {
 
         if (!isConnected() || isInitialSyncInProgress()) {
-            String msg = "Gateway is not connected or initial sync in progress so cannot merge asset: Gateway ID=" + gatewayId + ", Asset ID=" + asset.getId();
+            String msg = "Gateway is not connected or initial sync in progress so cannot merge asset: Gateway ID=" + gatewayId + ", Asset<?> ID=" + asset.getId();
             LOG.info(msg);
             throw new IllegalStateException(msg);
         }
@@ -513,7 +515,7 @@ public class GatewayConnector {
         synchronized (pendingAssetMerges) {
 
             if (id != null && pendingAssetMerges.containsKey(id)) {
-                String msg = "Gateway asset merge already pending for this asset: Gateway ID=" + gatewayId + ", Asset ID=" + id;
+                String msg = "Gateway asset merge already pending for this asset: Gateway ID=" + gatewayId + ", Asset<?> ID=" + id;
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
             }
@@ -541,9 +543,9 @@ public class GatewayConnector {
             try {
                 asset.getId().wait(ASSET_CRUD_TIMEOUT_MILLIS);
 
-                Asset mergedAsset;
+                T mergedAsset;
                 synchronized (pendingAssetMerges) {
-                    mergedAsset = pendingAssetMerges.remove(asset.getId());
+                    mergedAsset = (T)pendingAssetMerges.remove(asset.getId());
                 }
 
                 if (mergedAsset == null) {
@@ -569,7 +571,7 @@ public class GatewayConnector {
     protected boolean deleteGatewayAssets(List<String> assetIds) {
 
         if (!isConnected() || isInitialSyncInProgress()) {
-            String msg = "Gateway is not connected or initial sync in progress so cannot delete asset(s): Gateway ID=" + gatewayId + ", Asset IDs=" + Arrays.toString(assetIds.toArray());
+            String msg = "Gateway is not connected or initial sync in progress so cannot delete asset(s): Gateway ID=" + gatewayId + ", Asset<?> IDs=" + Arrays.toString(assetIds.toArray());
             LOG.info(msg);
             throw new IllegalStateException(msg);
         }
@@ -577,7 +579,7 @@ public class GatewayConnector {
         synchronized (pendingAssetDelete) {
 
             if (pendingAssetDelete.get() != null) {
-                String msg = "Gateway asset delete already pending: Gateway ID=" + gatewayId + ", Asset IDs Mapped=" + Arrays.toString(pendingAssetDelete.get().getEvent().getAssetIds().toArray());
+                String msg = "Gateway asset delete already pending: Gateway ID=" + gatewayId + ", Asset<?> IDs Mapped=" + Arrays.toString(pendingAssetDelete.get().getEvent().getAssetIds().toArray());
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
             }
@@ -593,11 +595,11 @@ public class GatewayConnector {
                 sendMessageToGateway(pendingAssetDelete.get());
                 pendingAssetDelete.wait(ASSET_CRUD_TIMEOUT_MILLIS);
                 if (pendingAssetDelete.get() != null) {
-                    throw new IllegalStateException("Gateway asset delete failed: Gateway ID=" + gatewayId + ", Asset IDs=" + originalIds + ", Asset IDs Mapped=" + Arrays.toString(assetIds.toArray()));
+                    throw new IllegalStateException("Gateway asset delete failed: Gateway ID=" + gatewayId + ", Asset<?> IDs=" + originalIds + ", Asset<?> IDs Mapped=" + Arrays.toString(assetIds.toArray()));
                 }
                 return true;
             } catch (InterruptedException e) {
-                String msg = "Gateway asset delete interrupted: Gateway ID=" + gatewayId + ", Asset IDs=" + originalIds + ", Asset IDs Mapped=" + Arrays.toString(assetIds.toArray());
+                String msg = "Gateway asset delete interrupted: Gateway ID=" + gatewayId + ", Asset<?> IDs=" + originalIds + ", Asset<?> IDs Mapped=" + Arrays.toString(assetIds.toArray());
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
             } finally {
@@ -633,13 +635,13 @@ public class GatewayConnector {
             case CREATE:
             case READ:
             case UPDATE:
-                String assetId = e.getEntityId();
-                Asset mergedAsset = saveAssetLocally(e.getAsset());
+                String assetId = e.getAssetId();
+                Asset<?> mergedAsset = saveAssetLocally(e.getAsset());
 
                 synchronized (pendingAssetMerges) {
                     if (pendingAssetMerges.containsKey(assetId)) {
                         @SuppressWarnings("OptionalGetWithoutIsPresent")
-                        Map.Entry<String, Asset> pendingAssetMergeEntry = pendingAssetMerges.entrySet().stream().filter(entry -> entry.getKey().equals(assetId)).findFirst().get();
+                        Map.Entry<String, Asset<?>> pendingAssetMergeEntry = pendingAssetMerges.entrySet().stream().filter(entry -> entry.getKey().equals(assetId)).findFirst().get();
                         String id = pendingAssetMergeEntry.getKey();
                         pendingAssetMergeEntry.setValue(mergedAsset);
 
@@ -653,9 +655,9 @@ public class GatewayConnector {
                 break;
             case DELETE:
                 try {
-                    deleteAssetsLocally(Collections.singletonList(mapAssetId(gatewayId, e.getEntityId(), false)));
+                    deleteAssetsLocally(Collections.singletonList(mapAssetId(gatewayId, e.getAssetId(), false)));
                 } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Removing obsolete asset failed: " + e.getEntityId(), ex);
+                    LOG.log(Level.SEVERE, "Removing obsolete asset failed: " + e.getAssetId(), ex);
                 }
                 break;
         }
@@ -664,12 +666,12 @@ public class GatewayConnector {
     protected void onAttributeEvent(AttributeEvent e) {
         // Just push the event through the processing chain
         assetProcessingService.sendAttributeEvent(
-            new AttributeEvent(mapAssetId(gatewayId, e.getEntityId(), false), e.getAttributeName(), e.getValue().orElse(null), e.getTimestamp()),
+            new AttributeEvent(mapAssetId(gatewayId, e.getAssetId(), false), e.getAttributeName(), e.getValue().orElse(null), e.getTimestamp()),
             AttributeEvent.Source.GATEWAY
         );
     }
 
-    protected Asset saveAssetLocally(Asset asset) {
+    protected <T extends Asset<?>> T saveAssetLocally(T asset) {
         String assetId = asset.getId();
         asset.setId(mapAssetId(gatewayId, assetId, false));
         asset.setParentId(asset.getParentId() != null ? mapAssetId(gatewayId, asset.getParentId(), false) : gatewayId);

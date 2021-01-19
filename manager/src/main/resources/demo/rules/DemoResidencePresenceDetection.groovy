@@ -10,14 +10,14 @@ assets have presence set.
 package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
+import org.openremote.model.asset.impl.BuildingAsset
+import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.rules.AssetState
 import org.openremote.model.util.Pair
 
 import java.util.logging.Logger
 
-import static org.openremote.model.asset.AssetType.RESIDENCE
-import static org.openremote.model.asset.AssetType.ROOM
 import static org.openremote.model.query.AssetQuery.Operator.GREATER_THAN
 import static org.openremote.model.query.AssetQuery.Operator.LESS_THAN
 
@@ -30,7 +30,7 @@ rules.add()
         { facts ->
             // Any room where the presence detected flag is not set
             facts.matchAssetState(
-                    new AssetQuery().types(ROOM).attributeValue("presenceDetected", false)
+                    new AssetQuery().types(RoomAsset).attributeValue("presenceDetected", false)
             ).flatMap { roomWithoutPresence ->
                 // and the motion sensor has been triggered
                 facts.matchAssetState(
@@ -69,7 +69,7 @@ rules.add()
         .then(
         { facts ->
             AssetState room = facts.bound("room")
-            LOG.info("Presence detected in residence '" + room.parentName + "', room: " + room.name + " [" + room.id + "]")
+            LOG.info("Presence detected in residence '" + room.parentName + "', room: " + room.assetName + " [" + room.id + "]")
             facts.updateAssetState(room.id, "presenceDetected", true)
         })
 
@@ -79,7 +79,7 @@ rules.add()
         { facts ->
             // Any room where the presence detected flag is set
             facts.matchAssetState(
-                    new AssetQuery().types(ROOM).attributeValue("presenceDetected", true)
+                    new AssetQuery().types(RoomAsset).attributeValue("presenceDetected", true)
             ).flatMap { roomWithPresence ->
                 // and the motion sensor has not been triggered
                 facts.matchAssetState(
@@ -108,7 +108,7 @@ rules.add()
         .then(
         { facts ->
             AssetState room = facts.bound("room")
-            LOG.info("Presence gone in residence '" + room.parentName + "', room: " + room.name + " [" + room.id + "]")
+            LOG.info("Presence gone in residence '" + room.parentName + "', room: " + room.assetName + " [" + room.id + "]")
             facts.updateAssetState(room.id, "presenceDetected", false)
         })
 
@@ -118,7 +118,7 @@ rules.add()
         { facts ->
             // Any room where the presence detected flag is set
             facts.matchAssetState(
-                    new AssetQuery().types(ROOM).attributeValue("presenceDetected", true)
+                    new AssetQuery().types(RoomAsset).attributeValue("presenceDetected", true)
             ).flatMap { roomWithPresence ->
                 // and the motion sensor has been triggered
                 facts.matchAssetState(
@@ -130,7 +130,7 @@ rules.add()
                             new AssetQuery().ids(roomWithMotionSensorTriggered.id)
                                     .attributeName("lastPresenceDetected")
                     ).filter({
-                        !it.value.isPresent() || it.valueAsNumber.get() < roomWithMotionSensorTriggered.timestamp
+                        !it.value.isPresent() || it.value.timestamp
                     }).map { outdatedLastPresenceDetected ->
                         // keep the room and the new timestamp
                         new Pair<AssetState, Double>(outdatedLastPresenceDetected, roomWithMotionSensorTriggered.timestamp)
@@ -144,7 +144,7 @@ rules.add()
         .then(
         { facts ->
             AssetState room = facts.bound("room")
-            LOG.info("Motion sensor triggered, updating last presence in residence '" + room.parentName + "', room: " + room.name + " [" + room.id + "]")
+            LOG.info("Motion sensor triggered, updating last presence in residence '" + room.parentName + "', room: " + room.assetName + " [" + room.id + "]")
             facts.updateAssetState(room.id, "lastPresenceDetected", facts.bound("lastPresenceTimestamp") as Double)
         })
 
@@ -154,11 +154,11 @@ rules.add()
         { facts ->
             // A room where the presence detected flag is set
             facts.matchAssetState(
-                    new AssetQuery().types(ROOM).attributeValue("presenceDetected", true)
+                    new AssetQuery().types(RoomAsset).attributeValue("presenceDetected", true)
             ).flatMap { roomWithPresence ->
                 // and a residence parent where the presence detected flag is not set
                 facts.matchAssetState(
-                        new AssetQuery().types(RESIDENCE)
+                        new AssetQuery()
                                 .ids(roomWithPresence.parentId)
                                 .attributeValue("presenceDetected", false)
                 )
@@ -170,7 +170,7 @@ rules.add()
         .then(
         { facts ->
             AssetState residence = facts.bound("residence")
-            LOG.info("Presence detected in residence: " + residence.name + " [" + residence.id + "]")
+            LOG.info("Presence detected in residence: " + residence.assetName + " [" + residence.id + "]")
             facts.updateAssetState(residence.id, "presenceDetected", true)
         })
 
@@ -180,11 +180,11 @@ rules.add()
         { facts ->
             // A residence where the presence detected flag is set
             facts.matchAssetState(
-                    new AssetQuery().types(RESIDENCE).attributeValue("presenceDetected", true)
+                    new AssetQuery().types(BuildingAsset).attributeValue("presenceDetected", true)
             ).filter { residenceWithPresence ->
                 // and no room child of that residence has presence
                 facts.matchAssetState(
-                        new AssetQuery().types(ROOM).parents(residenceWithPresence.id)
+                        new AssetQuery().types(RoomAsset).parents(residenceWithPresence.id)
                                 .attributeValue("presenceDetected", true)
                 ).count() == 0
             }.findFirst().map { residenceWithPresence ->
@@ -195,6 +195,6 @@ rules.add()
         .then(
         { facts ->
             AssetState residence = facts.bound("residence")
-            LOG.info("Presence gone in residence: " + residence.name + " [" + residence.id + "]")
+            LOG.info("Presence gone in residence: " + residence.assetName + " [" + residence.id + "]")
             facts.updateAssetState(residence.id, "presenceDetected", false)
         })

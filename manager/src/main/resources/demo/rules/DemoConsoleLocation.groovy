@@ -2,8 +2,8 @@ package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.manager.setup.builtin.ManagerTestSetup
-import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeType
+import org.openremote.model.asset.Asset
+import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.query.AssetQuery
@@ -27,7 +27,7 @@ rules.add()
     facts ->
 
         def consoleIds = facts.matchAssetState(new AssetQuery()
-                .types(AssetType.CONSOLE)
+                .types(ConsoleAsset.class)
                 .attributes(new LocationAttributePredicate(
                 new RadialGeofencePredicate(100, ManagerTestSetup.SMART_BUILDING_LOCATION.y, ManagerTestSetup.SMART_BUILDING_LOCATION.x))))
                 .filter({ !facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
@@ -66,8 +66,8 @@ rules.add()
     facts ->
 
         def consoleIds = facts.matchAssetState(new AssetQuery()
-                .types(AssetType.CONSOLE)
-                .attributeValue(AttributeType.LOCATION.attributeName, new ValueEmptyPredicate()))
+                .types(ConsoleAsset.class)
+                .attributeValue(Asset.LOCATION.name, new ValueEmptyPredicate()))
                 .filter({ facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
                 .map({ it.id })
                 .collect()

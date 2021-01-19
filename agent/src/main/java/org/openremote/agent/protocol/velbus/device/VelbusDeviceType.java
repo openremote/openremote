@@ -39,9 +39,9 @@ public enum VelbusDeviceType {
     VMB1TS(0x0C, false, TemperatureProcessor.class, ThermostatProcessor.class);
 
     private static final Map<Class<? extends FeatureProcessor>, FeatureProcessor> processors = new HashMap<>();
-    private int code;
-    private boolean hasSubAddresses;
-    private Class<? extends FeatureProcessor>[] featureProcessors;
+    private final int code;
+    private final boolean hasSubAddresses;
+    private final Class<? extends FeatureProcessor>[] featureProcessors;
 
     @SafeVarargs
     VelbusDeviceType(int code, boolean hasSubAddresses, Class<? extends FeatureProcessor>... featureProcessors) {

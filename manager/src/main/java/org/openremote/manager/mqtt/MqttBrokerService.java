@@ -28,8 +28,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.*;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -38,7 +38,7 @@ import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
 import java.util.*;
@@ -117,7 +117,7 @@ public class MqttBrokerService implements ContainerService {
                                     .forEach(event -> {
                                         MqttConnection mqttConnection = mqttConnectionMap.get(sessionKey);
                                         if (mqttConnection != null) {
-                                            if (mqttConnection.assetSubscriptions.containsKey(event.getEntityId()) || mqttConnection.assetAttributeSubscriptions.containsKey(event.getAttributeRef())) {
+                                            if (mqttConnection.assetSubscriptions.containsKey(event.getAssetId()) || mqttConnection.assetAttributeSubscriptions.containsKey(event.getAttributeRef())) {
                                                 sendAttributeEvent(sessionKey, event);
                                             }
                                             if (mqttConnection.assetAttributeValueSubscriptions.containsKey(event.getAttributeRef())) {
@@ -150,13 +150,13 @@ public class MqttBrokerService implements ContainerService {
         LOG.fine("Stopped MQTT broker");
     }
 
-    public void sendAttributeEvent(String clientId, AttributeEvent attributeEvent) {
+    protected void sendAttributeEvent(String clientId, AttributeEvent attributeEvent) {
         try {
-            ByteBuf payload = Unpooled.copiedBuffer(Container.JSON.writeValueAsString(attributeEvent), Charset.defaultCharset());
+            ByteBuf payload = Unpooled.copiedBuffer(Values.JSON.writeValueAsString(attributeEvent), Charset.defaultCharset());
 
             MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                     .qos(MqttQoS.AT_MOST_ONCE)
-                    .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getEntityId())
+                    .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getAssetId())
                     .payload(payload)
                     .build();
 
@@ -167,11 +167,11 @@ public class MqttBrokerService implements ContainerService {
     }
 
     public void sendAttributeValue(String clientId, AttributeEvent attributeEvent) {
-        ByteBuf payload = Unpooled.copiedBuffer(attributeEvent.getValue().map(Value::toString).orElse(""), Charset.defaultCharset());
+        ByteBuf payload = Unpooled.copiedBuffer(Values.asJSON(attributeEvent.getValue()).orElse(""), Charset.defaultCharset());
 
         MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)
-                .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getEntityId() + TOPIC_SEPARATOR + attributeEvent.getAttributeName())
+                .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getAssetId() + TOPIC_SEPARATOR + attributeEvent.getAttributeName())
                 .payload(payload)
                 .build();
 

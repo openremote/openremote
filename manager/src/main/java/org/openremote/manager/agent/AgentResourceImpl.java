@@ -19,34 +19,34 @@
  */
 package org.openremote.manager.agent;
 
-import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.CodecUtil;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.AssetTreeNode;
+import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentResource;
-import org.openremote.model.asset.agent.AgentStatusEvent;
-import org.openremote.model.asset.agent.ProtocolDescriptor;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeValidationResult;
-import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.util.Pair;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+// TODO: Redirect gateway agent requests to the gateway
+// TODO: Allow user to select which assets/attributes are actually added to the DB
 public class AgentResourceImpl extends ManagerWebResource implements AgentResource {
 
     private static final Logger LOG = Logger.getLogger(AgentResourceImpl.class.getName());
@@ -63,137 +63,120 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     }
 
     @Override
-    public ProtocolDescriptor[] getSupportedProtocols(RequestParams requestParams, String agentId) {
-        return withAgentConnector(agentId, agentConnector -> {
-            LOG.finer("Asking connector '" + agentConnector.value.getClass().getSimpleName() + "' for protocol configurations");
-            return agentConnector.value.getProtocolDescriptors(agentConnector.key);
-        }, () -> new ProtocolDescriptor[0]);
-    }
+    public Agent<?, ?, ?>[] doProtocolInstanceDiscovery(RequestParams requestParams, String parentId, String agentType, String realm) {
 
-    @Override
-    public List<AgentStatusEvent> getAgentStatus(RequestParams requestParams, String agentId) {
+        if (!isSuperUser()) {
+            realm = getAuthenticatedRealm();
+        }
 
-        if (!identityService.getIdentityProvider().canSubscribeWith(
-            getAuthContext(),
-            new TenantFilter<AgentStatusEvent>() {
-                @Override
-                public boolean apply(AgentStatusEvent event) {
-                    return event.getRealm().equals(getAuthenticatedTenant().getRealm());
-                }
+        if (parentId != null) {
+            // Check parent is in the correct realm
+            Asset<?> asset = assetStorageService.find(parentId, false);
+            if (asset == null) {
+                throw new NotFoundException("Parent asset does not exist");
             }
-        )) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "', can't get agent status of: " + agentId);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+            if (realm != null && !asset.getRealm().equals(realm)) {
+                throw new NotAuthorizedException("Parent asset not in the correct realm: agent ID =" + parentId);
+            }
         }
 
-        List<AgentStatusEvent> result = withAgentConnector(agentId, agentConnector -> {
-            LOG.finer("Asking connector '" + agentConnector.value.getClass().getSimpleName() + "' for connection status");
-            return agentConnector.value.getConnectionStatus(agentConnector.key);
-        }, Collections::emptyList);
+        Optional<AgentDescriptor<?, ?, ?>> agentDescriptor = AssetModelUtil.getAgentDescriptor(agentType);
 
-        // Compress response (the request attribute enables the interceptor)
-        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+        if (!agentDescriptor.isPresent()) {
+            throw new IllegalArgumentException("Agent descriptor not found: agent type =" + agentType);
+        }
 
-        return result;
+        if (!agentDescriptor.map(AgentDescriptor::isInstanceDiscovery).orElse(false)) {
+            throw new NotSupportedException("Agent protocol doesn't support instance discovery");
+        }
+
+        List<Agent<?, ?, ?>> foundAgents = new ArrayList<>();
+        agentService.doProtocolInstanceDiscovery(parentId, agentDescriptor.get().getInstanceDiscoveryProviderClass(), agents -> {
+            if (agents != null) {
+                foundAgents.addAll(Arrays.asList(agents));
+            }
+        });
+
+        return foundAgents.toArray(new Agent[0]);
     }
 
     @Override
-    public Map<String, ProtocolDescriptor[]> getAllSupportedProtocols(RequestParams requestParams) {
-        Map<String, ProtocolDescriptor[]> agentDescriptorMap = new HashMap<>(agentService.getAgents().size());
-        agentService.getAgents().forEach((id, agent) ->
-            agentDescriptorMap.put(
-                id,
-                agentService.getAgentConnector(agent)
-                    .map(agentConnector -> {
-                        LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' for protocol descriptors");
-                        return agentConnector.getProtocolDescriptors(agent);
-                    })
-                    .orElseThrow(() -> {
-                        LOG.warning("Agent connector not found for agent ID: " + id);
-                        return new IllegalStateException("Agent connector not found or returned invalid response");
-                    })
-            ));
+    public AssetTreeNode[] doProtocolAssetDiscovery(RequestParams requestParams, String agentId, String realm) {
 
-        return agentDescriptorMap;
-    }
-
-    @Override
-    public AssetAttribute[] getDiscoveredProtocolConfigurations(RequestParams requestParams, String agentId, String protocolName) {
-        return new AssetAttribute[0];
-    }
-
-    @Override
-    public AttributeValidationResult validateProtocolConfiguration(RequestParams requestParams, String agentId, AssetAttribute protocolConfiguration) {
-        return withAgentConnector(agentId, agentConnector -> agentConnector.value.validateProtocolConfiguration(protocolConfiguration), () -> null);
-    }
-
-    @Override
-    public AssetTreeNode[] searchForLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realm) {
-        AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
-
-        if (!isSuperUser() && TextUtil.isNullOrEmpty(realm)) {
+        if (!isSuperUser()) {
             realm = getAuthenticatedRealm();
         }
 
-        Asset parentAsset = getParent(parentId, realm);
+        Agent<?, ?, ?> agent = agentService.getAgent(agentId);
 
-        // TODO: Allow user to select which assets/attributes are actually added to the DB
-        AssetTreeNode[] assets = withAgentConnector(
-            agentId,
-            agentConnector -> {
-                LOG.finer(
-                    "Asking connector '" + agentConnector.value.getClass().getSimpleName()
-                        + "' to do linked attribute discovery for protocol configuration: " + protocolConfigRef);
-                return agentConnector.value.getDiscoveredLinkedAttributes(protocolConfigRef);
-            }, () -> new AssetTreeNode[0]
-        );
+        if (agent == null) {
+            throw new IllegalArgumentException("Agent not found: agent ID =" + agentId);
+        }
 
-        persistAssets(assets, parentAsset, realm);
-        return assets;
+        if (realm != null && !realm.equals(agent.getRealm())) {
+            throw new NotAuthorizedException("Agent not in the correct realm: agent ID =" + agentId);
+        }
+
+        List<AssetTreeNode> foundAssets = new ArrayList<>();
+        agentService.doProtocolAssetDiscovery(agent, assets -> {
+            if (assets != null) {
+                foundAssets.addAll(Arrays.asList(assets));
+            }
+        });
+
+        return foundAssets.toArray(new AssetTreeNode[0]);
     }
 
     @Override
-    public AssetTreeNode[] importLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realm, FileInfo fileInfo) {
-        AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
+    public AssetTreeNode[] doProtocolAssetImport(RequestParams requestParams, String agentId, String realm, FileInfo fileInfo) {
 
-        if (TextUtil.isNullOrEmpty(parentId) && TextUtil.isNullOrEmpty(realm)) {
+        if (!isSuperUser()) {
             realm = getAuthenticatedRealm();
         }
 
-        Asset parentAsset = getParent(parentId, realm);
+        Agent<?, ?, ?> agent = agentService.getAgent(agentId);
 
-        if (fileInfo == null || fileInfo.getContents() == null) {
-            throw new BadRequestException("A file must be provided for import");
+        if (agent == null) {
+            throw new IllegalArgumentException("Agent not found: agent ID =" + agentId);
         }
 
-        AssetTreeNode[] assets = withAgentConnector(
-            agentId,
-            agentConnector -> {
-                LOG.finer(
-                    "Asking connector '" + agentConnector.value.getClass().getSimpleName()
-                        + "' to do linked attribute discovery using uploaded file for protocol configuration: " + protocolConfigRef
-                );
-                return agentConnector.value.getDiscoveredLinkedAttributes(protocolConfigRef, fileInfo);
-            }, () -> new AssetTreeNode[0]
-        );
+        if (realm != null && !realm.equals(agent.getRealm())) {
+            throw new NotAuthorizedException("Agent not in the correct realm: agent ID =" + agentId);
+        }
 
-        persistAssets(assets, parentAsset, realm);
-        return assets;
-    }
+        List<AssetTreeNode> foundAssets = new ArrayList<>();
 
-    protected <T> T withAgentConnector(String agentId, Function<Pair<Asset, AgentConnector>, T> function, Supplier<T> failureFunction) {
-        return Optional.ofNullable(agentService.getAgents().get(agentId))
-            .filter(asset -> asset.getWellKnownType() == AssetType.AGENT)
-            .map(agent -> new Pair<>(agent, agentService.getAgentConnector(agent).orElseThrow(() -> {
-                LOG.warning("Failed to find agent connector for: " + agent);
-                return new IllegalStateException("Agent connector not found or returned invalid response");
-            })))
-            .map(function)
-            .orElseGet(failureFunction);
+        byte[] fileData;
+
+        try {
+            fileData = fileInfo.isBinary() ? CodecUtil.decodeBase64(fileInfo.getContents()) : fileInfo.getContents().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            String msg = "Failed to decode file info: name = " + fileInfo.getName();
+            LOG.log(Level.WARNING, msg, e);
+            throw new BadRequestException(msg);
+        }
+
+        try {
+            Future<Void> future = agentService.doProtocolAssetImport(agent, fileData, assets -> {
+                if (assets != null) {
+                    foundAssets.addAll(Arrays.asList(assets));
+                }
+            });
+
+            future.get();
+        } catch (UnsupportedOperationException e) {
+            throw new NotAllowedException(e);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ProcessingException(e);
+        }
+
+        AssetTreeNode[] foundAssetsArr = foundAssets.toArray(new AssetTreeNode[0]);
+        persistAssets(foundAssetsArr, agent, realm);
+        return foundAssetsArr;
     }
 
     // TODO: Allow user to select which assets/attributes are actually added to the DB
-    protected void persistAssets(AssetTreeNode[] assets, Asset parentAsset, String realm) {
+    protected void persistAssets(AssetTreeNode[] assets, Asset<?> parentAsset, String realm) {
         try {
 
             if (assets == null || assets.length == 0) {
@@ -201,9 +184,8 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
                 return;
             }
 
-            for (int i = 0; i < assets.length; i++) {
-                AssetTreeNode assetNode = assets[i];
-                Asset asset = assetNode.asset;
+            for (AssetTreeNode assetNode : assets) {
+                Asset<?> asset = assetNode.asset;
 
                 if (asset == null) {
                     LOG.info("Skipping node as asset not set");
@@ -233,7 +215,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
     }
 
-    protected Asset getParent(String parentId, String realm) throws WebApplicationException {
+    protected Asset<?> getParent(String parentId, String realm) throws WebApplicationException {
         if (!isSuperUser() && !realm.equals(getAuthenticatedRealm())) {
             throw new ForbiddenException();
         }
@@ -243,7 +225,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
 
         // Assets must be added in the same realm as the user (unless super user)
-        Asset parentAsset = assetStorageService.find(parentId);
+        Asset<?> parentAsset = assetStorageService.find(parentId);
 
         if (parentAsset == null || (!TextUtil.isNullOrEmpty(realm) && parentAsset.getRealm().equals(realm))) {
             throw new NotFoundException("Parent asset doesn't exist in the requested realm '" + realm + "'");

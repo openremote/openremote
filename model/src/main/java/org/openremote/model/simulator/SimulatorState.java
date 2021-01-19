@@ -19,98 +19,27 @@
  */
 package org.openremote.model.simulator;
 
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
-
 /**
- * A snapshot of {@link SimulatorElement}s and their values.
+ * A snapshot of {@link SimulatorAttributeInfo}s for a given Simulator {@link Agent}.
  */
 public class SimulatorState extends SharedEvent {
 
-    public static class ConfigurationFilter extends EventFilter<SimulatorState> {
+    protected String agentId;
+    protected SimulatorAttributeInfo[] attributes;
 
-        public static final String FILTER_TYPE = "simulator-state-configuration";
-
-        protected AttributeRef[] configurations;
-
-        public ConfigurationFilter() {
-        }
-
-        public ConfigurationFilter(AttributeRef... configurations) {
-            this.configurations = configurations;
-        }
-
-        public AttributeRef[] getConfigurations() {
-            return configurations;
-        }
-
-        @Override
-        public String getFilterType() {
-            return FILTER_TYPE;
-        }
-
-        @Override
-        public boolean apply(SimulatorState event) {
-            return event.getProtocolConfigurationRef() != null
-                && Arrays.asList(getConfigurations()).contains(event.getProtocolConfigurationRef());
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "configurations='" + Arrays.toString(configurations) + '\'' +
-                '}';
-        }
+    public SimulatorState(String agentId, SimulatorAttributeInfo[] attributes) {
+        this.agentId = agentId;
+        this.attributes = attributes;
     }
 
-    // This map can be populated to complete the simulator state with user-friendly names for each simulated AttributeRef
-    protected Map<String, String> assetIdAndName = new HashMap<>();
-    protected AttributeRef protocolConfigurationRef;
-    protected SimulatorElement[] elements = new SimulatorElement[0];
-
-    protected SimulatorState() {
+    public String getAgentId() {
+        return agentId;
     }
 
-    public SimulatorState(long timestamp, AttributeRef protocolConfigurationRef, SimulatorElement... elements) {
-        super(timestamp);
-        this.protocolConfigurationRef = protocolConfigurationRef;
-        this.elements = elements;
+    public SimulatorAttributeInfo[] getAttributes() {
+        return attributes;
     }
-
-    public AttributeRef getProtocolConfigurationRef() {
-        return protocolConfigurationRef;
-    }
-
-    public SimulatorElement[] getElements() {
-        return elements;
-    }
-
-    public void updateAssetNames(Consumer<Map<String, String>> updater) {
-        clearAssetNames();
-        for (SimulatorElement element : elements) {
-            assetIdAndName.put(element.getAttributeRef().getEntityId(), null);
-        }
-        updater.accept(assetIdAndName);
-    }
-
-    public void clearAssetNames() {
-        this.assetIdAndName.clear();
-    }
-
-    public Map<String, String> getAssetIdAndName() {
-        return assetIdAndName;
-    }
-
-    public String getElementName(SimulatorElement element) {
-        AttributeRef ref = element.getAttributeRef();
-        return (assetIdAndName.containsKey(ref.getEntityId()) ? assetIdAndName.get(ref.getEntityId()) : ref.getEntityId())
-            + ":" + ref.getAttributeName();
-    }
-
 }

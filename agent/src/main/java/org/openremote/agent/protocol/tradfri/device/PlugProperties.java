@@ -1,6 +1,5 @@
 package org.openremote.agent.protocol.tradfri.device;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,13 +16,12 @@ public class PlugProperties extends DeviceProperties {
      * The on state of the plug (true for on, false for off)
      */
     @JsonProperty(ApiCode.ON_OFF)
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
-    private Boolean on;
+    private Integer on;
 
     /**
      * Construct the PlugProperties class
      */
-    public PlugProperties(){
+    public PlugProperties() {
     }
 
     /**
@@ -31,7 +29,7 @@ public class PlugProperties extends DeviceProperties {
      * @return The on state of the plug (true for on, false for off)
      */
     public Boolean getOn() {
-        return this.on;
+        return this.on != null && this.on.equals(1);
     }
 
     /**
@@ -40,6 +38,6 @@ public class PlugProperties extends DeviceProperties {
      * @param on The new on state for the plug (true for on, false for off)
      */
     public void setOn(Boolean on) {
-        this.on = on;
+        this.on = on != null ? on ? 1 : 0 : null;
     }
 }

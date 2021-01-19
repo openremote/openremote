@@ -19,9 +19,6 @@
  */
 package org.openremote.model.security;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
@@ -36,7 +33,6 @@ import javax.validation.constraints.Size;
 /**
  * This can be used (among other things) to query the REALM table in JPA queries.
  */
-@JsType
 @Entity
 @Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class Tenant {
@@ -81,7 +77,6 @@ public class Tenant {
     @Transient
     protected Integer accessTokenLifespan;
 
-    @JsIgnore
     public Tenant() {
         this(null, null, null, null);
     }
@@ -93,7 +88,6 @@ public class Tenant {
         this.enabled = enabled;
     }
 
-    @JsProperty
     public String getId() {
         return id;
     }
@@ -102,7 +96,6 @@ public class Tenant {
         this.id = id;
     }
 
-    @JsProperty
     @NotNull(message = "{Tenant.realm.NotNull}")
     @Size(min = 3, max = 255, message = "{Tenant.realm.Size}")
     @Pattern(regexp = "[a-zA-Z0-9\\-_]+", message = "{Tenant.realm.Pattern}")
@@ -114,7 +107,6 @@ public class Tenant {
         this.realm = realm;
     }
 
-    @JsProperty
     @NotNull(message = "{Tenant.displayName.NotNull}")
     @Size(min = 3, max = 255, message = "{Tenant.displayName.Size}")
     public String getDisplayName() {
@@ -125,7 +117,6 @@ public class Tenant {
         this.displayName = displayName;
     }
 
-    @JsProperty
     public Boolean getEnabled() {
         return enabled;
     }
@@ -202,8 +193,6 @@ public class Tenant {
     public void setEmailTheme(String emailTheme) {
         this.emailTheme = emailTheme;
     }
-
-
 
     @Override
     public String toString() {

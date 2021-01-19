@@ -22,7 +22,6 @@ package org.openremote.model.event.shared;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
 import org.openremote.model.gateway.GatewayConnectionStatusEvent;
@@ -42,13 +41,11 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
     @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
     @JsonSubTypes.Type(value = AssetsEvent.class, name = "assets"),
-    @JsonSubTypes.Type(value = ReadAssetAttributeEvent.class, name = "read-asset-attribute"),
+    @JsonSubTypes.Type(value = ReadAttributeEvent.class, name = "read-asset-attribute"),
     @JsonSubTypes.Type(value = ReadAssetEvent.class, name = "read-asset"),
     @JsonSubTypes.Type(value = ReadAssetsEvent.class, name = "read-assets"),
-    @JsonSubTypes.Type(value = AssetTreeModifiedEvent.class, name = "asset-tree-modified"),
     @JsonSubTypes.Type(value = SimulatorState.class, name = "simulator-state"),
     @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state"),
-    @JsonSubTypes.Type(value = AgentStatusEvent.class, name = "agent-status"),
     @JsonSubTypes.Type(value = RulesEngineStatusEvent.class, name = "rules-engine-status"),
     @JsonSubTypes.Type(value = RulesetChangedEvent.class, name = "ruleset-changed"),
     @JsonSubTypes.Type(value = GatewayDisconnectEvent.class, name = "gateway-disconnect"),
@@ -58,7 +55,6 @@ import org.openremote.model.syslog.SyslogEvent;
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
     property = "eventType"
 )
 public abstract class SharedEvent extends Event {

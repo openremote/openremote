@@ -1,14 +1,16 @@
 import {customElement, html, LitElement, property, PropertyValues} from "lit-element";
-import { Asset, AssetQuery, AssetQueryMatch} from "@openremote/model";
-import {surveySectionStyle, surveyLayoutStyle} from "./style";
+import {Asset, AssetQuery} from "@openremote/model";
+import {surveyLayoutStyle, surveySectionStyle} from "./style";
 import set from "lodash-es/set";
 import get from "lodash-es/get";
 import orderBy from "lodash-es/orderBy";
 
-import * as momentImported from 'moment'; const moment = momentImported;
-import manager, { OREvent, EventCallback } from "@openremote/core";
+import * as momentImported from 'moment';
+import manager, {EventCallback, OREvent} from "@openremote/core";
 import filter from "lodash-es/filter";
 import "@openremote/or-translate";
+
+const moment = momentImported;
 declare var MANAGER_URL: string;
 
 export interface OrComputeGridEventDetail {
@@ -419,15 +421,8 @@ class OrSurvey extends LitElement {
         }
 
         const surveyQuery: AssetQuery = {
-            select: {
-                excludeAttributeMeta: false,
-                excludeAttributes: false,
-                excludeAttributeValue: false,
-                excludeAttributeTimestamp: false,
-                excludeAttributeType: false
-            },
             ids: [surveyId],
-            types: [{predicateType: "string", value: "urn:openremote:asset:"+manager.getRealm()+":survey"}]
+            types: ["SurveyAsset"]
         };
         manager.rest.api.AssetResource.queryPublicAssets(surveyQuery).then((response) => {
             if (response && response.data) {
@@ -444,14 +439,7 @@ class OrSurvey extends LitElement {
         }
 
         const questionQuery: AssetQuery = {
-            select: {
-                excludeAttributeMeta: false,
-                excludeAttributes: false,
-                excludeAttributeValue: false,
-                excludeAttributeTimestamp: false,
-                excludeAttributeType: false
-            },
-            types: [{predicateType: "string", value: "urn:openremote:asset:"+manager.getRealm()+":survey:question", match: AssetQueryMatch.CONTAINS}]
+            types: ["SurveyQuestionAsset"]
         };
 
         manager.rest.api.AssetResource.queryPublicAssets(questionQuery).then((response) => {
@@ -471,8 +459,6 @@ class OrSurvey extends LitElement {
         }).catch((reason) => {
             console.error("Error: " + reason);
         });
-
-
     }
 
 }

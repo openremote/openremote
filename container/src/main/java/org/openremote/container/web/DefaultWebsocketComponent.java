@@ -76,8 +76,8 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
 
         WebSocketDeploymentInfo webSocketDeploymentInfo = new WebSocketDeploymentInfo();
 
-        getConsumers().entrySet().forEach(consumerEntry -> {
-            String endpointPath = WEBSOCKET_PATH + "/" + consumerEntry.getKey();
+        getConsumers().forEach((key, value) -> {
+            String endpointPath = WEBSOCKET_PATH + "/" + key;
             LOG.info("Deploying websocket endpoint: " + endpointPath);
             webSocketDeploymentInfo.addEndpoint(
                 ServerEndpointConfig.Builder.create(WebsocketAdapter.class, endpointPath)
@@ -85,10 +85,9 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                         @SuppressWarnings("unchecked")
                         @Override
                         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
-                            return (T) new WebsocketAdapter(consumerEntry.getValue());
+                            return (T) new WebsocketAdapter(value);
                         }
 
-                        @SuppressWarnings("unchecked")
                         @Override
                         public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
 
@@ -100,7 +99,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                             AuthContext authContext;
 
                             if (principal instanceof KeycloakPrincipal) {
-                                KeycloakPrincipal keycloakPrincipal = (KeycloakPrincipal) principal;
+                                KeycloakPrincipal<?> keycloakPrincipal = (KeycloakPrincipal<?>) principal;
                                 authContext = new AccessTokenAuthContext(
                                     keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
                                     keycloakPrincipal.getKeycloakSecurityContext().getToken()

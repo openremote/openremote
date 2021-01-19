@@ -20,8 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.StandardCharsets;
@@ -44,19 +43,19 @@ public class OledProcessor extends FeatureProcessor {
     @Override
     public List<PropertyDescriptor> getPropertyDescriptors(VelbusDeviceType deviceType) {
         return Collections.singletonList(
-            new PropertyDescriptor("memoText", "Memo Text", "MEMO_TEXT", AttributeValueType.STRING)
+            new PropertyDescriptor("memoText", "Memo Text", "MEMO_TEXT", ValueType.TEXT)
         );
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         if (property.equals("MEMO_TEXT")) {
             return Values.getString(value)
                 .map(text -> {
 
                     if (text.length() == 0) {
                         // Cancel the memo text
-                        device.setProperty("MEMO_TEXT", new StringDevicePropertyValue(""));
+                        device.setProperty("MEMO_TEXT", "");
                         return Collections.singletonList(getCancelMemoTextPacket(device));
                     }
 
@@ -102,12 +101,12 @@ public class OledProcessor extends FeatureProcessor {
                             device.velbusNetwork.sendPackets(
                                 getCancelMemoTextPacket(device)
                             );
-                            device.setProperty("MEMO_TEXT", StringDevicePropertyValue.EMPTY);
+                            device.setProperty("MEMO_TEXT", "");
                         },
                         finalTimeout * 1000
                     );
 
-                    device.setProperty("MEMO_TEXT", new StringDevicePropertyValue(text));
+                    device.setProperty("MEMO_TEXT", text);
                     return packets;
                 })
                 .orElse(null);
@@ -124,7 +123,7 @@ public class OledProcessor extends FeatureProcessor {
         switch (packetCommand) {
             case MODULE_STATUS:
                 // TODO: try and extract memo text from the device at initialisation
-                device.setProperty("MEMO_TEXT", StringDevicePropertyValue.EMPTY);
+                device.setProperty("MEMO_TEXT", "");
 
                 packet.setHandled(true);
                 return false;

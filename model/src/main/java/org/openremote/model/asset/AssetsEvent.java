@@ -31,14 +31,14 @@ import java.util.stream.Collectors;
  */
 public class AssetsEvent extends SharedEvent {
 
-    protected List<Asset> assets;
+    protected List<Asset<?>> assets;
 
     @JsonCreator
-    public AssetsEvent(@JsonProperty("assets") List<Asset> assets) {
+    public AssetsEvent(@JsonProperty("assets") List<Asset<?>> assets) {
         this.assets = assets;
     }
 
-    public List<Asset> getAssets() {
+    public List<Asset<?>> getAssets() {
         return assets;
     }
 

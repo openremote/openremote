@@ -43,7 +43,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     private static final Logger LOG = Logger.getLogger(PersistenceEventInterceptor.class.getName());
 
     protected MessageBrokerService messageBrokerService;
-    protected Set<PersistenceEvent> persistenceEvents = new HashSet<>();
+    protected Set<PersistenceEvent<?>> persistenceEvents = new HashSet<>();
 
     public void setMessageBrokerService(MessageBrokerService messageBrokerService) {
         this.messageBrokerService = messageBrokerService;
@@ -54,7 +54,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     public boolean onSave(Object entity, Serializable id,
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
-        persistenceEvents.add(new PersistenceEvent(
+        persistenceEvents.add(new PersistenceEvent<>(
             PersistenceEvent.Cause.CREATE,
             entity,
             propertyNames,
@@ -69,7 +69,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                                 Object[] currentState, Object[] previousState,
                                 String[] propertyNames, Type[] types)
         throws CallbackException {
-        persistenceEvents.add(new PersistenceEvent(
+        persistenceEvents.add(new PersistenceEvent<>(
             PersistenceEvent.Cause.UPDATE,
             entity,
             propertyNames,
@@ -85,7 +85,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                          Object[] state,
                          String[] propertyNames,
                          Type[] types) {
-        persistenceEvents.add(new PersistenceEvent(
+        persistenceEvents.add(new PersistenceEvent<>(
             PersistenceEvent.Cause.DELETE,
             entity,
             propertyNames,
@@ -111,7 +111,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                         return;
                     }
 
-                    for (PersistenceEvent persistenceEvent : persistenceEvents) {
+                    for (PersistenceEvent<?> persistenceEvent : persistenceEvents) {
                         try {
                             messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                                 PersistenceEvent.PERSISTENCE_TOPIC,
@@ -134,5 +134,10 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
 
     @Override
     public void afterTransactionCompletion(Transaction tx) {
+    }
+
+    @Override
+    public int[] findDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
+        return super.findDirty(entity, id, currentState, previousState, propertyNames, types);
     }
 }

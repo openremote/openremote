@@ -19,56 +19,83 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.query.LogicGroup;
+import org.openremote.model.value.NameHolder;
 
-// TODO: Incorporate meta predicates here
-public class AttributePredicate {
+import java.util.Arrays;
 
-    public StringPredicate name;
-    public boolean notExists;
-    public ValuePredicate value;
+/**
+ * Adds additional predicate logic to {@link NameValuePredicate}, allowing predicating on {@link Attribute#getMeta}
+ * presence/absence and/or values; there is an implicit OR between meta predicates (and condition can be achieved by
+ * creating multiple {@link AttributePredicate}s in an {@link LogicGroup.Operator#AND} {@link LogicGroup}. Can also
+ * predicate on the previous value of the {@link Attribute} which is only relevant when applied to {@link
+ * org.openremote.model.rules.AssetState}.
+ */
+public class AttributePredicate extends NameValuePredicate {
+
+    public NameValuePredicate[] meta;
+    public ValuePredicate previousValue;
 
     public AttributePredicate() {
     }
 
-    public AttributePredicate(String name) {
-        this(new StringPredicate(name));
+    public AttributePredicate(NameHolder nameHolder, ValuePredicate value) {
+        super(nameHolder, value);
     }
 
-    public AttributePredicate(StringPredicate name) {
-        this.name = name;
-    }
-
-    public AttributePredicate(ValuePredicate value) {
-        this.value = value;
+    public AttributePredicate(String name, ValuePredicate value) {
+        super(name, value);
     }
 
     public AttributePredicate(StringPredicate name, ValuePredicate value) {
-        this.name = name;
-        this.value = value;
+        super(name, value);
     }
 
+    public AttributePredicate(NameHolder nameHolder, ValuePredicate value, boolean negated, Path path) {
+        super(nameHolder, value, negated, path);
+    }
+
+    public AttributePredicate(String name, ValuePredicate value, boolean negated, Path path) {
+        super(name, value, negated, path);
+    }
+
+    public AttributePredicate(StringPredicate name, ValuePredicate value, boolean negated, Path path) {
+        super(name, value, negated, path);
+    }
+
+    @Override
     public AttributePredicate name(StringPredicate name) {
         this.name = name;
         return this;
     }
 
+    @Override
     public AttributePredicate value(ValuePredicate value) {
         this.value = value;
         return this;
     }
 
-    public AttributePredicate doesntExist() {
-        this.notExists = true;
+    @Override
+    public AttributePredicate negate() {
+        super.negate();
         return this;
     }
 
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("name", name.toModelValue());
-        objectValue.put("value", value.toModelValue());
-        return objectValue;
+    @Override
+    public AttributePredicate path(Path path) {
+        super.path(path);
+        return this;
+    }
+
+    public AttributePredicate previousValue(ValuePredicate previousValue) {
+        this.previousValue = previousValue;
+        return this;
+    }
+
+    public AttributePredicate meta(NameValuePredicate... meta) {
+        this.meta = meta;
+        return this;
     }
 
     @Override
@@ -76,6 +103,10 @@ public class AttributePredicate {
         return getClass().getSimpleName() + "{" +
             "name=" + name +
             ", value=" + value +
+            ", negated=" + negated +
+            ", path=" + (path == null ? "null" : Arrays.toString(path.paths)) +
+            ", meta=" + Arrays.toString(meta) +
+            ", previousValue=" + previousValue +
             '}';
     }
 }

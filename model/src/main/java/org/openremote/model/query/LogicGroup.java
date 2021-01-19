@@ -20,6 +20,7 @@
 package org.openremote.model.query;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class LogicGroup<T> {
@@ -32,11 +33,30 @@ public class LogicGroup<T> {
     public LogicGroup() {
     }
 
+    @SafeVarargs
+    public LogicGroup(T... items) {
+        this(Arrays.asList(items));
+    }
+
     public LogicGroup(List<T> items) {
         this.items = items;
     }
 
-    public LogicGroup(Operator operator, List<T> items, List<LogicGroup<T>> groups) {
+    @SafeVarargs
+    public LogicGroup(Operator operator, T... items) {
+        this(operator, Arrays.asList(items));
+    }
+
+    public LogicGroup(Operator operator, List<T> items) {
+        this(operator, null, items);
+    }
+
+    @SafeVarargs
+    public LogicGroup(Operator operator, List<LogicGroup<T>> groups, T... items) {
+        this(operator, groups, Arrays.asList(items));
+    }
+
+    public LogicGroup(Operator operator, List<LogicGroup<T>> groups, List<T> items) {
         this.operator = operator;
         this.items = items;
         this.groups = groups;
@@ -59,15 +79,15 @@ public class LogicGroup<T> {
 
 
     public List<T> getItems() {
-        return items == null ? new ArrayList<T>() : items;
+        return items == null ? new ArrayList<>() : items;
     }
 
     @Override
     public String toString() {
         return LogicGroup.class.getSimpleName() + "{" +
             "operator=" + operator +
-            ", items=" + items +
-            ", groups=" + groups +
+            ", items=" + (items == null ? "[]" : Arrays.toString(items.toArray())) +
+            ", groups=" + (groups == null ? "[]" : Arrays.toString(groups.toArray())) +
             '}';
     }
 }

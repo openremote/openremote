@@ -30,16 +30,16 @@ public class UnauthorizedEventSubscription<E extends SharedEvent> {
 
     public static final String MESSAGE_PREFIX = "UNAUTHORIZED:";
 
-    protected EventSubscription subscription;
+    protected EventSubscription<E> subscription;
 
     protected UnauthorizedEventSubscription() {
     }
 
-    public UnauthorizedEventSubscription(EventSubscription subscription) {
+    public UnauthorizedEventSubscription(EventSubscription<E> subscription) {
         this.subscription = subscription;
     }
 
-    public EventSubscription getSubscription() {
+    public EventSubscription<E> getSubscription() {
         return subscription;
     }
 

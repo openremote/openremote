@@ -19,23 +19,19 @@
  */
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.model.util.EnumUtil;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-
 /**
  * Abstract processor for channel related operations
  */
 public abstract class OutputChannelProcessor extends ChannelProcessor {
 
-    public enum ChannelSetting implements DevicePropertyValue<ChannelSetting> {
+    public enum ChannelSetting {
             NORMAL(0x00),
             INHIBITED(0x01),
             FORCED(0x02),
             LOCKED(0x03, 0x04);
 
-            private int code;
-            private int code2;
+            private final int code;
+            private final int code2;
 
             ChannelSetting(int code) {
                 this(code, 0);
@@ -48,16 +44,6 @@ public abstract class OutputChannelProcessor extends ChannelProcessor {
 
             public int getCode() {
                 return this.code;
-            }
-
-            @Override
-            public Value toValue(ValueType valueType) {
-                return EnumUtil.enumToValue(this, valueType);
-            }
-
-            @Override
-            public ChannelSetting getPropertyValue() {
-                return this;
             }
 
             public static ChannelSetting fromCode(int code) {

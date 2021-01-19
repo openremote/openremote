@@ -32,8 +32,7 @@ import org.openremote.model.syslog.SyslogEvent;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = TenantFilter.class, name = TenantFilter.FILTER_TYPE),
     @JsonSubTypes.Type(value = SyslogEvent.LevelCategoryFilter.class, name = SyslogEvent.LevelCategoryFilter.FILTER_TYPE),
-    @JsonSubTypes.Type(value = AssetFilter.class, name = AssetFilter.FILTER_TYPE),
-    @JsonSubTypes.Type(value = SimulatorState.ConfigurationFilter.class, name = SimulatorState.ConfigurationFilter.FILTER_TYPE)
+    @JsonSubTypes.Type(value = AssetFilter.class, name = AssetFilter.FILTER_TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

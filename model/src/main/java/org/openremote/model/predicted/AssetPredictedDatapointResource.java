@@ -19,20 +19,16 @@
  */
 package org.openremote.model.predicted;
 
-import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
-
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("asset/predicted")
-@JsType(isNative = true)
 public interface AssetPredictedDatapointResource {
     /**
      * Retrieve the predicted datapoints of an asset attribute. Regular users can only access assets in their
@@ -44,10 +40,8 @@ public interface AssetPredictedDatapointResource {
     @GET
     @Path("{assetId}/attribute/{attributeName}")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    @SuppressWarnings("unusable-by-js")
-    ValueDatapoint[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
+    ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
                                             @PathParam("assetId") String assetId,
                                             @PathParam("attributeName") String attributeName,
                                             @QueryParam("interval") DatapointInterval datapointInterval,

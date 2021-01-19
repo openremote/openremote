@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.setup.builtin;
 
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 
 import java.util.Arrays;

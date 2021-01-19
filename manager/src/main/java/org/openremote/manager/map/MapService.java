@@ -19,17 +19,18 @@
  */
 package org.openremote.manager.map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.core.UriBuilder;
@@ -42,6 +43,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,10 +72,10 @@ public class MapService implements ContainerService {
     protected Path mapTilesPath;
     protected Path mapSettingsPath;
     protected Metadata metadata;
-    protected ObjectValue mapConfig;
-    protected ObjectValue mapSource;
-    protected Map<String, ObjectValue> mapSettings = new HashMap<>();
-    protected Map<String, ObjectValue> mapSettingsJs = new HashMap<>();
+    protected ObjectNode mapConfig;
+    protected ObjectNode mapSource;
+    protected Map<String, ObjectNode> mapSettings = new HashMap<>();
+    protected Map<String, ObjectNode> mapSettingsJs = new HashMap<>();
 
     protected static Metadata getMetadata(Connection connection) {
 
@@ -95,11 +97,12 @@ public class MapService implements ContainerService {
             }
 
             String attribution = resultMap.get("attribution");
-            ArrayValue vectorLayer = Values.<ObjectValue>parse(resultMap.get("json")).flatMap(json -> json.getArray("vector_layers")).orElse(null);
-            int maxZoom = Integer.valueOf(resultMap.get("maxzoom"));
-            int minZoom = Integer.valueOf(resultMap.get("minzoom"));
-            ArrayValue center = Values.parse(resultMap.get("center")).flatMap(Values::getArray).orElse(null);
-            ArrayValue bounds = Values.parse(resultMap.get("bounds")).flatMap(Values::getArray).orElse(null);
+            int maxZoom = Integer.parseInt(resultMap.get("maxzoom"));
+            int minZoom = Integer.parseInt(resultMap.get("minzoom"));
+
+            ArrayNode vectorLayer = resultMap.containsKey("json") ? (ArrayNode)Values.JSON.readTree(resultMap.get("json")).get("vector_layers") : null;
+            ArrayNode center = resultMap.containsKey("center") ? (ArrayNode)Values.JSON.readTree("[" + resultMap.get("center") + "]") : null;
+            ArrayNode bounds = resultMap.containsKey("bounds") ? (ArrayNode)Values.JSON.readTree("[" + resultMap.get("bounds") + "]") : null;
 
             if (!TextUtil.isNullOrEmpty(attribution) && vectorLayer != null && !vectorLayer.isEmpty() && maxZoom > 0) {
                 metadata = new Metadata(attribution, vectorLayer, bounds, center, maxZoom, minZoom);
@@ -114,12 +117,11 @@ public class MapService implements ContainerService {
         return metadata;
     }
 
-    protected static ObjectValue loadMapSettingsJson(Path mapSettingsPath) {
-        ObjectValue mapSettings = Values.createObject();
+    protected static ObjectNode loadMapSettingsJson(Path mapSettingsPath) {
+        ObjectNode mapSettings = null;
 
         try {
-            String mapSettingsJson = new String(Files.readAllBytes(mapSettingsPath), "utf-8");
-            mapSettings = Values.<ObjectValue>parse(mapSettingsJson).orElseGet(Values::createObject);
+            mapSettings = (ObjectNode)Values.JSON.readTree(Files.readAllBytes(mapSettingsPath));
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
         }
@@ -207,7 +209,7 @@ public class MapService implements ContainerService {
         metadata = getMetadata(connection);
         if (metadata.isValid()) {
             mapConfig = loadMapSettingsJson(mapSettingsPath);
-            if (!mapConfig.hasKeys()) {
+            if (mapConfig == null) {
                 LOG.warning("Map config could not be loaded from '" + mapSettingsPath.toAbsolutePath() + "', map functionality will not work");
                 return;
             }
@@ -216,31 +218,31 @@ public class MapService implements ContainerService {
             return;
         }
 
-        ObjectValue options = mapConfig.getObject("options").orElse(Values.createObject());
-        ObjectValue defaultOptions = options.getObject("default").orElse(Values.createObject());
-        options.put("default", defaultOptions);
-        mapConfig.put("options", options);
+        ObjectNode options = Optional.ofNullable((ObjectNode)mapConfig.get("options")).orElse(mapConfig.objectNode());
+        ObjectNode defaultOptions = Optional.ofNullable((ObjectNode)options.get("default")).orElse(mapConfig.objectNode());
+        options.replace("default", defaultOptions);
+        mapConfig.replace("options", options);
 
-        if (!defaultOptions.hasKey("maxZoom")) {
+        if (!defaultOptions.has("maxZoom")) {
             defaultOptions.put("maxZoom", metadata.maxZoom);
         }
-        if (!defaultOptions.hasKey("minZoom")) {
+        if (!defaultOptions.has("minZoom")) {
             defaultOptions.put("minZoom", metadata.minZoom);
         }
 
         if (metadata.getCenter() != null) {
-            if (!defaultOptions.hasKey("center")) {
-                ArrayValue center = metadata.getCenter().deepCopy();
+            if (!defaultOptions.has("center")) {
+                ArrayNode center = metadata.getCenter().deepCopy();
                 center.remove(2);
-                defaultOptions.put("center", center);
+                defaultOptions.set("center", center);
             }
-            if (!defaultOptions.hasKey("zoom")) {
-                defaultOptions.put("zoom", metadata.getCenter().getNumber(2).orElse(13d));
+            if (!defaultOptions.has("zoom")) {
+                defaultOptions.put("zoom", metadata.getCenter().get(2).asDouble(13d));
             }
         }
 
-        if (!defaultOptions.hasKey("bounds") && metadata.getBounds() != null) {
-            defaultOptions.put("bounds", metadata.getBounds());
+        if (!defaultOptions.has("bounds") && metadata.getBounds() != null) {
+            defaultOptions.set("bounds", metadata.getBounds());
         }
     }
 
@@ -254,47 +256,48 @@ public class MapService implements ContainerService {
     /**
      * Dynamically build Mapbox GL settings based on mapsettings.json
      */
-    public ObjectValue getMapSettings(String realm, UriBuilder baseUriBuilder) {
+    public ObjectNode getMapSettings(String realm, UriBuilder baseUriBuilder) {
 
         if (mapSettings.containsKey(realm)) {
             return mapSettings.get(realm);
         }
 
-        final ObjectValue settings = mapSettings.computeIfAbsent(realm, r -> {
-            if (metadata.isValid() && mapConfig.hasKeys()) {
+        final ObjectNode settings = mapSettings.computeIfAbsent(realm, r -> {
+            if (metadata.isValid() && !mapConfig.isEmpty()) {
                 // Use config as a settings base and convert URLs
                 return mapConfig.deepCopy();
             }
-            return Values.createObject();
+            return mapConfig.objectNode();
         });
 
-        if (!metadata.isValid() || !mapConfig.hasKeys()) {
+        if (!metadata.isValid() || mapConfig.isEmpty()) {
             return settings;
         }
 
         // Set vector_tiles URL to MapResource getSource endpoint
-        settings.getObject("sources")
-                .flatMap(s -> s.getObject("vector_tiles"))
-                .ifPresent(vectorTilesObj -> {
-
+        Optional.ofNullable(settings.get("sources"))
+                .map(s -> s.get("vector_tiles"))
+                .filter(JsonNode::isObject)
+                .ifPresent(vectorTilesNode -> {
+                    ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
                     vectorTilesObj.remove("url");
 
                     vectorTilesObj.put("attribution", metadata.attribution);
                     vectorTilesObj.put("maxzoom", metadata.maxZoom);
                     vectorTilesObj.put("minzoom", metadata.minZoom);
-                    vectorTilesObj.put("vector_layers", metadata.vectorLayers);
+                    vectorTilesObj.replace("vector_layers", metadata.vectorLayers);
 
-                    mapConfig.getArray("center").ifPresent(center ->
-                            mapConfig.getNumber("zoom").ifPresent(zoom -> {
-                                ArrayValue centerArray = center.deepCopy();
-                                centerArray.add(Values.create(zoom));
-                                vectorTilesObj.put("center", centerArray);
+                    Optional.ofNullable(mapConfig.get("center")).ifPresent(center ->
+                            Optional.ofNullable(mapConfig.has("zoom") && mapConfig.get("zoom").isInt() ? mapConfig.get("zoom") : null).ifPresent(zoom -> {
+                                ArrayNode centerArray = center.deepCopy();
+                                centerArray.add(zoom);
+                                vectorTilesObj.replace("center", centerArray);
                             }));
 
-                    ArrayValue tilesArray = Values.createArray();
+                    ArrayNode tilesArray = mapConfig.arrayNode();
                     String tileUrl = baseUriBuilder.clone().replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
-                    tilesArray.set(0, tileUrl);
-                    vectorTilesObj.put("tiles", tilesArray);
+                    tilesArray.insert(0, tileUrl);
+                    vectorTilesObj.replace("tiles", tilesArray);
 
 //                    vectorTilesObj.put(
 //                            "url",
@@ -307,7 +310,7 @@ public class MapService implements ContainerService {
                 });
 
         // Set sprite URL to shared folder
-        settings.getString("sprite").ifPresent(sprite -> {
+        Optional.ofNullable(settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null).ifPresent(sprite -> {
             String spriteUri =
                     baseUriBuilder.clone()
                             .replacePath(ManagerWebService.SHARED_PATH)
@@ -317,7 +320,7 @@ public class MapService implements ContainerService {
         });
 
         // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so add /fonts here
-        settings.getString("glyphs").ifPresent(glyphs -> {
+        Optional.ofNullable(settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null).ifPresent(glyphs -> {
             String glyphsUri =
                     baseUriBuilder.clone()
                             .replacePath(ManagerWebService.SHARED_PATH)
@@ -331,28 +334,28 @@ public class MapService implements ContainerService {
     /**
      * Dynamically build Mapbox JS settings based on mapsettings.json
      */
-    public ObjectValue getMapSettingsJs(String realm, UriBuilder baseUriBuilder) {
+    public ObjectNode getMapSettingsJs(String realm, UriBuilder baseUriBuilder) {
 
         if (mapSettingsJs.containsKey(realm)) {
             return mapSettingsJs.get(realm);
         }
 
-        final ObjectValue settings = mapSettingsJs.computeIfAbsent(realm, r -> Values.createObject());
+        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realm, r -> Values.JSON.createObjectNode());
 
-        if (!metadata.isValid() || !mapConfig.hasKeys()) {
+        if (!metadata.isValid() || mapConfig.isEmpty()) {
             return settings;
         }
 
-        ArrayValue tilesArray = Values.createArray();
+        ArrayNode tilesArray = Values.JSON.createArrayNode();
         String tileUrl = baseUriBuilder.clone().replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
-        tilesArray.set(0, tileUrl);
+        tilesArray.insert(0, tileUrl);
 
-        settings.put("options", mapConfig.getObject("options").orElse(null));
+        settings.replace("options", mapConfig.has("options") && mapConfig.get("options").isObject() ? (ObjectNode)mapConfig.get("options") : null);
 
         settings.put("attribution", metadata.attribution);
         settings.put("format", "png");
         settings.put("type", "baselayer");
-        settings.put("tiles", tilesArray);
+        settings.replace("tiles", tilesArray);
 
         return settings;
     }
@@ -365,7 +368,7 @@ public class MapService implements ContainerService {
         ResultSet result = null;
         try {
             query = connection.prepareStatement(
-                    "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?"
+                "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?"
             );
 
             int index = 0;
@@ -397,14 +400,14 @@ public class MapService implements ContainerService {
 
     protected static final class Metadata {
         protected String attribution;
-        protected ArrayValue vectorLayers;
+        protected ArrayNode vectorLayers;
         protected int maxZoom;
         protected int minZoom;
-        protected ArrayValue bounds;
-        protected ArrayValue center;
+        protected ArrayNode bounds;
+        protected ArrayNode center;
         protected boolean valid;
 
-        public Metadata(String attribution, ArrayValue vectorLayers, ArrayValue bounds, ArrayValue center, int maxZoom, int minZoom) {
+        public Metadata(String attribution, ArrayNode vectorLayers, ArrayNode bounds, ArrayNode center, int maxZoom, int minZoom) {
             this.attribution = attribution;
             this.vectorLayers = vectorLayers;
             this.bounds = bounds;
@@ -421,15 +424,15 @@ public class MapService implements ContainerService {
             return attribution;
         }
 
-        public ArrayValue getVectorLayers() {
+        public ArrayNode getVectorLayers() {
             return vectorLayers;
         }
 
-        public ArrayValue getBounds() {
+        public ArrayNode getBounds() {
             return bounds;
         }
 
-        public ArrayValue getCenter() {
+        public ArrayNode getCenter() {
             return center;
         }
 

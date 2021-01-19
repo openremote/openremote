@@ -31,8 +31,6 @@ import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -57,7 +55,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
     }
 
     @Override
-    public Stream<Asset> getResults(AssetQuery assetQuery) {
+    public Stream<Asset<?>> getResults(AssetQuery assetQuery) {
 
         if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             // Realm is restricted to rules
@@ -70,7 +68,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
                 rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId))
             );
 
-            Asset restrictedAsset = assetStorageService.find(
+            Asset<?> restrictedAsset = assetStorageService.find(
                 rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
                 true);
 
@@ -99,7 +97,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             return this;
 
         // Check if the asset ID of every event can be found with the default security of this facade
-        String[] ids = Arrays.stream(events).map(AttributeEvent::getEntityId).toArray(String[]::new);
+        String[] ids = Arrays.stream(events).map(AttributeEvent::getAssetId).toArray(String[]::new);
 
         AssetQuery query = new AssetQuery().ids(ids);
         long count = this.getResults(query).count();
@@ -115,24 +113,8 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
         return this;
     }
 
-    public AssetsFacade<T> dispatch(String assetId, String attributeName, Value value) {
+    public AssetsFacade<T> dispatch(String assetId, String attributeName, Object value) {
         return dispatch(new AttributeEvent(assetId, attributeName, value));
-    }
-
-    public AssetsFacade<T> dispatch(String assetId, String attributeName, String value) {
-        return dispatch(assetId, attributeName, Values.create(value));
-    }
-
-    public AssetsFacade<T> dispatch(String assetId, String attributeName, double value) {
-        return dispatch(assetId, attributeName, Values.create(value));
-    }
-
-    public AssetsFacade<T> dispatch(String assetId, String attributeName, boolean value) {
-        return dispatch(assetId, attributeName, Values.create(value));
-    }
-
-    public AssetsFacade<T> dispatch(String assetId, String attributeName, AttributeExecuteStatus status) {
-        return dispatch(assetId, attributeName, status.asValue());
     }
 
     public AssetsFacade<T> dispatch(String assetId, String attributeName) {

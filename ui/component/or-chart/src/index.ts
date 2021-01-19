@@ -11,7 +11,7 @@ import {
 } from "lit-element";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {Asset, AssetAttribute, AttributeRef, DatapointInterval, MetaItemType, Attribute, ReadAssetEvent, AssetEvent} from "@openremote/model";
+import {Asset, Attribute, AttributeRef, DatapointInterval, WellknownMetaItems, ReadAssetEvent, AssetEvent} from "@openremote/model";
 import manager, {
     AssetModelUtil,
     DefaultColor2,
@@ -48,8 +48,8 @@ export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
     }
 }
 export interface ChartViewConfig {
-    assetIds?: (string|undefined)[];
-    attributes?: (string|undefined)[];
+    assetIds?: string[];
+    attributes?: string[];
     timestamp?: Date;
     compareTimestamp?: Date;
     period?: moment.unitOfTime.Base;
@@ -330,7 +330,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     private activeAsset?: Asset;
 
     @property({type: Object})
-    public assetAttributes: AssetAttribute[] = [];
+    public assetAttributes: Attribute<any>[] = [];
 
     @property({type: Object})
     public attributeRef?: AttributeRef;
@@ -339,7 +339,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
     @property({type: String})
-    public period: moment.unitOfTime.Base = "day";
+    public period?: moment.unitOfTime.Base = "day";
 
     @property({type: Number})
     public timestamp?: Date = moment().set('minute', 0).toDate();
@@ -481,8 +481,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                         ${this.assetAttributes && this.assetAttributes.map((attr, index) => {
 
                             const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!);
-                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attr);
-                            const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], true);
+                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attr.name, attr);
+                            const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[index]!.type, true);
                             const bgColor = Util.getMetaValue('color', attr, undefined) ? Util.getMetaValue('color', attr, undefined) : "";
                             return html`
                                 <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
@@ -702,32 +702,31 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(!configStr || !this.panelName) return
 
         const viewSelector = this.activeAssetId ? this.activeAssetId : window.location.hash;
-        const config = JSON.parse(configStr);
+        const config = JSON.parse(configStr) as OrChartConfig;
         const view = config.views[viewSelector][this.panelName];
-        if(!view) return
+        if (!view) return;
         const query = {
             ids: view.assetIds
         }
-        if(view.assetIds === this.assets.map(asset => asset.id)) return 
+        if (view.assetIds && this.assets && view.assetIds.every(id => !!this.assets.find(asset => asset.id === id))) return;
         this._loading = true;
 
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
             const assets = response.data;
-            if(assets.length > 0) {
-                this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId));
-                this.assetAttributes = view.attributes.map((attr: string, index: number)  => Util.getAssetAttribute(this.assets[index], attr));
-                this.period = view.period;
-                this._loading = false;
-            }
-        });
+            if (!view || !view.assetIds || !view.attributes || assets.length !== view.assetIds.length || assets.length !== view.attributes.length) return;
 
+            this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId)!);
+            this.assetAttributes = view.attributes.map((attr: string, index: number) => assets[index] && assets[index].attributes ? assets[index].attributes![attr] : undefined).filter(attr => !!attr) as Attribute<any>[];
+            this.period = view.period;
+            this._loading = false;
+        });
     }
 
     saveSettings() {
         const viewSelector = this.activeAssetId ? this.activeAssetId : window.location.hash;
-        const assets: Asset[] = this.assets.filter(asset => 'id' in asset && typeof asset.id === "string");
-        const assetIds = assets.map(asset => asset.id);
-        const attributes = this.assetAttributes.map(attr => attr.name);
+        const assets: Asset[] = this.assets ? this.assets.filter(asset => !!asset.id) : [];
+        const assetIds = assets.map(asset => asset.id!);
+        const attributes = this.assetAttributes ? this.assetAttributes.map(attr => attr.name!) : [];
         const configStr = window.localStorage.getItem('OrChartConfig')
         if(!this.panelName) return
 
@@ -772,11 +771,11 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     addAttribute(e:Event) {
-        if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')){
+        if (this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
             const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
-            if(this.activeAsset){
-                const attr = Util.getAssetAttribute(this.activeAsset, elm.value);
-                if(attr){
+            if (this.activeAsset) {
+                const attr = this.activeAsset.attributes ? this.activeAsset.attributes[elm.value] : undefined;
+                if (attr) {
                     this.setAttrColor(attr);
                     this.assetAttributes = [...this.assetAttributes, attr];
 
@@ -787,16 +786,15 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
     
-    setAttrColor(attr: Attribute) {
+    setAttrColor(attr: Attribute<any>) {
         const usedColors = this.assetAttributes.map(attr => this.getAttrColor(attr));
         const color = this.colors.filter(color => usedColors.indexOf(color) < 0)[0];
-        const meta = {name: "color", value: color};
-        if(attr.meta){
-            attr.meta.push(meta);
+        if (attr.meta) {
+            attr.meta["color"] = color;
         }
     }
     
-    getAttrColor(attr: Attribute) {
+    getAttrColor(attr: Attribute<any>) {
         return  Util.getMetaValue('color', attr, undefined);
     }
 
@@ -821,7 +819,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         this.saveSettings();
     }
 
-    protected _getAttributeOptions() {
+    protected _getAttributeOptions(): [string, string][] | undefined {
         if(!this.activeAsset || !this.activeAsset.attributes) {
             return;
         }
@@ -831,17 +829,16 @@ export class OrChart extends translate(i18next)(LitElement) {
             elm.value = '';
         }
 
-        let attributes = [...Util.getAssetAttributes(this.activeAsset)];
-        if(attributes && attributes.length > 0) {
-            attributes = attributes
-                .filter((attr: AssetAttribute) => Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!))
-                .filter((attr: AssetAttribute) => (this.assetAttributes && !this.assetAttributes.some(assetAttr => (assetAttr.name === attr.name) && (assetAttr.assetId === attr.assetId))));
-            const options = attributes.map((attr: AssetAttribute) => {
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr);
-                const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], false);
-                return [attr.name, label];
-            });
-            return options
+        let attributes = Object.values(this.activeAsset.attributes);
+        if (attributes && attributes.length > 0) {
+            return attributes
+                .filter((attr) => !!Util.getMetaValue(attr, undefined, WellknownMetaItems.STOREDATAPOINTS))
+                .filter((attr) => (this.assetAttributes && !this.assetAttributes.some((assetAttr, index) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
+                .map((attr) => {
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
+                    const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
+                    return [attr.name!, label];
+                });
         }
     }
 
@@ -892,13 +889,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         });
 
         let data = this.assetAttributes.map(async (attribute, index) => {
-            const valuepoints = await this._loadAttributeData(attribute, this.timestamp);
+            const valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.timestamp);
             const dataset = {...datasetBases[index],
                 data: valuepoints
             };
             if(this.assets[index]) {
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
-                const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute.name, attribute);
+                const label = Util.getAttributeLabel(attribute, descriptors[0], this.assets[index]!.type, false);
                 dataset["label"] = this.assets[index]!.name + " " + label;
             }
             return dataset;
@@ -910,15 +907,15 @@ export class OrChart extends translate(i18next)(LitElement) {
         }));
 
         const predictedData = this.assetAttributes.map(async (attribute, index) => {
-            const valuepoints = await this._loadPredictedAttributeData(attribute, this.timestamp);
+            const valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.timestamp);
             const dataset = {...datasetBases[index],
                 data: valuepoints,
                 borderDash: [2, 4]
             };
 
             if(this.assets[index]) {
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
-                const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute.name, attribute);
+                const label = Util.getAttributeLabel(attribute, descriptors[0], this.assets[index]!.type, false);
                 dataset["label"] = this.assets[index]!.name + " " + label + " " + i18next.t("predicted");
             }
             return dataset;
@@ -928,15 +925,15 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if(this.periodCompare) {
             const cData = this.assetAttributes.map(async (attribute, index) => {
-                const valuepoints = await this._loadAttributeData(attribute, this.compareTimestamp);
+                const valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.compareTimestamp);
                 const dataset = {...datasetBases[index],
                     data: valuepoints,
                     borderDash: [10, 10]
                 };
 
                 if(this.assets[index]) {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
-                    const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute.name, attribute);
+                    const label = Util.getAttributeLabel(attribute, descriptors[0], this.assets[index]!.type, false);
                     dataset["label"] = this.assets[index]!.name + " " + label + " " + i18next.t("compare");
                 }
 
@@ -944,14 +941,14 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
             
             let cPredictedData = this.assetAttributes.map(async (attribute, index) => {
-                const valuepoints = await this._loadPredictedAttributeData(attribute, this.compareTimestamp);
+                const valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.compareTimestamp);
                 const dataset = {...datasetBases[index],
                     data: valuepoints,
                     borderDash: [2, 4]
                 };
                 if(this.assets[index]) {
-                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute);
-                    const label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], false);
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attribute.name, attribute);
+                    const label = Util.getAttributeLabel(attribute, descriptors[0], this.assets[index]!.type, false);
                     dataset["label"] = this.assets[index]!.name + " " + label + " " + i18next.t("compare") + " " + i18next.t("predicted");
                 }
                 return dataset;
@@ -994,7 +991,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         return newMoment.format();
     }
     
-    protected async _loadAttributeData(attribute:AssetAttribute, timestamp: Date | undefined) {
+    protected async _loadAttributeData(asset: Asset, attribute:Attribute<any>, timestamp: Date | undefined) {
         if (!attribute) {
             return [];
         }
@@ -1009,9 +1006,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         const startOfPeriod = moment(timestamp).startOf(this.period).toDate().getTime();
         const endOfPeriod = moment(timestamp).endOf(this.period).toDate().getTime();
 
-        if (attribute.assetId && attribute.name) {
+        if (asset.id && attribute.name) {
             const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
-                attribute.assetId,
+                asset.id,
                 attribute.name,
                 {
                     interval: this._getInterval(),
@@ -1041,7 +1038,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    protected async _loadPredictedAttributeData(attribute:AssetAttribute, timestamp: Date | undefined) {
+    protected async _loadPredictedAttributeData(asset: Asset, attribute:Attribute<any>, timestamp: Date | undefined) {
         if (!attribute) {
             return [];
         }
@@ -1058,9 +1055,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         const endOfPeriod = moment(timestamp).endOf(this.period).toDate().valueOf();
         const fromTimestamp = now < startOfPeriod ? startOfPeriod : now;
 
-        if(attribute.assetId &&  attribute.name && endOfPeriod){
+        if(asset && asset.id && attribute.name && endOfPeriod){
             const response = await manager.rest.api.AssetPredictedDatapointResource.getPredictedDatapoints(
-                attribute.assetId,
+                asset.id,
                 attribute.name,
                 {
                     interval: this._getInterval(),

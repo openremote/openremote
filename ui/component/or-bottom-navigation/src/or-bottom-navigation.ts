@@ -149,7 +149,7 @@ export class OrBottomNavigation extends LitElement {
     }
 
     firstUpdated() {
-        this._observer = new FlattenedNodesObserver(this._itemsSlot!, (info) => {
+        this._observer = new FlattenedNodesObserver(this._itemsSlot!, (info: any) => {
             this._onAdd(info.addedNodes);
             this._onRemove(info.removedNodes);
         });

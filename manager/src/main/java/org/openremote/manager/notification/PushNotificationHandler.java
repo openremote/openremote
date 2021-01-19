@@ -20,30 +20,29 @@
 package org.openremote.manager.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.*;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.gateway.GatewayService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetType;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.console.ConsoleConfiguration;
+import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.ObjectValueKeyPredicate;
-import org.openremote.model.query.filter.PathPredicate;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.*;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Values;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -52,10 +51,11 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.persistence.PersistenceEvent.*;
-import static org.openremote.model.asset.AssetType.CONSOLE;
+import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
 
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
@@ -67,6 +67,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     public static final String FCM_PROVIDER_NAME = "fcm";
 
     protected AssetStorageService assetStorageService;
+    protected GatewayService gatewayService;
     protected boolean valid;
     protected Map<String, String> consoleFCMTokenMap = new HashMap<>();
     protected List<String> fcmTokenBlacklist = new ArrayList<>();
@@ -78,6 +79,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
     public void init(Container container) throws Exception {
         this.assetStorageService = container.getService(AssetStorageService.class);
+        this.gatewayService = container.getService(GatewayService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
         String firebaseConfigFilePath = container.getConfig().get(FIREBASE_CONFIG_FILE);
@@ -121,11 +123,13 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         assetStorageService.findAll(
             new AssetQuery()
                 .select(new AssetQuery.Select().excludePath(true)
-                    .attributes(AttributeType.CONSOLE_PROVIDERS.getAttributeName()))
-                .types(CONSOLE)
-                .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
-                    new ObjectValueKeyPredicate("push")))
+                    .attributes(ConsoleAsset.CONSOLE_PROVIDERS.getName()))
+                .types(ConsoleAsset.class)
+                .attributes(
+                    new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))
+                ))
             .stream()
+            .map(asset -> (ConsoleAsset) asset)
             .filter(PushNotificationHandler::isLinkedToFcmProvider)
             .forEach(asset -> consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null)));
     }
@@ -140,13 +144,13 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         // If any console asset was modified in the database, detect push provider changes
         from(PERSISTENCE_TOPIC)
             .routeId("PushNotificationAssetChanges")
-            .filter(isPersistenceEventForEntityType(Asset.class))
+            .filter(isPersistenceEventForEntityType(ConsoleAsset.class))
+            .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
-                if (isPersistenceEventForAssetType(CONSOLE).matches(exchange)) {
-                    PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                    final Asset console = (Asset) persistenceEvent.getEntity();
-                    processConsoleAssetChange(console, persistenceEvent);
-                }
+                @SuppressWarnings("unchecked")
+                PersistenceEvent<ConsoleAsset> persistenceEvent = (PersistenceEvent<ConsoleAsset>)exchange.getIn().getBody(PersistenceEvent.class);
+                final ConsoleAsset asset = persistenceEvent.getEntity();
+                processConsoleAssetChange(asset, persistenceEvent);
             });
     }
 
@@ -200,9 +204,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                 new AssetQuery()
                                     .select(AssetQuery.Select.selectExcludeAll())
                                     .tenant(new TenantPredicate(targetId))
-                                    .types(AssetType.CONSOLE)
-                                    .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
-                                        new ObjectValueKeyPredicate(PushNotificationMessage.TYPE)))
+                                    .types(ConsoleAsset.class)
+                                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
                                 .stream()
                                 .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
                                 .collect(Collectors.toList()));
@@ -221,9 +224,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                     new AssetQuery()
                                         .select(AssetQuery.Select.selectExcludeAll())
                                         .ids(ids)
-                                        .types(AssetType.CONSOLE)
-                                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
-                                            new ObjectValueKeyPredicate(PushNotificationMessage.TYPE)))
+                                        .types(ConsoleAsset.class)
+                                        .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
                                     .stream()
                                     .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
                                     .collect(Collectors.toList()));
@@ -241,9 +243,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                 new AssetQuery()
                                     .select(AssetQuery.Select.selectExcludeAll())
                                     .paths(new PathPredicate(targetId))
-                                    .types(AssetType.CONSOLE)
-                                    .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
-                                        new ObjectValueKeyPredicate(PushNotificationMessage.TYPE)))
+                                    .types(ConsoleAsset.class)
+                                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
                                 .stream()
                                 .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
                                 .collect(Collectors.toList()));
@@ -341,11 +342,12 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
     }
 
-    protected boolean isConsoleSubscribedToTopic(Asset asset, String topic) {
-        return ConsoleConfiguration.getConsoleProvider(asset, PushNotificationMessage.TYPE)
-            .map(ConsoleProvider::getData)
-            .flatMap(objectValue -> objectValue.getArray("topics"))
-            .map(arrayValue -> arrayValue.contains(topic))
+    protected boolean isConsoleSubscribedToTopic(ConsoleAsset consoleAsset, String topic) {
+        return consoleAsset.getConsoleProviders().flatMap(consoleProviders ->
+            Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
+                .map(ConsoleProvider::getData)
+                .map(objectValue -> objectValue.withArray("topics"))
+                .map(arrayValue -> StreamSupport.stream(arrayValue.spliterator(), false).anyMatch(node -> node.asText("").equals(topic))))
             .orElse(false);
     }
 
@@ -390,9 +392,10 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         if (pushMessage.getData() != null) {
-            pushMessage.getData().stream().forEach(stringValuePair -> {
-                if (stringValuePair.value != null) {
-                    builder.putData(stringValuePair.key, stringValuePair.value.toString());
+            Iterable<Map.Entry<String, JsonNode>> iterable = () -> pushMessage.getData().fields();
+            StreamSupport.stream(iterable.spliterator(), false).forEach(stringValuePair -> {
+                if (stringValuePair.getValue() != null) {
+                    builder.putData(stringValuePair.getKey(), stringValuePair.getValue().toString());
                 }
             });
 
@@ -406,11 +409,11 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         try {
             if (pushMessage.getAction() != null) {
-                builder.putData("action", Container.JSON.writeValueAsString(pushMessage.getAction()));
+                builder.putData("action", Values.asJSONOrThrow(pushMessage.getAction()));
             }
 
             if (pushMessage.getButtons() != null) {
-                builder.putData("buttons", Container.JSON.writeValueAsString(pushMessage.getButtons()));
+                builder.putData("buttons", Values.asJSONOrThrow(pushMessage.getButtons()));
             }
         } catch (JsonProcessingException e) {
             e.printStackTrace();
@@ -441,18 +444,22 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         return builder.build();
     }
 
-    protected static boolean isLinkedToFcmProvider(Asset asset) {
-        return ConsoleConfiguration.getConsoleProvider(asset, "push")
-            .map(ConsoleProvider::getVersion).map(FCM_PROVIDER_NAME::equals).orElse(false);
+    protected static boolean isLinkedToFcmProvider(ConsoleAsset asset) {
+        return asset.getConsoleProviders().flatMap(consoleProviders ->
+            Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
+                .map(ConsoleProvider::getVersion)
+                .map(FCM_PROVIDER_NAME::equals))
+            .orElse(false);
     }
 
-    protected static Optional<String> getFcmToken(Asset asset) {
-        return ConsoleConfiguration.getConsoleProvider(asset, "push")
-            .map(ConsoleProvider::getData)
-            .flatMap(objValue -> objValue.getString("token"));
+    protected static Optional<String> getFcmToken(ConsoleAsset asset) {
+        return asset.getConsoleProviders().flatMap(consoleProviders ->
+            Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
+                .map(ConsoleProvider::getData)
+                .map(data -> data.get("token").asText()));
     }
 
-    protected void processConsoleAssetChange(Asset asset, PersistenceEvent persistenceEvent) {
+    protected void processConsoleAssetChange(ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {
 
         withLock(getClass().getSimpleName() + "::processAssetChange", () -> {
 
@@ -476,17 +483,16 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         LOG.log(Level.WARNING, "FCM send failed: " + e.getErrorCode(), e);
 
-        // TODO: Implement backoff and blacklisting
-        switch (e.getErrorCode()) {
-
-            case "invalid-argument":
-            case "authentication-error":
-                LOG.severe("FCM critical error so marking FCM as invalid no more messages will be sent");
-                break;
-            case "server-unavailable":
-            case "internal-error":
-
-                break;
-        }
+//        // TODO: Implement backoff and blacklisting
+//        switch (e.getErrorCode()) {
+//
+//            case INVALID_ARGUMENT:
+//            case UNAUTHENTICATED:
+//                LOG.severe("FCM critical error so marking FCM as invalid no more messages will be sent");
+//                break;
+//            case UNAVAILABLE:
+//            case INTERNAL:
+//                break;
+//        }
     }
 }

@@ -25,7 +25,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.container.web.file.FileServlet;
 import org.openremote.container.web.file.GzipResponseFilter;
 

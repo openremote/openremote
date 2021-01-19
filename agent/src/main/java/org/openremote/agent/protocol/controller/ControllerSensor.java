@@ -2,10 +2,6 @@ package org.openremote.agent.protocol.controller;
 
 /**
  * ControllerSensor represents a sensor on a device
- * <p>
- * Date : 03-Sep-18
- *
- * @author jerome.vervier
  */
 public class ControllerSensor {
     private String deviceName;

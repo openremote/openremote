@@ -12,7 +12,7 @@ import {
     AssetTreeNode,
     ClientRole,
     SharedEvent,
-    AssetType
+    AssetTypeInfo
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -173,11 +173,7 @@ export const getAssetTypes = async () => {
         select: {
             excludeAttributes: true,
             excludeParentInfo: true,
-            excludePath: true,
-            excludeAttributeMeta: true,
-            excludeAttributeTimestamp: true,
-            excludeAttributeType: true,
-            excludeAttributeValue: true
+            excludePath: true
         },
         recursive: true
     });
@@ -188,7 +184,7 @@ export const getAssetTypes = async () => {
 }
 
 export function getDefaultAllowedAddAssetTypes(): [AgentDescriptor[], AssetDescriptor[]] {
-    return [AssetModelUtil.getAgentDescriptors(), AssetModelUtil.getAssetDescriptors().filter((descriptor) => descriptor.type !== AssetType.AGENT.type)];
+    return [AssetModelUtil.getAgentDescriptors(), AssetModelUtil.getAssetDescriptors().filter((descriptor) => descriptor.descriptorType !== "agent")];
 }
 
 @customElement("or-asset-tree")
@@ -207,7 +203,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public assets?: Asset[];
 
     @property({type: Object})
-    public assetDescriptors?: AssetDescriptor[];
+    public assetInfos?: AssetTypeInfo[];
 
     @property({type: Array})
     public _assetIdsOverride?: string[];
@@ -555,7 +551,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                             const asset: Asset = {
                                 name: name,
-                                type: descriptor.type,
+                                type: descriptor.name,
                                 realm: manager.getRealm()
                             };
 
@@ -689,11 +685,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const descriptors = getDefaultAllowedAddAssetTypes();
         descriptors[0] = descriptors[0]
-            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.type!)))
-                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.type!))));
+            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
+                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
         descriptors[1] = descriptors[1]
-            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.type!)))
-                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.type!))));
+            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
+                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
 
         return descriptors;
     }

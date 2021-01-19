@@ -19,20 +19,15 @@
  */
 package org.openremote.model.notification;
 
-import jsinterop.annotations.JsType;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
-import org.openremote.model.value.Value;
-
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
-import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("notification")
-@JsType(isNative = true)
 public interface NotificationResource {
 
     /**
@@ -44,10 +39,8 @@ public interface NotificationResource {
      * Only the superuser can call this operation.
      */
     @GET
-    @SuccessStatusCode(200)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @SuppressWarnings("unusable-by-js")
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
                                         @QueryParam("id") Long id,
                                         @QueryParam("type") String type,
@@ -76,9 +69,7 @@ public interface NotificationResource {
      * Only the superuser can call this operation.
      */
     @DELETE
-    @SuccessStatusCode(204)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @SuppressWarnings("unusable-by-js")
     void removeNotifications(@BeanParam RequestParams requestParams,
                              @QueryParam("id") Long id,
                              @QueryParam("type") String type,
@@ -105,9 +96,7 @@ public interface NotificationResource {
      */
     @DELETE
     @Path("{notificationId}")
-    @SuccessStatusCode(204)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @SuppressWarnings("unusable-by-js")
     void removeNotification(@BeanParam RequestParams requestParams,
                             @PathParam("notificationId") Long notificationId);
 
@@ -118,9 +107,7 @@ public interface NotificationResource {
      */
     @POST
     @Path("alert")
-    @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
-    @SuppressWarnings("unusable-by-js")
     void sendNotification(@BeanParam RequestParams requestParams,
                           Notification notification);
 
@@ -132,8 +119,6 @@ public interface NotificationResource {
      */
     @PUT
     @Path("{notificationId}/delivered")
-    @SuccessStatusCode(204)
-    @SuppressWarnings("unusable-by-js")
     void notificationDelivered(@BeanParam RequestParams requestParams,
                                @QueryParam("targetId") String targetId,
                                @PathParam("notificationId") Long notificationId);
@@ -147,10 +132,8 @@ public interface NotificationResource {
     @PUT
     @Path("{notificationId}/acknowledged")
     @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @SuppressWarnings("unusable-by-js")
     void notificationAcknowledged(@BeanParam RequestParams requestParams,
                                   @QueryParam("targetId") String targetId,
                                   @PathParam("notificationId") Long notificationId,
-                                  Value acknowledgement);
+                                  JsonNode acknowledgement);
 }

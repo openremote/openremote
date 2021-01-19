@@ -20,8 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,9 +28,9 @@ import java.util.List;
 public class TemperatureProcessor extends FeatureProcessor {
 
     protected static final List<PropertyDescriptor> SUPPORTED_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("tempCurrent", "Temp Current", "TEMP_CURRENT", AttributeValueType.TEMPERATURE, true),
-        new PropertyDescriptor("tempMin", "Temp Min", "TEMP_MIN", AttributeValueType.TEMPERATURE, true),
-        new PropertyDescriptor("tempMax", "Temp Max", "TEMP_MAX", AttributeValueType.TEMPERATURE, true)
+        new PropertyDescriptor("tempCurrent", "Temp Current", "TEMP_CURRENT", ValueType.NUMBER, true),
+        new PropertyDescriptor("tempMin", "Temp Min", "TEMP_MIN", ValueType.NUMBER, true),
+        new PropertyDescriptor("tempMax", "Temp Max", "TEMP_MAX", ValueType.NUMBER, true)
     );
 
     @Override
@@ -49,7 +48,7 @@ public class TemperatureProcessor extends FeatureProcessor {
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return null;
     }
 
@@ -96,8 +95,8 @@ public class TemperatureProcessor extends FeatureProcessor {
         double current = ((double)Math.round(0.625 * currentValue)) / 10;
         double min = ((double)Math.round(0.625 * minValue)) / 10;
         double max = ((double)Math.round(0.625 * maxValue)) / 10;
-        device.setProperty("TEMP_CURRENT",  new DoubleDevicePropertyValue(current));
-        device.setProperty("TEMP_MIN",  new DoubleDevicePropertyValue(min));
-        device.setProperty("TEMP_MAX",  new DoubleDevicePropertyValue(max));
+        device.setProperty("TEMP_CURRENT",  current);
+        device.setProperty("TEMP_MIN",  min);
+        device.setProperty("TEMP_MAX",  max);
     }
 }

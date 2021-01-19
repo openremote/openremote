@@ -20,18 +20,20 @@
 package org.openremote.manager.setup.builtin;
 
 import org.apache.commons.io.IOUtils;
-import org.openremote.container.Container;
 import org.openremote.manager.setup.AbstractManagerSetup;
+import org.openremote.model.Container;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
-import org.openremote.model.value.Values;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
+import static org.openremote.model.rules.Ruleset.Lang.SHOW_ON_LIST;
+import static org.openremote.model.value.MetaItemType.SHOW_ON_DASHBOARD;
 
 public class RulesTestSetup extends AbstractManagerSetup {
 
@@ -94,13 +96,13 @@ public class RulesTestSetup extends AbstractManagerSetup {
         }
 
         // Apartment 2
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {
-            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            Ruleset ruleset = new AssetRuleset(
-                    managerTestSetup.apartment2Id, "Demo Residence - All Lights Off", Ruleset.Lang.JAVASCRIPT, rules
-            );
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
+//        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {
+//            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+//            Ruleset ruleset = new AssetRuleset(
+//                    managerTestSetup.apartment2Id, "Demo Residence - All Lights Off", Ruleset.Lang.JAVASCRIPT, rules
+//            );
+//            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
+//        }
 
         try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoConsoleLocation.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
@@ -124,7 +126,10 @@ public class RulesTestSetup extends AbstractManagerSetup {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new TenantRuleset(
                     keycloakTestSetup.tenantCity.getRealm(), "Demo Geofences", Ruleset.Lang.JSON, rules
-            ).setAccessPublicRead(true).addMeta("showOnMap", Values.create(true)).addMeta("showOnList", Values.create(true));
+            ).setAccessPublicRead(true);
+            ruleset.getMeta().addOrReplace(
+                new MetaItem<>(SHOW_ON_DASHBOARD),
+                new MetaItem<>(SHOW_ON_LIST));
             tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }

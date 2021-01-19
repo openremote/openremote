@@ -21,14 +21,18 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.ObjectValue;
+import org.openremote.model.calendar.CalendarEvent;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.Date;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Can be applied to {@link org.openremote.model.attribute.Attribute}s of type
- * {@link org.openremote.model.attribute.AttributeValueType#CALENDAR_EVENT}.
+ * {@link ValueType#CALENDAR_EVENT}.
  */
 public class CalendarEventPredicate implements ValuePredicate {
 
@@ -41,10 +45,23 @@ public class CalendarEventPredicate implements ValuePredicate {
     }
 
     @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", name);
-        objectValue.put("timestamp", Values.create(timestamp.getTime()));
-        return objectValue;
+    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
+        return obj -> {
+
+            if (obj == null) {
+                return true;
+            }
+
+            return Values.getValueCoerced(obj, CalendarEvent.class).map(calendarEvent -> {
+                Date when = timestamp;
+
+                Pair<Long, Long> nextOrActive = calendarEvent.getNextOrActiveFromTo(when);
+                if (nextOrActive == null) {
+                    return false;
+                }
+
+                return nextOrActive.key <= when.getTime() && nextOrActive.value > when.getTime();
+            }).orElse(true);
+        };
     }
 }

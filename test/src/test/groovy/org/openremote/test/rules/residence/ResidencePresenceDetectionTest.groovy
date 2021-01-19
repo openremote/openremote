@@ -77,13 +77,13 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         when: "motion sensor is triggered in all rooms"
         double expectedLastPresenceDetected = getClockTimeOf(container)
         def kitchenMotionSensorEvent = new AttributeEvent(
-                managerTestSetup.apartment1KitchenId, "motionSensor", Values.create(1)
+                managerTestSetup.apartment1KitchenId, "motionSensor", 1
         )
-        simulatorProtocol.putValue(kitchenMotionSensorEvent)
+        simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
         def hallwayMotionSensorEvent = new AttributeEvent(
-                managerTestSetup.apartment1HallwayId, "motionSensor", Values.create(1)
+                managerTestSetup.apartment1HallwayId, "motionSensor", 1
         )
-        simulatorProtocol.putValue(hallwayMotionSensorEvent)
+        simulatorProtocol.updateSensor(hallwayMotionSensorEvent)
 
         then: "the rule engines should settle"
         conditions.eventually {
@@ -93,13 +93,13 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         then: "presence should be detected in all rooms"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert apartment.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
             def kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId, true)
-            assert kitchen.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert kitchen.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert kitchen.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert kitchen.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
             def hallway = assetStorageService.find(managerTestSetup.apartment1HallwayId, true)
-            assert hallway.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert hallway.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert hallway.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert hallway.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
         when: "time advances"
@@ -108,9 +108,9 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         and: "motion sensor is triggered a room again"
         double expectedLastPresenceDetected2 = getClockTimeOf(container)
         kitchenMotionSensorEvent = new AttributeEvent(
-                managerTestSetup.apartment1KitchenId, "motionSensor", Values.create(1)
+                managerTestSetup.apartment1KitchenId, "motionSensor", 1
         )
-        simulatorProtocol.putValue(kitchenMotionSensorEvent)
+        simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
 
         then: "the rule engines should settle"
         conditions.eventually {
@@ -120,13 +120,13 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         then: "presence should be detected in all rooms and timestamp should be updated of one room"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert apartment.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
             def kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId, true)
-            assert kitchen.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert kitchen.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected2
+            assert kitchen.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert kitchen.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected2
             def hallway = assetStorageService.find(managerTestSetup.apartment1HallwayId, true)
-            assert hallway.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert hallway.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert hallway.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert hallway.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
         when: "time advances"
@@ -134,9 +134,9 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
         and: "motion sensor is not triggered in a room"
         kitchenMotionSensorEvent = new AttributeEvent(
-                managerTestSetup.apartment1KitchenId, "motionSensor", Values.create(0)
+                managerTestSetup.apartment1KitchenId, "motionSensor", 0
         )
-        simulatorProtocol.putValue(kitchenMotionSensorEvent)
+        simulatorProtocol.updateSensor(kitchenMotionSensorEvent)
 
         then: "the rule engines should settle"
         conditions.eventually {
@@ -146,13 +146,13 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         then: "some presence should still be detected and timestamps are still available"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert apartment.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert apartment.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
             def kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId, true)
-            assert !kitchen.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert kitchen.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected2
+            assert !kitchen.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert kitchen.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected2
             def hallway = assetStorageService.find(managerTestSetup.apartment1HallwayId, true)
-            assert hallway.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert hallway.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert hallway.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert hallway.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
         when: "time advances"
@@ -160,9 +160,9 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
         and: "motion sensor is not triggered in another room"
         hallwayMotionSensorEvent = new AttributeEvent(
-                managerTestSetup.apartment1HallwayId, "motionSensor", Values.create(0)
+                managerTestSetup.apartment1HallwayId, "motionSensor", 0
         )
-        simulatorProtocol.putValue(hallwayMotionSensorEvent)
+        simulatorProtocol.updateSensor(hallwayMotionSensorEvent)
 
         then: "the rule engines should settle"
         conditions.eventually {
@@ -172,13 +172,13 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         then: "no presence should be detected but the last timestamp still available"
         conditions.eventually {
             def apartment = assetStorageService.find(managerTestSetup.apartment1Id, true)
-            assert !apartment.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert !apartment.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
             def kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId, true)
-            assert !kitchen.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert kitchen.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected2
+            assert !kitchen.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert kitchen.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected2
             def hallway = assetStorageService.find(managerTestSetup.apartment1HallwayId, true)
-            assert !hallway.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert hallway.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert !hallway.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert hallway.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
         cleanup: "the static rules time variable is reset"
@@ -231,9 +231,9 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         when: "motion sensor is triggered"
         double expectedLastPresenceDetected = getClockTimeOf(container)
         def motionSensorTrigger = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "motionSensor", Values.create(1)
+                managerTestSetup.apartment1LivingroomId, "motionSensor", 1
         )
-        simulatorProtocol.putValue(motionSensorTrigger)
+        simulatorProtocol.updateSensor(motionSensorTrigger)
 
         /* See rules, this leads to many false negatives when windows are open in the room
         then: "presence should not be detected"
@@ -251,9 +251,9 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         for (i in 1..3) {
 
             def co2LevelIncrement = new AttributeEvent(
-                    managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(400 + i)
+                    managerTestSetup.apartment1LivingroomId, "co2Level", 400 + i
             )
-            simulatorProtocol.putValue(co2LevelIncrement)
+            simulatorProtocol.updateSensor(co2LevelIncrement)
 
             // Wait for event to be processed
             conditions.eventually {
@@ -275,24 +275,24 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         then: "presence should be detected and the last motion sensor trigger is the last detected timestamp"
         conditions.eventually {
             def roomAsset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
-            assert roomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert roomAsset.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert roomAsset.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
         when: "motion sensor is not triggered (someone might be resting in the room)"
         def motionSensorNoTrigger = new AttributeEvent(
-                managerTestSetup.apartment1LivingroomId, "motionSensor", Values.create(0)
+                managerTestSetup.apartment1LivingroomId, "motionSensor", 0
         )
-        simulatorProtocol.putValue(motionSensorNoTrigger)
+        simulatorProtocol.updateSensor(motionSensorNoTrigger)
 
         and: "the CO2 level increases (someone breathing in the room)"
         // The CO2 level increments 3 times, 5 minutes apart
         for (i in 1..3) {
 
             def co2LevelIncrement = new AttributeEvent(
-                    managerTestSetup.apartment1LivingroomId, "co2Level", Values.create(400 + i)
+                    managerTestSetup.apartment1LivingroomId, "co2Level", 400 + i
             )
-            simulatorProtocol.putValue(co2LevelIncrement)
+            simulatorProtocol.updateSensor(co2LevelIncrement)
 
             // Wait for event to be processed
             conditions.eventually {
@@ -311,8 +311,8 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         then: "presence should be detected and the last motion sensor trigger is the last detected timestamp"
         conditions.eventually {
             def roomAsset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
-            assert roomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert roomAsset.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert roomAsset.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
         when: "there is no CO2 level increase for a while (nobody resting in the room)"
@@ -326,8 +326,8 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         then: "presence should be gone but the last timestamp still available"
         conditions.eventually {
             def roomAsset = assetStorageService.find(managerTestSetup.apartment1LivingroomId, true)
-            assert !roomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            assert !roomAsset.getAttribute("presenceDetected").flatMap{it.value}.orElse(false)
+            assert roomAsset.getAttribute("lastPresenceDetected").flatMap{it.value}.orElse(0d) == expectedLastPresenceDetected
         }
 
         cleanup: "the static rules time variable is reset"

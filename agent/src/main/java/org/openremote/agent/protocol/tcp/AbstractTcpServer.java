@@ -24,7 +24,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoServer;
 
 import java.net.InetSocketAddress;
@@ -39,8 +38,7 @@ public abstract class AbstractTcpServer<T> extends AbstractNettyIoServer<T, Sock
 
     protected SocketAddress localAddress;
 
-    public AbstractTcpServer(ProtocolExecutorService executorService, InetSocketAddress localAddress) {
-        super(executorService);
+    public AbstractTcpServer(InetSocketAddress localAddress) {
         this.localAddress = localAddress;
     }
 

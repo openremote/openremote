@@ -19,21 +19,15 @@
  */
 package org.openremote.container;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreads;
-import org.openremote.model.ModelModule;
 import org.openremote.container.util.LogUtil;
+import org.openremote.model.ContainerService;
+import org.openremote.model.value.Values;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,6 +35,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.container.util.MapAccess.getInteger;
 
 /**
  * A thread-safe registry of {@link ContainerService}s.
@@ -51,12 +46,35 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  * Access environment configuration through {@link #getConfig()} and the helper methods
  * in {@link org.openremote.container.util.MapAccess}. Consider using {@link #DEV_MODE}
  * to distinguish between development and production environments.
- * <p>
- * Read and write JSON with a sensible mapper configuration using {@link #JSON}.
  */
-public class Container {
+public class Container implements org.openremote.model.Container {
+
+    protected static class NoShutdownScheduledExecutorService extends ContainerScheduledExecutor {
+
+        public NoShutdownScheduledExecutorService(String name, int corePoolSize) {
+            super(name, corePoolSize);
+        }
+
+        @Override
+        public void shutdown() {
+            throw new UnsupportedOperationException();
+        }
+
+        @SuppressWarnings("NullableProblems")
+        @Override
+        public List<Runnable> shutdownNow() {
+            throw new UnsupportedOperationException();
+        }
+
+        void doShutdownNow() {
+            super.shutdownNow();
+        }
+    }
 
     public static final Logger LOG;
+    public static ScheduledExecutorService EXECUTOR_SERVICE;
+    public static final String SCHEDULED_TASKS_THREADS_MAX = "SCHEDULED_TASKS_THREADS_MAX";
+    public static final int SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
 
     static {
         LogUtil.configureLogging("logging.properties");
@@ -65,22 +83,6 @@ public class Container {
 
     public static final String DEV_MODE = "DEV_MODE";
     public static final boolean DEV_MODE_DEFAULT = true;
-
-    @SuppressWarnings("deprecation")
-    public static final ObjectMapper JSON = new ObjectMapper()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
-        .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
-        .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
-        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-        .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
-        .registerModule(new ModelModule())
-        .registerModule(new Jdk8Module())
-        .registerModule(new JavaTimeModule())
-        .registerModule(new ParameterNamesModule(JsonCreator.Mode.PROPERTIES));
-
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
 
@@ -113,8 +115,15 @@ public class Container {
         this.devMode = getBoolean(this.config, DEV_MODE, DEV_MODE_DEFAULT);
 
         if (this.devMode) {
-            JSON.enable(SerializationFeature.INDENT_OUTPUT);
+            Values.JSON.enable(SerializationFeature.INDENT_OUTPUT);
         }
+
+        int scheduledTasksThreadsMax = getInteger(
+            getConfig(),
+            SCHEDULED_TASKS_THREADS_MAX,
+            SCHEDULED_TASKS_THREADS_MAX_DEFAULT);
+
+        EXECUTOR_SERVICE = new NoShutdownScheduledExecutorService("Scheduled task", scheduledTasksThreadsMax);
 
         // Any log handlers of the root logger that are container services must be registered
         for (Handler handler : Logger.getLogger("").getHandlers()) {
@@ -131,6 +140,7 @@ public class Container {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
+    @Override
     public Map<String, String> getConfig() {
         return config;
     }
@@ -143,48 +153,52 @@ public class Container {
         return waitingThread != null;
     }
 
-    public void start() throws Exception {
-        synchronized (services) {
-            if (isRunning())
-                return;
-            LOG.info(">>> Starting runtime container...");
-            try {
-                for (ContainerService service : getServices()) {
-                    LOG.fine("Initializing service: " + service);
-                    service.init(Container.this);
-                }
-                for (ContainerService service : getServices()) {
-                    LOG.fine("Starting service: " + service);
-                    service.start(Container.this);
-                }
-            } catch (Exception ex) {
-                LOG.log(Level.SEVERE, ">>> Runtime container startup failed", ex);
-                throw ex;
+    public synchronized void start() throws Exception {
+        if (isRunning())
+            return;
+        LOG.info(">>> Starting runtime container...");
+        try {
+            for (ContainerService service : getServices()) {
+                LOG.fine("Initializing service: " + service);
+                service.init(Container.this);
             }
-            LOG.info(">>> Runtime container startup complete");
+            for (ContainerService service : getServices()) {
+                LOG.fine("Starting service: " + service);
+                service.start(Container.this);
+            }
+        } catch (Exception ex) {
+            LOG.log(Level.SEVERE, ">>> Runtime container startup failed", ex);
+            throw ex;
         }
+        LOG.info(">>> Runtime container startup complete");
     }
 
-    public void stop() {
-        synchronized (services) {
-            if (!isRunning())
-                return;
-            LOG.info("<<< Stopping runtime container...");
-            List<ContainerService> servicesToStop = Arrays.asList(getServices());
-            Collections.reverse(servicesToStop);
-            try {
-                for (ContainerService service : servicesToStop) {
-                    LOG.fine("Stopping service: " + service);
-                    service.stop(this);
-                }
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            } finally {
-                waitingThread.interrupt();
-                waitingThread = null;
+    public synchronized void stop() {
+        if (!isRunning())
+            return;
+        LOG.info("<<< Stopping runtime container...");
+
+        List<ContainerService> servicesToStop = Arrays.asList(getServices());
+        Collections.reverse(servicesToStop);
+        try {
+            for (ContainerService service : servicesToStop) {
+                LOG.fine("Stopping service: " + service);
+                service.stop(this);
             }
-            LOG.info("<<< Runtime container stopped");
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
+
+        try {
+            LOG.info("Cancelling scheduled tasks");
+            ((NoShutdownScheduledExecutorService) EXECUTOR_SERVICE).doShutdownNow();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Exception thrown whilst trying to stop scheduled tasks", e);
+        }
+
+        waitingThread.interrupt();
+        waitingThread = null;
+        LOG.info("<<< Runtime container stopped");
     }
 
     /**
@@ -195,12 +209,14 @@ public class Container {
         waitingThread = ContainerThreads.startWaitingThread();
     }
 
+    @Override
     public ContainerService[] getServices() {
         synchronized (services) {
             return services.values().toArray(new ContainerService[services.size()]);
         }
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T extends ContainerService> Collection<T> getServices(Class<T> type) {
         synchronized (services) {
@@ -214,6 +230,7 @@ public class Container {
         }
     }
 
+    @Override
     public <T extends ContainerService> boolean hasService(Class<T> type) {
         return getServices(type).size() > 0;
     }
@@ -222,8 +239,9 @@ public class Container {
      * Get a service instance matching the specified type exactly, or if that yields
      * no result, try to get the first service instance that has a matching interface.
      */
+    @Override
     @SuppressWarnings("unchecked")
-    public <T extends ContainerService> T getService(Class<T> type) {
+    public <T extends ContainerService> T getService(Class<T> type) throws IllegalStateException {
         synchronized (services) {
             T service = (T) services.get(type);
             if (service == null) {
@@ -240,4 +258,8 @@ public class Container {
         }
     }
 
+    @Override
+    public ScheduledExecutorService getExecutorService() {
+        return EXECUTOR_SERVICE;
+    }
 }

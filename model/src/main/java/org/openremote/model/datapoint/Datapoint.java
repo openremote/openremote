@@ -22,7 +22,6 @@ package org.openremote.model.datapoint;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.value.Value;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -42,7 +41,7 @@ public abstract class Datapoint implements Serializable {
 
     @Id
     @Column(name = "ENTITY_ID", length = 36, nullable = false)
-    protected String entityId;
+    protected String assetId;
 
     @Id
     @Column(name = "ATTRIBUTE_NAME", nullable = false)
@@ -54,36 +53,36 @@ public abstract class Datapoint implements Serializable {
 
     @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
-    protected Value value;
+    protected Object value;
 
     public Datapoint() {
     }
 
     public Datapoint(AttributeState attributeState, long timestamp) {
-        this(attributeState.getAttributeRef(), attributeState.getValue().orElse(null), timestamp);
+        this(attributeState.getRef(), attributeState.getValue().orElse(null), timestamp);
     }
 
     public Datapoint(AttributeEvent stateEvent) {
         this(stateEvent.getAttributeState(), stateEvent.getTimestamp());
     }
 
-    public Datapoint(AttributeRef attributeRef, Value value, long timestamp) {
-        this(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
+    public Datapoint(AttributeRef attributeRef, Object value, long timestamp) {
+        this(attributeRef.getId(), attributeRef.getName(), value, timestamp);
     }
 
-    public Datapoint(String entityId, String attributeName, Value value, long timestamp) {
-        this.entityId = entityId;
+    public Datapoint(String assetId, String attributeName, Object value, long timestamp) {
+        this.assetId = assetId;
         this.attributeName = attributeName;
         this.timestamp = new Date(timestamp);
         this.value = value;
     }
 
-    public String getEntityId() {
-        return entityId;
+    public String getAssetId() {
+        return assetId;
     }
 
-    public void setEntityId(String entityId) {
-        this.entityId = entityId;
+    public void setAssetId(String assetId) {
+        this.assetId = assetId;
     }
 
     public String getAttributeName() {
@@ -102,11 +101,11 @@ public abstract class Datapoint implements Serializable {
         this.timestamp = new Date(timestamp);
     }
 
-    public Value getValue() {
+    public Object getValue() {
         return value;
     }
 
-    public void setValue(Value value) {
+    public void setValue(Object value) {
         this.value = value;
     }
 
@@ -118,23 +117,23 @@ public abstract class Datapoint implements Serializable {
         Datapoint datapoint = (Datapoint) o;
 
         return timestamp == datapoint.timestamp
-            && entityId.equals(datapoint.entityId)
+            && assetId.equals(datapoint.assetId)
             && attributeName.equals(datapoint.attributeName)
             && value.equals(datapoint.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityId, attributeName, timestamp, value);
+        return Objects.hash(assetId, attributeName, timestamp, value);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "entityId='" + entityId + '\'' +
+            "assetId='" + assetId + '\'' +
             ", attributeName='" + attributeName + '\'' +
             ", timestamp=" + timestamp +
-            ", value=" + (value != null ? value.toJson() : "null") +
+            ", value=" + (value != null ? value : "null") +
             '}';
     }
 }

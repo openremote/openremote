@@ -19,12 +19,18 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.asset.AssetType;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.query.AssetQuery;
 
 public class ParentPredicate {
 
     public String id;
-    public String type;
+    @JsonSerialize(converter = AssetQuery.AssetClassToStringConverter.class)
+    @JsonDeserialize(converter = AssetQuery.StringToAssetClassConverter.class)
+    public Class<? extends Asset<?>> type;
     public String name;
     public boolean noParent;
 
@@ -44,12 +50,12 @@ public class ParentPredicate {
         return this;
     }
 
-    public ParentPredicate type(String type) {
+    public ParentPredicate type(Class<? extends Asset<?>> type) {
         this.type = type;
         return this;
     }
 
-    public ParentPredicate type(AssetType type) {
+    public ParentPredicate type(AssetDescriptor<?> type) {
         return type(type.getType());
     }
 

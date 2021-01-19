@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol.controller;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.HttpHostConnectException;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
@@ -28,14 +30,16 @@ import org.openremote.agent.protocol.controller.command.ControllerCommandBasic;
 import org.openremote.agent.protocol.controller.command.ControllerCommandMapped;
 import org.openremote.agent.protocol.http.HttpClientProtocol;
 import org.openremote.container.web.WebTargetBuilder;
-import org.openremote.container.Container;
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.Container;
+import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.*;
+import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.Values;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.MultivaluedMap;
@@ -45,251 +49,152 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.web.WebTargetBuilder.CONNECTION_POOL_SIZE;
-import static org.openremote.container.web.WebTargetBuilder.createClient;
+import static org.openremote.agent.protocol.controller.ControllerAgent.*;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.container.web.WebTargetBuilder.CONNECTION_POOL_SIZE;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
-import static org.openremote.model.util.TextUtil.*;
 
 /**
- * This is a Controller 2.5 protocol to communicate with a running Controller 2.5 instance and getting sensor's status and executing commands.
- * <p>
- * Necessary META for Agent setup is {@link #META_PROTOCOL_BASE_URI} and if a basic authentication is active on Controller instance :
- * {@link #META_PROTOCOL_USERNAME} - {@link #META_PROTOCOL_PASSWORD}
+ * This is a Controller 2.5 protocol to communicate with a running Controller 2.5 instance and getting sensor's status
+ * and executing commands.
  * <p>
  * The protocol communicate with Controller by using Controller REST API.
  * <p>
  * The protocol manage two kinds of request :
  * <ul>
- * <li>A set of polling requests (one by controller/device name couple) {@link #pollingSensorList}. For each request we just wait for a response 200 (new status) or 403 (timeout after 60 seconds) and relaunch the
- * same request as soon as we have one of those two responses.</li>
+ * <li>A set of polling requests (one by controller/device name couple) {@link #pollingSensorList}. For each request we
+ * just wait for a response 200 (new status) or 403 (timeout after 60 seconds) and relaunch the same request as soon as we have one of those two responses.</li>
  * <li>Executing commands provided by Write Attribute with necessary information. There is different kind of situations explained in
  * {@link org.openremote.agent.protocol.controller.ControllerCommand}</li>
  * </ul>
  * <p>
  * <p>
- * Two cases are considered :
+ * Two cases are considered:
  * <ul>
  * <li>A sensor : if we want to link an attribute to a controller 2.5 sensor to get status we should create an Attribute with proper type
- * considering the situation (temperature, time,...) and two necessary META {@link #META_ATTRIBUTE_DEVICE_NAME} and
- * {@link #META_ATTRIBUTE_SENSOR_NAME}</li>
+ * considering the situation (temperature, time,...) and two necessary META {@link ControllerAgent#META_DEVICE_NAME} and
+ * {@link ControllerAgent#META_SENSOR_NAME}</li>
  * <li>A command : if we want to execute a command on a controller 2.5, we create an attribute with the following available META (see details
  * in {@link org.openremote.agent.protocol.controller.ControllerCommand}) :
- * {@link #META_ATTRIBUTE_DEVICE_NAME} or {@link #META_ATTRIBUTE_COMMAND_DEVICE_NAME}, {@link #META_ATTRIBUTE_COMMAND_NAME} or
- * {@link #META_ATTRIBUTE_COMMANDS_MAP}</li>
+ * {@link ControllerAgent#META_DEVICE_NAME} or {@link ControllerAgent#META_COMMAND_DEVICE_NAME}, {@link ControllerAgent#META_COMMAND_NAME} or
+ * {@link ControllerAgent#META_COMMANDS_MAP}</li>
  * </ul>
  * <p>
  */
-@SuppressWarnings("JavaDoc")
-// TODO: Fix or remove this protocol - it does constant polling with no delay for each sensor - should be using long poll mechanism; also futures are not cancelled and NPEs appear etc...nasty
-public class ControllerProtocol extends AbstractProtocol {
-
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ControllerProtocol.class);
-
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":controllerClient";
-
-    /*--------------- META ITEMS TO BE USED ON PROTOCOL CONFIGURATIONS ---------------*/
-    /**
-     * Base URI for all requests to this server
-     */
-    public static final String META_PROTOCOL_BASE_URI = PROTOCOL_NAME + ":baseUri";
-    
-    /**
-     * Basic authentication username (string)
-     */
-    public static final String META_PROTOCOL_USERNAME = PROTOCOL_NAME + ":username";
-
-    /**
-     * Basic authentication password (string)
-     */
-    public static final String META_PROTOCOL_PASSWORD = PROTOCOL_NAME + ":password";
-
-    /*--------------- META ITEMS TO BE USED ON LINKED ATTRIBUTES ---------------*/
-    /**
-     * Path to query Controller :
-     * <p>
-     * - status : {@link #META_PROTOCOL_BASE_URI}/devices/{@link #META_ATTRIBUTE_DEVICE_NAME}/status?name={@link #META_ATTRIBUTE_SENSOR_NAME}
-     * - execute command : {@link #META_PROTOCOL_BASE_URI}/devices/{@link #META_ATTRIBUTE_DEVICE_NAME}/commands?name={COMMAND_TO_EXECUTE_DEPENDING_CASE}
-     * - polling : {@link #META_PROTOCOL_BASE_URI}/devices/{@link #META_ATTRIBUTE_DEVICE_NAME}/polling/<DeviceIDFromController/>?name={@link #META_ATTRIBUTE_SENSOR_NAME}&name={@link #META_ATTRIBUTE_SENSOR_NAME}
-     * <p>
-     * For Polling, a global set of all sensor_name has to be maintained as Attribute are added. Those sensor_name will be grouped by device_name
-     * such that we can group them together.
-     * <p>
-     * /
-     * <p>
-     * /**
-     * Device name to query on Controller
-     * (string)
-     */
-    public static final String META_ATTRIBUTE_DEVICE_NAME = PROTOCOL_NAME + ":deviceName";
-
-    /**
-     * Relative path to endpoint on the server; supports dynamic value insertion, see class javadoc for details
-     * (string)
-     */
-    public static final String META_ATTRIBUTE_SENSOR_NAME = PROTOCOL_NAME + ":sensorName";
-    /**
-     * A command could be execute on a different device name than the device name used for sensor status
-     * (string)
-     */
-    public static final String META_ATTRIBUTE_COMMAND_DEVICE_NAME = PROTOCOL_NAME + ":commandDeviceName";
-    /**
-     * A command name
-     * (string)
-     */
-    public static final String META_ATTRIBUTE_COMMAND_NAME = PROTOCOL_NAME + ":commandName";
-    /**
-     * Relative path to endpoint on the server; supports dynamic value insertion, see class javadoc for details
-     * (string)
-     */
-    public static final String META_ATTRIBUTE_COMMANDS_MAP = PROTOCOL_NAME + ":commandsMap";
+// TODO: Fix or remove this protocol - it does polling per device and also futures are not cancelled and NPEs appear etc...nasty
+public class ControllerProtocol extends AbstractProtocol<ControllerAgent, ControllerAgentLink> {
 
     public static final int HEARTBEAT_DELAY_SECONDS = 5;
-
-    protected static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays
-            .asList(new MetaItemDescriptorImpl(META_PROTOCOL_BASE_URI, ValueType.STRING, true,
-                            REGEXP_PATTERN_BASIC_HTTP_URL, MetaItemDescriptor.PatternFailure.HTTP_URL.name(), 1, null, false, null, null, null),
-                    new MetaItemDescriptorImpl(META_PROTOCOL_USERNAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
-                            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false, null, null, null),
-                    new MetaItemDescriptorImpl(META_PROTOCOL_PASSWORD, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
-                            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false, null, null, null));
-
-    public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays
-            .asList(new MetaItemDescriptorImpl(META_ATTRIBUTE_DEVICE_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
-                    new MetaItemDescriptorImpl(META_ATTRIBUTE_SENSOR_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
-                    new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMAND_DEVICE_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
-                    new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMAND_NAME, ValueType.STRING, false,
-                            REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false, null, null, null),
-                    new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMANDS_MAP, ValueType.OBJECT, false, null, null, 1, null,
-                            false, null, null, null));
-
-    /*--------------- Protocol attributes ---------------*/
     public static final String PROTOCOL_DISPLAY_NAME = "Controller Client";
-    public static final String PROTOCOL_VERSION = "1.0";
-
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ControllerProtocol.class);
+    private final Map<String, Future<?>> pollingSensorList = new HashMap<>();
     protected ResteasyClient client;
-    private Map<PollingKey, ScheduledFuture> pollingSensorList = new HashMap<>();
-    private Map<AttributeRef, Controller> controllersMap = new HashMap<>();
-    private Map<AttributeRef, ResteasyWebTarget> controllersTargetMap = new HashMap<>();
-    private Map<AttributeRef, ScheduledFuture> controllerHeartbeat = new HashMap<>();
-    private Map<AttributeRef, Boolean> initStatusDone = new HashMap<>();
+    private Controller controller;
+    private ResteasyWebTarget controllerWebTarget;
+    private ScheduledFuture<?> controllerHeartbeat;
+    private final Map<AttributeRef, Boolean> initStatusDone = new HashMap<>();
 
-    @Override
-    public void init(Container container) throws Exception {
-        super.init(container);
-        client = createClient(executorService, CONNECTION_POOL_SIZE, 70000, null);
+    public ControllerProtocol(ControllerAgent agent) {
+        super(agent);
     }
 
     @Override
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return new ArrayList<>(PROTOCOL_META_ITEM_DESCRIPTORS);
-    }
+    public void doStart(Container container) throws Exception {
 
-    @Override
-    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return new ArrayList<>(ATTRIBUTE_META_ITEM_DESCRIPTORS);
-    }
-
-    @Override
-    protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        LOG.fine("### Adding new protocol " + protocolConfiguration.getReferenceOrThrow() + " (" + protocolConfiguration.getNameOrThrow() + ")");
-
-        String baseURL = protocolConfiguration.getMetaItem(META_PROTOCOL_BASE_URI).flatMap(AbstractValueHolder::getValueAsString)
-                .orElseThrow(() -> new IllegalArgumentException("Missing or invalid required meta item: " + META_PROTOCOL_BASE_URI));
+        String baseURL = agent.getControllerURI().orElseThrow(() -> new IllegalArgumentException("Missing or invalid controller URI: " + agent));
+        URI uri;
 
         try {
-            URI uri = new URIBuilder(baseURL).build();
-            WebTargetBuilder webTargetBuilder = new WebTargetBuilder(client, uri);
-            String username = protocolConfiguration.getMetaItem(META_PROTOCOL_USERNAME).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
-            String password = protocolConfiguration.getMetaItem(META_PROTOCOL_PASSWORD).flatMap(AbstractValueHolder::getValueAsString).orElse(null);
-
-            if (username != null && password != null) {
-                webTargetBuilder.setBasicAuthentication(username, password);
-            }
-
-            controllersTargetMap.put(protocolConfiguration.getReferenceOrThrow(), webTargetBuilder.build());
-
-            controllersMap.put(protocolConfiguration.getReferenceOrThrow(), new Controller(protocolConfiguration.getReferenceOrThrow()));
-
-            this.updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
-
-            controllerHeartbeat.put(protocolConfiguration.getReferenceOrThrow(), this.executorService.scheduleWithFixedDelay(() -> this.executeHeartbeat(protocolConfiguration.getReferenceOrThrow(),
-                response -> onHeartbeatResponse(protocolConfiguration.getReferenceOrThrow(), response)), 0, HEARTBEAT_DELAY_SECONDS,
-                TimeUnit.SECONDS));
+            uri = new URIBuilder(baseURL).build();
         } catch (URISyntaxException e) {
-            LOG.log(Level.SEVERE, "Invalid URI", e);
-            updateConnectionStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR);
+            LOG.log(Level.SEVERE, "Invalid Controller URI", e);
+            setConnectionStatus(ConnectionStatus.ERROR);
+            throw e;
         }
+
+        client = createClient(executorService, CONNECTION_POOL_SIZE, 70000, null);
+
+        WebTargetBuilder webTargetBuilder = new WebTargetBuilder(client, uri);
+
+        agent.getUsernamePassword().ifPresent(usernamePassword -> {
+            LOG.info("Setting BASIC auth credentials for controller");
+            webTargetBuilder.setBasicAuthentication(usernamePassword.getUsername(), usernamePassword.getPassword());
+        });
+
+        controllerWebTarget = webTargetBuilder.build();
+        controller = new Controller(agent.getId());
+
+        controllerHeartbeat = this.executorService.scheduleWithFixedDelay(
+            () -> this.executeHeartbeat(this::onHeartbeatResponse),
+            0,
+            HEARTBEAT_DELAY_SECONDS,
+            TimeUnit.SECONDS);
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        controllersMap.remove(protocolConfiguration.getReferenceOrThrow());
-        controllersTargetMap.remove(protocolConfiguration.getReferenceOrThrow());
-        controllerHeartbeat.remove(protocolConfiguration.getReferenceOrThrow());
+    protected void setConnectionStatus(ConnectionStatus connectionStatus) {
+        super.setConnectionStatus(connectionStatus);
 
-        for (PollingKey key : this.pollingSensorList.keySet()) {
-            if (key.getControllerAgentRef().equals(protocolConfiguration.getReferenceOrThrow())) {
-                this.pollingSensorList.remove(key);
+        if (connectionStatus.equals(ConnectionStatus.DISCONNECTED)) {
+            for (Future<?> task : this.pollingSensorList.values()) {
+                task.cancel(true);
             }
         }
     }
 
     @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        String deviceName = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_DEVICE_NAME, StringValue.class, true, true)
-                .map(StringValue::getString).orElse(null);
+    protected void doStop(Container container) throws Exception {
 
-        String sensorName = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_SENSOR_NAME, StringValue.class, false, true)
-                .map(StringValue::getString).orElse(null);
+        if (controllerHeartbeat != null) {
+            controllerHeartbeat.cancel(true);
+        }
 
-        String commandDeviceName = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_COMMAND_DEVICE_NAME, StringValue.class, false, true)
-                .map(StringValue::getString).orElse(null);
+        pollingSensorList.values().forEach(pollingTask -> pollingTask.cancel(true));
+        pollingSensorList.clear();
+        initStatusDone.clear();
+    }
 
-        String commandName = Values.getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_COMMAND_NAME, StringValue.class, false, true)
-                .map(StringValue::getString).orElse(null);
+    @Override
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, ControllerAgentLink agentLink) {
+        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+        String deviceName = agentLink.getDeviceName().orElse(null);
+        String sensorName = agentLink.getSensorName().orElse(null);
+        String commandDeviceName = agentLink.getCommandDeviceName().orElse(null);
+        String commandName = agentLink.getCommandName().orElse(null);
 
-        MultivaluedMap<String, String> commandsMap = Values
-                .getMetaItemValueOrThrow(attribute, META_ATTRIBUTE_COMMANDS_MAP, ObjectValue.class, false, true)
-                .flatMap(objectValue -> HttpClientProtocol.getMultivaluedMap(objectValue, false)).orElse(null);
+        Map<String, List<String>> commandsMap = agentLink.getCommandsMap().orElse(null);
 
-        /**
+        /*
          * Build Sensor Status info for polling request
          */
         if (sensorName != null) {
-            LOG.fine("### Adding new sensor [" + deviceName + "," + sensorName + "] linked to " + protocolConfiguration.getReferenceOrThrow() + " (" + protocolConfiguration.getNameOrThrow() + ")");
-            controllersMap.get(protocolConfiguration.getReferenceOrThrow()).addSensor(attribute.getReferenceOrThrow(), new ControllerSensor(deviceName, sensorName));
+            LOG.fine("### Adding new sensor [" + deviceName + "," + sensorName + "] linked to " + agent.getId() + " (" + agent.getName() + ")");
+            controller.addSensor(attributeRef, new ControllerSensor(deviceName, sensorName));
 
-            //Properly stop previously existing polling on device name --> use of false parameter
-            PollingKey pollingKey = new PollingKey(deviceName, protocolConfiguration.getReferenceOrThrow());
-
-            if (pollingSensorList.containsKey(pollingKey)) {
-                pollingSensorList.get(pollingKey).cancel(true);
+            // Properly stop previously existing polling on device name --> use of false parameter
+            if (pollingSensorList.containsKey(deviceName)) {
+                pollingSensorList.get(deviceName).cancel(true);
             }
 
-            this.initStatusDone.put(attribute.getReferenceOrThrow(), false);
+            this.initStatusDone.put(attributeRef, false);
 
-            //Get initial status of sensor
-            this.collectInitialStatus(attribute.getReferenceOrThrow(), deviceName, sensorName, protocolConfiguration.getReferenceOrThrow());
+            // Get initial status of sensor
+            collectInitialStatus(attributeRef, deviceName, sensorName);
 
             //Put new polling on a new device name or update previous
-            this.schedulePollingTask(pollingKey);
+            this.schedulePollingTask(deviceName);
         }
 
-        /**
+        /*
          * If linked Attribute contains command info, we build {@link org.openremote.agent.protocol.controller.ControllerCommand } depending on
          * attribute information.
          */
@@ -300,60 +205,52 @@ public class ControllerProtocol extends AbstractProtocol {
             }
 
             if (commandName != null) {
-                controllersMap.get(protocolConfiguration.getReferenceOrThrow()).addCommand(attribute.getReferenceOrThrow(), new ControllerCommandBasic(commandDeviceName, commandName));
+                controller.addCommand(attributeRef, new ControllerCommandBasic(commandDeviceName, commandName));
             } else {
                 assert commandsMap.size() > 0;
-                controllersMap.get(protocolConfiguration.getReferenceOrThrow()).addCommand(attribute.getReferenceOrThrow(), new ControllerCommandMapped(commandDeviceName, computeCommandsMapFromMultiValue(commandsMap)));
+                controller.addCommand(attributeRef, new ControllerCommandMapped(commandDeviceName, computeCommandsMapFromMultiValue(commandsMap)));
             }
         }
     }
 
     /**
-     * Clearing elements if an attribute is unlinked from Controller Agent
-     * We don't have to clear {@link #pollingSensorList} as a check is done before scheduling task {@link #schedulePollingTask}
-     *
-     * @param attribute
-     * @param protocolConfiguration
+     * Clearing elements if an attribute is unlinked from Controller Agent We don't have to clear {@link
+     * #pollingSensorList} as a check is done before scheduling task {@link #schedulePollingTask}
      */
     @Override
-    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        controllersMap.get(protocolConfiguration.getReferenceOrThrow()).removeAttributeRef(attribute.getReferenceOrThrow());
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, ControllerAgentLink agentLink) {
+        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+        controller.removeAttributeRef(attributeRef);
     }
 
     /**
-     * Write action on a linked attribute mean we execute a command on the Controller. It induce a HTTP request and manage it's return code. (No value
-     * is returned from the execution of a command)
-     *  @param event
-     * @param processedValue
-     * @param protocolConfiguration
+     * Write action on a linked attribute mean we execute a command on the Controller. It induce a HTTP request and
+     * manage it's return code. (No value is returned from the execution of a command)
      */
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, ControllerAgentLink agentLink, AttributeEvent event, Object processedValue) {
         LOG.fine("### Process Linked Attribute Write");
 
         AttributeRef attributeRef = event.getAttributeRef();
-        ControllerCommand controllerCommand = controllersMap.get(protocolConfiguration.getReferenceOrThrow()).getCommand(attributeRef);
-        HttpClientProtocol.HttpClientRequest request = RequestBuilder.buildCommandRequest(controllerCommand, event, this.controllersTargetMap.get(protocolConfiguration.getReferenceOrThrow()));
+        ControllerCommand controllerCommand = controller.getCommand(attributeRef);
+        HttpClientProtocol.HttpClientRequest request = RequestBuilder.buildCommandRequest(controllerCommand, event, controllerWebTarget);
 
         String body = null;
 
         if (controllerCommand instanceof ControllerCommandBasic) {
             body = event.getValue().map(v -> {
-                ObjectValue objectValue = Values.createObject();
-                objectValue.put("parameter", v);
+                ObjectNode objectValue = Values.JSON.createObjectNode();
+                objectValue.putPOJO("parameter", processedValue);
                 return objectValue.toString();
             }).orElse(null);
         }
-        executeAttributeWriteRequest(request, body, protocolConfiguration.getReferenceOrThrow(), this::onAttributeWriteResponse);
+        executeAttributeWriteRequest(request, body, this::onAttributeWriteResponse);
     }
 
     /**
      * Convert commands map received as {@link MultivaluedMap} into a simple {@link Map}
-     *
-     * @param multivaluedMap
-     * @return
      */
-    private Map<String, String> computeCommandsMapFromMultiValue(MultivaluedMap<String, String> multivaluedMap) {
+    private Map<String, String> computeCommandsMapFromMultiValue(Map<String, List<String>> multivaluedMap) {
         Map<String, String> commandsMap = new HashMap<>();
 
         for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
@@ -363,17 +260,16 @@ public class ControllerProtocol extends AbstractProtocol {
         return commandsMap;
     }
 
-    private void collectInitialStatus(AttributeRef attributeRef, String deviceName, String sensorName, AttributeRef controllerRef) {
+    private void collectInitialStatus(AttributeRef attributeRef, String deviceName, String sensorName) {
         this.executorService
-                .schedule(() -> this.executeInitialStatus(attributeRef, deviceName, sensorName, controllerRef,response -> onInitialStatusResponse(attributeRef, deviceName, sensorName, controllerRef, response)),
-                        0);
+            .submit(() -> this.executeInitialStatus(attributeRef, deviceName, sensorName, response -> onInitialStatusResponse(attributeRef, deviceName, sensorName, response)));
     }
 
-    private void executeInitialStatus(AttributeRef attributeRef, String deviceName, String sensorName, AttributeRef controllerRef, Consumer<Response> responseConsumer) {
+    private void executeInitialStatus(AttributeRef attributeRef, String deviceName, String sensorName, Consumer<Response> responseConsumer) {
         withLock(getProtocolName() + "::executeInitialStatus::" + attributeRef, () -> {
-            LOG.info("### Initial status check for " + attributeRef.getAttributeName() + " [" + deviceName + "," + sensorName + "] ...");
+            LOG.info("### Initial status check for " + attributeRef.getName() + " [" + deviceName + "," + sensorName + "] ...");
 
-            HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildStatusRequest(deviceName, Arrays.asList(sensorName), this.controllersTargetMap.get(controllerRef));
+            HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildStatusRequest(deviceName, Arrays.asList(sensorName), controllerWebTarget);
 
             Response response = null;
 
@@ -381,7 +277,7 @@ public class ControllerProtocol extends AbstractProtocol {
                 response = checkRequest.invoke(null);
                 responseConsumer.accept(response);
             } catch (ProcessingException e) {
-                LOG.log(Level.SEVERE, "### Initial status for " + attributeRef.getAttributeName() + " [" + deviceName + "," + sensorName + "] doesn't succeed", e);
+                LOG.log(Level.SEVERE, "### Initial status for " + attributeRef.getName() + " [" + deviceName + "," + sensorName + "] doesn't succeed", e);
             } finally {
                 if (response != null) {
                     response.close();
@@ -391,26 +287,20 @@ public class ControllerProtocol extends AbstractProtocol {
         });
     }
 
-    private void onInitialStatusResponse(AttributeRef attributeRef, String deviceName, String sensorName, AttributeRef controllerRef, Response response) {
-        if(response != null) {
+    private void onInitialStatusResponse(AttributeRef attributeRef, String deviceName, String sensorName, Response response) {
+        if (response != null) {
             if (response.getStatusInfo().equals(Response.Status.OK)) {
-                String responseBodyAsString = response.readEntity(String.class);
-
                 LOG.fine("### New sensor [" + sensorName + "] status received");
-                LOG.finer("### Status request body response : " + responseBodyAsString);
+                ArrayNode arrayValue = response.readEntity(ArrayNode.class);
 
-                Optional<ArrayValue> arrayValue = Values.parse(responseBodyAsString).flatMap(Values::getArray);
-                Optional<List<ObjectValue>> statuses = Values.getArrayElements(arrayValue.orElse(null), ObjectValue.class, false, false);
-
-                if (!statuses.isPresent()) {
-                    LOG.warning("### Status response is not a JSON array or empty: " + responseBodyAsString);
+                if (arrayValue.isEmpty()) {
+                    LOG.warning("### Status response is empty");
                 } else {
-                    statuses.get().forEach(status -> {
-                        String name = status.getString("name").orElse(null);
-                        String value = status.getString("value").orElse(null);
+                    arrayValue.forEach(status -> {
+                        String name = status.get("name").asText();
+                        String value = status.get("value").asText();
 
                         this.updateAttributeValue(attributeRef, value);
-
                         this.initStatusDone.put(attributeRef, true);
                     });
                 }
@@ -418,59 +308,52 @@ public class ControllerProtocol extends AbstractProtocol {
                 LOG.severe("### Status code for initial status received error : " + response.getStatus() + " --> " + response.getStatusInfo().getReasonPhrase());
             }
         } else {
-            LOG.warning("### Initial status check return a null value for " + attributeRef.getAttributeName() + " [" + deviceName + "," + sensorName + "]");
+            LOG.warning("### Initial status check return a null value for " + attributeRef.getName() + " [" + deviceName + "," + sensorName + "]");
         }
 
-        if(!this.initStatusDone.get(attributeRef)) {
-            collectInitialStatus(attributeRef, deviceName, sensorName, controllerRef);
+        if (!this.initStatusDone.get(attributeRef)) {
+            collectInitialStatus(attributeRef, deviceName, sensorName);
         }
     }
 
     /**
-     * Compute the polling request for a given deviceName and controller. Method check all registered sensor's (linked to the Protocol) and collect all sensor's name
-     * to put them into polling request
-     *
-     * @param pollingKey Device name and controller agent reference on which we're polling
-     * @return {@link ScheduledFuture} task to keep a track on
+     * Compute the polling request for a given deviceName and controller. Method check all registered sensor's (linked
+     * to the Protocol) and collect all sensor's name to put them into polling request
      */
-    private ScheduledFuture computePollingTask(PollingKey pollingKey) {
-        return withLockReturning(getProtocolName() + "::computePollingTask::" + pollingKey.getControllerAgentRef() + "::" + pollingKey.getDeviceName(), () -> {
-            List<String> sensorNameList = this.controllersMap.get(pollingKey.getControllerAgentRef()).collectSensorNameLinkedToDeviceName(pollingKey.getDeviceName());
+    private Future<?> computePollingTask(String deviceName) {
+        return withLockReturning(getProtocolName() + "::computePollingTask::" + deviceName, () -> {
+            List<String> sensorNameList = controller.collectSensorNameLinkedToDeviceName(deviceName);
 
             if (sensorNameList.isEmpty()) {
                 return null;
             }
 
-            return executorService.schedule(() -> executePollingRequest(pollingKey, sensorNameList,
-                    response -> onPollingResponse(pollingKey, sensorNameList, response)), 0);
+            return executorService.submit(() -> executePollingRequest(deviceName, sensorNameList,
+                response -> onPollingResponse(deviceName, sensorNameList, response)));
         });
     }
 
     /**
-     * Polling Request execution if a Connection issue (exception) occurs, we check the nature {@link #checkIfConnectionRefused(Exception, AttributeRef)}
-     *
-     * @param pollingKey       device name and controller agent ref on which we'll polling
-     * @param sensorList       list of sensors to catch status
-     * @param responseConsumer Consumer for onResponse treatment
+     * Polling Request execution if a Connection issue (exception) occurs, we check the nature {@link
+     * #checkIfConnectionRefused}
      */
-    private void executePollingRequest(PollingKey pollingKey, List<String> sensorList, Consumer<Response> responseConsumer) {
-        LOG.info("### Polling Request for device [device=" + pollingKey.getDeviceName() + ", sensors=" + this.formatSensors(sensorList) + "]");
+    private void executePollingRequest(String deviceName, List<String> sensorList, Consumer<Response> responseConsumer) {
+        LOG.info("### Polling Request for device [device=" + deviceName + ", sensors=" + this.formatSensors(sensorList) + "]");
 
         HttpClientProtocol.HttpClientRequest httpClientRequest = RequestBuilder
-                .buildStatusPollingRequest(pollingKey.getDeviceName(), sensorList, this.controllersMap.get(pollingKey.getControllerAgentRef()).getDeviceId(), this.controllersTargetMap.get(pollingKey.getControllerAgentRef()));
+            .buildStatusPollingRequest(deviceName, sensorList, controller.getDeviceId(), controllerWebTarget);
 
         Response response = null;
 
         try {
             response = httpClientRequest.invoke(null);
-
-            this.updateConnectionStatus(pollingKey.getControllerAgentRef(), ConnectionStatus.CONNECTED);
+            setConnectionStatus(ConnectionStatus.CONNECTED);
         } catch (Exception e) {
             LOG.log(Level.SEVERE,
-                    "### Exception thrown whilst doing polling request [device=" + pollingKey.getDeviceName() + ", sensors=" + this.formatSensors(sensorList) + "]",
-                    e);
+                "### Exception thrown whilst doing polling request [device=" + deviceName + ", sensors=" + this.formatSensors(sensorList) + "]",
+                e);
 
-            this.checkIfConnectionRefused(e, pollingKey.getControllerAgentRef());
+            this.checkIfConnectionRefused(e);
         }
 
         responseConsumer.accept(response);
@@ -486,39 +369,35 @@ public class ControllerProtocol extends AbstractProtocol {
      * <p>
      * In every case, we should start a new polling request directly. Only the 200 response induce an update of every linked attribute having a sensor
      * status updated.
-     *
-     * @param pollingKey     device name and controller agent ref on which polling has been execute
-     * @param sensorNameList sensors requested
-     * @param response       Response received from request
      */
-    private void onPollingResponse(PollingKey pollingKey, List<String> sensorNameList, Response response) {
-        if(response != null) {
+    private void onPollingResponse(String deviceName, List<String> sensorNameList, Response response) {
+        if (response != null) {
             if (response.getStatusInfo() == Response.Status.OK) {
                 String responseBodyAsString = response.readEntity(String.class);
 
                 LOG.info("### New sensors status received");
                 LOG.finer("### Polling request body response : " + responseBodyAsString);
 
-                Optional<ArrayValue> arrayValue = Values.parse(responseBodyAsString).flatMap(Values::getArray);
-                Optional<List<ObjectValue>> statuses = Values.getArrayElements(arrayValue.orElse(null), ObjectValue.class, false, false);
+                ArrayNode statusArray = Values.convert(responseBodyAsString, ArrayNode.class);
 
-                if (!statuses.isPresent()) {
+                if (statusArray == null) {
                     LOG.warning("### Polling response is not a JSON array or empty: " + responseBodyAsString);
                 } else {
-                    statuses.get().forEach(status -> {
-                        String name = status.getString("name").orElse(null);
-                        String value = status.getString("value").orElse(null);
+                    statusArray.forEach(status -> {
+
+                        String name = Optional.ofNullable(status.get("name")).flatMap(Values::getString).orElse(null);
+                        String value = Optional.ofNullable(status.get("value")).flatMap(Values::getString).orElse(null);
 
                         /**
-                         * For every sensors in the request body, find the linked attributeref and update value by calling {@link updateAttributeValue}
+                         * For every sensors in the request body, find the linked attributeref and update value by calling {@link #updateAttributeValue}
                          */
-                        this.controllersMap.get(pollingKey.getControllerAgentRef()).getSensorsListForDevice(pollingKey.getDeviceName()).stream()
-                                .filter(entry -> entry.getValue().getSensorName().equals(name))
-                                .forEach(e -> this.updateAttributeValue(e.getKey(), value));
+                        controller.getSensorsListForDevice(deviceName).stream()
+                            .filter(entry -> entry.getValue().getSensorName().equals(name))
+                            .forEach(e -> this.updateAttributeValue(e.getKey(), value));
                     });
                 }
             } else if (response.getStatusInfo() == Response.Status.REQUEST_TIMEOUT) {
-                LOG.info("### Timeout from polling no changes on Controller side given sensors [device=" + pollingKey.getDeviceName() + ", sensors=" + this.formatSensors(sensorNameList) + "]");
+                LOG.info("### Timeout from polling no changes on Controller side given sensors [device=" + deviceName + ", sensors=" + this.formatSensors(sensorNameList) + "]");
             } else {
                 LOG.severe("### Status code received error : " + response.getStatus() + " --> " + response.getStatusInfo().getReasonPhrase());
             }
@@ -527,48 +406,28 @@ public class ControllerProtocol extends AbstractProtocol {
         }
 
         //No matter status code, we're continuing to poll
-        this.schedulePollingTask(pollingKey);
+        this.schedulePollingTask(deviceName);
     }
 
     /**
      * Update linked attribute with new value. We should take care of attribute type and format
-     *
-     * @param attributeRef
-     * @param value
      */
     private void updateAttributeValue(AttributeRef attributeRef, String value) {
-        LOG.fine("### Updating attribute " + attributeRef + " with value " + value);
-        AttributeValueDescriptor attributeType = this.linkedAttributes.get(attributeRef).getTypeOrThrow();
-
-        ValueType valueType = attributeType.getValueType();
-        try {
-            switch (valueType) {
-                case BOOLEAN:
-                    this.updateLinkedAttribute(new AttributeState(attributeRef, Values.create(Boolean.parseBoolean(value))));
-                    break;
-                case NUMBER:
-                    this.updateLinkedAttribute(new AttributeState(attributeRef, Values.create(Double.parseDouble(value))));
-                    break;
-                default:
-                    this.updateLinkedAttribute(new AttributeState(attributeRef, Values.create(value)));
-            }
-        } catch (NumberFormatException e) {
-            LOG.severe("### Error in parsing NUMBER value [" + value + "]");
-            this.updateLinkedAttribute(new AttributeState(attributeRef, Values.create(0.0)));
-        }
+        LOG.finest("### Updating attribute " + attributeRef + " with value " + value);
+        ValueDescriptor<?> valueType = this.linkedAttributes.get(attributeRef).getType();
+        Object valueObj = Values.convert(value, valueType.getType());
+        this.updateLinkedAttribute(new AttributeState(attributeRef, valueObj));
     }
 
-    private void executeAttributeWriteRequest(HttpClientProtocol.HttpClientRequest request, String body, AttributeRef protocolRef, Consumer<Response> responseConsumer) {
+    private void executeAttributeWriteRequest(HttpClientProtocol.HttpClientRequest request, String body, Consumer<Response> responseConsumer) {
         Response response = null;
 
         try {
             response = request.invoke(body);
 
-            this.updateConnectionStatus(protocolRef, ConnectionStatus.CONNECTED);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "### Exception thrown whilst doing attribute write request", e);
-
-            this.checkIfConnectionRefused(e, protocolRef);
+            this.checkIfConnectionRefused(e);
         }
 
         responseConsumer.accept(response);
@@ -590,74 +449,37 @@ public class ControllerProtocol extends AbstractProtocol {
     }
 
     /**
-     * {@link #checkIfConnectionRefused(Exception, AttributeRef)} check the exception received from a request execution to see if it's not a
-     * connection issue. If it is the case, we'll start a heartbeat task until we get a new signal. Heartbeat is done evey
-     * {@link #HEARTBEAT_DELAY_SECONDS} seconds.
-     *
-     * @param e           is the exception thrown by invoking the request
-     * @param protocolRef is the reference to Protocol configuration (to update status,...)
+     * Check the exception received from a request execution to see if it's not a connection issue. If it is the case,
+     * we'll start a heartbeat task until we get a new signal. Heartbeat is done every {@link #HEARTBEAT_DELAY_SECONDS}
+     * seconds.
      */
-    private void checkIfConnectionRefused(Exception e, AttributeRef protocolRef) {
+    private void checkIfConnectionRefused(Exception e) {
         if (e.getCause() instanceof HttpHostConnectException) {
             HttpHostConnectException e2 = (HttpHostConnectException) e.getCause();
 
             if (e2.getCause() instanceof ConnectException || e2.getCause() instanceof UnknownHostException) {
                 ConnectException e3 = (ConnectException) e2.getCause();
-                LOG.log(Level.SEVERE, "### Connection refused : " + e3.getMessage());
-                this.updateConnectionStatus(protocolRef, ConnectionStatus.DISCONNECTED);
+                LOG.log(Level.SEVERE, "Connection refused: " + e3.getMessage());
+                setConnectionStatus(ConnectionStatus.DISCONNECTED);
 
-                //Starting a heartbeat Task until connection is OK
-                if (!this.controllerHeartbeat.containsKey(protocolRef) || this.controllerHeartbeat.get(protocolRef).isCancelled()) {
-                    this.controllerHeartbeat.put(protocolRef, this.executorService
-                            .scheduleWithFixedDelay(() -> this.executeHeartbeat(protocolRef, response -> onHeartbeatResponse(protocolRef, response)),
-                                    0, HEARTBEAT_DELAY_SECONDS, TimeUnit.SECONDS));
+                // Starting a heartbeat Task until connection is OK
+                if (controllerHeartbeat == null || this.controllerHeartbeat.isCancelled()) {
+                    controllerHeartbeat = this.executorService.scheduleWithFixedDelay(() ->
+                        this.executeHeartbeat(this::onHeartbeatResponse), 0, HEARTBEAT_DELAY_SECONDS, TimeUnit.SECONDS);
                 }
             }
         }
     }
 
-    /**
-     * {@link #updateConnectionStatus(AttributeRef, ConnectionStatus)} method will update the Protocol Connection status (disconnected or connected)
-     * and will manage to relaunch all the polling requests if it move from disconnected to connected status.
-     *
-     * @param protocolRef
-     * @param status
-     */
-    private void updateConnectionStatus(AttributeRef protocolRef, ConnectionStatus status) {
-        ConnectionStatus previousStatus = this.getStatus(this.getLinkedProtocolConfiguration(protocolRef));
-
-        this.updateStatus(protocolRef, status);
-
-        if (status.equals(ConnectionStatus.CONNECTED) && (previousStatus == null || previousStatus.equals(ConnectionStatus.DISCONNECTED))) {
-            //Relaunch polling
-            if (this.pollingSensorList.isEmpty()) {
-                LOG.info("### no polling to restart for " + protocolRef.getAttributeName() + "...");
-            }
-            for (PollingKey key : this.pollingSensorList.keySet()) {
-                if (key.getControllerAgentRef().equals(protocolRef)) {
-                    this.schedulePollingTask(key);
-                }
-            }
-        }
-
-        if (status.equals(ConnectionStatus.DISCONNECTED)) {
-            for (ScheduledFuture task : this.pollingSensorList.values()) {
-                task.cancel(true);
-            }
-        }
-    }
 
     /**
      * Heartbeat is used when connection with Controller 2.x is lost and is running until connection is back
-     *
-     * @param protocolRef
-     * @param responseConsumer
      */
-    private void executeHeartbeat(AttributeRef protocolRef, Consumer<Response> responseConsumer) {
+    private void executeHeartbeat(Consumer<Response> responseConsumer) {
         withLock(getProtocolName() + "::executeHeartbeat", () -> {
-            LOG.info("### Heartbeat check on " + protocolRef.getAttributeName() + "...");
+            LOG.info("Doing heartbeat check for controller: " + controllerWebTarget.getUriBuilder().build());
 
-            HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildCheckRequest(this.controllersTargetMap.get(protocolRef));
+            HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildCheckRequest(controllerWebTarget);
 
             Response response = null;
 
@@ -665,7 +487,7 @@ public class ControllerProtocol extends AbstractProtocol {
                 response = checkRequest.invoke(null);
                 responseConsumer.accept(response);
             } catch (ProcessingException e) {
-                LOG.log(Level.SEVERE, "### Check for " + this.controllersMap.get(protocolRef).getControllerConfigName() + " doesn't succeed", e);
+                LOG.log(Level.SEVERE, "Heartbeat check for controller failed: " + controllerWebTarget.getUriBuilder().build(), e);
             } finally {
                 if (response != null) {
                     response.close();
@@ -674,19 +496,20 @@ public class ControllerProtocol extends AbstractProtocol {
         });
     }
 
-    private void onHeartbeatResponse(AttributeRef protocolRef, Response response) {
+    private void onHeartbeatResponse(Response response) {
         //if we don't have any connection issue, we stop the heartbeat check
         if (response != null && (response.getStatusInfo().equals(Response.Status.OK) || response.getStatusInfo().equals(Response.Status.FOUND))) {
-            LOG.info("### Heartbeat check on " + protocolRef.getAttributeName() + " succeed !");
-            this.updateConnectionStatus(protocolRef, ConnectionStatus.CONNECTED);
-            //cancel has to be the last step
-            LOG.info("### Stop Heartbeat task for " + protocolRef.getAttributeName());
-            this.controllerHeartbeat.get(protocolRef).cancel(true);
+            LOG.info("Heartbeat check for controller success: " + controllerWebTarget.getUriBuilder().build());
+            setConnectionStatus(ConnectionStatus.CONNECTED);
+            // cancel has to be the last step
+            controllerHeartbeat.cancel(true);
+            controllerHeartbeat = null;
         } else {
+            String responseMsg = "NONE";
             if (response != null) {
-                LOG.severe("### Heartbeat check response is " + response.getStatus());
+                responseMsg = Integer.toString(response.getStatus());
             }
-            LOG.severe("### Heartbeat check on " + protocolRef.getAttributeName() + " failed !");
+            LOG.severe("Heartbeat check for controller failed (Response = " + responseMsg + "): " + controllerWebTarget.getUriBuilder().build());
         }
     }
 
@@ -694,29 +517,22 @@ public class ControllerProtocol extends AbstractProtocol {
      * Scheduling of a polling request
      * <p>
      * We check if there is sensor to poll for the given device name.
-     *
-     * @param key
      */
-    private void schedulePollingTask(PollingKey key) {
-        ScheduledFuture scheduledFuture = computePollingTask(key);
+    private void schedulePollingTask(String deviceName) {
+        Future<?> scheduledFuture = computePollingTask(deviceName);
 
         if (scheduledFuture != null) {
-            pollingSensorList.put(key, scheduledFuture);
+            pollingSensorList.put(deviceName, scheduledFuture);
         }
     }
 
     @Override
     public String getProtocolName() {
-        return PROTOCOL_NAME;
-    }
-
-    @Override
-    public String getProtocolDisplayName() {
         return PROTOCOL_DISPLAY_NAME;
     }
 
     @Override
-    public String getVersion() {
-        return PROTOCOL_VERSION;
+    public String getProtocolInstanceUri() {
+        return "or-controller://" + (controllerWebTarget != null ? controllerWebTarget.getUriBuilder().build() : agent.getId());
     }
 }

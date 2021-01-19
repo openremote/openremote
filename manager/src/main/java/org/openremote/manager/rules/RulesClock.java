@@ -32,19 +32,19 @@ import java.util.function.Predicate;
  */
 public class RulesClock {
 
-    final public double timestamp;
+    final public long timestamp;
     final public LocalDateTime time;
 
     public RulesClock(TimerService timerService) {
         this(timerService.getCurrentTimeMillis());
     }
 
-    public RulesClock(double timestamp) {
+    public RulesClock(long timestamp) {
         this.timestamp = timestamp;
-        time = LocalDateTime.ofInstant(Instant.ofEpochMilli((long) this.timestamp), ZoneId.systemDefault());
+        time = LocalDateTime.ofInstant(Instant.ofEpochMilli(this.timestamp), ZoneId.systemDefault());
     }
 
-    public double getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

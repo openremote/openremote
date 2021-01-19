@@ -4,7 +4,7 @@ rules = [{
 
         var roomWithLightOn = facts.matchFirstAssetState( // Find asset state
             new AssetQuery()
-                .types(AssetType.ROOM) // for a room
+                .types(ROOM) // for a room
                 .attributeValue("lightSwitch", true) // where the light switch is on
         );
 

@@ -11,14 +11,13 @@ import org.openremote.agent.protocol.tradfri.util.ApiCode;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LightProperties extends DeviceProperties{
+public class LightProperties extends DeviceProperties {
 
     /**
      * The on state of the light (true for on, false for off)
      */
     @JsonProperty(ApiCode.ON_OFF)
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
-    private Boolean on;
+    private Integer on;
 
     /**
      * The brightness of the light
@@ -79,7 +78,7 @@ public class LightProperties extends DeviceProperties{
      * @return The on state of the light (true for on, false for off)
      */
     public Boolean getOn() {
-        return this.on;
+        return this.on != null && this.on.equals(1);
     }
 
     /**
@@ -152,7 +151,7 @@ public class LightProperties extends DeviceProperties{
      * @param on The new on state for the light (true for on, false for off)
      */
     public void setOn(Boolean on) {
-        this.on = on;
+        this.on = on != null ? on ? 1 : 0 : null;
     }
 
     /**

@@ -19,52 +19,38 @@
  */
 package org.openremote.model.util;
 
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
-
 import java.util.Optional;
 
 public final class EnumUtil {
     private EnumUtil() {}
 
-    public static Value enumToValue(Enum<?> enumValue, ValueType valueType) {
+    @SuppressWarnings("unchecked")
+    public static <T> T enumToValue(Enum<?> enumValue, Class<T> clazz) {
 
-        switch (valueType) {
-            case OBJECT:
-                return null;
-            case ARRAY:
-                return null;
-            case STRING:
-                return Values.create(enumValue.name());
-            case NUMBER:
-                return Values.create(enumValue.ordinal());
-            case BOOLEAN:
-                return null;
+        if (String.class == clazz) {
+            return (T)enumValue.name();
+        }
+        if (Integer.class == clazz) {
+            return (T)Integer.valueOf(enumValue.ordinal());
+        }
+        if (Double.class == clazz) {
+            return (T)Double.valueOf(enumValue.ordinal());
         }
 
         return null;
     }
 
-    public static <T extends Enum<T>> Optional<T> enumFromValue(Class<T> enumClazz, Value value) {
+    public static <T extends Enum<T>> Optional<T> enumFromValue(Class<T> enumClazz, Object value) {
         if (value == null) {
             return Optional.empty();
         }
 
-        switch (value.getType()) {
-            case OBJECT:
-                return Optional.empty();
-            case ARRAY:
-                return Optional.empty();
-            case STRING:
-                return enumFromString(enumClazz, value.toString());
-            case NUMBER:
-                return Values
-                    .getNumber(value)
-                    .map(Double::intValue)
-                    .flatMap(ordinal -> enumFromInteger(enumClazz, ordinal));
-            case BOOLEAN:
-                return Optional.empty();
+        if (value instanceof String) {
+            return enumFromString(enumClazz, (String)value);
+        }
+
+        if (Number.class.isAssignableFrom(value.getClass())) {
+            return enumFromInteger(enumClazz, ((Number)value).intValue());
         }
 
         return Optional.empty();

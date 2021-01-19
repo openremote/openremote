@@ -1,9 +1,10 @@
 package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesBuilder
+import org.openremote.model.asset.impl.BuildingAsset
+import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeValueType
+import static org.openremote.model.value.ValueType.*
 
 RulesBuilder rules = binding.rules
 
@@ -37,7 +38,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("Kitchen Number Attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery().names("Kitchen 1"))
-                            .filter({ assetState -> assetState.attributeValueType == AttributeValueType.NUMBER })
+                            .filter({ assetState -> assetState.type == NUMBER })
                             .findFirst().isPresent()
         })
         .then(
@@ -51,7 +52,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("Boolean attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.attributeValueType == AttributeValueType.BOOLEAN })
+                            .filter({ assetState -> assetState.type == BOOLEAN })
                             .findFirst().isPresent()
         })
         .then(
@@ -65,7 +66,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("String Attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.attributeValueType == AttributeValueType.STRING })
+                            .filter({ assetState -> assetState.type == TEXT })
                             .findFirst().isPresent()
         })
         .then(
@@ -79,7 +80,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("Number value types").isPresent() &&
                     facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.valueAsNumber.isPresent() })
+                            .filter({ assetState -> assetState.value.isPresent() })
                             .findFirst().isPresent()
         })
         .then(
@@ -92,7 +93,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Parent Type Residence").isPresent() &&
-                    facts.matchAssetState(new AssetQuery().parents(AssetType.RESIDENCE))
+                    facts.matchAssetState(new AssetQuery().parents(BuildingAsset))
                             .findFirst().isPresent()
         })
         .then(
@@ -105,7 +106,7 @@ rules.add()
         .when(
         { facts ->
             !facts.matchFirst("Asset Type Room").isPresent() &&
-                    facts.matchAssetState(new AssetQuery().types(AssetType.ROOM))
+                    facts.matchAssetState(new AssetQuery().types(RoomAsset))
                             .findFirst().isPresent()
         })
         .then(

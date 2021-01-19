@@ -12,48 +12,15 @@ import {
     Asset,
     AssetEvent,
     AssetEventCause,
-    Attribute,
     AttributeEvent,
-    AttributeType,
-    AttributeValueType,
-    SharedEvent
+    SharedEvent,
+    WellknownAttributes
 } from "@openremote/model";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
-import "./or-map-attribute-field";
-import {orAttributeTemplateProvider} from "./or-map-attribute-field";
 import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-input";
 import { i18next } from "@openremote/or-translate";
-
-orAttributeTemplateProvider.setTemplate((attribute:Attribute) => {
-    let template;
-    const value = Util.getAttributeValueFormatted(attribute, undefined, undefined);
-    switch (attribute.type) {
-        case AttributeValueType.SWITCH_TOGGLE.name:
-            template = html`<or-translate value="${value ? "On" : "Off"}"></or-translate>`;
-            break;
-        case AttributeValueType.OBJECT.name:
-        case AttributeValueType.ARRAY.name:
-            if(attribute.name === "status") {
-                template = html`<or-translate value="${value.result}"></or-translate>`;
-            }
-            else if(value && value.content.time) {
-                template = new Intl.DateTimeFormat('default', {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric'
-                }).format(new Date(attribute.value.content.time));
-            }
-            break;
-        default:
-            template = value ? value : "-";
-            break;
-    }
-    return template;
-});
 
 export interface MapAssetCardTypeConfig {
     include?: string[];
@@ -109,7 +76,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
             this.title = "";
             this.assetIds = this.assetId && this.assetId.length > 0 ? [this.assetId] : undefined;
 
-            if (Object.keys(_changedProperties).length === 1) {
+            if (_changedProperties.size === 1) {
                 return false;
             }
         }
@@ -160,7 +127,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         const color = this.getColor();
         const styleStr = color ? "--internal-or-map-asset-card-header-color: #" + color + ";" : "";
         const cardConfig = this.getCardConfig();
-        const attributes = Util.getAssetAttributes(this.asset).filter((attr) => attr.name !== AttributeType.LOCATION.attributeName);
+        const attributes = Object.values(this.asset.attributes!).filter((attr) => attr.name !== WellknownAttributes.LOCATION);
         const includedAttributes = cardConfig && cardConfig.include ? cardConfig.include : undefined;
         const excludedAttributes = cardConfig && cardConfig.exclude ? cardConfig.exclude : [];
         const attrs = attributes.filter((attr) =>
@@ -176,9 +143,10 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                 <div id="attribute-list">
                     <ul>
                         ${attrs.map((attr) => {
-                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr);
-                             const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], true);
-                             return html`<li><span class="attribute-name">${label}</span><span class="attribute-value"><or-attribute-field .attribute="${attr}"></or-attribute-field></span></li>`; 
+                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr.name, attr);
+                             const label = Util.getAttributeLabel(attr, descriptors[0], this.asset!.type, true);
+                             const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset!.type, false, "-");
+                             return html`<li><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`; 
                         })}
                     </ul>
                 </div>
@@ -203,7 +171,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
     protected getColor(): string | undefined {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
-            return descriptor ? descriptor.color : undefined;
+            return descriptor ? descriptor.colour : undefined;
         }
     }
 }

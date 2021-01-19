@@ -20,190 +20,302 @@
 package org.openremote.agent.protocol.websocket;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.Protocol;
-import org.openremote.model.ValidationFailure;
-import org.openremote.model.ValueHolder;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.attribute.*;
+import org.apache.http.HttpHeaders;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.util.BasicAuthHelper;
+import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
+import org.openremote.container.web.WebTargetBuilder;
+import org.openremote.model.Container;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.http.HttpClientProtocol.getUsernameAndPassword;
-import static org.openremote.container.util.Util.joinCollections;
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.agent.protocol.http.HttpClientProtocol.DEFAULT_CONTENT_TYPE;
+import static org.openremote.agent.protocol.http.HttpClientProtocol.DEFAULT_HTTP_METHOD;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is a generic implementation of {@link AbstractWebsocketClientProtocol} for communicating with a Websocket server
- * using {@link String} based messages; messages coming from the server are written through to {@link Attribute}s by using
- * the {@link #META_ATTRIBUTE_MATCH_FILTERS} and {@link #META_ATTRIBUTE_MATCH_PREDICATE} {@link MetaItem}s.
+ * This is a generic {@link org.openremote.model.asset.agent.Protocol} for communicating with a Websocket server
+ * using {@link String} based messages.
  * <p>
- * For supported {@link ProtocolConfiguration} {@link MetaItem}s see {@link #PROTOCOL_META_ITEM_DESCRIPTORS}
- * <p>
- * For supported linked {@link Attribute} {@link MetaItem}s see {@link #ATTRIBUTE_META_ITEM_DESCRIPTORS}
+ * <h2>Protocol Specifics</h2>
+ * When the websocket connection is established it is possible to subscribe to events by specifying the
+ * {@link WebsocketClientAgent#CONNECT_SUBSCRIPTIONS} on the {@link WebsocketClientAgent} or
+ * {@link WebsocketClientAgent.WebsocketClientAgentLink#getConnectSubscriptions()} on linked {@link Attribute}s; a
+ * subscription can be a message sent over the websocket or a HTTP REST API call.
  */
-public class WebsocketClientProtocol extends AbstractWebsocketClientProtocol<String> {
+public class WebsocketClientProtocol extends AbstractIoClientProtocol<WebsocketClientProtocol, WebsocketClientAgent, String, WebsocketIoClient<String>, WebsocketClientAgent.WebsocketClientAgentLink> {
 
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":websocketClient";
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
-    public static final String PROTOCOL_VERSION = "1.0";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketClientProtocol.class);
-    protected final Map<AttributeRef, List<Pair<AttributeRef, Consumer<String>>>> protocolMessageConsumers = new HashMap<>();
+    public static final int CONNECTED_SEND_DELAY_MILLIS = 2000;
+    protected static final ResteasyClient resteasyClient;
+    protected List<Runnable> protocolConnectedTasks;
+    protected Map<AttributeRef, Runnable> attributeConnectedTasks;
+    protected Map<String, List<String>> clientHeaders;
+    protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
 
-    public static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = joinCollections(
-        AbstractWebsocketClientProtocol.PROTOCOL_META_ITEM_DESCRIPTORS,
-        PROTOCOL_GENERIC_META_ITEM_DESCRIPTORS);
+    static {
+        resteasyClient = createClient(org.openremote.container.Container.EXECUTOR_SERVICE);
+    }
 
-    public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = joinCollections(
-        Arrays.asList(
-            META_ATTRIBUTE_MATCH_FILTERS,
-            META_ATTRIBUTE_MATCH_PREDICATE),
-        AbstractWebsocketClientProtocol.ATTRIBUTE_META_ITEM_DESCRIPTORS);
-
-    @Override
-    public String getProtocolName() {
-        return PROTOCOL_NAME;
+    public WebsocketClientProtocol(WebsocketClientAgent agent) {
+        super(agent);
     }
 
     @Override
-    public String getProtocolDisplayName() {
+    public String getProtocolName() {
         return PROTOCOL_DISPLAY_NAME;
     }
 
     @Override
-    public String getVersion() {
-        return PROTOCOL_VERSION;
+    protected void doStop(Container container) throws Exception {
+        super.doStop(container);
+
+        clientHeaders = null;
+        protocolConnectedTasks = null;
+        attributeConnectedTasks = null;
+        protocolMessageConsumers.clear();
     }
 
     @Override
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return new ArrayList<>(PROTOCOL_META_ITEM_DESCRIPTORS);
+    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
+        return getGenericStringEncodersAndDecoders(client.ioClient, agent);
     }
 
     @Override
-    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return new ArrayList<>(ATTRIBUTE_META_ITEM_DESCRIPTORS);
-    }
-
-    @Override
-    public AssetAttribute getProtocolConfigurationTemplate() {
-        return super.getProtocolConfigurationTemplate()
-                .addMeta(
-                        new MetaItem(META_PROTOCOL_CONNECT_URI, null)
-                );
-    }
-
-    @Override
-    public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
-        if (result.isValid()) {
-            try {
-                Protocol.getOAuthGrant(protocolConfiguration);
-                getUsernameAndPassword(protocolConfiguration);
-            } catch (IllegalArgumentException e) {
-                result.addAttributeFailure(
-                        new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_MISMATCH, PROTOCOL_NAME)
-                );
+    protected void onMessageReceived(String message) {
+        protocolMessageConsumers.forEach(c -> {
+            if (c.value != null) {
+                c.value.accept(message);
             }
-        }
-        return result;
+        });
     }
 
     @Override
-    protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-        synchronized (protocolMessageConsumers) {
-            protocolMessageConsumers.remove(protocolConfiguration.getReferenceOrThrow());
-        }
-        super.doUnlinkProtocolConfiguration(agent, protocolConfiguration);
-    }
+    protected String createWriteMessage(Attribute<?> attribute, WebsocketClientAgent.WebsocketClientAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
-    @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        super.doLinkAttribute(attribute, protocolConfiguration);
-
-        AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-        Consumer<String> messageConsumer = Protocol.createGenericAttributeMessageConsumer(attribute, assetService, this::updateLinkedAttribute);
-
-        if (messageConsumer != null) {
-            synchronized (protocolMessageConsumers) {
-                protocolMessageConsumers.compute(protocolRef, (ref, consumers) -> {
-                    if (consumers == null) {
-                        consumers = new ArrayList<>();
-                    }
-                    consumers.add(new Pair<>(
-                        attribute.getReferenceOrThrow(),
-                        messageConsumer
-                    ));
-                    return consumers;
-                });
-            }
-        }
-    }
-
-    @Override
-    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        AttributeRef attributeRef = attribute.getReferenceOrThrow();
-        synchronized (protocolMessageConsumers) {
-            protocolMessageConsumers.compute(protocolConfiguration.getReferenceOrThrow(), (ref, consumers) -> {
-                if (consumers != null) {
-                    consumers.removeIf((attrRefConsumer) -> attrRefConsumer.key.equals(attributeRef));
-                }
-                return consumers;
-            });
-        }
-        super.doUnlinkAttribute(attribute, protocolConfiguration);
-    }
-
-    @Override
-    protected Supplier<ChannelHandler[]> getEncoderDecoderProvider(WebsocketIoClient<String> client, AssetAttribute protocolConfiguration) {
-        return getGenericStringEncodersAndDecoders(client, protocolConfiguration);
-    }
-
-    @Override
-    protected void onMessageReceived(AttributeRef protocolRef, String message) {
-        List<Pair<AttributeRef, Consumer<String>>> consumers;
-
-        synchronized (protocolMessageConsumers) {
-            consumers = protocolMessageConsumers.get(protocolRef);
-
-            if (consumers != null) {
-                consumers.forEach(c -> {
-                    if (c.value != null) {
-                        c.value.accept(message);
-                    }
-                });
-            }
-        }
-    }
-
-    @Override
-    protected String createWriteMessage(AssetAttribute protocolConfiguration, AssetAttribute attribute, AttributeEvent event, Value processedValue) {
-        if (attribute.isReadOnly()) {
-            LOG.fine("Attempt to write to an attribute that doesn't support writes: " + event.getAttributeRef());
-            return null;
-        }
-
-        if (attribute.isExecutable()) {
-            AttributeExecuteStatus status = event.getValue()
-                .flatMap(Values::getString)
-                .flatMap(AttributeExecuteStatus::fromString)
-                .orElse(null);
-
-            if (status != null && status != AttributeExecuteStatus.REQUEST_START) {
-                LOG.fine("Unsupported execution status: " + status);
+        if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
+            boolean isRequestStart = event.getValue()
+                .flatMap(v -> Values.getValue(v, AttributeExecuteStatus.class))
+                .map(status -> status == AttributeExecuteStatus.REQUEST_START)
+                .orElse(false);
+            if (!isRequestStart) {
+                LOG.fine("Unsupported execution status: " + event);
                 return null;
             }
         }
 
-        return processedValue != null ? processedValue.toString() : null;
+        return Values.convert(processedValue, String.class);
+    }
+
+    @Override
+    protected WebsocketIoClient<String> doCreateIoClient() throws Exception {
+
+        String uriStr = agent.getConnectUri().orElseThrow(() ->
+            new IllegalArgumentException("Missing or invalid connectUri: " + agent));
+
+        URI uri = new URI(uriStr);
+
+        /* We're going to fail hard and fast if optional meta items are incorrectly configured */
+
+        Optional<OAuthGrant> oAuthGrant = agent.getOAuthGrant();
+        Optional<UsernamePassword> usernameAndPassword = agent.getUsernamePassword();
+        Optional<ValueType.MultivaluedStringMap> headers = agent.getConnectHeaders();
+        Optional<WebsocketSubscription[]> subscriptions = agent.getConnectSubscriptions();
+
+        if (!oAuthGrant.isPresent() && usernameAndPassword.isPresent()) {
+            String authValue = BasicAuthHelper.createHeader(usernameAndPassword.get().getUsername(), usernameAndPassword.get().getPassword());
+            headers = Optional.of(headers.map(h -> {
+                h.remove(HttpHeaders.AUTHORIZATION);
+                h.replace(HttpHeaders.AUTHORIZATION, Collections.singletonList(authValue));
+                return h;
+            }).orElseGet(() -> {
+                ValueType.MultivaluedStringMap h = new ValueType.MultivaluedStringMap();
+                h.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(authValue));
+                return h;
+            }));
+        }
+
+        clientHeaders = headers.orElse(null);
+        WebsocketIoClient<String> websocketClient = new WebsocketIoClient<>(uri, headers.orElse(null), oAuthGrant.orElse(null));
+        Map<String, List<String>> finalHeaders = headers.orElse(null);
+
+        subscriptions.ifPresent(websocketSubscriptions ->
+            addProtocolConnectedTask(() -> doSubscriptions(finalHeaders, websocketSubscriptions))
+        );
+
+        return websocketClient;
+    }
+
+    @Override
+    protected void setConnectionStatus(ConnectionStatus connectionStatus) {
+        super.setConnectionStatus(connectionStatus);
+        if (connectionStatus == ConnectionStatus.CONNECTED) {
+            onConnected();
+        }
+    }
+
+    @Override
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, WebsocketClientAgent.WebsocketClientAgentLink agentLink) {
+        Optional<WebsocketSubscription[]> subscriptions = agentLink.getWebsocketSubscriptions();
+        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+
+        subscriptions.ifPresent(websocketSubscriptions -> {
+            Runnable task = () -> doSubscriptions(clientHeaders, websocketSubscriptions);
+            addAttributeConnectedTask(attributeRef, task);
+            if (client.ioClient.getConnectionStatus() == ConnectionStatus.CONNECTED) {
+                executorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
+            }
+        });
+
+        Consumer<String> messageConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(assetId, attribute, agent.getAgentLink(attribute), timerService::getCurrentTimeMillis, this::updateLinkedAttribute);
+
+        if (messageConsumer != null) {
+            protocolMessageConsumers.add(new Pair<>(attributeRef, messageConsumer));
+        }
+    }
+
+    @Override
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, WebsocketClientAgent.WebsocketClientAgentLink agentLink) {
+        AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
+        protocolMessageConsumers.removeIf((attrRefConsumer) -> attrRefConsumer.key.equals(attributeRef));
+        attributeConnectedTasks.remove(attributeRef);
+    }
+
+    protected void onConnected() {
+        // Look for any subscriptions that need to be processed
+        if (protocolConnectedTasks != null) {
+            // Execute after a delay to ensure connection is properly initialised
+            executorService.schedule(() -> protocolConnectedTasks.forEach(Runnable::run), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+        }
+
+        if (attributeConnectedTasks != null) {
+            // Execute after a delay to ensure connection is properly initialised
+            executorService.schedule(() -> attributeConnectedTasks.forEach((ref, task) -> task.run()), CONNECTED_SEND_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    protected void addProtocolConnectedTask(Runnable task) {
+        if (protocolConnectedTasks == null) {
+            protocolConnectedTasks = new ArrayList<>();
+        }
+        protocolConnectedTasks.add(task);
+    }
+
+    protected void addAttributeConnectedTask(AttributeRef attributeRef, Runnable task) {
+        if (attributeConnectedTasks == null) {
+            attributeConnectedTasks = new HashMap<>();
+        }
+
+        attributeConnectedTasks.put(attributeRef, task);
+    }
+
+    protected void doSubscriptions(Map<String, List<String>> headers, WebsocketSubscription[] subscriptions) {
+        LOG.info("Executing subscriptions for websocket: " + client.ioClient.getClientUri());
+
+        // Inject OAuth header
+        if (!TextUtil.isNullOrEmpty(client.ioClient.authHeaderValue)) {
+            if (headers == null) {
+                headers = new MultivaluedHashMap<>();
+            }
+            headers.remove(HttpHeaders.AUTHORIZATION);
+            headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(client.ioClient.authHeaderValue));
+        }
+
+        Map<String, List<String>> finalHeaders = headers;
+        Arrays.stream(subscriptions).forEach(
+            subscription -> doSubscription(finalHeaders, subscription)
+        );
+    }
+
+    protected void doSubscription(Map<String, List<String>> headers, WebsocketSubscription subscription) {
+        if (subscription instanceof WebsocketHttpSubscription) {
+            WebsocketHttpSubscription httpSubscription = (WebsocketHttpSubscription)subscription;
+
+            if (TextUtil.isNullOrEmpty(httpSubscription.uri)) {
+                LOG.warning("Websocket subscription missing or empty URI so skipping: " + subscription);
+                return;
+            }
+
+            URI uri;
+
+            try {
+                uri = new URI(httpSubscription.uri);
+            } catch (URISyntaxException e) {
+                LOG.warning("Websocket subscription invalid URI so skipping: " + subscription);
+                return;
+            }
+
+            if (httpSubscription.method == null) {
+                httpSubscription.method = WebsocketHttpSubscription.Method.valueOf(DEFAULT_HTTP_METHOD);
+            }
+
+            if (TextUtil.isNullOrEmpty(httpSubscription.contentType)) {
+                httpSubscription.contentType = DEFAULT_CONTENT_TYPE;
+            }
+
+            if (httpSubscription.headers != null) {
+                headers = headers != null ? new HashMap<>(headers) : new HashMap<>();
+                Map<String, List<String>> finalHeaders = headers;
+                httpSubscription.headers.forEach((header, values) -> {
+                    if (values == null || values.isEmpty()) {
+                        finalHeaders.remove(header);
+                    } else {
+                        List<String> vals = new ArrayList<>(finalHeaders.compute(header, (h, l) -> l != null ? l : Collections.emptyList()));
+                        vals.addAll(values);
+                        finalHeaders.put(header, vals);
+                    }
+                });
+            }
+
+            WebTargetBuilder webTargetBuilder = new WebTargetBuilder(resteasyClient, uri);
+
+            if (headers != null) {
+                webTargetBuilder.setInjectHeaders(headers);
+            }
+
+            LOG.fine("Creating web target client for subscription '" + uri + "'");
+            ResteasyWebTarget target = webTargetBuilder.build();
+
+            Invocation invocation;
+
+            if (httpSubscription.body == null) {
+                invocation = target.request().build(httpSubscription.method.toString());
+            } else {
+                invocation = target.request().build(httpSubscription.method.toString(), Entity.entity(httpSubscription.body, httpSubscription.contentType));
+            }
+            Response response = invocation.invoke();
+            response.close();
+            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                LOG.warning("WebsocketHttpSubscription returned an un-successful response code: " + response.getStatus());
+            }
+        } else {
+            client.ioClient.sendMessage(Values.convert(subscription.body, String.class));
+        }
     }
 }

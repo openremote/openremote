@@ -13,11 +13,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:groundwater"
-                    }
+                    "GroundwaterSensorAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -45,11 +41,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:environment"
-                    }
+                    "EnvironmentSensorAsset"
                   ],
                   "attributes": {
                     "items": [
@@ -57,7 +49,7 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "ozone"
+                          "value": "ozoneLevel"
                         },
                         "value": {
                           "predicateType": "number",

@@ -24,41 +24,42 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelResource;
-import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
-    public AssetModelResourceImpl(TimerService timerService, ManagerIdentityService identityService) {
+    protected AssetModelService assetModelService;
+
+    public AssetModelResourceImpl(TimerService timerService, ManagerIdentityService identityService, AssetModelService assetModelService) {
         super(timerService, identityService);
+        this.assetModelService = assetModelService;
     }
 
     @Override
-    public AssetDescriptor[] getAssetDescriptors(RequestParams requestParams) {
-        return AssetModelUtil.getAssetDescriptors();
+    public AssetTypeInfo[] getAssetInfos(RequestParams requestParams, String parentId, String parentType) {
+        return assetModelService.getAssetInfos(parentId, parentType);
     }
 
     @Override
-    public AgentDescriptor[] getAgentDescriptors(RequestParams requestParams) {
-        return AssetModelUtil.getAgentDescriptors();
+    public AssetTypeInfo getAssetInfo(RequestParams requestParams, String parentId, String assetType) {
+        return assetModelService.getAssetInfo(parentId, assetType);
     }
 
     @Override
-    public AttributeDescriptor[] getAttributeDescriptors(RequestParams requestParams) {
-        return AssetModelUtil.getAttributeDescriptors();
+    public AssetDescriptor<?>[] getAssetDescriptors(RequestParams requestParams, String parentId, String parentType) {
+        return assetModelService.getAssetDescriptors(parentId, parentType);
     }
 
     @Override
-    public AttributeValueDescriptor[] getAttributeValueDescriptors(RequestParams requestParams) {
-        return AssetModelUtil.getAttributeValueDescriptors();
+    public ValueDescriptor<?>[] getValueDescriptors(RequestParams requestParams, String parentId) {
+        return assetModelService.getValueDescriptors(parentId);
     }
 
     @Override
-    public MetaItemDescriptor[] getMetaItemDescriptors(RequestParams requestParams) {
-        return AssetModelUtil.getMetaItemDescriptors();
+    public MetaItemDescriptor<?>[] getMetaItemDescriptors(RequestParams requestParams, String parentId) {
+        return assetModelService.getMetaItemDescriptors(parentId);
     }
 }

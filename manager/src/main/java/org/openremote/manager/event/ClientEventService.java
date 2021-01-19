@@ -23,7 +23,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.agent.protocol.ProtocolClientEventService;
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;

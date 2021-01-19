@@ -8,7 +8,7 @@
 	<!-- Provides the KNXnet/IP-side configuration for access to one KNX subnet -->
 	<serviceContainer activate="true" routing="false" networkMonitoring="false" udpPort="3671" listenNetIf="lo0" reuseCtrlEP="false">
 		<knxAddress type="individual">1.1.1</knxAddress>
-		<knxSubnet type="user-supplied" class="org.openremote.test.KNXTestingNetworkLink">1.1.1</knxSubnet>
+		<knxSubnet type="user-supplied" class="org.openremote.test.protocol.KNXTestingNetworkLink">1.1.1</knxSubnet>
 
 		<!-- Additional KNX individual addresses assigned to KNXnet/IP connections (optional) -->
 		<additionalAddresses>

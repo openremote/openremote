@@ -145,8 +145,8 @@ public class Notification {
     }
 
     /**
-     * This applies a sliding time window to a notification i.e. a value of 1h would mean has it been at least 1hr
-     * since the notification was last sent.
+     * This applies a sliding time window to a notification using an ISO8601 duration string i.e. a value of PT1H would
+     * mean has it been at least 1hr since the notification was last sent.
      */
     public Notification setRepeatInterval(String repeatInterval) {
         this.repeatFrequency = null;

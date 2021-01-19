@@ -21,9 +21,12 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
+
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Determines if the value is an array and meets the following:
@@ -41,14 +44,14 @@ public class ArrayPredicate implements ValuePredicate {
 
     public static final String name = "array";
     public boolean negated;
-    public Value value;
+    public Object value;
     public Integer index;
     public Integer lengthEquals;
     public Integer lengthGreaterThan;
     public Integer lengthLessThan;
 
     @JsonCreator
-    public ArrayPredicate(@JsonProperty("value") Value value,
+    public ArrayPredicate(@JsonProperty("value") Object value,
                           @JsonProperty("index") Integer index,
                           @JsonProperty("lengthEquals") Integer lengthEquals,
                           @JsonProperty("lengthGreaterThan") Integer lengthGreaterThan,
@@ -67,7 +70,7 @@ public class ArrayPredicate implements ValuePredicate {
         return this;
     }
 
-    public ArrayPredicate value(Value value) {
+    public ArrayPredicate value(Object value) {
         this.value = value;
         return this;
     }
@@ -93,23 +96,37 @@ public class ArrayPredicate implements ValuePredicate {
     }
 
     @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", name);
-        objectValue.put("negated", Values.create(negated));
-        objectValue.put("value", value);
-        if (index != null) {
-            objectValue.put("index", Values.create(index));
-        }
-        if (lengthEquals != null) {
-            objectValue.put("lengthEquals", Values.create(lengthEquals));
-        }
-        if (lengthGreaterThan != null) {
-            objectValue.put("lengthGreaterThan", Values.create(lengthGreaterThan));
-        }
-        if (lengthLessThan != null) {
-            objectValue.put("lengthLessTHan", Values.create(lengthLessThan));
-        }
-        return objectValue;
+    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
+        return obj -> {
+            if (obj == null || !Values.isArray(obj.getClass())) {
+                return false;
+            }
+
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
+            Object[] arrayValue = Values.getValueCoerced(obj, Object[].class).get();
+            boolean result = true;
+
+            if (value != null) {
+                if (index != null) {
+                    result = arrayValue.length >= index && Objects.equals(arrayValue[index], value);
+                } else {
+                    result = Arrays.stream(arrayValue).anyMatch(av -> Objects.equals(av, value));
+                }
+            }
+
+            if (result && lengthEquals != null) {
+                result = arrayValue.length == lengthEquals;
+            }
+            if (result && lengthGreaterThan != null) {
+                result = arrayValue.length > lengthGreaterThan;
+            }
+            if (result && lengthLessThan != null) {
+                result = arrayValue.length < lengthLessThan;
+            }
+            if (negated) {
+                return !result;
+            }
+            return result;
+        };
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.openremote.model.system;
 
-import org.openremote.model.value.Value;
-
 /**
  * Allows implementors to provide health status data that is relevant to them.
  */
@@ -30,5 +28,5 @@ public interface HealthStatusProvider {
 
     String getHealthStatusVersion();
 
-    Value getHealthStatus();
+    Object getHealthStatus();
 }

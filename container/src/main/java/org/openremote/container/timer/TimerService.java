@@ -19,12 +19,14 @@
  */
 package org.openremote.container.timer;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.Date;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -57,30 +59,57 @@ public class TimerService implements ContainerService {
             public long advanceTime(long amount, TimeUnit unit) {
                 throw new UnsupportedOperationException("Wall clock can not be advanced manually");
             }
+
+            @Override
+            public void stop() {
+                // NOOP
+            }
+
+            @Override
+            public void start() {
+                // NOOP
+            }
         },
         PSEUDO {
-            AtomicLong timer = new AtomicLong(System.currentTimeMillis());
+            protected AtomicLong offset = new AtomicLong();
+            protected Long stopTime;
 
             @Override
             public void init() {
-                timer.set(System.currentTimeMillis());
-                long current = timer.get();
+                long current = getCurrentTimeMillis();
                 LOG.info("Initialized pseudo clock to: " + (current) + "/" + new Date(current));
             }
 
             @Override
             public long getCurrentTimeMillis() {
-                return timer.get();
+                return (stopTime != null ? stopTime : System.currentTimeMillis()) + offset.get();
             }
 
             @Override
             public long advanceTime(long amount, TimeUnit unit) {
-                return timer.addAndGet(unit.toMillis(amount));
+                offset.addAndGet(unit.toMillis(amount));
+                return getCurrentTimeMillis();
+            }
+
+            @Override
+            public void stop() {
+                if (stopTime == null) {
+                    stopTime = System.currentTimeMillis();
+                }
+            }
+
+            @Override
+            public void start() {
+                if (stopTime != null) {
+                    stopTime = null;
+                }
             }
         };
 
         public abstract void init();
         public abstract long getCurrentTimeMillis();
+        public abstract void stop();
+        public abstract void start();
         public abstract long advanceTime(long amount, TimeUnit unit);
     }
 
@@ -101,12 +130,12 @@ public class TimerService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-
+        getClock().start();
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
+        getClock().stop();
     }
 
     public Clock getClock() {

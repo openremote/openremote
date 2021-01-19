@@ -20,7 +20,7 @@
 package org.openremote.manager.security;
 
 import org.hibernate.Session;
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicIdentityProvider;
 import org.openremote.container.security.basic.PasswordStorage;

@@ -19,8 +19,9 @@
  */
 package org.openremote.manager.notification;
 
-import org.openremote.container.ContainerService;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.ContainerService;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
@@ -60,7 +61,7 @@ public interface NotificationHandler extends ContainerService {
      * targets then return null. If the requested target is already compatible then it can just be returned; handlers
      * are free to determine how the requested target should be mapped (e.g. if requested {@link Notification.TargetType}
      * was {@link Notification.TargetType#TENANT} and this handler only supports targets of type
-     * {@link Notification.TargetType#ASSET} where {@link AssetType} equals {@link AssetType#CONSOLE} then the handler
+     * {@link Notification.TargetType#ASSET} where the {@link Asset}s must be {@link ConsoleAsset} then the handler
      * needs to find all console assets that belong to the specified tenant). Handlers can also add extra
      * {@link org.openremote.model.notification.Notification.TargetType#CUSTOM} handlers extracted from the message.
      */

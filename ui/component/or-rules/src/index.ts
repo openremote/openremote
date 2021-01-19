@@ -15,19 +15,17 @@ import "@openremote/or-icon";
 import {
     AssetDescriptor,
     AssetQuery,
+    AssetTypeInfo,
     AttributeDescriptor,
-    AttributeValueDescriptor,
     ClientRole,
     JsonRule,
     LogicGroup,
-    MetaItemDescriptor,
-    MetaItemType,
     NotificationTargetType,
     RuleActionUnion,
     RuleCondition,
     RulesetLang,
     RulesetUnion,
-    ValueType
+    WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-drawer";
@@ -38,7 +36,7 @@ import "./flow-viewer/flow-viewer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
-import {AttributeInputCustomProvider} from "@openremote/or-attribute-input";
+import {ValueInputProviderGenerator} from "@openremote/or-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
 export const enum ConditionType {
@@ -88,10 +86,6 @@ export enum AssetQueryOperator {
     OUTSIDE_RECTANGLE = "outsideRectangle"
 }
 
-export interface AssetTypeAttributeName {
-    assetType: string;
-    attributeName: string;
-}
 export interface AllowedActionTargetTypes {
     default?: ActionTargetType[];
     actions?: {[actionType in ActionType]?: ActionTargetType[]};
@@ -102,7 +96,7 @@ export interface RulesConfig {
         allowedLanguages?: RulesetLang[];
         allowedConditionTypes?: ConditionType[];
         allowedActionTypes?: ActionType[];
-        allowedAssetQueryOperators?: Map<AssetTypeAttributeName | AttributeDescriptor | AttributeValueDescriptor | ValueType, AssetQueryOperator[]>;
+        allowedAssetQueryOperators?: {[name: string]: AssetQueryOperator[]}; // name can be value descriptor name or value descriptor jsonType
         allowedRecurrenceOptions?: RecurrenceOption[];
         allowedActionTargetTypes?: AllowedActionTargetTypes;
         hideActionTypeOptions?: boolean;
@@ -115,7 +109,7 @@ export interface RulesConfig {
         hideWhenAddGroup?: boolean;
         multiSelect?: boolean;
     };
-    inputProvider?: AttributeInputCustomProvider;
+    inputProvider?: ValueInputProviderGenerator;
     descriptors?: {
         all?: RulesDescriptorSection;
         when?: RulesDescriptorSection;
@@ -154,19 +148,7 @@ export interface RulesConfigAsset {
     attributeDescriptors?: {[attributeName: string]: RulesConfigAttribute };
 }
 
-export interface RulesConfigAttribute {
-    icon?: string;
-    valueDescriptor?: RulesConfigAttribute;
-    initialValue?: any;
-    allowedValues?: any[];
-    allowedMin?: any;
-    allowedMax?: any;
-}
-
-export interface RulesConfigAttributeValue {
-    name?: string;
-    icon?: string;
-    valueType?: ValueType;
+export interface RulesConfigAttribute extends AttributeDescriptor {
 }
 
 export interface RulesetNode {
@@ -187,7 +169,7 @@ export interface RuleView {
     config?: RulesConfig;
 }
 
-function getAssetDescriptorFromSection(assetType: string, config: RulesConfig | undefined, useActionConfig: boolean) {
+function getAssetDescriptorFromSection(assetType: string, config: RulesConfig | undefined, useActionConfig: boolean): RulesConfigAsset | undefined {
     if (!config || !config.descriptors) {
         return;
     }
@@ -203,59 +185,43 @@ function getAssetDescriptorFromSection(assetType: string, config: RulesConfig | 
     return allSection && allSection.assets ? allSection.assets[assetType] ? allSection.assets[assetType] : allSection.assets["*"] : undefined;
 }
 
-export function getDescriptorValueType(descriptor?: AttributeDescriptor) {
-    if (!descriptor || !descriptor.valueDescriptor) {
-        return;
-    }
-
-    return descriptor.valueDescriptor.valueType;
-}
-
-export function getAssetTypeFromQuery(query?: AssetQuery) {
-    return query && query.types && query.types.length > 0 && query.types[0] ? query.types[0].value : undefined;
+export function getAssetTypeFromQuery(query?: AssetQuery): string | undefined {
+    return query && query.types && query.types.length > 0 && query.types[0] ? query.types[0] : undefined;
 }
 
 export function getAssetIdsFromQuery(query?: AssetQuery) {
     return query && query.ids ? [...query.ids] : undefined;
 }
 
-export function getAttributeNames(descriptor?: AssetDescriptor) {
-    let attributes: string[] = [];
-
-    if (descriptor && descriptor.attributeDescriptors) {
-        attributes = descriptor.attributeDescriptors.map((ad) => ad.attributeName!);
-    }
-
-    return attributes;
-}
-
 export const getAssetTypes = async () => {
-    const response = await manager.rest.api.AssetResource.queryAssets({
-        select: {
-            excludeAttributes: true,
-            excludeParentInfo: true,
-            excludePath: true,
-            excludeAttributeMeta: true,
-            excludeAttributeTimestamp: true,
-            excludeAttributeType: true,
-            excludeAttributeValue: true
-        },
-        recursive: true
-    });
-
-    if(response && response.data) {
-        return response.data.map(asset => asset.type!);
-    }
+    // RT: Change to just get all asset types for now as if an instance of a particular asset doesn't exist you
+    // won't be able to create a rule for it (e.g. if no ConsoleAsset in a realm then cannot create a console rule)
+    return AssetModelUtil.getAssetTypeInfos().filter((ati) => ati.assetDescriptor!.name !== WellknownAssets.UNKNOWNASSET).map(ati => ati.assetDescriptor!.name!);
+    // const response = await manager.rest.api.AssetResource.queryAssets({
+    //     select: {
+    //         excludeAttributes: true,
+    //         excludeParentInfo: true,
+    //         excludePath: true
+    //     },
+    //     tenant: {
+    //         realm: manager.displayRealm
+    //     },
+    //     recursive: true
+    // });
+    //
+    // if (response && response.data) {
+    //     return response.data.map(asset => asset.type!);
+    // }
 }
 
-
-export function getAssetDescriptors(config: RulesConfig | undefined, useActionConfig: boolean) {
+export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: boolean): Promise<AssetTypeInfo[]> {
     const assetDescriptors: AssetDescriptor[] = AssetModelUtil.getAssetDescriptors();
+
     return getAssetTypes().then(availibleAssetTypes => {
         let allowedAssetTypes: string[] = availibleAssetTypes ? availibleAssetTypes : [];
         let excludedAssetTypes: string[] = [];
         if (!config || !config.descriptors) {
-            return assetDescriptors;
+            return assetDescriptors.map((ad) => AssetModelUtil.getAssetTypeInfo(ad)!);
         }
 
         const section = useActionConfig ? config.descriptors.action : config.descriptors.when;
@@ -276,99 +242,77 @@ export function getAssetDescriptors(config: RulesConfig | undefined, useActionCo
         }
 
         return assetDescriptors.filter((ad) => {
-            if (allowedAssetTypes.length > 0 && allowedAssetTypes.indexOf(ad.type!) < 0) {
+            if (allowedAssetTypes.length > 0 && allowedAssetTypes.indexOf(ad.name!) < 0) {
                 return false;
             }
-            return excludedAssetTypes.indexOf(ad.type!) < 0;
+            return excludedAssetTypes.indexOf(ad.name!) < 0;
 
         }).map((ad) => {
+
+            let typeInfo = AssetModelUtil.getAssetTypeInfo(ad)!;
+
             // Amalgamate matching descriptor from config if defined
-            const configDescriptor = getAssetDescriptorFromSection(ad.type!, config, useActionConfig);
+            const configDescriptor = getAssetDescriptorFromSection(ad.name!, config, useActionConfig);
             if (!configDescriptor) {
-                return ad;
+                return typeInfo;
             }
 
-            const modifiedDescriptor: AssetDescriptor = {
-                name: ad.name,
-                type: ad.type,
-                icon: ad.icon,
-                color: ad.color,
-                attributeDescriptors: ad.attributeDescriptors ? [...ad.attributeDescriptors] : undefined
+            const modifiedTypeInfo: AssetTypeInfo = {
+                assetDescriptor: typeInfo.assetDescriptor ? {...typeInfo.assetDescriptor} : {descriptorType: "asset"},
+                attributeDescriptors: typeInfo.attributeDescriptors ? [...typeInfo.attributeDescriptors] : [],
+                metaItemDescriptors: typeInfo.metaItemDescriptors ? [...typeInfo.metaItemDescriptors] : [],
+                valueDescriptors: typeInfo.valueDescriptors ? [...typeInfo.valueDescriptors] : []
             };
 
             if (configDescriptor.icon) {
-                modifiedDescriptor.icon = configDescriptor.icon;
-            }
-            if (configDescriptor.name) {
-                modifiedDescriptor.name = configDescriptor.name;
+                modifiedTypeInfo.assetDescriptor!.icon = configDescriptor.icon;
             }
             if (configDescriptor.color) {
-                modifiedDescriptor.color = configDescriptor.color;
+                modifiedTypeInfo.assetDescriptor!.colour = configDescriptor.color;
             }
 
             // Remove any excluded attributes
-            if (modifiedDescriptor.attributeDescriptors) {
+            if (modifiedTypeInfo.attributeDescriptors) {
                 const includedAttributes = configDescriptor.includeAttributes !== undefined ? configDescriptor.includeAttributes : undefined;
                 const excludedAttributes = configDescriptor.excludeAttributes !== undefined ? configDescriptor.excludeAttributes : undefined;
 
                 if (includedAttributes || excludedAttributes) {
-                    modifiedDescriptor.attributeDescriptors = modifiedDescriptor.attributeDescriptors.filter((mad) =>
-                        (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc,  mad.attributeName!)))
-                        && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc,  mad.attributeName!))));
+                    modifiedTypeInfo.attributeDescriptors = modifiedTypeInfo.attributeDescriptors.filter((mad) =>
+                        (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc,  mad.name!)))
+                        && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc,  mad.name!))));
                 }
 
                 // Override any attribute descriptors
                 if (configDescriptor.attributeDescriptors) {
-                    modifiedDescriptor.attributeDescriptors.map((attributeDescriptor) => {
-                        let configAttributeDescriptor: RulesConfigAttribute | undefined = configDescriptor.attributeDescriptors![attributeDescriptor.attributeName!];
+                    modifiedTypeInfo.attributeDescriptors.map((attributeDescriptor) => {
+                        let configAttributeDescriptor: RulesConfigAttribute | undefined = configDescriptor.attributeDescriptors![attributeDescriptor.name!];
                         if (!configAttributeDescriptor) {
-                            configAttributeDescriptor = section && section.attributeDescriptors ? section.attributeDescriptors[attributeDescriptor.attributeName!] : undefined;
+                            configAttributeDescriptor = section && section.attributeDescriptors ? section.attributeDescriptors[attributeDescriptor.name!] : undefined;
                         }
                         if (!configAttributeDescriptor) {
-                            configAttributeDescriptor = config.descriptors!.all && config.descriptors!.all.attributeDescriptors ? config.descriptors!.all.attributeDescriptors[attributeDescriptor.attributeName!] : undefined;
+                            configAttributeDescriptor = config.descriptors!.all && config.descriptors!.all.attributeDescriptors ? config.descriptors!.all.attributeDescriptors[attributeDescriptor.name!] : undefined;
                         }
                         if (configAttributeDescriptor) {
-                            let metaItemDescriptors = attributeDescriptor.metaItemDescriptors;
-                            if (!metaItemDescriptors) {
-                                attributeDescriptor.metaItemDescriptors = [];
-                                metaItemDescriptors = attributeDescriptor.metaItemDescriptors;
+                            if (configAttributeDescriptor.type) {
+                                attributeDescriptor.type = configAttributeDescriptor.type;
                             }
-
-                            if (configAttributeDescriptor.allowedValues) {
-                                addOrReplaceMetaItemDescriptor(metaItemDescriptors, AssetModelUtil.getMetaItemDescriptorInitialValue(MetaItemType.ALLOWED_VALUES, configAttributeDescriptor.allowedValues));
+                            if (configAttributeDescriptor.format) {
+                                attributeDescriptor.format = configAttributeDescriptor.format;
                             }
-                            if (configAttributeDescriptor.allowedMin) {
-                                addOrReplaceMetaItemDescriptor(metaItemDescriptors, AssetModelUtil.getMetaItemDescriptorInitialValue(MetaItemType.RANGE_MIN, configAttributeDescriptor.allowedMin));
+                            if (configAttributeDescriptor.units) {
+                                attributeDescriptor.units = configAttributeDescriptor.units;
                             }
-                            if (configAttributeDescriptor.allowedMax) {
-                                addOrReplaceMetaItemDescriptor(metaItemDescriptors, AssetModelUtil.getMetaItemDescriptorInitialValue(MetaItemType.RANGE_MAX, configAttributeDescriptor.allowedMax));
+                            if (configAttributeDescriptor.constraints) {
+                                attributeDescriptor.constraints = attributeDescriptor.constraints ? [...configAttributeDescriptor.constraints,...attributeDescriptor.constraints] : configAttributeDescriptor.constraints;
                             }
-
-                            return {
-                                attributeName: attributeDescriptor.attributeName,
-                                valueDescriptor: configAttributeDescriptor.valueDescriptor ? configAttributeDescriptor.valueDescriptor : attributeDescriptor.valueDescriptor,
-                                initialValue: configAttributeDescriptor.initialValue ? configAttributeDescriptor.initialValue : attributeDescriptor.initialValue,
-                                metaItemDescriptors: attributeDescriptor.metaItemDescriptors
-                            };
                         }
-
-                        return attributeDescriptor;
                     });
                 }
             }
-            return modifiedDescriptor;
+            return modifiedTypeInfo;
         });
 
     });
-}
-
-function addOrReplaceMetaItemDescriptor(metaItemDescriptors: MetaItemDescriptor[], metaItemDescriptor: MetaItemDescriptor) {
-    const index = metaItemDescriptors.findIndex((mid) => mid.urn === metaItemDescriptor.urn);
-    if (index >= 0) {
-        metaItemDescriptors.splice(index, 1);
-
-    }
-    metaItemDescriptors.push(metaItemDescriptor);
 }
 
 export class OrRulesRuleChangedEvent extends CustomEvent<boolean> {

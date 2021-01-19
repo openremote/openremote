@@ -20,7 +20,7 @@
 package org.openremote.container.web;
 
 import org.keycloak.KeycloakPrincipal;
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
@@ -75,7 +75,6 @@ public class WebResource implements AuthContext {
         return securityContext.getUserPrincipal() != null;
     }
 
-    @SuppressWarnings("unchecked")
     public AuthContext getAuthContext() {
         // The securityContext is a thread-local proxy, careful when/how you call it
         Principal principal = securityContext.getUserPrincipal();
@@ -84,7 +83,7 @@ public class WebResource implements AuthContext {
         }
 
         if (principal instanceof KeycloakPrincipal) {
-            KeycloakPrincipal keycloakPrincipal = (KeycloakPrincipal) principal;
+            KeycloakPrincipal<?> keycloakPrincipal = (KeycloakPrincipal<?>) principal;
             return new AccessTokenAuthContext(
                 keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
                 keycloakPrincipal.getKeycloakSecurityContext().getToken()

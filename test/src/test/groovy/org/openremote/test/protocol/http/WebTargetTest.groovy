@@ -23,15 +23,14 @@ import org.apache.http.client.utils.URIBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
-import org.openremote.container.Container
-import org.openremote.container.web.HeaderInjectorFilter
-import org.openremote.container.web.OAuthClientCredentialsGrant
-import org.openremote.container.web.OAuthGrant
-import org.openremote.container.web.OAuthPasswordGrant
-import org.openremote.container.web.OAuthRefreshTokenGrant
+import org.openremote.model.auth.OAuthClientCredentialsGrant
+import org.openremote.model.auth.OAuthGrant
+import org.openremote.model.auth.OAuthPasswordGrant
+import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.container.web.QueryParameterInjectorFilter
 import org.openremote.container.web.WebTargetBuilder
+import org.openremote.model.value.Values
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -113,7 +112,7 @@ class WebTargetTest extends Specification {
                         && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID ) == "client1"
                         && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET ) == "secret1"
                         && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE ) == "scope1 scope2"
-                        && grant.getFirst(OAuthRefreshTokenGrant.VALUE_KEY_REFRESH_TOKEN ) == refreshToken) {
+                        && grant.getFirst(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE) == refreshToken) {
                         refreshTokenCount++
                         accessToken = "accesstoken" + accessTokenCount++
                         refreshToken = "refreshtoken" + accessTokenCount
@@ -153,9 +152,9 @@ class WebTargetTest extends Specification {
                     }
                     break
                 case "https://headerserver/get":
-                    if (requestContext.getHeaderString("MyHeader") == null
+                    if (requestContext.getHeaderString("MyHeader") == "MyHeaderValue"
                         && requestContext.getHeaderString("MyHeaderNew") == "MyHeaderNewValue"
-                        && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue1,MyMultiHeaderValue2,MyMultiHeaderValue3") {
+                        && requestContext.getHeaderString("MyMultiHeader") == "MyMultiHeaderValue3,MyMultiHeaderValue1,MyMultiHeaderValue2") {
                         requestContext.abortWith(Response.ok().build())
                         return
                     }
@@ -183,13 +182,13 @@ class WebTargetTest extends Specification {
                     UriInfo uriInfo = new ResteasyUriInfo(requestUri)
                     def queryParams = uriInfo.getQueryParameters(true)
                     if (queryParams.get("param1").size() == 2
-                        && queryParams.get("param1").get(0) == "param1Value1"
-                        && queryParams.get("param1").get(1) == "param1Value2"
+                        && queryParams.get("param1").contains("param1Value2")
+                        && queryParams.get("param1").contains("param1Value1")
                         && queryParams.get("param2").size() == 2
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        && queryParams.get("param2").get(1) == "param2Value2"
+                        && queryParams.get("param2").contains("param2Value1")
+                        && queryParams.get("param2").contains("param2Value2")
                         && queryParams.get("param3").size() == 1
-                        && queryParams.get("param3").get(0) == "param3Value1") {
+                        && queryParams.get("param3").contains("param3Value1")) {
 
                         requestContext.abortWith(Response.ok().build())
                         return
@@ -201,8 +200,8 @@ class WebTargetTest extends Specification {
                     if (queryParams.get("param1").size() == 1
                         && queryParams.getFirst("param1") == "dynamicValue1"
                         && queryParams.get("param2").size() == 2
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        &&queryParams.get("param2").get(1) == "param2Value2") {
+                        && queryParams.get("param2").contains("param2Value1")
+                        &&queryParams.get("param2").contains("param2Value2")) {
 
                         requestContext.abortWith(Response.ok().build())
                         return
@@ -241,10 +240,10 @@ class WebTargetTest extends Specification {
             "password")
 
         when: "it is serialised"
-        String grantStr = Container.JSON.writeValueAsString(grant)
+        String grantStr = Values.asJSON(grant).orElse(null)
 
         and: "deserialised again"
-        OAuthGrant grant2 = Container.JSON.readValue(grantStr, OAuthGrant.class)
+        OAuthGrant grant2 = Values.JSON.readValue(grantStr, OAuthGrant.class)
 
         then: "the two grant objects should be the same"
         assert grant2.tokenEndpointUri == grant.tokenEndpointUri
@@ -428,12 +427,11 @@ class WebTargetTest extends Specification {
 
         when: "a request is made to the server with additional headers"
         headers = new MultivaluedHashMap<String, String>(3)
-        headers.add("MyHeader", null)
         headers.add("MyHeaderNew", "MyHeaderNewValue")
         headers.add("MyMultiHeader", "MyMultiHeaderValue3")
         response = target.path("get")
-            .register(new HeaderInjectorFilter(headers))
             .request()
+            .headers(headers)
             .get()
 
         then: "the response should be a 200 OK indicating the custom headers reached the server"
@@ -474,11 +472,13 @@ class WebTargetTest extends Specification {
         assert response.getStatus() == 200
 
         when: "a request is made to the server with additional query parameters"
-        params = new MultivaluedHashMap<String, String>(3)
+        params = target.getConfiguration().getProperty(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY) as MultivaluedMap<String, String>
+        params = new MultivaluedHashMap<String, String>(params)
         params.add("param1", "param1Value2")
         params.add("param3", "param3Value1")
+
         response = target.path("get")
-            .register(new QueryParameterInjectorFilter(params, null, null))
+            .property(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY, params)
             .request()
             .get()
 
@@ -495,12 +495,12 @@ class WebTargetTest extends Specification {
 
         and: "a web target for a server"
         def target = new WebTargetBuilder(client, new URIBuilder("https://dynamicparamserver").build())
+            .setInjectQueryParameters(params)
             .build()
-            .register(new QueryParameterInjectorFilter(params, /"{0,1}\{\$(value)\}"{0,1}/, null))
 
         when: "a request is made to the server"
         def response = target.request()
-            .property(QueryParameterInjectorFilter.DYNAMIC_VALUE, "dynamicValue1")
+            .property(QueryParameterInjectorFilter.DYNAMIC_VALUE_PROPERTY, "dynamicValue1")
             .get()
 
         then: "the response should be a 200 OK indicating the query parameters reached the server"

@@ -20,28 +20,21 @@
 package org.openremote.manager.security;
 
 import org.apache.http.HttpStatus;
-import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.i18n.I18NService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.security.Tenant;
-import org.openremote.model.http.ConstraintViolation;
-import org.openremote.model.http.ConstraintViolationReport;
+import org.openremote.model.Container;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.security.Tenant;
 import org.openremote.model.security.TenantResource;
 
 import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.http.BadRequestError.VIOLATION_EXCEPTION_HEADER;
 
 public class TenantResourceImpl extends ManagerWebResource implements TenantResource {
 
@@ -84,15 +77,9 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        ConstraintViolationReport violationReport;
-        if ((violationReport = isIllegalMasterRealmMutation(realm, tenant)) != null) {
-            throw new WebApplicationException(
-                Response.status(BAD_REQUEST)
-                    .header(VIOLATION_EXCEPTION_HEADER, "true")
-                    .entity(violationReport)
-                    .build()
-            );
-        }
+
+        throwIfIllegalMasterRealmMutation(realm, tenant);
+
         try {
             identityService.getIdentityProvider().updateTenant(
                 tenant
@@ -127,16 +114,10 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+
         // TODO Delete all assets in that realm?
-        ConstraintViolationReport violationReport;
-        if ((violationReport = isIllegalMasterRealmDeletion(realm)) != null) {
-            throw new WebApplicationException(
-                Response.status(BAD_REQUEST)
-                    .header(VIOLATION_EXCEPTION_HEADER, "true")
-                    .entity(violationReport)
-                    .build()
-            );
-        }
+        throwIfIllegalMasterRealmDeletion(realm);
+
         try {
             identityService.getIdentityProvider().deleteTenant(
                 realm
@@ -148,48 +129,23 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         }
     }
 
-    protected ConstraintViolationReport isIllegalMasterRealmDeletion(String realm) {
+    protected void throwIfIllegalMasterRealmDeletion(String realm) throws WebApplicationException {
         if (!realm.equals(MASTER_REALM))
-            return null;
+            return;
 
-        ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
-        List<ConstraintViolation> violations = new ArrayList<>();
-        ConstraintViolation violation = new ConstraintViolation();
-        violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
-        violation.setMessage(validationMessages.getString("Tenant.masterDeleted"));
-        violations.add(violation);
-        ConstraintViolationReport report = new ConstraintViolationReport();
-        report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
-        return report;
+        throw new NotAllowedException("The master realm cannot be deleted");
     }
 
-    protected ConstraintViolationReport isIllegalMasterRealmMutation(String realm, Tenant tenant) {
+    protected void throwIfIllegalMasterRealmMutation(String realm, Tenant tenant) throws WebApplicationException {
         if (!realm.equals(MASTER_REALM))
-            return null;
+            return;
 
-        ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
-
-        List<ConstraintViolation> violations = new ArrayList<>();
         if (tenant.getEnabled() == null || !tenant.getEnabled()) {
-            ConstraintViolation violation = new ConstraintViolation();
-            violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
-            violation.setPath("Tenant.enabled");
-            violation.setMessage(validationMessages.getString("Tenant.masterDisabled"));
-            violations.add(violation);
+            throw new NotAllowedException("The master realm cannot be disabled");
         }
-        if (tenant.getRealm() == null || !tenant.getRealm().equals(MASTER_REALM)) {
-            ConstraintViolation violation = new ConstraintViolation();
-            violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
-            violation.setPath("Tenant.realm");
-            violation.setMessage(validationMessages.getString("Tenant.masterRealmChanged"));
-            violations.add(violation);
-        }
-        if (violations.size() > 0) {
-            ConstraintViolationReport report = new ConstraintViolationReport();
-            report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
-            return report;
-        }
-        return null;
-    }
 
+        if (tenant.getRealm() == null || !tenant.getRealm().equals(MASTER_REALM)) {
+            throw new NotAllowedException("The master realm identifier cannot be changed");
+        }
+    }
 }

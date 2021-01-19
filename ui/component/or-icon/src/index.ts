@@ -1,11 +1,14 @@
 import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import {AssetDescriptor, AssetType} from "@openremote/model";
+import {AssetDescriptor, WellknownAssets} from "@openremote/model";
 import {IconSetAddedEvent, ORIconSets, AssetModelUtil} from "@openremote/core";
 
 export function getAssetDescriptorIconTemplate(descriptor: AssetDescriptor | undefined, fallbackColor?: string | undefined, fallbackIcon?: string | undefined, overrideColor?: string | undefined, overrideIcon?: string | undefined): TemplateResult {
-    const color = overrideColor ? overrideColor : AssetModelUtil.getAssetDescriptorColor(descriptor, fallbackColor);
-    const icon = overrideIcon ? overrideIcon : AssetModelUtil.getAssetDescriptorIcon(descriptor, fallbackIcon);
-    return html`<or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon ? icon : AssetType.THING.icon}"></or-icon>`;
+    const color = overrideColor ? overrideColor : AssetModelUtil.getAssetDescriptorColour(descriptor, fallbackColor);
+    let icon = overrideIcon ? overrideIcon : AssetModelUtil.getAssetDescriptorIcon(descriptor, fallbackIcon);
+    if (!icon) {
+        icon = AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.UNKNOWNASSET);
+    }
+    return html`<or-icon style="--or-icon-fill: ${color ? "#" + color : "unset"}" icon="${icon}"></or-icon>`;
 }
 
 const _iconSets = new ORIconSets();

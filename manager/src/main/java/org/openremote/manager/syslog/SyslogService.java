@@ -19,10 +19,9 @@
  */
 package org.openremote.manager.syslog;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
@@ -32,19 +31,18 @@ import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
 import org.openremote.model.util.Pair;
 
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogConfig.DEFAULT_LIMIT;
 
 /**
  * Act as a JUL handler, publishes (some) log messages on the client event bus, stores
@@ -54,7 +52,7 @@ public class SyslogService extends Handler implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(SyslogService.class.getName());
 
-    protected ManagerExecutorService executorService;
+    protected ScheduledExecutorService executorService;
     protected PersistenceService persistenceService;
     protected ClientEventService clientEventService;
 
@@ -71,7 +69,7 @@ public class SyslogService extends Handler implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        executorService = container.getService(ManagerExecutorService.class);
+        executorService = container.getExecutorService();
 
         if (container.hasService(ClientEventService.class) && container.hasService(PersistenceService.class)) {
             LOG.info("Syslog service enabled");
@@ -104,7 +102,7 @@ public class SyslogService extends Handler implements ContainerService {
     public void start(Container container) throws Exception {
         if (persistenceService != null) {
             // Flush batch every 3 seconds (wait 10 seconds for database (schema) to be ready in dev mode)
-            flushBatchFuture = executorService.scheduleAtFixedRate(this::flushBatch, 10 * 1000, 3 * 1000);
+            flushBatchFuture = executorService.scheduleAtFixedRate(this::flushBatch, 10, 3, TimeUnit.SECONDS);
 
             // Clear outdated events every minute
             deleteOldFuture = executorService.scheduleAtFixedRate(() -> {
@@ -121,7 +119,7 @@ public class SyslogService extends Handler implements ContainerService {
                             "where e.timestamp < now() - make_interval(0, 0, 0, 0, 0, :minutes, 0)"
                     ).setParameter("minutes", maxAgeMinutes).executeUpdate();
                 });
-            }, 60 * 1000, 60 * 1000);
+            }, 60, 60, TimeUnit.SECONDS);
         }
     }
 

@@ -19,9 +19,6 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
-
 import java.util.Optional;
 
 public enum AttributeExecuteStatus {
@@ -77,10 +74,6 @@ public enum AttributeExecuteStatus {
 
     AttributeExecuteStatus(boolean write) {
         this.write = write;
-    }
-
-    public Value asValue() {
-        return Values.create(this.toString());
     }
 
     public boolean isWrite() {

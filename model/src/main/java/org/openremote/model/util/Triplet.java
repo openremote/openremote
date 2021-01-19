@@ -49,10 +49,10 @@ public class Triplet<A, B, C> implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o instanceof Triplet) {
-            Triplet pair = (Triplet) o;
-            return (value1 != null ? value1.equals(pair.value1) : pair.value1 == null)
-                    && (value2 != null ? value2.equals(pair.value2) : pair.value2 == null)
-                    && (value3 != null ? value3.equals(pair.value3) : pair.value3 == null);
+            Triplet<?,?,?> other = (Triplet<?,?,?>) o;
+            return (Objects.equals(value1, other.value1))
+                    && (Objects.equals(value2, other.value2))
+                    && (Objects.equals(value3, other.value3));
         }
         return false;
     }

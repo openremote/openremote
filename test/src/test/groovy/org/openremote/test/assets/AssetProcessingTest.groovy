@@ -1,153 +1,87 @@
 package org.openremote.test.assets
 
-import org.openremote.agent.protocol.AbstractProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.*
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
-import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetType
-import org.openremote.model.asset.agent.ProtocolConfiguration
+import org.openremote.model.asset.agent.AgentLink
+import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
-import org.openremote.model.value.Value
-import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.protocol.MockAgent
+import org.openremote.test.protocol.MockProtocol
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.persistence.EntityManager
-import java.util.logging.Logger
+
+import static org.openremote.model.value.ValueType.*
+import static org.openremote.model.value.MetaItemType.*
 
 class AssetProcessingTest extends Specification implements ManagerContainerTrait {
-
-    Logger LOG = Logger.getLogger(AssetProcessingTest.class.getName())
 
     def "Check processing of asset updates through the processing chain"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-
-        and: "a mock protocol"
-        def mockProtocolName = "urn:myCustom:mockProtocol"
-        def protocolDeployed = false
-        List<AttributeEvent> sendToActuatorEvents = []
-        def mockProtocol = new AbstractProtocol() {
-            protected void responseReceived() {
-                // Assume we've pushed the update to the actual device and it responded with OK
-                // so now we want to cause a sensor update that will go through the processing
-                // chain.
-                updateLinkedAttribute(sendToActuatorEvents.last().getAttributeState())
-            }
-
-            @Override
-            protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-                return null
-            }
-
-            @Override
-            protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-                return null
-            }
-
-            @Override
-            protected void doLinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-                LOG.info("Mock Protocol: linkProtocol")
-            }
-
-            @Override
-            protected void doUnlinkProtocolConfiguration(Asset agent, AssetAttribute protocolConfiguration) {
-                LOG.info("Mock Protocol: unlinkProtocol")
-            }
-
-            @Override
-            protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-                protocolDeployed = true
-                LOG.info("Mock Protocol: linkAttribute")
-            }
-
-            @Override
-            protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-                LOG.info("Mock Protocol: unlinkAttribute")
-            }
-
-            @Override
-            protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
-                LOG.info("Mock Protocol: processLinkedAttributeWrite")
-                sendToActuatorEvents.add(event)
-            }
-
-            @Override
-            String getVersion() {
-                return "1.0"
-            }
-
-            @Override
-            String getProtocolName() {
-                return mockProtocolName
-            }
-
-            @Override
-            String getProtocolDisplayName() {
-                return "Mock"
-            }
-        }
+        def startRecording = [false]
 
         and: "mock attribute state consumers"
-        List<Attribute> updatesPassedStartOfProcessingChain = []
-        List<Attribute> updatesPassedAgentService = []
-        List<Attribute> updatesPassedRulesService = []
-        List<Attribute> updatesPassedDatapointService = []
-        List<Attribute> updatesPassedAttributeLinkingService = []
+        List<AttributeEvent> updatesPassedStartOfProcessingChain = []
+        List<AttributeEvent> updatesPassedAgentService = []
+        List<AttributeEvent> updatesPassedRulesService = []
+        List<AttributeEvent> updatesPassedDatapointService = []
+        List<AttributeEvent> updatesPassedAttributeLinkingService = []
 
         AssetUpdateProcessor firstProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
-                updatesPassedStartOfProcessingChain.add(attribute)
+            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedStartOfProcessingChain.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AssetUpdateProcessor afterAgentServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
-                updatesPassedAgentService.add(attribute)
+            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedAgentService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AssetUpdateProcessor afterRulesServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
-                updatesPassedRulesService.add(attribute)
+            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedRulesService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AssetUpdateProcessor afterDatapointServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
-                updatesPassedDatapointService.add(attribute)
+            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedDatapointService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
         AssetUpdateProcessor afterAttributeLinkingServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
-                updatesPassedAttributeLinkingService.add(attribute)
+            boolean processAssetUpdate(EntityManager em, Asset asset, Attribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+                if (startRecording[0]) updatesPassedAttributeLinkingService.add(new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().get()))
                 false
             }
         }
 
-        when: "the container is started with the mock protocol and consumers"
-        def container = startContainer(defaultConfig(), defaultServices(mockProtocol))
+        when: "the container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def agentService = container.getService(AgentService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         then: "the container should be running and initialised"
@@ -160,76 +94,75 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AgentService}+1, afterAgentServiceProcessor)
         assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof RulesService}+1, afterRulesServiceProcessor)
         assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AssetDatapointService}+1, afterDatapointServiceProcessor)
-        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AssetAttributeLinkingService}+1, afterAttributeLinkingServiceProcessor)
+        assetProcessingService.processors.add(assetProcessingService.processors.findIndexOf {it instanceof AttributeLinkingService}+1, afterAttributeLinkingServiceProcessor)
 
         when: "a mock agent that uses the mock protocol is created"
-        def mockAgent = new Asset()
-        mockAgent.setName("Mock Agent")
-        mockAgent.setType(AssetType.AGENT)
-        mockAgent.setAttributes(
-                ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mock123"), mockProtocolName)
-        )
-        mockAgent.setRealm(keycloakTestSetup.masterTenant.realm)
+        def mockAgent = new MockAgent("Mock agent")
+            .setRealm(keycloakTestSetup.masterTenant.realm)
+            .setRequired(true)
         mockAgent = assetStorageService.merge(mockAgent)
 
-        and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
-        def mockThing = new Asset("Mock Thing Asset", AssetType.THING, mockAgent)
-        mockThing.setAttributes(
-                new AssetAttribute("light1Toggle", AttributeValueType.BOOLEAN, Values.create(true))
-                        .setMeta(
-                        new MetaItem(
-                                MetaItemType.DESCRIPTION,
-                                Values.create("The switch for the light 1 in the living room")
-                        ),
-                        new MetaItem(
-                                MetaItemType.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mock123").toArrayValue()
+        and: "a mock thing asset is created with a valid agent linked attribute, an invalid protocol attribute and a plain attribute"
+        def mockThing = new ThingAsset("Mock Thing Asset")
+            .setParent(mockAgent)
+        mockThing.addOrReplaceAttributes(
+                new Attribute<>("light1Toggle", BOOLEAN, true)
+                    .addOrReplaceMeta(
+                        new MetaItem<>(
+                            AGENT_LINK,
+                            new MockAgent.MockAgentLink(mockAgent.id)
+                                .setRequiredValue("true")
                         )
-                ),
-                new AssetAttribute("light2Toggle", AttributeValueType.BOOLEAN, Values.create(true))
-                        .setMeta(
-                        new MetaItem(
-                                MetaItemType.DESCRIPTION,
-                                Values.create("The switch for the light 2 in the living room")
-                        ),
-                        new MetaItem(
-                                MetaItemType.AGENT_LINK,
-                                new AttributeRef("INVALID AGENT ID", managerTestSetup.agentProtocolConfigName).toArrayValue()
+                    ),
+                new Attribute<>("light2Toggle", BOOLEAN, true)
+                    .addOrReplaceMeta(
+                        new MetaItem<>(
+                            AGENT_LINK,
+                            new AgentLink.Default("INVALID AGENT ID")
                         )
-                ),
-                new AssetAttribute("plainAttribute", AttributeValueType.STRING, Values.create("demo"))
-                        .setMeta(
-                        new MetaItem(
-                                MetaItemType.DESCRIPTION,
-                                Values.create("A plain string attribute for storing information")
-                        )
-                )
+                    ),
+                new Attribute<>("plainAttribute", TEXT, "demo")
         )
         mockThing = assetStorageService.merge(mockThing)
 
-        then: "the mock thing to be deployed to the protocol"
+        then: "all agents should become connected"
         conditions.eventually {
-            assert protocolDeployed
+            assert agentService.agentMap.values().every {it.getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED}
         }
-        when: "an attribute event occurs for a valid protocol linked attribute on the test asset"
+
+        then: "the mock thing to be deployed to the protocol instance"
+        conditions.eventually {
+            assert agentService.getProtocolInstance(mockAgent.id).linkedAttributes.size() == 1
+        }
+
+        then: "the system should settle down"
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 300)
+        }
+
+        when: "the mock protocol instance is configured to not update the sensor on write"
+        startRecording[0] = true
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).updateSensor = false
+
+        and: "an attribute event occurs for a valid protocol linked attribute on the test asset"
         def light1toggleOn = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), Values.create(false))
+                new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), false)
         )
         assetProcessingService.sendAttributeEvent(light1toggleOn)
 
         then: "the attribute event should reach the protocol and stop at the agent service, not be in the database"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
-            assert updatesPassedStartOfProcessingChain[0].nameOrThrow == "light1Toggle"
-            assert !updatesPassedStartOfProcessingChain[0].valueAsBoolean.get()
-            assert sendToActuatorEvents.size() == 1
+            assert updatesPassedStartOfProcessingChain[0].attributeName == "light1Toggle"
+            assert !updatesPassedStartOfProcessingChain[0].value.get()
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).protocolMethodCalls.last() == "WRITE_ATTRIBUTE:" + mockThing.id + ":light1Toggle"
             assert updatesPassedAgentService.size() == 0
             assert updatesPassedRulesService.size() == 0
             assert updatesPassedDatapointService.size() == 0
             assert updatesPassedAttributeLinkingService.size() == 0
-            // Light toggle should still be on in database
+            // Light toggle attribute value should still be true in database
             def asset = assetStorageService.find(mockThing.getId(), true)
-            assert asset.getAttribute("light1Toggle").get().getValueAsBoolean().get()
+            assert asset.getAttribute("light1Toggle").flatMap{it.value}.orElse(false)
         }
 
         when: "the protocol updates the attributes value with the value it just received"
@@ -238,20 +171,20 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesPassedAgentService.clear()
         updatesPassedDatapointService.clear()
         updatesPassedAttributeLinkingService.clear()
-        mockProtocol.responseReceived()
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).updateReceived(new AttributeState(light1toggleOn.attributeRef, light1toggleOn.value.orElse(null)))
 
         then: "a new attribute event should occur and reach the end of the processing chain, be stored in database"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
-            assert updatesPassedStartOfProcessingChain[0].nameOrThrow == "light1Toggle"
-            assert !updatesPassedStartOfProcessingChain[0].valueAsBoolean.get()
+            assert updatesPassedStartOfProcessingChain[0].attributeName == "light1Toggle"
+            assert !updatesPassedStartOfProcessingChain[0].value.get()
             assert updatesPassedAgentService.size() == 1
             assert updatesPassedRulesService.size() == 1
             assert updatesPassedDatapointService.size() == 1
             assert updatesPassedAttributeLinkingService.size() == 1
             // Light toggle should be off in database
             def asset = assetStorageService.find(mockThing.getId(), true)
-            assert !asset.getAttribute("light1Toggle").get().getValueAsBoolean().get()
+            assert !asset.getAttribute("light1Toggle").flatMap{it.value}.orElse(false)
         }
 
         when: "an attribute event occurs for the invalid protocol attribute"
@@ -260,17 +193,17 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesPassedAgentService.clear()
         updatesPassedDatapointService.clear()
         updatesPassedAttributeLinkingService.clear()
-        sendToActuatorEvents.clear()
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).protocolWriteAttributeEvents.clear()
         def light2toggleOn = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), Values.create(true))
+                new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), true)
         )
         assetProcessingService.sendAttributeEvent(light2toggleOn)
 
         then: "the attribute event should pass the start of the processing chain, but not reach the mock protocol or the end of the processing chain and error should be populated"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
-            assert updatesPassedStartOfProcessingChain[0].nameOrThrow == "light2Toggle"
-            assert sendToActuatorEvents.size() == 0
+            assert updatesPassedStartOfProcessingChain[0].attributeName == "light2Toggle"
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).protocolWriteAttributeEvents.size() == 0
             assert updatesPassedAgentService.size() == 0
             assert updatesPassedRulesService.size() == 0
             assert updatesPassedDatapointService.size() == 0
@@ -283,9 +216,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesPassedAgentService.clear()
         updatesPassedDatapointService.clear()
         updatesPassedAttributeLinkingService.clear()
-        sendToActuatorEvents.clear()
+        ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).protocolWriteAttributeEvents.clear()
         def plainAttributeTest = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), Values.create("test"))
+                new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), "test")
         )
         assetProcessingService.sendAttributeEvent(plainAttributeTest)
 
@@ -296,9 +229,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedRulesService.size() == 1
             assert updatesPassedDatapointService.size() == 1
             assert updatesPassedAttributeLinkingService.size() == 1
-            assert updatesPassedAttributeLinkingService[0].nameOrThrow == "plainAttribute"
-            assert updatesPassedAttributeLinkingService[0].valueAsString.orElse(null) == "test"
-            assert sendToActuatorEvents.size() == 0
+            assert updatesPassedAttributeLinkingService[0].attributeName == "plainAttribute"
+            assert updatesPassedAttributeLinkingService[0].value.orElse(null) == "test"
+            assert ((MockProtocol)agentService.getProtocolInstance(mockAgent.id)).protocolWriteAttributeEvents.size() == 0
         }
 
     }

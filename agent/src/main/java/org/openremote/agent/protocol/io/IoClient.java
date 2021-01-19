@@ -20,8 +20,6 @@
 package org.openremote.agent.protocol.io;
 
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelOutboundHandler;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
 import java.util.function.Consumer;

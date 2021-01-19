@@ -19,17 +19,13 @@
  */
 package org.openremote.agent.protocol.timer;
 
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.Values;
-
-import java.util.Locale;
-
+// TODO: Add support for other links (e.g. DAY_OF_WEEK)
 public enum TimerValue {
 
     /**
      * Links an attribute to the enabled status of a timer for read/write
      */
-    ENABLED,
+    ACTIVE,
 
     /**
      * Links the entire cron expression to an attribute for read/write
@@ -44,15 +40,5 @@ public enum TimerValue {
      *
      * 24h time format
      */
-    TIME;
-
-    // TODO: Add support for other links (e.g. DAY_OF_WEEK)
-
-    public static TimerValue fromString(String value) {
-        return value == null ? null : valueOf(value.toUpperCase(Locale.ROOT));
-    }
-
-    public MetaItem asMetaItem() {
-        return new MetaItem(TimerProtocol.META_TIMER_VALUE_LINK, Values.create(this.toString()));
-    }
+    TIME
 }

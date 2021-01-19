@@ -7,7 +7,8 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.query.AssetQuery
@@ -17,10 +18,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import static org.openremote.model.Constants.MASTER_REALM
-import static org.openremote.model.asset.AssetType.THING
-import static org.openremote.model.attribute.AttributeValueType.NUMBER
-import static org.openremote.model.attribute.MetaItemType.ACCESS_PUBLIC_READ
-import static org.openremote.model.attribute.MetaItemType.LABEL
+import static org.openremote.model.value.ValueType.*
+import static org.openremote.model.value.MetaItemType.*
 
 class AssetPublicQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -49,16 +48,17 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         returnedAssets = new ArrayList<>()
 
         for (int i = 0; i < 10; i++) {
-            Asset somePublicAsset = new Asset("Some Public Asset", THING)
-            somePublicAsset.setParentId(managerTestSetup.smartOfficeId)
-            somePublicAsset.setAccessPublicRead(true)
-            somePublicAsset.setAttributes(
-                    new AssetAttribute("somePrivateAttribute", NUMBER, Values.create(123)).addMeta(
-                            new MetaItem(LABEL, Values.create("Some Private Attribute"))
+            Asset somePublicAsset = new ThingAsset("Some Public Asset")
+                .setParentId(managerTestSetup.smartOfficeId)
+                .setRealm(MASTER_REALM)
+                .setAccessPublicRead(true)
+            somePublicAsset.addOrReplaceAttributes(
+                    new Attribute<>("somePrivateAttribute", NUMBER, 123D).addMeta(
+                            new MetaItem<>(LABEL, "Some Private Attribute")
                     ),
-                    new AssetAttribute("somePublicAttribute", NUMBER, Values.create(456)).addMeta(
-                            new MetaItem(LABEL, Values.create("Some Public Attribute")),
-                            new MetaItem(ACCESS_PUBLIC_READ, Values.create(true))
+                    new Attribute<>("somePublicAttribute", NUMBER, 456D).addMeta(
+                            new MetaItem<>(LABEL, "Some Public Attribute"),
+                            new MetaItem<>(ACCESS_PUBLIC_READ, true)
                     ),
             )
 
@@ -81,29 +81,29 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         assets.size() == 1
         assets[0].id == returnedAssets.get(0).id
         assets[0].name == "Some Public Asset"
-        assets[0].wellKnownType == THING
+        assets[0].type == ThingAsset.DESCRIPTOR.name
         assets[0].parentId == managerTestSetup.smartOfficeId
         assets[0].realm == keycloakTestSetup.masterTenant.realm
         !assets[0].getAttribute("somePrivateAttribute").isPresent()
-        assets[0].getAttribute("somePublicAttribute").get().getValue().get() == Values.create(456)
-        assets[0].getAttribute("somePublicAttribute").get().getMeta().size() == 1
-        assets[0].getAttribute("somePublicAttribute").get().getMetaItem(LABEL).get().getValueAsString().get() == "Some Public Attribute"
+        assets[0].getAttribute("somePublicAttribute").get().getValue().get() == 456
+        assets[0].getAttribute("somePublicAttribute").get().getMeta().size() >= 1
+        assets[0].getAttribute("somePublicAttribute").get().getMetaItem(LABEL).get().getValue().get() == "Some Public Attribute"
 
         when: "a GET query for a specific public asset is executed"
         def queryJson = "{\"select\":{\"include\":\"ALL\"},\"id\":\"${returnedAssets.get(0).id}\"}"
-        queryJson = container.JSON.writeValueAsString(query)
+        queryJson = Values.JSON.writeValueAsString(query)
         assets = assetResource.getPublicAssets(null, queryJson)
 
         then: "the result should match"
         assets.size() == 1
         assets[0].id == returnedAssets.get(0).id
         assets[0].name == "Some Public Asset"
-        assets[0].wellKnownType == THING
+        assets[0].type == ThingAsset.DESCRIPTOR.name
         assets[0].parentId == managerTestSetup.smartOfficeId
         assets[0].realm == keycloakTestSetup.masterTenant.realm
         !assets[0].getAttribute("somePrivateAttribute").isPresent()
-        assets[0].getAttribute("somePublicAttribute").get().getValue().get() == Values.create(456)
-        assets[0].getAttribute("somePublicAttribute").get().getMeta().size() == 1
-        assets[0].getAttribute("somePublicAttribute").get().getMetaItem(LABEL).get().getValueAsString().get() == "Some Public Attribute"
+        assets[0].getAttribute("somePublicAttribute").get().getValue().get() == 456
+        assets[0].getAttribute("somePublicAttribute").get().getMeta().size() >= 1
+        assets[0].getAttribute("somePublicAttribute").get().getMetaItem(LABEL).get().getValue().get() == "Some Public Attribute"
     }
 }

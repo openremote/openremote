@@ -109,11 +109,11 @@ export class OrAddAssetDialog extends LitElement {
                 descriptors.map((descriptor) => {
                     return {
                         styleMap: {
-                            "--or-icon-fill": descriptor.color ? "#" + descriptor.color : "unset"
+                            "--or-icon-fill": descriptor.colour ? "#" + descriptor.colour : "unset"
                         },
                         icon: descriptor.icon,
                         text: Util.getAssetTypeLabel(descriptor),
-                        value: descriptor.type!,
+                        value: descriptor.name!,
                         data: descriptor
                     }
                 }).sort(Util.sortByString((listItem) => listItem.text));
@@ -162,7 +162,7 @@ export class OrAddAssetDialog extends LitElement {
     protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor) {
 
         return html`
-            <or-icon style="--or-icon-fill: ${descriptor.color ? "#" + descriptor.color : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
+            <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
             <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
         `;
     }

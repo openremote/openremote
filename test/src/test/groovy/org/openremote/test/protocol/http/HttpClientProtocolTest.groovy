@@ -19,32 +19,26 @@
  */
 package org.openremote.test.protocol.http
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
-import org.openremote.agent.protocol.Protocol
-import org.openremote.container.util.Util
-import org.openremote.agent.protocol.http.*
-import org.openremote.container.web.OAuthGrant
-import org.openremote.container.web.OAuthPasswordGrant
-import org.openremote.container.web.OAuthRefreshTokenGrant
+import org.openremote.agent.protocol.http.HttpClientAgent
+import org.openremote.agent.protocol.http.HttpClientProtocol
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-
 import org.openremote.model.Constants
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.attribute.MetaItemType
-import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItem
-import org.openremote.model.value.ObjectValue
+import org.openremote.model.auth.OAuthGrant
+import org.openremote.model.auth.OAuthPasswordGrant
+import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.model.value.RegexValueFilter
-import org.openremote.model.value.Value
+import org.openremote.model.value.ValueFilter
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
@@ -55,8 +49,10 @@ import javax.ws.rs.HttpMethod
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
 import javax.ws.rs.core.*
+import java.util.regex.Pattern
 
-import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
+import static org.openremote.model.value.MetaItemType.AGENT_LINK
+import static org.openremote.model.value.ValueType.*
 
 class HttpClientProtocolTest extends Specification implements ManagerContainerTrait {
 
@@ -68,11 +64,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         private int refreshTokenCount
         private String accessToken = null
         private String refreshToken = null
-        private int pingCount = 0
         private int pollCountFast = 0
         private int pollCountSlow = 0
         private boolean putRequestWithHeadersCalled = false
-        private int successFailureCount = 0
+        private int successCount = 0
+        private int failureCount = 0
         private String dynamicPathParam = ""
 
         @Override
@@ -122,7 +118,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID) == "TestClient"
                         && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET) == "TestSecret"
                         && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE) == "scope1 scope2"
-                        && grant.getFirst(OAuthRefreshTokenGrant.VALUE_KEY_REFRESH_TOKEN) == refreshToken) {
+                        && grant.getFirst(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE) == refreshToken) {
                         refreshTokenCount++
                         accessToken = "accesstoken" + accessTokenCount++
                         refreshToken = "refreshtoken" + accessTokenCount
@@ -150,70 +146,29 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             }
 
             switch (requestPath) {
-                case "https://mockapi/pingGet":
-                    UriInfo uriInfo = new ResteasyUriInfo(requestContext.uri)
-                    def queryParams = uriInfo.getQueryParameters(true)
-                    if (queryParams.get("param1").size() == 1
-                        && queryParams.getFirst("param1") == "param1Value1"
-                        && queryParams.get("param2").size() == 2
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        && queryParams.get("param2").get(1) == "param2Value2"
-                        && requestContext.getHeaderString("header1") == "header1Value1"
-                        && requestContext.getHeaderString("header2") == "header2Value1,header2Value2") {
-                        pingCount++
-                        requestContext.abortWith(
-                            Response.ok().build()
-                        )
-                        return
-                    }
-                    break
-                case "https://mockapi/pingPost":
-                    UriInfo uriInfo = new ResteasyUriInfo(requestContext.uri)
-                    def queryParams = uriInfo.getQueryParameters(true)
-                    if (queryParams.get("param1").size() == 2
-                        && queryParams.getFirst("param1") == "param1Value1"
-                        && queryParams.get("param1").get(1) == "param1Value2"
-                        && queryParams.get("param2").size() == 2
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        && queryParams.get("param2").get(1) == "param2Value2"
-                        && queryParams.get("param3").size() == 1
-                        && queryParams.getFirst("param3") == "param3Value1"
-                        && requestContext.method == HttpMethod.POST
-                        && requestContext.getHeaderString("header1") == "header1Value1"
-                        && requestContext.getHeaderString("header2") == "header2Value1,header2Value2"
-                        && (requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON
-                            || requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_XML)) {
-
-                        String bodyStr = (String)requestContext.getEntity()
-                        ObjectValue body = Values.<ObjectValue>parse(bodyStr).orElse(null)
-                        if (body.get("prop1").isPresent() && body.get("prop2").isPresent()) {
-                            pingCount++
-                            requestContext.abortWith(Response.ok().build())
-                            return
-                        }
-                    }
-                    break
                 case "https://mockapi/put_request_with_headers":
                     UriInfo uriInfo = new ResteasyUriInfo(requestContext.uri)
                     def queryParams = uriInfo.getQueryParameters(true)
                     if (queryParams.get("param1").size() == 1
                         && queryParams.getFirst("param1") == "param1Value1"
                         && queryParams.get("param2").size() == 3
-                        && queryParams.get("param2").get(0) == "param2Value1"
-                        && queryParams.get("param2").get(1) == "param2Value2"
-                        && queryParams.get("param2").get(2) == "param2Value3"
+                        && queryParams.get("param2").contains("param2Value1")
+                        && queryParams.get("param2").contains("param2Value2")
+                        && queryParams.get("param2").contains("param2Value3")
                         && queryParams.get("param3").size() == 1
                         && queryParams.getFirst("param3") == "param3Value1"
                         && requestContext.method == HttpMethod.PUT
-                        && requestContext.getHeaderString("header1") == null
+                        && requestContext.getHeaderString("header1") == "header1Value1"
                         && requestContext.getHeaderString("header2") == "header2Value1,header2Value2"
+                        && requestContext.getHeaderString("header3") == "header3Value1,header3Value2"
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        ObjectValue body = Values.<ObjectValue>parse(bodyStr).orElse(null)
-                        if (body.get("prop1").isPresent()
-                            && body.get("prop1").get().toString() == /{"myProp1":123,"myProp2":true}/
-                            && body.get("prop2").isPresent() && body.get("prop2").get().toString() == "prop2Value") {
+                        ObjectNode body = Values.parse(bodyStr).orElse(null)
+                        if (body.has("prop1")
+                            && body.get("prop1").get("myProp1").asInt() == 123
+                            && body.get("prop1").get("myProp2").asBoolean()
+                            && body.has("prop2") && body.get("prop2").asText() == "prop2Value") {
                             putRequestWithHeadersCalled = true
                             requestContext.abortWith(Response.ok().build())
                             return
@@ -246,11 +201,11 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     return
                 case "https://mockapi/get_success_200":
                 case "https://redirected.mockapi/get_success_200":
-                    successFailureCount++
+                    successCount++
                     requestContext.abortWith(Response.ok().build())
                     return
                 case "https://mockapi/get_failure_401":
-                    successFailureCount++
+                    failureCount++
                     requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build())
                     return
                 case "https://mockapi/redirect":
@@ -268,266 +223,131 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         mockServer.refreshToken = null
         mockServer.accessTokenCount = 0
         mockServer.refreshTokenCount = 0
-        mockServer.pingCount = 0
         mockServer.pollCountSlow = 0
         mockServer.pollCountFast = 0
-        mockServer.successFailureCount = 0
+        mockServer.successCount = 0
+        mockServer.failureCount = 0
         mockServer.putRequestWithHeadersCalled = false
     }
 
-    def "Check HTTP client protocol configuration and linked attribute deployment"() {
+    def "Check HTTP client protocol and linked attribute deployment"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
 
         and: "the HTTP client protocol min times are adjusted for testing"
         HttpClientProtocol.MIN_POLLING_MILLIS = 10
-        HttpClientProtocol.MIN_PING_MILLIS = 10
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
-        def httpClientProtocol = container.getService(HttpClientProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def agentService = container.getService(AgentService.class)
 
         when: "the web target builder is configured to use the mock server"
-        if (!httpClientProtocol.client.configuration.isRegistered(mockServer)) {
-            httpClientProtocol.client.register(mockServer, Integer.MAX_VALUE)
+        if (!HttpClientProtocol.client.configuration.isRegistered(mockServer)) {
+            HttpClientProtocol.client.register(mockServer, Integer.MAX_VALUE)
         }
 
-        and: "an agent with a HTTP client protocol configuration is created"
-        def agent = new Asset()
-        agent.setRealm(Constants.MASTER_REALM)
-        agent.setName("Test Agent")
-        agent.setType(AssetType.AGENT)
-        agent.setAttributes(
-            initProtocolConfiguration(new AssetAttribute("protocolConfig"), HttpClientProtocol.PROTOCOL_NAME)
-                .addMeta(
-                    new MetaItem(
-                        HttpClientProtocol.META_PROTOCOL_BASE_URI,
-                        Values.create("https://mockapi")
-                    ),
-                    new MetaItem(
-                        Protocol.META_PROTOCOL_OAUTH_GRANT,
-                        new OAuthPasswordGrant("https://mockapi/token",
-                            "TestClient",
-                            "TestSecret",
-                            "scope1 scope2",
-                            "testuser",
-                            "password").toObjectValue()
-                    ),
-                    new MetaItem(
-                        HttpClientProtocol.META_PROTOCOL_FOLLOW_REDIRECTS,
-                        Values.create(true)
-                    ),
-                    new MetaItem(
-                        HttpClientProtocol.META_PROTOCOL_PING_PATH,
-                        Values.create("pingGet")
-                    ),
-                    new MetaItem(
-                        HttpClientProtocol.META_PROTOCOL_PING_MILLIS,
-                        Values.create(100)
-                    ),
-                    new MetaItem(
-                        HttpClientProtocol.META_HEADERS,
-                        Values.<ObjectValue>parse(/{"header1": "header1Value1", "header2": ["header2Value1","header2Value2"]}/).get()
-                    ),
-                    new MetaItem(
-                        HttpClientProtocol.META_QUERY_PARAMETERS,
-                        Values.<ObjectValue>parse(/{"param1": "param1Value1", "param2": ["param2Value1","param2Value2"]}/).get()
-                    )
-                )
+        and: "a HTTP client agent is created"
+        HttpClientAgent agent = new HttpClientAgent("Test agent")
+            .setRealm(Constants.MASTER_REALM)
+            .setBaseURI("https://mockapi")
+            .setOAuthGrant(
+                new OAuthPasswordGrant("https://mockapi/token",
+                    "TestClient",
+                    "TestSecret",
+                    "scope1 scope2",
+                    "testuser",
+                    "password")
+            )
+        .setFollowRedirects(true)
+        .setRequestHeaders(
+            Values.parse(/{"header1": ["header1Value1"], "header2": ["header2Value1","header2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
+        )
+        .setRequestQueryParameters(
+            Values.parse(/{"param1": ["param1Value1"], "param2": ["param2Value1","param2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
         )
 
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)
 
-        then: "the protocol should authenticate and start pinging the server and the connection status should become CONNECTED"
+        then: "the protocol should authenticate and the connection status should become CONNECTED"
         conditions.eventually {
-            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig"))
-            assert status == ConnectionStatus.CONNECTED
-            assert mockServer.pingCount > 2
+            agent = assetStorageService.find(agent.id, HttpClientAgent.class)
+            assert agent.getAgentStatus().orElse(ConnectionStatus.DISCONNECTED) == ConnectionStatus.CONNECTED
         }
 
-        when: "the protocol configuration is removed"
-        agent.removeAttribute("protocolConfig")
-        agent = assetStorageService.merge(agent)
-
-        then: "the request client should be removed"
-        conditions.eventually {
-            assert httpClientProtocol.clientMap.isEmpty()
-            assert httpClientProtocol.requestMap.isEmpty()
-            assert httpClientProtocol.pollingMap.isEmpty()
-        }
-
-        and: "ping polling should have stopped"
-        def pingCount = mockServer.pingCount
-        Thread.sleep(50)
-        assert mockServer.pingCount == pingCount
-
-        // Test ping using POST with body and query parameters
-
-        when: "ping count is reset"
-        mockServer.pingCount = 0
-
-        and: "a protocol configuration is added to the agent that uses POST ping mechanism"
-        agent.addAttributes(
-            initProtocolConfiguration(new AssetAttribute("protocolConfig"), HttpClientProtocol.PROTOCOL_NAME)
-                .addMeta(
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_BASE_URI,
-                    Values.create("https://mockapi")
-                ),
-                new MetaItem(
-                    Protocol.META_PROTOCOL_OAUTH_GRANT,
-                    new OAuthPasswordGrant("https://mockapi/token",
-                        "TestClient",
-                        "TestSecret",
-                        "scope1 scope2",
-                        "testuser",
-                        "password").toObjectValue()
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_FOLLOW_REDIRECTS,
-                    Values.create(true)
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_HEADERS,
-                    Values.<ObjectValue>parse(/{"header1": "header1Value1", "header2": ["header2Value1","header2Value2"]}/).get()
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_QUERY_PARAMETERS,
-                    Values.<ObjectValue>parse(/{"param1": "param1Value1", "param2": ["param2Value1","param2Value2"]}/).get()
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_PATH,
-                    Values.create("pingPost")
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_CONTENT_TYPE,
-                    Values.create(MediaType.APPLICATION_JSON)
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_MILLIS,
-                    Values.create(100)
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_METHOD,
-                    Values.create(HttpMethod.POST)
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_BODY,
-                    Values.<ObjectValue>parse(/{"prop1": "prop1Value", "prop2": "prop2Value"}/).get()
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_QUERY_PARAMETERS,
-                    Values.<ObjectValue>parse(/{"param1": "param1Value2", "param3": "param3Value1"}/).get()
-                ),
-            )
-        )
-        agent = assetStorageService.merge(agent)
-
-        then: "the protocol should authenticate and start pinging the server and the connection status should become CONNECTED"
-        conditions.eventually {
-            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig"))
-            assert status == ConnectionStatus.CONNECTED
-            assert mockServer.pingCount > 2
-        }
-
-        when: "the ping content type is manually configured"
-        agent.getAttribute("protocolConfig").ifPresent{
-            it.addMeta(
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_PING_CONTENT_TYPE,
-                    Values.create(MediaType.APPLICATION_XML)
-                )
-            )}
-
-        and: "the agent is merged to the asset service"
-        def currentClient = httpClientProtocol.clientMap.values().first()
-        agent = assetStorageService.merge(agent)
-
-        then: "the client should eventually be updated"
-        conditions.eventually {
-            assert httpClientProtocol.clientMap.size() == 1
-            assert httpClientProtocol.clientMap.values().first() != currentClient
-        }
-
-        and: "the protocol should authenticate and start pinging the server and the connection status should become CONNECTED"
-        conditions.eventually {
-            def status = agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig"))
-            assert status == ConnectionStatus.CONNECTED
-            assert mockServer.pingCount > 2
-        }
-
-        when: "an asset is created with attributes linked to the http protocol configuration"
-        def asset = new Asset("Test Asset", AssetType.THING, agent)
-        asset.setAttributes(
-            // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
-            new AssetAttribute("putRequestWithHeaders", AttributeValueType.OBJECT)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("put_request_with_headers")),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_METHOD, Values.create(HttpMethod.PUT)),
-                    new MetaItem(
-                        Protocol.META_ATTRIBUTE_WRITE_VALUE,
-                        Values.create('{"prop1": {$value}, "prop2": "prop2Value"}')
+        when: "an asset is created with attributes linked to the agent"
+        def asset = new ThingAsset("Test Asset")
+            .setParent(agent)
+            .addOrReplaceAttributes(
+                // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
+                new Attribute<>("putRequestWithHeaders", JSON_OBJECT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent.id)
+                            .setPath("put_request_with_headers")
+                            .setMethod(org.openremote.agent.protocol.http.HttpMethod.PUT)
+                            .setWriteValue('{"prop1": {$value}, "prop2": "prop2Value"}')
+                            .setContentType(MediaType.APPLICATION_JSON)
+                            .setHeaders(new MultivaluedStringMap(
+                                [
+                                    ("header3") : ["header3Value1","header3Value2"]
+                                ]
+                            ))
+                            .setQueryParameters(new MultivaluedStringMap(
+                                [
+                                    ("param2") : ["param2Value3"],
+                                    ("param3") : ["param3Value1"]
+                                ]
+                            ))
+                        )
                     ),
-                    new MetaItem(
-                        HttpClientProtocol.META_ATTRIBUTE_CONTENT_TYPE,
-                        Values.create(MediaType.APPLICATION_JSON)
+                // attribute that sends requests to the server using GET with dynamic path
+                new Attribute<>("getRequestWithDynamicPath", BOOLEAN)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent.id)
+                            .setPath('value/{$value}/set')
+                            .setWriteValueConverter((ObjectNode)Values.parse("{\n" +
+                                "    \"TRUE\": \"on\",\n" +
+                                "    \"FALSE\": \"off\"\n" +
+                                "}").get())
+                        )
                     ),
-                    new MetaItem(
-                        HttpClientProtocol.META_HEADERS,
-                        Values.createObject().put("header1", (Value)null)
+                // attribute that polls the server using GET and uses regex filter on response
+                new Attribute<>("getPollSlow", INTEGER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent.id)
+                            .setPath("get_poll_slow")
+                        .setPollingMillis(50)
+                            .setValueFilters(
+                                [
+                                    new RegexValueFilter(Pattern.compile("\\d+"))
+                                ] as ValueFilter[]
+                            )
+                        )
                     ),
-                    new MetaItem(
-                        HttpClientProtocol.META_QUERY_PARAMETERS,
-                        Values.<ObjectValue>parse(/{"param2": "param2Value3", "param3": "param3Value1"}/).get()
+                // attribute that polls the server using GET and uses regex filter on response
+                new Attribute<>("getPollFast", INTEGER)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent.id)
+                            .setPath("get_poll_fast")
+                            .setPollingMillis(40)
+                            .setValueFilters(
+                                [
+                                    new RegexValueFilter(Pattern.compile("\\d+")).setMatchIndex(1)
+                                ] as ValueFilter[]
+                            )
+                        )
                     )
-                ),
-            // attribute that sends requests to the server using GET with dynamic path
-            new AssetAttribute("getRequestWithDynamicPath", AttributeValueType.BOOLEAN)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create('value/{$value}/set')),
-                    new MetaItem(Protocol.META_ATTRIBUTE_WRITE_VALUE_CONVERTER, Values.parse("{\n" +
-                        "    \"TRUE\": \"on\",\n" +
-                        "    \"FALSE\": \"off\"\n" +
-                        "}").get())
-                ),
-            // attribute that polls the server using GET and uses regex filter on response
-            new AssetAttribute("getPollSlow", AttributeValueType.NUMBER)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_slow")),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_MILLIS, Values.create(50)), // This is ms in testing
-                    new MetaItem(
-                        Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 0)).get())
-                    )
-                ),
-            // attribute that polls the server using GET and uses regex filter on response
-            new AssetAttribute("getPollFast", AttributeValueType.NUMBER)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_fast")),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_MILLIS, Values.create(40)), // This is ms in testing
-                    new MetaItem(
-                        Protocol.META_ATTRIBUTE_VALUE_FILTERS,
-                        Values.createArray().add(Util.objectToValue(new RegexValueFilter("\\d+", 0, 1)).get())
-                    )
-                )
         )
 
         and: "the asset is merged into the asset service"
         asset = assetStorageService.merge(asset)
-        def requestCount = httpClientProtocol.requestMap.size()
 
         then: "new request maps should be created in the HTTP client protocol for the linked attributes"
         conditions.eventually {
-            assert httpClientProtocol.requestMap.size() == requestCount + 4
+            assert ((HttpClientProtocol)agentService.getProtocolInstance(agent.id)).requestMap.size() == 4
         }
 
         and: "the polling attributes should be polling the server"
@@ -540,14 +360,14 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         and: "the polling attributes should have the correct values"
         conditions.eventually {
             asset = assetStorageService.find(asset.getId(), true)
-            assert asset.getAttribute("getPollSlow").flatMap({it.getValueAsInteger()}).orElse(null) == 100
-            assert asset.getAttribute("getPollFast").flatMap({it.getValueAsInteger()}).orElse(null) == 60
+            assert asset.getAttribute("getPollSlow").flatMap({it.value}).orElse(null) == 100
+            assert asset.getAttribute("getPollFast").flatMap({it.value}).orElse(null) == 60
         }
 
         when: "a linked attribute value is updated"
         def attributeEvent = new AttributeEvent(asset.id,
             "putRequestWithHeaders",
-            Values.<ObjectValue>parse('{"myProp1": 123,"myProp2": true}').get())
+            Values.parse('{"myProp1": 123,"myProp2": true}').get())
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the server should have received the request"
@@ -555,11 +375,10 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             assert mockServer.putRequestWithHeadersCalled
         }
 
-        when: "a linked attribute value is updated to true the path should contain the dynamic mapped value of 'on'"
-        def count = mockServer.successFailureCount
+        when: "a linked attribute value is updated to true, the path should contain the dynamic mapped value of 'on'"
         attributeEvent = new AttributeEvent(asset.id,
             "getRequestWithDynamicPath",
-            Values.create(true))
+            true)
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the server should have received the request and returned a 200"
@@ -568,10 +387,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "a linked attribute value is updated to false the path should contain the dynamic mapped value of 'off'"
-        count = mockServer.successFailureCount
         attributeEvent = new AttributeEvent(asset.id,
             "getRequestWithDynamicPath",
-            Values.create(false))
+            false)
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the server should have received the request and returned a 200"
@@ -579,228 +397,102 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             assert mockServer.dynamicPathParam == "off"
         }
 
-        when: "a protocol configurations are added to the agent that don't use ping mechanism"
-        agent.addAttributes(
-            initProtocolConfiguration(new AssetAttribute("protocolConfig2"), HttpClientProtocol.PROTOCOL_NAME)
-                .addMeta(
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_BASE_URI,
-                    Values.create("https://mockapi")
-                ),
-                new MetaItem(
-                    Protocol.META_PROTOCOL_OAUTH_GRANT,
-                    new OAuthPasswordGrant("https://mockapi/token",
-                        "TestClient",
-                        "TestSecret",
-                        "scope1 scope2",
-                        "testuser",
-                        "password").toObjectValue()
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_FAILURE_CODES,
-                    Values.createArray()
-                        .add(Values.create(Response.Status.UNAUTHORIZED.statusCode))
-                        .add(Values.create(Response.Status.FORBIDDEN.statusCode))
-                )
-            ),
-            initProtocolConfiguration(new AssetAttribute("protocolConfig3"), HttpClientProtocol.PROTOCOL_NAME)
-                .addMeta(
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_BASE_URI,
-                    Values.create("https://mockapi")
-                ),
-                new MetaItem(
-                    Protocol.META_PROTOCOL_OAUTH_GRANT,
-                    new OAuthPasswordGrant("https://mockapi/token",
-                        "TestClient",
-                        "TestSecret",
-                        "scope1 scope2",
-                        "testuser",
-                        "password").toObjectValue()
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_FAILURE_CODES,
-                    Values.createArray()
-                        .add(Values.create(Response.Status.UNAUTHORIZED.statusCode))
-                        .add(Values.create(Response.Status.FORBIDDEN.statusCode))
-                )
-            ),
-            initProtocolConfiguration(new AssetAttribute("protocolConfig4"), HttpClientProtocol.PROTOCOL_NAME)
-                .addMeta(
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_BASE_URI,
-                    Values.create("https://mockapi")
-                ),
-                new MetaItem(
-                    Protocol.META_PROTOCOL_OAUTH_GRANT,
-                    new OAuthPasswordGrant("https://mockapi/token",
-                        "TestClient",
-                        "TestSecret",
-                        "scope1 scope2",
-                        "testuser",
-                        "password").toObjectValue()
-                ),
-                new MetaItem(
-                    HttpClientProtocol.META_PROTOCOL_FOLLOW_REDIRECTS,
-                    Values.create(true)
-                )
-            )
-        )
-        def protocolCount = httpClientProtocol.linkedProtocolConfigurations.size()
-        agent = assetStorageService.merge(agent)
+        when: "new agents are created"
+        def agent2 = agent
+            .setId(null)
+            .setFollowRedirects(null)
+            .setRequestHeaders(null)
+            .setRequestQueryParameters(null)
+        def agent3 = Values.clone(agent2)
+            .setId(null)
+        def agent4 = Values.clone(agent2)
+            .setId(null)
+            .setFollowRedirects(true)
 
-        then: "the protocol configuration should be linked with a connection status of connected"
+        agent2 = assetStorageService.merge(agent2)
+        agent3 = assetStorageService.merge(agent3)
+        agent4 = assetStorageService.merge(agent4)
+
+        then: "the protocol instances should be created and the agents should be connected"
         conditions.eventually {
-            assert httpClientProtocol.linkedProtocolConfigurations.size() == protocolCount + 3
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig2")) == ConnectionStatus.CONNECTED
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig3")) == ConnectionStatus.CONNECTED
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig4")) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolInstance(agent2.id) != null
+            assert agentService.getProtocolInstance(agent3.id) != null
+            assert agentService.getProtocolInstance(agent4.id) != null
+            assert agentService.getAgent(agent2.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert agentService.getAgent(agent3.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
+            assert agentService.getAgent(agent4.id).getAgentStatus().orElse(null) == ConnectionStatus.CONNECTED
         }
 
-        when: "attributes are linked to these protocol configurations"
-        def asset2 = new Asset("Test Asset 2", AssetType.THING, agent)
-        asset2.addAttributes(
-            new AssetAttribute("getSuccess", AttributeValueType.STRING)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig2").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_success_200"))
-                ),
-            new AssetAttribute("getFailure", AttributeValueType.STRING)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig2").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_failure_401"))
-                ),
-            new AssetAttribute("pollFailure", AttributeValueType.STRING)
-                .addMeta(
-                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig3").toArrayValue()),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_failure_401")),
-                    new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_MILLIS, Values.create(50)), // This is ms in testing
-                ),
-            new AssetAttribute("getSuccess2", AttributeValueType.STRING)
-                .addMeta(
-                new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
-                new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_success_200"))
-            ),
-            new AssetAttribute("getFailure2", AttributeValueType.STRING)
-                .addMeta(
-                new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
-                new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_failure_401"))
-            ),
-            new AssetAttribute("getRedirect", AttributeValueType.STRING)
-                .addMeta(
-                new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
-                new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("redirect"))
-            ),
-        )
+        when: "attributes are linked to these agents"
+        def asset2 = new ThingAsset("Test Asset 2")
+            .setRealm(Constants.MASTER_REALM)
+            .addOrReplaceAttributes(
+                new Attribute<>("getSuccess", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent2.id)
+                            .setPath("get_success_200")
+                        )
+                    ),
+                new Attribute<>("getFailure", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent2.id)
+                            .setPath("get_failure_401")
+                        )
+                    ),
+                new Attribute<>("pollFailure", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent3.id)
+                            .setPath("get_failure_401")
+                            .setPollingMillis(50)
+                        )
+                    ),
+                new Attribute<>("getSuccess2", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent4.id)
+                            .setPath("get_success_200")
+                        )
+                    ),
+                new Attribute<>("getFailure2", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent4.id)
+                            .setPath("get_failure_401")
+                        )
+                    ),
+                new Attribute<>("getRedirect", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agent4.id)
+                            .setPath("redirect")
+                        )
+                    )
+            )
 
         and: "the asset is merged into the asset service"
-        requestCount = httpClientProtocol.requestMap.size()
         asset2 = assetStorageService.merge(asset2)
 
         then: "new request maps should be created in the HTTP client protocol for the linked attributes"
         conditions.eventually {
-            assert httpClientProtocol.requestMap.size() == requestCount + 5
+            assert ((HttpClientProtocol)agentService.getProtocolInstance(agent2.id)) != null
+            assert ((HttpClientProtocol)agentService.getProtocolInstance(agent2.id)).requestMap.size() == 2
+            assert ((HttpClientProtocol)agentService.getProtocolInstance(agent3.id)) != null
+            assert ((HttpClientProtocol)agentService.getProtocolInstance(agent3.id)).requestMap.size() == 1
+            assert ((HttpClientProtocol)agentService.getProtocolInstance(agent4.id)) != null
+            assert ((HttpClientProtocol)agentService.getProtocolInstance(agent4.id)).requestMap.size() == 3
         }
 
-        and: "the protocol config connection status linked to by the failing poll request should become DISABLED"
+        and: "the polling attribute should be polling the server"
         conditions.eventually {
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig3")) == ConnectionStatus.DISABLED
+            assert mockServer.failureCount > 1
         }
-
-        when: "the success/failure count is stored"
-        count = mockServer.successFailureCount
-
-        then: "the poll request will no longer reach the server (the success/failure count shouldn't change)"
-        Thread.sleep(50)
-        assert mockServer.successFailureCount == count
 
         when: "a linked attribute value is updated"
         attributeEvent = new AttributeEvent(asset2.id,
             "getSuccess",
-            Values.create("OK"))
+            "OK")
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the server should have received the request"
         conditions.eventually {
-            assert mockServer.successFailureCount == count + 1
-        }
-
-        and: "the protocol connection status should now be CONNECTED"
-        conditions.eventually {
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig2")) == ConnectionStatus.CONNECTED
-        }
-
-        when: "a linked attribute value is updated"
-        count = mockServer.successFailureCount
-        attributeEvent = new AttributeEvent(asset2.id,
-            "getFailure",
-            Values.create("OK"))
-        assetProcessingService.sendAttributeEvent(attributeEvent)
-
-        then: "the server should have received the request and returned a 401"
-        conditions.eventually {
-            assert mockServer.successFailureCount == count + 1
-        }
-
-        and: "the protocol connection status should now be DISABLED"
-        conditions.eventually {
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig2")) == ConnectionStatus.DISABLED
-        }
-
-        when: "a linked attribute value is updated again"
-        count = mockServer.successFailureCount
-        attributeEvent = new AttributeEvent(asset2.id,
-            "getSuccess",
-            Values.create("OK"))
-        assetProcessingService.sendAttributeEvent(attributeEvent)
-
-        then: "the server should not have received the request"
-        Thread.sleep(50)
-        assert mockServer.successFailureCount == count
-
-        when: "a linked attribute value is updated"
-        attributeEvent = new AttributeEvent(asset2.id,
-            "getFailure2",
-            Values.create("OK"))
-        assetProcessingService.sendAttributeEvent(attributeEvent)
-
-        then: "the server should have received the request and returned a 401"
-        conditions.eventually {
-            assert mockServer.successFailureCount == count + 1
-        }
-
-        and: "the protocol connection status should now be ERROR_AUTHENTICATION"
-        conditions.eventually {
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig4")) == ConnectionStatus.ERROR_AUTHENTICATION
-        }
-
-        when: "a linked attribute value is updated"
-        count = mockServer.successFailureCount
-        attributeEvent = new AttributeEvent(asset2.id,
-            "getSuccess2",
-            Values.create("OK"))
-        assetProcessingService.sendAttributeEvent(attributeEvent)
-
-        then: "the server should have received the request and returned a 200"
-        conditions.eventually {
-            assert mockServer.successFailureCount == count + 1
-        }
-
-        and: "the protocol connection status should now be CONNECTED"
-        conditions.eventually {
-            assert agentService.getProtocolConnectionStatus(new AttributeRef(agent.id, "protocolConfig4")) == ConnectionStatus.CONNECTED
-        }
-
-        when: "a linked attribute value is updated"
-        count = mockServer.successFailureCount
-        attributeEvent = new AttributeEvent(asset2.id,
-            "getRedirect",
-            Values.create("OK"))
-        assetProcessingService.sendAttributeEvent(attributeEvent)
-
-        then: "the server should have sent a redirect request and the redirected endpoint returned a 200"
-        conditions.eventually {
-            assert mockServer.successFailureCount == count + 1
+            assert mockServer.successCount == 1
         }
     }
 }

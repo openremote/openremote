@@ -19,10 +19,8 @@
  */
 package org.openremote.model.rules;
 
-import com.google.gwt.core.shared.GwtIncompatible;
+import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.calendar.CalendarEvent;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -93,20 +91,8 @@ public class GlobalRuleset extends Ruleset {
     }
 
     @Override
-    public GlobalRuleset setMeta(ObjectValue meta) {
+    public GlobalRuleset setMeta(MetaMap meta) {
         super.setMeta(meta);
-        return this;
-    }
-
-    @Override
-    public GlobalRuleset addMeta(String key, Value value) {
-        super.addMeta(key, value);
-        return this;
-    }
-
-    @Override
-    public GlobalRuleset removeMeta(String key) {
-        super.removeMeta(key);
         return this;
     }
 
@@ -128,7 +114,6 @@ public class GlobalRuleset extends Ruleset {
         return this;
     }
 
-    @GwtIncompatible
     @Override
     public GlobalRuleset setValidity(CalendarEvent calendarEvent) {
         super.setValidity(calendarEvent);

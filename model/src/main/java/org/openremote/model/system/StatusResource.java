@@ -19,9 +19,7 @@
  */
 package org.openremote.model.system;
 
-import org.openremote.model.http.SuccessStatusCode;
-import org.openremote.model.value.ObjectValue;
-
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -34,12 +32,10 @@ public interface StatusResource {
     @Path("health")
     @GET
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    ObjectValue getHealthStatus();
+    ObjectNode getHealthStatus();
 
     @Path("info")
     @GET
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    ObjectValue getInfo();
+    ObjectNode getInfo();
 }

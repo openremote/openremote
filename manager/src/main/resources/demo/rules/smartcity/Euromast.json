@@ -11,11 +11,7 @@
               {
                 "assets": {
                   "types": [
-                    {
-                      "predicateType": "string",
-                      "match": "EXACT",
-                      "value": "urn:openremote:asset:console"
-                    }
+                    "ConsoleAsset"
                   ],
                   "attributes": {
                     "items": [

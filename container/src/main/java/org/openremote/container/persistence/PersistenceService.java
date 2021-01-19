@@ -22,16 +22,36 @@ package org.openremote.container.persistence;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.hibernate.Session;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
+import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.EntityClassProvider;
+import org.openremote.model.apps.ConsoleAppConfig;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.UserAsset;
+import org.openremote.model.datapoint.AssetDatapoint;
+import org.openremote.model.gateway.GatewayConnection;
+import org.openremote.model.notification.SentNotification;
+import org.openremote.model.predicted.AssetPredictedDatapoint;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.GlobalRuleset;
+import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.security.Tenant;
+import org.openremote.model.security.User;
+import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.util.AssetModelUtil;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.Persistence;
+import javax.persistence.*;
+import javax.persistence.spi.ClassTransformer;
+import javax.persistence.spi.PersistenceUnitTransactionType;
+import javax.sql.DataSource;
 import javax.ws.rs.core.UriBuilder;
+import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,6 +64,119 @@ import static org.openremote.container.util.MapAccess.*;
  * Uses the SQL database schema {@link #DEFAULT_SCHEMA_NAME} for all operations.
  */
 public class PersistenceService implements ContainerService {
+
+    /**
+     * Programmatic definition of OpenRemotePU for hibernate
+     */
+    public static class PersistenceUnitInfo implements javax.persistence.spi.PersistenceUnitInfo {
+
+        List<String> managedClassNames;
+        Properties properties;
+
+
+        public PersistenceUnitInfo(List<String> managedClassNames, Properties properties) {
+            // Configure default props
+            Properties props = new Properties();
+            props.put(AvailableSettings.FORMAT_SQL, "true");
+            props.put(AvailableSettings.USE_SQL_COMMENTS, "true");
+            props.put(AvailableSettings.SCANNER_DISCOVERY, "none");
+            props.put(AvailableSettings.DEFAULT_SCHEMA, DEFAULT_SCHEMA_NAME);
+            //props.put(AvailableSettings.SHOW_SQL, "true");
+            props.put(AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS, "thread");
+            props.put(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR, "org.openremote.container.persistence.EnhancedImportSqlCommandExtractor");
+
+            // Add custom properties
+            props.putAll(properties);
+
+            this.managedClassNames = managedClassNames;
+            this.properties = props;
+        }
+
+        @Override
+        public String getPersistenceUnitName() {
+            return PERSISTENCE_UNIT_NAME_DEFAULT;
+        }
+
+        @Override
+        public String getPersistenceProviderClassName() {
+            return "org.hibernate.jpa.HibernatePersistenceProvider";
+        }
+
+        @Override
+        public PersistenceUnitTransactionType getTransactionType() {
+            return PersistenceUnitTransactionType.RESOURCE_LOCAL;
+        }
+
+        @Override
+        public DataSource getJtaDataSource() {
+            return null;
+        }
+
+        @Override
+        public DataSource getNonJtaDataSource() {
+            return null;
+        }
+
+        @Override
+        public List<String> getMappingFileNames() {
+            return null;
+        }
+
+        @Override
+        public List<URL> getJarFileUrls() {
+            return null;
+        }
+
+        @Override
+        public URL getPersistenceUnitRootUrl() {
+            return null;
+        }
+
+        @Override
+        public List<String> getManagedClassNames() {
+            return managedClassNames;
+        }
+
+        @Override
+        public boolean excludeUnlistedClasses() {
+            return true;
+        }
+
+        @Override
+        public SharedCacheMode getSharedCacheMode() {
+            return null;
+        }
+
+        @Override
+        public ValidationMode getValidationMode() {
+            return null;
+        }
+
+        @Override
+        public Properties getProperties() {
+            return properties;
+        }
+
+        @Override
+        public String getPersistenceXMLSchemaVersion() {
+            return null;
+        }
+
+        @Override
+        public ClassLoader getClassLoader() {
+            return null;
+        }
+
+        @Override
+        public void addTransformer(ClassTransformer transformer) {
+
+        }
+
+        @Override
+        public ClassLoader getNewTempClassLoader() {
+            return null;
+        }
+    }
 
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
 
@@ -77,7 +210,7 @@ public class PersistenceService implements ContainerService {
     protected MessageBrokerService messageBrokerService;
     protected Database database;
     protected String persistenceUnitName;
-    protected Map<String, Object> persistenceUnitProperties;
+    protected Properties persistenceUnitProperties;
     protected EntityManagerFactory entityManagerFactory;
 
     protected Flyway flyway;
@@ -115,8 +248,49 @@ public class PersistenceService implements ContainerService {
 
         openDatabase(container, database);
 
-        this.entityManagerFactory =
-            Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
+        // Register standard entity classes and also any Entity ClassProviders
+        List<String> entityClasses = new ArrayList<>(50);
+        entityClasses.add(Asset.class.getName());
+        entityClasses.add(UserAsset.class.getName());
+        entityClasses.add(AssetDatapoint.class.getName());
+        entityClasses.add(SentNotification.class.getName());
+        entityClasses.add(AssetPredictedDatapoint.class.getName());
+        entityClasses.add(Tenant.class.getName());
+        entityClasses.add(User.class.getName());
+        entityClasses.add(GlobalRuleset.class.getName());
+        entityClasses.add(AssetRuleset.class.getName());
+        entityClasses.add(TenantRuleset.class.getName());
+        entityClasses.add(SyslogEvent.class.getName());
+        entityClasses.add(GatewayConnection.class.getName());
+        entityClasses.add(ConsoleAppConfig.class.getName());
+
+        // Add packages with package-info (don't think this is JPA spec but hibernate specific)
+        entityClasses.add("org.openremote.container.persistence");
+        entityClasses.add("org.openremote.container.util");
+
+        // Get asset sub type entities from asset model
+        Arrays.stream(AssetModelUtil.getAssetDescriptors(null))
+            .map(AssetDescriptor::getType)
+            .filter(assetClass -> assetClass.getAnnotation(Entity.class) != null)
+            .map(Class::getName)
+            .forEach(entityClasses::add);
+
+        // Get any entity class providers from the service loader
+        ServiceLoader<EntityClassProvider> entityClassProviders = ServiceLoader.load(EntityClassProvider.class);
+        entityClassProviders.forEach(entityClassProvider -> entityClassProvider.getEntityClasses().stream()
+            .filter(entityClass -> entityClass.getAnnotation(Entity.class) != null)
+            .map(Class::getName).forEach(entityClasses::add));
+
+        this.entityManagerFactory = getEntityManagerFactory(persistenceUnitProperties, entityClasses);
+        //Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
+    }
+
+    protected EntityManagerFactory getEntityManagerFactory(Properties properties, List<String> classNames) {
+        PersistenceUnitInfo persistenceUnitInfo = new PersistenceUnitInfo(classNames, properties);
+
+        return new EntityManagerFactoryBuilderImpl(
+            new PersistenceUnitInfoDescriptor(persistenceUnitInfo), null)
+            .build();
     }
 
 

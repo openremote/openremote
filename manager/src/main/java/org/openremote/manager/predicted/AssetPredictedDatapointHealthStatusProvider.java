@@ -19,14 +19,13 @@
  */
 package org.openremote.manager.predicted;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerHealthStatusProvider;
-import org.openremote.container.ContainerService;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.Values;
 
-public class AssetPredictedDatapointHealthStatusProvider implements ContainerHealthStatusProvider {
+public class AssetPredictedDatapointHealthStatusProvider implements HealthStatusProvider, ContainerService {
     public static final String NAME = "predicted";
     public static final String VERSION = "1.0";
     protected AssetPredictedDatapointService assetPredictedDatapointService;
@@ -62,8 +61,8 @@ public class AssetPredictedDatapointHealthStatusProvider implements ContainerHea
     }
 
     @Override
-    public Value getHealthStatus() {
-        ObjectValue value = Values.createObject();
+    public Object getHealthStatus() {
+        ObjectNode value = Values.JSON.createObjectNode();
         value.put("totalDatapoints", assetPredictedDatapointService.getDatapointsCount());
         return value;
     }

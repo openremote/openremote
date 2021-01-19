@@ -33,7 +33,7 @@ import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.servlet.api.AuthMethodConfig;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.model.Constants;

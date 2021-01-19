@@ -292,9 +292,9 @@ class BasicRulesFactsTest extends Specification {
     def "Handle temporary named facts"() {
 
         when: "some temporary facts are added"
-        rulesFacts.putTemporary("foo", "5s", "FOO")
-        rulesFacts.putTemporary("bar", "10s", "BAR")
-        rulesFacts.putTemporary("baz", "15s", "BAZ")
+        rulesFacts.putTemporary("foo", "PT5S", "FOO")
+        rulesFacts.putTemporary("bar", "PT10S", "BAR")
+        rulesFacts.putTemporary("baz", "PT15S", "BAZ")
 
         and: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(3000))
@@ -348,11 +348,11 @@ class BasicRulesFactsTest extends Specification {
 
         when: "some temporary facts are added"
         def anonFact1 = new AnonFact("FOO1", 123, true)
-        rulesFacts.putTemporary("5s", anonFact1)
+        rulesFacts.putTemporary("PT5S", anonFact1)
         def anonFact2 = new AnonFact("FOO2", 456, false)
-        rulesFacts.putTemporary("10s", anonFact2)
+        rulesFacts.putTemporary("PT10S", anonFact2)
         def anonFact3 = new AnonFact("FOO3", 789, true)
-        rulesFacts.putTemporary("15s", anonFact3)
+        rulesFacts.putTemporary("PT15S", anonFact3)
 
         and: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(3000))

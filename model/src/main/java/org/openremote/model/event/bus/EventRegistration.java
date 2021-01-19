@@ -21,6 +21,8 @@ package org.openremote.model.event.bus;
 
 import org.openremote.model.event.Event;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * Handle for receiving events from {@link EventBus}.
  */
@@ -38,11 +40,12 @@ public class EventRegistration<E extends Event> {
         this(false, eventClass, listener);
     }
 
+    @SuppressWarnings("unchecked")
     public EventRegistration(boolean prepare, EventListener<E> listener) {
-        this(prepare, null, listener);
+        this(prepare, (Class<E>)Event.class, listener);
     }
 
-    public EventRegistration(boolean prepare, Class<E> eventClass, EventListener<E> listener) {
+    public EventRegistration(boolean prepare, @NotNull Class<E> eventClass, EventListener<E> listener) {
         this.prepare = prepare;
         this.eventClass = eventClass;
         this.listener = listener;
@@ -64,7 +67,7 @@ public class EventRegistration<E extends Event> {
         return listener;
     }
 
-    public boolean isMatching(Event event) {
-        return getEventClass()  == null || getEventType().equals(event.getEventType());
+    public boolean isMatching(@NotNull Event event) {
+        return getEventClass().isAssignableFrom(event.getClass());
     }
 }

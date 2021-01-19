@@ -20,11 +20,11 @@
 package org.openremote.agent.protocol;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.processor.StopProcessor;
-import org.openremote.container.ContainerService;
+import org.openremote.model.ContainerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.security.ClientRole;
 
 import java.util.Arrays;

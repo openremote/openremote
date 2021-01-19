@@ -19,25 +19,21 @@
  */
 package org.openremote.agent.protocol.macro;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.Pair;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
+import java.io.Serializable;
 import java.util.Objects;
-import java.util.Optional;
-
-import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION;
 
 /**
  * A desired {@link AttributeState} and a delay in milli seconds before that state
  * is applied when the macro executes.
  */
-public class MacroAction {
+public class MacroAction implements Serializable {
 
     protected AttributeState attributeState;
+    @JsonProperty("delay")
     protected int delayMilliseconds;
 
     public MacroAction(AttributeState attributeState) {
@@ -45,7 +41,8 @@ public class MacroAction {
         this.attributeState = attributeState;
     }
 
-    public MacroAction(AttributeState attributeState, int delayMilliseconds) {
+    @JsonCreator
+    public MacroAction(@JsonProperty("attributeState") AttributeState attributeState, @JsonProperty("delay") int delayMilliseconds) {
         this(attributeState);
         setDelayMilliseconds(delayMilliseconds);
     }
@@ -66,33 +63,11 @@ public class MacroAction {
         this.delayMilliseconds = Math.max(0, delayMilliseconds);
     }
 
-    public ObjectValue toObjectValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("attributeState", attributeState.toObjectValue());
-        objectValue.put("delay", Values.create(delayMilliseconds));
-        return objectValue;
-    }
-
-    public MetaItem toMetaItem() {
-        return new MetaItem(META_MACRO_ACTION, toObjectValue());
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "attributeState='" + attributeState + '\'' +
             ", delay='" + delayMilliseconds + '\'' +
             '}';
-    }
-
-    public static Optional<MacroAction> fromValue(Value value) {
-        //noinspection ConstantConditions
-        return Values.getObject(value)
-            .map(objectValue -> new Pair<>(
-                    AttributeState.fromValue(objectValue.get("attributeState").orElse(null)),
-                    objectValue.getNumber("delay").orElse(0d)
-                )
-            ).filter(pair -> pair.key.isPresent())
-            .map(pair -> new MacroAction(pair.key.get(), pair.value.intValue()));
     }
 }

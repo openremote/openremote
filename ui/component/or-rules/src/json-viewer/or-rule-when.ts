@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import {AssetDescriptor, AssetType, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition} from "@openremote/model";
+import {AssetDescriptor, JsonRule, LogicGroup, LogicGroupOperator, RuleCondition, WellknownAssets, AssetTypeInfo} from "@openremote/model";
 import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
@@ -112,7 +112,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
     public config?: RulesConfig;
 
     @property({type: Object, attribute: false})
-    public assetDescriptors?: AssetDescriptor[];
+    public assetInfos?: AssetTypeInfo[];
 
     protected ruleGroupTemplate(group: LogicGroup<RuleCondition>, parentGroup?: LogicGroup<RuleCondition>): TemplateResult | undefined {
 
@@ -176,7 +176,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                     const content = html`
                         <div class="rule-group-item">
                             <div class="rule-condition">
-                                <or-rule-condition .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .ruleCondition="${condition}" .readonly="${this.readonly}" ></or-rule-condition>
+                                <or-rule-condition .config="${this.config}" .assetInfos="${this.assetInfos}" .ruleCondition="${condition}" .readonly="${this.readonly}" ></or-rule-condition>
                                 ${showRemoveGroup ? html`
                                     <button class="button-clear ${showRemoveCondition ? "" : "hidden"}" @click="${() => this.removeItem(condition, group, false)}"><or-icon icon="close-circle"></or-icon></input>
                                 ` : ``}
@@ -194,7 +194,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                 <span class="add-button-wrapper">
                     ${getContentWithMenuTemplate(
                         html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
-                        getWhenTypesMenu(this.config, this.assetDescriptors),
+                        getWhenTypesMenu(this.config, this.assetInfos),
                         undefined,
                         (values: string[] | string) => this.addCondition(group, values as string))}
                     <span>${i18next.t("rulesEditorAddCondition")}</span>
@@ -249,7 +249,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                     <span class="add-button-wrapper">
                         ${getContentWithMenuTemplate(
                             html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
-                            getWhenTypesMenu(this.config, this.assetDescriptors),
+                            getWhenTypesMenu(this.config, this.assetInfos),
                             undefined,
                             (values: string[] | string) => this.addGroup(this.rule!.when!, values as string))}
                         <strong>${i18next.t(!this.rule.when.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
@@ -373,7 +373,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
         if (this.config && this.config.json && this.config.json.whenCondition) {
             newCondition = JSON.parse(JSON.stringify(this.config.json.whenCondition)) as RuleCondition;
         } else {
-            updateRuleConditionType(newCondition, type || AssetType.THING.type, this.config);
+            updateRuleConditionType(newCondition, type || WellknownAssets.THINGASSET, this.config);
         }
 
         parent.items.push(newCondition);

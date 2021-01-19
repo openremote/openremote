@@ -6,7 +6,6 @@ import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
-import org.openremote.model.value.Values
 
 import java.util.logging.Logger
 import java.util.stream.Collectors
@@ -28,10 +27,10 @@ rules.add()
                 .attributeName("cameraCountIn"))
                 .map(
                 {
-                    new Tuple(it.id, it.valueAsNumber.orElse(0) - facts.matchFirstAssetState(new AssetQuery()
+                    new Tuple(it.id, it.getValueAs(Double.class).orElse(0d) - facts.matchFirstAssetState(new AssetQuery()
                             .names(new StringPredicate(AssetQuery.Match.BEGIN, "Camera"))
                             .attributeName("cameraCountOut"))
-                            .map({ it.valueAsNumber.orElse(0) }).orElse(0))
+                            .map({ it.getValueAs(Double.class).orElse(0d)}).orElse(0d))
                 })
                 .filter(
                 {
@@ -51,7 +50,7 @@ rules.add()
         def attributesEvents = []
         totals.forEach({ k, v ->
             cameraTotals.put(k, v)
-            attributesEvents << new AttributeEvent(k, "cameraCountTotal", Values.create(v))
+            attributesEvents << new AttributeEvent(k, "cameraCountTotal", v)
         })
         assets.dispatch(attributesEvents.toArray(new AttributeEvent[attributesEvents.size()]))
 })
@@ -66,16 +65,16 @@ rules.add()
                 .attributeName("cameraCountTotalAlert"))
                 .filter(
                 {
-                    !it.valueAsBoolean.orElse(false) &&
+                    !it.value.orElse(false) &&
                     facts.matchFirstAssetState(new AssetQuery()
                             .ids(it.id)
                             .attributeName("cameraCountTotal"))
-                            .map({ it.valueAsNumber.orElse(-1) })
+                            .map({ it.value.orElse(-1) })
                             .orElse(-1) >
                             facts.matchFirstAssetState(new AssetQuery()
                                     .ids(it.id)
                                     .attributeName("cameraCountTotalAlertLevel"))
-                                    .map({ it.valueAsNumber.orElse(-1) })
+                                    .map({ it.value.orElse(-1) })
                                     .orElse(-1)
                 })
                 .map({ it.id })

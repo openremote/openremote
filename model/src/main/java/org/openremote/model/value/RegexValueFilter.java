@@ -23,40 +23,80 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
-import static org.openremote.model.value.RegexValueFilter.NAME;
-
-@JsonTypeName(NAME)
-public class RegexValueFilter extends ValueFilter<StringValue> {
+@JsonTypeName(RegexValueFilter.NAME)
+public class RegexValueFilter extends ValueFilter {
 
     public static final String NAME = "regex";
 
     public Pattern pattern;
-    public int matchGroup;
-    public int matchIndex;
+    public Integer matchGroup;
+    public Integer matchIndex;
 
-    @JsonCreator
-    public RegexValueFilter(@JsonProperty("pattern") String regex,
-                            @JsonProperty("matchGroup") int matchGroup,
-                            @JsonProperty("matchIndex") int matchIndex) {
-        try {
-            pattern = Pattern.compile(regex);
-            this.matchGroup = matchGroup;
-            this.matchIndex = matchIndex;
-        } catch (PatternSyntaxException ignore) {}
+    protected RegexValueFilter() {}
+
+    public RegexValueFilter(Pattern pattern) {
+        this.pattern = pattern;
     }
 
-    public RegexValueFilter(Pattern pattern, int matchGroup, int matchIndex) {
-        this.pattern = pattern;
+    @JsonCreator
+    public RegexValueFilter(@JsonProperty("pattern") String pattern,
+                            @JsonProperty("dotAll") Boolean dotAll,
+                            @JsonProperty("multiline") Boolean multiline,
+                            @JsonProperty("matchGroup") int matchGroup,
+                            @JsonProperty("matchIndex") int matchIndex) {
+        this(pattern, dotAll == null || dotAll, multiline != null && multiline);
         this.matchGroup = matchGroup;
         this.matchIndex = matchIndex;
     }
 
+    public RegexValueFilter(String pattern, boolean dotAll, boolean multiline) {
+        this(Pattern.compile(pattern, (dotAll ? Pattern.DOTALL : 0) | (multiline ? Pattern.MULTILINE : 0)));
+    }
+
+    public RegexValueFilter setMatchGroup(Integer matchGroup) {
+        this.matchGroup = matchGroup;
+        return this;
+    }
+
+    public RegexValueFilter setMatchIndex(Integer matchIndex) {
+        this.matchIndex = matchIndex;
+        return this;
+    }
+
     @Override
-    public Class<StringValue> getValueType() {
-        return StringValue.class;
+    public Object filter(Object value) {
+        if (pattern == null) {
+            return null;
+        }
+
+        Optional<String> valueStr = Values.getValue(value, String.class, true);
+        if (!valueStr.isPresent()) {
+            return null;
+        }
+
+        String filteredStr = null;
+        Matcher matcher = pattern.matcher(valueStr.get());
+        int matchIndex = 0;
+        boolean matched = matcher.find();
+
+        if (this.matchIndex != null) {
+            while (matched && matchIndex < this.matchIndex) {
+                matched = matcher.find();
+                matchIndex++;
+            }
+        }
+
+        if (matched) {
+            int matchGroup = this.matchGroup == null ? 0 : this.matchGroup;
+            if (matchGroup <= matcher.groupCount()) {
+                filteredStr = matcher.group(matchGroup);
+            }
+        }
+
+        return filteredStr;
     }
 }

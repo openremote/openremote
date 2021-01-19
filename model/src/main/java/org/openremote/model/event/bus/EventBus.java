@@ -41,9 +41,9 @@ public class EventBus {
 
     private static final Logger LOG = Logger.getLogger(EventBus.class.getName());
 
-    final protected List<EventRegistration> registrations = new ArrayList<>();
+    final protected List<EventRegistration<?>> registrations = new ArrayList<>();
 
-    public List<EventRegistration> getRegistrations() {
+    public List<EventRegistration<?>> getRegistrations() {
         return Collections.unmodifiableList(registrations);
     }
 
@@ -57,49 +57,51 @@ public class EventBus {
         return registration;
     }
 
-    public void addAll(List<EventRegistration> registrations) {
+    public void addAll(List<EventRegistration<?>> registrations) {
         synchronized (this.registrations) {
             this.registrations.addAll(registrations);
         }
     }
 
-    public void add(EventRegistration registration) {
+    public void add(EventRegistration<?> registration) {
         synchronized (this.registrations) {
             this.registrations.add(registration);
         }
     }
 
-    public void removeAll(Collection<EventRegistration> registrations) {
+    public void removeAll(Collection<EventRegistration<?>> registrations) {
         synchronized (this.registrations) {
             this.registrations.removeAll(registrations);
         }
     }
 
-    public void remove(EventRegistration registration) {
+    public void remove(EventRegistration<?> registration) {
         synchronized (this.registrations) {
             this.registrations.remove(registration);
         }
     }
 
     @SuppressWarnings("unchecked")
-    public void dispatch(Event event) {
+    public <T extends Event> void dispatch(T event) {
         synchronized (this.registrations) {
             boolean vetoed = false;
 
             // Call all "prepare" phase listeners, find out if any event is vetoed
-            List<EventRegistration> activePrepareRegistrations = new ArrayList<>();
-            for (EventRegistration registration : registrations) {
+            List<EventRegistration<?>> activePrepareRegistrations = new ArrayList<>();
+            for (EventRegistration<?> registration : registrations) {
                 if (!registration.isMatching(event) || !registration.isPrepare())
                     continue;
                 activePrepareRegistrations.add(registration);
             }
             // Only notify listeners after iterating registrations, some listeners might modify registrations!
-            for (EventRegistration activePrepareRegistration : activePrepareRegistrations) {
-                try {
-                    activePrepareRegistration.getListener().on(event);
-                } catch (VetoEventException ex) {
-                    vetoed = true;
-                    break;
+            for (EventRegistration<?> activePrepareRegistration : activePrepareRegistrations) {
+                if (activePrepareRegistration.isMatching(event)) {
+                    try {
+                        ((EventRegistration<T>)activePrepareRegistration).getListener().on(event);
+                    } catch (VetoEventException ex) {
+                        vetoed = true;
+                        break;
+                    }
                 }
             }
 
@@ -108,15 +110,17 @@ public class EventBus {
                 if (LOG.isLoggable(Level.FINE)) {
                     LOG.fine("Dispatching event: " + event);
                 }
-                List<EventRegistration> activeRegistrations = new ArrayList<>();
-                for (EventRegistration registration : registrations) {
+                List<EventRegistration<?>> activeRegistrations = new ArrayList<>();
+                for (EventRegistration<?> registration : registrations) {
                     if (!registration.isMatching(event) || registration.isPrepare())
                         continue;
                     activeRegistrations.add(registration);
                 }
                 // Only notify listeners after iterating registrations, some listeners might modify registrations!
-                for (EventRegistration activeRegistration : activeRegistrations) {
-                    activeRegistration.getListener().on(event);
+                for (EventRegistration<?> activeRegistration : activeRegistrations) {
+                    if (activeRegistration.isMatching(event)) {
+                        ((EventRegistration<T>)activeRegistration).getListener().on(event);
+                    }
                 }
             } else if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Dropping vetoed event: " + event);

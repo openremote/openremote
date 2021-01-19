@@ -19,12 +19,8 @@
  */
 package org.openremote.model.syslog;
 
-import com.google.gwt.core.shared.GwtIncompatible;
-import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
-
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
@@ -34,7 +30,6 @@ import java.util.List;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("syslog")
-@JsType(isNative = true)
 public interface SyslogResource {
 
     @GET
@@ -42,29 +37,22 @@ public interface SyslogResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_RULES_ROLE})
     @SuppressWarnings({"unusable-by-js"})
-    @GwtIncompatible
     Response getEvents(@BeanParam RequestParams requestParams, @QueryParam("level") SyslogLevel level, @QueryParam("per_page") Integer perPage, @QueryParam("page") Integer page, @QueryParam("from") Long from, @QueryParam("to") Long to, @QueryParam("category") List<SyslogCategory> categories, @QueryParam("subCategory") List<String> subCategories);
 
     @DELETE
     @Path("event")
-    @SuccessStatusCode(204)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @SuppressWarnings("unusable-by-js")
     void clearEvents(@BeanParam RequestParams requestParams);
 
     @GET
     @Path("config")
-    @SuccessStatusCode(200)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    @SuppressWarnings("unusable-by-js")
     SyslogConfig getConfig(@BeanParam RequestParams requestParams);
 
     @PUT
     @Path("config")
-    @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ADMIN_ROLE})
-    @SuppressWarnings("unusable-by-js")
     void updateConfig(@BeanParam RequestParams requestParams, @Valid SyslogConfig config);
 }

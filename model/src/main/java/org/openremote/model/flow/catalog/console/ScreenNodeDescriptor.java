@@ -19,12 +19,12 @@
  */
 package org.openremote.model.flow.catalog.console;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.Slot;
 import org.openremote.model.flow.catalog.CatalogCategory;
 import org.openremote.model.flow.catalog.ConsoleNodeDescriptor;
 import org.openremote.model.flow.catalog.WidgetNodeDescriptor;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import java.util.List;
@@ -38,7 +38,7 @@ public class ScreenNodeDescriptor extends ConsoleNodeDescriptor {
     public static final String WIDGET_COMPONENT = "or-console-widget-screen";
     public static final String EDITOR_COMPONENT = "or-node-editor-screen";
 
-    public static final ObjectValue SCREEN_INITIAL_PROPERTIES = Values.createObject()
+    public static final ObjectNode SCREEN_INITIAL_PROPERTIES = Values.JSON.createObjectNode()
         .put(WidgetNodeDescriptor.PROPERTY_COMPONENT, WIDGET_COMPONENT)
         .put("backgroundColor", "#aaa")
         .put("textColor", "white");
@@ -79,7 +79,7 @@ public class ScreenNodeDescriptor extends ConsoleNodeDescriptor {
     }
 
     @Override
-    protected ObjectValue getInitialProperties() {
+    protected ObjectNode getInitialProperties() {
         return SCREEN_INITIAL_PROPERTIES;
     }
 

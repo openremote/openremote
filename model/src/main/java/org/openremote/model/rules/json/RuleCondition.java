@@ -38,6 +38,9 @@ import org.openremote.model.query.AssetQuery;
  */
 public class RuleCondition {
 
+    /**
+     * Must be an ISO8601 duration string (e.g. PT1H)
+     */
     public String timer;
     public AssetQuery assets;
     public String tag;

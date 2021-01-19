@@ -85,7 +85,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
         }
 
         Token token = topic.getTokens().get(1);
-        Asset asset = assetStorageService.find(token.toString());
+        Asset<?> asset = assetStorageService.find(token.toString());
         if(asset == null) {
             LOG.log(Level.INFO, "Asset not found");
             return false;

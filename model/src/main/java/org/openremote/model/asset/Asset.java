@@ -19,70 +19,67 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.Formula;
-import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
-import org.openremote.model.ValidationFailure;
+import org.openremote.model.asset.impl.ThingAsset;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.geo.GeoJSON;
-import org.openremote.model.geo.GeoJSONFeature;
-import org.openremote.model.geo.GeoJSONFeatureCollection;
+import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.util.ObservableList;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
+import org.openremote.model.jackson.AssetTypeIdResolver;
+import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.TsIgnore;
+import org.openremote.model.validation.AssetValid;
+import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueType;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
+import static javax.persistence.DiscriminatorType.STRING;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
-import static org.openremote.model.asset.AssetAttribute.*;
-import static org.openremote.model.attribute.AttributeType.LOCATION;
 
 // @formatter:off
 
 /**
  * The main model class of this software.
  * <p>
- * An asset is an identifiable item in a composite relationship with other assets. This tree
- * of assets can be managed through a <code>null</code> {@link #parentId} property for root
- * assets, and a valid parent identifier for sub-assets.
+ * An asset is an identifiable item in a composite relationship with other assets. This tree of assets can be managed
+ * through a <code>null</code> {@link #parentId} property for root assets, and a valid parent identifier for
+ * sub-assets.
  * <p>
- * The properties {@link #parentName} and {@link #parentType} are transient, not required
- * for storing assets, and only resolved and usable when the asset is loaded from storage.
+ * The properties {@link #parentName} and {@link #parentType} are transient, not required for storing assets, and only
+ * resolved and usable when the asset is loaded from storage.
  * <p>
  * An asset is stored in and therefore access-controlled through a {@link #realm}.
  * <p>
  * The {@link #createdOn} value is milliseconds since the Unix epoch.
  * <p>
- * The {@link #type} of the asset is an arbitrary string, it should be a URI, thus avoiding
- * collisions and representing "ownership" of asset type. Well-known asset types handled by
- * the core platform are defined in {@link AssetType}, third-party extensions can define
- * their own asset types in their own namespace, e.g. <code>urn:mynamespace:myassettype</code>
+ * The {@link #getType()}} of the asset is the same value as {@link Class#getSimpleName()} and should correspond with an
+ * {@link AssetDescriptor} registered within the running instance. If the corresponding {@link AssetDescriptor} cannot
+ * be found then the fallback generic {@link ThingAsset#DESCRIPTOR} will be assumed.
  * <p>
- * The {@link #path} is a list of parent asset identifiers, starting with the identifier of
- * this asset, followed by parent asset identifiers, and ending with the identifier of the
- * root asset in the tree. This is a transient property and only resolved and usable when
- * the asset is loaded from storage and as calculating it is costly, might be empty when
- * certain optimized loading operations are used.
- * An asset may have dynamically-typed {@link #attributes} with an underlying
- * {@link ObjectValue} model. Use the {@link Attribute} etc. class to work with this API.
- * This property can be empty when certain optimized loading operations are used.
+ * The {@link #path} is a list of parent asset identifiers, starting with the identifier of this asset, followed by
+ * parent asset identifiers, and ending with the identifier of the root asset in the tree. This is a transient property
+ * and only resolved and usable when the asset is loaded from storage and as calculating it is costly, might be empty
+ * when certain optimized loading operations are used. An asset may have 0-N {@link #attributes}; the {@link
+ * AssetDescriptor} associated with an asset type describes the standard {@link Attribute}s that can be found and what
+ * the value type of these {@link Attribute}s should be but additional {@link Attribute}s can also be added but
+ * obviously no validation can be performed on such dynamic {@link Attribute}s. Use the {@link Attribute} etc. class to
+ * work with this API. This property can be empty when certain optimized loading operations are used.
  * <p>
  * For more details on restricted access of user-assigned assets, see {@link UserAsset}.
  * </p>
@@ -93,7 +90,7 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
  * "version": 0,
  * "createdOn": 1489042784142,
- * "name": "Smart Building",
+ * "name": "Smart building",
  * "type": "urn:openremote:asset:building",
  * "accessPublicRead": false,
  * "realm": "building",
@@ -116,7 +113,7 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "type": "urn:openremote:asset:residence",
  * "accessPublicRead": false,
  * "parentId": "0oI7Gf_kTh6WyRJFUTr8Lg",
- * "parentName": "Smart Building",
+ * "parentName": "Smart building",
  * "parentType": "urn:openremote:asset:building",
  * "realm": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
  * "tenantRealm": "building",
@@ -218,23 +215,64 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * }</pre></blockquote>
  */
 // @formatter:on
+@SqlResultSetMapping(
+    name = "AssetMapping",
+    entities = @EntityResult(
+        entityClass = Asset.class,
+        discriminatorColumn = "type",
+        fields = {
+            @FieldResult(name = "id", column = "id"),
+            @FieldResult(name = "type", column = "type"),
+            @FieldResult(name = "version", column = "version"),
+            @FieldResult(name = "accessPublicRead", column = "access_public_read"),
+            @FieldResult(name = "attributes", column = "attributes"),
+            @FieldResult(name = "createdOn", column = "created_on"),
+            @FieldResult(name = "parentId", column = "parent_id"),
+            @FieldResult(name = "realm", column = "realm"),
+            @FieldResult(name = "path", column = "path"),
+            @FieldResult(name = "name", column = "name")}),
+    columns = {
+        @ColumnResult(name = "parent_name", type = String.class),
+        @ColumnResult(name = "parent_type", type = String.class)
+    })
 @Entity
 @Table(name = "ASSET")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
 @Check(constraints = "ID != PARENT_ID")
-public class Asset implements IdentifiableEntity {
+@JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = UnknownAsset.class)
+@JsonTypeIdResolver(AssetTypeIdResolver.class)
+@AssetValid(groups = Asset.AssetSave.class)
+@SuppressWarnings("unchecked")
+public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T> {
 
-    public enum AssetTypeFailureReason implements ValidationFailure.Reason {
-        ASSET_TYPE_MISMATCH,
-        ASSET_TYPE_NOT_SUPPORTED
-    }
+    @TsIgnore
+    public interface AssetSave {}
+
+    /*
+     * ATTRIBUTE DESCRIPTORS DESCRIBING FIXED NAME ATTRIBUTES AND THEIR VALUE TYPE - ALL SUB TYPES OF THIS ASSET TYPE
+     * WILL INHERIT THESE DESCRIPTORS ALSO; IT IS REQUIRED THAT EACH DESCRIPTOR HAS CORRESPONDING GETTER WITH OPTIONAL
+     * SETTER, THIS ENSURES BASIC COMPILE TIME CHECKING OF CONFLICTS BUT JUST MAKES GOOD SENSE FOR CONSUMERS
+     */
+    public static final AttributeDescriptor<GeoJSONPoint> LOCATION = new AttributeDescriptor<>("location", ValueType.GEO_JSON_POINT);
+
+    public static final AttributeDescriptor<String> EMAIL = new AttributeDescriptor<>("email", ValueType.EMAIL).withOptional(true);
+
+    public static final AttributeDescriptor<String[]> TAGS = new AttributeDescriptor<>("tags", ValueType.TEXT.asArray()).withOptional(true);
+
+    public static final AttributeDescriptor<String> NOTES = new AttributeDescriptor<>("notes", ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer", ValueType.TEXT).withOptional(true);
+    public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT).withOptional(true);
 
     @Id
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
+    @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
     @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
 
     @Version
-    @Column(name = "OBJ_VERSION", nullable = false)
+    @Min(value = 0L, message = "{Asset.version.Min}")
+    @Column(name = "VERSION", nullable = false)
     protected long version;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -242,21 +280,22 @@ public class Asset implements IdentifiableEntity {
     @org.hibernate.annotations.CreationTimestamp
     protected Date createdOn;
 
-    @NotNull(message = "{Asset.name.NotNull}")
+    @NotBlank(message = "{Asset.name.NotBlank}")
     @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
     @Column(name = "NAME", nullable = false, length = 1023)
     protected String name;
 
-    @NotNull(message = "{Asset.type.NotNull}")
-    @Size(min = 3, max = 255, message = "{Asset.type.Size}")
-    @Column(name = "ASSET_TYPE", nullable = false, updatable = false)
-    protected String type;
-
     @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
     protected boolean accessPublicRead;
 
-    @Column(name = "PARENT_ID", length = 36)
+    @Column(name = "PARENT_ID", length = 22, columnDefinition = "char(22)")
+    @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.parentId.Pattern}")
     protected String parentId;
+
+    @NotBlank(message = "{Asset.realm.NotBlank}")
+    @Size(min = 1, max = 255, message = "{Asset.realm.Size}")
+    @Column(name = "REALM", nullable = false)
+    protected String realm;
 
     @Transient
     protected String parentName;
@@ -264,190 +303,84 @@ public class Asset implements IdentifiableEntity {
     @Transient
     protected String parentType;
 
-    @Column(name = "REALM", nullable = false)
-    protected String realm;
-
-    @Transient
-    @JsonIgnore
-    protected ObservableList<AssetAttribute> attributeList;
+    @Column(name = "TYPE", nullable = false, updatable = false, insertable = false)
+    protected String type = getClass().getSimpleName();
 
     // The following are expensive to query, so if they are null, they might not have been loaded
-
     @Formula("get_asset_tree_path(ID)")
-    @org.hibernate.annotations.Type(type = "org.openremote.container.persistence.ArrayUserType")
+    @org.hibernate.annotations.Type(type = Constants.PERSISTENCE_STRING_ARRAY_TYPE)
     protected String[] path;
 
     @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
-    public ObjectValue attributes;
-
-    public Asset() {
-    }
-
-    public Asset(String name, AssetDescriptor type) {
-        this(name, type, null, null);
-    }
-
-    public Asset(String name, String type) {
-        this(name, type, false, null, null);
-    }
-
-    public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent) {
-        this(name, type, parent, null);
-    }
-
-    public Asset(@NotNull String name, @NotNull String type, Asset parent) {
-        this(name, type, false, parent, null);
-    }
-
-    public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent, String realm) {
-        this(name, type.getType(), false, parent, realm);
-        if (type.getAttributeDescriptors() != null) {
-            addAttributes(Arrays.stream(type.getAttributeDescriptors()).map(AssetAttribute::new).toArray(AssetAttribute[]::new));
-        }
-    }
-
-    public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, String realm) {
-        setRealm(realm);
-        setName(name);
-        setType(type);
-        setParent(parent);
-        setAccessPublicRead(accessPublicRead);
-
-        // Initialise realm from parent
-        // TODO: Need to look at this - can child have a different realm to the parent?
-        if (parent != null) {
-            this.realm = parent.getRealm();
-        }
-    }
-
-    @JsonCreator
-    public Asset(@JsonProperty("id") String id,
-                 @JsonProperty("version") long version,
-                 @JsonProperty("createdOn") Date createdOn,
-                 @JsonProperty("name") String name,
-                 @JsonProperty("type") String type,
-                 @JsonProperty("accessPublicRead") boolean accessPublicRead,
-                 @JsonProperty("parentId") String parentId,
-                 @JsonProperty("parentName") String parentName,
-                 @JsonProperty("parentType") String parentType,
-                 @JsonProperty("realm") String realm,
-                 @JsonProperty("path") String[] path,
-                 @JsonProperty("attributes") ObjectValue attributes) {
-        this(name, type, accessPublicRead, null, realm);
-        this.id = id;
-        this.version = version;
-        this.createdOn = createdOn;
-        this.parentId = parentId;
-        this.parentName = parentName;
-        this.parentType = parentType;
-        this.path = path;
-        this.attributes = attributes;
-    }
-
-    public Asset addAttributes(AssetAttribute... attributes) throws IllegalArgumentException {
-        Arrays.asList(attributes).forEach(
-            attribute -> {
-                if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
-                    throw new IllegalArgumentException("Attribute by this name already exists: " + attribute.getName().orElse(""));
-                }
-
-                replaceAttribute(attribute);
-            }
-        );
-        return this;
-    }
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    @Valid
+    protected AttributeMap attributes;
 
     /**
-     * Replaces existing or adds the attribute if it does not exist.
+     * For use by hydrators (i.e. JPA/Jackson)
      */
-    public Asset replaceAttribute(AssetAttribute attribute) throws IllegalArgumentException {
-        if (attribute == null || !attribute.getName().isPresent() || !attribute.getType().isPresent())
-            throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
-
-        attribute.assetId = getId();
-        List<AssetAttribute> attributeList = getAttributesList();
-        attributeList.removeIf(attr -> attr.getName().orElse("").equals(attribute.getName().orElse("")));
-        attributeList.add(attribute);
-
-        return this;
+    protected Asset() {
     }
 
-    public Asset removeAttribute(String name) {
-        List<AssetAttribute> attributeList = getAttributesList();
-        attributeList.removeIf(attr -> attr.getName().orElse("").equals(name));
-        return this;
-    }
+    protected Asset(String name) {
+        setName(name);
 
-    public Asset removeAttribute(AttributeDescriptor attributeDescriptor) {
-        return removeAttribute(attributeDescriptor.getAttributeName());
+        // Initialise required attributes
+        AssetModelUtil.initialiseAssetAttributes(this);
     }
 
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    @Override
+    public T setId(String id) {
         this.id = id;
-        // Must clear the cached list of attributes they can be recreated with the new identifier
-        this.attributeList = null;
+        return (T) this;
     }
 
     public long getVersion() {
         return version;
     }
 
-    public void setVersion(long version) {
+    public T setVersion(long version) {
         this.version = version;
+        return (T) this;
     }
 
     public Date getCreatedOn() {
         return createdOn;
     }
 
-    public void setCreatedOn(Date createdOn) {
+    public T setCreatedOn(Date createdOn) {
         this.createdOn = createdOn;
+        return (T) this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) throws IllegalArgumentException {
+
+    public T setName(String name) throws IllegalArgumentException {
         this.name = name;
+        return (T) this;
     }
 
     public String getType() {
         return type;
     }
 
-    public boolean hasTypeWellKnown() {
-        //TODO replace with AssetModel getValues, through a http request
-        return AssetType.getByValue(getType()).isPresent();
-    }
-
-    public AssetType getWellKnownType() {
-        //TODO replace with AssetModel getValues, through a http request
-        return AssetType.getByValue(getType()).orElse(null);
-    }
-
-    public void setType(String type) throws IllegalArgumentException {
-        this.type = type;
-    }
-
-    public void setType(AssetDescriptor type) {
-        setType(type != null ? type.getType() : null);
-    }
-
     public boolean isAccessPublicRead() {
         return accessPublicRead;
     }
 
-    public void setAccessPublicRead(boolean accessPublicRead) {
+    public T setAccessPublicRead(boolean accessPublicRead) {
         this.accessPublicRead = accessPublicRead;
+        return (T) this;
     }
 
-    public void setParent(Asset parent) {
+    public T setParent(Asset<?> parent) {
         if (parent == null) {
             parentId = null;
             parentName = null;
@@ -455,16 +388,20 @@ public class Asset implements IdentifiableEntity {
         } else {
             parentId = parent.id;
             parentName = parent.name;
-            parentType = parent.type;
+            parentType = parent.getType();
+            realm = parent.realm;
         }
+        return (T) this;
     }
 
     public String getParentId() {
         return parentId;
     }
 
-    public void setParentId(String parentId) {
+
+    public T setParentId(String parentId) {
         this.parentId = parentId;
+        return (T) this;
     }
 
     /**
@@ -474,10 +411,6 @@ public class Asset implements IdentifiableEntity {
         return parentName;
     }
 
-    public void setParentName(String parentName) {
-        this.parentName = parentName;
-    }
-
     /**
      * NOTE: This is a transient and optional property, set only in database query results.
      */
@@ -485,42 +418,35 @@ public class Asset implements IdentifiableEntity {
         return parentType;
     }
 
-    public void setParentType(String parentType) {
-        this.parentType = parentType;
-    }
-
-    public AssetType getParentWellKnownType() {
-        //TODO replace with AssetModel getValues, through a http request
-        return AssetType.getByValue(getParentType()).orElse(null);
-    }
-
     public String getRealm() {
         return realm;
     }
 
-    public void setRealm(String realm) {
+    public T setRealm(String realm) {
         this.realm = realm;
+        return (T) this;
     }
 
     /**
      * NOTE: This is a transient and optional property, set only in database query results.
      * <p>
-     * The identifiers of all parents representing the path in the tree. The first element
-     * is the identifier of this instance, the last is the root asset without a parent.
+     * The identifiers of all parents representing the path in the tree. The first element is the identifier of this
+     * instance, the last is the root asset without a parent.
      */
     public String[] getPath() {
         return path;
     }
 
-    public void setPath(String[] path) {
+    protected T setPath(String[] path) {
         this.path = path;
+        return (T) this;
     }
 
     /**
      * NOTE: This is a transient and optional property, set only in database query results.
      * <p>
-     * The identifiers of all parents representing the path in the tree. The first element
-     * is the root asset without a parent, the last is the identifier of this instance.
+     * The identifiers of all parents representing the path in the tree. The first element is the root asset without a
+     * parent, the last is the identifier of this instance.
      */
     public String[] getReversePath() {
         if (path == null)
@@ -539,50 +465,66 @@ public class Asset implements IdentifiableEntity {
         return path != null && Arrays.asList(getPath()).contains(assetId);
     }
 
-    public ObjectValue getAttributes() {
+    public AttributeMap getAttributes() {
+        if (attributes == null) {
+            attributes = new AttributeMap();
+        }
         return attributes;
     }
 
-    public Stream<AssetAttribute> getAttributesStream() {
-        return getAttributesList().stream();
-    }
-
-    public List<AssetAttribute> getAttributesList() {
-        if (attributeList == null) {
-            attributeList = new ObservableList<>(attributesFromJson(attributes, id).collect(Collectors.toList()),
-                    () -> this.attributes = attributesToJson(attributeList).orElse(Values.createObject()));
+    public T setAttributes(AttributeMap attributes) {
+        if (attributes == null) {
+            attributes = new AttributeMap();
         }
-        return attributeList;
+        this.attributes = attributes;
+        return (T) this;
     }
 
-    public boolean hasAttribute(String name) {
-        return attributes != null && attributes.hasKey(name);
-    }
-
-    public Optional<AssetAttribute> getAttribute(AttributeDescriptor descriptor) {
-        return getAttribute(descriptor.getAttributeName());
-    }
-
-    public Optional<AssetAttribute> getAttribute(String name) {
-        return attributes == null ? Optional.empty() : attributes.getObject(name)
-            .flatMap(objectValue -> AssetAttribute.attributeFromJson(objectValue, id, name));
-    }
-
-    public Asset setAttributes(ObjectValue attributes) {
-        setAttributes(attributesFromJson(attributes, id).collect(Collectors.toList()));
-        return this;
-    }
-
-    public Asset setAttributes(List<AssetAttribute> attributes) {
-        ((ObservableList) getAttributesList()).clear(false);
-        getAttributesList().addAll(attributes);
-        return this;
-    }
-
-    public Asset setAttributes(AssetAttribute... attributes) {
+    public Asset<?> setAttributes(Attribute<?>... attributes) {
         return setAttributes(Arrays.asList(attributes));
     }
 
+    public T setAttributes(Collection<Attribute<?>> attributes) {
+        this.attributes = new AttributeMap(attributes);
+        return (T) this;
+    }
+
+    public <T> Optional<Attribute<T>> getAttribute(AttributeDescriptor<T> descriptor) {
+        return getAttributes().get(descriptor);
+    }
+
+    public Optional<Attribute<?>> getAttribute(String attributeName) {
+        return getAttributes().get(attributeName);
+    }
+
+    public <U> Optional<Attribute<U>> getAttribute(String attributeName, Class<U> valueType) {
+        return getAttributes().get(attributeName).map(attribute -> {
+            if (attribute.getType().getType() == valueType) {
+                return (Attribute<U>) attribute;
+            } else {
+                return null;
+            }
+        });
+    }
+
+    public boolean hasAttribute(AttributeDescriptor<?> attributeDescriptor) {
+        return getAttributes().has(attributeDescriptor);
+    }
+
+    public boolean hasAttribute(String attributeName) {
+        return getAttributes().has(attributeName);
+    }
+
+
+    public T addAttributes(Attribute<?>... attributes) {
+        getAttributes().addAll(attributes);
+        return (T) this;
+    }
+
+    public T addOrReplaceAttributes(Attribute<?>... attributes) {
+        getAttributes().addOrReplace(attributes);
+        return (T) this;
+    }
 
     @Override
     public String toString() {
@@ -611,101 +553,66 @@ public class Asset implements IdentifiableEntity {
             '}';
     }
 
-//    ---------------------------------------------------
-//    FUNCTIONAL METHODS BELOW
-//    ---------------------------------------------------
+    /* WELL KNNOWN ATTRIBUTE GETTER / SETTERS */
 
-    /**
-     * Complies to the GeoJSON specification RFC 7946
-     */
-    public GeoJSONPoint getCoordinates() {
-        return getAttributesStream()
-            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getAttributeName()))
-            .findFirst()
-            .flatMap(AbstractValueHolder::getValue)
-            .flatMap(GeoJSONPoint::fromValue)
-            .orElse(null);
-    }
 
-    /**
-     * Complies to the GeoJSON specification RFC 7946
-     */
-    public void setCoordinates(GeoJSONPoint coordinates) {
-        AssetAttribute locationAttribute = getAttributesStream()
-            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getAttributeName()))
-            .findFirst().orElse(new AssetAttribute(LOCATION));
-
-        locationAttribute.setValue(coordinates == null ? null : coordinates.toValue());
-        replaceAttribute(locationAttribute);
+    public Optional<GeoJSONPoint> getLocation() {
+        return getAttributes().getValue(LOCATION);
     }
 
 
-
-    public boolean hasGeoFeature() {
-        return getCoordinates() != null;
+    public T setLocation(GeoJSONPoint location) {
+        getAttributes().addOrReplace(new Attribute<>(LOCATION, location));
+        return (T) this;
     }
 
-    public GeoJSON getGeoFeature(int maxNameLength) {
-        if (!hasGeoFeature())
-            return GeoJSONFeatureCollection.EMPTY;
-
-        return new GeoJSONFeatureCollection(
-            new GeoJSONFeature(getCoordinates())
-                .setProperty("id", getId())
-                .setProperty("title", TextUtil.ellipsize(getName(), maxNameLength))
-        );
+    public Optional<String[]> getTags() {
+        return getAttributes().getValue(TAGS);
     }
 
-    public static boolean isAssetNameEqualTo(Asset asset, String name) {
-        return asset != null && asset.getName().equals(name);
+
+    public T setTags(String[] tags) {
+        getAttributes().getOrCreate(TAGS).setValue(tags);
+        return (T) this;
     }
 
-    public static boolean isAssetTypeEqualTo(Asset asset, String assetType) {
-        return asset != null
-            && asset.getType() != null
-            && asset.getType().equals(assetType);
+    public Optional<String> getEmail() {
+        return getAttributes().getValue(EMAIL);
     }
 
-    public static boolean isAssetTypeEqualTo(Asset asset, AssetType assetType) {
-        return asset != null && asset.getWellKnownType() == assetType;
+
+    public T setEmail(String email) {
+        getAttributes().getOrCreate(EMAIL).setValue(email);
+        return (T) this;
     }
 
-    public static void removeAttributes(Asset asset, Predicate<AssetAttribute> filter) {
-        if (asset == null)
-            return;
-
-        asset.getAttributesList().removeIf(filter);
+    public Optional<String> getNotes() {
+        return getAttributes().getValue(NOTES);
     }
 
-    public static Asset map(Asset assetToMap, Asset asset) {
-        return map(assetToMap, asset, null, null, null, null, null, null);
+
+    public T setNotes(String notes) {
+        getAttributes().getOrCreate(NOTES).setValue(notes);
+        return (T) this;
     }
 
-    public static Asset map(Asset assetToMap, Asset asset,
-                            String overrideName,
-                            String overrideRealm,
-                            String overrideParentId,
-                            String overrideType,
-                            Boolean overrideAccessPublicRead,
-                            ObjectValue overrideAttributes) {
-        asset.setVersion(assetToMap.getVersion());
-        asset.setName(overrideName != null ? overrideName : assetToMap.getName());
-        if (overrideType != null) {
-            asset.setType(overrideType);
-        } else {
-            asset.setType(assetToMap.getType());
-        }
+    public Optional<String> getManufacturer() {
+        return getAttributes().getValue(MANUFACTURER);
+    }
 
-        asset.setAccessPublicRead(overrideAccessPublicRead != null ? overrideAccessPublicRead : assetToMap.isAccessPublicRead());
 
-        asset.setParentId(overrideParentId != null ? overrideParentId : assetToMap.getParentId());
-        asset.setParentName(null);
-        asset.setParentType(null);
+    public T setManufacturer(String manufacturer) {
+        getAttributes().getOrCreate(MANUFACTURER).setValue(manufacturer);
+        return (T) this;
+    }
 
-        asset.setRealm(overrideRealm != null ? overrideRealm : assetToMap.getRealm());
+    public Optional<String> getModel() {
+        return getAttributes().getValue(MODEL);
+    }
 
-        asset.setAttributes(overrideAttributes != null ? overrideAttributes : assetToMap.getAttributes());
 
-        return asset;
+    public T setModel(String model) {
+        getAttributes().getOrCreate(MODEL).setValue(model);
+        return (T) this;
     }
 }

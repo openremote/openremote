@@ -53,7 +53,7 @@ public abstract class NamespaceContextMap extends HashMap<String, String> implem
     }
 
     // Whatever, we don't care
-    public Iterator getPrefixes(String s) {
+    public Iterator<?> getPrefixes(String s) {
         return null;
     }
 

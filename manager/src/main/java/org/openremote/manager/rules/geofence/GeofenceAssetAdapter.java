@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.rules.geofence;
 
-import org.openremote.container.ContainerService;
+import org.openremote.model.ContainerService;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.LocationAttributePredicate;

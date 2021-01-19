@@ -1,7 +1,9 @@
 package org.openremote.test.notification
 
-import com.google.common.collect.Lists
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.node.TextNode
 import com.google.firebase.messaging.Message
+import org.openremote.container.timer.TimerService
 import org.openremote.container.web.WebService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -13,14 +15,11 @@ import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
-import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.attribute.AttributeType
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
-import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
@@ -43,10 +42,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
     def "Check push notification functionality"() {
 
-        def notificationIds = []
-        def notificationTargetTypes = []
-        def notificationTargetIds = []
-        def notificationMessages = []
+        List<String> notificationIds = []
+        List<Notification.TargetType> notificationTargetTypes = []
+        List<String> notificationTargetIds = []
+        List<AbstractNotificationMessage> notificationMessages = []
 
         given: "the container environment is started with the mock handler"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -55,6 +54,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def notificationService = container.getService(NotificationService.class)
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def consoleResource = (ConsoleResourceImpl)container.getService(WebService.class).getApiSingletons().find {it instanceof ConsoleResourceImpl}
+
+        and: "the clock is stopped for testing purposes"
+        stopPseudoClock()
 
         and: "a mock push notification handler"
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
@@ -115,7 +117,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                         managerTestSetup.apartment1LivingroomId,
                                         "alarmEnabled"
                                 ),
-                                Values.create(false)), null, null), null, null, null)
+                                false), null, null), null, null, null)
 
         and: "the notification resource"
         def testuser1NotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(NotificationResource.class)
@@ -152,12 +154,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 true,
                                 false,
-                                (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
+                                (ObjectNode) parse("{\"token\": \"23123213ad2313b0897efd\"}").orElse(null)
                         ))
                     }
                 },
                 "",
-                ["manager"] as String)
+                ["manager"] as String[])
         def testuser2Console = testuser2ConsoleResource.register(null, consoleRegistration)
         def testuser3Console1 = testuser3ConsoleResource.register(null, consoleRegistration)
         def testuser3Console2 = testuser3ConsoleResource.register(null, consoleRegistration)
@@ -290,18 +292,19 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         // -----------------------------------------------
 
         when: "the admin user requests the notifications for Building consoles"
-        def notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        List<SentNotification> notifications = []
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "all notifications sent to these consoles should be returned"
         assert notifications.size() == 19
         assert notifications.count {n ->
-            n.message.getString("title").orElse(null) == "Test Action" &&
-                n.message.getString("body").orElse(null) == "Click to cancel" &&
-                n.message.getObject("action").isPresent() &&
+            PushNotificationMessage pushMessage = n.message as PushNotificationMessage
+            pushMessage.getTitle() == "Test Action" &&
+                pushMessage.getBody() == "Click to cancel" &&
+                pushMessage.getAction() != null &&
                 n.deliveredOn == null &&
                 n.acknowledgedOn == null
         } == 19
@@ -319,7 +322,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         assert notifications.count {n -> n.deliveredOn != null} == 1
 
         when: "the admin user marks a Building console notification as delivered and requests the notifications for Building consoles"
-        adminNotificationResource.notificationAcknowledged(null, testuser2Console.id, notifications.find {n -> n.targetId == testuser2Console.id && n.deliveredOn != null}.id, Values.create("dismissed"))
+        adminNotificationResource.notificationAcknowledged(null, testuser2Console.id, notifications.find {n -> n.targetId == testuser2Console.id && n.deliveredOn != null}.id, new TextNode("dismissed"))
         notifications = []
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
@@ -328,7 +331,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notification should have been updated"
         assert notifications.size() == 19
-        assert notifications.count {n -> n.deliveredOn != null && n.acknowledgedOn != null && n.acknowledgement == "dismissed"} == 1
+        assert notifications.count {n -> n.deliveredOn != null && n.acknowledgedOn != null && n.acknowledgement == "\"dismissed\""} == 1
 
         when: "a regular user marks a console notification from another realm as delivered"
         testuser1NotificationResource.notificationDelivered(null, testuser3Console1.id, notifications.find {n -> n.targetId == testuser3Console1.id}.id)
@@ -485,7 +488,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         assert notifications.size() == 6
 
         when: "a repeat interval is used and a notification with the same name and scope is sent within the repeat window"
-        notification.setRepeatInterval("1mn")
+        notification.setRepeatInterval("P1M")
         advancePseudoClock(10, TimeUnit.DAYS, container)
         adminNotificationResource.sendNotification(null, notification)
         notifications = []
@@ -551,7 +554,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
 
         expect: "the container to settle"
-        assert noEventProcessedIn(assetProcessingService, 500)
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 500)
+        }
 
         when: "an email notification is sent to a tenant through same mechanism as rules"
         def notification = new Notification(
@@ -572,7 +577,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         when: "an email attribute is added to an asset"
         def kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId)
-        kitchen.addAttributes(new AssetAttribute(AttributeType.EMAIL, Values.create("kitchen@openremote.local")))
+        kitchen.setEmail("kitchen@openremote.local")
         kitchen = assetStorageService.merge(kitchen)
 
         and: "an email notification is sent to a parent asset"

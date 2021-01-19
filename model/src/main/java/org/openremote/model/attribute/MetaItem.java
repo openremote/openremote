@@ -19,150 +19,60 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gwt.regexp.shared.RegExp;
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.HasUniqueResourceName;
-import org.openremote.model.ValidationFailure;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.openremote.model.value.AbstractNameValueHolder;
+import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.ValueDescriptor;
 
-import java.util.Collection;
-import java.util.List;
+import java.io.IOException;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Predicate;
-
-import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.*;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
- * A named arbitrary {@link Value}. A meta item must have a value to be stored.
- * <p>
- * Name should be a URI, thus avoiding collisions and representing "ownership" of the meta item.
+ * A named value whose name must match the name of a {@link MetaItemDescriptor} and whose value must match the value
+ * type of the {@link MetaItemDescriptor}.
  */
-public class MetaItem extends AbstractValueHolder {
+@JsonSerialize(using = MetaItem.MetaItemSerializer.class)
+public class MetaItem<T> extends AbstractNameValueHolder<T> {
 
-    public enum MetaItemFailureReason implements ValidationFailure.Reason {
-        META_ITEM_NAME_IS_REQUIRED,
-        META_ITEM_VALUE_IS_REQUIRED,
-        META_ITEM_MISSING,
-        META_ITEM_DUPLICATION,
-        META_ITEM_VALUE_MISMATCH
-    }
+    /**
+     * Serialise the meta item as just the value
+     */
+    @SuppressWarnings("rawtypes")
+    public static class MetaItemSerializer extends StdSerializer<MetaItem> {
 
-    public MetaItem() {
-        this(Values.createObject());
-    }
-
-    public MetaItem(ObjectValue objectValue) {
-        super(objectValue);
-    }
-
-    @JsonCreator
-    public MetaItem(@JsonProperty("name") String name, @JsonProperty("value") Value value) {
-        super(Values.createObject());
-        setName(name);
-        setValue(value);
-    }
-
-    public MetaItem(MetaItemDescriptor metaItemDescriptor) {
-        super(Values.createObject());
-        setName(metaItemDescriptor.getUrn());
-        setValue(metaItemDescriptor.getInitialValue());
-    }
-
-    public MetaItem(HasUniqueResourceName hasUniqueResourceName, Value value) {
-        this(hasUniqueResourceName.getUrn(), value);
-    }
-
-    @JsonIgnore
-    public Optional<String> getName() {
-        return getObjectValue().getString("name");
-    }
-
-    @JsonProperty("name")
-    // This has to be after the ignored getter or it won't work with GWT-JACKSON
-    private String getNameInternal() {
-        return getName().orElse(null);
-    }
-
-    public void setName(String name) {
-        getObjectValue().put("name", TextUtil.requireNonNullAndNonEmpty(name));
-    }
-
-    public void clearName() {
-        getObjectValue().remove("name");
-    }
-
-    @Override
-    public List<ValidationFailure> getValidationFailures() {
-        return getValidationFailures(Optional.empty());
-    }
-
-    public List<ValidationFailure> getValidationFailures(Optional<MetaItemDescriptor> metaItemDescriptor) {
-
-        List<ValidationFailure> failures = super.getValidationFailures();
-
-        // Check name
-        if (!getName().isPresent())
-            failures.add(new ValidationFailure(META_ITEM_NAME_IS_REQUIRED));
-
-        // MetaItemDescriptor validation takes priority
-        metaItemDescriptor
-            .ifPresent(descriptor ->
-                descriptor.getValidator()
-                    .map(validator ->
-                        validator.apply(getValue().orElse(null))
-                            .map(failures::add)
-                            .orElse(true)
-                    )
-                    .orElseGet(
-                        () -> {
-                            if (!getValue().isPresent()) {
-                                failures.add(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType() != null ? descriptor.getValueType().name() : null)
-                                );
-                            }
-
-                            if (getValue().map(Value::getType).map(type -> descriptor.getValueType() != null && descriptor.getValueType() != ValueType.ANY && descriptor.getValueType() != type).orElse(true)) {
-                                failures.add(new ValidationFailure(META_ITEM_VALUE_MISMATCH, descriptor.getValueType() != null ? descriptor.getValueType().name() : null));
-                                return true;
-                            }
-
-                            if (getValue().isPresent() && !isNullOrEmpty(descriptor.getPattern())) {
-                                String valueStr = getValue().get().toString();
-
-                                if (isNullOrEmpty(valueStr)) {
-                                    failures.add(new ValidationFailure(MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType() != null ? descriptor.getValueType().name() : null));
-                                    return true;
-                                }
-
-                                // Do case insensitive regex (can't include this flag in the pattern like in normal java)
-                                if (!RegExp.compile(descriptor.getPattern(), "i").test(valueStr)) {
-                                    failures.add(new ValidationFailure(MetaItemFailureReason.META_ITEM_VALUE_MISMATCH, descriptor.getPatternFailureMessage()));
-                                    return true;
-                                }
-                            }
-
-                            // Here because Optional doesn't support ifAbsent
-                            return true;
-                        }
-                    ));
-
-        if (!metaItemDescriptor.isPresent() && !getValue().isPresent()) {
-            failures.add(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED));
+        protected MetaItemSerializer() {
+            super(MetaItem.class);
         }
 
-        return failures;
+        @Override
+        public void serialize(MetaItem value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeObject(value.value);
+        }
     }
 
-    public MetaItem copy() {
-        return new MetaItem(getObjectValue().deepCopy());
+    MetaItem() {
+    }
+
+    @SuppressWarnings("unchecked")
+    public MetaItem(MetaItemDescriptor<T> metaDescriptor) {
+        // If it's a boolean meta descriptor assume the caller wants it to be true as a default
+        this(metaDescriptor, (T) (Boolean.valueOf(metaDescriptor.getType().getType() == Boolean.class)));
+    }
+
+    public MetaItem(MetaItemDescriptor<T> metaDescriptor, T value) {
+        super(metaDescriptor.getName(), metaDescriptor.getType(), value);
+    }
+
+    // For JPA/Hydrators
+    protected void setNameInternal(String name) {
+        this.name = name;
+    }
+
+    protected void setTypeInternal(ValueDescriptor<T> type) {
+        this.type = type;
     }
 
     @Override
@@ -171,86 +81,10 @@ public class MetaItem extends AbstractValueHolder {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == this) return true;
-        if (!(o instanceof MetaItem)) {
-            return false;
-        }
-
-        MetaItem metaItem = (MetaItem) o;
-        return Objects.equals(getName(), metaItem.getName())
-            && getValue().equals(metaItem.getValue());
-    }
-
-    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            getObjectValue().toJson() +
+            "name='" + name + '\'' +
+            ", value='" + value + '\'' +
             '}';
-    }
-
-    //    ---------------------------------------------------
-    //    FUNCTIONAL METHODS BELOW
-    //    ---------------------------------------------------
-
-    public static boolean isMetaNameEqualTo(MetaItem item, String name) {
-        if (item == null)
-            return false;
-
-        Optional<String> itemName = item.getName();
-        return (!itemName.isPresent() && name == null) || (itemName.isPresent() && itemName.get().equals(name));
-    }
-
-    public static Predicate<MetaItem> isMetaNameEqualTo(String name) {
-        return metaItem -> isMetaNameEqualTo(metaItem, name);
-    }
-
-    public static boolean isMetaNameEqualTo(MetaItem item, HasUniqueResourceName hasUniqueResourceName) {
-        return hasUniqueResourceName != null && isMetaNameEqualTo(item, hasUniqueResourceName.getUrn());
-    }
-
-    public static Predicate<MetaItem> isMetaNameEqualTo(HasUniqueResourceName hasUniqueResourceName) {
-        return metaItem -> isMetaNameEqualTo(metaItem, hasUniqueResourceName);
-    }
-
-    // STREAM AND COLLECTION METHODS BELOW
-
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, String name, MetaItem newMetaItem) {
-        metaItems.removeIf(isMetaNameEqualTo(name));
-        metaItems.add(newMetaItem);
-    }
-
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, String name, Value newValue) {
-        metaItems.removeIf(isMetaNameEqualTo(name));
-        metaItems.add(new MetaItem(name, newValue));
-    }
-
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, String name, T newMetaItems) {
-        metaItems.removeIf(isMetaNameEqualTo(name));
-        metaItems.addAll(newMetaItems);
-    }
-
-    public static <T extends Collection<MetaItem>, V extends Collection<Value>> void replaceMetaByNameWithValues(T metaItems, String name, V newValues) {
-        metaItems.removeIf(isMetaNameEqualTo(name));
-        newValues
-            .stream()
-            .map(value -> new MetaItem(name, value))
-            .forEach(metaItems::add);
-    }
-
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, MetaItem newMetaItem) {
-        replaceMetaByName(metaItems, hasUniqueResourceName.getUrn(), newMetaItem);
-    }
-
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, Value newValue) {
-        replaceMetaByName(metaItems, hasUniqueResourceName.getUrn(), newValue);
-    }
-
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, T newMetaItems) {
-        replaceMetaByName(metaItems, hasUniqueResourceName.getUrn(), newMetaItems);
-    }
-
-    public static <T extends Collection<MetaItem>, V extends Collection<Value>> void replaceMetaByNameWithValues(T metaItems, HasUniqueResourceName hasUniqueResourceName, V newValues) {
-        replaceMetaByNameWithValues(metaItems, hasUniqueResourceName.getUrn(), newValues);
     }
 }

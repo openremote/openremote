@@ -1,6 +1,6 @@
-import {customElement, html, LitElement, property, TemplateResult, css, PropertyValues} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
 import {
-    getAssetDescriptors,
+    getAssetInfos,
     getAssetTypeFromQuery,
     OrRulesRuleChangedEvent,
     OrRulesRuleUnsupportedEvent,
@@ -8,9 +8,9 @@ import {
     RuleView
 } from "../index";
 import {
-    AssetDescriptor,
     AssetQuery,
     AssetQueryOperator as AQO,
+    AssetTypeInfo,
     JsonRule,
     JsonRulesetDefinition,
     LogicGroup,
@@ -120,9 +120,9 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
 
     protected _rule!: JsonRule;
     protected _unsupported = false;
-    protected _assetDescriptors?: AssetDescriptor[];
-    _whenAssetDescriptors?: AssetDescriptor[];
-    _actionAssetDescriptors?: AssetDescriptor[];
+    protected _assetTypeInfo?: AssetTypeInfo[];
+    _whenAssetInfos?: AssetTypeInfo[];
+    _actionAssetInfos?: AssetTypeInfo[];
 
     constructor() {
         super();
@@ -180,10 +180,10 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         }
     }
 
-    updated(changedPropreties:PropertyValues) {
-        if(changedPropreties.has('config')){
-            this.getAssetDescriptors(false);
-            this.getAssetDescriptors(true);
+    updated(changedProperties: PropertyValues) {
+        if (changedProperties.has('config')) {
+            this.loadAssetDescriptors(false);
+            this.loadAssetDescriptors(true);
         }
     }
 
@@ -196,35 +196,25 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         const targetTypeMap = getTargetTypeMap(this._rule);
         return html`
             <div class="section-container">                                    
-                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetDescriptors="${this._whenAssetDescriptors}" ?readonly="${this.readonly}"></or-rule-when>
+                <or-rule-when .rule="${this._rule}" .config="${this.config}" .assetInfos="${this._whenAssetInfos}" ?readonly="${this.readonly}"></or-rule-when>
             </div>
         
             <div class="section-container">              
-                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetDescriptors="${this._actionAssetDescriptors}" ?readonly="${this.readonly}"></or-rule-then-otherwise>
+                <or-rule-then-otherwise .rule="${this._rule}" .config="${this.config}" .targetTypeMap="${targetTypeMap}" .assetInfos="${this._actionAssetInfos}" ?readonly="${this.readonly}"></or-rule-then-otherwise>
             </div>
         `;
     }
 
-    protected getAssetDescriptors(useActionConfig: boolean) {
-        getAssetDescriptors(this.config, useActionConfig).then(result => {
+    protected loadAssetDescriptors(useActionConfig: boolean) {
+        getAssetInfos(this.config, useActionConfig).then(result => {
+
             if (useActionConfig) {
-                if (this._actionAssetDescriptors) {
-                    return this._actionAssetDescriptors;
-                }
-                this._actionAssetDescriptors = [...result];
+                this._actionAssetInfos = [...result];
                 this.requestUpdate();
-
-                return this._actionAssetDescriptors;
+            } else {
+                this._whenAssetInfos = [...result];
+                this.requestUpdate();
             }
-    
-            if (this._whenAssetDescriptors) {
-                return this._whenAssetDescriptors;
-            }
-    
-            this._whenAssetDescriptors = [...result];
-            this.requestUpdate();
-
-            return this._whenAssetDescriptors;
         })
     }
 
@@ -390,14 +380,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             }
         }
 
-        if (query.types) {
-            for (const type of query.types) {
-                if (!type.value || !type.predicateType) {
-                    return false;
-                }
-            }
-        }
-
         if (query.attributes && query.attributes.items) {
             for (const attribute of query.attributes.items) {
                 if (!attribute.name || !attribute.name.match || !attribute.name.value) {
@@ -418,8 +400,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 return valuePredicate.match !== undefined && valuePredicate.value !== undefined;
             case "boolean":
                 return valuePredicate.value !== undefined;
-            case "string-array":
-                return valuePredicate.predicates !== undefined && valuePredicate.predicates.length > 0 && valuePredicate.predicates.findIndex((p) => !p.match || p.value === undefined) === 0;
             case "datetime":
             case "number":
                 return valuePredicate.operator !== undefined && valuePredicate.value !== undefined && (valuePredicate.operator !== AQO.BETWEEN || valuePredicate.rangeValue !== undefined);
@@ -427,8 +407,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
                 return valuePredicate.radius !== undefined && valuePredicate.lat !== undefined && valuePredicate.lng !== undefined;
             case "rect":
                 return valuePredicate.lngMax !== undefined && valuePredicate.latMax !== undefined && valuePredicate.lngMin !== undefined && valuePredicate.latMin !== undefined;
-            case "object-value-key":
-                return valuePredicate.key !== undefined;
             case "array":
                 return (valuePredicate.index && !valuePredicate.value) || valuePredicate.value || valuePredicate.lengthEquals || valuePredicate.lengthLessThan || valuePredicate.lengthGreaterThan;
             case "value-empty":

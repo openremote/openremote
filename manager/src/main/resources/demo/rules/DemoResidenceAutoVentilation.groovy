@@ -2,6 +2,8 @@ package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.manager.rules.RulesFacts
+import org.openremote.model.asset.impl.BuildingAsset
+import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.AssetQuery.Operator
 import org.openremote.model.rules.AssetState
@@ -9,8 +11,6 @@ import org.openremote.model.rules.AssetState
 import java.util.logging.Logger
 import java.util.stream.Stream
 
-import static org.openremote.model.asset.AssetType.RESIDENCE
-import static org.openremote.model.asset.AssetType.ROOM
 import static org.openremote.model.query.AssetQuery.Operator.*
 
 Logger LOG = binding.LOG
@@ -20,24 +20,24 @@ final VENTILATION_LEVEL_LOW = 64d
 final VENTILATION_LEVEL_MEDIUM = 128d
 final VENTILATION_LEVEL_HIGH = 255d
 
-final VENTILATION_THRESHOLD_MEDIUM_CO2_TIME_WINDOW = "15m"
+final VENTILATION_THRESHOLD_MEDIUM_CO2_TIME_WINDOW = "PT15M"
 final VENTILATION_THRESHOLD_MEDIUM_CO2_LEVEL = 700d
-final VENTILATION_THRESHOLD_MEDIUM_HUMIDITY_TIME_WINDOW = "1m"
+final VENTILATION_THRESHOLD_MEDIUM_HUMIDITY_TIME_WINDOW = "PT1M"
 final VENTILATION_THRESHOLD_MEDIUM_HUMIDITY = 70d
 
-final VENTILATION_THRESHOLD_HIGH_CO2_TIME_WINDOW = "5m"
+final VENTILATION_THRESHOLD_HIGH_CO2_TIME_WINDOW = "PT5M"
 final VENTILATION_THRESHOLD_HIGH_CO2_LEVEL = 1000d
-final VENTILATION_THRESHOLD_HIGH_HUMIDITY_TIME_WINDOW = "1m"
+final VENTILATION_THRESHOLD_HIGH_HUMIDITY_TIME_WINDOW = "PT1M"
 final VENTILATION_THRESHOLD_HIGH_HUMIDITY = 85d
 
-final VENTILATION_THRESHOLD_MEDIUM_TIME_WINDOW = "30m"
-final VENTILATION_THRESHOLD_HIGH_TIME_WINDOW = "15m"
+final VENTILATION_THRESHOLD_MEDIUM_TIME_WINDOW = "PT30M"
+final VENTILATION_THRESHOLD_HIGH_TIME_WINDOW = "PT15M"
 
-Closure<Stream<AssetState>> residenceWithVentilationAutoMatch =
+Closure<Stream<AssetState<?>>> residenceWithVentilationAutoMatch =
         { RulesFacts facts, Operator operator, double ventilationLevelThreshold ->
             // Any residence where auto ventilation is on
             facts.matchAssetState(
-                    new AssetQuery().types(RESIDENCE).attributeValue("ventilationAuto", true)
+                    new AssetQuery().types(BuildingAsset).attributeValue("ventilationAuto", true)
             ).filter { residenceWithVentilationAuto ->
 
                 // and ventilation level is above/below/equal/etc. threshold
@@ -63,17 +63,17 @@ Closure<Boolean> roomThresholdMatch =
         { RulesFacts facts, AssetState residence, String attribute, boolean above, double threshold, String timeWindow ->
             // Any room of the residence which has a level greater than zero
             def roomWithMaxLevel = facts.matchAssetState(
-                    new AssetQuery().types(ROOM).parents(residence.id).attributeValue(attribute, GREATER_THAN, 0)
+                    new AssetQuery().types(RoomAsset).parents(residence.id).attributeValue(attribute, GREATER_THAN, 0)
             ).max { roomA, roomB ->
                 // get the room with the highest level
-                Double.compare(roomA.valueAsNumber.orElse(0), roomB.valueAsNumber.orElse(0))
+                Double.compare(roomA.value.orElse(0))
             }
 
             if (roomWithMaxLevel.isPresent()) {
                 // if we have a room with max level
                 return roomWithMaxLevel.filter { room ->
                     // and the level is above/below threshold
-                    room.valueAsNumber.filter({ level -> above ? level > threshold : level <= threshold }).isPresent()
+                    room.value.isPresent()
                 }.filter { roomAboveBelowThreshold ->
                     // and no level above/below threshold in the time window
                     facts.matchAssetEvent(
@@ -110,7 +110,7 @@ rules.add()
         .then(
         { facts ->
             AssetState residence = facts.bound("residence")
-            LOG.info("Ventilation auto and too much CO2/humidity in a room, switching to MEDIUM: " + residence.name)
+            LOG.info("Ventilation auto and too much CO2/humidity in a room, switching to MEDIUM: " + residence.assetName)
             facts.updateAssetState(residence.id, "ventilationLevel", VENTILATION_LEVEL_MEDIUM)
         })
 
@@ -136,7 +136,7 @@ rules.add()
         .then(
         { facts ->
             AssetState residence = facts.bound("residence")
-            LOG.info("Ventilation auto and low CO2/humidity in all rooms, switching to LOW: " + residence.name)
+            LOG.info("Ventilation auto and low CO2/humidity in all rooms, switching to LOW: " + residence.assetName)
             facts.updateAssetState(residence.id, "ventilationLevel", VENTILATION_LEVEL_LOW)
         })
 
@@ -162,7 +162,7 @@ rules.add()
         .then(
         { facts ->
             AssetState residence = facts.bound("residence")
-            LOG.info("Ventilation auto and too much CO2/humidity in a room, switching to HIGH: " + residence.name)
+            LOG.info("Ventilation auto and too much CO2/humidity in a room, switching to HIGH: " + residence.assetName)
             facts.updateAssetState(residence.id, "ventilationLevel", VENTILATION_LEVEL_HIGH)
         })
 
@@ -188,6 +188,6 @@ rules.add()
         .then(
         { facts ->
             AssetState residence = facts.bound("residence")
-            LOG.info("Ventilation auto and low CO2/humidity in all rooms, switching to MEDIUM: " + residence.name)
+            LOG.info("Ventilation auto and low CO2/humidity in all rooms, switching to MEDIUM: " + residence.assetName)
             facts.updateAssetState(residence.id, "ventilationLevel", VENTILATION_LEVEL_MEDIUM)
         })

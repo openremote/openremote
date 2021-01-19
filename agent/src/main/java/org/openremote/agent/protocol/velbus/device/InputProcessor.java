@@ -20,10 +20,8 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
@@ -63,13 +61,13 @@ public class InputProcessor extends ChannelProcessor {
         }
     }
 
-    public enum ChannelState implements DevicePropertyValue<ChannelState> {
+    public enum ChannelState {
         PRESSED(0x01),
         RELEASED(0x02),
         LONG_PRESSED(0x04);
 
         private static final EnumSet<ChannelState> values = EnumSet.allOf(ChannelState.class);
-        private int code;
+        private final int code;
 
         ChannelState(int code) {
             this.code = code;
@@ -79,39 +77,16 @@ public class InputProcessor extends ChannelProcessor {
             return this.code;
         }
 
-        @Override
-        public Value toValue(ValueType valueType) {
-            switch (valueType) {
-                case BOOLEAN:
-                    switch (this) {
-                        case PRESSED:
-                            return Values.create(false);
-                        case RELEASED:
-                            return null;
-                        case LONG_PRESSED:
-                            return Values.create(true);
-                    }
-                default:
-                    return EnumUtil.enumToValue(this, valueType);
-            }
-        }
-
-        @Override
-        public ChannelState getPropertyValue() {
-            return this;
-        }
-
-        public static Optional<ChannelState> fromValue(Value value) {
+        public static Optional<ChannelState> fromValue(Object value) {
             if (value == null) {
                 return Optional.empty();
             }
 
-            switch (value.getType()) {
-                case BOOLEAN:
-                    return fromBoolean(Values.getBoolean(value).orElse(null));
-                default:
-                    return EnumUtil.enumFromValue(ChannelState.class, value);
+            if (Values.isBoolean(value.getClass())) {
+                return fromBoolean(Values.getBoolean(value).orElse(null));
             }
+
+            return EnumUtil.enumFromValue(ChannelState.class, value);
         }
 
         public static Optional<ChannelState> fromCode(int integer) {
@@ -144,25 +119,25 @@ public class InputProcessor extends ChannelProcessor {
                 switch (propertyType) {
                     case CHANNEL_STATE:
                         if (deviceType != VelbusDeviceType.VMB4AN) {
-                            properties.add(new PropertyDescriptor("ch"+i+"State", "CH" + i, "CH" + i, AttributeValueType.STRING));
+                            properties.add(new PropertyDescriptor("ch"+i+"State", "CH" + i, "CH" + i, ValueType.TEXT));
                         }
                         break;
                     case LED_STATE:
                         if (deviceType != VelbusDeviceType.VMB4AN) {
-                            properties.add(new PropertyDescriptor("ch"+i+"LedState", "CH" + i + "LED State", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.STRING));
+                            properties.add(new PropertyDescriptor("ch"+i+"LedState", "CH" + i + "LED State", "CH" + i + propertyType.getPropertySuffix(), ValueType.TEXT));
                         }
                         break;
                     case LOCK_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Locked", "CH" + i + " Locked", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.BOOLEAN));
+                        properties.add(new PropertyDescriptor("ch"+i+"Locked", "CH" + i + " Locked", "CH" + i + propertyType.getPropertySuffix(), ValueType.BOOLEAN));
                         break;
                     case LOCK_DURATION:
-                        properties.add(new PropertyDescriptor("ch"+i+"LockDuration", "CH" + i + " Lock Duration (s)", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.NUMBER));
+                        properties.add(new PropertyDescriptor("ch"+i+"LockDuration", "CH" + i + " Lock Duration (s)", "CH" + i + propertyType.getPropertySuffix(), ValueType.NUMBER));
                         break;
                     case ENABLED_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Enabled", "CH" + i + " Enabled", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.BOOLEAN, true));
+                        properties.add(new PropertyDescriptor("ch"+i+"Enabled", "CH" + i + " Enabled", "CH" + i + propertyType.getPropertySuffix(), ValueType.BOOLEAN, true));
                         break;
                     case INVERTED_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Inverted", "CH" + i + " Inverted", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.BOOLEAN, true));
+                        properties.add(new PropertyDescriptor("ch"+i+"Inverted", "CH" + i + " Inverted", "CH" + i + propertyType.getPropertySuffix(), ValueType.BOOLEAN, true));
                         break;
                 }
 
@@ -178,9 +153,9 @@ public class InputProcessor extends ChannelProcessor {
         // Initialise basic state as disabled addresses don't broadcast this info
         for (int i=1; i<=getMaxChannelNumber(device.getDeviceType()); i++) {
             device.setProperty("CH" + i, ChannelState.RELEASED);
-            device.setProperty("CH" + i + "_ENABLED", BooleanDevicePropertyValue.FALSE);
-            device.setProperty("CH" + i + "_LOCKED", BooleanDevicePropertyValue.FALSE);
-            device.setProperty("CH" + i + "_INVERTED", BooleanDevicePropertyValue.FALSE);
+            device.setProperty("CH" + i + "_ENABLED", false);
+            device.setProperty("CH" + i + "_LOCKED", false);
+            device.setProperty("CH" + i + "_INVERTED", false);
             device.setProperty("CH" + i + "_LED", LedState.OFF);
         }
 
@@ -196,7 +171,7 @@ public class InputProcessor extends ChannelProcessor {
     }
 
     @Override
-    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Value value) {
+    public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return getChannelNumberAndPropertyType(device, property)
             .map(
                 channelNumberAndPropertyType -> {
@@ -245,7 +220,7 @@ public class InputProcessor extends ChannelProcessor {
                                     duration -> {
                                         packets.addAll(getLockStatePackets(device, channelNumber, duration));
                                         // Push value into device cache as well
-                                        device.setProperty(property, new IntDevicePropertyValue(duration));
+                                        device.setProperty(property, duration);
                                     }
                                 );
                             break;
@@ -290,9 +265,9 @@ public class InputProcessor extends ChannelProcessor {
 
                 for (int i=startChannel; i<startChannel+8; i++) {
                     ChannelState state = (statusByte & 0x01) == 1 ? ChannelState.PRESSED : ChannelState.RELEASED;
-                    BooleanDevicePropertyValue enabled = (enabledByte & 0x01) == 1 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
-                    BooleanDevicePropertyValue inverted = (invertedByte & 0x01) == 0 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
-                    BooleanDevicePropertyValue locked = (lockByte & 0x01) == 1 ? BooleanDevicePropertyValue.TRUE : BooleanDevicePropertyValue.FALSE;
+                    boolean enabled = (enabledByte & 0x01) == 1;
+                    boolean inverted = (invertedByte & 0x01) == 0;
+                    boolean locked = (lockByte & 0x01) == 1;
                     statusByte = statusByte >>> 1;
                     enabledByte = enabledByte >>> 1;
                     invertedByte = invertedByte >>> 1;

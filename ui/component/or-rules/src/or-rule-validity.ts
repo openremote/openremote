@@ -1,15 +1,13 @@
-import { css, customElement, html, LitElement, property, PropertyValues} from "lit-element";
-import { RulesetUnion } from "@openremote/model";
-import {
-    OrRulesRuleChangedEvent
-} from "./index";
+import {css, customElement, html, LitElement, property, PropertyValues} from "lit-element";
+import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
+import {OrRulesRuleChangedEvent} from "./index";
 import "@openremote/or-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 
-import {DialogAction, OrMwcDialog } from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import { RRule, Weekday } from 'rrule'
+import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {ByWeekday, RRule, Weekday} from 'rrule'
 import moment from "moment";
 
 @customElement("or-rule-validity")
@@ -45,16 +43,16 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 if (dialog) dialog.close();
                 this.rulesetId = this.ruleset.id
             }
-            if(!this.ruleset.meta) this.ruleset.meta = {};
-            if(!this.ruleset.meta["urn:openremote:rule:meta:validity"]) return;
-
-            if(this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence) {
-                this.rrule = RRule.fromString(this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence)
+            const validity = this.ruleset.meta ? this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent : undefined;
+            if (validity && validity.recurrence) {
+                this.rrule = RRule.fromString(validity.recurrence)
+            } else {
+                this.rrule = new RRule();
             }
         }
     }
 
-    getWeekDay(weekday: string) {
+    getWeekDay(weekday: string): ByWeekday | undefined {
         switch (weekday) {
             case "MO":
                 return RRule.MO
@@ -75,82 +73,80 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
     isAllDay() {
         if(this.ruleset && this.ruleset.meta) {
-            const validity = this.ruleset.meta["urn:openremote:rule:meta:validity"];
-            if(moment(validity.start).hours() === 0 && moment(validity.start).minutes() === 0 
-            && moment(validity.end).hours() === 23 && moment(validity.end).minutes() === 59) {
-                return true
-            }
+            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
+            return validity && moment(validity.start).hours() === 0 && moment(validity.start).minutes() === 0
+            && moment(validity.end).hours() === 23 && moment(validity.end).minutes() === 59;
         }
     }
 
     protected setRRuleValue(value: any, key?: string) {
-        if(key && this.rrule && this.ruleset){
-            const origOptions:any = this.rrule.origOptions
+        if (key && this.rrule && this.ruleset) {
+            const origOptions = this.rrule.origOptions;
+            if (!this.ruleset.meta) {
+                this.ruleset.meta = {};
+            }
+            if (!this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
+                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = {};
+            }
+            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
             switch (key) {
                 case "all-day":
-                    if(value) {
-                        if(this.ruleset.meta) {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).startOf('day');
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).endOf('day');
-                        }
+                    if (value) {
+                        validity.start = moment(validity.start).startOf("day").toDate().getTime();
+                        validity.end = moment(validity.end).endOf("day").toDate().getTime();
                     } else {
-                        if(this.ruleset.meta) {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment();
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment().add(1, 'hour');
-                        }
-                        
+                        validity.start = moment().toDate().getTime();
+                        validity.end = moment().add(1, 'hour').toDate().getTime();
                     }
                     break;
                 case "start":
-                    if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"]['start'] = moment(value).set({hour:0,minute:0,second:0,millisecond:0}).format();
-
-                    if(this.getValidityType() === "validityRecurrence") 
-                        origOptions[key] = moment(value).format();
+                    validity.start = moment(value).set({hour:0,minute:0,second:0,millisecond:0}).toDate().getTime();
+                    if (this.getValidityType() === "validityRecurrence") {
+                        origOptions.dtstart = moment(value).toDate();
                         this.rrule = new RRule(origOptions);
+                    }
                     break;
                 case "end":
-                    if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"]['end'] = moment(value).set({hour:23,minute:59,second:0,millisecond:0}).format();
+                    validity.end = moment(value).set({hour:23,minute:59,second:0,millisecond:0}).toDate().getTime();
                     break;
                 case "never-ends":
-                    if(value) {
+                    if (value) {
                         delete origOptions.until
                     } else {
-                        origOptions.until = new Date(moment().add(1, 'year').format());
+                        origOptions.until = moment().add(1, 'year').toDate();
                     }
-                    if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
+                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "byweekday":
-                    if(!origOptions[key]) origOptions[key] = [];
-                    if(value.checked) {
-                        origOptions[key].push(this.getWeekDay(value.name))
+                    if (!origOptions.byweekday) origOptions.byweekday = [];
+                    if (!Array.isArray(origOptions.byweekday)) origOptions.byweekday = [origOptions.byweekday as ByWeekday];
+                    if (value.checked) {
+                        const weekDay = this.getWeekDay(value.name);
+                        if (weekDay) origOptions.byweekday.push(weekDay);
                     } else {
-                        origOptions[key] = origOptions[key].filter((day:Weekday) => day !== this.getWeekDay(value.name));
+                        origOptions.byweekday = origOptions.byweekday.filter((day) => day !== this.getWeekDay(value.name));
                     }
-                    if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
+                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "until":
-                    if(this.rrule.options.until) {
+                    if (this.rrule.options.until) {
                         const newDate = moment(value)
                         origOptions["until"] = new Date(moment(origOptions["until"]).set({year: newDate.year(), month: newDate.month(), date: newDate.date()}).format())
                     }
-                    if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
+                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "dtstart-time":
                     const timeParts = value.split(':');
-                    origOptions["dtstart"] = moment(origOptions["dtstart"]).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).format()
-                    if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(origOptions["dtstart"]).format();
-                    if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
+                    origOptions.dtstart = moment(origOptions.dtstart).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).toDate();
+                    validity.start = moment(origOptions["dtstart"]).toDate().getTime();
+                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "until-time":
                     const untilParts = value.split(':');
-                    if(this.rrule.options.until) {
-                        origOptions["until"] = moment(origOptions["until"]).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).format()
+                    if (this.rrule.options.until) {
+                        origOptions.until = moment(origOptions.until).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate()
                     }
-                    if(this.ruleset.meta)
-                        this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).format();
+                    validity.end = moment(validity.end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate().getTime();
                     if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
             }
@@ -159,56 +155,60 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     }
 
     timeLabel() {
-        if(this.getValidityType() === "validityAlways") {
-            return i18next.t("validityAlways")
-        } else if(this.ruleset && this.ruleset.meta && this.ruleset.meta["urn:openremote:rule:meta:validity"] && this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence){
-            const diff = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).diff(this.ruleset.meta["urn:openremote:rule:meta:validity"].start, 'days');
+        if (this.getValidityType() === "validityAlways") {
+            return i18next.t("validityAlways");
+        } else if (this.ruleset && this.ruleset.meta && this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] && (this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent).recurrence) {
+            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
+            const diff = moment(validity.end).diff(validity.start, "days");
             let diffString = "";
-            if(this.isAllDay()) {
+            if (this.isAllDay()) {
                 if(diff > 0) diffString = " "+i18next.t('forDays', {days: diff});
-                return this.rrule.toText()+diffString;
+                return this.rrule.toText() + diffString;
             } else {
-                if(diff > 0) diffString = i18next.t("fromToDays", {start: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm"), end: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm"), days: diff })
-                if(diff === 0) diffString = i18next.t("fromTo", {start: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm"), end: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm") })
-                return this.rrule.toText()+" "+diffString;
+                if(diff > 0) diffString = i18next.t("fromToDays", {start: moment(validity.start).format("HH:mm"), end: moment(validity.end).format("HH:mm"), days: diff })
+                if(diff === 0) diffString = i18next.t("fromTo", {start: moment(validity.start).format("HH:mm"), end: moment(validity.end).format("HH:mm") })
+                return this.rrule.toText() + " " + diffString;
             } 
-        } else if(this.ruleset && this.ruleset.meta && this.ruleset.meta["urn:openremote:rule:meta:validity"]){
+        } else if (this.ruleset && this.ruleset.meta && this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
+            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
             let format = "DD-MM-YYYY";
             if(!this.isAllDay()) format = "DD-MM-YYYY HH:mm";
-            return i18next.t("activeFromTo", {start: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format(format), end: moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format(format) })
+            return i18next.t("activeFromTo", {start: moment(validity.start).format(format), end: moment(validity.end).format(format) })
         }
     }
 
     setValidityType(value: any) {
-        if(!this.ruleset || !this.ruleset.meta) return
+        if(!this.ruleset || !this.ruleset.meta) return;
+
         switch (value) {
             case "validityAlways":
-                this.ruleset.meta["urn:openremote:rule:meta:validity"] = null;
+                delete this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY];
                 break;
             case "validityPeriod":
-                this.ruleset.meta["urn:openremote:rule:meta:validity"] = {
-                    start: moment().startOf('day'),
-                    end:moment().endOf('day')
-                };
+                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = {
+                        start: moment().startOf('day').toDate().getTime(),
+                        end: moment().endOf('day').toDate().getTime()
+                    } as CalendarEvent;
                 break;
             case "validityRecurrence":
-                this.ruleset.meta["urn:openremote:rule:meta:validity"] = {
-                    start: moment().startOf('day'),
-                    end:moment().endOf('day'),
-                    recurrence: {}
-                };
+                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = {
+                        start: moment().startOf("day").toDate().getTime(),
+                        end: moment().endOf("day").toDate().getTime(),
+                        recurrence: {}
+                    } as CalendarEvent;
                 break;
         }
-        this.requestUpdate('ruleset')
+        this.requestUpdate("ruleset");
     }
 
     getValidityType () {
-        if(this.ruleset && this.ruleset.meta && this.ruleset.meta["urn:openremote:rule:meta:validity"]) {
-            if(this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence) {
-                return "validityRecurrence"
-            } else {
-                return "validityPeriod"
+        if(this.ruleset && this.ruleset.meta && this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
+            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
 
+            if (validity.recurrence) {
+                return "validityRecurrence";
+            } else {
+                return "validityPeriod";
             }
         }
         return "validityAlways";
@@ -222,6 +222,8 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         const selectedOptions = this.rrule.options && this.rrule.options.byweekday ? this.rrule.options.byweekday.map(day => new Weekday(day).toString()) : [];
        
         if (dialog && this.ruleset && this.ruleset.meta) {
+            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
+
             dialog.dialogContent = html`
                 <div style="min-height: 200px; min-width: 635px; display:grid; flex-direction: row;">
                     <div class="layout horizontal">
@@ -232,12 +234,12 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                         <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
                         <div style="display: flex; justify-content: space-between;" class="layout horizontal">
                             <div> 
-                                <or-input value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
-                                <or-input .disabled=${this.isAllDay()} .value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
+                                <or-input value="${moment(validity.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
+                                <or-input .disabled=${this.isAllDay()} .value="${moment(validity.start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
                             </div>
                             <div>
-                                <or-input .value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-input>
-                                <or-input .disabled=${this.isAllDay()} .value="${moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-input>
+                                <or-input .value="${moment(validity.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-input>
+                                <or-input .disabled=${this.isAllDay()} .value="${moment(validity.end).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-input>
                             </div>
                         </div>  
                         
@@ -247,7 +249,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     ` : ``}
                  
                     ${validityType  === "validityRecurrence" ? html`
-                        <label style="display:block; margin-top: 20px;"><or-translate value="repeatOccurenceEvery"></or-translate></label>
+                        <label style="display:block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
                         <div class="layout horizontal">
                             <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
                         </div>
@@ -287,12 +289,13 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("apply")}"></or-input>`,
                 action: () => {
                     if(this.ruleset && this.ruleset.meta) {
+                        const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
                         if(this.getValidityType() === "validityRecurrence") {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].recurrence = this.rrule.toString().split("RRULE:")[1]
+                            validity.recurrence = this.rrule.toString().split("RRULE:")[1]
                         }
                         if(this.getValidityType() === "validityPeriod" || this.getValidityType() === "validityRecurrence") {
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].start = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].start).unix()*1000
-                            this.ruleset.meta["urn:openremote:rule:meta:validity"].end = moment(this.ruleset.meta["urn:openremote:rule:meta:validity"].end).unix()*1000
+                            validity.start = moment(validity.start).toDate().getTime();
+                            validity.end = moment(validity.end).toDate().getTime();
                         }
                         this.dispatchEvent(new OrRulesRuleChangedEvent(true));
                         this.requestUpdate('ruleset')

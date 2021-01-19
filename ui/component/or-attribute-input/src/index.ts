@@ -12,31 +12,20 @@ import {
 import {ifDefined} from "lit-html/directives/if-defined";
 import {i18next, translate} from "@openremote/or-translate";
 import {
-    AssetAttribute,
+    Attribute,
     AttributeDescriptor,
     AttributeEvent,
     AttributeRef,
-    AttributeValueDescriptor,
-    AttributeValueType,
-    MetaItemType,
+    WellknownMetaItems,
     SharedEvent,
-    ValueType
+    ValueDescriptor,
+    WellknownValueTypes
 } from "@openremote/model";
 import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-input";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputTemplateFunction, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider} from "@openremote/or-input";
 import "@openremote/or-map";
-import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {
-    getMarkerIconAndColorFromAssetType,
-    LngLat,
-    MapEventDetail,
-    MapGL,
-    OrMapClickedEvent,
-    Util as MapUtil,
-    OrMap,
-    OrMapMarker
-} from "@openremote/or-map";
+import { geoJsonPointInputTemplateProvider } from "@openremote/or-map";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -65,237 +54,7 @@ declare global {
     }
 }
 
-export type AttributeInputCustomProviderResult = ((value: any, timestamp: number | undefined, loading: boolean, sending: boolean, error: boolean) => TemplateResult) | undefined;
-
-export type AttributeInputCustomProvider = (assetType: string | undefined, attribute: AssetAttribute | undefined, attributeDescriptor: AttributeDescriptor | undefined, valueDescriptor: AttributeValueDescriptor | undefined, valueChangeNotifier: (value: any | undefined) => void, attributeInput: OrAttributeInput) => AttributeInputCustomProviderResult;
-
-export class CenterControl {
-    protected map?: MapGL;
-    protected elem?: HTMLElement;
-    public pos?: LngLat;
-
-    onAdd(map: MapGL): HTMLElement {
-        this.map = map;
-        const control = document.createElement("div");
-        control.classList.add("mapboxgl-ctrl");
-        control.classList.add("mapboxgl-ctrl-group");
-        const button = document.createElement("button");
-        button.className = "mapboxgl-ctrl-icon mapboxgl-ctrl-geolocate";
-        button.addEventListener("click", (ev) => map.flyTo({
-            center: this.pos,
-            zoom: map.getZoom()
-        }));
-        control.appendChild(button);
-        this.elem = control;
-        return control;
-    }
-
-    onRemove(map: MapGL) {
-        this.map = undefined;
-        this.elem = undefined;
-    }
-}
-
-const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(-?\\d+\\.?\\d*)[ ]*$";
-
-function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
-    return (e: KeyboardEvent) => {
-        if (e.code === "Enter" || e.code === "NumpadEnter") {
-            const valStr = (e.target as OrInput).value as string;
-            let value: LngLat | undefined;
-
-            if (valStr) {
-                const lngLatArr = valStr.split(/[ ,]/).filter(v => !!v);
-                if (lngLatArr.length === 2) {
-                    value = new LngLat(
-                        Number.parseFloat(lngLatArr[0]),
-                        Number.parseFloat(lngLatArr[1])
-                    );
-                }
-            }
-            valueChangedHandler(value);
-        }
-    };
-}
-
-export class CoordinatesControl {
-
-    protected map?: MapGL;
-    protected elem?: HTMLElement;
-    protected input!: OrInput;
-    protected _readonly = false;
-    protected _value: any;
-    protected _valueChangedHandler: (value: LngLat | undefined) => void;
-
-    constructor(disabled: boolean = false, valueChangedHandler: (value: LngLat | undefined) => void) {
-        this._readonly = disabled;
-        this._valueChangedHandler = valueChangedHandler;
-    }
-
-    onAdd(map: MapGL): HTMLElement {
-        this.map = map;
-        const control = document.createElement("div");
-        control.classList.add("mapboxgl-ctrl");
-        control.classList.add("mapboxgl-ctrl-group");
-
-        const input = new OrInput();
-        input.type = InputType.TEXT;
-        input.outlined = true;
-        input.compact = true;
-        input.readonly = this._readonly;
-        input.icon = "crosshairs-gps";
-        input.value = this._value;
-        input.pattern = CoordinatesRegexPattern;
-        input.onkeyup = getCoordinatesInputKeyHandler(this._valueChangedHandler);
-
-        control.appendChild(input);
-        this.elem = control;
-        this.input = input;
-        return control;
-    }
-
-    onRemove(map: MapGL) {
-        this.map = undefined;
-        this.elem = undefined;
-    }
-
-    public set readonly(readonly: boolean) {
-        this._readonly = readonly;
-        if (this.input) {
-            this.input.readonly = readonly;
-        }
-    }
-
-    public set value(value: any) {
-        this._value = value;
-        if (this.input) {
-            this.input.value = value;
-        }
-    }
-}
-
-export const GeoJsonPointInputTemplateProvider: AttributeInputCustomProvider = (assetType, attribute, attributeDescriptor, valueDescriptor, valueChangeNotifier, attributeInput) => {
-
-    const centerControl = new CenterControl();
-    const coordinatesControl = new CoordinatesControl(attributeInput.disabled, valueChangeNotifier);
-
-    return (value, timestamp, loading, sending, error) => {
-        let pos: LngLat | undefined;
-        let center: number[] | undefined;
-
-        if (value) {
-            pos = MapUtil.getLngLat(value);
-            center = pos ? pos.toArray() : undefined;
-        }
-
-        const centerStr = center ? center.join(", ") : undefined;
-        centerControl.pos = pos;
-        coordinatesControl.readonly = !!attributeInput.disabled || !!attributeInput.readonly || sending || loading;
-        coordinatesControl.value = centerStr;
-
-        const iconAndColor = getMarkerIconAndColorFromAssetType(assetType);
-
-        let dialog: OrMwcDialog | undefined;
-
-        const updateHandler = () => {
-            if (valueChangeNotifier) {
-                valueChangeNotifier(MapUtil.getGeoJSONPoint(pos));
-            }
-        };
-
-        const setPos = (lngLat: LngLat | undefined) => {
-            if (attributeInput.readonly || attributeInput.disabled) {
-                return;
-            }
-
-            pos = lngLat;
-
-            if (dialog) {
-                // We're in compact mode modal
-                const marker = dialog.shadowRoot!.getElementById("geo-json-point-marker") as OrMapMarker;
-                marker.lng = pos ? pos.lng : undefined;
-                marker.lat = pos ? pos.lat : undefined;
-                center = pos ? pos.toArray() : undefined;
-                const centerStr = center ? center.join(", ") : undefined;
-                coordinatesControl.value = centerStr;
-            } else {
-                updateHandler();
-            }
-        };
-
-        let content = html`
-            <style>
-                or-map {
-                    border: #e5e5e5 1px solid;
-                    margin: 3px 0;
-                }
-            </style>
-            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
-                <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .color="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
-            </or-map>
-        `;
-
-        if (attributeInput.compact) {
-            const mapContent = content;
-
-            const onClick = () => {
-                dialog = showDialog(
-                    {
-                        content: mapContent,
-                        styles: html`
-                            <style>
-                                or-map {
-                                    width: 600px !important;
-                                    height: 600px !important;
-                                }
-                            </style>
-                        `,
-                        actions: [
-                            {
-                                actionName: "none",
-                                content: i18next.t("none"),
-                                action: () => {
-                                    setPos(undefined);
-                                    updateHandler();
-                                }
-                            },
-                            {
-                                actionName: "ok",
-                                content: i18next.t("ok"),
-                                action: () => {
-                                    updateHandler();
-                                }
-                            },
-                            {
-                                default: true,
-                                actionName: "cancel",
-                                content: i18next.t("cancel")
-                            }
-                        ]
-                    });
-            };
-
-            content = html`
-                <style>
-                    #geo-json-point-input-compact-wrapper {
-                        display: table-cell;
-                    }
-                    #geo-json-point-input-compact-wrapper > * {
-                        vertical-align: middle;
-                    }
-                </style>
-                <div id="geo-json-point-input-compact-wrapper">
-                    <or-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
-                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @click="${onClick}"></or-input>
-                </div>
-            `;
-        }
-
-        return getAttributeInputWrapper(content, loading, !!attributeInput.disabled, attributeInput.hasHelperText ? getHelperText(sending, false, timestamp) : undefined, attributeInput.label, undefined);
-    }
-}
-
-export function getAttributeInputWrapper(content: TemplateResult, loading: boolean, disabled: boolean, helperText: string | undefined, label: string | undefined, buttonIcon?: string, valueProvider?: () => any, valueChangeConsumer?: (value: any) => void): TemplateResult {
+export function getAttributeInputWrapper(content: TemplateResult, value: any, loading: boolean, disabled: boolean, helperText: string | undefined, label: string | undefined, buttonIcon?: string, sendValue?: () => void): TemplateResult {
 
     if (helperText) {
         content = html`
@@ -312,8 +71,8 @@ export function getAttributeInputWrapper(content: TemplateResult, loading: boole
                 ${content}
                 <or-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-input-changed="${(e: OrInputChangedEvent) => {
             e.stopPropagation();
-            if (valueProvider && valueChangeConsumer) {
-                valueChangeConsumer(valueProvider())
+            if (sendValue) {
+                sendValue();
             }
         }}"></or-input>
             `;
@@ -543,7 +302,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     @property({type: Object, reflect: false})
-    public attribute?: AssetAttribute;
+    public attribute?: Attribute<any>;
 
     @property({type: Object})
     public attributeRef?: AttributeRef;
@@ -552,7 +311,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public attributeDescriptor?: AttributeDescriptor;
 
     @property({type: Object})
-    public attributeValueDescriptor?: AttributeValueDescriptor;
+    public valueDescriptor?: ValueDescriptor;
 
     @property({type: String})
     public assetType?: string;
@@ -593,27 +352,19 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property()
     protected _writeTimeoutHandler?: number;
 
-    @query("#input")
-    protected _attrInput!: OrInput;
     @query("#send-btn")
     protected _sendButton!: OrInput;
     @query("#scrim")
     protected _scrimElem!: HTMLDivElement;
 
-    public customProvider?: AttributeInputCustomProvider;
+    public customProvider?: ValueInputProviderGenerator;
     public writeTimeout?: number = DEFAULT_TIMEOUT;
-    protected _template?: AttributeInputCustomProviderResult;
-    protected _attributeDescriptor?: AttributeDescriptor;
-    protected _attributeValueDescriptor?: AttributeValueDescriptor;
-    protected _inputType?: InputType;
-    protected _step?: number;
-    protected _min?: any;
-    protected _max?: any;
-    protected _unit?: string;
-    protected _options?: any;
-    protected _showButton?: boolean;
-    protected _valueFormat?: string;
+    protected _requestFocus = false;
+    protected _newValue: any;
+    protected _templateProvider?: ValueInputProvider;
     protected _sendError = false;
+    protected _attributeDescriptor?: AttributeDescriptor;
+    protected _valueDescriptor?: ValueDescriptor;
 
     public disconnectedCallback() {
         super.disconnectedCallback();
@@ -631,26 +382,26 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         if (_changedProperties.has("attributeDescriptor")
-            || _changedProperties.has("attributeValueDescriptor")
+            || _changedProperties.has("valueDescriptor")
             || _changedProperties.has("assetType")) {
             updateDescriptors = true;
         }
 
         if (_changedProperties.has("attribute")) {
-            const oldAttr = {..._changedProperties.get("attribute") as AssetAttribute};
+            const oldAttr = {..._changedProperties.get("attribute") as Attribute<any>};
             const attr = this.attribute;
 
             if (oldAttr && attr) {
                 const oldValue = oldAttr.value;
-                const oldTimestamp = oldAttr.valueTimestamp;
+                const oldTimestamp = oldAttr.timestamp;
 
                 // Compare attributes ignoring the timestamp and value
                 oldAttr.value = attr.value;
-                oldAttr.valueTimestamp = attr.valueTimestamp;
+                oldAttr.timestamp = attr.timestamp;
                 if (Util.objectsEqual(oldAttr, attr)) {
                     // Compare value and timestamp
-                    if (!Util.objectsEqual(oldValue, attr.value) || oldTimestamp !== attr.valueTimestamp) {
-                        this._onAttributeValueChanged(oldValue, attr.value, attr.valueTimestamp);
+                    if (!Util.objectsEqual(oldValue, attr.value) || oldTimestamp !== attr.timestamp) {
+                        this._onAttributeValueChanged(oldValue, attr.value, attr.timestamp);
                     } else if (_changedProperties.size === 1) {
                         // Only the attribute has 'changed' and we've handled it so don't perform update
                         return false;
@@ -675,7 +426,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._updateSubscribedRefs();
         }
 
-        if (this._template
+        if (this._templateProvider
             && (_changedProperties.has("disabled")
                 || _changedProperties.has("readonly")
                 || _changedProperties.has("label"))) {
@@ -700,32 +451,26 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (this.attributeRef) {
             return this.attributeRef;
         }
-        if (this.attribute) {
-            return {
-                entityId: this.attribute.assetId!,
-                attributeName: this.attribute.name!
-            }
-        }
     }
 
     protected _updateDescriptors(): void {
 
-        this._attributeValueDescriptor = undefined;
+        this._valueDescriptor = undefined;
         this._attributeDescriptor = undefined;
 
-        if (this.attributeDescriptor && this.attributeValueDescriptor) {
+        if (this.attributeDescriptor && this.valueDescriptor) {
             this._attributeDescriptor = this.attributeDescriptor;
-            this._attributeValueDescriptor = this.attributeValueDescriptor;
+            this._valueDescriptor = this.valueDescriptor;
         } else {
-            const attributeOrDescriptorOrName = this.attributeDescriptor || (this.attribute ? this.attribute : this.attributeRef ? this.attributeRef.attributeName! : undefined);
+            const attributeOrDescriptorOrName = this.attributeDescriptor || (this.attribute ? this.attribute.name : this.attributeRef ? this.attributeRef.name! : undefined);
 
             if (!attributeOrDescriptorOrName) {
                 this._attributeDescriptor = this.attributeDescriptor;
-                this._attributeValueDescriptor = this.attributeValueDescriptor;
+                this._valueDescriptor = this.valueDescriptor;
             } else {
-                const attributeAndValueDescriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, attributeOrDescriptorOrName);
+                const attributeAndValueDescriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, attributeOrDescriptorOrName, this.attribute);
                 this._attributeDescriptor = attributeAndValueDescriptors[0];
-                this._attributeValueDescriptor = this.attributeValueDescriptor ? this._attributeValueDescriptor : attributeAndValueDescriptors[1];
+                this._valueDescriptor = this.valueDescriptor ? this._valueDescriptor : attributeAndValueDescriptors[1];
             }
         }
 
@@ -733,98 +478,38 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     protected _updateTemplate(): void {
-        this._template = undefined;
-        this._inputType = undefined;
-        this._step = undefined;
-        this._min = undefined;
-        this._max = undefined;
-        this._unit = undefined;
-        this._options = undefined;
-        this._showButton = undefined;
-        this._inputType = undefined;
-        this._valueFormat = undefined;
+        this._templateProvider = undefined;
 
-        if (this.customProvider) {
-            this._template = this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this);
-        }
-
-        if (this._template) {
+        if (!this.assetType) {
             return;
         }
 
-        if (this.inputType) {
-            this._inputType = this.inputType;
-        } else if (this._attributeValueDescriptor) {
-            switch (this._attributeValueDescriptor.name) {
-                case AttributeValueType.GEO_JSON_POINT.name:
-                    this._template = GeoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor, (v) => this._updateValue(v), this);
-                    return;
-                case AttributeValueType.SWITCH_MOMENTARY.name:
-                    this._inputType = InputType.BUTTON_MOMENTARY;
-                    break;
-                default:
-                    // Use value type
-                    switch (this._attributeValueDescriptor.valueType) {
-                        case ValueType.STRING:
-                            this._inputType = InputType.TEXT;
-                            break;
-                        case ValueType.NUMBER:
-                            this._inputType = InputType.NUMBER;
-                            break;
-                        case ValueType.BOOLEAN:
-                            this._inputType = InputType.SWITCH;
-                            break;
-                        default:
-                            this._inputType = InputType.JSON;
-                            break;
-                    }
-                    break;
-            }
+        const valueDescriptor = AssetModelUtil.resolveValueDescriptor(this.attribute, this._valueDescriptor || this._attributeDescriptor);
+
+        if (!valueDescriptor) {
+            return;
         }
 
-        if (!this._inputType && (this.attribute || this.value)) {
-            const currentValue = this.attribute ? this.attribute.value : this.value;
+        const options: ValueInputProviderOptions = {
+            readonly: this.readonly,
+            disabled: this.disabled,
+            compact: this.compact,
+            label: this.getLabel()
+        };
 
-            if (currentValue !== undefined && currentValue !== null) {
-                if (typeof currentValue === "number") {
-                    this._inputType = InputType.NUMBER;
-                } else if (typeof currentValue === "string") {
-                    this._inputType = InputType.TEXT;
-                } else if (typeof currentValue === "boolean") {
-                    this._inputType = InputType.SWITCH;
-                } else {
-                    this._inputType = InputType.JSON;
-                }
-            }
+        if (this.customProvider) {
+            this._templateProvider = this.customProvider ? this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (v) => this._onInputValueChanged(v), options) : undefined;
+            return;
         }
 
-        if (this._inputType) {
-            this._min = Util.getMetaValue(MetaItemType.RANGE_MIN, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
-            this._max = Util.getMetaValue(MetaItemType.RANGE_MAX, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
-            this._unit = Util.getMetaValue(MetaItemType.UNIT_TYPE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as string;
-            this._step = Util.getMetaValue(MetaItemType.STEP, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor) as number;
-            this._options = Util.getMetaValue(MetaItemType.ALLOWED_VALUES, this.attribute, this._attributeDescriptor);
-
-            if (this._inputType === InputType.TEXT) {
-                if (this._options && Array.isArray(this._options) && this._options.length > 0) {
-                    this._inputType = InputType.SELECT;
-                } else if (Util.getMetaValue(MetaItemType.MULTILINE, this.attribute, this._attributeDescriptor, this._attributeValueDescriptor)) {
-                    this._inputType = InputType.TEXTAREA;
-                }
-            }
-
-            if (this._inputType === InputType.NUMBER) {
-                if (this._options && Array.isArray(this._options) && this._options.length > 0) {
-                    this._inputType = InputType.SELECT;
-                    this._options = this._options.map((opt, index) => [index, opt]);
-                } else if (this._min !== undefined && this._max) {
-                    this._inputType = InputType.RANGE;
-                }
-            }
-
-            this._valueFormat = Util.getAttributeValueFormat(this.attribute, this._attributeDescriptor, this._attributeValueDescriptor);
-            this._showButton = !this.isReadonly() && !this.disabled && !this.disableButton && this.inputTypeSupportsButton() && !!this._getAttributeRef();
+        // Handle special value types
+        if (valueDescriptor.name === WellknownValueTypes.GEOJSONPOINT) {
+            this._templateProvider = geoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (v: any) => this._onInputValueChanged(v), options);
+            return;
         }
+
+        // Fallback to simple input provider
+        this._templateProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (v: any) => this._onInputValueChanged(v), options);
     }
 
     public getLabel(): string | undefined {
@@ -833,69 +518,56 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (this.label) {
             label = this.label;
         } else if (this.label !== "" && this.label !== null) {
-            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute || this._attributeDescriptor);
-            label = Util.getAttributeLabel(this.attribute, descriptors[0], descriptors[1], true);
+            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assetType, this.attribute ? this.attribute!.name : undefined, this._attributeDescriptor);
+            label = Util.getAttributeLabel(this.attribute, descriptors[0], this.assetType, true);
         }
 
         return label;
     }
 
     public isReadonly(): boolean {
-        return this.readonly !== undefined ? this.readonly : Util.getMetaValue(MetaItemType.READ_ONLY, this.attribute, this._attributeDescriptor);
+        return this.readonly !== undefined ? this.readonly : Util.getMetaValue(WellknownMetaItems.READONLY, this.attribute, this._attributeDescriptor);
     }
 
     public render() {
 
-        // Check if attribute hasn't been loaded yet or pending write
-        const loading = (this.attributeRefs && !this._attributeEvent) || !!this._writeTimeoutHandler;
-        let content: TemplateResult | string | undefined = "";
-
-        const value = this.getValue();
-
-        if (this._template) {
-            content = this._template(value, this.getTimestamp(), loading, !!this._writeTimeoutHandler, this._sendError);
-        } else {
-
-            if (!this._inputType) {
-                content = html`<div><or-translate .value="attributeUnsupported"></or-translate></div>`;
-            }
-
-            const helperText = this.hasHelperText ? getHelperText(!!this._writeTimeoutHandler, this._sendError, this.getTimestamp()) : undefined;
-            const buttonIcon = this._writeTimeoutHandler ? "send-clock" : "send";
-            const supportsHelperText = this.inputTypeSupportsHelperText();
-            let label = this.getLabel();
-
-            if (helperText && !this.inputTypeSupportsHelperText()) {
-                label = undefined;
-            }
-
-            content = html`<or-input id="input" .type="${this._inputType}" .label="${label}" .value="${value}" 
-                .allowedValues="${this._options}" .min="${this._min}" .max="${this._max}" .format="${this._valueFormat}"
-                .options="${this._options}" .readonly="${this.isReadonly()}" .disabled="${this.disabled || loading}" 
-                .helperText="${supportsHelperText ? helperText : undefined}" .helperPersistent="${true}"
-                @keyup="${(e: KeyboardEvent) => {
-                    if ((e.code === "Enter" || e.code === "NumpadEnter") && this._inputType !== InputType.JSON && this._inputType !== InputType.TEXTAREA) {
-                        this._updateValue(this._attrInput.value);
-                    }
-                }}" @or-input-changed="${(e: OrInputChangedEvent) => {
-                    e.stopPropagation();
-                    if (!this._showButton) {
-                        this._updateValue(e.detail.value);
-                    }
-                }}"></or-input>`;
-
-            content = getAttributeInputWrapper(content, loading, !!this.disabled, !supportsHelperText ? helperText : undefined, this.getLabel(), this._showButton ? buttonIcon : this.disableButton ? undefined : "", () => this._attrInput.value, (v) => this._updateValue(v));
+        if (!this.assetType || !this._templateProvider) {
+            return html``;
         }
 
+        // Check if attribute hasn't been loaded yet or pending write
+        const loading = (this.attributeRefs && !this._attributeEvent) || !!this._writeTimeoutHandler;
+        let content: TemplateResult;
+
+        const value = this.getValue();
+        const focus = this._requestFocus;
+        this._requestFocus = false;
+        const helperText = this.hasHelperText ? getHelperText(!!this._writeTimeoutHandler, this._sendError, this.getTimestamp()) : undefined;
+        const buttonIcon = !this.showButton ? (this.disableButton ? undefined : "") : this._writeTimeoutHandler ? "send-clock" : "send";
+
+        if (this._templateProvider && this._templateProvider.templateFunction) {
+            content = this._templateProvider.templateFunction(value, focus, loading, !!this._writeTimeoutHandler, this._sendError, this._templateProvider.supportsHelperText ? helperText : undefined);
+        } else {
+            content = html`<or-translate .value="attributeUnsupported"></or-translate>`;
+        }
+
+        content = getAttributeInputWrapper(content, value, loading, !!this.disabled, this._templateProvider.supportsHelperText ? undefined : helperText, this._templateProvider.supportsLabel ? undefined : this.getLabel(), buttonIcon, () => this._updateValue());
         return content;
     }
 
     protected updated(_changedProperties: PropertyValues): void {
         if (_changedProperties.has("_writeTimeoutHandler") && !this._writeTimeoutHandler) {
-            if (this._attrInput) {
-                this._attrInput.focus();
-            }
+            this._requestFocus = true;
+            this.requestUpdate();
         }
+    }
+
+    protected get showButton(): boolean {
+        if (this.isReadonly() || this.disabled || this.disableButton || !this._getAttributeRef()) {
+            return false;
+        }
+
+        return this._templateProvider ? this._templateProvider.supportsSendButton : false;
     }
 
     protected getValue(): any {
@@ -903,28 +575,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     protected getTimestamp(): number | undefined {
-        return this._attributeEvent ? this._attributeEvent.timestamp : this.attribute ? this.attribute.valueTimestamp : undefined;
-    }
-
-    protected inputTypeSupportsButton() {
-        return this._inputType === InputType.NUMBER
-            || this._inputType === InputType.TELEPHONE
-            || this._inputType === InputType.TEXT
-            || this._inputType === InputType.PASSWORD
-            || this._inputType === InputType.DATE
-            || this._inputType === InputType.DATETIME
-            || this._inputType === InputType.EMAIL
-            || this._inputType === InputType.JSON
-            || this._inputType === InputType.MONTH
-            || this._inputType === InputType.TEXTAREA
-            || this._inputType === InputType.TIME
-            || this._inputType === InputType.URL
-            || this._inputType === InputType.WEEK;
-    }
-
-    protected inputTypeSupportsHelperText() {
-        return this.inputTypeSupportsButton()
-            || this._inputType === InputType.SELECT;
+        return this._attributeEvent ? this._attributeEvent.timestamp : this.attribute ? this.attribute.timestamp : undefined;
     }
 
     /**
@@ -943,7 +594,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected _onAttributeValueChanged(oldValue: any, newValue: any, timestamp?: number) {
         if (this.attribute) {
             this.attribute.value = newValue;
-            this.attribute.valueTimestamp = timestamp;
+            this.attribute.timestamp = timestamp;
         }
 
         this._clearWriteTimeout();
@@ -952,9 +603,15 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this.dispatchEvent(new OrAttributeInputChangedEvent(newValue, oldValue));
     }
 
-    protected _updateValue(newValue: any) {
-        const oldValue = this.getValue();
+    protected _onInputValueChanged(value: any) {
+        this._newValue = value;
 
+        if (!this.showButton) {
+            this._updateValue();
+        }
+    }
+
+    protected _updateValue() {
         if (this.readonly || this.isReadonly()) {
             return;
         }
@@ -962,6 +619,11 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (this._writeTimeoutHandler) {
             return;
         }
+
+        const oldValue = this.getValue();
+        const newValue = this._newValue;
+        this._newValue = undefined;
+
 
         // If we have an attributeRef then send an update and wait for the updated attribute event to come back through
         // the system or for the attribute property to be updated by a parent control or timeout and reset the value
@@ -993,12 +655,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     protected _onWriteTimeout() {
         this._sendError = true;
-        if (!this.inputTypeSupportsButton()) {
-            // Put the old value back
-            this._attrInput.value = this.getValue();
-        }
-        if (this.hasHelperText) {
-            this.requestUpdate();
+        if (!this.showButton || this.hasHelperText) {
+            this.requestUpdate("value");
         }
         this._clearWriteTimeout();
     }

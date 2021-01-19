@@ -19,21 +19,17 @@
  */
 package org.openremote.manager.agent;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerHealthStatusProvider;
-import org.openremote.container.ContainerService;
-import org.openremote.model.asset.Asset;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
+import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.Values;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AgentHealthStatusProvider implements ContainerHealthStatusProvider {
+public class AgentHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
     public static final String NAME = "agents";
     public static final String VERSION = "1.0";
@@ -70,97 +66,54 @@ public class AgentHealthStatusProvider implements ContainerHealthStatusProvider 
     }
 
     @Override
-    public Value getHealthStatus() {
+    public Object getHealthStatus() {
         AtomicInteger connectedCount = new AtomicInteger(0);
         AtomicInteger disabledCount = new AtomicInteger(0);
         AtomicInteger errorCount = new AtomicInteger(0);
         AtomicInteger otherCount = new AtomicInteger(0);
 
-        ObjectValue objectValue = Values.createObject();
+        ObjectNode objectValue = Values.JSON.createObjectNode();
         objectValue.put("agents", agentService.getAgents().size());
-        objectValue.put("protocols", agentService.protocols.size());
+        objectValue.put("protocols", agentService.protocolInstanceMap.size());
 
-        for (Asset agent : agentService.getAgents().values()) {
-            AtomicInteger total = new AtomicInteger(0);
-            AtomicInteger connected = new AtomicInteger(0);
-            AtomicInteger disabled = new AtomicInteger(0);
-            AtomicInteger error = new AtomicInteger(0);
-            AtomicInteger other = new AtomicInteger(0);
+        for (Agent<?, ?, ?> agent : agentService.getAgents().values()) {
+            ConnectionStatus status = agent.getAgentStatus().orElse(null);
 
-            ObjectValue agentValue = Values.createObject();
-            agentValue.put("name", agent.getName());
+            if (status != null) {
+                switch (status) {
 
-            // Get protocol configurations for this agent
-            agentService.protocolConfigurations.entrySet()
-                .stream()
-                .filter(protocolConfigInfo -> Objects.equals(agent.getId(), protocolConfigInfo.getKey().getEntityId()))
-                .forEach(protocolConfigInfo -> {
-
-                    total.incrementAndGet();
-
-                    ConnectionStatus connectionStatus = protocolConfigInfo.getValue().value;
-                    if (connectionStatus != null) {
-                        switch (connectionStatus) {
-
-                            case UNKNOWN:
-                            case DISCONNECTED:
-                            case CONNECTING:
-                            case DISCONNECTING:
-                            case WAITING:
-                                otherCount.incrementAndGet();
-                                other.incrementAndGet();
-                                break;
-                            case CONNECTED:
-                                connectedCount.incrementAndGet();
-                                connected.incrementAndGet();
-                                break;
-                            case DISABLED:
-                                disabledCount.incrementAndGet();
-                                disabled.incrementAndGet();
-                                break;
-                            case ERROR_AUTHENTICATION:
-                            case ERROR_CONFIGURATION:
-                            case ERROR:
-                                errorCount.incrementAndGet();
-                                error.incrementAndGet();
-                                break;
-                        }
-                    } else {
+                    case DISCONNECTED:
+                    case CONNECTING:
+                    case DISCONNECTING:
+                    case WAITING:
                         otherCount.incrementAndGet();
-                        other.incrementAndGet();
-                    }
+                        break;
+                    case CONNECTED:
+                        connectedCount.incrementAndGet();
+                        break;
+                    case DISABLED:
+                        disabledCount.incrementAndGet();
+                        break;
+                    case ERROR:
+                        errorCount.incrementAndGet();
+                        break;
+                }
+            } else {
+                otherCount.incrementAndGet();
+            }
 
-                    ObjectValue protocol = Values.createObject();
-
-                    protocol.put(
-                        "protocol",
-                        ProtocolConfiguration.getProtocolName(protocolConfigInfo.getValue().key).orElse(null));
-
-                    protocol.put(
-                        "status",
-                        protocolConfigInfo.getValue().value == null ? null : protocolConfigInfo.getValue().value.name());
-
-                    long attributeCount = !agentService.linkedAttributes.containsKey(protocolConfigInfo.getKey())
-                        ? 0
-                        : agentService.linkedAttributes.get(protocolConfigInfo.getKey()).size();
-                    protocol.put("linkedAttributes", attributeCount);
-                    agentValue.put(protocolConfigInfo.getKey().getAttributeName(), protocol);
-                });
-
-            agentValue.put("totalProtocolConfigs", total.get());
-            agentValue.put("connectedProtocolConfigs", connected.get());
-            agentValue.put("errorProtocolConfigs", error.get());
-            agentValue.put("disabledProtocolConfigs", disabled.get());
-            agentValue.put("otherProtocolConfigs", other.get());
-            objectValue.put(agent.getId(), agentValue);
+            ObjectNode agentValue = Values.JSON.createObjectNode();
+            agentValue.put("name", agent.getName());
+            agentValue.put("status", status != null ? status.name() : "null");
+            agentValue.put("type", agent.getType());
+            objectValue.set(agent.getId(), agentValue);
         }
 
-        objectValue.put("totalProtocolConfigs", agentService.protocolConfigurations.size());
-        objectValue.put("connectedProtocolConfigs", connectedCount.get());
-        objectValue.put("errorProtocolConfigs", errorCount.get());
-        objectValue.put("disabledProtocolConfigs", disabledCount.get());
-        objectValue.put("otherProtocolConfigs", otherCount.get());
-        objectValue.put("linkedAttributes", agentService.linkedAttributes.values().stream().mapToInt(List::size).sum());
+        objectValue.put("totalAgents", agentService.agentMap.size());
+        objectValue.put("connectedAgents", connectedCount.get());
+        objectValue.put("errorAgents", errorCount.get());
+        objectValue.put("disabledAgents", disabledCount.get());
+        objectValue.put("otherAgents", otherCount.get());
 
         return objectValue;
     }

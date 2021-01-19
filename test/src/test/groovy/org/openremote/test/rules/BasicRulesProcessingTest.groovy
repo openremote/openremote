@@ -1,6 +1,5 @@
 package org.openremote.test.rules
 
-
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesEngine
@@ -9,15 +8,16 @@ import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.*
+import org.openremote.model.asset.impl.RoomAsset
+import org.openremote.model.attribute.Attribute
+import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.TenantRuleset
-import org.openremote.model.value.Values
+import org.openremote.model.value.MetaItemType
+import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -51,16 +51,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesImport.assertEnginesReady(rulesService, keycloakTestSetup, managerTestSetup)
             assert noRuleEngineFiringScheduled()
-        }
-
-        and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
-        conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
-            assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
         }
 
         when: "a LHS filtering test rule definition is loaded into the Smart Building asset"
@@ -100,7 +90,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event occurs"
         rulesImport.resetRulesFired(smartHomeEngine)
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-            managerTestSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
+            managerTestSetup.apartment2LivingroomId, "presenceDetected", true
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -147,16 +137,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "a Kitchen room asset is inserted into apartment that contains a RULE_STATE = true meta flag"
         def apartment2 = assetStorageService.find(managerTestSetup.apartment2Id)
-        def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
-        asset.setRealm(keycloakTestSetup.tenantBuilding.getRealm())
-        def attributes = [
-            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
-                .setMeta(
-                new Meta(new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
-                )
+        def asset = new RoomAsset("Kitchen")
+            .setParent(apartment2)
+            .addOrReplaceAttributes(
+                new Attribute<>("testString", ValueType.TEXT, "test")
+                    .addOrReplaceMeta(
+                        new MetaItem<>(MetaItemType.RULE_STATE, true)
+                    )
             )
-        ]
-        asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
 
         then: "the rules engines should have executed at least once"
@@ -202,14 +190,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         def apartment2LivingRoomWindowOpenChange = new AttributeEvent(
-            managerTestSetup.apartment2LivingroomId, "windowOpen", Values.create(true)
+            managerTestSetup.apartment2LivingroomId, "windowOpen", true
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomWindowOpenChange)
 
         then: "the attribute event should have been processed"
         conditions.eventually {
             def apartment2LivingRoom = assetStorageService.find(managerTestSetup.apartment2LivingroomId, true)
-            assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValueAsBoolean()}.orElse(false)
+            assert apartment2LivingRoom.getAttribute("windowOpen").flatMap{it.getValueAs(Boolean.class)}.orElse(false)
         }
 
         then: "the rules engines should not have fired"
@@ -230,14 +218,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         tenantALastFireTimestamp = rulesImport.tenantBuildingEngine.lastFireTimestamp
         apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
-        attributes = [
-            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
-                .setMeta(
-                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
-            ),
-            new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
-        ]
-        asset.setAttributes(attributes)
+        asset.addOrReplaceAttributes(
+            new Attribute<>("testString", ValueType.TEXT, "test")
+                .addOrReplaceMeta(
+                    new MetaItem<>(MetaItemType.RULE_STATE, true)
+                ),
+            new Attribute<>("testInteger", ValueType.NUMBER, 0d)
+        )
         asset = assetStorageService.merge(asset)
 
         then: "the rules engines should have executed at least one more time"
@@ -266,14 +253,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is modified to set the RULE_STATE to false"
         rulesImport.resetRulesFired()
-        attributes = [
-            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
-                .setMeta(
-                new MetaItem(MetaItemType.RULE_STATE, Values.create(false))
-            ),
-            new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
-        ]
-        asset.setAttributes(attributes)
+        asset.addOrReplaceAttributes(
+            new Attribute<>("testString", ValueType.TEXT, "test")
+                .addOrReplaceMeta(
+                    new MetaItem<>(MetaItemType.RULE_STATE, false)
+                ),
+            new Attribute<>("testInteger", ValueType.NUMBER, 0d)
+        )
         asset = assetStorageService.merge(asset)
 
         then: "the facts should be removed from the rule engines and rules should have fired"
@@ -295,17 +281,16 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is modified to set all attributes to RULE_STATE = true"
         rulesImport.resetRulesFired()
-        attributes = [
-            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
-                .setMeta(
-                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
-            ),
-            new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
-                .setMeta(
-                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
-            )
-        ]
-        asset.setAttributes(attributes)
+        asset.addOrReplaceAttributes(
+            new Attribute<>("testString", ValueType.TEXT, "test")
+                .addOrReplaceMeta(
+                    new MetaItem<>(MetaItemType.RULE_STATE, true)
+                ),
+            new Attribute<>("testInteger", ValueType.NUMBER, 0d)
+                .addOrReplaceMeta(
+                    new MetaItem<>(MetaItemType.RULE_STATE, true)
+                )
+        )
         asset = assetStorageService.merge(asset)
 
         then: "the facts should be added to the rule engines and rules should have fired"
@@ -405,7 +390,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment2LastFireTimestamp = rulesImport.apartment2Engine.lastFireTimestamp
         def apartment3LastFireTimestamp = rulesImport.apartment3Engine.lastFireTimestamp
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-            managerTestSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
+            managerTestSetup.apartment2LivingroomId, "presenceDetected", true
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 

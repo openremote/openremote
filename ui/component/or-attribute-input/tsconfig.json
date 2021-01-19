@@ -12,7 +12,6 @@
   "references": [
     { "path": "../core" },
     { "path": "../or-translate" },
-    { "path": "../or-mwc-components" },
     { "path": "../or-map" },
     { "path": "../or-input" }
   ]

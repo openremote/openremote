@@ -29,7 +29,6 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.DatagramPacketEncoder;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoServer;
 
 import java.net.InetSocketAddress;
@@ -48,8 +47,7 @@ public abstract class AbstractUdpServer<T> extends AbstractNettyIoServer<T, Data
     protected InetSocketAddress localAddress;
     protected InetSocketAddress lastMessageSender;
 
-    public AbstractUdpServer(ProtocolExecutorService executorService, InetSocketAddress localAddress) {
-        super(executorService);
+    public AbstractUdpServer(InetSocketAddress localAddress) {
         this.localAddress = localAddress;
     }
 
@@ -132,7 +130,7 @@ public abstract class AbstractUdpServer<T> extends AbstractNettyIoServer<T, Data
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     protected void addEncoder(DatagramChannel channel, ChannelOutboundHandler encoder) {
         if (encoder instanceof DatagramPacketEncoder) {

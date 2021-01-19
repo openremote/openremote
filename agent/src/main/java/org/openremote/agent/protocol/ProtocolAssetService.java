@@ -19,14 +19,12 @@
  */
 package org.openremote.agent.protocol;
 
-import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueFilter;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -71,35 +69,35 @@ public interface ProtocolAssetService extends ContainerService {
         }
 
         /**
-         * Assigns the merged asset to the given user, can be <code>null</code> to not assign
-         * the asset to a user. The {@link #mergeAsset} call returns <code>null</code> if the
-         * user doesn't exist or the asset couldn't be assigned.
+         * Assigns the merged asset to the given user, can be <code>null</code> to not assign the asset to a user. The
+         * {@link #mergeAsset} call returns <code>null</code> if the user doesn't exist or the asset couldn't be
+         * assigned.
          */
         public String getAssignToUserName() {
             return assignToUserName;
         }
 
         /**
-         * Compare existing and merged asset state before doing the actual storage merge. If only the
-         * attributes in this predicate have change, then perform the merge on storage. Ignores what {#link getIgnoredAttributeNames}
-         * has stored if attributeNamesToEvaluate is not null.
+         * Compare existing and merged asset state before doing the actual storage merge. If only the attributes in this
+         * predicate have change, then perform the merge on storage. Ignores what {#link getIgnoredAttributeNames} has
+         * stored if attributeNamesToEvaluate is not null.
          */
         public Predicate<String> getAttributeNamesToEvaluate() {
             return attributeNamesToEvaluate;
         }
 
         /**
-         * Compare existing and merged asset state before doing the actual storage merge. If only the
-         * ignored attributes have changed, don't perform the merge on storage.
+         * Compare existing and merged asset state before doing the actual storage merge. If only the ignored attributes
+         * have changed, don't perform the merge on storage.
          */
         public Predicate<String> getIgnoredAttributeNames() {
             return ignoredAttributeNames;
         }
 
         /**
-         * Compare existing and merged asset state before doing the actual storage merge. If only the
-         * ignored keys of any attributes have changed, don't perform the merge on storage. If {#link getAttributeNamesToEvaluate}
-         * is not null, then ignoredAttributeKeys is ignored.
+         * Compare existing and merged asset state before doing the actual storage merge. If only the ignored keys of
+         * any attributes have changed, don't perform the merge on storage. If {#link getAttributeNamesToEvaluate} is
+         * not null, then ignoredAttributeKeys is ignored.
          */
         public Predicate<String> getIgnoredAttributeKeys() {
             return ignoredAttributeKeys;
@@ -107,61 +105,40 @@ public interface ProtocolAssetService extends ContainerService {
     }
 
     /**
-     * Protocols can update their own protocol configuration, for example, to store configuration
-     * details such as temporary access (e.g. OAuth offline) tokens.
+     * Protocols may store assets in the context or update existing assets. A unique identifier must be set by the
+     * protocol implementor, and the parent must be the {@link Agent} associated with the requesting protocol instance.
+     * This operation stores transient or detached state and returns the current state. It will override any existing
+     * stored asset data, ignoring versions.
      */
-    void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
-
-    /**
-     * Protocols may store assets in the context or update existing assets. A unique identifier
-     * must be set by the protocol implementor, as well as a parent identifier. This operation
-     * stores transient or detached state and returns the current state. It will override any
-     * existing stored asset data, ignoring versions.
-     */
-    Asset mergeAsset(Asset asset);
-
-    /**
-     * Protocols may store assets in the context or update existing assets. A unique identifier
-     * must be set by the protocol implementor, as well as a parent identifier. This operation
-     * stores transient or detached state and returns the current state. It will override any
-     * existing stored asset data, ignoring versions. This call may return <code>null</code>
-     * if the desired {@link MergeOptions} were not successful.
-     */
-    Asset mergeAsset(Asset asset, MergeOptions options);
+    <T extends Asset<?>> T mergeAsset(T asset);
 
     /**
      * Protocols may remove assets from the context store.
      *
      * @return <code>false</code> if the delete could not be performed (asset may have children?)
      */
-    boolean deleteAsset(String assetId);
+    boolean deleteAssets(String...assetIds);
+
+    /**
+     * Get asset of specified type from the store by ID.
+     */
+    <T extends Asset<?>> T findAsset(String assetId, Class<T> assetType);
 
     /**
      * Get asset from the store by ID.
      */
-    Asset findAsset(String assetId);
+    <T extends Asset<?>> T findAsset(String assetId);
 
     /**
      * Get assets by an {@link org.openremote.model.query.AssetQuery}; can only access {@link Asset}s that are
      * descendants of the specified {@link Asset}
      */
-    List<Asset> findAssets(String assetId, AssetQuery assetQuery);
+    List<Asset<?>> findAssets(String assetId, AssetQuery assetQuery);
 
     /**
      * Protocols can send arbitrary attribute change events for regular processing.
      */
     void sendAttributeEvent(AttributeEvent attributeEvent);
-
-    /**
-     * Gets the Agent {@link Asset} that the specified {@link org.openremote.model.asset.agent.ProtocolConfiguration}
-     * belongs to.
-     */
-    Asset getAgent(AssetAttribute protocolConfiguration);
-
-    /**
-     * Apply the specified set of {@link ValueFilter}s to the specified {@link Value}
-     */
-    Value applyValueFilters(Value value, ValueFilter<?>... filters);
 
     /**
      * Subscribe to changes of {@link Asset}s that are descendants of the specified agent.
@@ -170,12 +147,12 @@ public interface ProtocolAssetService extends ContainerService {
      * to call this method multiple times for the same agentId and assetChangeConsumer and only a single subscription
      * would actually be created.
      */
-    void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer);
+    void subscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer);
 
     /**
      * Unsubscribe from asset changes for the specified agent.
      * <p>
      * When an agent is unlinked from a protocol then all subscriptions will be automatically removed also.
      */
-    void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset>> assetChangeConsumer);
+    void unsubscribeChildAssetChange(String agentId, Consumer<PersistenceEvent<Asset<?>>> assetChangeConsumer);
 }

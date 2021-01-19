@@ -29,16 +29,15 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient43Engine;
 import org.openremote.container.json.JacksonConfig;
+import org.openremote.model.auth.OAuthGrant;
 
 import javax.ws.rs.Priorities;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
@@ -65,8 +64,8 @@ public class WebTargetBuilder {
     protected OAuthGrant oAuthGrant;
     protected URI baseUri;
     protected List<Integer> failureResponses = new ArrayList<>();
-    protected MultivaluedMap<String, String> injectHeaders;
-    protected MultivaluedMap<String, String> injectQueryParameters;
+    protected Map<String, List<String>> injectHeaders;
+    protected Map<String, List<String>> injectQueryParameters;
     protected boolean followRedirects = false;
 
     public WebTargetBuilder(ResteasyClient client, URI baseUri) {
@@ -93,12 +92,12 @@ public class WebTargetBuilder {
         return this;
     }
 
-    public WebTargetBuilder setInjectHeaders(MultivaluedMap<String, String> injectHeaders) {
+    public WebTargetBuilder setInjectHeaders(Map<String, List<String>> injectHeaders) {
         this.injectHeaders = injectHeaders;
         return this;
     }
 
-    public WebTargetBuilder setInjectQueryParameters(MultivaluedMap<String ,String> injectQueryParameters) {
+    public WebTargetBuilder setInjectQueryParameters(Map<String, List<String>> injectQueryParameters) {
         this.injectQueryParameters = injectQueryParameters;
         return this;
     }
@@ -146,6 +145,7 @@ public class WebTargetBuilder {
 
     public ResteasyWebTarget build() {
         ResteasyWebTarget target = client.target(baseUri);
+        target.register(QueryParameterInjectorFilter.class);
 
         if (!failureResponses.isEmpty()) {
             // Put a filter with max priority in the filter chain
@@ -153,7 +153,7 @@ public class WebTargetBuilder {
         }
 
         if (oAuthGrant != null) {
-            WebTarget authTarget = client.target(oAuthGrant.tokenEndpointUri);
+            WebTarget authTarget = client.target(oAuthGrant.getTokenEndpointUri());
             OAuthFilter oAuthFilter = new OAuthFilter(authTarget, oAuthGrant);
             target.register(oAuthFilter, Priorities.AUTHENTICATION);
         } else if (basicAuthentication != null) {
@@ -165,7 +165,7 @@ public class WebTargetBuilder {
         }
 
         if (injectQueryParameters != null) {
-            target.register(new QueryParameterInjectorFilter(injectQueryParameters, null, null));
+            target.property(QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY, mapToMultivaluedMap(injectQueryParameters, new MultivaluedHashMap<>()));
         }
 
         if (followRedirects) {
@@ -180,6 +180,7 @@ public class WebTargetBuilder {
     }
 
     public static ResteasyClient createClient(ExecutorService executorService, int connectionPoolSize, long overrideSocketTimeout, UnaryOperator<ResteasyClientBuilder> builderConfigurator) {
+
         //Create all of this config code in order to deal with expires cookies in responses
         RequestConfig requestConfig = RequestConfig.custom()
             .setCookieSpec(CookieSpecs.STANDARD)
@@ -196,12 +197,12 @@ public class WebTargetBuilder {
             .httpEngine(engine)
             .connectionPoolSize(connectionPoolSize)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .socketTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
-            .establishConnectionTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
+            .readTimeout(overrideSocketTimeout, TimeUnit.MILLISECONDS)
+            .connectTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .register(new JacksonConfig());
 
         if (executorService != null) {
-            clientBuilder.asyncExecutor(executorService);
+            clientBuilder.executorService(executorService);
         }
 
         if (builderConfigurator != null) {
@@ -209,5 +210,13 @@ public class WebTargetBuilder {
         }
 
         return clientBuilder.build();
+    }
+
+    public static <K, V, W extends V> MultivaluedMap<K, V> mapToMultivaluedMap(Map<K, List<W>> map, MultivaluedMap<K, V> multivaluedMap) {
+        for (Map.Entry<K, List<W>> e : map.entrySet()) {
+            multivaluedMap.put(e.getKey(), e.getValue() == null ? null : new ArrayList<>(e.getValue()));
+        }
+
+        return multivaluedMap;
     }
 }

@@ -56,7 +56,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.id.userId == keycloakTestSetup.testuser3Id &&
                     it.id.assetId == managerTestSetup.apartment1Id &&
                     it.assetName == "Apartment 1" &&
-                    it.parentAssetName == "Smart Building" &&
+                    it.parentAssetName == "Smart building" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
         userAssets.any {
@@ -130,7 +130,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.id.userId == keycloakTestSetup.testuser3Id &&
                     it.id.assetId == managerTestSetup.apartment1Id &&
                     it.assetName == "Apartment 1" &&
-                    it.parentAssetName == "Smart Building" &&
+                    it.parentAssetName == "Smart building" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
 
@@ -144,7 +144,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.id.userId == keycloakTestSetup.testuser3Id &&
                     it.id.assetId == managerTestSetup.apartment1Id &&
                     it.assetName == "Apartment 1" &&
-                    it.parentAssetName == "Smart Building" &&
+                    it.parentAssetName == "Smart building" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
 
@@ -168,7 +168,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.id.userId == keycloakTestSetup.testuser2Id &&
                     it.id.assetId == managerTestSetup.apartment2Id &&
                     it.assetName == "Apartment 2" &&
-                    it.parentAssetName == "Smart Building" &&
+                    it.parentAssetName == "Smart building" &&
                     it.userFullName == "testuser2 (DemoA2 DemoLast)" &&
                     it.createdOn.time <= timerService.currentTimeMillis
         }

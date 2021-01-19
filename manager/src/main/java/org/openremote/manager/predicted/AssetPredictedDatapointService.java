@@ -22,19 +22,18 @@ package org.openremote.manager.predicted;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.agent.protocol.ProtocolPredictedAssetService;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import org.postgresql.util.PGInterval;
 
@@ -95,7 +94,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
             String queryStr = attributeRef == null ?
                 "select count(dp) from AssetPredictedDatapoint dp" :
-                "select count(dp) from AssetPredictedDatapoint dp where dp.entityId = :assetId and dp.attributeName = :attributeName";
+                "select count(dp) from AssetPredictedDatapoint dp where dp.assetId = :assetId and dp.attributeName = :attributeName";
 
             TypedQuery<Long> query = entityManager.createQuery(
                 queryStr,
@@ -103,37 +102,43 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
             if (attributeRef != null) {
                 query
-                    .setParameter("assetId", attributeRef.getEntityId())
-                    .setParameter("attributeName", attributeRef.getAttributeName());
+                    .setParameter("assetId", attributeRef.getId())
+                    .setParameter("attributeName", attributeRef.getName());
             }
 
             return query.getSingleResult();
         });
     }
 
-    public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
+    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                String truncate,
                                                String interval,
                                                long fromTimestamp,
                                                long toTimestamp) {
-        Asset asset = assetStorageService.find(attributeRef.getEntityId());
-        if (asset == null) {
-            throw new IllegalStateException("Asset not found: " + attributeRef.getEntityId());
-        }
-        ValueType attributeValueType = asset.getAttribute(attributeRef.getAttributeName())
-            .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getAttributeName()))
-            .getTypeOrThrow()
-            .getValueType();
+        String assetId = attributeRef.getId();
+        String attributeName = attributeRef.getName();
 
-        LOG.fine("Getting predicted datapoints for: " + attributeRef);
+        Asset<?> asset = assetStorageService.find(assetId);
+        if (asset == null) {
+            throw new IllegalStateException("Asset not found: " + assetId);
+        }
+
+        Attribute<?> attribute = asset.getAttribute(attributeName)
+            .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeName));
+
+        LOG.fine("Getting predicted datapoints for: " + attributeName);
 
         return persistenceService.doReturningTransaction(entityManager ->
-            entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint[]>() {
+            entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint<?>[]>() {
                 @Override
-                public ValueDatapoint[] execute(Connection connection) throws SQLException {
+                public ValueDatapoint<?>[] execute(Connection connection) throws SQLException {
 
+
+                    Class<?> attributeType = attribute.getType().getType();
+                    boolean isNumber = Number.class.isAssignableFrom(attributeType);
+                    boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
                     StringBuilder query = new StringBuilder();
-                    boolean downsample = (attributeValueType == ValueType.NUMBER || attributeValueType == ValueType.BOOLEAN);
+                    boolean downsample = isNumber || isBoolean;;
 
                     if (downsample) {
                         // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
@@ -146,7 +151,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                             "       select " +
                             "           date_trunc(?, TIMESTAMP)::timestamp as TS, ");
 
-                        if (attributeValueType == ValueType.NUMBER) {
+                        if (isNumber) {
                             query.append(" AVG(VALUE::text::numeric) as AVG_VALUE ");
                         } else {
                             query.append(" AVG(case when VALUE::text::boolean is true then 1 else 0 end) as AVG_VALUE ");
@@ -188,23 +193,23 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                             st.setString(5, truncate);
                             st.setLong(6, fromTimestampSeconds);
                             st.setLong(7, toTimestampSeconds);
-                            st.setString(8, attributeRef.getEntityId());
-                            st.setString(9, attributeRef.getAttributeName());
+                            st.setString(8, assetId);
+                            st.setString(9, attributeName);
                             st.setObject(10, new PGInterval(interval));
                         } else {
                             st.setLong(1, fromTimestampSeconds);
                             st.setLong(2, toTimestampSeconds);
-                            st.setString(3, attributeRef.getEntityId());
-                            st.setString(4, attributeRef.getAttributeName());
+                            st.setString(3, assetId);
+                            st.setString(4, attributeName);
                         }
 
                         try (ResultSet rs = st.executeQuery()) {
                             List<ValueDatapoint<?>> result = new ArrayList<>();
                             while (rs.next()) {
-                                Value value = rs.getObject(2) != null ? Values.parseOrNull(rs.getString(2)) : null;
+                                Object value = rs.getObject(2) != null ? Values.convert(rs.getString(2), attributeType) : null;
                                 result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                             }
-                            return result.toArray(new ValueDatapoint[result.size()]);
+                            return result.toArray(new ValueDatapoint<?>[0]);
                         }
                     }
                 }
@@ -212,7 +217,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
         );
     }
 
-    public ValueDatapoint[] getValueDatapoints(AttributeRef attributeRef,
+    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                DatapointInterval datapointInterval,
                                                long fromTimestamp,
                                                long toTimestamp) {
@@ -251,19 +256,19 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
         return getValueDatapoints(attributeRef, truncateX, interval, fromTimestamp, toTimestamp);
     }
 
-    public void updateValue(AttributeRef attributeRef, Value value, long timestamp) {
-        persistenceService.doTransaction(em -> upsertValue(em, attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp));
+    public void updateValue(AttributeRef attributeRef, Object value, long timestamp) {
+        persistenceService.doTransaction(em -> upsertValue(em, attributeRef.getId(), attributeRef.getName(), value, timestamp));
     }
 
-    public void updateValue(String assetId, String attributeName, Value value, long timestamp) {
+    public void updateValue(String assetId, String attributeName, Object value, long timestamp) {
         updateValue(new AttributeRef(assetId, attributeName), value, timestamp);
     }
 
-    private void upsertValue(EntityManager entityManager, String assetId, String attributeName, Value value, long timestamp) {
+    private void upsertValue(EntityManager entityManager, String assetId, String attributeName, Object value, long timestamp) {
         entityManager.createNativeQuery(String.format("INSERT INTO asset_predicted_datapoint (entity_id, attribute_name, value, timestamp) \n" +
             "VALUES ('%1$s', '%2$s', '%3$s', to_timestamp(%4$d))\n" +
             "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE \n" +
-            "  SET value = excluded.value", assetId, attributeName, value.toJson(), timestamp))
+            "  SET value = excluded.value", assetId, attributeName, value, timestamp))
             .executeUpdate();
     }
 }

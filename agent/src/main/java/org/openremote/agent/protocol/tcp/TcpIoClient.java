@@ -22,7 +22,6 @@ package org.openremote.agent.protocol.tcp;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.util.TextUtil;
@@ -43,8 +42,7 @@ public class TcpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
     protected String host;
     protected int port;
 
-    public TcpIoClient(String host, int port, ProtocolExecutorService executorService) {
-        super(executorService);
+    public TcpIoClient(String host, int port) {
         TextUtil.requireNonNullAndNonEmpty(host);
         this.host = host;
         this.port = port;

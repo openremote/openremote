@@ -24,7 +24,6 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
-import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
@@ -37,7 +36,7 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.AssetTreeModifiedEvent;
+import org.openremote.model.Container;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.TenantPredicate;
@@ -50,13 +49,10 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.util.JsonUtil.convert;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS;
@@ -64,6 +60,7 @@ import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS_
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK;
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT;
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.Values.convert;
 
 /**
  * All keycloak interaction is done through the admin-cli client; security is implemented downstream of here; anything
@@ -164,7 +161,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public User createUser(String realm, User user, String password) {
         RealmResource realmResource = getRealms().realm(realm);
         Response response = realmResource.users().create(
-                convert(Container.JSON, UserRepresentation.class, user)
+                convert(user, UserRepresentation.class)
             );
         response.close();
         if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
@@ -207,7 +204,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void resetPassword(String realm, String userId, Credential credential) {
         getRealms()
             .realm(realm).users().get(userId).resetPassword(
-            convert(Container.JSON, CredentialRepresentation.class, credential)
+            convert(credential, CredentialRepresentation.class)
         );
     }
 
@@ -433,8 +430,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public Tenant getTenant(String realm) {
-        RealmRepresentation realmRepresentation = getRealms().realm(realm).toRepresentation();
-        return convert(Container.JSON, Tenant.class, realmRepresentation);
+        try {
+            RealmRepresentation realmRepresentation = getRealms().realm(realm).toRepresentation();
+            return convert(realmRepresentation, Tenant.class);
+        } catch (Exception ex) {
+            LOG.log(Level.INFO, "Failed to get tenant for realm: " + realm, ex);
+        }
+        return null;
     }
 
     @Override
@@ -472,7 +474,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public Tenant createTenant(Tenant tenant) {
         LOG.fine("Create tenant: " + tenant);
         RealmsResource realmsResource = getRealms();
-        RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
+        RealmRepresentation realmRepresentation = convert(tenant, RealmRepresentation.class);
         realmsResource.create(realmRepresentation);
         RealmResource realmResource = realmsResource.realm(tenant.getRealm());
 
@@ -482,7 +484,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         realmResource.update(realmRepresentation);
         createOpenRemoteClientApplication(realmRepresentation.getRealm());
         publishModification(PersistenceEvent.Cause.CREATE, tenant);
-        return convert(Container.JSON, Tenant.class, realmRepresentation);
+        return convert(realmRepresentation, Tenant.class);
     }
 
     @Override
@@ -553,7 +555,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             return null;
         }
         UserRepresentation user = getRealms().realm(realm).clients().get(client.getId()).getServiceAccountUser();
-        return user != null ? convert(Container.JSON, User.class, user) : null;
+        return user != null ? convert(user, User.class) : null;
     }
 
     /**
@@ -750,14 +752,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     public static User convertUser(String realm, UserRepresentation userRepresentation) {
-        User user = convert(Container.JSON, User.class, userRepresentation);
+        User user = convert(userRepresentation, User.class);
         user.setRealm(realm);
         return user;
     }
 
     protected void publishModification(PersistenceEvent.Cause cause, Tenant tenant) {
         // Fire persistence event although we don't use database for Tenant CUD but call Keycloak API
-        PersistenceEvent persistenceEvent = new PersistenceEvent<>(cause, tenant, new String[0], null);
+        PersistenceEvent<?> persistenceEvent = new PersistenceEvent<>(cause, tenant, new String[0], null);
 
         if (messageBrokerService.getProducerTemplate() != null) {
             messageBrokerService.getProducerTemplate().sendBodyAndHeader(
@@ -768,10 +770,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 persistenceEvent.getEntity().getClass()
             );
         }
-
-        clientEventService.publishEvent(
-            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getRealm(), null)
-        );
     }
 
     public String addLDAPConfiguration(String realm, ComponentRepresentation componentRepresentation) {

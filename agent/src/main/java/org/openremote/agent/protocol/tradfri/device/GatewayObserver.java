@@ -59,15 +59,16 @@ public class GatewayObserver extends Observer {
      * Handles a new response from the CoAP client and calls the appropriate event handlers for the IKEA TRÅDFRI gateway
      * @param payload The payload of the response to the CoAP request
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void callEventHandlers(String payload) {
         try {
             int[] deviceIds = objectMapper.readValue(payload, int[].class);
-            ArrayList<EventHandler> called = new ArrayList<>();
+            ArrayList<EventHandler<?>> called = new ArrayList<>();
             GatewayEvent event = new GatewayEvent(gateway);
-            for (EventHandler eventHandler : gateway.getEventHandlers()) {
+            for (EventHandler<?> eventHandler : gateway.getEventHandlers()) {
                 if (eventHandler.getEventType().isAssignableFrom(event.getClass()) && !called.contains(eventHandler)) {
-                    eventHandler.handle(event);
+                    ((EventHandler)eventHandler).handle(event);
                     called.add(eventHandler);
                 }
             }

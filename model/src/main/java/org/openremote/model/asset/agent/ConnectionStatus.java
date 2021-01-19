@@ -19,19 +19,10 @@
  */
 package org.openremote.model.asset.agent;
 
-import org.openremote.model.attribute.MetaItemType;
-import org.openremote.model.attribute.MetaItem;
-
 /**
- * Indicates the status of a protocol configuration (i.e. protocol instance); but can also be used internally by a
- * protocol if desired.
+ * Indicates the status of an agent's protocol instance; but can also be used internally by a protocol if desired.
  */
 public enum ConnectionStatus {
-
-    /**
-     * To be used when it is not possible to determine the status.
-     */
-    UNKNOWN,
 
     /**
      * Not connected.
@@ -53,12 +44,6 @@ public enum ConnectionStatus {
      */
     CONNECTED,
 
-    /**
-     * Disabled.
-     * <p>
-     * For protocol configurations this generally means that it is disabled (i.e. it has a
-     * {@link MetaItemType#DISABLED} {@link MetaItem} with a value of <code>true</code>).
-     */
     DISABLED,
 
     /**
@@ -68,17 +53,9 @@ public enum ConnectionStatus {
     WAITING,
 
     /**
-     * An authentication related error has occurred.
-     */
-    ERROR_AUTHENTICATION,
-
-    /**
-     * A configuration related error has occurred.
-     */
-    ERROR_CONFIGURATION,
-
-    /**
      * A general error has occurred that prevents normal operation.
      */
-    ERROR
+    ERROR,
+
+    STOPPED
 }

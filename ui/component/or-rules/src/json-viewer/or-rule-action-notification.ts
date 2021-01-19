@@ -2,18 +2,19 @@ import {css, customElement, html, LitElement, property, TemplateResult} from "li
 import {until} from "lit-html/directives/until";
 import {ActionTargetType, ActionType, OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {
-    AssetDescriptor,
     AssetQuery,
     AssetQueryOrderBy$Property,
+    AssetTypeInfo,
     JsonRule,
     RuleAction,
     RuleActionNotification,
-    UserQuery
+    UserQuery,
+    WellknownAssets
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import "./modals/or-rule-notification-modal";
-import "./forms/or-rule-form-message";
+import "./forms/or-rule-form-email-message";
 import "./forms/or-rule-form-push-notification";
 import "./or-rule-action-attribute";
 import {i18next} from "@openremote/or-translate";
@@ -50,7 +51,7 @@ export class OrRuleActionNotification extends LitElement {
     public readonly?: boolean;
 
     @property({type: Object})
-    public assetDescriptors?: AssetDescriptor[];
+    public assetInfos?: AssetTypeInfo[];
 
     @property({type: Object})
     public config?: RulesConfig;
@@ -136,8 +137,6 @@ export class OrRuleActionNotification extends LitElement {
             } else {
                 const assetQuery = baseAssetQuery ? {...baseAssetQuery} : {};
                 assetQuery.select = {
-                    excludeAttributeTimestamp: true,
-                    excludeAttributeValue: true,
                     excludeParentInfo: true,
                     excludePath: true
                 };
@@ -162,7 +161,7 @@ export class OrRuleActionNotification extends LitElement {
                             return;
                         }
                         if (action.target.matchedAssets.types && action.target.matchedAssets.types.length === 1) {
-                            value = action.target.matchedAssets.types[0].value;
+                            value = action.target.matchedAssets.types[0];
                         }
                     } else if (action.target.assets) {
                         if (action.target.assets.ids && action.target.assets.ids.length > 1) {
@@ -230,10 +229,7 @@ export class OrRuleActionNotification extends LitElement {
         if (messageType === "push") {
             baseAssetQuery = {
                 types: [
-                    {
-                        predicateType: "string",
-                        value: "urn:openremote:asset:console"
-                    }
+                    WellknownAssets.CONSOLEASSET
                 ]};
         } else {
             baseAssetQuery = {
@@ -268,7 +264,7 @@ export class OrRuleActionNotification extends LitElement {
             if (messageType === "email") {
                 modalTemplate = html`
                     <or-rule-notification-modal title="email" .action="${this.action}">
-                        <or-rule-form-message .action="${this.action}"></or-rule-form-message>
+                        <or-rule-form-email-message .action="${this.action}"></or-rule-form-email-message>
                     </or-rule-notification-modal>
                 `;
             }
@@ -324,10 +320,7 @@ export class OrRuleActionNotification extends LitElement {
                     this.action.target = {
                         matchedAssets: {
                             types: [
-                                {
-                                    predicateType: "string",
-                                    value: value
-                                }
+                                value
                             ]
                         }
                     };

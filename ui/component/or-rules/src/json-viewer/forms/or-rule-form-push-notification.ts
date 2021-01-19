@@ -30,16 +30,16 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
     
     protected updated(_changedProperties: Map<PropertyKey, unknown>): void {
         if(_changedProperties.has("action")) {
-            let message:PushNotificationMessage | undefined = this.action.notification!.message;
-            if(this.action.notification && message && !message.action) {
-                message = {action: {openInBrowser: true}}
+            let message: PushNotificationMessage | undefined = this.action.notification!.message as PushNotificationMessage;
+            if (this.action.notification && message && !message.action) {
+                message = {type: "push", action: {openInBrowser: true}}
                 this.action.notification.message = {...this.action.notification.message, ...message};
             }
         }
     }
 
     protected render() {
-        const message:PushNotificationMessage | undefined = this.action.notification!.message;
+        const message: PushNotificationMessage | undefined = this.action.notification!.message as PushNotificationMessage;
         const title = message && message.title ? message.title : "";
         const body = message && message.body ? message.body : "";
         const action = message && message.action ? message.action : "";

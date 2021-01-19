@@ -30,7 +30,7 @@ import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.jsapi.JSAPIServlet;

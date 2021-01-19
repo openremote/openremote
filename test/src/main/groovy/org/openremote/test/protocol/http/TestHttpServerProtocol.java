@@ -20,60 +20,50 @@
 package org.openremote.test.protocol.http;
 
 import org.openremote.agent.protocol.http.AbstractHttpServerProtocol;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.value.Value;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-public class TestHttpServerProtocol extends AbstractHttpServerProtocol {
+public class TestHttpServerProtocol extends AbstractHttpServerProtocol<TestHttpServerProtocol, HttpServerTestAgent, AgentLink.Default> {
 
-    public static final String PROTOCOL_NAME = AbstractHttpServerProtocol.PROTOCOL_NAME + ":test";
+    public static final String PROTOCOL_DISPLAY_NAME = "HTTP Server Test Protocol";
     public TestResourceImpl resource1 = new TestResourceImpl();
 
+    public TestHttpServerProtocol(HttpServerTestAgent agent) {
+        super(agent);
+    }
+
     @Override
-    protected Set<Object> getApiSingletons(AssetAttribute protocolConfiguration) {
+    protected Set<Object> getApiSingletons() {
         return new HashSet<>(Collections.singletonList(resource1));
     }
 
     @Override
-    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
-        return Collections.emptyList();
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) throws RuntimeException {
+
     }
 
     @Override
-    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return Collections.emptyList();
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+
     }
 
     @Override
-    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, AgentLink.Default agentLink, AttributeEvent event, Object processedValue) {
+
     }
 
     @Override
-    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-    }
-
-    @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, Value processedValue, AssetAttribute protocolConfiguration) {
+    public String getProtocolInstanceUri() {
+        return "httpServerProtocol://test";
     }
 
     @Override
     public String getProtocolName() {
-        return PROTOCOL_NAME;
-    }
-
-    @Override
-    public String getProtocolDisplayName() {
-        return "HTTP Server Test Protocol";
-    }
-
-    @Override
-    public String getVersion() {
-        return "1.0";
+        return PROTOCOL_DISPLAY_NAME;
     }
 }

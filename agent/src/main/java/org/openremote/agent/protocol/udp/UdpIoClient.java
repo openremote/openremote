@@ -25,11 +25,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.io.IoClient;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -53,9 +51,7 @@ public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
     protected int port;
     protected int bindPort;
 
-    public UdpIoClient(String host, Integer port, Integer bindPort, ProtocolExecutorService executorService) {
-        super(executorService);
-
+    public UdpIoClient(String host, Integer port, Integer bindPort) {
         if (port == null) {
             port = 0;
         } else if (port < 1 || port > 65536) {

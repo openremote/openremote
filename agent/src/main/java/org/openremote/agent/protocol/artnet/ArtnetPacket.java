@@ -16,18 +16,18 @@ public class ArtnetPacket {
     private byte DUMMY_LENGTH_LO = 0;
 
     private int universe;
-    private List<ArtnetLight> lights;
+    private List<ArtnetLightAsset> lights;
 
-    public ArtnetPacket(int universe, List<ArtnetLight> lights) {
+    public ArtnetPacket(int universe, List<ArtnetLightAsset> lights) {
         this.universe = universe;
-        Collections.sort(lights, Comparator.comparingInt(ArtnetLight ::getLightId));
+        Collections.sort(lights, Comparator.comparingInt(light -> light.getLightId().orElse(0)));
         this.lights = lights;
     }
 
     public void toByteBuf(ByteBuf buf) {
         writePrefix(buf, this.universe);
-        for(ArtnetLight light : lights)
-            writeLight(buf, light.getLightState().getValues(), light.getAmountOfLeds());
+        for(ArtnetLightAsset light : lights)
+            writeLight(buf, light.getValues(), light.getLEDCount().orElse(0));
         updateLength(buf);
     }
 

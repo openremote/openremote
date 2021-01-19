@@ -24,7 +24,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
@@ -52,7 +52,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
     }
 
     @Override
-    public ValueDatapoint[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
+    public ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
                                                    String assetId,
                                                    String attributeName,
                                                    DatapointInterval datapointInterval,
@@ -64,7 +64,7 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            Asset asset = assetStorageService.find(assetId, true);
+            Asset<?> asset = assetStorageService.find(assetId, true);
 
             if (asset == null) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -75,16 +75,11 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            AssetAttribute attribute = asset.getAttribute(attributeName).orElseThrow(() ->
-                new WebApplicationException(Response.Status.NOT_FOUND)
-            );
-
             return assetPredictedDatapointService.getValueDatapoints(
-                attribute.getReferenceOrThrow(),
+                new AttributeRef(assetId, attributeName),
                 datapointInterval,
                 fromTimestamp,
-                toTimestamp
-            );
+                toTimestamp);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

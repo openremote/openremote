@@ -19,18 +19,17 @@
  */
 package org.openremote.model.console;
 
-import jsinterop.annotations.JsType;
-import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("console")
-@JsType(isNative = true)
 public interface ConsoleResource {
 
     /**
@@ -39,7 +38,7 @@ public interface ConsoleResource {
      * ConsoleRegistration} is returned which should be used for future calls to this endpoint.
      * <p>
      * Behind the scenes the console registration is converted into an asset and the {@link ConsoleRegistration} data is
-     * stored in the appropriate {@link Asset} {@link Attribute}s (see {@link ConsoleConfiguration} for more details).
+     * stored in the appropriate {@link ConsoleAsset} {@link Attribute}s.
      * <p>
      * This is a public endpoint and allows the registration of consoles anonymously; if there is an authenticated user
      * registering the console  then the console asset will be linked to that user. If multiple users login on the same
@@ -47,9 +46,7 @@ public interface ConsoleResource {
      */
     @POST
     @Path("register")
-    @SuccessStatusCode(200)
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuppressWarnings("unusable-by-js")
-    ConsoleRegistration register(@BeanParam RequestParams requestParams, ConsoleRegistration consoleRegistration);
+    ConsoleRegistration register(@BeanParam RequestParams requestParams, @NotNull @Valid ConsoleRegistration consoleRegistration);
 }

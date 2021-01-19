@@ -22,18 +22,17 @@ package org.openremote.manager.gateway;
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.container.web.OAuthClientCredentialsGrant;
+import org.openremote.model.Container;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIoClient;
 import org.openremote.agent.protocol.websocket.WebsocketIoClient;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
+import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -50,8 +49,10 @@ import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.Values;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -73,7 +74,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected PersistenceService persistenceService;
     protected ClientEventService clientEventService;
     protected TimerService timerService;
-    protected ManagerExecutorService executorService;
+    protected ScheduledExecutorService executorService;
     protected ManagerIdentityService identityService;
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
     protected final Map<String, WebsocketIoClient<String>> clientRealmMap = new HashMap<>();
@@ -85,12 +86,12 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     @Override
     public void init(Container container) throws Exception {
+        executorService = container.getExecutorService();
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         persistenceService = container.getService(PersistenceService.class);
         clientEventService = container.getService(ClientEventService.class);
         timerService = container.getService(TimerService.class);
-        executorService = container.getService(ManagerExecutorService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
@@ -213,8 +214,8 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                         .build().toString(),
                     connection.getClientId(),
                     connection.getClientSecret(),
-                    null).setBasicAuthHeader(true),
-                executorService);
+                    null).setBasicAuthHeader(true)
+            );
 
             client.setEncoderDecoderProvider(() ->
                 new ChannelHandler[] {new AbstractNettyIoClient.MessageToMessageDecoder<>(String.class, client)}
@@ -226,7 +227,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
             client.addMessageConsumer(message -> onCentralManagerMessage(connection, message));
 
-            // Subscribe to Asset and attribute events of local realm and pass through to connected manager
+            // Subscribe to Asset<?> and attribute events of local realm and pass through to connected manager
             clientEventService.addInternalSubscription(
                 getClientSessionKey(connection)+"Asset",
                 AssetEvent.class,
@@ -308,21 +309,21 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
                     Asset asset = assetEvent.getAsset();
                     asset.setRealm(connection.getLocalRealm());
-                    LOG.fine("Request from central manager to create/update an asset: Realm=" + connection.getLocalRealm() + ", Asset ID=" + asset.getId());
+                    LOG.fine("Request from central manager to create/update an asset: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId());
                     try {
                         asset = assetStorageService.merge(asset, true);
                     } catch (Exception e) {
-                        LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset ID=" + asset.getId(), e);
+                        LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId(), e);
                     }
                 }
             } else if (event instanceof DeleteAssetsRequestEvent) {
                 DeleteAssetsRequestEvent deleteRequest = (DeleteAssetsRequestEvent)event;
-                LOG.fine("Request from central manager to delete asset(s): Realm=" + connection.getLocalRealm() + ", Asset IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
+                LOG.fine("Request from central manager to delete asset(s): Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
                 boolean success = false;
                 try {
                     success = assetStorageService.delete(deleteRequest.getAssetIds());
                 } catch (Exception e) {
-                    LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()), e);
+                    LOG.log(Level.INFO, "Request from central manager to create/update an asset failed: Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()), e);
                 } finally {
                     sendCentralManagerMessage(
                         connection.getLocalRealm(),
@@ -339,7 +340,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 AssetQuery query = readAssets.getAssetQuery();
                 // Force realm to be the one that this client is associated with
                 query.tenant(new TenantPredicate(connection.getLocalRealm()));
-                List<Asset> assets = assetStorageService.findAll(readAssets.getAssetQuery());
+                List<Asset<?>> assets = assetStorageService.findAll(readAssets.getAssetQuery());
 
                 sendCentralManagerMessage(
                     connection.getLocalRealm(),
@@ -370,21 +371,13 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected <T> T messageFromString(String message, String prefix, Class<T> clazz) {
-        try {
-            message = message.substring(prefix.length());
-            return Container.JSON.readValue(message, clazz);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to parse message");
-        }
+        message = message.substring(prefix.length());
+        return Values.parse(message, clazz).orElse(null);
     }
 
     protected String messageToString(String prefix, Object message) {
-        try {
-            String str = Container.JSON.writeValueAsString(message);
-            return prefix + str;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Unable to serialise message");
-        }
+        String str = Values.asJSON(message).orElse("null");
+        return prefix + str;
     }
 
     /** GATEWAY RESOURCE METHODS */

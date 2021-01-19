@@ -20,8 +20,13 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.value.ObjectValue;
+import org.openremote.model.util.Pair;
+import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.Values;
+
+import java.util.Date;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Predicate for date time values; provided values should be valid ISO 8601 datetime strings
@@ -31,8 +36,8 @@ import org.openremote.model.value.Values;
 public class DateTimePredicate implements ValuePredicate {
 
     public static final String name = "datetime";
-    public String value; // Sliding window value e.g. 1h or fixed date time in ISO 8601
-    public String rangeValue; // Sliding window value e.g. 1h or fixed date time (used as upper bound when Operator.BETWEEN)
+    public String value; // Sliding window value as ISO8601 duration e.g. PT1H or fixed date time in ISO 8601
+    public String rangeValue; // Sliding window value as ISO8601 duration e.g. PT1H or fixed date time (used as upper bound when Operator.BETWEEN)
     public AssetQuery.Operator operator = AssetQuery.Operator.EQUALS;
     public boolean negate;
 
@@ -48,24 +53,6 @@ public class DateTimePredicate implements ValuePredicate {
         this.operator = AssetQuery.Operator.BETWEEN;
         this.value = rangeStart;
         this.rangeValue = rangeEnd;
-    }
-
-    public static DateTimePredicate fromObjectValue(ObjectValue objectValue) {
-        DateTimePredicate dateTimePredicate = new DateTimePredicate();
-
-        objectValue.getString("value").ifPresent(value -> {
-            dateTimePredicate.value = value;
-        });
-        objectValue.getString("rangeValue").ifPresent(rangeValue -> {
-            dateTimePredicate.rangeValue = rangeValue;
-        });
-        objectValue.getString("operator").ifPresent(operator -> {
-            dateTimePredicate.operator = AssetQuery.Operator.valueOf(operator);
-        });
-        objectValue.getBoolean("negate").ifPresent(negate -> {
-            dateTimePredicate.negate = negate;
-        });
-        return dateTimePredicate;
     }
 
     public DateTimePredicate operator(AssetQuery.Operator dateMatch) {
@@ -89,14 +76,45 @@ public class DateTimePredicate implements ValuePredicate {
         return this;
     }
 
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", name);
-        objectValue.put("value", Values.create(value));
-        objectValue.put("rangeValue", Values.create(rangeValue));
-        objectValue.put("negate", Values.create(negate));
-        objectValue.put("operator", Values.create(operator.toString()));
-        return objectValue;
+    @Override
+    public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
+        return obj ->
+            Values.getValueCoerced(obj, Date.class).map(date -> {
+                Pair<Long, Long> fromAndTo = asFromAndTo(currentMillisSupplier.get());
+                Long from = fromAndTo.key;
+                Long to = fromAndTo.value;
+                long timestamp = date.getTime();
+
+                boolean result = operator.compare(Long::compare, timestamp, from, to);
+                return negate != result;
+            }).orElse(false);
+    }
+
+    public Pair<Long, Long> asFromAndTo(long currentMillis) {
+
+        Long from;
+        Long to = null;
+
+        try {
+            if (TimeUtil.isTimeDuration(value)) {
+                from = currentMillis + TimeUtil.parseTimeDuration(value);
+            } else {
+                from = TimeUtil.parseTimeIso8601(value);
+            }
+
+            if (operator == AssetQuery.Operator.BETWEEN) {
+                if (TimeUtil.isTimeDuration(rangeValue)) {
+                    to = currentMillis + TimeUtil.parseTimeDuration(rangeValue);
+                } else {
+                    to = TimeUtil.parseTimeIso8601(rangeValue);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            from = null;
+            to = null;
+        }
+
+        return new Pair<>(from, to);
     }
 
     @Override

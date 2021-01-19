@@ -23,6 +23,7 @@ public abstract class EventHandler<T> {
      * Get the class of the event that this event handler handles
      * @return The class of the event that this event handler handles
      */
+    @SuppressWarnings("unchecked")
     public Class<T> getEventType(){
         return (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }

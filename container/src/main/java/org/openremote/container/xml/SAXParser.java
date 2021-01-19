@@ -122,7 +122,7 @@ public class SAXParser {
 
         protected SAXParser parser;
         protected I instance;
-        protected Handler parent;
+        protected Handler<?> parent;
         protected StringBuilder characters = new StringBuilder();
         protected Attributes attributes;
 
@@ -134,11 +134,11 @@ public class SAXParser {
             this(instance, parser, null);
         }
 
-        public Handler(I instance, Handler parent) {
+        public Handler(I instance, Handler<?> parent) {
             this(instance, parent.getParser(), parent);
         }
 
-        public Handler(I instance, SAXParser parser, Handler parent) {
+        public Handler(I instance, SAXParser parser, Handler<?> parent) {
             this.instance = instance;
             this.parser = parser;
             this.parent = parent;
@@ -155,7 +155,7 @@ public class SAXParser {
             return parser;
         }
 
-        public Handler getParent() {
+        public Handler<?> getParent() {
             return parent;
         }
 

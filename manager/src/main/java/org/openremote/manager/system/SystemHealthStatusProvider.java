@@ -19,17 +19,16 @@
  */
 package org.openremote.manager.system;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerHealthStatusProvider;
-import org.openremote.container.ContainerService;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.Values;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
 
-public class SystemHealthStatusProvider implements ContainerHealthStatusProvider {
+public class SystemHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
     public static final String NAME = "system";
     public static final String VERSION = "1.0";
@@ -65,8 +64,8 @@ public class SystemHealthStatusProvider implements ContainerHealthStatusProvider
     }
 
     @Override
-    public Value getHealthStatus() {
-        ObjectValue objectValue = Values.createObject();
+    public Object getHealthStatus() {
+        ObjectNode objectValue = Values.JSON.createObjectNode();
         com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         File[] roots = File.listRoots();
 
@@ -77,18 +76,18 @@ public class SystemHealthStatusProvider implements ContainerHealthStatusProvider
         objectValue.put("totalSwapSpaceMB", operatingSystemMXBean.getTotalSwapSpaceSize() / (1024F*1024F));
         objectValue.put("freeSwapSpaceMB", operatingSystemMXBean.getFreeSwapSpaceSize() / (1024F*1024F));
 
-        ObjectValue rootsObj = Values.createObject();
+        ObjectNode rootsObj = Values.JSON.createObjectNode();
 
         for (File root : roots) {
-            ObjectValue rootObj = Values.createObject();
+            ObjectNode rootObj = Values.JSON.createObjectNode();
             rootObj.put("totalSpaceMB", root.getTotalSpace() / (1024F*1024F));
             rootObj.put("freeSpaceMB", root.getFreeSpace() / (1024F*1024F));
             String name = root.getAbsolutePath();
             name = name.replace("/","").replace("\\", "").replace(":", "");
-            rootsObj.put(name, rootObj);
+            rootsObj.set(name, rootObj);
         }
 
-        objectValue.put("filesystem", rootsObj);
+        objectValue.set("filesystem", rootsObj);
 
         return objectValue;
     }

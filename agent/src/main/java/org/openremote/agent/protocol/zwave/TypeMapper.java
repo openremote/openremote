@@ -19,673 +19,262 @@
  */
 package org.openremote.agent.protocol.zwave;
 
-import org.openremote.model.Constants;
-import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.AttributeValueType;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.attribute.MetaItemType;
+import org.openremote.model.value.*;
 import org.openremote.protocol.zwave.model.commandclasses.channel.ChannelType;
 
-import java.util.*;
-import java.util.logging.Logger;
+import java.util.HashMap;
+import java.util.Map;
 
-import static org.openremote.model.Constants.UNITS_TEMPERATURE_CELSIUS;
-import static org.openremote.model.Constants.UNITS_TEMPERATURE_FAHRENHEIT;
+import static org.openremote.model.Constants.*;
 
 public class TypeMapper {
 
-    private static final Logger LOG = Logger.getLogger(TypeMapper.class.getName());
+    public static final class TypeInfo {
+        protected ValueDescriptor<?> valueDescriptor;
+        protected String[] units;
+        protected ValueConstraint[] constraints;
+        protected ValueFormat valueFormat;
 
-    static private Map<ChannelType, AttributeValueDescriptor> typeMap = new HashMap<>();
+        public TypeInfo(ValueDescriptor<?> valueDescriptor) {
+            this.valueDescriptor = valueDescriptor;
+        }
 
-    static private Map<ChannelType, List<MetaItem>> metaItemMap = new HashMap<>();
+        public TypeInfo(ValueDescriptor<?> valueDescriptor, String[] units) {
+            this.valueDescriptor = valueDescriptor;
+            this.units = units;
+        }
+
+        public TypeInfo(ValueDescriptor<?> valueDescriptor, String[] units, ValueFormat valueFormat) {
+            this.valueDescriptor = valueDescriptor;
+            this.units = units;
+            this.valueFormat = valueFormat;
+        }
+
+        public TypeInfo(ValueDescriptor<?> valueDescriptor, String[] units, ValueFormat valueFormat, ValueConstraint[] constraints) {
+            this.valueDescriptor = valueDescriptor;
+            this.units = units;
+            this.constraints = constraints;
+            this.valueFormat = valueFormat;
+        }
+    }
+    
+    static private final Map<ChannelType, TypeInfo> typeMap = new HashMap<>();
 
     static {
 
         // Basic types
 
-        typeMap.put(ChannelType.INTEGER, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.NUMBER, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.STRING, AttributeValueType.STRING);
-        typeMap.put(ChannelType.BOOLEAN, AttributeValueType.BOOLEAN);
-        typeMap.put(ChannelType.ARRAY, AttributeValueType.ARRAY);
+        typeMap.put(ChannelType.INTEGER, new TypeInfo(ValueType.INTEGER));
+        typeMap.put(ChannelType.NUMBER, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.STRING, new TypeInfo(ValueType.TEXT));
+        typeMap.put(ChannelType.BOOLEAN, new TypeInfo(ValueType.BOOLEAN));
+        typeMap.put(ChannelType.ARRAY, new TypeInfo(ValueType.JSON_OBJECT.asArray()));
 
         // COMMAND_CLASS_SENSOR_MULTILEVEL
 
-        typeMap.put(ChannelType.TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
-        typeMap.put(ChannelType.TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
-        typeMap.put(ChannelType.PERCENTAGE, AttributeValueType.PERCENTAGE);
-        typeMap.put(ChannelType.LUMINANCE_PERCENTAGE, AttributeValueType.PERCENTAGE);
-        typeMap.put(ChannelType.LUMINANCE_LUX, AttributeValueType.BRIGHTNESS);
-        typeMap.put(ChannelType.POWER_WATT, AttributeValueType.POWER);
-        typeMap.put(ChannelType.POWER_BTU_H, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.HUMIDITY_PERCENTAGE, AttributeValueType.HUMIDITY);
-        typeMap.put(ChannelType.HUMIDITY_ABSOLUTE, AttributeValueType.HUMIDITY);
-        typeMap.put(ChannelType.SPEED_MS, AttributeValueType.SPEED);
-        typeMap.put(ChannelType.SPEED_MPH, AttributeValueType.SPEED);
-        typeMap.put(ChannelType.DIRECTION_DECIMAL_DEGREES, AttributeValueType.DIRECTION);
-        typeMap.put(ChannelType.PRESSURE_KPA, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.PRESSURE_IN_HG, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SOLAR_RADIATION_WATT_M2, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.DEW_POINT_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
-        typeMap.put(ChannelType.DEW_POINT_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
-        typeMap.put(ChannelType.RAINFALL_MMPH, AttributeValueType.RAINFALL);
-        typeMap.put(ChannelType.RAINFALL_INPH, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.TIDE_LEVEL_M, AttributeValueType.DISTANCE);
-        typeMap.put(ChannelType.TIDE_LEVEL_FT, AttributeValueType.DISTANCE);
-        typeMap.put(ChannelType.WEIGHT_KG, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.WEIGHT_LB, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.VOLTAGE_V, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.VOLTAGE_MV, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.CURRENT_A, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.CURRENT_MA, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.CO2_PPM, AttributeValueType.CO2);
-        typeMap.put(ChannelType.AIR_FLOW_CMPH, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.AIR_FLOW_CFTPM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.TANK_CAPACITY_L, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.TANK_CAPACITY_CBM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.TANK_CAPACITY_GAL, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.DISTANCE_M, AttributeValueType.DISTANCE);
-        typeMap.put(ChannelType.DISTANCE_CM, AttributeValueType.DISTANCE);
-        typeMap.put(ChannelType.DISTANCE_FT, AttributeValueType.DISTANCE);
-        typeMap.put(ChannelType.ANGLE_POSITION_PERCENT, AttributeValueType.PERCENTAGE);
-        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_NORTH_POLE, AttributeValueType.DIRECTION);
-        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_SOUTH_POLE, AttributeValueType.DIRECTION);
-        typeMap.put(ChannelType.ROTATION_HZ, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ROTATION_RPM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.WATER_TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
-        typeMap.put(ChannelType.WATER_TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
-        typeMap.put(ChannelType.SOIL_TEMPERATURE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
-        typeMap.put(ChannelType.SOIL_TEMPERATURE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
-        typeMap.put(ChannelType.SEISMIC_INTENSITY_MERCALLI, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SEISMIC_INTENSITY_EU_MACROSEISMIC, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SEISMIC_INTENSITY_LIEDU, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SEISMIC_INTENSITY_SHINDO, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_LOCAL, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_MOMENT, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_SURFACE_WAVE, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_BODY_WAVE, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ULTRAVIOLET_UV_INDEX, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.RESISTIVITY_OHM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.CONDUCTIVITY_SPM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.LOUDNESS_DB, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.LOUDNESS_DBA, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.MOISTURE_PERCENTAGE, AttributeValueType.PERCENTAGE);
-        typeMap.put(ChannelType.MOISTURE_VOLUME_WATER_CONTENT, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.MOISTURE_IMPEDANCE, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.MOISTURE_WATER_ACTIVITY, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.FREQUENCY_HZ, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.FREQUENCY_KHZ, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.TIME_SECONDS, AttributeValueType.TIMESTAMP);
-        typeMap.put(ChannelType.TARGET_TEMPERATUE_CELSIUS, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_CELSIUS));
-        typeMap.put(ChannelType.TARGET_TEMPERATUE_FAHRENHEIT, AttributeValueType.TEMPERATURE.withUnitType(UNITS_TEMPERATURE_FAHRENHEIT));
-        typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MOLPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MCGPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.FORMALDEHYDE_LEVEL_MOLPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.RADON_CONCENTRATION_BQPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.RADON_CONCENTRATION_PCIPL, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.METHANE_DENSITY_MOLPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.VOLATILE_ORGANIC_COMPOUND_MOLPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.VOLATILE_ORGANIC_COMPOUND_PPM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.CO_MOLPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.CO_PPM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SOIL_HUMIDITY_PERCENTAGE, AttributeValueType.PERCENTAGE);
-        typeMap.put(ChannelType.SOIL_REACTIVITY_PH, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SOIL_SALINITY_MOLPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.HEART_RATE_BPM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.BLOOD_PRESSURE_SYSTOLIC, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.BLOOD_PRESSURE_DIASTOLIC, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.MUSCLE_MASS_KG, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.FAT_MASS_KG, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.BONE_MASS_KG, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.TOTAL_BODY_WATER_KG, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.BASIC_METABOLIC_RATE_JOULE, AttributeValueType.ENERGY);
-        typeMap.put(ChannelType.BODY_MASS_INDEX, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ACCELERATION_X_MPSS, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ACCELERATION_Y_MPSS, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ACCELERATION_Z_MPSS, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.SMOKE_DENSITY_PERCENTAGE, AttributeValueType.PERCENTAGE);
-        typeMap.put(ChannelType.WATER_FLOW_LPH, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.WATER_PRESSURE_KPA, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.RF_SIGNAL_STRENGTH_RSSI, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.RF_SIGNAL_STRENGTH_DBM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.PARTICULATE_MATTER_MOLPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.PARTICULATE_MATTER_MCGPCM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.RESPIRATORY_RATE_BPM, AttributeValueType.NUMBER);
+        typeMap.put(ChannelType.TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS), ValueFormat.NUMBER_1_DP()));
+        typeMap.put(ChannelType.TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT), ValueFormat.NUMBER_1_DP()));
+        typeMap.put(ChannelType.PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.LUMINANCE_PERCENTAGE, new TypeInfo(ValueType.INTEGER, units(UNITS_PERCENTAGE), null, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))));
+        typeMap.put(ChannelType.LUMINANCE_LUX, new TypeInfo(ValueType.INTEGER, units(UNITS_LUX)));
+        typeMap.put(ChannelType.POWER_WATT, new TypeInfo(ValueType.INTEGER, units(UNITS_WATT)));
+        typeMap.put(ChannelType.POWER_BTU_H, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_BTU, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.HUMIDITY_PERCENTAGE, new TypeInfo(ValueType.INTEGER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.HUMIDITY_ABSOLUTE, new TypeInfo(ValueType.INTEGER.withUnits(UNITS_GRAM, UNITS_PER, UNITS_METRE, UNITS_CUBED)));
+        typeMap.put(ChannelType.SPEED_MS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND)));
+        typeMap.put(ChannelType.SPEED_MPH, new TypeInfo(ValueType.INTEGER.withUnits(UNITS_MILE, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.DIRECTION_DECIMAL_DEGREES, new TypeInfo(ValueType.INTEGER, units(UNITS_DEGREE)));
+        typeMap.put(ChannelType.PRESSURE_KPA, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_PASCAL)));
+        typeMap.put(ChannelType.PRESSURE_IN_HG, new TypeInfo(ValueType.NUMBER, units(UNITS_IN_HG)));
+        typeMap.put(ChannelType.SOLAR_RADIATION_WATT_M2, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_WATT, UNITS_PER, UNITS_METRE, UNITS_SQUARED)));
+        typeMap.put(ChannelType.DEW_POINT_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
+        typeMap.put(ChannelType.DEW_POINT_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
+        typeMap.put(ChannelType.RAINFALL_MMPH, new TypeInfo(ValueType.INTEGER.withUnits(UNITS_MILLI, UNITS_METRE, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.RAINFALL_INPH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_INCH, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.TIDE_LEVEL_M, new TypeInfo(ValueType.NUMBER, units(UNITS_METRE)));
+        typeMap.put(ChannelType.TIDE_LEVEL_FT, new TypeInfo(ValueType.NUMBER, units(UNITS_FOOT)));
+        typeMap.put(ChannelType.WEIGHT_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
+        typeMap.put(ChannelType.WEIGHT_LB, new TypeInfo(ValueType.NUMBER, units(UNITS_MASS_POUND)));
+        typeMap.put(ChannelType.VOLTAGE_V, new TypeInfo(ValueType.NUMBER, units(UNITS_VOLT)));
+        typeMap.put(ChannelType.VOLTAGE_MV, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_MILLI, UNITS_VOLT)));
+        typeMap.put(ChannelType.CURRENT_A, new TypeInfo(ValueType.NUMBER, units(UNITS_AMP)));
+        typeMap.put(ChannelType.CURRENT_MA, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_MILLI, UNITS_AMP)));
+        typeMap.put(ChannelType.CO2_PPM, new TypeInfo(ValueType.INTEGER, units(UNITS_PART_PER_MILLION)));
+        typeMap.put(ChannelType.AIR_FLOW_CMPH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED, UNITS_PER, UNITS_MINUTE)));
+        typeMap.put(ChannelType.AIR_FLOW_CFTPM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_FOOT, UNITS_CUBED, UNITS_PER, UNITS_MINUTE)));
+        typeMap.put(ChannelType.TANK_CAPACITY_L, new TypeInfo(ValueType.NUMBER, units(UNITS_LITRE)));
+        typeMap.put(ChannelType.TANK_CAPACITY_CBM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED)));
+        typeMap.put(ChannelType.TANK_CAPACITY_GAL, new TypeInfo(ValueType.NUMBER, units(UNITS_GALLON)));
+        typeMap.put(ChannelType.DISTANCE_M, new TypeInfo(ValueType.NUMBER, units(UNITS_METRE)));
+        typeMap.put(ChannelType.DISTANCE_CM, new TypeInfo(ValueType.POSITIVE_NUMBER.withUnits(UNITS_CENTI, UNITS_METRE)));
+        typeMap.put(ChannelType.DISTANCE_FT, new TypeInfo(ValueType.POSITIVE_NUMBER, units(UNITS_FOOT)));
+        typeMap.put(ChannelType.ANGLE_POSITION_PERCENT, new TypeInfo(ValueType.INTEGER, units(UNITS_PERCENTAGE), null, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))));
+        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_NORTH_POLE, new TypeInfo(ValueType.INTEGER, units(UNITS_DEGREE)));
+        typeMap.put(ChannelType.ANGLE_POSITION_DEGREE_SOUTH_POLE, new TypeInfo(ValueType.INTEGER, units(UNITS_DEGREE)));
+        typeMap.put(ChannelType.ROTATION_HZ, new TypeInfo(ValueType.NUMBER, units(UNITS_HERTZ)));
+        typeMap.put(ChannelType.ROTATION_RPM, new TypeInfo(ValueType.NUMBER, units(UNITS_RPM)));
+        typeMap.put(ChannelType.WATER_TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
+        typeMap.put(ChannelType.WATER_TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
+        typeMap.put(ChannelType.SOIL_TEMPERATURE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
+        typeMap.put(ChannelType.SOIL_TEMPERATURE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
+        typeMap.put(ChannelType.SEISMIC_INTENSITY_MERCALLI, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SEISMIC_INTENSITY_EU_MACROSEISMIC, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SEISMIC_INTENSITY_LIEDU, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SEISMIC_INTENSITY_SHINDO, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_LOCAL, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_MOMENT, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_SURFACE_WAVE, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SEISMIC_MAGNITUDE_BODY_WAVE, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.ULTRAVIOLET_UV_INDEX, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.RESISTIVITY_OHM, new TypeInfo(ValueType.NUMBER, units(UNITS_OHM)));
+        typeMap.put(ChannelType.CONDUCTIVITY_SPM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.LOUDNESS_DB, new TypeInfo(ValueType.NUMBER, units(UNITS_DECIBEL)));
+        typeMap.put(ChannelType.LOUDNESS_DBA, new TypeInfo(ValueType.NUMBER, units(UNITS_DECIBEL_ATTENUATED)));
+        typeMap.put(ChannelType.MOISTURE_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.MOISTURE_VOLUME_WATER_CONTENT, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.MOISTURE_IMPEDANCE, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.MOISTURE_WATER_ACTIVITY, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.FREQUENCY_HZ, new TypeInfo(ValueType.NUMBER, units(UNITS_HERTZ)));
+        typeMap.put(ChannelType.FREQUENCY_KHZ, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_HERTZ)));
+        typeMap.put(ChannelType.TIME_SECONDS, new TypeInfo(ValueType.NUMBER, units(UNITS_SECOND)));
+        typeMap.put(ChannelType.TARGET_TEMPERATUE_CELSIUS, new TypeInfo(ValueType.NUMBER, units(UNITS_CELSIUS)));
+        typeMap.put(ChannelType.TARGET_TEMPERATUE_FAHRENHEIT, new TypeInfo(ValueType.NUMBER, units(UNITS_FAHRENHEIT)));
+        typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MOLPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.PARTICULATE_MATTER_2_5_MCGPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.FORMALDEHYDE_LEVEL_MOLPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.RADON_CONCENTRATION_BQPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.RADON_CONCENTRATION_PCIPL, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.METHANE_DENSITY_MOLPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.VOLATILE_ORGANIC_COMPOUND_MOLPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.VOLATILE_ORGANIC_COMPOUND_PPM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.CO_MOLPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.CO_PPM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SOIL_HUMIDITY_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.SOIL_REACTIVITY_PH, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.SOIL_SALINITY_MOLPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.HEART_RATE_BPM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.BLOOD_PRESSURE_SYSTOLIC, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.BLOOD_PRESSURE_DIASTOLIC, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.MUSCLE_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
+        typeMap.put(ChannelType.FAT_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
+        typeMap.put(ChannelType.BONE_MASS_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
+        typeMap.put(ChannelType.TOTAL_BODY_WATER_KG, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_GRAM)));
+        typeMap.put(ChannelType.BASIC_METABOLIC_RATE_JOULE, new TypeInfo(ValueType.NUMBER, units(UNITS_JOULE)));
+        typeMap.put(ChannelType.BODY_MASS_INDEX, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.ACCELERATION_X_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND, UNITS_SQUARED)));
+        typeMap.put(ChannelType.ACCELERATION_Y_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND, UNITS_SQUARED)));
+        typeMap.put(ChannelType.ACCELERATION_Z_MPSS, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND, UNITS_SQUARED)));
+        typeMap.put(ChannelType.SMOKE_DENSITY_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
+        typeMap.put(ChannelType.WATER_FLOW_LPH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_LITRE, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.WATER_PRESSURE_KPA, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_PASCAL)));
+        typeMap.put(ChannelType.RF_SIGNAL_STRENGTH_RSSI, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.RF_SIGNAL_STRENGTH_DBM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.PARTICULATE_MATTER_MOLPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.PARTICULATE_MATTER_MCGPCM, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.RESPIRATORY_RATE_BPM, new TypeInfo(ValueType.NUMBER));
 
         // COMMAND_CLASS_METER
 
         // Electric Meter
-        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KWH, AttributeValueType.ENERGY);
-        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVAH, AttributeValueType.ENERGY);
-        typeMap.put(ChannelType.ELECTRIC_METER_POWER_W, AttributeValueType.POWER);
-        typeMap.put(ChannelType.ELECTRIC_METER_PULSE_COUNT, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ELECTRIC_METER_VOLTAGE_V, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ELECTRIC_METER_CURRENT_A, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ELECTRIC_METER_POWER_FACTOR, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.ELECTRIC_METER_POWER_KVAR, AttributeValueType.POWER);
-        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVARH, AttributeValueType.ENERGY);
+        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KWH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVAH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT, UNITS_PER, UNITS_HOUR)));
+        typeMap.put(ChannelType.ELECTRIC_METER_POWER_W, new TypeInfo(ValueType.NUMBER, units(UNITS_WATT)));
+        typeMap.put(ChannelType.ELECTRIC_METER_PULSE_COUNT, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.ELECTRIC_METER_VOLTAGE_V, new TypeInfo(ValueType.NUMBER, units(UNITS_VOLT)));
+        typeMap.put(ChannelType.ELECTRIC_METER_CURRENT_A, new TypeInfo(ValueType.NUMBER, units(UNITS_AMP)));
+        typeMap.put(ChannelType.ELECTRIC_METER_POWER_FACTOR, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.ELECTRIC_METER_POWER_KVAR, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT)));
+        typeMap.put(ChannelType.ELECTRIC_METER_ENERGY_KVARH, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_KILO, UNITS_WATT, UNITS_PER, UNITS_HOUR)));
 
         // Gas Meter
-        typeMap.put(ChannelType.GAS_METER_VOLUME_CM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.GAS_METER_VOLUME_CFT, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.GAS_METER_PULSE_COUNT, AttributeValueType.NUMBER);
+        typeMap.put(ChannelType.GAS_METER_VOLUME_CM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED)));
+        typeMap.put(ChannelType.GAS_METER_VOLUME_CFT, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_FOOT, UNITS_CUBED)));
+        typeMap.put(ChannelType.GAS_METER_PULSE_COUNT, new TypeInfo(ValueType.NUMBER));
 
         // Water Meter
-        typeMap.put(ChannelType.WATER_METER_VOLUME_CM, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.WATER_METER_VOLUME_CFT, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.WATER_METER_VOLUME_GAL, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.WATER_METER_PULSE_COUNT, AttributeValueType.NUMBER);
+        typeMap.put(ChannelType.WATER_METER_VOLUME_CM, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_METRE, UNITS_CUBED)));
+        typeMap.put(ChannelType.WATER_METER_VOLUME_CFT, new TypeInfo(ValueType.NUMBER.withUnits(UNITS_FOOT, UNITS_CUBED)));
+        typeMap.put(ChannelType.WATER_METER_VOLUME_GAL, new TypeInfo(ValueType.NUMBER, units(UNITS_GALLON)));
+        typeMap.put(ChannelType.WATER_METER_PULSE_COUNT, new TypeInfo(ValueType.NUMBER));
 
         // COMMAND_CLASS_COLOR_CONTROL
 
-        typeMap.put(ChannelType.COLOR_WARM_WHITE, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_COLD_WHITE, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_RED, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_GREEN, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_BLUE, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_AMBER, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_CYAN, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_PURPLE, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_INDEXED, AttributeValueType.NUMBER);
-        typeMap.put(ChannelType.COLOR_RGB, AttributeValueType.COLOR_RGB);
-        typeMap.put(ChannelType.COLOR_ARGB, AttributeValueType.COLOR_ARGB);
+        typeMap.put(ChannelType.COLOR_WARM_WHITE, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_COLD_WHITE, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_RED, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_GREEN, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_BLUE, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_AMBER, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_CYAN, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_PURPLE, new TypeInfo(ValueType.INT_BYTE));
+        typeMap.put(ChannelType.COLOR_INDEXED, new TypeInfo(ValueType.NUMBER));
+        typeMap.put(ChannelType.COLOR_RGB, new TypeInfo(ValueType.COLOUR_RGB));
+        typeMap.put(ChannelType.COLOR_ARGB, new TypeInfo(ValueType.COLOUR_RGBA));
 
         // COMMAND_CLASS_SENSOR_ALARM
 
-        typeMap.put(ChannelType.GENERAL_PURPOSE_ALARM, AttributeValueType.BOOLEAN);
-        typeMap.put(ChannelType.SMOKE_ALARM, AttributeValueType.BOOLEAN);
-        typeMap.put(ChannelType.CO_ALARM, AttributeValueType.BOOLEAN);
-        typeMap.put(ChannelType.CO2_ALARM, AttributeValueType.BOOLEAN);
-        typeMap.put(ChannelType.HEAT_ALARM, AttributeValueType.BOOLEAN);
-        typeMap.put(ChannelType.WATER_LEAK_ALARM, AttributeValueType.BOOLEAN);
-        typeMap.put(ChannelType.FIRST_SUPPORTED_ALARM, AttributeValueType.BOOLEAN);
+        typeMap.put(ChannelType.GENERAL_PURPOSE_ALARM, new TypeInfo(ValueType.BOOLEAN, null, ValueFormat.BOOLEAN_ON_OFF()));
+        typeMap.put(ChannelType.SMOKE_ALARM, new TypeInfo(ValueType.BOOLEAN, null, ValueFormat.BOOLEAN_ON_OFF()));
+        typeMap.put(ChannelType.CO_ALARM, new TypeInfo(ValueType.BOOLEAN, null, ValueFormat.BOOLEAN_ON_OFF()));
+        typeMap.put(ChannelType.CO2_ALARM, new TypeInfo(ValueType.BOOLEAN, null, ValueFormat.BOOLEAN_ON_OFF()));
+        typeMap.put(ChannelType.HEAT_ALARM, new TypeInfo(ValueType.BOOLEAN, null, ValueFormat.BOOLEAN_ON_OFF()));
+        typeMap.put(ChannelType.WATER_LEAK_ALARM, new TypeInfo(ValueType.BOOLEAN, null, ValueFormat.BOOLEAN_ON_OFF()));
+        typeMap.put(ChannelType.FIRST_SUPPORTED_ALARM, new TypeInfo(ValueType.BOOLEAN, null, ValueFormat.BOOLEAN_ON_OFF()));
 
         // COMMAND_CLASS_BATTERY
 
-        typeMap.put(ChannelType.CHARGE_PERCENTAGE, AttributeValueType.PERCENTAGE);
+        typeMap.put(ChannelType.CHARGE_PERCENTAGE, new TypeInfo(ValueType.NUMBER, units(UNITS_PERCENTAGE)));
 
         // COMMAND_CLASS_CLOCK
 
-        typeMap.put(ChannelType.DATETIME, AttributeValueType.TIMESTAMP_ISO8601);
-
-
-
-        // Basic types
-
-        metaItemMap.put(ChannelType.INTEGER, new ArrayList<>());
-        metaItemMap.put(ChannelType.NUMBER, new ArrayList<>());
-        metaItemMap.put(ChannelType.STRING, new ArrayList<>());
-        metaItemMap.put(ChannelType.BOOLEAN, new ArrayList<>());
-        metaItemMap.put(ChannelType.ARRAY, new ArrayList<>());
-
-        // COMMAND_CLASS_SENSOR_MULTILEVEL
-
-        metaItemMap.put(
-            ChannelType.TEMPERATURE_CELSIUS,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.TEMPERATURE_FAHRENHEIT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("FAHRENHEIT")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.PERCENTAGE, new ArrayList<>());
-        metaItemMap.put(ChannelType.LUMINANCE_PERCENTAGE, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.LUMINANCE_LUX,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("LUX")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%d lx"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.POWER_WATT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("WATT")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f W"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.POWER_BTU_H, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.HUMIDITY_PERCENTAGE,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("PERCENTAGE")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%3d %%"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.HUMIDITY_ABSOLUTE, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.SPEED_MS,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_SPEED_METRES_SECOND)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.3f m/s"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.SPEED_MPH,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("SPEED_MPH")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f mi/h"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.DIRECTION_DECIMAL_DEGREES,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_ANGLE_DEGREES)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f deg"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.PRESSURE_KPA, new ArrayList<>());
-        metaItemMap.put(ChannelType.PRESSURE_IN_HG, new ArrayList<>());
-        metaItemMap.put(ChannelType.SOLAR_RADIATION_WATT_M2, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.DEW_POINT_CELSIUS,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.DEW_POINT_FAHRENHEIT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.RAINFALL_MMPH,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("RAINFALL_MMPH")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f mm/h"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.RAINFALL_INPH, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.TIDE_LEVEL_M,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("TIDE_LEVEL_M")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f m"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.TIDE_LEVEL_FT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("TIDE_LEVEL_FT")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f '"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.WEIGHT_KG, new ArrayList<>());
-        metaItemMap.put(ChannelType.WEIGHT_LB, new ArrayList<>());
-        metaItemMap.put(ChannelType.VOLTAGE_V, new ArrayList<>());
-        metaItemMap.put(ChannelType.VOLTAGE_MV, new ArrayList<>());
-        metaItemMap.put(ChannelType.CURRENT_A, new ArrayList<>());
-        metaItemMap.put(ChannelType.CURRENT_MA, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.CO2_PPM,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("CO2_PPM")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%4d ppm"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.AIR_FLOW_CMPH, new ArrayList<>());
-        metaItemMap.put(ChannelType.AIR_FLOW_CFTPM, new ArrayList<>());
-        metaItemMap.put(ChannelType.TANK_CAPACITY_L, new ArrayList<>());
-        metaItemMap.put(ChannelType.TANK_CAPACITY_CBM, new ArrayList<>());
-        metaItemMap.put(ChannelType.TANK_CAPACITY_GAL, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.DISTANCE_M,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("METERS")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f m"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.DISTANCE_CM,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("CENTIMETERS")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f cm"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.DISTANCE_FT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("FEET")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f '"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.ANGLE_POSITION_PERCENT, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.ANGLE_POSITION_DEGREE_NORTH_POLE,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_ANGLE_DEGREES)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f deg"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.ANGLE_POSITION_DEGREE_SOUTH_POLE,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_ANGLE_DEGREES)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f deg"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.ROTATION_HZ, new ArrayList<>());
-        metaItemMap.put(ChannelType.ROTATION_RPM, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.WATER_TEMPERATURE_CELSIUS,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.WATER_TEMPERATURE_FAHRENHEIT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.SOIL_TEMPERATURE_CELSIUS,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.SOIL_TEMPERATURE_FAHRENHEIT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.SEISMIC_INTENSITY_MERCALLI, new ArrayList<>());
-        metaItemMap.put(ChannelType.SEISMIC_INTENSITY_EU_MACROSEISMIC, new ArrayList<>());
-        metaItemMap.put(ChannelType.SEISMIC_INTENSITY_LIEDU, new ArrayList<>());
-        metaItemMap.put(ChannelType.SEISMIC_INTENSITY_SHINDO, new ArrayList<>());
-        metaItemMap.put(ChannelType.SEISMIC_MAGNITUDE_LOCAL, new ArrayList<>());
-        metaItemMap.put(ChannelType.SEISMIC_MAGNITUDE_MOMENT, new ArrayList<>());
-        metaItemMap.put(ChannelType.SEISMIC_MAGNITUDE_SURFACE_WAVE, new ArrayList<>());
-        metaItemMap.put(ChannelType.SEISMIC_MAGNITUDE_BODY_WAVE, new ArrayList<>());
-        metaItemMap.put(ChannelType.ULTRAVIOLET_UV_INDEX, new ArrayList<>());
-        metaItemMap.put(ChannelType.RESISTIVITY_OHM, new ArrayList<>());
-        metaItemMap.put(ChannelType.CONDUCTIVITY_SPM, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.LOUDNESS_DB,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_SOUND_DECIBELS)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%d dB"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.LOUDNESS_DBA,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(Constants.UNITS_SOUND_DECIBELS)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%d dBA"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.MOISTURE_PERCENTAGE, new ArrayList<>());
-        metaItemMap.put(ChannelType.MOISTURE_VOLUME_WATER_CONTENT, new ArrayList<>());
-        metaItemMap.put(ChannelType.MOISTURE_IMPEDANCE, new ArrayList<>());
-        metaItemMap.put(ChannelType.MOISTURE_WATER_ACTIVITY, new ArrayList<>());
-        metaItemMap.put(ChannelType.FREQUENCY_HZ, new ArrayList<>());
-        metaItemMap.put(ChannelType.FREQUENCY_KHZ, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.TIME_SECONDS,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("SECONDS")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%d s"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.TARGET_TEMPERATUE_CELSIUS,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_CELSIUS)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f C"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.TARGET_TEMPERATUE_FAHRENHEIT,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue(UNITS_TEMPERATURE_FAHRENHEIT)),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.1f F"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.PARTICULATE_MATTER_2_5_MOLPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.PARTICULATE_MATTER_2_5_MCGPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.FORMALDEHYDE_LEVEL_MOLPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.RADON_CONCENTRATION_BQPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.RADON_CONCENTRATION_PCIPL, new ArrayList<>());
-        metaItemMap.put(ChannelType.METHANE_DENSITY_MOLPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.VOLATILE_ORGANIC_COMPOUND_MOLPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.VOLATILE_ORGANIC_COMPOUND_PPM, new ArrayList<>());
-        metaItemMap.put(ChannelType.CO_MOLPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.CO_PPM, new ArrayList<>());
-        metaItemMap.put(ChannelType.SOIL_HUMIDITY_PERCENTAGE, new ArrayList<>());
-        metaItemMap.put(ChannelType.SOIL_REACTIVITY_PH, new ArrayList<>());
-        metaItemMap.put(ChannelType.SOIL_SALINITY_MOLPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.HEART_RATE_BPM, new ArrayList<>());
-        metaItemMap.put(ChannelType.BLOOD_PRESSURE_SYSTOLIC, new ArrayList<>());
-        metaItemMap.put(ChannelType.BLOOD_PRESSURE_DIASTOLIC, new ArrayList<>());
-        metaItemMap.put(ChannelType.MUSCLE_MASS_KG, new ArrayList<>());
-        metaItemMap.put(ChannelType.FAT_MASS_KG, new ArrayList<>());
-        metaItemMap.put(ChannelType.BONE_MASS_KG, new ArrayList<>());
-        metaItemMap.put(ChannelType.TOTAL_BODY_WATER_KG, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.BASIC_METABOLIC_RATE_JOULE,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("JOULE")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f J"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.BODY_MASS_INDEX, new ArrayList<>());
-        metaItemMap.put(ChannelType.ACCELERATION_X_MPSS, new ArrayList<>());
-        metaItemMap.put(ChannelType.ACCELERATION_Y_MPSS, new ArrayList<>());
-        metaItemMap.put(ChannelType.ACCELERATION_Z_MPSS, new ArrayList<>());
-        metaItemMap.put(ChannelType.SMOKE_DENSITY_PERCENTAGE, new ArrayList<>());
-        metaItemMap.put(ChannelType.WATER_FLOW_LPH, new ArrayList<>());
-        metaItemMap.put(ChannelType.WATER_PRESSURE_KPA, new ArrayList<>());
-        metaItemMap.put(ChannelType.RF_SIGNAL_STRENGTH_RSSI, new ArrayList<>());
-        metaItemMap.put(ChannelType.RF_SIGNAL_STRENGTH_DBM, new ArrayList<>());
-        metaItemMap.put(ChannelType.PARTICULATE_MATTER_MOLPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.PARTICULATE_MATTER_MCGPCM, new ArrayList<>());
-        metaItemMap.put(ChannelType.RESPIRATORY_RATE_BPM, new ArrayList<>());
-
-        // COMMAND_CLASS_METER
-
-        // Electric Meter
-        metaItemMap.put(
-            ChannelType.ELECTRIC_METER_ENERGY_KWH,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("ENERGY_KWH")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f KWh"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.ELECTRIC_METER_ENERGY_KVAH,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("ENERGY_KVAH")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f KVAh"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.ELECTRIC_METER_POWER_W,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("POWER_W")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f W"))
-                }
-            )
-        );
-        metaItemMap.put(ChannelType.ELECTRIC_METER_PULSE_COUNT, new ArrayList<>());
-        metaItemMap.put(ChannelType.ELECTRIC_METER_VOLTAGE_V, new ArrayList<>());
-        metaItemMap.put(ChannelType.ELECTRIC_METER_CURRENT_A, new ArrayList<>());
-        metaItemMap.put(ChannelType.ELECTRIC_METER_POWER_FACTOR, new ArrayList<>());
-        metaItemMap.put(
-            ChannelType.ELECTRIC_METER_POWER_KVAR,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("POWER_KVAR")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f W"))
-                }
-            )
-        );
-        metaItemMap.put(
-            ChannelType.ELECTRIC_METER_ENERGY_KVARH,
-            Arrays.asList(
-                new MetaItem[] {
-                    new MetaItem(MetaItemType.UNIT_TYPE.withInitialValue("ENERGY_KVARH")),
-                    new MetaItem(MetaItemType.FORMAT.withInitialValue("%0.5f KW"))
-                }
-            )
-        );
-
-        // Gas Meter
-        metaItemMap.put(ChannelType.GAS_METER_VOLUME_CM, new ArrayList<>());
-        metaItemMap.put(ChannelType.GAS_METER_VOLUME_CFT, new ArrayList<>());
-        metaItemMap.put(ChannelType.GAS_METER_PULSE_COUNT, new ArrayList<>());
-
-        // Water Meter
-        metaItemMap.put(ChannelType.WATER_METER_VOLUME_CM, new ArrayList<>());
-        metaItemMap.put(ChannelType.WATER_METER_VOLUME_CFT, new ArrayList<>());
-        metaItemMap.put(ChannelType.WATER_METER_VOLUME_GAL, new ArrayList<>());
-        metaItemMap.put(ChannelType.WATER_METER_PULSE_COUNT, new ArrayList<>());
-
-        // COMMAND_CLASS_COLOR_CONTROL
-
-        metaItemMap.put(ChannelType.COLOR_WARM_WHITE, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_COLD_WHITE, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_RED, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_GREEN, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_BLUE, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_AMBER, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_CYAN, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_PURPLE, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_INDEXED, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_RGB, new ArrayList<>());
-        metaItemMap.put(ChannelType.COLOR_ARGB, new ArrayList<>());
-
-        // COMMAND_CLASS_SENSOR_ALARM
-
-        metaItemMap.put(ChannelType.GENERAL_PURPOSE_ALARM, new ArrayList<>());
-        metaItemMap.put(ChannelType.SMOKE_ALARM, new ArrayList<>());
-        metaItemMap.put(ChannelType.CO_ALARM, new ArrayList<>());
-        metaItemMap.put(ChannelType.CO2_ALARM, new ArrayList<>());
-        metaItemMap.put(ChannelType.HEAT_ALARM, new ArrayList<>());
-        metaItemMap.put(ChannelType.WATER_LEAK_ALARM, new ArrayList<>());
-        metaItemMap.put(ChannelType.FIRST_SUPPORTED_ALARM, new ArrayList<>());
-
-        // COMMAND_CLASS_BATTERY
-
-        metaItemMap.put(ChannelType.CHARGE_PERCENTAGE, new ArrayList<>());
-
-        // COMMAND_CLASS_CLOCK
-
-        metaItemMap.put(ChannelType.DATETIME, new ArrayList<>());
-
-
+        typeMap.put(ChannelType.DATETIME, new TypeInfo(ValueType.TIMESTAMP_ISO8601));
     }
 
-    static public AttributeValueDescriptor toAttributeType(ChannelType channelType) {
+    public static Attribute<?> createAttribute(String name, ChannelType channelType) {
 
-        AttributeValueDescriptor attributeType = AttributeValueType.STRING;
+        ValueDescriptor<?> valueType = ValueType.TEXT;
+        ValueConstraint[] constraints = null;
+        ValueFormat format = null;
+        String[] units = null;
 
         if (typeMap.containsKey(channelType)) {
-            attributeType = typeMap.get(channelType);
+            TypeInfo typeInfo = typeMap.get(channelType);
+            valueType = typeInfo.valueDescriptor;
+            constraints = typeInfo.constraints;
+            format = typeInfo.valueFormat;
+            units = typeInfo.units;
         } else {
             switch(channelType.getValueType()) {
                 case INTEGER:
-                    attributeType = AttributeValueType.NUMBER;
+                    valueType = ValueType.INTEGER;
                     break;
                 case NUMBER:
-                    attributeType = AttributeValueType.NUMBER;
+                    valueType = ValueType.NUMBER;
                     break;
                 case BOOLEAN:
-                    attributeType = AttributeValueType.BOOLEAN;
+                    valueType = ValueType.BOOLEAN;
                     break;
                 case STRING:
-                    attributeType = AttributeValueType.STRING;
+                    valueType = ValueType.TEXT;
                     break;
                 case ARRAY:
-                    attributeType = AttributeValueType.ARRAY;
+                    valueType = ValueDescriptor.UNKNOWN.asArray();
                     break;
             }
         }
-        return attributeType;
-    }
 
-    static public List<MetaItem> toMetaItems(ChannelType channelType) {
-        if (metaItemMap.containsKey(channelType)) {
-            return metaItemMap.get(channelType);
-        } else {
-            return new ArrayList<>();
+        Attribute<?> attribute = new Attribute<>(name, valueType);
+        if (constraints != null) {
+            attribute.addMeta(new MetaItem<>(MetaItemType.CONSTRAINTS, constraints));
         }
+        if (format != null) {
+            attribute.addMeta(new MetaItem<>(MetaItemType.FORMAT, format));
+        }
+        if (units != null) {
+            attribute.addMeta(new MetaItem<>(MetaItemType.UNITS, units));
+        }
+        return attribute;
     }
 }

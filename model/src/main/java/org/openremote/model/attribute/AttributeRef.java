@@ -19,45 +19,40 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Optional;
+import java.io.Serializable;
 
 import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 /**
  * A reference to an entity and an {@link Attribute}.
  * <p>
- * The {@link #entityId} and {@link #attributeName} are required to identify
- * an entity's attribute.
+ * The {@link #id} and {@link #name} are required to identify an asset's attribute.
  * <p>
- * Two attribute references are {@link #equals} if they reference the same entity
+ * Two attribute references are {@link #equals} if they reference the same asset
  * and attribute.
  */
-public class AttributeRef {
+public class AttributeRef implements Serializable {
 
-    protected String entityId;
-    protected String attributeName;
+    protected String id;
+    protected String name;
 
-    protected AttributeRef() {
+    @JsonCreator
+    public AttributeRef(@JsonProperty("id") String id, @JsonProperty("name") String name) {
+        requireNonNullAndNonEmpty(id);
+        requireNonNullAndNonEmpty(name);
+        this.id = id;
+        this.name = name;
     }
 
-    public AttributeRef(String entityId, String attributeName) {
-        requireNonNullAndNonEmpty(entityId);
-        requireNonNullAndNonEmpty(attributeName);
-        this.entityId = entityId;
-        this.attributeName = attributeName;
+    public String getId() {
+        return id;
     }
 
-    public String getEntityId() {
-        return entityId;
-    }
-
-    public String getAttributeName() {
-        return attributeName;
+    public String getName() {
+        return name;
     }
 
     @Override
@@ -65,59 +60,21 @@ public class AttributeRef {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AttributeRef that = (AttributeRef) o;
-        return entityId.equals(that.entityId) && attributeName.equals(that.attributeName);
+        return id.equals(that.id) && name.equals(that.name);
     }
 
     @Override
     public int hashCode() {
-        int result = entityId.hashCode();
-        result = 31 * result + attributeName.hashCode();
+        int result = id.hashCode();
+        result = 31 * result + name.hashCode();
         return result;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "entityId='" + entityId + '\'' +
-            ", attributeName='" + attributeName + '\'' +
+            "id='" + id + '\'' +
+            ", name='" + name + '\'' +
             '}';
-    }
-
-    public ArrayValue toArrayValue() {
-        ArrayValue arrayValue = Values.createArray();
-        arrayValue.set(0, Values.create(getEntityId()));
-        arrayValue.set(1, Values.create(getAttributeName()));
-        return arrayValue;
-    }
-
-    public static boolean isAttributeRef(AbstractValueHolder valueHolder) {
-        return valueHolder != null
-            && valueHolder.getValueAsArray().filter(AttributeRef::isAttributeRef).isPresent();
-    }
-
-    public static boolean isAttributeRef(Value value) {
-        boolean result = Values.getArray(value)
-            .map(arrayValue ->
-                arrayValue.length() == 2
-                    && arrayValue.getString(0).filter(s -> !s.isEmpty()).isPresent()
-                    && arrayValue.getString(1).filter(s -> !s.isEmpty()).isPresent()
-            )
-            .orElse(
-                Values.getObject(value)
-                    .map(objectValue ->
-                        objectValue.getString("entityId").isPresent() && objectValue.getString("attributeName").isPresent()
-                    ).orElse(false)
-            );
-
-        return result;
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    public static Optional<AttributeRef> fromValue(Value value) {
-        return Values.getArray(value)
-            .filter(AttributeRef::isAttributeRef)
-            .map(arrayValue ->
-                new AttributeRef(arrayValue.getString(0).get(), arrayValue.getString(1).get())
-            );
     }
 }

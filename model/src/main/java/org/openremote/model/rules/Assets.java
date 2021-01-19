@@ -23,7 +23,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.value.Value;
+import org.openremote.model.util.TsIgnore;
 
 import java.util.stream.Stream;
 
@@ -31,22 +31,14 @@ import java.util.stream.Stream;
  * Facade for writing rules RHS actions, supporting asset queries within the scope
  * of the rule engine, and dispatching of {@link AttributeEvent} as rule consequence.
  */
+@TsIgnore
 public abstract class Assets {
 
-    abstract public Stream<Asset> getResults(AssetQuery assetQuery);
+    abstract public Stream<Asset<?>> getResults(AssetQuery assetQuery);
 
     abstract public Assets dispatch(AttributeEvent... event);
 
-    abstract public Assets dispatch(String assetId, String attributeName, Value value);
-
-    abstract public Assets dispatch(String assetId, String attributeName, String value);
-
-    abstract public Assets dispatch(String assetId, String attributeName, double value);
-
-    abstract public Assets dispatch(String assetId, String attributeName, boolean value);
-
-    abstract public Assets dispatch(String assetId, String attributeName, AttributeExecuteStatus status);
+    abstract public Assets dispatch(String assetId, String attributeName, Object value);
 
     abstract public Assets dispatch(String assetId, String attributeName);
-
 }

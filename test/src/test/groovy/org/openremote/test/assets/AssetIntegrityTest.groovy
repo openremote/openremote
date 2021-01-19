@@ -1,14 +1,14 @@
 package org.openremote.test.assets
 
+import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeValueType
-import org.openremote.model.value.Values
+import org.openremote.model.asset.impl.RoomAsset
+import org.openremote.model.asset.impl.ThingAsset
+import org.openremote.model.attribute.Attribute
+import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -42,19 +42,20 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         def assetResource = getClientApiTarget(serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakTestSetup.masterTenant.realm)
+        RoomAsset testAsset = new RoomAsset("Test Room")
+            .setRealm(keycloakTestSetup.masterTenant.realm)
         testAsset = assetResource.create(null, testAsset)
 
         then: "the asset should exist"
         testAsset.name == "Test Room"
-        testAsset.wellKnownType == AssetType.ROOM
+        testAsset.type == RoomAsset.DESCRIPTOR.getName()
         testAsset.realm == keycloakTestSetup.masterTenant.realm
         testAsset.parentId == null
 
         when: "an asset is stored with an illegal attribute name"
         testAsset = assetResource.get(null, testAsset.getId())
-        testAsset.setAttributes(
-            new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&", AttributeValueType.STRING)
+        testAsset.addOrReplaceAttributes(
+            new Attribute<>("illegal- Attribute:name&&&", ValueType.TEXT)
         )
 
         assetResource.update(null, testAsset.getId(), testAsset)
@@ -65,27 +66,27 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
-        testAsset.setAttributes(
-                new AssetAttribute("foo", AttributeValueType.STRING, Values.create("bar"), getClockTimeOf(container))
+        testAsset.addOrReplaceAttributes(
+                new Attribute<>("foo", ValueType.TEXT, "bar")
         )
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute should exist"
         testAsset.getAttribute("foo").isPresent()
-        testAsset.getAttribute("foo").get().getValueAsString().get() == "bar"
+        testAsset.getAttribute("foo").get().getValue().get() == "bar"
 
         when: "an asset attribute value is written directly"
-        assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
+        assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "bar2")
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            assert asset.getAttribute("foo").get().getValueAsString().get() == "bar2"
+            assert asset.getAttribute("foo").get().getValue().get() == "bar2"
         }
 
         when: "an asset attribute value null is written directly"
-        assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "null")
+        assetResource.writeAttributeValue(null, testAsset.getId(), "foo", null)
 
         then: "the attribute value should match"
         new PollingConditions(timeout: 5, delay: 0.2).eventually {
@@ -95,16 +96,30 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         when: "an asset is updated with a different type"
         testAsset = assetResource.get(null, testAsset.getId())
-        testAsset.setType(AssetType.BUILDING)
-        assetResource.update(null, testAsset.id, testAsset)
-        testAsset = assetResource.get(null, testAsset.getId())
+        def newTestAsset = new ThingAsset(testAsset.getName())
+            .setId(testAsset.getId())
+            .setRealm(testAsset.getRealm())
+            .setAttributes(testAsset.getAttributes())
+            .setParentId(testAsset.getParentId())
 
-        then: "the asset should not be updated"
-        testAsset.wellKnownType == AssetType.ROOM
+        assetResource.update(null, testAsset.id, newTestAsset)
 
-        when: "an asset is updated with a non-existent realm"
-        testAsset.setRealm("thisdoesnotexistitreallydoesnt")
+        then: "the request should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset is updated with a new realm"
+        testAsset.setRealm(keycloakTestSetup.tenantBuilding.realm)
         assetResource.update(null, testAsset.id, testAsset)
+
+        then: "the request should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset is created with a non existent realm"
+        newTestAsset.setId(null)
+        newTestAsset.setRealm("nonexistentrealm")
+        assetResource.create(null, newTestAsset)
 
         then: "the request should be forbidden"
         ex = thrown()
@@ -112,30 +127,30 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         when: "an asset is updated with a non-existent parent"
         testAsset = assetResource.get(null, testAsset.getId())
-        testAsset.setParentId("thisdoesnotexistitreallydoesnt")
+        testAsset.setParentId(UniqueIdentifierGenerator.generateId())
         assetResource.update(null, testAsset.id, testAsset)
 
-        then: "the request should be bad"
+        then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.status == 403
 
         when: "an asset is updated with itself as a parent"
         testAsset = assetResource.get(null, testAsset.getId())
         testAsset.setParentId(testAsset.getId())
         assetResource.update(null, testAsset.id, testAsset)
 
-        then: "the request should be bad"
+        then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.status == 403
 
         when: "an asset is updated with a parent in a different realm"
         testAsset = assetResource.get(null, testAsset.getId())
         testAsset.setParentId(managerTestSetup.smartBuildingId)
         assetResource.update(null, testAsset.id, testAsset)
 
-        then: "the request should be bad"
+        then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.status == 403
 
         when: "an asset is deleted but has children"
         assetResource.delete(null, [managerTestSetup.apartment1Id])

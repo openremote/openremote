@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, query, TemplateResult} from "lit-element";
-import {AssetDescriptor, AssetQueryMatch, AssetType, RuleCondition} from "@openremote/model";
+import {AssetTypeInfo, RuleCondition, WellknownAssets} from "@openremote/model";
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
@@ -7,7 +7,7 @@ import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-component
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {InputType} from "@openremote/or-input";
-import {AssetModelUtil} from "@openremote/core";
+import {AssetModelUtil, Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrRuleAssetQuery} from "./or-rule-asset-query";
@@ -15,7 +15,7 @@ import {OrRuleAssetQuery} from "./or-rule-asset-query";
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
 
-export function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetDescriptor[]): MenuItem[] {
+export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): MenuItem[] {
 
     let addAssetTypes = true;
     let addTimer = true;
@@ -27,17 +27,17 @@ export function getWhenTypesMenu(config?: RulesConfig, assetDescriptors?: AssetD
 
     const menu: MenuItem[] = [];
 
-    if (addAssetTypes && assetDescriptors) {
-        menu.push(...assetDescriptors.map((ad) => {
+    if (addAssetTypes && assetInfos) {
+        menu.push(...assetInfos.map((assetTypeInfo) => {
 
-            const color = AssetModelUtil.getAssetDescriptorColor(ad);
-            const icon = AssetModelUtil.getAssetDescriptorIcon(ad);
+            const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
+            const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
             const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
 
             return {
-                text: i18next.t(ad.name!, {defaultValue: ad.name!.replace(/_/g, " ").toLowerCase()}),
-                value: ad.type,
-                icon: icon ? icon : AssetType.THING.icon,
+                text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
+                value: assetTypeInfo.assetDescriptor!.name,
+                icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                 styleMap: styleMap
             } as MenuItem;
         }));
@@ -71,14 +71,7 @@ export function updateRuleConditionType(ruleCondition: RuleCondition, value: str
         } else {
             ruleCondition.assets = {};
         }
-
-        if (!ruleCondition.assets!.types || ruleCondition.assets!.types.length === 0) {
-            ruleCondition.assets!.types = [{
-                predicateType: "string",
-                match: AssetQueryMatch.EXACT
-            }];
-        }
-        ruleCondition.assets!.types[0].value = value;
+        ruleCondition.assets!.types = [value];
     }
 }
 
@@ -112,7 +105,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
     public config?: RulesConfig;
 
     @property({type: Object})
-    public assetDescriptors?: AssetDescriptor[];
+    public assetInfos?: AssetTypeInfo[];
 
     @query("#asset-query")
     protected _assetQuery?: OrRuleAssetQuery;
@@ -147,7 +140,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                     default:
                         const ad = AssetModelUtil.getAssetDescriptor(type);
                         buttonIcon = AssetModelUtil.getAssetDescriptorIcon(ad) || buttonIcon;
-                        buttonColor = AssetModelUtil.getAssetDescriptorColor(ad) || buttonColor;
+                        buttonColor = AssetModelUtil.getAssetDescriptorColour(ad) || buttonColor;
                         break;
                 }
             }
@@ -160,7 +153,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                 <div id="type" style="--or-input-color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
                         html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
-                        getWhenTypesMenu(this.config, this.assetDescriptors),
+                        getWhenTypesMenu(this.config, this.assetInfos),
                         type,
                         (values: string[] | string) => this.type = values as ConditionType)}
                 </div>
@@ -175,7 +168,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                     template = html`<span>TIMER NOT IMPLEMENTED</span>`;
                     break;
                 default:
-                    template = html`<or-rule-asset-query id="asset-query" .config="${this.config}" .assetDescriptors="${this.assetDescriptors}" .readonly="${this.readonly}" .condition="${this.ruleCondition}"></or-rule-asset-query>`;
+                    template = html`<or-rule-asset-query id="asset-query" .config="${this.config}" .assetInfos="${this.assetInfos}" .readonly="${this.readonly}" .condition="${this.ruleCondition}"></or-rule-asset-query>`;
                     break;
             }
         }

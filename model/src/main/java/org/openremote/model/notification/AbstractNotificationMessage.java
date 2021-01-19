@@ -21,7 +21,6 @@ package org.openremote.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.openremote.model.value.ObjectValue;
 
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PushNotificationMessage.class, name = PushNotificationMessage.TYPE),
@@ -29,6 +28,7 @@ import org.openremote.model.value.ObjectValue;
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type"
 )
 public abstract class AbstractNotificationMessage {
@@ -42,6 +42,4 @@ public abstract class AbstractNotificationMessage {
     public String getType() {
         return type;
     }
-
-    public abstract ObjectValue toValue();
 }

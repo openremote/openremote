@@ -22,16 +22,11 @@ package org.openremote.model.geo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.openremote.model.geo.GeoJSONFeature.TYPE;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 @JsonTypeName(TYPE)
 public class GeoJSONFeature extends GeoJSON {
@@ -81,61 +76,5 @@ public class GeoJSONFeature extends GeoJSON {
 
         properties.put(name, value);
         return this;
-    }
-
-    @Override
-    public ObjectValue toValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("type", type);
-        ObjectValue props = null;
-        ObjectValue geom = null;
-
-        if (properties != null && !properties.isEmpty()) {
-            props = Values.createObject();
-            ObjectValue finalProps = props;
-            properties.forEach((k, v ) -> finalProps.put(k, Values.create(v)));
-        }
-
-        objectValue.put("properties", props);
-
-        if (geometry != null) {
-            geom = geometry.toValue();
-        }
-
-        objectValue.put("geometry", geom);
-
-        return objectValue;
-    }
-
-    public static Optional<GeoJSONFeature> fromValue(Value value) {
-        return Values.getObject(value)
-            .map(obj -> {
-                String type = obj.getString("type").orElse(null);
-                GeoJSONGeometry geometry = null;
-                Map<String, String> properties = null;
-                ObjectValue geom = obj.getObject("geometry").orElse(null);
-                ObjectValue props = obj.getObject("properties").orElse(null);
-
-                if (isNullOrEmpty(type)) {
-                    return null;
-                }
-
-                if (geom != null) {
-                    String geomType = geom.getString("type").orElse("");
-                    switch (geomType) {
-                        case GeoJSONPoint.TYPE:
-                            geometry = GeoJSONPoint.fromValue(geom).orElse(null);
-                            break;
-                    }
-                }
-
-                if (props != null) {
-                    properties = new HashMap<>();
-                    Map<String, String> finalProperties = properties;
-                    props.stream().forEach(kvp -> Values.getString(kvp.value).ifPresent(v -> finalProperties.put(kvp.key, v)));
-                }
-
-                return new GeoJSONFeature(geometry, properties);
-            });
     }
 }

@@ -19,10 +19,8 @@
  */
 package org.openremote.model.apps;
 
-import jsinterop.annotations.JsType;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
@@ -30,7 +28,6 @@ import javax.ws.rs.*;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("app")
-@JsType(isNative = true)
 public interface ConsoleAppResource {
 
     /**
@@ -39,14 +36,11 @@ public interface ConsoleAppResource {
      */
     @GET
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     @RolesAllowed({Constants.READ_APPS_ROLE})
-    @SuppressWarnings("unusable-by-js")
     String[] getInstalledApps(@BeanParam RequestParams requestParams);
 
     @GET
     @Path("config")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
     ConsoleAppConfig getAppConfig(@BeanParam RequestParams requestParams);
 }

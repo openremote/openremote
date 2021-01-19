@@ -1,1 +1,0 @@
-declare module "i18next-sprintf-postprocessor";

@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.setup;
 
-import org.openremote.container.Container;
+import org.openremote.model.Container;
 
 import java.util.List;
 

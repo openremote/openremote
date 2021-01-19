@@ -22,15 +22,10 @@ package org.openremote.model.geo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.openremote.model.geo.GeoJSONFeatureCollection.TYPE;
 
@@ -55,32 +50,5 @@ public class GeoJSONFeatureCollection extends GeoJSON {
 
     public GeoJSONFeature[] getFeatures() {
         return features.toArray(new GeoJSONFeature[features.size()]);
-    }
-
-    @Override
-    public ObjectValue toValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("type", type);
-        ArrayValue feats = Values.createArray();
-        features.forEach(f -> feats.add(f.toValue()));
-        objectValue.put("features", feats);
-        return objectValue;
-    }
-
-    public static Optional<GeoJSONFeatureCollection> fromValue(Value value) {
-        return Values.getObject(value)
-            .map(obj -> {
-                String type = obj.getString("type").orElse(null);
-                if (!TYPE.equalsIgnoreCase(type)) {
-                    return null;
-                }
-
-                ArrayList<GeoJSONFeature> features = new ArrayList<>();
-                obj.getArray("features").ifPresent(feats ->
-                                                       feats.stream().forEach(v ->
-                                                                                  GeoJSONFeature.fromValue(v)
-                                                                                      .ifPresent(features::add)));
-                return new GeoJSONFeatureCollection(features);
-            });
     }
 }

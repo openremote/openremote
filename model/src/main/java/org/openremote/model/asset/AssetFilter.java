@@ -88,7 +88,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     public boolean apply(T event) {
 
         if (assetIds != null && assetIds.length > 0) {
-            if (!Arrays.asList(assetIds).contains(event.getEntityId())) {
+            if (!Arrays.asList(assetIds).contains(event.getAssetId())) {
                 return false;
             }
         }

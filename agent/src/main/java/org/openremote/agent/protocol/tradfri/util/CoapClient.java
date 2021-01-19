@@ -13,6 +13,7 @@ import org.eclipse.californium.core.network.EndpointManager;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
 import org.eclipse.californium.scandium.dtls.pskstore.InMemoryPskStore;
+import org.openremote.model.value.Values;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -22,10 +23,7 @@ import java.net.InetSocketAddress;
  */
 public class CoapClient {
 
-    /**
-     * An object mapper used for mapping JSON responses from the IKEA TRÅDFRI gateway to Java classes
-     */
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = Values.JSON;
 
     /**
      * The credentials used to authenticate the CoAP client to the IKEA TRÅDFRI gateway
@@ -42,13 +40,6 @@ public class CoapClient {
      * @value 20000
      */
     private long timeout = 20000L;
-
-    /**
-     * Construct the CoapClient class
-     */
-    public CoapClient(){
-        objectMapper = new ObjectMapper();
-    }
 
     /**
      * Get the credentials used to communicate with the IKEA TRÅDFRI gateway
@@ -116,6 +107,7 @@ public class CoapClient {
      * @param <T> The expected type of response
      * @return The response from the IKEA TRÅDFRI gateway (converted to the expected response type)
      */
+    @SuppressWarnings("unchecked")
     private <T> T request(Request request, String endpoint, Class<T> responseType) {
         try {
             request.setURI(endpoint);
@@ -162,8 +154,7 @@ public class CoapClient {
         Request request = Request.newGet();
         request.setURI(endpoint);
         request.setObserve();
-        CoapObserveRelation relation = client.observe(request, handler);
-        return relation;
+        return client.observe(request, handler);
     }
 
     /**

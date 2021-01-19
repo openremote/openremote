@@ -22,6 +22,8 @@ package org.openremote.model.console;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 /**
@@ -86,10 +88,14 @@ import java.util.Map;
  */
 public class ConsoleRegistration {
     protected String id;
+    @NotBlank
     protected String name;
+    @NotBlank
     protected String version;
+    @NotBlank
     protected String platform;
     protected String model;
+    @NotNull
     protected Map<String, ConsoleProvider> providers;
     protected String[] apps;
 

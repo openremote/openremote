@@ -2,20 +2,20 @@ import {html, render} from "lit-html";
 import manager, {Auth, Manager} from "@openremote/core";
 import {AssetQuery} from "@openremote/model";
 
-let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${manager.username}</span>(<button @click="${ ()=> {manager.logout()}}">logout</button>)`;
-let loggedOutTemplate = (openremote:Manager) => html `<span>Please</span><button @click="${() => {manager.login()}}">login</button>`;
+let loggedInTemplate = (manager: Manager) => html `<span>Welcome ${manager.username}</span>(<button @click="${ ()=> {manager.logout()}}">logout</button>)`;
+let loggedOutTemplate = (manager: Manager) => html `<span>Please</span><button @click="${() => {manager.login()}}">login</button>`;
 
 function renderUi() {
     if (manager.authenticated) {
 
         let queryAssetsTemplate = html`
-            ${loggedInTemplate(openremote)}
+            ${loggedInTemplate(manager)}
             <br />
             <button @click="${() => queryAssets()}">Get Assets</button><span> (see console window)</span>
         `;
         render(queryAssetsTemplate, document.body);
     } else {
-        render(loggedOutTemplate(openremote), document.body);
+        render(loggedOutTemplate(manager), document.body);
     }
 }
 
@@ -36,5 +36,5 @@ manager.init({
     keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: "building"
+    realm: "smartcity"
 }).then(renderUi);

@@ -24,23 +24,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
+/**
+ * Allows {@link Asset}s to be represented in a hierarchical structure
+ */
 public class AssetTreeNode {
 
-    public Asset asset;
+    public Asset<?> asset;
     public AssetTreeNode[] children;
 
-    public AssetTreeNode(Asset asset) {
+    public AssetTreeNode(Asset<?> asset) {
         this.asset = asset;
     }
 
     @JsonCreator
-    public AssetTreeNode(@JsonProperty("asset") Asset asset,
+    public AssetTreeNode(@JsonProperty("asset") Asset<?> asset,
                          @JsonProperty("children") AssetTreeNode... children) {
         this.asset = asset;
         this.children = children;
     }
 
-    public Asset getAsset() {
+    public Asset<?> getAsset() {
         return asset;
     }
 

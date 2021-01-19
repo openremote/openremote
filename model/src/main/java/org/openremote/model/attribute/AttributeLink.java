@@ -21,8 +21,10 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.value.*;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -32,29 +34,30 @@ import static java.util.Objects.requireNonNull;
  * A link from one attribute to another with a definition of how to map the value from the source attribute
  * to the linked attribute.
  */
-public class AttributeLink {
+// TODO: Somehow combine this with flow rules
+public class AttributeLink implements Serializable {
 
     public enum ConverterType {
 
         /**
          * Toggle the value of the linked attribute; the linked attribute's type must be
-         * {@link AttributeValueType#BOOLEAN}
+         * {@link Boolean}
          */
         TOGGLE("@TOGGLE"),
 
         /**
          * Increment the value of the linked attribute; the linked attribute's type must be
-         * {@link AttributeValueType#NUMBER}
+         * {@link Number}
          */
         INCREMENT("@INCREMENT"),
 
         /**
          * Decrement the value of the linked attribute; the linked attribute's type must be
-         * {@link AttributeValueType#NUMBER}
+         * {@link Number}
          */
         DECREMENT("@DECREMENT");
 
-        private String value;
+        private final String value;
         // Prevents cloning of values each time fromString is called
         private static final ConverterType[] copyOfValues = values();
 
@@ -75,33 +78,33 @@ public class AttributeLink {
         }
     }
 
-    protected AttributeRef attributeRef;
-    protected ObjectValue converter;
+    protected AttributeRef ref;
+    protected ObjectNode converter;
     protected ValueFilter[] filters;
 
     @JsonCreator
-    public AttributeLink(@JsonProperty("attributeRef") AttributeRef attributeRef,
-                         @JsonProperty("converter") ObjectValue converter,
+    public AttributeLink(@JsonProperty("ref") AttributeRef ref,
+                         @JsonProperty("converter") ObjectNode converter,
                          @JsonProperty("filters") ValueFilter[] filters) {
-        this.attributeRef = requireNonNull(attributeRef);
+        this.ref = requireNonNull(ref);
         this.converter = converter;
         this.filters = filters;
     }
 
     public AttributeRef getAttributeRef() {
-        return attributeRef;
+        return ref;
     }
 
-    public Optional<ObjectValue> getConverter() {
+    public Optional<ObjectNode> getConverter() {
         return Optional.ofNullable(converter);
     }
 
-    public void setConverter(ObjectValue converter) {
+    public void setConverter(ObjectNode converter) {
         this.converter = converter;
     }
 
-    public void setAttributeRef(AttributeRef attributeRef) {
-        this.attributeRef = attributeRef;
+    public void setAttributeRef(AttributeRef ref) {
+        this.ref = ref;
     }
 
     public ValueFilter[] getFilters() {
@@ -115,19 +118,9 @@ public class AttributeLink {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "attributeRef=" + attributeRef +
+            "ref=" + ref +
             ", converter=" + converter +
             ", filters=" + (filters != null ? Arrays.toString(filters) : "null") +
             '}';
-    }
-
-    public static boolean isAttributeLink(Value value) {
-        boolean result = Values.getObject(value)
-            .map(objectValue -> AttributeRef.isAttributeRef(objectValue.get("attributeRef").orElse(null)) &&
-                objectValue.get("converter").map(v -> v.getType() == ValueType.OBJECT).orElse(true) &&
-                objectValue.get("filters").map(v -> v.getType() == ValueType.ARRAY).orElse(true)
-            )
-            .orElse(false);
-        return result;
     }
 }

@@ -20,15 +20,16 @@
 
 package org.openremote.model.flow.catalog;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.NodeColor;
 import org.openremote.model.flow.Slot;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+
+import static org.openremote.model.value.Values.JSON;
 
 
 public abstract class NodeDescriptor {
@@ -49,24 +50,24 @@ public abstract class NodeDescriptor {
 
         List<Slot> slots = new ArrayList<>();
         addSlots(slots, idGenerator);
-        node.setSlots(slots.toArray(new Slot[slots.size()]));
+        node.setSlots(slots.toArray(new Slot[0]));
 
         node.getEditorSettings().setTypeLabel(getTypeLabel());
         node.getEditorSettings().setNodeColor(getColor());
 
         List<String> editorComponents = new ArrayList<>();
         addEditorComponents(editorComponents);
-        node.getEditorSettings().setComponents(editorComponents.toArray(new String[editorComponents.size()]));
+        node.getEditorSettings().setComponents(editorComponents.toArray(new String[0]));
 
-        ObjectValue initialProperties = getInitialProperties();
+        ObjectNode initialProperties = getInitialProperties();
         try {
             if (initialProperties != null) {
-                node.setProperties(initialProperties.toJson());
+                node.setProperties(JSON.writeValueAsString(initialProperties));
             } else {
-                ObjectValue properties = Values.createObject();
+                ObjectNode properties = JSON.createObjectNode();
                 configureInitialProperties(properties);
-                if (properties.hasKeys()) {
-                    node.setProperties(properties.toJson());
+                if (!properties.isEmpty()) {
+                    node.setProperties(JSON.writeValueAsString(properties));
                 }
             }
         } catch (Exception ex) {
@@ -96,7 +97,7 @@ public abstract class NodeDescriptor {
         // Subclass
     }
 
-    protected void configureInitialProperties(ObjectValue properties) {
+    protected void configureInitialProperties(ObjectNode properties) {
         // Subclass
     }
 
@@ -104,7 +105,7 @@ public abstract class NodeDescriptor {
         // Subclass
     }
 
-    protected ObjectValue getInitialProperties() {
+    protected ObjectNode getInitialProperties() {
         return null;
     }
 }

@@ -3,11 +3,11 @@ package org.openremote.test
 import com.google.common.collect.Lists
 import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.container.Container
-import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.rules.RulesService
+import org.openremote.model.ContainerService
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
@@ -68,11 +68,6 @@ trait ManagerContainerTrait extends ContainerTrait {
         startContainer(config << [(TIMER_CLOCK_TYPE): REAL.name()], services)
     }
 
-    boolean noEventProcessedIn(AssetProcessingService assetProcessingService, int milliseconds) {
-        return (assetProcessingService.lastProcessedEventTimestamp > 0
-                && assetProcessingService.lastProcessedEventTimestamp + milliseconds < System.currentTimeMillis())
-    }
-
     boolean noRuleEngineFiringScheduled() {
         if (!this.container) {
             return false
@@ -96,6 +91,14 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     void advancePseudoClock(long amount, TimeUnit unit, Container container) {
         withClockOf(container) { it.advanceTime(amount, unit) }
+    }
+
+    void stopPseudoClock() {
+        withClockOf(container) { it.stop() }
+    }
+
+    void startPseudoClock() {
+        withClockOf(container) { it.start() }
     }
 
     void noPendingExchangesOnMessageEndpoint(Container container, String... endpointName) {

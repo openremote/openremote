@@ -12,7 +12,7 @@ import "@openremote/or-survey-results";
 import "@openremote/or-table";
 import "@openremote/or-panel";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {showOkCancelDialog, showErrorDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
@@ -22,14 +22,13 @@ import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {
     Asset,
-    AssetAttribute,
     AssetEvent,
-    AssetType,
     Attribute,
     AttributeEvent,
     ClientRole,
-    MetaItemType,
-    SharedEvent
+    SharedEvent,
+    WellknownAssets,
+    WellknownMetaItems
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next from "i18next";
@@ -39,7 +38,6 @@ import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
-import { RestResponse } from "@openremote/rest";
 
 export interface PanelConfig {
     type?: "info" | "history" | "group" | "survey" | "survey-results";
@@ -96,9 +94,9 @@ export interface GroupPanelConfig extends PanelConfig {
 }
 
 export type PanelConfigUnion = InfoPanelConfig | GroupPanelConfig | PanelConfig;
-export type PanelViewProvider = (asset: Asset, attributes: Attribute[], panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
+export type PanelViewProvider = (asset: Asset, attributes: { [index: string]: Attribute<any> }, panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
 export type PropertyViewProvider = (asset: Asset, property: string, value: any, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
-export type AttributeViewProvider = (asset: Asset, attribute: Attribute, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
+export type AttributeViewProvider = (asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
 
 export interface AssetViewerConfig {
     panels?: {[name: string]: PanelConfigUnion};
@@ -131,15 +129,15 @@ export function getIncludedProperties(config?: InfoPanelConfig): string[] {
     return includedProperties.filter((prop) => !excludedProperties || excludedProperties.indexOf(prop) < 0);
 }
 
-export function getIncludedAttributes(attributes: Attribute[], config?: InfoPanelConfig): Attribute[] {
+export function getIncludedAttributes(attributes: { [index: string]: Attribute<any> }, config?: InfoPanelConfig): Attribute<any>[] {
     const includedAttributes = config && config.attributes && config.attributes.include ? config.attributes.include : undefined;
     const excludedAttributes = config && config.attributes && config.attributes.exclude ? config.attributes.exclude : undefined;
     if (includedAttributes || excludedAttributes) {
-        return attributes.filter((attr) =>
+        return Object.values(attributes).filter((attr) =>
             (!includedAttributes || includedAttributes.some((inc) => Util.stringMatch(inc, attr.name!)))
             && (!excludedAttributes || !excludedAttributes.some((exc) => Util.stringMatch(exc, attr.name!))));
     }
-    return attributes;
+    return Object.values(attributes);
 }
 
 class EventHandler {
@@ -273,7 +271,7 @@ export function getPanel(name: string, panelConfig: PanelConfig, content: Templa
     `;
 }
 
-export function getPanelContent(panelName: string, asset: Asset, attributes: Attribute[], hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig): TemplateResult | undefined {
+export function getPanelContent(panelName: string, asset: Asset, attributes: { [index: string]: Attribute<any> }, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig): TemplateResult | undefined {
 
     // See if config has a custom way for rendering this panel
     if (viewerConfig.panelViewProvider) {
@@ -294,7 +292,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
             return undefined;
         }
 
-        const items: {item: string | Attribute, itemConfig: InfoPanelItemConfig}[] = [];
+        const items: {item: string | Attribute<any>, itemConfig: InfoPanelItemConfig}[] = [];
 
         includedProperties.forEach((prop) => {
             const itemConfig = infoConfig.properties && infoConfig.properties.itemConfig ? infoConfig.properties.itemConfig[prop] : {};
@@ -311,8 +309,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
         includedAttributes.forEach((attribute) => {
             const itemConfig = infoConfig.attributes && infoConfig.attributes.itemConfig && infoConfig.attributes.itemConfig[attribute.name!] ? infoConfig.attributes.itemConfig[attribute.name!] : {};
             if (itemConfig.label === undefined) {
-                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type!, attribute);
-                itemConfig.label = Util.getAttributeLabel(attribute, descriptors[0], descriptors[1], true);
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type!, attribute.name, attribute);
+                itemConfig.label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
             }
             itemConfig.priority = itemConfig.priority || 0;
             items.push({
@@ -321,7 +319,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
             });
         });
 
-        const labelSort = Util.sortByString((item: {item: string | Attribute, itemConfig: InfoPanelItemConfig}) => item.itemConfig.label!.toUpperCase());
+        const labelSort = Util.sortByString((item: {item: string | Attribute<any>, itemConfig: InfoPanelItemConfig}) => item.itemConfig.label!.toUpperCase());
 
         items.sort((a, b) => {
             const priorityA = a.itemConfig.priority!;
@@ -367,10 +365,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
         const historyConfig = panelConfig as HistoryPanelConfig;
         const includedAttributes = historyConfig.include ? historyConfig.include : undefined;
         const excludedAttributes = historyConfig.exclude ? historyConfig.exclude : [];
-        const historyAttrs = attributes.filter((attr) =>
+        const historyAttrs = Object.values(attributes).filter((attr) =>
             (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
             && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0)
-            && !!Util.getFirstMetaItem(attr, MetaItemType.STORE_DATA_POINTS.urn!));
+            && !!Util.getMetaValue(WellknownMetaItems.STOREDATAPOINTS, attr));
 
         if (historyAttrs.length === 0) {
             return undefined;
@@ -382,10 +380,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
 
                 if (attributeHistory) {
 
-                    let attribute: AssetAttribute | undefined;
+                    let attribute: Attribute<any> | undefined;
 
                     if (attributeName) {
-                        attribute = Util.getAssetAttribute(asset, attributeName);
+                        attribute = asset.attributes && asset.attributes![attributeName];
                     }
 
                     attributeHistory.attribute = attribute;
@@ -394,8 +392,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
         };
 
         const options = historyAttrs.map((attr) => {
-            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr);
-            const label = Util.getAttributeLabel(attr, descriptors[0], descriptors[1], true);
+            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
+            const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
             return [attr.name, label];
         });
         const attrName: string = historyAttrs[0].name!;
@@ -436,7 +434,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
             <div id="history-controls">
                 <or-input id="history-attribute-picker" .checkAssetWrite="${false}" .value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-input>
             </div>        
-            <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}"></or-attribute-history>
+            <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}" .assetId="${asset.id}"></or-attribute-history>
         `;
     }
 
@@ -447,7 +445,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
         }
 
         // Get child asset type attribute value
-        const childAssetTypeAttribute = Util.getAssetAttribute(asset, "childAssetType");
+        const childAssetTypeAttribute = asset.attributes && asset.attributes["childAssetType"];
         const groupConfig = panelConfig as GroupPanelConfig;
 
         if (!childAssetTypeAttribute || typeof childAssetTypeAttribute.value !== "string") {
@@ -467,9 +465,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
 
         // Get available and selected attributes from asset descriptor if not defined in config
         if (availableAttributes.length === 0) {
-            const descriptor = AssetModelUtil.getAssetDescriptor(childAssetType);
+            const descriptor = AssetModelUtil.getAssetTypeInfo(childAssetType);
             if (descriptor && descriptor.attributeDescriptors) {
-                availableAttributes = descriptor.attributeDescriptors.map((desc) => desc.attributeName!);
+                availableAttributes = descriptor.attributeDescriptors.map((desc) => desc.name!);
             }
         }
         if ((!selectedAttributes || selectedAttributes.length === 0) && availableAttributes) {
@@ -526,7 +524,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
             const headers = [...selectedAttributes].sort();
             attributeTable.headers = headers.map((attrName) => {
                 const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, childAssetType);
-                return Util.getAttributeLabel(undefined, attributeDescriptor, undefined, false);
+                return Util.getAttributeLabel(undefined, attributeDescriptor, asset.type, false);
             });
             attributeTable.headers.unshift(i18next.t("groupAssetName"));
             attributeTable.rows = childAssets.map((childAsset) => {
@@ -570,7 +568,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: Att
     return undefined;
 }
 
-export function getAttributeTemplate(asset: Asset, attribute: AssetAttribute, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, itemConfig: InfoPanelItemConfig) {
+export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, itemConfig: InfoPanelItemConfig) {
     if (viewerConfig.attributeViewProvider) {
         const result = viewerConfig.attributeViewProvider(asset, attribute, hostElement, viewerConfig, panelConfig);
         if (result) {
@@ -822,7 +820,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
     protected _assetModified = false;
     protected _viewerConfig?: AssetViewerConfig;
-    protected _attributes?: Attribute[];
+    protected _attributes?: { [index: string]: Attribute<any> };
     protected resizeHandler = () => OrAssetViewer.generateGrid(this.shadowRoot);
 
     @query("#wrapper")
@@ -868,7 +866,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
             if (this.asset) {
                 this._viewerConfig = this._getPanelConfig(this.asset);
-                this._attributes = Util.getAssetAttributes(this.asset);
+                this._attributes = this.asset.attributes;
                 this._assetModified = !this.asset.id;
             }
         }
@@ -934,7 +932,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         <or-icon icon="chevron-left"></or-icon>
                     </a>
                     <div id="title">
-                        <or-icon title="${descriptor && descriptor.type ? descriptor.type : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.color ? "#" + descriptor.color : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetType.THING.icon}"></or-icon>
+                        <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
                         ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-input>` : html`<span>${this.asset.name}</span>`}
                     </div>
                     ${!this._isReadonly() ? html`
@@ -1089,10 +1087,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (event.eventType === "attribute") {
             const attributeEvent = event as AttributeEvent;
-            if (attributeEvent.attributeState!.attributeRef!.entityId !== this.assetId) {
+            if (attributeEvent.attributeState!.ref!.id !== this.assetId) {
                 return;
             }
-            const attrName = attributeEvent.attributeState!.attributeRef!.attributeName!;
+            const attrName = attributeEvent.attributeState!.ref!.name!;
 
             if (this.asset && this.asset.attributes && this.asset.attributes.hasOwnProperty(attrName)) {
                 if (attributeEvent.attributeState!.deleted) {

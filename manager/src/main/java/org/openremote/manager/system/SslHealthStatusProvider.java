@@ -19,11 +19,10 @@
  */
 package org.openremote.manager.system;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerHealthStatusProvider;
-import org.openremote.container.ContainerService;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.Values;
 
 import javax.net.ssl.*;
@@ -40,7 +39,7 @@ import static org.openremote.container.security.keycloak.KeycloakIdentityProvide
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
 
-public class SslHealthStatusProvider implements ContainerHealthStatusProvider, X509TrustManager {
+public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider, ContainerService {
 
     public static final String NAME = "ssl";
     public static final String VERSION = "1.0";
@@ -86,7 +85,7 @@ public class SslHealthStatusProvider implements ContainerHealthStatusProvider, X
     }
 
     @Override
-    public Value getHealthStatus() {
+    public Object getHealthStatus() {
         if (!sslEnabled) {
             return null;
         }
@@ -102,8 +101,8 @@ public class SslHealthStatusProvider implements ContainerHealthStatusProvider, X
 
             Date date = serverCert.getNotAfter();
             long validDays = DAYS.between(Instant.now(), date.toInstant());
-            ObjectValue objectValue = Values.createObject();
-            objectValue.put("validDays", Values.create(validDays));
+            ObjectNode objectValue = Values.JSON.createObjectNode();
+            objectValue.put("validDays", validDays);
             return objectValue;
         } catch (IOException e) {
             LOG.log(Level.WARNING, "Failed to connect to SSL port 443 on host: " + hostname);

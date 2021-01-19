@@ -21,30 +21,31 @@ package org.openremote.model.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public class ObservableList<T> extends ArrayList<T> {
 
-    protected Runnable onModified;
+    protected Consumer<ObservableList<T>> onModified;
 
-    public ObservableList(int initialCapacity, Runnable onModified) {
+    public ObservableList(int initialCapacity, Consumer<ObservableList<T>> onModified) {
         super(initialCapacity);
         this.onModified = onModified;
     }
 
-    public ObservableList(Runnable onModified) {
+    public ObservableList(Consumer<ObservableList<T>> onModified) {
         this.onModified = onModified;
     }
 
-    public ObservableList(Collection<? extends T> c, Runnable onModified) {
+    public ObservableList(Collection<? extends T> c, Consumer<ObservableList<T>> onModified) {
         super(c);
         this.onModified = onModified;
     }
 
     protected void notifyModified() {
         if (onModified != null) {
-            onModified.run();
+            onModified.accept(this);
         }
     }
 
@@ -65,6 +66,29 @@ public class ObservableList<T> extends ArrayList<T> {
     @Override
     public void add(int index, T element) {
         super.add(index, element);
+        notifyModified();
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends T> c) {
+        boolean result = super.addAll(c);
+        if (result)
+            notifyModified();
+        return result;
+    }
+
+    @Override
+    public boolean addAll(int index, Collection<? extends T> c) {
+        boolean result = super.addAll(index, c);
+        if (result)
+            notifyModified();
+        return result;
+    }
+
+    @Override
+    public void replaceAll(UnaryOperator<T> operator) {
+        super.replaceAll(operator);
+        // May not have modified the list but just in case
         notifyModified();
     }
 
@@ -97,22 +121,6 @@ public class ObservableList<T> extends ArrayList<T> {
     }
 
     @Override
-    public boolean addAll(Collection<? extends T> c) {
-        boolean result = super.addAll(c);
-        if (result)
-            notifyModified();
-        return result;
-    }
-
-    @Override
-    public boolean addAll(int index, Collection<? extends T> c) {
-        boolean result = super.addAll(index, c);
-        if (result)
-            notifyModified();
-        return result;
-    }
-
-    @Override
     protected void removeRange(int fromIndex, int toIndex) {
         super.removeRange(fromIndex, toIndex);
         notifyModified();
@@ -140,12 +148,5 @@ public class ObservableList<T> extends ArrayList<T> {
         if (result)
             notifyModified();
         return result;
-    }
-
-    @Override
-    public void replaceAll(UnaryOperator<T> operator) {
-        super.replaceAll(operator);
-        // May not have modified the list but just in case
-        notifyModified();
     }
 }

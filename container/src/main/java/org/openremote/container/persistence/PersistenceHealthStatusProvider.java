@@ -19,13 +19,11 @@
  */
 package org.openremote.container.persistence;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zaxxer.hikari.HikariPoolMXBean;
-import org.openremote.container.Container;
-import org.openremote.container.ContainerHealthStatusProvider;
-import org.openremote.container.ContainerService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import javax.management.JMX;
@@ -38,7 +36,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.Database.PROPERTY_POOL_NAME;
 
-public class PersistenceHealthStatusProvider implements ContainerHealthStatusProvider {
+public class PersistenceHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
     private static final Logger LOG = Logger.getLogger(PersistenceHealthStatusProvider.class.getName());
     public static final String NAME = "db";
@@ -76,7 +74,7 @@ public class PersistenceHealthStatusProvider implements ContainerHealthStatusPro
     }
 
     @Override
-    public Value getHealthStatus() {
+    public Object getHealthStatus() {
         if (persistenceService.persistenceUnitProperties == null) {
             return null;
         }
@@ -95,7 +93,7 @@ public class PersistenceHealthStatusProvider implements ContainerHealthStatusPro
             int totalConnections = poolMBean.getTotalConnections();
             int threadsWaiting = poolMBean.getThreadsAwaitingConnection();
 
-            ObjectValue value = Values.createObject();
+            ObjectNode value = Values.JSON.createObjectNode();
             value.put("idleConnections", idleConnections);
             value.put("activeConnections", activeConnections);
             value.put("totalConnections", totalConnections);
