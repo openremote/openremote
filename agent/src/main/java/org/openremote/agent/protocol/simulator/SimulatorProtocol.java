@@ -118,25 +118,22 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     }
 
     public void updateSensor(AttributeRef attributeRef, Object value) {
-        updateSensor(attributeRef, value, 0L);
+        updateSensor(attributeRef, value, timerService.getCurrentTimeMillis());
     }
 
     /**
      * Call this to simulate a sensor update using the specified timestamp
      */
     public void updateSensor(AttributeRef attributeRef, Object value, long timestamp) {
-        withLock(getProtocolName() + "::updateSensor", () -> {
+        Attribute<?> attribute = getLinkedAttributes().get(attributeRef);
+        AttributeState state = new AttributeState(attributeRef, value);
 
-            AttributeState state = new AttributeState(attributeRef, value);
-            executorService.submit(() -> {
-                Attribute<?> attribute = getLinkedAttributes().get(attributeRef);
-                if (attribute == null) {
-                    LOG.info("Attempt to update unlinked attribute: " + state);
-                    return;
-                }
-                updateLinkedAttribute(state, timestamp);
-            });
-        });
+        if (attribute == null) {
+            LOG.info("Attempt to update unlinked attribute: " + state);
+            return;
+        }
+
+        updateLinkedAttribute(state, timestamp);
     }
 
     public Map<AttributeRef, ScheduledFuture<?>> getReplayMap() {

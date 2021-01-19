@@ -3,7 +3,6 @@ package org.openremote.test.notification
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import com.google.firebase.messaging.Message
-import org.openremote.container.timer.TimerService
 import org.openremote.container.web.WebService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -12,6 +11,7 @@ import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
+import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakTestSetup
 import org.openremote.manager.setup.builtin.ManagerTestSetup
@@ -20,7 +20,6 @@ import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
-import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
 import spock.lang.Specification
@@ -536,7 +535,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
+        def identityService = container.getService(ManagerIdentityService.class)
         def emailNotificationHandler = container.getService(EmailNotificationHandler.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
@@ -553,9 +554,10 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         }
         notificationService.notificationHandlerMap.put(emailNotificationHandler.getTypeName(), mockEmailNotificationHandler)
 
-        expect: "the container to settle"
+        expect: "the demo users to be created"
         conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 500)
+            def users = identityService.getIdentityProvider().getUsers(keycloakTestSetup.tenantBuilding.realm)
+            assert users.size() == 4
         }
 
         when: "an email notification is sent to a tenant through same mechanism as rules"

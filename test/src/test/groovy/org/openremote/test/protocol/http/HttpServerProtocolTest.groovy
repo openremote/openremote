@@ -30,6 +30,7 @@ import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.auth.OAuthGrant
@@ -266,6 +267,16 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         mockServer.putRequestWithHeadersCalled = false
     }
 
+    def tryPost(TestResource authenticatedTestResource, Asset testAsset) {
+        def exception = null
+        try {
+            authenticatedTestResource.postAsset(testAsset)
+        } catch (Exception e) {
+            exception = e
+        }
+        return exception
+    }
+
     def "Check HTTP server protocol and JAX-RS deployment"() {
 
         given: "expected conditions"
@@ -409,10 +420,11 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             assert deploymentManager.getState() == DeploymentManager.State.UNDEPLOYED
         }
 
-        when: "when the removed endpoint is used"
-        authenticatedTestResource.postAsset(testAsset)
-
-        then: "then an exception should be thrown"
-        thrown(NotAllowedException)
+        // There's some timing issue on the undeployment
+        then: "if an attempt is made to use the removed endpoint"
+        new PollingConditions(timeout: 10, initialDelay: 1, delay: 1).eventually {
+            def exception = tryPost(authenticatedTestResource, testAsset)
+            assert exception instanceof NotAllowedException
+        }
     }
 }

@@ -49,11 +49,11 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "an attribute linked to the simulator agent receives some values"
-        def simulatorProtocol = ((SimulatorProtocol)agentService.protocolInstanceMap.get(managerTestSetup.agentId));
+        def simulatorProtocol = ((SimulatorProtocol)agentService.protocolInstanceMap.get(managerTestSetup.agentId))
         advancePseudoClock(10, SECONDS, container)
         simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"), 13.3d)
         advancePseudoClock(10, SECONDS, container)
-        simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"), 13.3d)
+        simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"), null)
         advancePseudoClock(10, SECONDS, container)
         simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"), 13.3d)
 
@@ -103,7 +103,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         expect: "the datapoints to be stored"
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
-            assert datapoints.size() == 3
+            assert datapoints.size() == 5
 
             // Note that the "No value" sensor update should not have created a datapoint, the first
             // datapoint is the last sensor update with an actual value
@@ -116,6 +116,10 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
             assert Values.getValue(datapoints.get(2).value, Double.class).orElse(null) == 13.3d
             assert datapoints.get(2).timestamp == datapoint1ExpectedTimestamp
+
+            assert Values.getValue(datapoints.get(3).value, Double.class).orElse(null) == 13.3d
+
+            assert Values.getValue(datapoints.get(4).value, Double.class).orElse(null) == 13.3d
         }
 
         and: "the aggregated datapoints should match"
@@ -215,7 +219,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             def powerDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
             def toggleDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
 
-            assert powerDatapoints.size() == 4
+            assert powerDatapoints.size() == 6
             assert Values.getValue(powerDatapoints.get(0).value, Double.class).orElse(null) == 17.5d
             assert powerDatapoints.get(0).timestamp == datapoint4ExpectedTimestamp
 

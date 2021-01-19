@@ -275,21 +275,40 @@ public class EmailNotificationHandler implements NotificationHandler {
         switch (targetType) {
 
             case USER:
-                toRecipients.add(getUserRecipient(targetId));
+                EmailNotificationMessage.Recipient userRecipient = getUserRecipient(targetId);
+                if (userRecipient == null) {
+                    LOG.warning("Failed to find user: id=" + targetId);
+                } else {
+                    LOG.finest("Adding to recipient: " + userRecipient);
+                    toRecipients.add(userRecipient);
+                }
                 break;
             case ASSET:
-                toRecipients.add(getAssetRecipient(targetId));
+                EmailNotificationMessage.Recipient assetRecipient = getAssetRecipient(targetId);
+                if (assetRecipient == null) {
+                    LOG.warning("Failed to find asset: id=" + targetId);
+                } else {
+                    LOG.finest("Adding to recipient: " + assetRecipient);
+                    toRecipients.add(assetRecipient);
+                }
                 break;
             case CUSTOM:
                 // This recipient list is the target ID
                 Arrays.stream(targetId.split(";")).forEach(recipient -> {
                     if (recipient.startsWith("to:")) {
-                        toRecipients.add(new EmailNotificationMessage.Recipient(recipient.substring(3)));
+                        String email = recipient.substring(3);
+                        LOG.finest("Adding to recipient: " + email);
+                        toRecipients.add(new EmailNotificationMessage.Recipient(email));
                     } else if (recipient.startsWith("cc:")) {
-                        ccRecipients.add(new EmailNotificationMessage.Recipient(recipient.substring(3)));
+                        String email = recipient.substring(3);
+                        LOG.finest("Adding cc recipient: " + email);
+                        ccRecipients.add(new EmailNotificationMessage.Recipient(email));
                     } else if (recipient.startsWith("bcc:")) {
-                        bccRecipients.add(new EmailNotificationMessage.Recipient(recipient.substring(4)));
+                        String email = recipient.substring(4);
+                        LOG.finest("Adding bcc recipient: " + email);
+                        bccRecipients.add(new EmailNotificationMessage.Recipient(email));
                     } else {
+                        LOG.finest("Adding to recipient: " + recipient);
                         toRecipients.add(new EmailNotificationMessage.Recipient(recipient));
                     }
                 });
