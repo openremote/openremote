@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.notification;
 
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.EmailNotificationMessage;
@@ -41,7 +41,10 @@ import org.simplejavamail.mailer.Mailer;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.simplejavamail.mailer.config.TransportStrategy;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -57,20 +60,6 @@ public class EmailNotificationHandler implements NotificationHandler {
     protected Mailer mailer;
     protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
-    // Keep 100 user email addresses in cache for quick lookup
-    protected LinkedHashMap<String, EmailNotificationMessage.Recipient> userEmails = new LinkedHashMap<String, EmailNotificationMessage.Recipient>(100) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, EmailNotificationMessage.Recipient> eldest) {
-            return size() > 100;
-        }
-    };
-    // Keep 1000 asset email addresses in cache for quick lookup
-    protected LinkedHashMap<String, EmailNotificationMessage.Recipient> assetEmails = new LinkedHashMap<String, EmailNotificationMessage.Recipient>(1000) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, EmailNotificationMessage.Recipient> eldest) {
-            return size() > 1000;
-        }
-    };
 
     @Override
     public int getPriority() {
@@ -160,28 +149,34 @@ public class EmailNotificationHandler implements NotificationHandler {
                 switch (targetType) {
 
                     case TENANT:
-                        // Find all users in this tenant
-                        User[] users = managerIdentityService
-                            .getIdentityProvider()
-                            .getUsers(new UserQuery().tenant(new TenantPredicate(targetId)));
+                    case USER:
+                        // Find all users in this tenant or by id
+                        User[] users = targetType == Notification.TargetType.TENANT
+                            ? managerIdentityService
+                                .getIdentityProvider()
+                                .getUsers(new UserQuery().tenant(new TenantPredicate(targetId)))
+                            : managerIdentityService
+                                .getIdentityProvider()
+                                .getUsers(Collections.singletonList(targetId));
 
                         if (users.length == 0) {
-                            LOG.fine("No users found in target realm: " + targetId);
+                            if (targetType == Notification.TargetType.USER) {
+                                LOG.info("User not found: " + targetId);
+                            } else {
+                                LOG.info("No users found in target realm: " + targetId);
+                            }
                             return;
                         }
 
-                        Arrays.stream(users).forEach(user -> {
-                            EmailNotificationMessage.Recipient recipient =
-                                new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail());
-                            userEmails.put(user.getId(), recipient);
-                        });
-
                         mappedTargets.addAll(
                             Arrays.stream(users)
-                                .map(user -> new Notification.Target(Notification.TargetType.USER, user.getId()))
+                                .map(user -> {
+                                    Notification.Target userAssetTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
+                                    userAssetTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
+                                    return userAssetTarget;
+                                })
                                 .collect(Collectors.toList()));
                         break;
-                    case USER:
                     case CUSTOM:
                         // Nothing to do here
                         mappedTargets.add(new Notification.Target(targetType, targetId));
@@ -202,17 +197,15 @@ public class EmailNotificationHandler implements NotificationHandler {
                             return;
                         }
 
-                        assets.forEach(asset -> {
-                            EmailNotificationMessage.Recipient recipient =
-                                new EmailNotificationMessage.Recipient(
+                        mappedTargets.addAll(assets.stream()
+                            .map(asset -> {
+                                Notification.Target assetTarget =new Notification.Target(Notification.TargetType.ASSET, asset.getId());
+                                assetTarget.setData(new EmailNotificationMessage.Recipient(
                                     asset.getName(),
                                     asset.getEmail()
-                                        .orElse(null));
-                            assetEmails.put(asset.getId(), recipient);
-                        });
-
-                        mappedTargets.addAll(assets.stream()
-                            .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                                        .orElse(null)));
+                                return assetTarget;
+                            })
                             .collect(Collectors.toList()));
                         break;
                 }
@@ -275,41 +268,35 @@ public class EmailNotificationHandler implements NotificationHandler {
         switch (targetType) {
 
             case USER:
-                EmailNotificationMessage.Recipient userRecipient = getUserRecipient(targetId);
-                if (userRecipient == null) {
-                    LOG.warning("Failed to find user: id=" + targetId);
-                } else {
-                    LOG.finest("Adding to recipient: " + userRecipient);
-                    toRecipients.add(userRecipient);
-                }
-                break;
             case ASSET:
-                EmailNotificationMessage.Recipient assetRecipient = getAssetRecipient(targetId);
-                if (assetRecipient == null) {
-                    LOG.warning("Failed to find asset: id=" + targetId);
+                // Recipient should be stored from earlier mapping call
+                EmailNotificationMessage.Recipient recipient = (EmailNotificationMessage.Recipient)target.getData();
+
+                if (recipient == null) {
+                    LOG.warning("User or asset recipient missing: id=" + targetId);
                 } else {
-                    LOG.finest("Adding to recipient: " + assetRecipient);
-                    toRecipients.add(assetRecipient);
+                    LOG.finest("Adding to recipient: " + recipient);
+                    toRecipients.add(recipient);
                 }
                 break;
             case CUSTOM:
                 // This recipient list is the target ID
-                Arrays.stream(targetId.split(";")).forEach(recipient -> {
-                    if (recipient.startsWith("to:")) {
-                        String email = recipient.substring(3);
+                Arrays.stream(targetId.split(";")).forEach(customRecipient -> {
+                    if (customRecipient.startsWith("to:")) {
+                        String email = customRecipient.substring(3);
                         LOG.finest("Adding to recipient: " + email);
                         toRecipients.add(new EmailNotificationMessage.Recipient(email));
-                    } else if (recipient.startsWith("cc:")) {
-                        String email = recipient.substring(3);
+                    } else if (customRecipient.startsWith("cc:")) {
+                        String email = customRecipient.substring(3);
                         LOG.finest("Adding cc recipient: " + email);
                         ccRecipients.add(new EmailNotificationMessage.Recipient(email));
-                    } else if (recipient.startsWith("bcc:")) {
-                        String email = recipient.substring(4);
+                    } else if (customRecipient.startsWith("bcc:")) {
+                        String email = customRecipient.substring(4);
                         LOG.finest("Adding bcc recipient: " + email);
                         bccRecipients.add(new EmailNotificationMessage.Recipient(email));
                     } else {
-                        LOG.finest("Adding to recipient: " + recipient);
-                        toRecipients.add(new EmailNotificationMessage.Recipient(recipient));
+                        LOG.finest("Adding to recipient: " + customRecipient);
+                        toRecipients.add(new EmailNotificationMessage.Recipient(customRecipient));
                     }
                 });
 
@@ -363,31 +350,6 @@ public class EmailNotificationHandler implements NotificationHandler {
             LOG.log(Level.WARNING, "Email send failed: " + e.getMessage(), e);
             return NotificationSendResult.failure("Email send failed: " + e.getMessage());
         }
-    }
-
-    protected EmailNotificationMessage.Recipient getUserRecipient(String userId) {
-        if (userEmails.containsKey(userId)) {
-            return userEmails.get(userId);
-        }
-
-        User[] users = managerIdentityService.getIdentityProvider().getUsers(Collections.singletonList(userId));
-        if (users == null || users.length == 0) {
-            return null;
-        }
-        return new EmailNotificationMessage.Recipient(users[0].getFullName(), users[0].getEmail());
-    }
-
-    protected EmailNotificationMessage.Recipient getAssetRecipient(String assetId) {
-        if (assetEmails.containsKey(assetId)) {
-            return assetEmails.get(assetId);
-        }
-
-        Asset<?> asset = assetStorageService.find(assetId);
-        if (asset == null) {
-            return null;
-        }
-
-        return new EmailNotificationMessage.Recipient(asset.getName(), asset.getEmail().orElse(null));
     }
 
     protected EmailPopulatingBuilder buildEmailBuilder(long id, EmailNotificationMessage emailNotificationMessage) {

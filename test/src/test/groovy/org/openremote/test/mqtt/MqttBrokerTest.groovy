@@ -44,7 +44,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             }
         }
 
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
         def services = Lists.newArrayList(defaultServices())
         services.replaceAll { it instanceof MqttBrokerService ? spyMqttBrokerService : it }
         def container = startContainer(defaultConfig(), services)
@@ -303,10 +303,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetAttributeSubscriptions.containsKey(new AttributeRef(managerTestSetup.apartment1HallwayId, "motionSensor"))
         }
 
-        when: "time advances"
-        advancePseudoClock(1, TimeUnit.SECONDS, container)
-
-        and: "that attribute changed"
+        when: "that attribute changed"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 30)
         ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
 
@@ -366,10 +363,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetAttributeValueSubscriptions.containsKey(new AttributeRef(managerTestSetup.apartment1HallwayId, "motionSensor"))
         }
 
-        when: "time advances"
-        advancePseudoClock(1, TimeUnit.SECONDS, container)
-
-        and: "that attribute changed"
+        when: "that attribute changed"
         attributeEvent = new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 40)
         ((SimulatorProtocol)agentService.getProtocolInstance(managerTestSetup.apartment1ServiceAgentId)).updateSensor(attributeEvent)
 

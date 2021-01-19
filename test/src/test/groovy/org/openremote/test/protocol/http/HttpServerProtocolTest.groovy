@@ -268,13 +268,10 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
     }
 
     def tryPost(TestResource authenticatedTestResource, Asset testAsset) {
-        def exception = null
+        // There's some weird behaviour where sometimes a forbidden exception is thrown and sometimes not
         try {
             authenticatedTestResource.postAsset(testAsset)
-        } catch (Exception e) {
-            exception = e
-        }
-        return exception
+        } catch (Exception ignored) {}
     }
 
     def "Check HTTP server protocol and JAX-RS deployment"() {
@@ -410,7 +407,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         assert asset.getLocation().map{it.coordinates.y}.orElse(-1d) == testAsset.getLocation().map{it.coordinates.y}.orElse(0d)
 
         when: "an agent is deleted"
-        def protocolInstance = (TestHttpServerProtocol)agentService.getProtocolInstance(agent.id)
+        def protocolInstance = agentService.getProtocolInstance(agent.id) as TestHttpServerProtocol
         def deploymentManager = Servlets.defaultContainer().getDeployment(protocolInstance.deployment.deploymentInfo.getDeploymentName());
         assetStorageService.delete([agent.id])
 
@@ -420,11 +417,11 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             assert deploymentManager.getState() == DeploymentManager.State.UNDEPLOYED
         }
 
-        // There's some timing issue on the undeployment
-        then: "if an attempt is made to use the removed endpoint"
-        new PollingConditions(timeout: 10, initialDelay: 1, delay: 1).eventually {
-            def exception = tryPost(authenticatedTestResource, testAsset)
-            assert exception instanceof NotAllowedException
+        then: "if an attempt is made to use the removed endpoint then no asset should be posted"
+        conditions.eventually {
+            def postCount = protocolInstance.resource1.postedAssets.size()
+            tryPost(authenticatedTestResource, testAsset)
+            assert postCount == protocolInstance.resource1.postedAssets.size()
         }
     }
 }

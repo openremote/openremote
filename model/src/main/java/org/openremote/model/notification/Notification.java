@@ -46,6 +46,7 @@ public class Notification {
 
         protected TargetType type;
         protected String id;
+        protected Object data; // Handlers can store temporary data here
 
         @JsonCreator
         public Target(@JsonProperty("type") TargetType type, @JsonProperty("id") String id) {
@@ -63,6 +64,15 @@ public class Notification {
 
         public String getId() {
             return id;
+        }
+
+        public Target setData(Object data) {
+            this.data = data;
+            return this;
+        }
+
+        public Object getData() {
+            return data;
         }
 
         @Override
