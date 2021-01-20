@@ -172,6 +172,9 @@ public class EmailNotificationHandler implements NotificationHandler {
                             Arrays.stream(users)
                                 .map(user -> {
                                     Notification.Target userAssetTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
+
+
+
                                     userAssetTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
                                     return userAssetTarget;
                                 })
