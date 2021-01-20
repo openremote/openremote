@@ -589,9 +589,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the child asset with the email attribute should have been sent an email"
         conditions.eventually {
-            assert sentEmails.size() == 5
-            assert sentEmails.get(4).getSubject() == "Test 2"
-            assert sentEmails.get(4).getRecipients().get(0).getAddress() == "kitchen@openremote.local"
+            assert sentEmails.size() >= 4
+            assert sentEmails.any { it.getSubject() == "Test 2"}
+            assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "kitchen@openremote.local"}
         }
 
         when: "an email is sent to a custom target"
@@ -601,13 +601,12 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the email should have been sent to all custom recipients"
         conditions.eventually {
-            assert sentEmails.size() == 6
-            assert sentEmails.get(5).getSubject() == "Test Custom"
-            assert sentEmails.get(5).getRecipients().size() == 4
-            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.TO && it.address == "custom1@openremote.local"}
-            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.TO && it.address == "custom2@openremote.local"}
-            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.CC && it.address == "custom3@openremote.local"}
-            assert sentEmails.get(5).getRecipients().any{ it.type == javax.mail.Message.RecipientType.BCC && it.address == "custom4@openremote.local"}
+            assert sentEmails.size() >= 5
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().size() == 4}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.TO && it.address == "custom1@openremote.local"}}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.TO && it.address == "custom2@openremote.local"}}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.CC && it.address == "custom3@openremote.local"}}
+            assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.BCC && it.address == "custom4@openremote.local"}}
         }
 
         cleanup: "the mock is removed"
