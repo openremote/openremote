@@ -131,14 +131,14 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 case "until":
                     if (this.rrule.options.until) {
                         const newDate = moment(value)
-                        origOptions["until"] = new Date(moment(origOptions["until"]).set({year: newDate.year(), month: newDate.month(), date: newDate.date()}).format())
+                        origOptions["until"] = new Date(moment(origOptions.until).set({year: newDate.year(), month: newDate.month(), date: newDate.date()}).format())
                     }
                     if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "dtstart-time":
                     const timeParts = value.split(':');
                     origOptions.dtstart = moment(origOptions.dtstart).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).toDate();
-                    validity.start = moment(origOptions["dtstart"]).toDate().getTime();
+                    validity.start = moment(origOptions.dtstart).toDate().getTime();
                     if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
                     break;
                 case "until-time":
