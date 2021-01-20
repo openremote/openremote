@@ -54,7 +54,7 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
      */
     public static final String QUERY_PARAMETERS_PROPERTY = QueryParameterInjectorFilter.class.getName() + ".params";
 
-    protected static final Pattern DYNAMIC_TIME_PATTERN = Pattern.compile(Protocol.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
+    public static final Pattern DYNAMIC_TIME_PATTERN = Pattern.compile(Protocol.DYNAMIC_TIME_PLACEHOLDER_REGEXP);
 
     @SuppressWarnings("unchecked")
     @Override
