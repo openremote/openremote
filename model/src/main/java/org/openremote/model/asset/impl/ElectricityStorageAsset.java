@@ -41,7 +41,7 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
     public static final AttributeDescriptor<Double> LEVELISED_COST_OF_STORAGE = new AttributeDescriptor<>("levelisedCostOfStorage", ValueType.POSITIVE_NUMBER).withUnits("EUR");
     public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    );
+    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Integer> ENERGY_AVAILABLE_PERCENTAGE = new AttributeDescriptor<>("energyAvailablePercentage", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
 

@@ -6,7 +6,7 @@ import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
 import {MDCCheckbox} from "@material/checkbox";
 import {MDCSwitch} from "@material/switch";
-import {MDCSlider} from "@material/slider";
+import {MDCSlider, MDCSliderChangeEventDetail} from "@material/slider";
 import {MDCSelect, MDCSelectEvent} from "@material/select";
 import {MDCList, MDCListActionEvent} from "@material/list";
 
@@ -137,13 +137,14 @@ function inputTypeSupportsLabel(inputType: InputType) {
 
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: any | undefined) => void, options: ValueInputProviderOptions) => {
 
-    let inputType = InputType.JSON;
+    let inputType: InputType | undefined;
     let step: number | undefined;
     let pattern: string | undefined;
     let min: any;
     let max: any;
     let required: boolean | undefined;
     let selectOptions: [string, string][] | undefined;
+    let valueConverter: (v: any) => any | undefined;
 
     const assetType = typeof assetDescriptor === "string" ? assetDescriptor : assetDescriptor.name;
     const constraints: ValueConstraint[] = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueConstraints(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueConstraints(valueHolder as NameValueHolder<any>, valueHolderDescriptor as AttributeDescriptor, assetType)) || [];
@@ -165,6 +166,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                 step = 1;
                 min = 0;
                 max = 1;
+                valueConverter = (v) => !!v;
                 break;
             }
             if (format && (format.asOnOff || format.asOpenClosed)) {
@@ -198,6 +200,9 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                 inputType = InputType.DATETIME;
             } else if (format && format.asBoolean) {
                 inputType = InputType.CHECKBOX;
+                valueConverter = (v) => v ? 1 : 0;
+            } else if (format && format.asSlider) {
+                inputType = InputType.RANGE;
             } else {
                 inputType = InputType.NUMBER;
             }
@@ -207,9 +212,6 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             step = 1;
             break;
         case WellknownValueTypes.COLOURRGB:
-        case WellknownValueTypes.COLOURRGBA:
-        case WellknownValueTypes.COLOURRGBW:
-        case WellknownValueTypes.COLOURRGBAW:
             inputType = InputType.COLOUR;
             break;
         case WellknownValueTypes.DATEANDTIME:
@@ -229,6 +231,28 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         case WellknownValueTypes.TIMEANDPERIODDURATIONISO8601:
             inputType = InputType.DURATION;
             break;
+    }
+
+    if (!inputType) {
+        switch (valueDescriptor.jsonType) {
+            case "number":
+            case "bigint":
+                inputType = InputType.NUMBER;
+                break;
+            case "boolean":
+                inputType = InputType.CHECKBOX;
+                break;
+            case "string":
+                inputType = InputType.TEXT;
+                break;
+            case "date":
+                inputType = InputType.DATETIME;
+                break;
+        }
+    }
+
+    if (!inputType) {
+        inputType = InputType.JSON;
     }
 
     // Apply any constraints
@@ -276,6 +300,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             const label = allowedLabels ? allowedLabels[i] : typeof v === "string" ? Util.getAllowedValueLabel(v) : "" + i;
             return ["" + v, label || "" + v];
         });
+        inputType = InputType.SELECT;
     }
 
     if (inputType === InputType.DATETIME) {
@@ -317,7 +342,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             .helperText="${helperText}" .helperPersistent="${true}"
         }}" @or-input-changed="${(e: OrInputChangedEvent) => {
             e.stopPropagation();
-            valueChangeNotifier(e.detail.value);
+            valueChangeNotifier(valueConverter ? valueConverter(e.detail.value) : e.detail.value);
         }}"></or-input>`
     };
 
@@ -328,7 +353,6 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         supportsLabel: supportsLabel
     };
 }
-
 
 // language=CSS
 const style = css`
@@ -722,7 +746,7 @@ export class OrInput extends LitElement {
                             "mdc-select--with-leading-icon": !!this.icon
                         };
 
-                        let optsList = this.resolveOptions(this.options);
+                        const optsList = this.resolveOptions(this.options);
                         this._selectedIndex = -1;
                         return html`
                             <div id="component" class="mdc-list mdc-select ${classMap(classesList)}" @MDCList:action="${(e: MDCListActionEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
@@ -748,7 +772,7 @@ export class OrInput extends LitElement {
                         "mdc-select--with-leading-icon": !!this.icon
                     };
 
-                    let opts = this.resolveOptions(this.options);
+                    const opts = this.resolveOptions(this.options);
                     const value = opts && opts.find(([optValue, optDisplay], index) => this.value === optValue);
                     const valueLabel = value ? value[1] : typeof this.value === "string" ? this.value : "";
                     this._selectedIndex = -1;
@@ -841,7 +865,7 @@ export class OrInput extends LitElement {
                 }
                 case InputType.CHECKBOX_LIST:
 
-                    let optsRadio = this.resolveOptions(this.options);
+                    const optsRadio = this.resolveOptions(this.options);
                     this._selectedIndex = -1;
                     return html`
                             <div class="mdc-checkbox-list">
@@ -913,7 +937,7 @@ export class OrInput extends LitElement {
                             valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? (typeof valMinMax[0] === "string" ? valMinMax[0] : JSON.stringify(valMinMax[0], null, 2)) : "";
                         } else {
 
-                            let format = this.format ? {...this.format} : {};
+                            const format = this.format ? {...this.format} : {};
 
                             switch (this.type) {
                                 case InputType.TIME:
@@ -1016,23 +1040,17 @@ export class OrInput extends LitElement {
                         inputElem = html`
                             <span id="wrapper">
                                 ${this.label ? html`<label for="component" class="${this.disabled ? "mdc-switch--disabled" : ""}">${this.label}</label>` : ``}
-                                <div id="component" class="mdc-slider mdc-slider--discrete" tabindex="10" role="slider"
-                                aria-valuemin="${ifDefined(valMinMax[1])}" aria-valuemax="${ifDefined(valMinMax[2])}"
-                                aria-valuenow="${ifDefined(valMinMax[0])}" aria-label="${ifDefined(this.label)}"
-                                aria-disabled="${(this.readonly || this.disabled) ? "true" : "false"}"
-                                @MDCSlider:change="${() => this.onValueChange(undefined, (this._mdcComponent as MDCSlider).value)}">
-                                    <div class="mdc-slider__track-container">
-                                        <div class="mdc-slider__track"></div>
+                                <div id="component" class="mdc-slider" @MDCSlider:change="${(ev:CustomEvent<MDCSliderChangeEventDetail>) => this.onValueChange(undefined, ev.detail.value)}">
+                                  <input class="mdc-slider__input" ?disabled="${this.readonly || this.disabled}" type="range" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}" value="${ifDefined(valMinMax[0])}" name="slider" aria-label="${this.label}">
+                                  <div class="mdc-slider__track">
+                                    <div class="mdc-slider__track--inactive"></div>
+                                    <div class="mdc-slider__track--active">
+                                      <div class="mdc-slider__track--active_fill"></div>
                                     </div>
-                                    <div class="mdc-slider__thumb-container">
-                                        <div class="mdc-slider__pin">
-                                            <span class="mdc-slider__pin-value-marker"></span>
-                                        </div>
-                                        <svg class="mdc-slider__thumb" width="21" height="21">
-                                            <circle cx="10.5" cy="10.5" r="7.875"></circle>
-                                        </svg>
-                                        <div class="mdc-slider__focus-ring"></div>
-                                    </div>
+                                  </div>
+                                  <div class="mdc-slider__thumb">
+                                    <div class="mdc-slider__thumb-knob"></div>
+                                  </div>
                                 </div>
                                 ${inputElem ? html`<div style="width: 75px; margin-left: 20px;">${inputElem}</div>` : ``}
                             </span>
@@ -1133,10 +1151,10 @@ export class OrInput extends LitElement {
                 (this._mdcComponent as MDCSelect).selectedIndex = this._selectedIndex;
             } else if (this.type === InputType.RANGE && this._mdcComponent) {
                 const slider = this._mdcComponent as MDCSlider;
-                slider.disabled = this.disabled || this.readonly;
-                slider.min = this.min;
-                slider.max = this.max;
-                slider.value = this.value;
+                slider.setDisabled(this.disabled || this.readonly);
+                // slider.getDefaultFoundation(). getDefaultFoundation()..getMax() = this.min;
+                // slider.max = this.max;
+                // slider.setValue(this.value);
             } else if (this.type === InputType.SWITCH && this._mdcComponent) {
                 const swtch = this._mdcComponent as MDCSwitch;
                 swtch.checked = this.value;
@@ -1207,7 +1225,7 @@ export class OrInput extends LitElement {
 
         if (newValue !== previousValue) {
             if (this.type === InputType.RANGE) {
-                (this._mdcComponent as MDCSlider).value = newValue;
+                (this._mdcComponent as MDCSlider).setValue(newValue);
                 if (this._mdcComponent2) {
                     (this._mdcComponent2 as MDCTextField).value = newValue;
                 }

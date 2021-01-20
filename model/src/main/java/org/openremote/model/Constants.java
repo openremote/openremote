@@ -47,14 +47,6 @@ public interface Constants {
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
     String PERSISTENCE_JSON_VALUE_TYPE = "jsonb";
     String PERSISTENCE_STRING_ARRAY_TYPE = "string-array";
-    String NAMESPACE = "urn:openremote";
-    String ASSET_NAMESPACE = NAMESPACE + ":asset";
-    String AGENT_NAMESPACE = NAMESPACE + ":agent";
-    String ASSET_META_NAMESPACE = ASSET_NAMESPACE + ":meta";
-    String DEFAULT_DATETIME_FORMAT ="dd. MMM yyyy HH:mm:ss zzz";
-    String DEFAULT_DATETIME_FORMAT_MILLIS ="dd. MMM yyyy HH:mm:ss:SSS zzz";
-    String DEFAULT_DATE_FORMAT ="dd. MMM yyyy";
-    String DEFAULT_TIME_FORMAT ="HH:mm:ss";
 
     String SETUP_EMAIL_USER = "SETUP_EMAIL_USER";
     String SETUP_EMAIL_HOST = "SETUP_EMAIL_HOST";

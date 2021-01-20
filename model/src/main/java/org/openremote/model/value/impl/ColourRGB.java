@@ -19,21 +19,50 @@
  */
 package org.openremote.model.value.impl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.util.StdConverter;
+import org.openremote.model.protocol.ProtocolUtil;
+import org.openremote.model.util.TextUtil;
 
 import java.awt.*;
 import java.io.Serializable;
 import java.util.Objects;
 
+@JsonDeserialize(converter = ColourRGB.HexStringColourRGBConverter.class)
 public class ColourRGB implements Serializable {
+
+    public static class HexStringColourRGBConverter extends StdConverter<JsonNode, ColourRGB> {
+
+        @Override
+        public ColourRGB convert(JsonNode value) {
+            if (value.isTextual()) {
+                return ColourRGB.fromHexString(value.asText());
+            }
+            if (value.isObject()) {
+                return new ColourRGB(
+                    value.get("r").asInt(),
+                    value.get("g").asInt(),
+                    value.get("b").asInt()
+                );
+            }
+            if (value.isArray() && value.size() == 3) {
+                return new ColourRGB(
+                    value.get(0).asInt(),
+                    value.get(1).asInt(),
+                    value.get(2).asInt()
+                );
+            }
+            return null;
+        }
+    }
 
     protected int r;
     protected int g;
     protected int b;
 
-    @JsonCreator
-    public ColourRGB(@JsonProperty("r") int r, @JsonProperty("g") int g, @JsonProperty("b") int b) {
+    public ColourRGB(int r, int g, int b) {
         this.r = r;
         this.g = g;
         this.b = b;
@@ -68,13 +97,29 @@ public class ColourRGB implements Serializable {
         return Objects.hash(r, g, b);
     }
 
+    @JsonValue
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "r=" + r +
-            ", g=" + g +
-            ", b=" + b +
-            '}';
+        return "#" + ProtocolUtil.bytesToHexString(new byte[] {(byte)r, (byte)g, (byte)b});
+    }
+
+    public static ColourRGB fromHexString(String hexString) {
+        if (TextUtil.isNullOrEmpty(hexString)) {
+            return null;
+        }
+        if (hexString.charAt(0) == '#') {
+            hexString = hexString.substring(1);
+        }
+        byte[] values = ProtocolUtil.bytesFromHexString(hexString);
+        if (values.length == 3) {
+            return new ColourRGB(
+                Byte.toUnsignedInt(values[0]),
+                Byte.toUnsignedInt(values[1]),
+                Byte.toUnsignedInt(values[2])
+            );
+        }
+
+        return null;
     }
 
     public static ColourRGB fromHS(int hue, int saturation) {

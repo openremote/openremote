@@ -20,12 +20,19 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.openremote.model.attribute.Attribute;
 
 import java.io.Serializable;
 
 /**
  * Represents formatting rules to apply to date and number values when converting to {@link String} representation; based on
- * HTML Intl API, see: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl">here</a>
+ * HTML Intl API, see: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl">here</a>.
+ * {@link ValueFormat}s should be merged for UI consumption in the following priority order:
+ * <ol>
+ * <li>{@link Attribute} {@link MetaItemType#FORMAT}</li>
+ * <li>{@link AttributeDescriptor#getFormat}/{@link MetaItemDescriptor#getFormat}</li>
+ * <li>{@link ValueDescriptor#getFormat}</li>
+ * </ol>
  */
 public class ValueFormat implements Serializable {
 
@@ -78,6 +85,7 @@ public class ValueFormat implements Serializable {
     protected Integer maximumSignificantDigits;
     protected Boolean asBoolean;
     protected Boolean asDate;
+    protected Boolean asSlider;
     protected Number resolution;
 
     /* DATE FORMATS */
@@ -382,6 +390,15 @@ public class ValueFormat implements Serializable {
 
     public ValueFormat setResolution(Number resolution) {
         this.resolution = resolution;
+        return this;
+    }
+
+    public Boolean getAsSlider() {
+        return asSlider;
+    }
+
+    public ValueFormat setAsSlider(Boolean asSlider) {
+        this.asSlider = asSlider;
         return this;
     }
 }

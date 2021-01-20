@@ -40,7 +40,6 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
@@ -689,7 +688,7 @@ public abstract class AbstractManagerSetup implements Setup {
             new MetaItem<>(RULE_STATE),
             new MetaItem<>(STORE_DATA_POINTS)
         );
-        lightAsset.getAttributes().getOrCreate(LightAsset.COLOUR_RGBW).addMeta(
+        lightAsset.getAttributes().getOrCreate(LightAsset.COLOUR_RGB).addMeta(
             new MetaItem<>(RULE_STATE),
             new MetaItem<>(STORE_DATA_POINTS)
         );
@@ -718,7 +717,7 @@ public abstract class AbstractManagerSetup implements Setup {
             new MetaItem<>(RULE_STATE),
             new MetaItem<>(STORE_DATA_POINTS)
         );
-        lightAsset.getAttributes().getOrCreate(LightAsset.COLOUR_RGBW).addMeta(
+        lightAsset.getAttributes().getOrCreate(LightAsset.COLOUR_RGB).addMeta(
             new MetaItem<>(RULE_STATE),
             new MetaItem<>(STORE_DATA_POINTS)
         );

@@ -304,8 +304,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Object, reflect: false})
     public attribute?: Attribute<any>;
 
-    @property({type: Object})
-    public attributeRef?: AttributeRef;
+    @property({type: String})
+    public assetId?: string;
 
     @property({type: Object})
     public attributeDescriptor?: AttributeDescriptor;
@@ -413,7 +413,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             }
         }
 
-        if (_changedProperties.has("attributeRef") && !Util.objectsEqual(_changedProperties.get("attributeRef"), this.attributeRef)) {
+        if (_changedProperties.has("assetId") && _changedProperties.get("assetId") !== this.assetId) {
             updateSubscribedRefs = true;
             updateDescriptors = true;
         }
@@ -448,8 +448,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     protected _getAttributeRef(): AttributeRef | undefined {
-        if (this.attributeRef) {
-            return this.attributeRef;
+        if (this.assetId && this.attribute) {
+            return {name: this.attribute.name, id: this.assetId};
         }
     }
 
@@ -462,7 +462,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             this._attributeDescriptor = this.attributeDescriptor;
             this._valueDescriptor = this.valueDescriptor;
         } else {
-            const attributeOrDescriptorOrName = this.attributeDescriptor || (this.attribute ? this.attribute.name : this.attributeRef ? this.attributeRef.name! : undefined);
+            const attributeOrDescriptorOrName = this.attributeDescriptor || (this.attribute ? this.attribute.name : undefined);
 
             if (!attributeOrDescriptorOrName) {
                 this._attributeDescriptor = this.attributeDescriptor;
@@ -634,7 +634,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             super._sendEvent({
                 eventType: "attribute",
                 attributeState: {
-                    attributeRef: attributeRef,
+                    ref: attributeRef,
                     value: newValue
                 }
             } as AttributeEvent);

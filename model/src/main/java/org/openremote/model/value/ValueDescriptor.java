@@ -234,6 +234,22 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         return new ValueDescriptor<>(name, type, constraints, format, units, arrayDimensions);
     }
 
+    public Integer getArrayDimensions() {
+        return arrayDimensions;
+    }
+
+    public ValueConstraint[] getConstraints() {
+        return constraints;
+    }
+
+    public ValueFormat getFormat() {
+        return format;
+    }
+
+    public String[] getUnits() {
+        return units;
+    }
+
     public boolean isArray() {
         return arrayDimensions != null && arrayDimensions > 0;
     }

@@ -61,7 +61,7 @@ declare global {
 }
 
 export async function showErrorDialog(errorMessage: string) {
-    const deferred = new Util.Deferred<boolean>();
+    const deferred = new Util.Deferred<void>();
 
     showDialog({
         title: "error",
@@ -81,7 +81,7 @@ export async function showErrorDialog(errorMessage: string) {
             actionName: "ok",
             content: i18next.t("ok"),
             default: true,
-            action: () => deferred.resolve()
+            action: (dialog) => deferred.resolve()
         }]
     });
 

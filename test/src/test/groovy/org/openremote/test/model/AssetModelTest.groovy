@@ -167,10 +167,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "it should look as expected"
         def assetStateObjectNode = Values.parse(assetStateStr, ObjectNode.class).get()
         assetStateObjectNode.get("name").asText() == LightAsset.COLOUR_RGB.name
-        assetStateObjectNode.get("value").isObject()
-        assetStateObjectNode.get("value").size() == 3
-        assetStateObjectNode.get("value").get("r").asInt() == 50I
-        assetStateObjectNode.get("value").get("g").asInt() == 100I
-        assetStateObjectNode.get("value").get("b").asInt() == 200I
+        assetStateObjectNode.get("value").isTextual()
+        assetStateObjectNode.get("value").asText() == "#3264c8"
     }
 }

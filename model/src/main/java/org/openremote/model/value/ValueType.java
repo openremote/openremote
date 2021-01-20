@@ -162,9 +162,6 @@ public final class ValueType {
     public static final ValueDescriptor<ConsoleProviders> CONSOLE_PROVIDERS = new ValueDescriptor<>("consoleProviders", ConsoleProviders.class);
 
     public static final ValueDescriptor<ColourRGB> COLOUR_RGB = new ValueDescriptor<>("colourRGB", ColourRGB.class);
-    public static final ValueDescriptor<ColourRGBA> COLOUR_RGBA = new ValueDescriptor<>("colourRGBA", ColourRGBA.class);
-    public static final ValueDescriptor<ColourRGBW> COLOUR_RGBW = new ValueDescriptor<>("colourRGBW", ColourRGBW.class);
-    public static final ValueDescriptor<ColourRGBAW> COLOUR_RGBAW = new ValueDescriptor<>("colourRGBAW", ColourRGBAW.class);
 
     public static final ValueDescriptor<OAuthGrant> OAUTH_GRANT = new ValueDescriptor<>("OAuthGrant", OAuthGrant.class);
 

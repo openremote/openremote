@@ -156,7 +156,6 @@ export class OrAssetTreeAssetEvent extends CustomEvent<AssetEvent> {
     }
 }
 
-
 declare global {
     export interface HTMLElementEventMap {
         [OrAssetTreeRequestSelectionEvent.NAME]: OrAssetTreeRequestSelectionEvent;
@@ -249,14 +248,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this.selectedIds = nodes.map((node) => node.asset!.id!);
     }
 
-    /**
-     * Override subscribe mixin behaviour to get re-render
-     */
-    public set assetIds(assetIds: string[]) {
-        this._assetIdsOverride = assetIds;
-        super.assetIds = assetIds;
-    }
-
     public connectedCallback() {
         super.connectedCallback();
         manager.addListener(this.onManagerEvent);
@@ -264,6 +255,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public disconnectedCallback() {
         super.disconnectedCallback();
+        this.requestUpdate();
         manager.removeListener(this.onManagerEvent);
     }
 
@@ -341,8 +333,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
         const result = super.shouldUpdate(_changedProperties);
-        if (_changedProperties.has("_assetIdsOverride")
-            || _changedProperties.has("assets")
+        if (_changedProperties.has("assets")
             || _changedProperties.has("rootAssets")
             || _changedProperties.has("rootAssetIds")) {
             this._nodes = undefined;

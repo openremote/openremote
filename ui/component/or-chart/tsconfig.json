@@ -14,6 +14,8 @@
     { "path": "../or-panel" },
     { "path": "../or-input" },
     { "path": "../or-icon" },
+    { "path": "../or-asset-tree" },
+    { "path": "../or-mwc-components" },
     { "path": "../or-translate" }
   ]
 }

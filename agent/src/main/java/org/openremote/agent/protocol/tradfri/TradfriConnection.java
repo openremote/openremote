@@ -165,7 +165,7 @@ public class TradfriConnection {
                         light.setOn(Values.getBooleanCoerced(event.getValue()).orElse(false));
                     } else if (event.getAttributeName().equals(LightAsset.COLOUR_RGB.getName())) {
                         light.setColour(Values.convert(event.getValue(), ColourRGB.class));
-                    } else if (event.getAttributeName().equals(LightAsset.TEMPERATURE.getName())) {
+                    } else if (event.getAttributeName().equals(LightAsset.COLOUR_TEMPERATURE.getName())) {
                         light.setColourTemperature(Values.getInteger(event.getValue()).orElse(0));
                     }
                 }

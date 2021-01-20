@@ -628,7 +628,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
                 const deferred = this._subscribeDeferred;
                 this._subscribeDeferred = null;
                 if (deferred) {
-                    deferred.resolve(subscription.subscriptionId);
+                    deferred.resolve(subscription.subscriptionId!);
                 }
             } else if (msg.startsWith(UNAUTHORIZED_MESSAGE_PREFIX)) {
                 const jsonStr = msg.substring(UNAUTHORIZED_MESSAGE_PREFIX.length);

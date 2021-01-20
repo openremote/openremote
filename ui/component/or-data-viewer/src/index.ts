@@ -47,7 +47,7 @@ class EventHandler {
     }
 
     public startCallbacks() {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             if (this._callbacks && this._callbacks.length > 0) {
                 this._callbacks.forEach((cb) => cb());
             }

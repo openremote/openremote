@@ -148,7 +148,7 @@ class EventHandler {
     }
 
     startCallbacks() {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             if (this._callbacks && this._callbacks.length > 0) {
                 this._callbacks.forEach(cb => cb());
             }
@@ -593,7 +593,7 @@ export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, ho
     }
 
     return html`
-        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}"></or-attribute-input>
+        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}"></or-attribute-input>
     `;
 }
 

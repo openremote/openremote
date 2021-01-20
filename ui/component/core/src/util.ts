@@ -30,7 +30,7 @@ import moment from "moment";
 
 export class Deferred<T> {
 
-    protected _resolve!: (value?: T | PromiseLike<T>) => void;
+    protected _resolve!: (value: T | PromiseLike<T>) => void;
     protected _reject!: (reason?: any) => void;
     protected _promise: Promise<T>;
 
@@ -555,12 +555,12 @@ export function resolveUnits(units: string[] | undefined, valueStr?: string): st
         valueStr = "";
     }
 
-    let unitsStr = units.map((unit, index) => {
+    const unitsStr = units.map((unit, index) => {
         if (unit.length === 3 && unit.toUpperCase() === unit) {
             // This is a currency code - use Intl API to find the symbol
             const parts = new Intl.NumberFormat(i18next.language, {currency: unit, style: "currency"}).formatToParts();
             // Check whether it goes before or after the value
-            if (index == 0 && parts[0].type === "currency") {
+            if (index === 0 && parts[0].type === "currency") {
                 if (valueStr) {
                     valueStr = parts[0].value + valueStr;
                 } else {
@@ -629,18 +629,23 @@ export function getMetaValueFormat(metaItem: NameValueHolder<any> | undefined, d
  * If no value is found in translation files then the standard resolution is used by looking at the nameValueHolder and/or
  * the provided descriptor(s); the resolution order is:
  * {@link NameValueHolder}, {@link ValueDescriptorHolder}, {@link ValueDescriptor}, the first value encountered will be
- * returned.
+ * returned; with the exception of {@link ValueFormat} which are merged in reverse priority order.
  */
 function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | WellknownMetaItems.UNITS | WellknownMetaItems.CONSTRAINTS, nameValueHolder: NameValueHolder<any> | string | undefined, descriptor: AbstractNameValueDescriptorHolder | string | undefined, assetType: string | undefined, isAttribute: boolean): T | undefined {
 
-    let matched: T | undefined = undefined;
-
+    let matched: T | undefined;
+    const formats: ValueFormat[] = [];
+    
     const name = nameValueHolder && typeof nameValueHolder === "string" ? nameValueHolder : nameValueHolder ? (nameValueHolder as NameHolder).name : descriptor ? typeof (descriptor) === "string" ? descriptor : descriptor.name : undefined;
     const str = doStandardTranslationLookup(lookup, name, descriptor, assetType, isAttribute);
     if (str) {
         matched = JSON.parse(str) as T;
         if (matched) {
-            return matched;
+            if (lookup === WellknownMetaItems.FORMAT) {
+                formats.push(matched);
+            } else {
+                return matched;
+            }
         }
     }
 
@@ -649,15 +654,43 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
         matched = getMetaValue(WellknownMetaItems.FORMAT, nameValueHolder as Attribute<any>, descriptor) as T;
 
         if (matched) {
+            if (lookup === WellknownMetaItems.FORMAT) {
+                formats.push(matched);
+            } else {
+                return matched;
+            }
+        }
+    }
+
+    if (descriptor && typeof(descriptor) !== "string" && (descriptor as any).hasOwnProperty(lookup)) {
+        matched = (descriptor as any)[lookup] as T;
+        if (lookup === WellknownMetaItems.FORMAT) {
+            formats.push(matched);
+        } else {
             return matched;
         }
     }
 
-    if (descriptor && (descriptor as any).hasOwnProperty(lookup)) {
-        matched = (descriptor as any)[lookup] as T;
+    if (descriptor && (descriptor as AbstractNameValueDescriptorHolder).type) {
+        const valueDescriptor = AssetModelUtil.getValueDescriptor((descriptor as AbstractNameValueDescriptorHolder).type);
+        matched = (valueDescriptor as any)[lookup] as T;
+        if (lookup === WellknownMetaItems.FORMAT) {
+            formats.push(matched);
+        } else {
+            return matched;
+        }
     }
 
-    return matched;
+    if (lookup !== WellknownMetaItems.FORMAT || formats.length === 0) {
+        return matched;
+    }
+    
+    let mergedFormat: ValueFormat = {};
+    formats.reverse().forEach((format) => {
+        mergedFormat = {...mergedFormat,...format};
+    })
+    
+    return mergedFormat as T;
 }
 
 /**

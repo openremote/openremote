@@ -731,13 +731,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         if(!this.panelName) return
 
         let config:OrChartConfig;
-        if(configStr) {
+        if (configStr) {
             config = JSON.parse(configStr);
         } else {
             config = {
                 views: {
                     [viewSelector]: {
-                        [name] : {
+                        [this.panelName] : {
 
                         }
                     }

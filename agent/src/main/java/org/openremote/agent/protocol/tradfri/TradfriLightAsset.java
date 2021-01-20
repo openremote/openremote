@@ -58,7 +58,7 @@ public class TradfriLightAsset extends LightAsset implements TradfriAsset {
         EventHandler<LightChangeColourTemperatureEvent> lightColorTemperatureEventHandler = new EventHandler<LightChangeColourTemperatureEvent>() {
             @Override
             public void handle(LightChangeColourTemperatureEvent event) {
-                attributeEventConsumer.accept(new AttributeEvent(getId(), TEMPERATURE.getName(), light.getColourTemperature()));
+                attributeEventConsumer.accept(new AttributeEvent(getId(), COLOUR_TEMPERATURE.getName(), light.getColourTemperature()));
             }
         };
 
@@ -81,7 +81,7 @@ public class TradfriLightAsset extends LightAsset implements TradfriAsset {
 
         getAttributes().get(COLOUR_RGB).ifPresent(attribute -> attribute.setValue(light.getColourRGB()));
 
-        getAttributes().get(TEMPERATURE).ifPresent(attribute -> attribute.setValue(light.getColourTemperature()));
+        getAttributes().get(COLOUR_TEMPERATURE).ifPresent(attribute -> attribute.setValue(light.getColourTemperature()));
     }
 
     public static Integer convertBrightness(Integer value, boolean toPercentage) {

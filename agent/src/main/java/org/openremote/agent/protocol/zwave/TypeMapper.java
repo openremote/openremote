@@ -211,7 +211,7 @@ public class TypeMapper {
         typeMap.put(ChannelType.COLOR_PURPLE, new TypeInfo(ValueType.INT_BYTE));
         typeMap.put(ChannelType.COLOR_INDEXED, new TypeInfo(ValueType.NUMBER));
         typeMap.put(ChannelType.COLOR_RGB, new TypeInfo(ValueType.COLOUR_RGB));
-        typeMap.put(ChannelType.COLOR_ARGB, new TypeInfo(ValueType.COLOUR_RGBA));
+        typeMap.put(ChannelType.COLOR_ARGB, new TypeInfo(ValueType.COLOUR_RGB));
 
         // COMMAND_CLASS_SENSOR_ALARM
 

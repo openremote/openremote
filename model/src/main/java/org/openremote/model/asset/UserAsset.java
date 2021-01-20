@@ -50,11 +50,7 @@ import java.util.Date;
  * A restricted client can not create or delete assets. A restricted client can not change the name, parent, or
  * realm of an asset. A restricted user can not make an asset public. A restricted user can change the location of an asset.
  * </li>
- * </ul>
- * <p>
- * Note that third-party metadata items (not in the {@link org.openremote.model.Constants#NAMESPACE}) are never
- * included by default in restricted read/write asset operations. To include them, provide meta item descriptors and
- * desired access permissions through the {@link AssetModelProvider} SPI.
+ * </ul>.
  */
 @Entity
 @Table(name = "USER_ASSET")

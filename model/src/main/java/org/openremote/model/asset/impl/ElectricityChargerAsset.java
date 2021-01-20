@@ -22,10 +22,7 @@ package org.openremote.model.asset.impl;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueFormat;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import javax.persistence.Entity;
 import java.util.Optional;
@@ -35,15 +32,29 @@ import static org.openremote.model.Constants.*;
 @Entity
 public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
 
+    public enum ConnectorType {
+        YAZAKI,
+        MENNEKES,
+        LE_GRAND,
+        CHADEMO,
+        COMBO,
+        SCHUKO
+    }
+
+    public static final ValueDescriptor<ConnectorType> CONNECTOR_TYPE_VALUE = new ValueDescriptor<>("chargerType", ConnectorType.class);
+
     public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<String> CHARGER_TYPE = new AttributeDescriptor<>("chargerType", ValueType.TEXT);
+    public static final AttributeDescriptor<ConnectorType> CHARGER_TYPE = new AttributeDescriptor<>("chargerType", CONNECTOR_TYPE_VALUE);
     public static final AttributeDescriptor<Double> POWER_CAPACITY = new AttributeDescriptor<>("powerCapacity", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_0_DP());
     public static final AttributeDescriptor<Double> POWER_CONSUMPTION = new AttributeDescriptor<>("powerConsumption", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_0_DP());
+    ).withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
+    public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.POSITIVE_NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.NUMBER)
         .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withFormat(ValueFormat.NUMBER_2_DP());
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.NUMBER)
@@ -74,12 +85,12 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return (T)this;
     }
 
-    public Optional<String> getChargerType() {
+    public Optional<ConnectorType> getChargerType() {
         return getAttributes().getValue(CHARGER_TYPE);
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends ElectricityChargerAsset> T setChargerType(String value) {
+    public <T extends ElectricityChargerAsset> T setChargerType(ConnectorType value) {
         getAttributes().getOrCreate(CHARGER_TYPE).setValue(value);
         return (T)this;
     }
@@ -101,6 +112,16 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
     @SuppressWarnings("unchecked")
     public <T extends ElectricityChargerAsset> T setPowerConsumption(Double value) {
         getAttributes().getOrCreate(POWER_CONSUMPTION).setValue(value);
+        return (T)this;
+    }
+
+    public Optional<Double> getPowerSetpoint() {
+        return getAttributes().getValue(POWER_SETPOINT);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ElectricityChargerAsset> T setPowerSetpoint(Double value) {
+        getAttributes().getOrCreate(POWER_SETPOINT).setValue(value);
         return (T)this;
     }
 

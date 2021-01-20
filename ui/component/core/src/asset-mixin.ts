@@ -7,6 +7,7 @@ import { Util } from ".";
 declare type Constructor<T = {}> = new (...args: any[]) => T;
 
 interface CustomElement {
+    requestUpdate(name?: PropertyKey, oldValue?: unknown): void;
     connectedCallback?(): void;
     disconnectedCallback?(): void;
     readonly isConnected: boolean;
@@ -151,9 +152,10 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
 
             this._assetIds = assetIds;
             this._refreshEventSubscriptions();
+            this.requestUpdate("assetIds");
         }
 
-        public get assetIds() {
+        public get assetIds(): string[] | undefined {
             return this._assetIds;
         }
 

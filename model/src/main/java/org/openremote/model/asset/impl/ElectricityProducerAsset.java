@@ -37,7 +37,7 @@ public class ElectricityProducerAsset extends Asset<ElectricityProducerAsset> {
         EAST_WEST
     }
 
-    public static final ValueDescriptor<PanelOrientation> PANEL_ORIENTATION_VALUE = new ValueDescriptor<>("Panel orientation", PanelOrientation.class);
+    public static final ValueDescriptor<PanelOrientation> PANEL_ORIENTATION_VALUE = new ValueDescriptor<>("panelOrientation", PanelOrientation.class);
 
     public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
         new MetaItem<>(MetaItemType.READ_ONLY)
@@ -66,7 +66,7 @@ public class ElectricityProducerAsset extends Asset<ElectricityProducerAsset> {
     public static final AttributeDescriptor<Double> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_NUMBER
     ).withUnits(UNITS_DEGREE);
 
-    public static final AssetDescriptor<ElectricityProducerAsset> DESCRIPTOR = new AssetDescriptor<>("ev-station", "8A293D", ElectricityProducerAsset.class);
+    public static final AssetDescriptor<ElectricityProducerAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "8A293D", ElectricityProducerAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
