@@ -233,18 +233,12 @@ include:
     - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf openremote/ profile/ deployment/ deploy.sh .docker/config.json"
   after_script:
     - *ssh_config
-    - SSH "docker logs ${PROJECT_NAME}_proxy_1 &> proxy_${CI_ENVIRONMENT_SLUG}.log"
-    - SSH "docker logs ${PROJECT_NAME}_manager_1 &> manager_${CI_ENVIRONMENT_SLUG}.log"
-    - SSH "docker logs ${PROJECT_NAME}_keycloak_1 &> keycloak_${CI_ENVIRONMENT_SLUG}.log"
-    - SSH "docker logs ${PROJECT_NAME}_postgresql_1 &> postgresql_${CI_ENVIRONMENT_SLUG}.log"
-    - SCP ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/*.log .
-    - SSH "rm ~/*.log"
+    - SSH "docker-compose -p ${PROJECT_NAME} -f profile/${CI_ENVIRONMENT_SLUG}.yml logs > ${CI_ENVIRONMENT_SLUG}.log"
+    - SCP ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/${CI_ENVIRONMENT_SLUG}.log .
+    - SSH "rm ~/${CI_ENVIRONMENT_SLUG}.log"
   artifacts:
     paths:
-      - proxy_${CI_ENVIRONMENT_SLUG}.log
-      - manager_${CI_ENVIRONMENT_SLUG}.log
-      - keycloak_${CI_ENVIRONMENT_SLUG}.log
-      - postgresql_${CI_ENVIRONMENT_SLUG}.log
+      - ${CI_ENVIRONMENT_SLUG}.log
     expire_in: 1 week
 
 deploy staging:
