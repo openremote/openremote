@@ -201,19 +201,14 @@ build-keycloak-postgresql-proxy:
     - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi; rm -rf proxy/ manager/ postgresql/ keycloak/ profile/ deployment/ deploy.sh .docker/config.json"
   after_script:
     - *ssh_config
-    - SSH "docker logs ${PROJECT_NAME}_proxy_1 &> proxy_${CI_ENVIRONMENT_SLUG}.log"
-    - SSH "docker logs ${PROJECT_NAME}_manager_1 &> manager_${CI_ENVIRONMENT_SLUG}.log"
-    - SSH "docker logs ${PROJECT_NAME}_keycloak_1 &> keycloak_${CI_ENVIRONMENT_SLUG}.log"
-    - SSH "docker logs ${PROJECT_NAME}_postgresql_1 &> postgresql_${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker-compose -p ${PROJECT_NAME} -f profile/demo-openremote.yml logs > demo-openremote.log"
     - SCP ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/*.log .
     - SSH "rm ~/*.log"
   artifacts:
+    when: on_failure
     paths:
-      - proxy_${CI_ENVIRONMENT_SLUG}.log
-      - manager_${CI_ENVIRONMENT_SLUG}.log
-      - keycloak_${CI_ENVIRONMENT_SLUG}.log
-      - postgresql_${CI_ENVIRONMENT_SLUG}.log
-    expire_in: 1 week
+      - demo-openremote.log
+    expire_in: 4 weeks
   retry:
     max: 2
 
