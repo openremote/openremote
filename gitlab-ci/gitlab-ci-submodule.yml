@@ -237,9 +237,10 @@ include:
     - SCP ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/${CI_ENVIRONMENT_SLUG}.log .
     - SSH "rm ~/${CI_ENVIRONMENT_SLUG}.log"
   artifacts:
+    when: on_failure
     paths:
       - ${CI_ENVIRONMENT_SLUG}.log
-    expire_in: 1 week
+    expire_in: 4 weeks
 
 deploy staging:
   stage: deploy
