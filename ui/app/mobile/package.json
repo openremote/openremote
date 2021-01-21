@@ -31,7 +31,7 @@
     "css-loader": "^5.0.1",
     "fast-async": "^6.3.8",
     "file-loader": "^6.2.0",
-    "html-webpack-plugin": "^4.5.1",
+    "html-webpack-plugin": "^5.0.0-beta.6",
     "raw-loader": "^4.0.2",
     "shx": "^0.3.2",
     "source-map-loader": "^2.0.0",

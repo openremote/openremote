@@ -3,7 +3,7 @@ import {Console} from "./console";
 import rest from "@openremote/rest";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
-import i18next from "i18next";
+import i18next, { InitOptions } from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
 import moment from "moment";
 import {
@@ -126,7 +126,7 @@ export interface ManagerConfig {
     mapType?: MapType;
     loadTranslations?: string[];
     translationsLoadPath?: string;
-    configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
+    configureTranslationsOptions?: (i18next: InitOptions) => void;
     basicLoginProvider?: (username: string | undefined, password: string | undefined) => PromiseLike<BasicLoginResult>;
 }
 
@@ -727,7 +727,7 @@ export class Manager implements EventProviderFactory {
 
         // Look for language preference in local storage
         const language = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
-        const initOptions: i18next.InitOptions = {
+        const initOptions: InitOptions = {
             lng: language,
             fallbackLng: "en",
             defaultNS: "app",

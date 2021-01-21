@@ -1,5 +1,5 @@
 import {translate} from "./translate-mixin";
-import i18next from "i18next";
+import i18next, {InitOptions, TOptions } from "i18next";
 import {LitElement, customElement, property, html, css} from "lit-element";
 
 export {i18next};
@@ -23,7 +23,7 @@ export class OrTranslate extends translate(i18next)(LitElement) {
     public value?: string;
 
     @property({type: Object})
-    public options?: i18next.TOptions<i18next.InitOptions>;
+    public options?: TOptions<InitOptions>;
 
     protected render() {
         return html`

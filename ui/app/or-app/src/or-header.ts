@@ -13,6 +13,7 @@ import "@openremote/or-icon";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {Tenant} from "@openremote/model";
 import {router} from "./index";
+import {ResolveOptions} from "navigo";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -469,7 +470,7 @@ class OrHeader extends LitElement {
         if (headerItem.action) {
             headerItem.action();
         } else if (headerItem.href) {
-            router.navigate(headerItem.href, !!headerItem.absolute);
+            router.navigate(headerItem.href, {resolveOptions: });
         }
     }
 

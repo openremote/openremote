@@ -31,7 +31,7 @@ import {
     WellknownMetaItems
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
-import i18next from "i18next";
+import i18next, {TOptions, InitOptions} from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
 import {GenericAxiosResponse} from "axios";
@@ -942,7 +942,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         </span>
                     `: ``}
                     <div id="right-wrapper">
-                        ${this.asset!.createdOn ? html`<or-translate id="created-time" class="mobileHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as i18next.TOptions<i18next.InitOptions>}"></or-translate>` : ``}
+                        ${this.asset!.createdOn ? html`<or-translate id="created-time" class="mobileHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``}
                         ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._onSaveClicked()}"></or-input>` : ``}
                     </div>
                 </div>

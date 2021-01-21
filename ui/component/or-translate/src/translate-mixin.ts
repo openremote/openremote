@@ -1,5 +1,5 @@
 import {PropertyValues} from "lit-element";
-import i18n from "i18next";
+import { InitOptions, i18n } from "i18next";
 
 declare type Constructor<T> = new (...args: any[]) => T;
 
@@ -10,7 +10,7 @@ interface CustomElement {
 }
 
 // TODO: Can't currently export declaration files with explicit LitElement type (see https://github.com/Microsoft/TypeScript/issues/17293)
-export const translate = (i18next: i18n.i18n) => <T extends Constructor<CustomElement>>(base: T) =>
+export const translate = (i18next: i18n) => <T extends Constructor<CustomElement>>(base: T) =>
         class extends base {
 
             _i18nextJustInitialized = false;
@@ -46,7 +46,7 @@ export const translate = (i18next: i18n.i18n) => <T extends Constructor<CustomEl
                 return super.shouldUpdate && super.shouldUpdate(changedProps);
             }
 
-            public initCallback = (options: i18n.InitOptions) => {
+            public initCallback = (options: InitOptions) => {
                 this._i18nextJustInitialized = true;
                 // @ts-ignore
                 if (this.requestUpdate) {
