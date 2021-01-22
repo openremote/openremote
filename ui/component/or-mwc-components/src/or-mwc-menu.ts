@@ -13,9 +13,12 @@ import {styleMap} from "lit-html/directives/style-map";
 import {MDCMenu} from "@material/menu";
 import { DefaultColor8, DefaultColor4 } from "@openremote/core";
 
-const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
-const menuSurfaceStyle = require("!!raw-loader!@material/menu-surface/dist/mdc.menu-surface.css");
-const menuStyle = require("!!raw-loader!@material/menu/dist/mdc.menu.css");
+// @ts-ignore
+import listStyle from "@material/list/dist/mdc.list.css";
+// @ts-ignore
+import menuSurfaceStyle from "@material/menu-surface/dist/mdc.menu-surface.css";
+// @ts-ignore
+const menuStyle = require("@material/menu/dist/mdc.menu.css");
 
 export interface MenuItem {
     icon?: string;

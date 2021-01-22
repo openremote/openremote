@@ -1,5 +1,4 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
-import L, {LatLng, LatLngBounds} from "mapbox.js";
 import {Asset, Attribute, GeoJSONPoint, ValueHolder, WellknownAttributes} from "@openremote/model";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
@@ -73,7 +72,7 @@ export function getLngLatBounds(lngLatBoundsLike?: LngLatBoundsLike): LngLatBoun
     }
 }
 
-export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): LatLngBounds | undefined {
+export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBounds | undefined {
     const lngLatBounds = getLngLatBounds(lngLatBoundsLike);
     if (lngLatBounds) {
         return L.latLngBounds(lngLatBounds.getNorthEast()!, lngLatBounds.getSouthWest()!);

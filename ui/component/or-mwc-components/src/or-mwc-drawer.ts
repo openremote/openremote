@@ -2,7 +2,7 @@ import { css, customElement, html, LitElement, property, TemplateResult, unsafeC
 import { MDCDrawer } from "@material/drawer";
 import { classMap } from "lit-html/directives/class-map";
 
-const drawerStyle = require("!!raw-loader!@material/drawer/dist/mdc.drawer.css");
+const drawerStyle = require("@material/drawer/dist/mdc.drawer.css");
 
 export class OrMwcDrawerChangedEvent extends CustomEvent<boolean> {
 

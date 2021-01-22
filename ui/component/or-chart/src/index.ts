@@ -79,8 +79,8 @@ export interface OrChartConfig {
     }};
 }
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
-const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
+const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
+const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 // language=CSS
 const style = css`

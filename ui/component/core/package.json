@@ -5,9 +5,6 @@
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "exports": {
-    "./": "./dist/"
-  },
   "scripts": {
     "generate": "node mdi-iconset-generator.js",
     "test": "echo \"No tests\" && exit 0",

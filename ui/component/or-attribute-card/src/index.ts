@@ -22,8 +22,6 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-
 
 export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue";
 
-const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
-
 // language=CSS
 const style = css`
     
@@ -232,7 +230,6 @@ export class OrAttributeCard extends LitElement {
 
     static get styles() {
         return [
-            css`${unsafeCSS(dialogStyle)}`,
             style
         ];
     }

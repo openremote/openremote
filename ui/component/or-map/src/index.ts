@@ -15,7 +15,7 @@ import { i18next } from "@openremote/or-translate";
 export {Util, LngLatLike};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
-export {Control, IControl, Map as MapGL} from "mapbox-gl";
+export {Control, IControl} from "mapbox-gl";
 export * from "./or-map-asset-card";
 
 export interface ViewSettings {

@@ -5,7 +5,7 @@ import {MDCDataTable} from "@material/data-table";
 
 import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
 
-const dataTableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
+const dataTableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 interface TableOptions {
     columnFilter?: string[];

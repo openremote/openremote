@@ -738,7 +738,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
 }
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
+const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 @customElement("or-asset-viewer")
 export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {

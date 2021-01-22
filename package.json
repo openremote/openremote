@@ -1,10 +1,10 @@
 {
   "private": true,
   "workspaces": [
+    "ui/util",
     "ui/app/*",
     "ui/component/*",
-    "ui/demo/*",
-    "client/src/main/webapp"
+    "ui/demo/*"
   ],
   "devDependencies": {
     "lerna": "^3.18.1"

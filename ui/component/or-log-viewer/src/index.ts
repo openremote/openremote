@@ -25,7 +25,7 @@ import { GenericAxiosResponse } from "axios";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const linkParser = require("parse-link-header");
-const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
+const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export interface ViewerConfig {
     allowedCategories?: Model.SyslogCategory[];

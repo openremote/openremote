@@ -21,8 +21,10 @@
     "@openremote/or-translate": "^1.0.3",
     "@openremote/rest": "^1.0.3",
     "@polymer/polymer": "^3.3.1",
+    "@types/mapbox": "^1.6.41",
+    "@types/mapbox-gl": "^2.0.2",
     "lit-element": "^2.4.0",
-    "mapbox-gl": "2.0.1",
+    "mapbox-gl": "^1.13.0",
     "mapbox.js": "^3.2.0"
   },
   "devDependencies": {

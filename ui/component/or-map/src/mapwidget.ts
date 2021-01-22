@@ -1,19 +1,16 @@
-// tslint:disable-next-line:no-reference
-///<reference path="../@types/mapbox.js/index.d.ts" />
 import manager, {MapType} from "@openremote/core";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent,
     NavigationControl,
     Control,
     IControl} from "mapbox-gl";
-import L, {Map as MapJS, MapOptions as OptionsJS, Marker as MarkerJS} from "mapbox.js";
 import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat} from "./util";
-const mapboxJsStyles = require("!!raw-loader!mapbox.js/dist/mapbox.css");
-const mapboxGlStyles = require("!!raw-loader!mapbox-gl/dist/mapbox-gl.css");
+const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
+const mapboxGlStyles = require("mapbox-gl/dist/mapbox-gl.css");
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
@@ -21,13 +18,13 @@ const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
 
 
 export class MapWidget {
-    protected _mapJs?: MapJS;
+    protected _mapJs?: L.mapbox.Map;
     protected _mapGl?: MapGL;
     protected _type: MapType;
     protected _styleParent: Node;
     protected _mapContainer: HTMLElement;
     protected _loaded: boolean = false;
-    protected _markersJs: Map<OrMapMarker, MarkerJS> = new Map();
+    protected _markersJs: Map<OrMapMarker, L.Marker> = new Map();
     protected _markersGl: Map<OrMapMarker, MarkerGL> = new Map();
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLatLike;
@@ -185,7 +182,7 @@ export class MapWidget {
             this._styleParent.appendChild(style);
             const settings = await this.loadViewSettings();
 
-            let options: OptionsJS | undefined;
+            let options: L.mapbox.MapOptions | undefined;
             if (this._viewSettings) {
                 options = {};
 
@@ -200,10 +197,12 @@ export class MapWidget {
                     options.maxBounds = getLatLngBounds(this._viewSettings.bounds);
                 }
                 if (this._viewSettings.center) {
-                    options.center = getLngLat(this._viewSettings.center);
+                    const lngLat = getLngLat(this._viewSettings.center);
+                    options.center = lngLat ? L.latLng(lngLat.lat, lngLat.lng) : undefined;
                 }
                 if (this._center) {
-                    options.center = getLngLat(this._center);
+                    const lngLat = getLngLat(this._center);
+                    options.center = lngLat ? L.latLng(lngLat.lat, lngLat.lng) : undefined;
                 }
                 if (this._zoom) {
                     options.zoom = this._zoom + 1;
@@ -219,7 +218,7 @@ export class MapWidget {
             if (options && options.maxBounds) {
                 const minZoom = this._mapJs.getBoundsZoom(options.maxBounds, true);
                 if (!options.minZoom || options.minZoom < minZoom) {
-                    this._mapJs.setMinZoom(minZoom);
+                    (this._mapJs as any).setMinZoom(minZoom);
                 }
             }
         } else {
@@ -347,7 +346,7 @@ export class MapWidget {
     protected _updateMarkerPosition(marker: OrMapMarker) {
         switch (this._type) {
             case MapType.RASTER:
-                const m: MarkerJS | undefined = this._markersJs.get(marker);
+                const m: L.Marker | undefined = this._markersJs.get(marker);
                 if (m) {
                     m.setLatLng([marker.lat!, marker.lng!]);
                 }
@@ -370,7 +369,7 @@ export class MapWidget {
                 if (m) {
                     this._removeMarkerClickHandler(marker, marker.markerContainer as HTMLElement);
                     marker._actualMarkerElement = undefined;
-                    m.removeFrom(this._mapJs!);
+                    (m as any).removeFrom(this._mapJs!);
                     this._markersJs.delete(marker);
                 }
 
@@ -380,7 +379,7 @@ export class MapWidget {
                         const icon = L.divIcon({html: elem.outerHTML, className: "or-marker-raster"});
                         m = L.marker([marker.lat!, marker.lng!], {icon: icon, clickable: marker.interactive});
                         m.addTo(this._mapJs!);
-                        marker._actualMarkerElement = m.getElement() ? m.getElement().firstElementChild as HTMLDivElement : undefined;
+                        marker._actualMarkerElement = (m as any).getElement() ? (m as any).getElement().firstElementChild as HTMLDivElement : undefined;
                         if (marker.interactive) {
                             this._addMarkerClickHandler(marker, marker.markerContainer as HTMLElement);
                         }

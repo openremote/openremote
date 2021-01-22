@@ -17,21 +17,21 @@ import i18next from "i18next";
 import { ValueFormat, ValueFormatStyleRepresentation, AssetDescriptor, ValueDescriptorHolder, ValueDescriptor, WellknownValueTypes, MetaHolder, WellknownMetaItems, ValueHolder, NameHolder, Attribute, ValueConstraint, AttributeDescriptor, ValueConstraintSize, ValueConstraintPattern, ValueConstraintMax, ValueConstraintMin, ValueConstraintAllowedValues, ValueConstraintPastOrPresent, ValueConstraintPast, ValueConstraintFuture, ValueConstraintFutureOrPresent, ValueConstraintNotNull, ValueConstraintNotBlank, ValueConstraintNotEmpty, NameValueHolder } from "@openremote/model";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const buttonStyle = require("!!raw-loader!@material/button/dist/mdc.button.css");
-const buttonFabStyle = require("!!raw-loader!@material/fab/dist/mdc.fab.css");
-const iconButtonStyle = require("!!raw-loader!@material/icon-button/dist/mdc.icon-button.css");
-const textfieldStyle = require("!!raw-loader!@material/textfield/dist/mdc.textfield.css");
-const rippleStyle = require("!!raw-loader!@material/ripple/dist/mdc.ripple.css");
-const lineRippleStyle = require("!!raw-loader!@material/line-ripple/dist/mdc.line-ripple.css");
-const floatingLabelStyle = require("!!raw-loader!@material/floating-label/dist/mdc.floating-label.css");
-const formFieldStyle = require("!!raw-loader!@material/form-field/dist/mdc.form-field.css");
-const checkboxStyle = require("!!raw-loader!@material/checkbox/dist/mdc.checkbox.css");
-const switchStyle = require("!!raw-loader!@material/switch/dist/mdc.switch.css");
-const selectStyle = require("!!raw-loader!@material/select/dist/mdc.select.css");
-const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
-const menuSurfaceStyle = require("!!raw-loader!@material/menu-surface/dist/mdc.menu-surface.css");
-const menuStyle = require("!!raw-loader!@material/menu/dist/mdc.menu.css");
-const sliderStyle = require("!!raw-loader!@material/slider/dist/mdc.slider.css");
+const buttonStyle = require("@material/button/dist/mdc.button.css");
+const buttonFabStyle = require("@material/fab/dist/mdc.fab.css");
+const iconButtonStyle = require("@material/icon-button/dist/mdc.icon-button.css");
+const textfieldStyle = require("@material/textfield/dist/mdc.textfield.css");
+const rippleStyle = require("@material/ripple/dist/mdc.ripple.css");
+const lineRippleStyle = require("@material/line-ripple/dist/mdc.line-ripple.css");
+const floatingLabelStyle = require("@material/floating-label/dist/mdc.floating-label.css");
+const formFieldStyle = require("@material/form-field/dist/mdc.form-field.css");
+const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
+const switchStyle = require("@material/switch/dist/mdc.switch.css");
+const selectStyle = require("@material/select/dist/mdc.select.css");
+const listStyle = require("@material/list/dist/mdc.list.css");
+const menuSurfaceStyle = require("@material/menu-surface/dist/mdc.menu-surface.css");
+const menuStyle = require("@material/menu/dist/mdc.menu.css");
+const sliderStyle = require("@material/slider/dist/mdc.slider.css");
 
 export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
 

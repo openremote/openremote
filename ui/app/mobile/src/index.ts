@@ -55,7 +55,7 @@ const onboardingConfig:OnboardingConfig  = {
 }
 
 const splashConfig:SplashConfig  = {
-    redirect: "#!onboarding/",
+    redirect: "#onboarding/",
     interval: 3000,
     logoMobile: require("../images/logo-mobile.svg")
 }

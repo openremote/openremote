@@ -1,4 +1,4 @@
-const util = require("../webpack.util");
+const util = require("@openremote/util");
 
 bundles = {
     "index.orbundle": undefined

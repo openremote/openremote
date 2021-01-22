@@ -6,8 +6,8 @@ import {InputType} from "@openremote/or-input";
 import { i18next } from "@openremote/or-translate";
 import { Util } from "@openremote/core";
 
-const dialogStyle = require("!!raw-loader!@material/dialog/dist/mdc.dialog.css");
-const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
+const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
+const listStyle = require("@material/list/dist/mdc.list.css");
 
 export interface DialogConfig {
     title?: TemplateResult | string;

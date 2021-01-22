@@ -71,7 +71,7 @@ export function headerItemGatewayConnection<S extends AppStateKeyed, A extends A
     return {
         icon: "cloud",
         value: "gateway",
-        href: "#!gateway",
+        href: "#gateway",
         text: "gatewayConnection",
         roles: ["write:admin", "read:admin"]
     };
@@ -296,8 +296,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     if (provider.routes) {
                         provider.routes.forEach((route) => {
                             router.on(
-                                route, (params, query) => {
-                                    this._store.dispatch(updatePage({page: pageName, params: params}));
+                                route, ({ data, params, queryString }) => {
+                                    this._store.dispatch(updatePage({page: pageName, params: data}));
                                 }
                             )
                         });
@@ -305,10 +305,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 });
 
                 if (this.appConfig.pages.default) {
-                    router.on("*", (params, query) => {
+                    router.on(() => {
                         this._store.dispatch(updatePage("default"));
-                    })
+                    });
                 }
+
+                // router.notFound(() => {
+                //     this._store.dispatch(updatePage("default"));
+                // })
                
                 router.resolve();
             } else {

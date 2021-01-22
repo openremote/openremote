@@ -19,7 +19,7 @@ import { OrIcon } from "@openremote/or-icon";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 
-const tableStyle = require("!!raw-loader!@material/data-table/dist/mdc.data-table.css");
+const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageUsersProvider<S extends AppStateKeyed>(
   store: EnhancedStore<S>

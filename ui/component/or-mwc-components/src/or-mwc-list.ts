@@ -14,8 +14,8 @@ import {ifDefined} from "lit-html/directives/if-defined";
 import {MDCList, MDCListActionEvent} from "@material/list";
 import { DefaultColor8, DefaultColor4, Util } from "@openremote/core";
 import i18next from "i18next";
-const listStyle = require("!!raw-loader!@material/list/dist/mdc.list.css");
-const checkboxStyle = require("!!raw-loader!@material/checkbox/dist/mdc.checkbox.css");
+const listStyle = require("@material/list/dist/mdc.list.css");
+const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
 
 export interface ListItem {
     icon?: string;

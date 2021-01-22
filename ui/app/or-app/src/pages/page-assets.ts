@@ -25,6 +25,7 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause} from "@openremote/model";
+import { NavigateOptions } from "navigo";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -241,15 +242,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     }
 
     protected _updateRoute(silent: boolean = true) {
-        if (silent) {
-            router.pause();
-        }
         const assetId = this._assetIds && this._assetIds.length === 1 ? this._assetIds[0] : undefined;
-        router.navigate(getAssetsRoute(this._editMode, assetId));
-        if (silent) {
-            window.setTimeout(() => {
-                router.resume();
-            }, 0);
-        }
+        router.navigate(getAssetsRoute(this._editMode, assetId), silent ? {callHandler: false} : undefined);
     }
 }

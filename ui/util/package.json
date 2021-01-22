@@ -1,0 +1,33 @@
+{
+  "name": "@openremote/util",
+  "version": "1.0.4",
+  "description": "Build Util",
+  "private": true,
+  "author": "OpenRemote",
+  "main": "webpack.util.js",
+  "bin": {
+    "orutil": "./cli.js"
+  },
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/plugin-syntax-object-rest-spread": "^7.8.3",
+    "@babel/plugin-transform-regenerator": "^7.0.0",
+    "@babel/plugin-transform-runtime": "^7.8.3",
+    "@babel/preset-env": "^7.8.3",
+    "@babel/runtime": "^7.8.3",
+    "babel-loader": "^8.0.4",
+    "copy-webpack-plugin": "^7.0.0",
+    "cross-env": "^7.0.3",
+    "css-loader": "^5.0.1",
+    "fast-async": "^6.3.8",
+    "html-webpack-plugin": "^5.0.0-beta.6",
+    "shx": "^0.3.3",
+    "source-map-loader": "^2.0.0",
+    "style-loader": "^2.0.0",
+    "webpack": "^5.16.0",
+    "webpack-cli": "^4.4.0",
+    "webpack-dev-server": "^3.11.2"
+  }
+}

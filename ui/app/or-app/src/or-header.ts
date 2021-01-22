@@ -13,7 +13,6 @@ import "@openremote/or-icon";
 import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 import {Tenant} from "@openremote/model";
 import {router} from "./index";
-import {ResolveOptions} from "navigo";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -63,6 +62,10 @@ function hasRequiredRole(option: HeaderItem): boolean {
     }
 
     return Object.entries(option.roles).some(([client, roles]) => roles.some((r) => manager.hasRole(r, client)));
+}
+
+function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
+    return window.location.hash && window.location.hash.length > 2 ? window.location.hash.substr(2).split("/")[0] : defaultRef;
 }
 
 @customElement("or-header")
@@ -331,7 +334,7 @@ class OrHeader extends LitElement {
     private _drawerOpened = false;
 
     @property({ type: String })
-    private activeMenu: string | undefined = window.location.hash ? window.location.hash.split("/")[0].substr(2) : "map";
+    private activeMenu: string | undefined = getCurrentMenuItemRef();
 
     public connectedCallback(): void {
         super.connectedCallback();
@@ -344,8 +347,8 @@ class OrHeader extends LitElement {
     }
 
     public _onHashChanged(e: Event) {
-        const menu = window.location.hash.split("/")[0];
-        this.activeMenu = menu.substr(2);
+        const menu = getCurrentMenuItemRef(this.config.mainMenu?.length > 0 ? this.config.mainMenu[0].href : undefined);
+        this.activeMenu = menu;
     }
 
     public _onRealmSelect(realm: string) {
@@ -470,7 +473,11 @@ class OrHeader extends LitElement {
         if (headerItem.action) {
             headerItem.action();
         } else if (headerItem.href) {
-            router.navigate(headerItem.href, {resolveOptions: });
+            if (headerItem.absolute) {
+                window.location.href = headerItem.href!;
+            } else {
+                router.navigate(headerItem.href);
+            }
         }
     }
 
