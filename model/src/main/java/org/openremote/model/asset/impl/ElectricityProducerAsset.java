@@ -32,13 +32,6 @@ import static org.openremote.model.Constants.*;
 @Entity
 public class ElectricityProducerAsset extends Asset<ElectricityProducerAsset> {
 
-    public enum PanelOrientation {
-        SOUTH,
-        EAST_WEST
-    }
-
-    public static final ValueDescriptor<PanelOrientation> PANEL_ORIENTATION_VALUE = new ValueDescriptor<>("panelOrientation", PanelOrientation.class);
-
     public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
@@ -55,18 +48,8 @@ public class ElectricityProducerAsset extends Asset<ElectricityProducerAsset> {
     public static final AttributeDescriptor<Double> ENERGY_TOTAL = new AttributeDescriptor<>("energyTotal", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> INSTALLED_CAPACITY = new AttributeDescriptor<>("installedCapacity", ValueType.POSITIVE_NUMBER
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
 
-    public static final AttributeDescriptor<PanelOrientation> PANEL_ORIENTATION = new AttributeDescriptor<>("panelOrientation", PANEL_ORIENTATION_VALUE);
-
-    public static final AttributeDescriptor<Double> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth", ValueType.POSITIVE_NUMBER
-    ).withUnits(UNITS_DEGREE);
-
-    public static final AttributeDescriptor<Double> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_NUMBER
-    ).withUnits(UNITS_DEGREE);
-
-    public static final AssetDescriptor<ElectricityProducerAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "8A293D", ElectricityProducerAsset.class);
+    public static final AssetDescriptor<ElectricityProducerAsset> DESCRIPTOR = new AssetDescriptor<>("flash", "EABB4D", ElectricityProducerAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
@@ -83,101 +66,53 @@ public class ElectricityProducerAsset extends Asset<ElectricityProducerAsset> {
         return getAttributes().getValue(STATUS);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setStatus(String value) {
+    public ElectricityProducerAsset setStatus(String value) {
         getAttributes().getOrCreate(STATUS).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Double> getPowerTotal() {
         return getAttributes().getValue(POWER_TOTAL);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setPowerTotal(Double value) {
+    public ElectricityProducerAsset setPowerTotal(Double value) {
         getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Double> getPowerForecastDeviation() {
         return getAttributes().getValue(POWER_FORECAST_DEVIATION);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setPowerForecastDeviation(Double value) {
+    public ElectricityProducerAsset setPowerForecastDeviation(Double value) {
         getAttributes().getOrCreate(POWER_FORECAST_DEVIATION).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Double> getPowerCapacity() {
         return getAttributes().getValue(POWER_CAPACITY);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setPowerCapacity(Double value) {
+    public ElectricityProducerAsset setPowerCapacity(Double value) {
         getAttributes().getOrCreate(POWER_CAPACITY).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getEfficiency() {
         return getAttributes().getValue(EFFICIENCY);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setEfficiency(Integer value) {
+    public ElectricityProducerAsset setEfficiency(Integer value) {
         getAttributes().getOrCreate(EFFICIENCY).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Double> getEnergyTotal() {
         return getAttributes().getValue(ENERGY_TOTAL);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setEnergyTotal(Double value) {
+    public ElectricityProducerAsset setEnergyTotal(Double value) {
         getAttributes().getOrCreate(ENERGY_TOTAL).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getInstalledCapacity() {
-        return getAttributes().getValue(INSTALLED_CAPACITY);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setInstalledCapacity(Double value) {
-        getAttributes().getOrCreate(INSTALLED_CAPACITY).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<PanelOrientation> getPanelOrientation() {
-        return getAttributes().getValue(PANEL_ORIENTATION);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setPanelOrientation(PanelOrientation value) {
-        getAttributes().getOrCreate(PANEL_ORIENTATION).setValue(value);
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public Optional<Double> getPanelAzimuth() {
-        return getAttributes().getValue(PANEL_AZIMUTH);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setPanelAzimuth(Double value) {
-        getAttributes().getOrCreate(PANEL_AZIMUTH).setValue(value);
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public Optional<Double> getPanelPitch() {
-        return getAttributes().getValue(PANEL_PITCH);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityProducerAsset> T setPanelPitch(Double value) {
-        getAttributes().getOrCreate(PANEL_PITCH).setValue(value);
-        return (T)this;
+        return this;
     }
 }

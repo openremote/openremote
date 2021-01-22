@@ -38,17 +38,18 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
     public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<Double> LEVELISED_COST_OF_STORAGE = new AttributeDescriptor<>("levelisedCostOfStorage", ValueType.POSITIVE_NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Double> LEVELISED_COST_OF_STORAGE = new AttributeDescriptor<>("levelisedCostOfStorage", ValueType.POSITIVE_NUMBER)
+        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> ENERGY_AVAILABLE_PERCENTAGE = new AttributeDescriptor<>("energyAvailablePercentage", ValueType.POSITIVE_INTEGER)
+    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
-
-    public static final AttributeDescriptor<Double> ENERGY_AVAILABLE = new AttributeDescriptor<>("energyAvailable", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_CAPACITY_REMAINING = new AttributeDescriptor<>("energyCapacityRemaining", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_MAX_PERCENTAGE = new AttributeDescriptor<>("energyLevelMaxPercentage", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_MIN_PERCENTAGE = new AttributeDescriptor<>("energyLevelMinPercentage", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Double> ENERGY_LEVEL = new AttributeDescriptor<>("energyLevel", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Double> ENERGY_TOTAL_IMPORT = new AttributeDescriptor<>("energyTotalImport", ValueType.POSITIVE_NUMBER,
@@ -58,7 +59,7 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Double> POWER_CAPACITY_IMPORT = new AttributeDescriptor<>("powerCapacityImport", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+        .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_CAPACITY_EXPORT = new AttributeDescriptor<>("powerCapacityExport", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("powerTotal", ValueType.POSITIVE_NUMBER,
@@ -99,16 +100,20 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
         return getAttributes().getValue(ENERGY_CAPACITY);
     }
 
-    public Optional<Integer> getEnergyAvailablePercentage() {
-        return getAttributes().getValue(ENERGY_AVAILABLE_PERCENTAGE);
+    public Optional<Integer> getEnergyLevelPercentage() {
+        return getAttributes().getValue(ENERGY_LEVEL_PERCENTAGE);
     }
 
-    public Optional<Double> getEnergyAvailable() {
-        return getAttributes().getValue(ENERGY_AVAILABLE);
+    public Optional<Double> getEnergyLevel() {
+        return getAttributes().getValue(ENERGY_LEVEL);
     }
 
-    public Optional<Double> getEnergyCapacityRemaining() {
-        return getAttributes().getValue(ENERGY_CAPACITY_REMAINING);
+    public Optional<Integer> getEnergyLevelMinPercentage() {
+        return getAttributes().getValue(ENERGY_LEVEL_MIN_PERCENTAGE);
+    }
+
+    public Optional<Integer> getEnergyLevelMaxPercentage() {
+        return getAttributes().getValue(ENERGY_LEVEL_MAX_PERCENTAGE);
     }
 
     public Optional<Double> getEnergyTotalImport() {

@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import static org.openremote.model.Constants.*;
 
+@SuppressWarnings("unchecked")
 @Entity
 public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
 
@@ -47,9 +48,11 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
     public static final AttributeDescriptor<ConnectorType> CHARGER_TYPE = new AttributeDescriptor<>("chargerType", CONNECTOR_TYPE_VALUE);
-    public static final AttributeDescriptor<Double> POWER_CAPACITY = new AttributeDescriptor<>("powerCapacity", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> POWER_CAPACITY_IMPORT = new AttributeDescriptor<>("powerCapacityImport", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_0_DP());
-    public static final AttributeDescriptor<Double> POWER_CONSUMPTION = new AttributeDescriptor<>("powerConsumption", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> POWER_CAPACITY_EXPORT = new AttributeDescriptor<>("powerCapacityExport", ValueType.POSITIVE_NUMBER)
+        .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_0_DP());
+    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("powerTotal", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
     public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.POSITIVE_NUMBER,
@@ -79,7 +82,7 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return getAttributes().getValue(STATUS);
     }
 
-    @SuppressWarnings("unchecked")
+    
     public <T extends ElectricityChargerAsset> T setStatus(String value) {
         getAttributes().getOrCreate(STATUS).setValue(value);
         return (T)this;
@@ -89,29 +92,37 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return getAttributes().getValue(CHARGER_TYPE);
     }
 
-    @SuppressWarnings("unchecked")
+    
     public <T extends ElectricityChargerAsset> T setChargerType(ConnectorType value) {
         getAttributes().getOrCreate(CHARGER_TYPE).setValue(value);
         return (T)this;
     }
 
-    public Optional<Double> getPowerCapacity() {
-        return getAttributes().getValue(POWER_CAPACITY);
+    public Optional<Double> getPowerCapacityImport() {
+        return getAttributes().getValue(POWER_CAPACITY_IMPORT);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityChargerAsset> T setPowerCapacity(Double value) {
-        getAttributes().getOrCreate(POWER_CAPACITY).setValue(value);
+    
+    public <T extends ElectricityChargerAsset> T setPowerCapacityImport(Double value) {
+        getAttributes().getOrCreate(POWER_CAPACITY_IMPORT).setValue(value);
+        return (T)this;
+    }
+    
+    public Optional<Double> getPowerCapacityExport() {
+        return getAttributes().getValue(POWER_CAPACITY_EXPORT);
+    }
+
+    public <T extends ElectricityChargerAsset> T setPowerCapacityExport(Double value) {
+        getAttributes().getOrCreate(POWER_CAPACITY_EXPORT).setValue(value);
         return (T)this;
     }
 
-    public Optional<Double> getPowerConsumption() {
-        return getAttributes().getValue(POWER_CONSUMPTION);
+    public Optional<Double> getPowerTotal() {
+        return getAttributes().getValue(POWER_TOTAL);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ElectricityChargerAsset> T setPowerConsumption(Double value) {
-        getAttributes().getOrCreate(POWER_CONSUMPTION).setValue(value);
+    public <T extends ElectricityChargerAsset> T setPowerTotal(Double value) {
+        getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
         return (T)this;
     }
 
@@ -119,7 +130,6 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return getAttributes().getValue(POWER_SETPOINT);
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends ElectricityChargerAsset> T setPowerSetpoint(Double value) {
         getAttributes().getOrCreate(POWER_SETPOINT).setValue(value);
         return (T)this;
@@ -129,7 +139,6 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return getAttributes().getValue(TARIFF_IMPORT);
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends ElectricityChargerAsset> T setTariffImport(Double value) {
         getAttributes().getOrCreate(TARIFF_IMPORT).setValue(value);
         return (T)this;
@@ -139,7 +148,6 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return getAttributes().getValue(TARIFF_EXPORT);
     }
 
-    @SuppressWarnings("unchecked")
     public <T extends ElectricityChargerAsset> T setTariffExport(Double value) {
         getAttributes().getOrCreate(TARIFF_EXPORT).setValue(value);
         return (T)this;
@@ -148,8 +156,7 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
     public Optional<Double> getTariffStart() {
         return getAttributes().getValue(TARIFF_START);
     }
-
-    @SuppressWarnings("unchecked")
+    
     public <T extends ElectricityChargerAsset> T setTariffStart(Double value) {
         getAttributes().getOrCreate(TARIFF_START).setValue(value);
         return (T)this;
