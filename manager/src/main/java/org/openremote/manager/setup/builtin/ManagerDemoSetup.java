@@ -414,8 +414,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production3Asset = assetStorageService.merge(production3Asset);
 
         ElectricityChargerAsset charger1Asset = createDemoElectricityChargerAsset("Charger 1 Markthal", building3Asset, new GeoJSONPoint(4.486143, 51.920058));
-        charger1Asset.setPowerTotal(0d);
-        charger1Asset.getAttribute(ElectricityConsumerAsset.TARIFF_IMPORT).ifPresent(attr -> attr.setValue(0.15));
+        charger1Asset.setPower(0d);
         charger1Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL).addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -456,7 +455,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         charger1Asset = assetStorageService.merge(charger1Asset);
 
         ElectricityChargerAsset charger2Asset = createDemoElectricityChargerAsset("Charger 2 Markthal", building3Asset, new GeoJSONPoint(4.486188, 51.919957));
-        charger2Asset.setPowerTotal(0d);
+        charger2Asset.setPower(0d);
         charger2Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL)
             .addMeta(
                     new MetaItem<>(
@@ -498,7 +497,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         charger2Asset = assetStorageService.merge(charger2Asset);
 
         ElectricityChargerAsset charger3Asset = createDemoElectricityChargerAsset("Charger 3 Markthal", building3Asset, new GeoJSONPoint(4.486232, 51.919856));
-        charger3Asset.setPowerTotal(0d);
+        charger3Asset.setPower(0d);
         charger3Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL)
             .addMeta(
                     new MetaItem<>(
@@ -540,7 +539,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         charger3Asset = assetStorageService.merge(charger3Asset);
 
         ElectricityChargerAsset charger4Asset = createDemoElectricityChargerAsset("Charger 4 Markthal", building3Asset, new GeoJSONPoint(4.486286, 51.919733));
-        charger4Asset.setPowerTotal(0d);
+        charger4Asset.setPower(0d);
         charger4Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL)
             .addMeta(
                     new MetaItem<>(

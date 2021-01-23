@@ -19,11 +19,17 @@
  */
 package org.openremote.model.asset.impl;
 
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
+import java.util.Collection;
+import java.util.Date;
 import java.util.Optional;
 
 @Entity
@@ -51,5 +57,107 @@ public class BuildingAsset extends CityAsset {
 
     public Optional<String> getPostalCode() {
         return getAttributes().getValue(POSTAL_CODE);
+    }
+
+    @Override
+    public BuildingAsset setId(String id) {
+        super.setId(id);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setName(String name) throws IllegalArgumentException {
+        super.setName(name);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setAccessPublicRead(boolean accessPublicRead) {
+        super.setAccessPublicRead(accessPublicRead);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setParent(Asset<?> parent) {
+        super.setParent(parent);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setParentId(String parentId) {
+        super.setParentId(parentId);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setRealm(String realm) {
+        super.setRealm(realm);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setAttributes(AttributeMap attributes) {
+        super.setAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public Asset<?> setAttributes(Attribute<?>... attributes) {
+        super.setAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setAttributes(Collection<Attribute<?>> attributes) {
+        super.setAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setLocation(GeoJSONPoint location) {
+        super.setLocation(location);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setTags(String[] tags) {
+        super.setTags(tags);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setEmail(String email) {
+        super.setEmail(email);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setNotes(String notes) {
+        super.setNotes(notes);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setModel(String model) {
+        super.setModel(model);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset addAttributes(Attribute<?>... attributes) {
+        super.addAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset addOrReplaceAttributes(Attribute<?>... attributes) {
+        super.addOrReplaceAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public BuildingAsset setManufacturer(String manufacturer) {
+        super.setManufacturer(manufacturer);
+        return this;
     }
 }

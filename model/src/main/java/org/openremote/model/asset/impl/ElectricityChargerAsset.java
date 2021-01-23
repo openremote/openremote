@@ -47,23 +47,18 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
     public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<ConnectorType> CHARGER_TYPE = new AttributeDescriptor<>("chargerType", CONNECTOR_TYPE_VALUE);
+    public static final AttributeDescriptor<ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>("connectorType", CONNECTOR_TYPE_VALUE);
     public static final AttributeDescriptor<Double> POWER_CAPACITY_IMPORT = new AttributeDescriptor<>("powerCapacityImport", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_0_DP());
     public static final AttributeDescriptor<Double> POWER_CAPACITY_EXPORT = new AttributeDescriptor<>("powerCapacityExport", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_0_DP());
-    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("powerTotal", ValueType.NUMBER,
+    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("power", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
     public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
-    public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withFormat(ValueFormat.NUMBER_2_DP());
-    public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withFormat(ValueFormat.NUMBER_2_DP());
-    public static final AttributeDescriptor<Double> TARIFF_START = new AttributeDescriptor<>("tariffStart", ValueType.NUMBER)
-        .withUnits("EUR").withFormat(ValueFormat.NUMBER_2_DP());
+
 
     public static final AssetDescriptor<ElectricityChargerAsset> DESCRIPTOR = new AssetDescriptor<>("ev-station", "8A293D", ElectricityChargerAsset.class);
 
@@ -88,13 +83,13 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return (T)this;
     }
 
-    public Optional<ConnectorType> getChargerType() {
-        return getAttributes().getValue(CHARGER_TYPE);
+    public Optional<ConnectorType> getConnectorType() {
+        return getAttributes().getValue(CONNECTOR_TYPE);
     }
 
     
-    public <T extends ElectricityChargerAsset> T setChargerType(ConnectorType value) {
-        getAttributes().getOrCreate(CHARGER_TYPE).setValue(value);
+    public <T extends ElectricityChargerAsset> T setConnectorType(ConnectorType value) {
+        getAttributes().getOrCreate(CONNECTOR_TYPE).setValue(value);
         return (T)this;
     }
 
@@ -117,11 +112,11 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
         return (T)this;
     }
 
-    public Optional<Double> getPowerTotal() {
+    public Optional<Double> getPower() {
         return getAttributes().getValue(POWER_TOTAL);
     }
 
-    public <T extends ElectricityChargerAsset> T setPowerTotal(Double value) {
+    public <T extends ElectricityChargerAsset> T setPower(Double value) {
         getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
         return (T)this;
     }
@@ -132,33 +127,6 @@ public class ElectricityChargerAsset extends Asset<ElectricityChargerAsset> {
 
     public <T extends ElectricityChargerAsset> T setPowerSetpoint(Double value) {
         getAttributes().getOrCreate(POWER_SETPOINT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getTariffImport() {
-        return getAttributes().getValue(TARIFF_IMPORT);
-    }
-
-    public <T extends ElectricityChargerAsset> T setTariffImport(Double value) {
-        getAttributes().getOrCreate(TARIFF_IMPORT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getTariffExport() {
-        return getAttributes().getValue(TARIFF_EXPORT);
-    }
-
-    public <T extends ElectricityChargerAsset> T setTariffExport(Double value) {
-        getAttributes().getOrCreate(TARIFF_EXPORT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getTariffStart() {
-        return getAttributes().getValue(TARIFF_START);
-    }
-    
-    public <T extends ElectricityChargerAsset> T setTariffStart(Double value) {
-        getAttributes().getOrCreate(TARIFF_START).setValue(value);
         return (T)this;
     }
 }

@@ -45,14 +45,15 @@ public class ElectricitySupplierAsset extends Asset<ElectricitySupplierAsset> {
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Integer> POWER_EDR_MIN_PERIOD = new AttributeDescriptor<>("powerEDRMinPeriod", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_SECOND);
-    public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("energyTariffImport", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.POSITIVE_NUMBER)
         .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("energyTariffExport", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.POSITIVE_NUMBER)
         .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_TARIFF_IMPORT_FORECAST_DEVIATION = new AttributeDescriptor<>("energyTariffImportForecastDeviation", ValueType.POSITIVE_NUMBER,
+
+    public static final AttributeDescriptor<Double> ENERGY_TARIFF_IMPORT_FORECAST_DEVIATION = new AttributeDescriptor<>("tariffImportForecastDeviation", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<Double> ENERGY_TARIFF_EXPORT_FORECAST_DEVIATION = new AttributeDescriptor<>("energyTariffExportForecastDeviation", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> ENERGY_TARIFF_EXPORT_FORECAST_DEVIATION = new AttributeDescriptor<>("tariffExportForecastDeviation", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
     public static final AttributeDescriptor<Double> ENERGY_TAX = new AttributeDescriptor<>("energyTax", ValueType.POSITIVE_NUMBER)
@@ -65,7 +66,7 @@ public class ElectricitySupplierAsset extends Asset<ElectricitySupplierAsset> {
         .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("powerTotal", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("power", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY, true)
     ).withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_FORECAST_DEVIATION = new AttributeDescriptor<>("powerForecastDeviation", ValueType.NUMBER,
@@ -85,6 +86,10 @@ public class ElectricitySupplierAsset extends Asset<ElectricitySupplierAsset> {
     ).withUnits("EUR");
     public static final AttributeDescriptor<Integer> CARBON_TOTAL = new AttributeDescriptor<>("carbonTotal", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY, true)
+    ).withUnits(UNITS_KILO, UNITS_GRAM);
+    public static final AttributeDescriptor<Double> FINANCIAL_WALLET = new AttributeDescriptor<>("financialWallet", ValueType.POSITIVE_NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Integer> CARBON_WALLET = new AttributeDescriptor<>("carbonWallet", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_GRAM);
 
     public static final AssetDescriptor<ElectricitySupplierAsset> DESCRIPTOR = new AssetDescriptor<>("upload-network", "9257A9", ElectricitySupplierAsset.class);
@@ -156,7 +161,7 @@ public class ElectricitySupplierAsset extends Asset<ElectricitySupplierAsset> {
         return getAttributes().getValue(CARBON_EXPORT);
     }
 
-    public Optional<Double> getPowerTotal() {
+    public Optional<Double> getPower() {
         return getAttributes().getValue(POWER_TOTAL);
     }
 

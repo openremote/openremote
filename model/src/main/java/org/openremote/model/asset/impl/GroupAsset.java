@@ -36,7 +36,6 @@ import java.util.Optional;
 public class GroupAsset extends Asset<GroupAsset> {
 
     public static final AttributeDescriptor<String> CHILD_ASSET_TYPE = new AttributeDescriptor<>("childAssetType", ValueType.TEXT);
-    public static final String t = GroupAsset.class.getSimpleName();
     public static final AssetDescriptor<GroupAsset> DESCRIPTOR = new AssetDescriptor<>("folder", "B3B3B3", GroupAsset.class);
 
     /**

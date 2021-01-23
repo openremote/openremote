@@ -26,7 +26,7 @@
 					},
 					"value": {
 						"assetId": "6DW7WWYVtOybr7W1BWREc3",
-						"attributeName": "powerTotal"
+						"attributeName": "power"
 					}
 				}
 			],
@@ -60,7 +60,7 @@
 					},
 					"value": {
 						"assetId": "3Mj9yiC6bcH4MoIYDY2T35",
-						"attributeName": "powerTotal"
+						"attributeName": "power"
 					}
 				}
 			],

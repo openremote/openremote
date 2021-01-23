@@ -19,12 +19,17 @@
  */
 package org.openremote.model.asset.impl;
 
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
+import java.util.Collection;
 import java.util.Optional;
 
 import static org.openremote.model.Constants.UNITS_DEGREE;
@@ -63,7 +68,7 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
         return this;
     }
 
-    public ElectricityProducerSolarAsset setPowerTotal(Double value) {
+    public ElectricityProducerSolarAsset setPower(Double value) {
         getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
         return this;
     }
@@ -112,6 +117,108 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
 
     public ElectricityProducerSolarAsset setPanelPitch(Double value) {
         getAttributes().getOrCreate(PANEL_PITCH).setValue(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setId(String id) {
+        super.setId(id);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setName(String name) throws IllegalArgumentException {
+        super.setName(name);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setAccessPublicRead(boolean accessPublicRead) {
+        super.setAccessPublicRead(accessPublicRead);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setParent(Asset<?> parent) {
+        super.setParent(parent);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setParentId(String parentId) {
+        super.setParentId(parentId);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setRealm(String realm) {
+        super.setRealm(realm);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setAttributes(AttributeMap attributes) {
+        super.setAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public Asset<?> setAttributes(Attribute<?>... attributes) {
+        super.setAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setAttributes(Collection<Attribute<?>> attributes) {
+        super.setAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset addAttributes(Attribute<?>... attributes) {
+        super.addAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset addOrReplaceAttributes(Attribute<?>... attributes) {
+        super.addOrReplaceAttributes(attributes);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setLocation(GeoJSONPoint location) {
+        super.setLocation(location);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setTags(String[] tags) {
+        super.setTags(tags);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEmail(String email) {
+        super.setEmail(email);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setNotes(String notes) {
+        super.setNotes(notes);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setManufacturer(String manufacturer) {
+        super.setManufacturer(manufacturer);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setModel(String model) {
+        super.setModel(model);
         return this;
     }
 }

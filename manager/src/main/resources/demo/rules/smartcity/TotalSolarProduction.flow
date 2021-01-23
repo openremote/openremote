@@ -42,7 +42,7 @@
 					},
 					"value": {
 						"assetId": "6DW7WWYVtOybr7W1BWREc3",
-						"attributeName": "powerTotal"
+						"attributeName": "power"
 					}
 				}
 			],
@@ -76,7 +76,7 @@
 					},
 					"value": {
 						"assetId": "4Fnz8pxxdtDobuDGWYwRNp",
-						"attributeName": "powerTotal"
+						"attributeName": "power"
 					}
 				}
 			],
@@ -110,7 +110,7 @@
 					},
 					"value": {
 						"assetId": "2RIt5xuSj1BSyaRhwU3z3I",
-						"attributeName": "powerTotal"
+						"attributeName": "power"
 					}
 				}
 			],
@@ -144,7 +144,7 @@
 					},
 					"value": {
 						"assetId": "5xgMdcrVWORYWpUKuP2Mo0",
-						"attributeName": "powerTotal"
+						"attributeName": "power"
 					}
 				}
 			],

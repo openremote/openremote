@@ -62,18 +62,14 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_CAPACITY_EXPORT = new AttributeDescriptor<>("powerCapacityExport", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("powerTotal", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("power", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Integer> CHARGE_CYCLES = new AttributeDescriptor<>("chargeCycles", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<Double> FINANCIAL_WALLET = new AttributeDescriptor<>("financialWallet", ValueType.POSITIVE_NUMBER).withUnits("EUR");
-    public static final AttributeDescriptor<Integer> CARBON_WALLET = new AttributeDescriptor<>("carbonWallet", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
 
     public static final AssetDescriptor<ElectricityStorageAsset> DESCRIPTOR = new AssetDescriptor<>("battery-charging", "1B7C89", ElectricityStorageAsset.class);
 
@@ -132,7 +128,7 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
         return getAttributes().getValue(POWER_CAPACITY_EXPORT);
     }
 
-    public Optional<Double> getPowerTotal() {
+    public Optional<Double> getPower() {
         return getAttributes().getValue(POWER_TOTAL);
     }
 
@@ -142,13 +138,5 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
 
     public Optional<Integer> getChargeCycles() {
         return getAttributes().getValue(CHARGE_CYCLES);
-    }
-
-    public Optional<Double> getFinancialWallet() {
-        return getAttributes().getValue(FINANCIAL_WALLET);
-    }
-
-    public Optional<Integer> getCarbonWallet() {
-        return getAttributes().getValue(CARBON_WALLET);
     }
 }

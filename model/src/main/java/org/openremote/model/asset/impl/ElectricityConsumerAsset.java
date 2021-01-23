@@ -36,33 +36,10 @@ import static org.openremote.model.Constants.*;
 @Entity
 public class ElectricityConsumerAsset extends Asset<ElectricityConsumerAsset> {
 
-    public enum DemandResponseType {
-        NONE,
-        FORECAST,
-        SETPOINT
-    }
-
-    public static final ValueDescriptor<DemandResponseType> DEMAND_RESPONSE_TYPE_VALUE = new ValueDescriptor<>("demandResponseType", DemandResponseType.class);
-
     public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<DemandResponseType> DEMAND_RESPONSE_TYPE = new AttributeDescriptor<>("demandResponseType", DEMAND_RESPONSE_TYPE_VALUE);
-    public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> CARBON_IMPORT = new AttributeDescriptor<>("carbonTariffImport", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> CARBON_EXPORT = new AttributeDescriptor<>("carbonTariffExport", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("powerTotal", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_FORECAST_DEVIATION = new AttributeDescriptor<>("powerForecastDeviation", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER,
+    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("power", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_AVAILABLE_MAX = new AttributeDescriptor<>("powerAvailableMax", ValueType.POSITIVE_NUMBER,
@@ -97,75 +74,12 @@ public class ElectricityConsumerAsset extends Asset<ElectricityConsumerAsset> {
         return (T)this;
     }
 
-    public Optional<DemandResponseType> getDemandResponseType() {
-        return getAttributes().getValue(DEMAND_RESPONSE_TYPE);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setDemandResponseType(DemandResponseType value) {
-        getAttributes().getOrCreate(DEMAND_RESPONSE_TYPE).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getTariffImport() {
-        return getAttributes().getValue(TARIFF_IMPORT);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setTariffImport(Double value) {
-        getAttributes().getOrCreate(TARIFF_IMPORT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getTariffExport() {
-        return getAttributes().getValue(TARIFF_EXPORT);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setTariffExport(Double value) {
-        getAttributes().getOrCreate(TARIFF_EXPORT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Integer> getCarbonImport() {
-        return getAttributes().getValue(CARBON_IMPORT);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setCarbonImport(Integer value) {
-        getAttributes().getOrCreate(CARBON_IMPORT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Integer> getCarbonExport() {
-        return getAttributes().getValue(CARBON_EXPORT);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setCarbonExport(Integer value) {
-        getAttributes().getOrCreate(CARBON_EXPORT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getPowerTotal() {
+    public Optional<Double> getPower() {
         return getAttributes().getValue(POWER_TOTAL);
     }
 
-    public <T extends ElectricityConsumerAsset> T setPowerTotal(Double value) {
+    public <T extends ElectricityConsumerAsset> T setPower(Double value) {
         getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getPowerForecastDeviation() {
-        return getAttributes().getValue(POWER_FORECAST_DEVIATION);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setPowerForecastDeviation(Double value) {
-        getAttributes().getOrCreate(POWER_FORECAST_DEVIATION).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getPowerSetpoint() {
-        return getAttributes().getValue(POWER_SETPOINT);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setPowerSetpoint(Double value) {
-        getAttributes().getOrCreate(POWER_SETPOINT).setValue(value);
         return (T)this;
     }
 

@@ -39,7 +39,7 @@ public class ElectricityProducerAsset extends Asset<ElectricityProducerAsset> {
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Integer> EFFICIENCY = new AttributeDescriptor<>("efficiency", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
-    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("powerTotal", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("power", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_FORECAST_DEVIATION = new AttributeDescriptor<>("powerForecastDeviation", ValueType.NUMBER,
@@ -71,11 +71,11 @@ public class ElectricityProducerAsset extends Asset<ElectricityProducerAsset> {
         return this;
     }
 
-    public Optional<Double> getPowerTotal() {
+    public Optional<Double> getPower() {
         return getAttributes().getValue(POWER_TOTAL);
     }
 
-    public ElectricityProducerAsset setPowerTotal(Double value) {
+    public ElectricityProducerAsset setPower(Double value) {
         getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
         return this;
     }
