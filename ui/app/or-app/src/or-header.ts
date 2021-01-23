@@ -65,7 +65,8 @@ function hasRequiredRole(option: HeaderItem): boolean {
 }
 
 function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
-    return window.location.hash && window.location.hash.length > 2 ? window.location.hash.substr(2).split("/")[0] : defaultRef;
+ 	const menu = window.location.hash.split("/")[0].substr(2);
+	return menu || defaultRef;
 }
 
 @customElement("or-header")
@@ -473,11 +474,7 @@ class OrHeader extends LitElement {
         if (headerItem.action) {
             headerItem.action();
         } else if (headerItem.href) {
-            if (headerItem.absolute) {
-                window.location.href = headerItem.href!;
-            } else {
-                router.navigate(headerItem.href);
-            }
+            router.navigate(headerItem.href, !!headerItem.absolute);
         }
     }
 

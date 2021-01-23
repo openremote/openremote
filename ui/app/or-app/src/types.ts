@@ -8,14 +8,7 @@ import {ThunkMiddleware} from "redux-thunk";
 import Navigo from "navigo";
 
 // Configure routing
-export const router = new Navigo("/", {hash: true, noMatchWarning: false}).hooks(
-    {
-        before(done, match) {
-            // do something
-            done();
-        }
-    }
-);
+export const router = new Navigo(null, true, "#!");
 
 export interface DefaultAppConfig {
     appTitle: string;
