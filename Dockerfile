@@ -1,5 +1,5 @@
 FROM debian:stretch-slim
-MAINTAINER support@openremote.io
+LABEL mantainer=support@openremote.io
 
 # Install utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
