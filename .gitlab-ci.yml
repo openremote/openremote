@@ -63,6 +63,9 @@ build-enviroment:
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
       when: never
+    - changes:
+        - Dockerfile
+    - when: manual
 
 build-deployment-manager-swarm:
   stage: build
