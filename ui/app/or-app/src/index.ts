@@ -312,7 +312,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                
                 router.resolve();
             } else {
-                showErrorDialog(manager.isError ? "managerError." + manager.error : "");cross
+                showErrorDialog(manager.isError ? "managerError." + manager.error : "");
             }
         });
     }
