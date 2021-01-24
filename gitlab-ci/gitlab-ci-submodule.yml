@@ -73,6 +73,11 @@ stages:
     - docker push "$CI_REGISTRY_IMAGE/postgresql:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
     - docker push "$CI_REGISTRY_IMAGE/keycloak:$CI_ENVIRONMENT_SLUG-$CI_COMMIT_TAG"
     - fi
+  artifacts:
+    when: on_failure
+    paths:
+      - "/root/.npm/_logs/*"
+    expire_in: 4 weeks
 
 .notify_whatsapp: &notify_whatsapp
   image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest

@@ -71,6 +71,11 @@ build-enviroment:
       when: never
     - changes:
         - Dockerfile
+  artifacts:
+    when: on_failure
+    paths:
+      - "/root/.npm/_logs/*"
+    expire_in: 4 weeks
 
 build-deployment-manager-swarm:
   stage: build
@@ -97,6 +102,11 @@ build-deployment-manager-swarm:
       when: manual
   retry:
     max: 2
+  artifacts:
+    when: on_failure
+    paths:
+      - "/root/.npm/_logs/*"
+    expire_in: 4 weeks
 
 build-keycloak-postgresql-proxy:
   stage: build
@@ -123,6 +133,11 @@ build-keycloak-postgresql-proxy:
     - when: manual
   retry:
     max: 2
+  artifacts:
+    when: on_failure
+    paths:
+      - "/root/.npm/_logs/*"
+    expire_in: 4 weeks
 
 .email_template: &notify_email
   image: docker:latest
