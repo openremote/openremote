@@ -71,11 +71,6 @@ build-enviroment:
       when: never
     - changes:
         - Dockerfile
-  artifacts:
-    when: on_failure
-    paths:
-      - "/root/.npm/_logs/*"
-    expire_in: 4 weeks
 
 build-deployment-manager-swarm:
   stage: build
@@ -91,7 +86,7 @@ build-deployment-manager-swarm:
   script:
     - docker buildx ls
     - docker context ls
-    - docker run -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker run -v $(pwd):/or -v $(pwd)/logs:/root/.npm/_logs "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew --console plain clean installDist"
     # Build multi-arch images
     - docker buildx build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
@@ -105,7 +100,7 @@ build-deployment-manager-swarm:
   artifacts:
     when: on_failure
     paths:
-      - "/root/.npm/_logs/*"
+      - "logs/*"
     expire_in: 4 weeks
 
 build-keycloak-postgresql-proxy:
@@ -133,11 +128,6 @@ build-keycloak-postgresql-proxy:
     - when: manual
   retry:
     max: 2
-  artifacts:
-    when: on_failure
-    paths:
-      - "/root/.npm/_logs/*"
-    expire_in: 4 weeks
 
 .email_template: &notify_email
   image: docker:latest

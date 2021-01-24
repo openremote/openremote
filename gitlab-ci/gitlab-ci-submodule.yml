@@ -42,7 +42,7 @@ stages:
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - docker run -v $(pwd):/or registry.gitlab.com/openremote/openremote:master
+    - docker run -v $(pwd):/or -v $(pwd)/logs:/root/.npm/_logs registry.gitlab.com/openremote/openremote:master
       /bin/sh -c "./gradlew --console plain clean installDist"
     - docker run -v $(pwd):/or
       -v /var/run/docker.sock:/var/run/docker.sock
@@ -76,7 +76,7 @@ stages:
   artifacts:
     when: on_failure
     paths:
-      - "/root/.npm/_logs/*"
+      - "logs/*"
     expire_in: 4 weeks
 
 .notify_whatsapp: &notify_whatsapp
