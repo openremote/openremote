@@ -235,7 +235,7 @@ include:
     - SCP ./openremote/profile/* ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/openremote/profile/
     - SCP ${FIREBASE_CONFIG_FILE} ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/FIREBASE_CONFIG_FILE
     - SSH ./deploy.sh
-    - SSH "docker system prune -f; docker images -q --filter dangling=true | xargs docker rmi"
+    - SSH "docker system prune -f"
   after_script:
     - *ssh_config
     - SSH "docker-compose -p ${PROJECT_NAME} -f profile/${CI_ENVIRONMENT_SLUG}.yml logs > ${CI_ENVIRONMENT_SLUG}.log"
