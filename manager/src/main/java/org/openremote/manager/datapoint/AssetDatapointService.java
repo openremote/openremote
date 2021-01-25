@@ -120,7 +120,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                       Attribute<?> attribute,
                                       Source source) throws AssetProcessingException {
 
-        if (attribute.getMetaValue(STORE_DATA_POINTS).orElse(false)
+        if (attribute.getMetaValue(STORE_DATA_POINTS).orElse(true)
                 && attribute.getValue().isPresent()) { // Don't store datapoints with null value
 
             // Perform upsert on datapoint (datapoint isn't immutable then really and tied to postgresql but prevents entire attribute event from failing)

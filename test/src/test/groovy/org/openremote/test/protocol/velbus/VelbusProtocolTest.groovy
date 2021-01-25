@@ -173,7 +173,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         and: "a given asset should have the correct attributes (VMBGPOD)"
         def asset = assets.find {it.asset.name == "VMBGPOD"}
         assert asset != null
-        assert asset.asset.getAttributes().size() == 304
+        assert asset.asset.getAttributes().size() == 305
         def memoTextAttribute = asset.asset.getAttributes().values().find {it.getMetaValue(AGENT_LINK).map{(it as VelbusAgent.VelbusAgentLink).deviceValueLink.orElse(null) == "MEMO_TEXT"}.orElse(false)}
         assert memoTextAttribute != null
         assert memoTextAttribute.getMetaValue(AGENT_LINK).flatMap(){(it as VelbusAgent.VelbusAgentLink).deviceAddress}.orElse(null) == 24
