@@ -219,7 +219,6 @@ export const mapAssetCardStyle = css`
                 height: var(--internal-or-map-asset-card-header-height);
                 border-top: 1px solid var(--internal-or-map-asset-card-separator-color);
                 text-align: right;
-                --or-input-color: var(--internal-or-map-asset-card-background-text-color);
                 padding: 5px 12px;
             }
             

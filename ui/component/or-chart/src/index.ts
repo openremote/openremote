@@ -712,13 +712,13 @@ export class OrChart extends translate(i18next)(LitElement) {
         this._loading = true;
 
         manager.rest.api.AssetResource.queryAssets(query).then((response) => {
+            this._loading = false;
             const assets = response.data;
             if (!view || !view.assetIds || !view.attributes || assets.length !== view.assetIds.length || assets.length !== view.attributes.length) return;
 
             this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId)!);
             this.assetAttributes = view.attributes.map((attr: string, index: number) => assets[index] && assets[index].attributes ? assets[index].attributes![attr] : undefined).filter(attr => !!attr) as Attribute<any>[];
             this.period = view.period;
-            this._loading = false;
         });
     }
 
@@ -832,7 +832,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         let attributes = Object.values(this.activeAsset.attributes);
         if (attributes && attributes.length > 0) {
             return attributes
-                .filter((attr) => !!Util.getMetaValue(attr, undefined, WellknownMetaItems.STOREDATAPOINTS))
+                .filter((attr) => !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) || !!Util.getMetaValue(attr, undefined, WellknownMetaItems.STOREDATAPOINTS))
                 .filter((attr) => (this.assetAttributes && !this.assetAttributes.some((assetAttr, index) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
                 .map((attr) => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);

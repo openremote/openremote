@@ -479,7 +479,7 @@ function getValueHolderValueAsString(nameValueHolder: NameValueHolder<any> | und
     return valueStr;
 }
 
-export function getValueAsString(value: any, formatProvider: () => ValueFormat | undefined, fallback?: string): string {
+export function getValueAsString(value: any, formatProvider: () => ValueFormat | undefined, language?: string, fallback?: string): string {
     let valueStr = "";
 
     if (value === null || typeof(value) === "undefined") {
@@ -506,7 +506,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
 
                 switch (typeof(value)) {
                     case "number":
-                        valueStr = new Intl.NumberFormat(i18next.language, format).format(value);
+                        valueStr = new Intl.NumberFormat(language || i18next.language, format).format(value);
                         break;
                     case "boolean":
                         if (format.asOnOff) {
@@ -529,7 +529,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                             const weekNo = getWeekNumber(value);
                             valueStr = format.week === ValueFormatStyleRepresentation.DIGIT_2 ? String(weekNo).padStart(2,"0") : Number(weekNo).toString(10);
                         } else {
-                            valueStr = new Intl.DateTimeFormat(i18next.language, format).format(value);
+                            valueStr = new Intl.DateTimeFormat(language || i18next.language, format).format(value);
                         }
                         break;
                 }

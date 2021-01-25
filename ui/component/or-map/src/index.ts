@@ -80,11 +80,14 @@ export class CenterControl {
         control.classList.add("mapboxgl-ctrl");
         control.classList.add("mapboxgl-ctrl-group");
         const button = document.createElement("button");
-        button.className = "mapboxgl-ctrl-icon mapboxgl-ctrl-geolocate";
+        button.className = "mapboxgl-ctrl-geolocate";
         button.addEventListener("click", (ev) => map.flyTo({
             center: this.pos,
             zoom: map.getZoom()
         }));
+        const buttonIcon = document.createElement("span");
+        buttonIcon.className = "mapboxgl-ctrl-icon";
+        button.appendChild(buttonIcon);
         control.appendChild(button);
         this.elem = control;
         return control;

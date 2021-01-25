@@ -23,7 +23,7 @@ import {
 } from "@openremote/model";
 import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-input";
-import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputTemplateFunction, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider} from "@openremote/or-input";
 import "@openremote/or-map";
 import { geoJsonPointInputTemplateProvider } from "@openremote/or-map";
 
@@ -491,7 +491,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         const options: ValueInputProviderOptions = {
-            readonly: this.readonly,
+            readonly: this.isReadonly(),
             disabled: this.disabled,
             compact: this.compact,
             label: this.getLabel()
@@ -551,7 +551,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             content = html`<or-translate .value="attributeUnsupported"></or-translate>`;
         }
 
-        content = getAttributeInputWrapper(content, value, loading, !!this.disabled, this._templateProvider.supportsHelperText ? undefined : helperText, this._templateProvider.supportsLabel ? undefined : this.getLabel(), buttonIcon, () => this._updateValue());
+        content = getAttributeInputWrapper(content, value, loading, !!this.disabled, this._templateProvider.supportsHelperText ? undefined : helperText, this._templateProvider.supportsLabel ? undefined : this.getLabel(), this._templateProvider.supportsSendButton ? buttonIcon : undefined, () => this._updateValue());
         return content;
     }
 
@@ -605,10 +605,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
     protected _onInputValueChanged(value: any) {
         this._newValue = value;
-
-        if (!this.showButton) {
-            this._updateValue();
-        }
+        this._updateValue();
     }
 
     protected _updateValue() {

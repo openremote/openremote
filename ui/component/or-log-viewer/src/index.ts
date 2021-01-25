@@ -12,7 +12,7 @@ import {
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import * as Model from "@openremote/model";
-import manager, {DefaultColor2, DefaultColor3} from "@openremote/core";
+import manager, {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-input";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
@@ -340,7 +340,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
         return categories.map((cat) => {
             return {
-                text: cat,
+                text: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))}),
                 value: cat
             } as MenuItem;
         });

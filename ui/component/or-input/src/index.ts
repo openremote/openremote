@@ -12,7 +12,7 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
-import {DefaultColor4, DefaultColor8, Util, AssetModelUtil} from "@openremote/core";
+import {DefaultColor4, DefaultColor8, Util} from "@openremote/core";
 import i18next from "i18next";
 import { ValueFormat, ValueFormatStyleRepresentation, AssetDescriptor, ValueDescriptorHolder, ValueDescriptor, WellknownValueTypes, MetaHolder, WellknownMetaItems, ValueHolder, NameHolder, Attribute, ValueConstraint, AttributeDescriptor, ValueConstraintSize, ValueConstraintPattern, ValueConstraintMax, ValueConstraintMin, ValueConstraintAllowedValues, ValueConstraintPastOrPresent, ValueConstraintPast, ValueConstraintFuture, ValueConstraintFutureOrPresent, ValueConstraintNotNull, ValueConstraintNotBlank, ValueConstraintNotEmpty, NameValueHolder } from "@openremote/model";
 
@@ -929,7 +929,7 @@ export class OrInput extends LitElement {
                 case InputType.TEXTAREA:
                 case InputType.JSON: {
                     // The following HTML input types require the values as specially formatted strings
-                    let valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? "" : this.value, this.min, this.max];
+                    let valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? undefined : this.value, this.min, this.max];
 
                     if (valMinMax.some((v) => typeof (v) !== "string")) {
 
@@ -963,7 +963,8 @@ export class OrInput extends LitElement {
                                     break;
                             }
 
-                            valMinMax = valMinMax.map((val) => Util.getValueAsString(val, () => format)) as [any,any,any];
+                            // Numbers/dates must be in english locale
+                            valMinMax = valMinMax.map((val) => val !== undefined ? Util.getValueAsString(val, () => format, "en-GB") : undefined) as [any,any,any];
                         }
                     }
 
@@ -1009,7 +1010,7 @@ export class OrInput extends LitElement {
                             <input type="${type}" id="elem" aria-labelledby="${ifDefined(label ? "label" : undefined)}"
                             class="mdc-text-field__input" ?required="${this.required}" ?readonly="${this.readonly}"
                             ?disabled="${this.disabled}" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}"
-                            step="${ifDefined(this.step)}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
+                            step="${this.step ? this.step : "any"}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
                             .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
                             @keyup="${(e: KeyboardEvent) => {

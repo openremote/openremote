@@ -1,4 +1,4 @@
-import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
 import {until} from "lit-html/directives/until";
 import manager, {
     DefaultBoxShadowBottom,
@@ -335,7 +335,7 @@ class OrHeader extends LitElement {
     private _drawerOpened = false;
 
     @property({ type: String })
-    private activeMenu: string | undefined = getCurrentMenuItemRef();
+    private activeMenu: string | undefined;
 
     public connectedCallback(): void {
         super.connectedCallback();
@@ -359,6 +359,13 @@ class OrHeader extends LitElement {
     }
     protected _hashCallback = (e: Event) => {
         this._onHashChanged(e);
+    }
+
+    protected shouldUpdate(changedProperties: PropertyValues): boolean {
+        if (changedProperties.has("config")) {
+            this.activeMenu = getCurrentMenuItemRef(this.config && this.config.mainMenu && this.config.mainMenu.length > 0 ? this.config.mainMenu[0].href : undefined);
+        }
+        return super.shouldUpdate(changedProperties);
     }
 
     protected render() {
@@ -441,7 +448,7 @@ class OrHeader extends LitElement {
             ${getContentWithMenuTemplate(
                 html`
                     <div id="realm-picker">
-                        <span>${tenants.find((t) => t.realm ===  manager.displayRealm).displayName}</span>
+                        <span>${tenants.find((t) => t.realm ===  manager.displayRealm)?.displayName}</span>
                         <or-icon icon="chevron-down"></or-icon>
                     </div>
                 `,

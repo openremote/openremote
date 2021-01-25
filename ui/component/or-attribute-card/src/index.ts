@@ -482,11 +482,11 @@ export class OrAttributeCard extends LitElement {
             elm.value = "";
         }
 
-        let attributes = Object.values(this.assetAttributes);
+        let attributes = this.assetAttributes;
 
         if (attributes && attributes.length > 0) {
             return attributes
-                .filter((attr) => !!Util.getMetaValue(attr, undefined, WellknownMetaItems.STOREDATAPOINTS))
+                .filter((attr) => !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) || !!Util.getMetaValue(attr, undefined, WellknownMetaItems.STOREDATAPOINTS))
                 .map((attr: Attribute<any>) => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr.name, attr);
                     return [attr.name!, Util.getAttributeLabel(attr, descriptors[0], this.asset!.type, false)];

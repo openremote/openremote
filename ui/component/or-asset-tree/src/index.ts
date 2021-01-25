@@ -2,7 +2,6 @@ import {customElement, html, LitElement, property, PropertyValues, TemplateResul
 import "@openremote/or-input";
 import "@openremote/or-icon";
 import {
-    AgentDescriptor,
     Asset,
     AssetDescriptor,
     AssetEvent,
@@ -10,9 +9,9 @@ import {
     AssetQuery,
     AssetsEvent,
     AssetTreeNode,
+    AssetTypeInfo,
     ClientRole,
-    SharedEvent,
-    AssetTypeInfo
+    SharedEvent
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -25,7 +24,12 @@ import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-component
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {OrMwcDialog, showDialog, showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {
+    OrMwcDialog,
+    showDialog,
+    showErrorDialog,
+    showOkCancelDialog
+} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
 
@@ -40,7 +44,7 @@ export interface AssetTreeConfig {
         types?: string[];
     };
     add?: {
-        typesProvider?: (parent: UiAssetTreeNode | undefined) => [AgentDescriptor[], AssetDescriptor[]] | undefined;
+        typesProvider?: (parent: UiAssetTreeNode | undefined) => AssetDescriptor[] | undefined;
         typesParent?: {
             default?: AssetTreeTypeConfig;
             none?: AssetTreeTypeConfig;
@@ -182,8 +186,8 @@ export const getAssetTypes = async () => {
     }
 }
 
-export function getDefaultAllowedAddAssetTypes(): [AgentDescriptor[], AssetDescriptor[]] {
-    return [AssetModelUtil.getAgentDescriptors(), AssetModelUtil.getAssetDescriptors().filter((descriptor) => descriptor.descriptorType !== "agent")];
+export function getDefaultAllowedAddAssetTypes(): AssetDescriptor[] {
+    return AssetModelUtil.getAssetDescriptors();
 }
 
 @customElement("or-asset-tree")
@@ -642,7 +646,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return this._getAllowedChildTypes(selectedNode).length > 0;
     }
 
-    protected _getAllowedChildTypes(selectedNode: UiAssetTreeNode | undefined): [AgentDescriptor[], AssetDescriptor[]] {
+    protected _getAllowedChildTypes(selectedNode: UiAssetTreeNode | undefined): AssetDescriptor[] {
         let includedAssetTypes: string[] | undefined;
         let excludedAssetTypes: string[];
 
@@ -674,15 +678,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             }
         }
 
-        const descriptors = getDefaultAllowedAddAssetTypes();
-        descriptors[0] = descriptors[0]
+        return getDefaultAllowedAddAssetTypes()
             .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
                 && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
-        descriptors[1] = descriptors[1]
-            .filter((descriptor) => (!includedAssetTypes || includedAssetTypes.some((inc) => Util.stringMatch(inc, descriptor.name!)))
-                && (!excludedAssetTypes || !excludedAssetTypes.some((exc) => Util.stringMatch(exc, descriptor.name!))));
-
-        return descriptors;
     }
 
     protected _getSortFunction(): (a: UiAssetTreeNode, b: UiAssetTreeNode) => number {
@@ -743,7 +741,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public async _addEventSubscriptions(): Promise<void> {
         if (!this.disableSubscribe) {
             // Subscribe to asset events for all assets in the realm
-            this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(null, false, (event) => this._onEvent(event))];
+            this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(null, false, undefined, (event) => this._onEvent(event))];
         }
     }
 

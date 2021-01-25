@@ -1,4 +1,4 @@
-import {css, customElement, html, LitElement, property, PropertyValues} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
 import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
 import {OrRulesRuleChangedEvent} from "./index";
 import "@openremote/or-input";
@@ -18,6 +18,9 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
     @property({type: Object})
     public ruleset?: RulesetUnion;
+
+    @query("#radial-modal")
+    protected dialog?: OrMwcDialog;
 
     @property({type: Object})
     public rrule: RRule = new RRule({
@@ -178,7 +181,9 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     }
 
     setValidityType(value: any) {
-        if(!this.ruleset || !this.ruleset.meta) return;
+        if(!this.ruleset) return;
+
+        if (!this.ruleset.meta) this.ruleset.meta = {};
 
         switch (value) {
             case "validityAlways":
@@ -215,58 +220,61 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     }
 
     renderDialogHTML() {
-        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
+
+        if (!this.ruleset) {
+            return;
+        }
+
+        if (!this.dialog) {
+            return;
+        }
+
         const options = [RRule.MO.toString(), RRule.TU.toString(), RRule.WE.toString(), RRule.TH.toString(), RRule.FR.toString(), RRule.SA.toString(), RRule.SU.toString()];
         const validityTypes = ["validityAlways", "validityPeriod", "validityRecurrence"];
-        const validityType = this.getValidityType()
+        const validityType = this.getValidityType();
         const selectedOptions = this.rrule.options && this.rrule.options.byweekday ? this.rrule.options.byweekday.map(day => new Weekday(day).toString()) : [];
-       
-        if (dialog && this.ruleset && this.ruleset.meta) {
-            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
+        const validity = this.ruleset.meta ? this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent : undefined;
 
-            dialog.dialogContent = html`
-                <div style="min-height: 200px; min-width: 635px; display:grid; flex-direction: row;">
+        this.dialog.dialogContent = html`
+            <div style="min-height: 200px; min-width: 635px; display:grid; flex-direction: row;">
+                <div class="layout horizontal">
+                    <or-input .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-input>
+                </div>
+
+                ${validity && (validityType  === "validityPeriod" || validityType  === "validityRecurrence") ? html`
+                    <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
+                    <div style="display: flex; justify-content: space-between;" class="layout horizontal">
+                        <div> 
+                            <or-input value="${moment(validity.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
+                            <or-input .disabled=${this.isAllDay()} .value="${moment(validity.start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
+                        </div>
+                        <div>
+                            <or-input .value="${moment(validity.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-input>
+                            <or-input .disabled=${this.isAllDay()} .value="${moment(validity.end).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-input>
+                        </div>
+                    </div>  
+                    
                     <div class="layout horizontal">
-                        <or-input .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-input>
+                        <or-input .value=${this.isAllDay()} @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-input>
                     </div>
-
-                    ${(validityType  === "validityPeriod" || validityType  === "validityRecurrence") ? html`
-                        <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
-                        <div style="display: flex; justify-content: space-between;" class="layout horizontal">
-                            <div> 
-                                <or-input value="${moment(validity.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
-                                <or-input .disabled=${this.isAllDay()} .value="${moment(validity.start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
-                            </div>
-                            <div>
-                                <or-input .value="${moment(validity.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-input>
-                                <or-input .disabled=${this.isAllDay()} .value="${moment(validity.end).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-input>
-                            </div>
-                        </div>  
-                        
-                        <div class="layout horizontal">
-                            <or-input .value=${this.isAllDay()} @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-input>
-                        </div>
-                    ` : ``}
-                 
-                    ${validityType  === "validityRecurrence" ? html`
-                        <label style="display:block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
-                        <div class="layout horizontal">
-                            <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
-                        </div>
-                        
-                        <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
-                        <div class="layout horizontal">                        
-                            <or-input .value="${!this.rrule.options.until}"  @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-input>
-                        </div>
-                        <div class="layout horizontal">
-                            <or-input ?disabled="${!this.rrule.options.until}" .value="${this.rrule.options.until ? moment(this.rrule.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-input>
-                        </div>
-                    ` : ``}
-                  
+                ` : ``}
+             
+                ${validityType  === "validityRecurrence" ? html`
+                    <label style="display:block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
+                    <div class="layout horizontal">
+                        <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
+                    </div>
                     
-                    
-                </div>`;
-        }
+                    <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
+                    <div class="layout horizontal">                        
+                        <or-input .value="${!this.rrule.options.until}"  @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-input>
+                    </div>
+                    <div class="layout horizontal">
+                        <or-input ?disabled="${!this.rrule.options.until}" .value="${this.rrule.options.until ? moment(this.rrule.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-input>
+                    </div>
+                ` : ``}
+                
+            </div>`;
     }
 
     protected render() {

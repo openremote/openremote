@@ -9,9 +9,9 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent
 } from "@openremote/or-map";
-import manager, {Util} from "@openremote/core";
+import manager, {OREvent, Util} from "@openremote/core";
 import {createSelector} from "reselect";
-import {Asset, AssetEvent, AssetEventCause, AttributeEvent, GeoJSONPoint, Attribute, WellknownMetaItems, WellknownAttributes} from "@openremote/model";
+import {Asset, AssetEvent, AssetEventCause, AttributeEvent, GeoJSONPoint, Attribute, WellknownMetaItems, WellknownAttributes, AssetQueryOperator, LogicGroupOperator} from "@openremote/model";
 import {getAssetsRoute} from "./page-assets";
 import {Page, router} from "../types";
 import {AppStateKeyed} from "../app";
@@ -69,6 +69,12 @@ const pageMapSlice = createSlice({
                 ]
             };
         },
+        setAssets(state, action: PayloadAction<Asset[]>) {
+            return {
+                ...state,
+                assets: action.payload
+            };
+        },
         setAssetSubscriptionId(state, action: PayloadAction<string>) {
             return {
                 ...state,
@@ -84,7 +90,7 @@ const pageMapSlice = createSlice({
     }
 });
 
-const {assetEventReceived, attributeEventReceived, setAssetSubscriptionId, setAttributeSubscriptionId} = pageMapSlice.actions;
+const {assetEventReceived, attributeEventReceived, setAssets, setAssetSubscriptionId, setAttributeSubscriptionId} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
 export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?:MapAssetCardConfig) {
@@ -166,19 +172,64 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
         try {
             const result = await manager.rest.api.AssetResource.queryAssets({
+                tenant: {
+                    realm: manager.displayRealm
+                },
                 select: {
-                    excludeAttributes: true,
+                    attributes: [WellknownAttributes.LOCATION],
                     excludeParentInfo: true,
                     excludePath: true
+                },
+                attributes: {
+                    items: [
+                        {
+                            name: {
+                                predicateType: "string",
+                                value: WellknownAttributes.LOCATION
+                            }
+                        }
+                    ],
+                    groups: [
+                        {
+                            operator: LogicGroupOperator.OR,
+                            items: [
+                                {
+                                    meta: [
+                                        {
+                                            name: {
+                                                predicateType: "string",
+                                                value: WellknownMetaItems.SHOWONDASHBOARD
+                                            },
+                                            negated: true
+                                        },
+                                        {
+                                            name: {
+                                                predicateType: "string",
+                                                value: WellknownMetaItems.SHOWONDASHBOARD
+                                            },
+                                            value: {
+                                                predicateType: "boolean",
+                                                value: true
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
             });
 
             if (result.data) {
+                const assets = result.data;
+
+                dispatch(setAssets(assets))
+
                 const ids = result.data.map(
                     asset => asset.id
                 );
 
-                const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, true, (event) => {
+                const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, false, {filterType: "asset", attributeNames: [WellknownAttributes.LOCATION]}, (event) => {
                     dispatch(assetEventReceived(event));
                 });
 
@@ -219,12 +270,9 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
     protected mapCardConfig: MapAssetCardConfig = {
         default: {
-            exclude: ["userNotes"]
+            exclude: ["notes"]
         },
         assetTypes: {
-            "urn:openremote:asset:iems:weather": {
-                exclude: ["location"]
-            }
         }
     };
 
@@ -259,13 +307,13 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
         return html`
             
-            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config ? this.config : this.mapCardConfig}" .asset="${this._currentAsset}"></or-map-asset-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config ? this.config : this.mapCardConfig}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map">
                 ${
                     this._assets.filter((asset) => {
                         const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                        const showOnMap = !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr); 
+                        const showOnMap = !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr); 
                         return showOnMap;
                     }).map((asset) => {
                         return html`
@@ -281,6 +329,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         super.connectedCallback();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
+        manager.addListener(this.onManagerEvent);
         this._store.dispatch(this.subscribeAssets());
     }
 
@@ -288,7 +337,17 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         super.disconnectedCallback();
         this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
+        manager.removeListener(this.onManagerEvent);
         this._store.dispatch(this.unsubscribeAssets());
+    }
+
+    protected onManagerEvent = (event: OREvent) => {
+        switch (event) {
+            case OREvent.DISPLAY_REALM_CHANGED:
+                this._store.dispatch(this.unsubscribeAssets());
+                this._store.dispatch(this.subscribeAssets());
+                break;
+        }
     }
 
     stateChanged(state: S) {

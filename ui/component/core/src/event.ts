@@ -4,6 +4,7 @@ import {
     Asset,
     AssetEvent,
     AssetEventCause,
+    AssetFilter,
     AssetsEvent,
     AttributeEvent,
     AttributeRef,
@@ -36,7 +37,7 @@ export interface EventProvider {
 
     unsubscribe<T extends SharedEvent>(subscriptionId: string): void;
 
-    subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string>;
+    subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string>;
 
     subscribeAttributeEvents(ids: string[] | AttributeRef[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string>;
 
@@ -251,7 +252,7 @@ abstract class EventProviderImpl implements EventProvider {
         return this._doSendWithReply(event);
     }
 
-    public async subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string> {
+    public async subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string> {
 
         const subscription: EventSubscription<AssetEvent> = {
             eventType: "asset"
@@ -260,11 +261,19 @@ abstract class EventProviderImpl implements EventProvider {
         const isAttributeRef = ids && typeof ids[0] !== "string";
         const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((ref) => ref.id!) : ids as string[] | null;
 
-        if (assetIds && assetIds.length > 0) {
-            subscription.filter = {
-                filterType: "asset",
-                assetIds: ids
-            };
+        if (filter || assetIds && assetIds.length > 0) {
+
+            if (!filter) {
+                filter = {
+                    filterType: "asset"
+                };
+            }
+
+            if (assetIds && assetIds.length > 0) {
+                filter.assetIds = assetIds;
+            }
+
+            subscription.filter = filter;
         }
 
         let subscriptionId: string | null = null;

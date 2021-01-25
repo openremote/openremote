@@ -759,7 +759,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     include:[]
                 },
                 attributes: {
-                    include: ["userNotes", "manufacturer", "model"]
+                    include: ["notes", "manufacturer", "model"]
                 }
             },
             location: {
@@ -783,7 +783,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     include:[]
                 },
                 attributes: {
-                    exclude: ["location", "userNotes", "manufacturer", "model", "status"]
+                    exclude: ["location", "notes", "manufacturer", "model", "status"]
                 }
             },
             history: {

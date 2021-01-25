@@ -210,17 +210,11 @@ export class ORIconSets {
 export class AssetModelUtil {
 
     static _assetTypeInfos: AssetTypeInfo[] = [];
-    static _assetDescriptors: AssetDescriptor[] = [];
-    static _agentDescriptors: AgentDescriptor[] = [];
     static _metaItemDescriptors: MetaItemDescriptor[] = [];
     static _valueDescriptors: ValueDescriptor[] = [];
 
-    public static getAgentDescriptors(): AgentDescriptor[] {
-        return [...this._agentDescriptors];
-    }
-
     public static getAssetDescriptors(): AssetDescriptor[] {
-        return [...this._assetDescriptors];
+        return AssetModelUtil._assetTypeInfos.map(info => info.assetDescriptor as AgentDescriptor);
     }
 
     public static getMetaItemDescriptors(): MetaItemDescriptor[] {
@@ -266,9 +260,10 @@ export class AssetModelUtil {
             return type as AssetDescriptor;
         }
 
-        return this._assetDescriptors.find((assetDescriptor) => {
-            return assetDescriptor.name === type;
+        const match = this._assetTypeInfos.find((assetTypeInfo) => {
+            return assetTypeInfo.assetDescriptor!.name === type;
         });
+        return match ? match.assetDescriptor : undefined;
     }
 
     public static getAttributeDescriptor(attributeName?: string, assetTypeOrDescriptor?: string | AssetDescriptor | AssetTypeInfo): AttributeDescriptor | undefined {
@@ -783,8 +778,6 @@ export class Manager implements EventProviderFactory {
             const valueDescriptorResponse = await rest.api.AssetModelResource.getValueDescriptors();
 
             AssetModelUtil._assetTypeInfos = assetInfosResponse.data;
-            AssetModelUtil._agentDescriptors =  AssetModelUtil._assetTypeInfos.filter(info => info.assetDescriptor!.descriptorType === "agent").map(info => info.assetDescriptor as AgentDescriptor);
-            AssetModelUtil._assetDescriptors =  AssetModelUtil._assetTypeInfos.filter(info => info.assetDescriptor!.descriptorType === "asset").map(info => info.assetDescriptor!);
             AssetModelUtil._metaItemDescriptors = metaItemDescriptorResponse.data;
             AssetModelUtil._valueDescriptors = valueDescriptorResponse.data;
         } catch (e) {

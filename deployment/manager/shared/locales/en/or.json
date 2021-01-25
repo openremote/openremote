@@ -388,5 +388,6 @@
   "never": "Never", 
   "repetitionEnds": "Repetition ends",
   "repeatOccurrenceEvery": "Repeat occurrence every",
-  "daysOfTheWeek": "days of the week"
+  "daysOfTheWeek": "days of the week",
+  "logCategory": {}
 }
