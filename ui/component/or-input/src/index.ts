@@ -402,6 +402,7 @@ const style = css`
 
     #menu-anchor {
         max-width: 100%;
+        width: 100%;
     }
     
     .mdc-checkbox-list input {
@@ -429,11 +430,14 @@ const style = css`
         width: 32px;
     }
     
+    .mdc-text-field.mdc-text-field--invalid:not(.mdc-text-field--disabled) + .mdc-text-field-helper-line .mdc-text-field-helper-text {
+        color: var(--mdc-theme-error, #b00020)
+    }
+    
     .mdc-checkbox-list input:checked + label {
         color: var(--or-app-color2);
         background-color: var(--mdc-theme-primary);
     }
-
     .or-input--rounded {
         border-radius: 50% !important;
     }
@@ -985,6 +989,7 @@ export class OrInput extends LitElement {
                     if (!(this.type === InputType.RANGE && this.disableSliderNumberInput)) {
                         const classes = {
                             "mdc-text-field": true,
+                            "mdc-text-field--invalid": !this.valid,
                             "mdc-text-field--filled": !outlined,
                             "mdc-text-field--outlined": outlined,
                             "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,

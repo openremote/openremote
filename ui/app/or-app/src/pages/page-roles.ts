@@ -32,6 +32,7 @@ export function pageRolesProvider<S extends AppStateKeyed>(
   };
 }
 
+
 @customElement("page-roles")
 class PageRoles<S extends AppStateKeyed> extends Page<S> {
   static get styles() {
@@ -48,27 +49,29 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         }
 
         #title {
-          margin: 0 auto;
-          padding: 20px;
+          padding: 0 20px;
           font-size: 18px;
           font-weight: bold;
           width: calc(100% - 40px);
-          max-width: 1400px;
+          max-width: 1360px;
+          margin: 20px auto;
         }
 
         #title or-icon {
           margin-right: 10px;
+          margin-left: 14px;
         }
 
         .panel {
-          width: calc(100% - 80px);
-          max-width: 1400px;
+          width: calc(100% - 90px);
+          padding: 0 20px;
+          max-width: 1320px;
           background-color: white;
           border: 1px solid #e5e5e5;
           border-radius: 5px;
           position: relative;
           margin: 0 auto;
-          padding: 20px;
+          padding: 24px;
         }
 
         .panel-title {
@@ -77,12 +80,29 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
             line-height: 1em;
             color: var(--internal-or-asset-viewer-title-text-color);
             margin-bottom: 20px;
+            margin-top: 0;
             flex: 0 0 auto;
             letter-spacing: 0.025em;
         }
 
-        #table-users {
-            width: 100%;
+
+        #table-roles,
+        #table-roles table{
+          width: 100%;
+          white-space: nowrap;
+        }
+
+        .mdc-data-table__row {
+          border-top-color: lightgrey;
+        }
+        
+        td, th {
+          width: 25%;
+          border: none;
+        }
+  
+        td.large, th.large {
+          width: 50%
         }
 
         .meta-item-container {
@@ -90,7 +110,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
           overflow: hidden;
           max-height: 0;
           transition: max-height 0.25s ease-out;
-          padding: 0 20px 0 30px;
+          padding: 0 20px;
         }
 
         or-input {
@@ -170,6 +190,9 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
           .hide-mobile {
             display: none;
           }
+          td, th {
+            width: 50%
+          }
         }
       `,
     ];
@@ -234,6 +257,9 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
   }
 
   private _updateRoles() {
+    if(this._compositeRoles.some(role => role.compositeRoleIds.length === 0)) {
+      return
+    }
     const roles = [...this._compositeRoles, ...this._roles];
     manager.rest.api.UserResource.updateRoles(manager.displayRealm, roles).then(response => {
       this.getRoles()
@@ -255,6 +281,27 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
   }
 
+  private addRemoveRole(e, r, index) {
+    if(e.detail.value) {
+      this._compositeRoles[index].compositeRoleIds = [...this._compositeRoles[index].compositeRoleIds, r.id]
+    } else {
+      this._compositeRoles[index].compositeRoleIds = this._compositeRoles[index].compositeRoleIds.filter(id=> id !== r.id)
+    }
+    this.requestUpdate('_compositeRoles')
+  }
+
+  private expanderToggle(ev: MouseEvent, index:number) {
+    const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
+    const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
+    if(metaRow.classList.contains('expanded')){
+      metaRow.classList.remove("expanded");
+      expanderIcon.icon = "chevron-right";
+    } else {
+      metaRow.classList.add("expanded");
+      expanderIcon.icon = "chevron-down";
+    }
+  }
+
   protected render(): TemplateResult | void {
     if (!manager.authenticated) {
       return html`
@@ -267,17 +314,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         <or-translate value="notSupported"></or-translate>
       `;
     }
-    const expanderToggle = (ev: MouseEvent, index:number) => {
-      const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
-      const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
-      if(metaRow.classList.contains('expanded')){
-        metaRow.classList.remove("expanded");
-        expanderIcon.icon = "chevron-right";
-      } else {
-        metaRow.classList.add("expanded");
-        expanderIcon.icon = "chevron-down";
-      }
-    };
+
     const readonly = !manager.hasRole(ClientRole.WRITE_USER);
     const readRoles = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name))
     const writeRoles = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name))
@@ -285,29 +322,28 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
     return html`
          <div id="wrapper">
                 <div id="title">
-                <or-icon icon="account-group"></or-icon>${i18next.t(
-                  "role"
+                <or-icon icon="account-box-multiple"></or-icon>${i18next.t(
+                  "role_plural"
                 )}
                 </div>
                 <div class="panel">
                 <p class="panel-title">${i18next.t("role")}</p>
-                  <div id="table-users" class="mdc-data-table">
+                  <div id="table-roles" class="mdc-data-table">
                   <table class="mdc-data-table__table" aria-label="attribute list" >
                       <thead>
                           <tr class="mdc-data-table__header-row">
                               <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
                               <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="description"></or-translate></th>
-                              <th class="mdc-data-table__header-cell hide-mobile" role="columnheader" scope="col"><or-translate value="permissions"></or-translate></th>
+                              <th class="mdc-data-table__header-cell hide-mobile large" role="columnheader" scope="col"><or-translate value="permissions"></or-translate></th>
                           </tr>
                       </thead>
                       <tbody class="mdc-data-table__content">
                       ${this._compositeRoles.map(
                         (role, index) => {
-                          const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).join(', ');
+                          const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).sort((a, b) => a.localeCompare(b)).join(', ');
                           return html`
-                          <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => expanderToggle(ev, index)}">
-                            <td
-                              class="padded-cell mdc-data-table__cell"
+                          <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => this.expanderToggle(ev, index)}">
+                            <td  class="padded-cell mdc-data-table__cell"
                             >
                               <or-icon id="mdc-data-table-icon-${index}" icon="chevron-right"></or-icon>
                               <span>${role.name}</span>
@@ -315,12 +351,12 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                             <td class="padded-cell mdc-data-table__cell">
                               ${role.description}
                             </td>
-                            <td class="padded-cell hide-mobile mdc-data-table__cell">
+                            <td class="padded-cell hide-mobile mdc-data-table__cell large">
                               ${compositeRoleName}
                             </td>
                           </tr>
-                          <tr id="attribute-meta-row-${index}" class="attribute-meta-row${!role.name ? " expanded" : ""}">
-                            <td colspan="4">
+                          <tr id="attribute-meta-row-${index}" class="attribute-meta-row${!role.id ? " expanded" : ""}">
+                            <td colspan="100%">
                               <div class="meta-item-container">
                                  
                                   <div class="row">
@@ -338,7 +374,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
                                         ${readRoles.map(r => {
                                           return html`
-                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => e.detail.value ? role.compositeRoleIds = [...role.compositeRoleIds, r.id]: role.compositeRoleIds = role.compositeRoleIds.filter(id=> id !== r.id) }"></or-input>            
+                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-input>        
                                           `
                                         })}
                                       
@@ -348,7 +384,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                         <strong>${i18next.t("write")}</strong>
                                         ${writeRoles.map(r => {
                                           return html`
-                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => e.detail.value ? role.compositeRoleIds = [...role.compositeRoleIds, r.id]: role.compositeRoleIds = role.compositeRoleIds.filter(id=> id !== r.id) }"></or-input>            
+                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}"  @or-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-input>              
                                           `
                                         })}
                                       </div>
@@ -357,20 +393,19 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                       <div class="column">
                                         ${otherRoles.map(r => {
                                           return html`
-                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => e.detail.value ? role.compositeRoleIds = [...role.compositeRoleIds, r.id]: role.compositeRoleIds = role.compositeRoleIds.filter(id=> id !== r.id) }"></or-input>            
+                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-input>            
                                           `
                                         })}
                                       </div>
                                   </div>
 
-                                  <div class="row">
-                                  
+                                  <div class="row" style="margin-bottom: 0;">
                                   ${role.id && !readonly ? html`
-                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role)}"></or-input>            
-                                      <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
+                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role)}"></or-input>          
+                                      <or-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
                                   ` : html`
                                     <or-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._compositeRoles.splice(-1,1); this._compositeRoles = [...this._compositeRoles]}}"></or-input>            
-                                    <or-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
+                                    <or-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
                                   `}    
                                   </div>
                               </div>
@@ -380,8 +415,8 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                       })}
                         ${!!this._compositeRoles[this._compositeRoles.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
-                          <td colspan="4">
-                            <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("role")}</strong></a> 
+                          <td colspan="100%">
+                            <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {composite:true, name:"", compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("role")}</strong></a> 
                           </td>
                         </tr>
                       ` : ``}
