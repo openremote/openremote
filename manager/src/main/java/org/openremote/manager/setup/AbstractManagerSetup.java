@@ -91,33 +91,25 @@ public abstract class AbstractManagerSetup implements Setup {
                 .addMeta(
                     new MetaItem<>(LABEL, "Alarm enabled"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                    new MetaItem<>(RULE_STATE, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true)
+                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
                 ),
             new Attribute<>("presenceDetected", BOOLEAN)
                 .addMeta(
                     new MetaItem<>(LABEL, "Presence detected"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(RULE_STATE, true),
-                    new MetaItem<>(STORE_DATA_POINTS, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true)
+                    new MetaItem<>(READ_ONLY, true)
                 ),
             new Attribute<>("vacationUntil", TIMESTAMP)
                 .addMeta(
                     new MetaItem<>(LABEL, "Vacation until"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                    new MetaItem<>(RULE_STATE, true)
+                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
                 ),
             new Attribute<>("lastExecutedScene", ValueType.TEXT)
                 .addMeta(
                     new MetaItem<>(LABEL, "Last executed scene"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(RULE_STATE, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true)
+                    new MetaItem<>(READ_ONLY, true)
                 ),
             new Attribute<>(Asset.LOCATION, location)
                     .addMeta(new MetaItem<>(ACCESS_RESTRICTED_READ, true))
@@ -128,13 +120,11 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem<>(DESCRIPTION, "Predict presence and automatically adjust scene schedule"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                     new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                    new MetaItem<>(RULE_STATE, true)
                 ),
             new Attribute<>("lastDetectedScene", ValueType.STRING)
                 .addMeta(
                     new MetaItem<>(LABEL, "Last detected scene by rules"),
                     new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(RULE_STATE, true)
                 )
             */
         );
@@ -152,29 +142,22 @@ public abstract class AbstractManagerSetup implements Setup {
             new Attribute<>("motionSensor", INTEGER)
                 .addMeta(
                     new MetaItem<>(LABEL, "Motion sensor"),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(RULE_STATE, true),
-                    new MetaItem<>(STORE_DATA_POINTS)),
+                    new MetaItem<>(READ_ONLY, true)),
             new Attribute<>("presenceDetected", BOOLEAN)
                 .addMeta(
                     new MetaItem<>(LABEL, "Presence detected"),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(STORE_DATA_POINTS, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true)
+                    new MetaItem<>(READ_ONLY, true)
                 ),
             new Attribute<>("firstPresenceDetected", TIMESTAMP)
                 .addMeta(
                     new MetaItem<>(LABEL, "First time movement was detected"),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(RULE_STATE, true)
+                    new MetaItem<>(READ_ONLY, true)
                 ),
             new Attribute<>("lastPresenceDetected", TIMESTAMP)
                 .addMeta(
                     new MetaItem<>(LABEL, "Last time movement was detected"),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(RULE_STATE, true)
+                    new MetaItem<>(READ_ONLY, true)
                 )
         );
 
@@ -194,13 +177,10 @@ public abstract class AbstractManagerSetup implements Setup {
                 .addMeta(
                     new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)),
                     new MetaItem<>(LABEL, "CO2 level"),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(RULE_EVENT, true),
                     new MetaItem<>(RULE_EVENT_EXPIRES, "PT45M"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true),
-                    new MetaItem<>(STORE_DATA_POINTS)
+                    new MetaItem<>(READ_ONLY, true)
                 ));
 
         if (shouldBeLinked) {
@@ -215,14 +195,11 @@ public abstract class AbstractManagerSetup implements Setup {
             new Attribute<>("humidity", POSITIVE_INTEGER)
                 .addMeta(
                     new MetaItem<>(LABEL, "Humidity"),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(RULE_EVENT, true),
                     new MetaItem<>(RULE_EVENT_EXPIRES, "PT45M"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                     new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true),
-                    new MetaItem<>(UNITS, Constants.units(UNITS_PERCENTAGE)),
-                    new MetaItem<>(STORE_DATA_POINTS)
+                    new MetaItem<>(UNITS, Constants.units(UNITS_PERCENTAGE))
                 ));
 
         if (shouldBeLinked) {
@@ -239,13 +216,10 @@ public abstract class AbstractManagerSetup implements Setup {
             new Attribute<>("currentTemperature", NUMBER)
                 .addMeta(
                     new MetaItem<>(LABEL, "Current temperature"),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                     new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true),
                     new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS)),
-                    new MetaItem<>(FORMAT, ValueFormat.NUMBER_1_DP()),
-                    new MetaItem<>(STORE_DATA_POINTS)
+                    new MetaItem<>(FORMAT, ValueFormat.NUMBER_1_DP())
                 ));
 
         if (shouldBeLinked) {
@@ -262,13 +236,10 @@ public abstract class AbstractManagerSetup implements Setup {
             new Attribute<>("targetTemperature", NUMBER)
                 .addMeta(
                     new MetaItem<>(LABEL, "Target temperature"),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                     new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true),
                     new MetaItem<>(UNITS, Constants.units(UNITS_CELSIUS)),
-                    new MetaItem<>(FORMAT, ValueFormat.NUMBER_1_DP()),
-                    new MetaItem<>(STORE_DATA_POINTS)
+                    new MetaItem<>(FORMAT, ValueFormat.NUMBER_1_DP())
                 ));
 
         if (shouldBeLinked) {
@@ -296,7 +267,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem<>(LABEL, "Smart Switch mode " + switchName),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                     new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(RULE_EVENT, true),
                     new MetaItem<>(RULE_EVENT_EXPIRES, "PT48H")),
             // Time
@@ -304,28 +274,28 @@ public abstract class AbstractManagerSetup implements Setup {
                 .addMeta(
                     new MetaItem<>(LABEL, "Smart Switch begin/end cycle " + switchName),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                    new MetaItem<>(RULE_STATE, true)),
+                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
+                ),
             // StartTime
             new Attribute<>("smartSwitchStartTime" + switchName, TIMESTAMP)
                 .addMeta(
                     new MetaItem<>(LABEL, "Smart Switch actuator earliest start time " + switchName),
                     new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(UNITS, Constants.units(UNITS_SECOND)),
-                    new MetaItem<>(RULE_STATE, true)),
+                    new MetaItem<>(UNITS, Constants.units(UNITS_SECOND))
+                ),
             // StopTime
             new Attribute<>("smartSwitchStopTime" + switchName, TIMESTAMP)
                 .addMeta(
                     new MetaItem<>(LABEL, "Smart Switch actuator latest stop time " + switchName),
                     new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(UNITS, Constants.units(UNITS_SECOND)),
-                    new MetaItem<>(RULE_STATE, true)),
+                    new MetaItem<>(UNITS, Constants.units(UNITS_SECOND))
+                ),
             // Enabled
             new Attribute<>("smartSwitchEnabled" + switchName, NUMBER)
                 .addMeta(
                     new MetaItem<>(LABEL, "Smart Switch actuator enabled " + switchName),
-                    new MetaItem<>(READ_ONLY, true),
-                    new MetaItem<>(RULE_STATE, true))
+                    new MetaItem<>(READ_ONLY, true)
+                )
         );
 
         if (shouldBeLinked) {
@@ -354,14 +324,11 @@ public abstract class AbstractManagerSetup implements Setup {
             new Attribute<>("ventilationLevel", POSITIVE_INTEGER)
                 .addMeta(
                     new MetaItem<>(LABEL, "Ventilation level"),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                    new MetaItem<>(STORE_DATA_POINTS)),
+                    new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)),
             new Attribute<>("ventilationAuto", BOOLEAN)
                 .addMeta(
                     new MetaItem<>(LABEL, "Ventilation auto"),
-                    new MetaItem<>(RULE_STATE, true),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                     new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
                 )
@@ -537,7 +504,6 @@ public abstract class AbstractManagerSetup implements Setup {
                             new MetaItem<>(LABEL, scene.sceneName + " time " + dayOfWeekLabel),
                             new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                             new MetaItem<>(ACCESS_RESTRICTED_WRITE, true),
-                            new MetaItem<>(RULE_STATE, true),
                             new MetaItem<>(AGENT_LINK, new TimerAgent.TimerAgentLink(agents.get(i+j).getId()).setTimerValue(TimerValue.TIME))
                         ),
                     new Attribute<>(scene.attributeName + "Enabled" + dayOfWeek.name(), BOOLEAN)
@@ -557,7 +523,6 @@ public abstract class AbstractManagerSetup implements Setup {
                 .addMeta(
                     new MetaItem<>(LABEL, "Scene timer enabled"),
                     new MetaItem<>(ACCESS_RESTRICTED_READ, true),
-                    new MetaItem<>(SHOW_ON_DASHBOARD, true),
                     new MetaItem<>(READ_ONLY, true)
                 ),
             new Attribute<>("enableSceneTimer", EXECUTION_STATUS)
@@ -584,46 +549,27 @@ public abstract class AbstractManagerSetup implements Setup {
             new Attribute<>(Asset.LOCATION, location)
         );
         peopleCounterAsset.getAttribute("peopleCountIn").ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(
-                new MetaItem<>(RULE_STATE),
-                new MetaItem<>(STORE_DATA_POINTS)
-            );
             if (agentLinker != null) {
                 assetAttribute.addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()));
             }
         });
         peopleCounterAsset.getAttribute("peopleCountOut").ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(
-                new MetaItem<>(RULE_STATE),
-                new MetaItem<>(STORE_DATA_POINTS)
-            );
             if (agentLinker != null) {
                 assetAttribute.addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()));
             }
         });
         peopleCounterAsset.getAttribute("peopleCountInMinute").ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(
-                new MetaItem<>(RULE_STATE),
-                new MetaItem<>(STORE_DATA_POINTS)
-            );
             if (agentLinker != null) {
                 assetAttribute.addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()));
             }
         });
         peopleCounterAsset.getAttribute("peopleCountOutMinute").ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(
-                new MetaItem<>(RULE_STATE),
-                new MetaItem<>(STORE_DATA_POINTS)
-            );
             if (agentLinker != null) {
                 assetAttribute.addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()));
             }
         });
         peopleCounterAsset.getAttribute("peopleCountTotal").ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(
-                new MetaItem<>(RULE_STATE),
-                new MetaItem<>(STORE_DATA_POINTS)
-            );
+
             if (agentLinker != null) {
                 assetAttribute.addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()));
             }
@@ -640,8 +586,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
         microphoneAsset.getAttribute(MicrophoneAsset.SOUND_LEVEL).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
-                new MetaItem<>(RULE_STATE),
-                new MetaItem<>(STORE_DATA_POINTS)
+                new MetaItem<>(READ_ONLY)
             );
             if (agentLinker != null) {
                 assetAttribute.addMeta(new MetaItem<>(AGENT_LINK, agentLinker.get()));
@@ -677,29 +622,8 @@ public abstract class AbstractManagerSetup implements Setup {
     protected LightAsset createDemoLightAsset(String name, Asset<?> area, GeoJSONPoint location) {
         LightAsset lightAsset = new LightAsset(name);
         lightAsset.setParent(area);
-        lightAsset.getAttributes().addOrReplace(
-            new Attribute<>(Asset.LOCATION, location).addMeta(new MetaItem<>(SHOW_ON_DASHBOARD, true))
-        );
-        lightAsset.getAttributes().getOrCreate(LightAsset.ON_OFF).addMeta(
-            new MetaItem<>(RULE_STATE),
-            new MetaItem<>(STORE_DATA_POINTS)
-        );
-        lightAsset.getAttributes().getOrCreate(LightAsset.BRIGHTNESS).addMeta(
-            new MetaItem<>(RULE_STATE),
-            new MetaItem<>(STORE_DATA_POINTS)
-        );
-        lightAsset.getAttributes().getOrCreate(LightAsset.COLOUR_RGB).addMeta(
-            new MetaItem<>(RULE_STATE),
-            new MetaItem<>(STORE_DATA_POINTS)
-        );
-        lightAsset.getAttributes().getOrCreate("groupNumber", POSITIVE_INTEGER).addMeta(
-            new MetaItem<>(RULE_STATE),
-            new MetaItem<>(STORE_DATA_POINTS)
-        );
-        lightAsset.getAttributes().getOrCreate("scenario", TEXT).addMeta(
-            new MetaItem<>(RULE_STATE)
-        );
-
+        lightAsset.getAttributes().getOrCreate("groupNumber", POSITIVE_INTEGER);
+        lightAsset.getAttributes().getOrCreate("scenario", TEXT);
         return lightAsset;
     }
 
@@ -709,21 +633,7 @@ public abstract class AbstractManagerSetup implements Setup {
         lightAsset.getAttributes().addOrReplace(
             new Attribute<>(Asset.LOCATION, location)
         );
-        lightAsset.getAttributes().getOrCreate(LightAsset.ON_OFF).addMeta(
-            new MetaItem<>(RULE_STATE),
-            new MetaItem<>(STORE_DATA_POINTS)
-        );
-        lightAsset.getAttributes().getOrCreate(LightAsset.BRIGHTNESS).addMeta(
-            new MetaItem<>(RULE_STATE),
-            new MetaItem<>(STORE_DATA_POINTS)
-        );
-        lightAsset.getAttributes().getOrCreate(LightAsset.COLOUR_RGB).addMeta(
-            new MetaItem<>(RULE_STATE),
-            new MetaItem<>(STORE_DATA_POINTS)
-        );
-        lightAsset.getAttributes().getOrCreate("scenario", TEXT).addMeta(
-            new MetaItem<>(RULE_STATE)
-        );
+        lightAsset.getAttributes().getOrCreate("scenario", TEXT);
 
         return lightAsset;
     }
@@ -731,84 +641,42 @@ public abstract class AbstractManagerSetup implements Setup {
     protected ElectricityStorageAsset createDemoElectricityStorageAsset(String name, Asset<?> area, GeoJSONPoint location) {
         ElectricityStorageAsset electricityStorageAsset = new ElectricityStorageAsset(name);
         electricityStorageAsset.setParent(area);
-        electricityStorageAsset.getAttributes().addOrReplace(
-            new Attribute<>(Asset.LOCATION, location).addMeta(
-                new MetaItem<>(SHOW_ON_DASHBOARD)
-            )
-        );
-
-    return electricityStorageAsset;
+        return electricityStorageAsset;
     }
 
     protected ElectricityProducerSolarAsset createDemoElectricitySolarProducerAsset(String name, Asset<?> area, GeoJSONPoint location) {
         ElectricityProducerSolarAsset electricityProducerAsset = new ElectricityProducerSolarAsset(name);
         electricityProducerAsset.setParent(area);
-        electricityProducerAsset.getAttributes().addOrReplace(
-            new Attribute<>(Asset.LOCATION, location).addMeta(
-                new MetaItem<>(SHOW_ON_DASHBOARD)
-            )
-        );
-
-    return electricityProducerAsset;
+        return electricityProducerAsset;
     }
 
     protected ElectricityConsumerAsset createDemoElectricityConsumerAsset(String name, Asset<?> area, GeoJSONPoint location) {
         ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset(name);
         electricityConsumerAsset.setParent(area);
-        electricityConsumerAsset.getAttributes().addOrReplace(
-            new Attribute<>(Asset.LOCATION, location).addMeta(
-                new MetaItem<>(SHOW_ON_DASHBOARD)
-            )
-        );
-
-    return electricityConsumerAsset;
+        return electricityConsumerAsset;
     }
 
     protected ElectricityChargerAsset createDemoElectricityChargerAsset(String name, Asset<?> area, GeoJSONPoint location) {
         ElectricityChargerAsset electricityChargerAsset = new ElectricityChargerAsset(name);
         electricityChargerAsset.setParent(area);
-        electricityChargerAsset.getAttributes().addOrReplace(
-                new Attribute<>(Asset.LOCATION, location).addMeta(
-                    new MetaItem<>(SHOW_ON_DASHBOARD)
-                )
-        );
-
         return electricityChargerAsset;
     }
 
     protected GroundwaterSensorAsset createDemoGroundwaterAsset(String name, Asset<?> area, GeoJSONPoint location) {
         GroundwaterSensorAsset groundwaterAsset = new GroundwaterSensorAsset(name);
         groundwaterAsset.setParent(area);
-        groundwaterAsset.getAttributes().addOrReplace(
-            new Attribute<>(Asset.LOCATION, location).addMeta(
-                new MetaItem<>(SHOW_ON_DASHBOARD)
-            )
-        );
-
-    return groundwaterAsset;
+        return groundwaterAsset;
     }
 
     protected ParkingAsset createDemoParkingAsset(String name, Asset<?> area, GeoJSONPoint location) {
         ParkingAsset parkingAsset = new ParkingAsset(name);
         parkingAsset.setParent(area);
-        parkingAsset.getAttributes().addOrReplace(
-            new Attribute<>(Asset.LOCATION, location).addMeta(
-                new MetaItem<>(SHOW_ON_DASHBOARD)
-            )
-        );
-
-    return parkingAsset;
+        return parkingAsset;
     }
 
     protected ShipAsset createDemoShipAsset(String name, Asset<?> area, GeoJSONPoint location) {
         ShipAsset shipAsset = new ShipAsset(name);
         shipAsset.setParent(area);
-        shipAsset.getAttributes().addOrReplace(
-                new Attribute<>(Asset.LOCATION, location).addMeta(
-                    new MetaItem<>(SHOW_ON_DASHBOARD)
-                )
-        );
-
         return shipAsset;
     }
 }

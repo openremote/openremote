@@ -17,6 +17,7 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.impl.ConsoleAsset
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
@@ -654,9 +655,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                     .count() == 12
         }
 
-        when: "the RULE_STATE meta is removed from a console's location attribute"
+        when: "the RULE_STATE meta is set to false on a console's location attribute"
         testUser3Console1 = assetStorageService.find(testUser3Console1.id, true)
-        testUser3Console1.getAttribute(Asset.LOCATION.name).get().getMeta().remove(MetaItemType.RULE_STATE)
+        testUser3Console1.getAttribute(Asset.LOCATION.name).ifPresent{it.addMeta(new MetaItem<>(MetaItemType.RULE_STATE, false))}
         testUser3Console1 = assetStorageService.merge(testUser3Console1)
 
         then: "no geofences should remain for this console"

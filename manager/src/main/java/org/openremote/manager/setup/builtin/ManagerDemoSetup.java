@@ -110,14 +110,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .addOrReplaceMeta(
                         new MetaItem<>(LABEL, "Combined power of all producers"),
                         new MetaItem<>(UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
-                        new MetaItem<>(STORE_DATA_POINTS, true),
-                        new MetaItem<>(READ_ONLY, true),
-                        new MetaItem<>(RULE_STATE, true)),
+                        new MetaItem<>(READ_ONLY, true)),
                 new Attribute<>("powerTotalConsumers", NUMBER).addOrReplaceMeta(
                         new MetaItem<>(LABEL, "Combined power use of all consumers"),
                         new MetaItem<>(UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
-                        new MetaItem<>(STORE_DATA_POINTS, true),
-                        new MetaItem<>(RULE_STATE, true),
                         new MetaItem<>(READ_ONLY, true))
         );
         energyManagement.setId(UniqueIdentifierGenerator.generateId(energyManagement.getName()));
@@ -136,8 +132,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new Attribute<>("powerBalance", NUMBER).addMeta(
                         new MetaItem<>(LABEL, "Balance of power production and use"),
                         new MetaItem<>(UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
-                        new MetaItem<>(STORE_DATA_POINTS),
-                        new MetaItem<>(RULE_STATE),
                         new MetaItem<>(READ_ONLY))
         );
         building1Asset.setId(UniqueIdentifierGenerator.generateId(building1Asset.getName() + "building"));
@@ -147,12 +141,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         storage1Asset.setManufacturer("Super-B");
         storage1Asset.setModel("Nomia");
         storage1Asset.setId(UniqueIdentifierGenerator.generateId(storage1Asset.getName()));
-        storage1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         storage1Asset = assetStorageService.merge(storage1Asset);
 
         ElectricityConsumerAsset consumption1Asset = createDemoElectricityConsumerAsset("Consumption De Rotterdam", building1Asset, new GeoJSONPoint(4.487519, 51.906544));
         consumption1Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-                assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS, true));
                 assetAttribute.addMeta(
                     new MetaItem<>(
                         AGENT_LINK,
@@ -188,14 +180,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         });
 
         consumption1Asset.setId(UniqueIdentifierGenerator.generateId(consumption1Asset.getName()));
-        consumption1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         consumption1Asset = assetStorageService.merge(consumption1Asset);
 
         ElectricityProducerSolarAsset production1Asset = createDemoElectricitySolarProducerAsset("Solar De Rotterdam", building1Asset, new GeoJSONPoint(4.488592, 51.907047));
         production1Asset.setManufacturer("AEG");
         production1Asset.setModel("AS-P60");
         production1Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS));
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -235,7 +225,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production1Asset.setEfficiency(93);
         production1Asset.setPanelOrientation(ElectricityProducerSolarAsset.PanelOrientation.EAST_WEST);
         production1Asset.setId(UniqueIdentifierGenerator.generateId(production1Asset.getName()));
-        production1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         production1Asset = assetStorageService.merge(production1Asset);
 
         // ### Stadhuis ###
@@ -256,12 +245,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         storage2Asset.setManufacturer("LG Chem");
         storage2Asset.setModel("ESS Industrial");
         storage2Asset.setId(UniqueIdentifierGenerator.generateId(storage2Asset.getName()));
-        storage2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         storage2Asset = assetStorageService.merge(storage2Asset);
 
         ElectricityConsumerAsset consumption2Asset = createDemoElectricityConsumerAsset("Consumption Stadhuis", building2Asset, new GeoJSONPoint(4.47933, 51.92259));
         consumption2Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS));
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -297,12 +284,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         });
         consumption2Asset.setId(UniqueIdentifierGenerator.generateId(consumption2Asset.getName()));
-        consumption2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         consumption2Asset = assetStorageService.merge(consumption2Asset);
 
         ElectricityProducerSolarAsset production2Asset = createDemoElectricitySolarProducerAsset("Solar Stadhuis", building2Asset, new GeoJSONPoint(4.47945, 51.92301));
         production2Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS));
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -344,7 +329,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production2Asset.setManufacturer("Solarwatt");
         production2Asset.setModel("EasyIn 60M");
         production2Asset.setId(UniqueIdentifierGenerator.generateId(production2Asset.getName()));
-        production2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         production2Asset = assetStorageService.merge(production2Asset);
 
         // ### Markthal ###
@@ -360,7 +344,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new Attribute<>("allChargersInUse", BOOLEAN)
                         .addMeta(
                                 new MetaItem<>(LABEL, "All chargers in use"),
-                                new MetaItem<>(RULE_STATE),
                                 new MetaItem<>(READ_ONLY))
         );
         building3Asset.setId(UniqueIdentifierGenerator.generateId(building3Asset.getName() + "building"));
@@ -368,7 +351,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ElectricityProducerSolarAsset production3Asset = createDemoElectricitySolarProducerAsset("Solar Markthal", building3Asset, new GeoJSONPoint(4.47945, 51.92301));
         production3Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS));
             assetAttribute.addMeta(
                 new MetaItem<>(
                         AGENT_LINK,
@@ -410,7 +392,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production3Asset.setManufacturer("Sunpower");
         production3Asset.setModel("E20-327");
         production3Asset.setId(UniqueIdentifierGenerator.generateId(production3Asset.getName()));
-        production3Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         production3Asset = assetStorageService.merge(production3Asset);
 
         ElectricityChargerAsset charger1Asset = createDemoElectricityChargerAsset("Charger 1 Markthal", building3Asset, new GeoJSONPoint(4.486143, 51.920058));
@@ -451,7 +432,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         charger1Asset.setManufacturer("Allego");
         charger1Asset.setModel("HPC");
         charger1Asset.setId(UniqueIdentifierGenerator.generateId(charger1Asset.getName()));
-        charger1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         charger1Asset = assetStorageService.merge(charger1Asset);
 
         ElectricityChargerAsset charger2Asset = createDemoElectricityChargerAsset("Charger 2 Markthal", building3Asset, new GeoJSONPoint(4.486188, 51.919957));
@@ -493,7 +473,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         charger2Asset.setManufacturer("Bosch");
         charger2Asset.setModel("EV800");
         charger2Asset.setId(UniqueIdentifierGenerator.generateId(charger2Asset.getName()));
-        charger2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         charger2Asset = assetStorageService.merge(charger2Asset);
 
         ElectricityChargerAsset charger3Asset = createDemoElectricityChargerAsset("Charger 3 Markthal", building3Asset, new GeoJSONPoint(4.486232, 51.919856));
@@ -535,7 +514,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         charger3Asset.setManufacturer("Siemens");
         charger3Asset.setModel("CPC 50");
         charger3Asset.setId(UniqueIdentifierGenerator.generateId(charger3Asset.getName()));
-        charger3Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         charger3Asset = assetStorageService.merge(charger3Asset);
 
         ElectricityChargerAsset charger4Asset = createDemoElectricityChargerAsset("Charger 4 Markthal", building3Asset, new GeoJSONPoint(4.486286, 51.919733));
@@ -578,7 +556,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         charger4Asset.setManufacturer("SemaConnect");
         charger4Asset.setModel("The Series 6");
         charger4Asset.setId(UniqueIdentifierGenerator.generateId(charger4Asset.getName()));
-        charger4Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         charger4Asset = assetStorageService.merge(charger4Asset);
 
         // ### Erasmianum ###
@@ -597,7 +574,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ElectricityConsumerAsset consumption4Asset = createDemoElectricityConsumerAsset("Consumption Erasmianum", building4Asset, new GeoJSONPoint(4.468324, 51.912062));
         consumption4Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS));
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -633,7 +609,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         });
         consumption4Asset.setId(UniqueIdentifierGenerator.generateId(consumption4Asset.getName()));
-        consumption4Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         consumption4Asset = assetStorageService.merge(consumption4Asset);
 
         // ### Oostelijk zwembad ###
@@ -652,7 +627,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ElectricityConsumerAsset consumption5Asset = createDemoElectricityConsumerAsset("Consumption Zwembad", building5Asset, new GeoJSONPoint(4.498048, 51.925770));
         consumption5Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS));
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -688,12 +662,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         });
         consumption5Asset.setId(UniqueIdentifierGenerator.generateId(consumption5Asset.getName()));
-        consumption5Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         consumption5Asset = assetStorageService.merge(consumption5Asset);
 
         ElectricityProducerSolarAsset production5Asset = createDemoElectricitySolarProducerAsset("Solar Zwembad", building5Asset, new GeoJSONPoint(4.498281, 51.925507));
         production5Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
-            assetAttribute.addMeta(new MetaItem<>(STORE_DATA_POINTS));
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -735,7 +707,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         production5Asset.setManufacturer("S-Energy");
         production5Asset.setModel("SN260P-10");
         production5Asset.setId(UniqueIdentifierGenerator.generateId(production5Asset.getName()));
-        production5Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         production5Asset = assetStorageService.merge(production5Asset);
 
         // ### Weather ###
@@ -779,7 +750,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 })
                         ));
         new Attribute<>(Asset.LOCATION, new GeoJSONPoint(4.463250, 51.918849));
-        weather.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         weather = assetStorageService.merge(weather);
 
         // ################################ Realm smartcity - Environment monitor ###################################
@@ -838,7 +808,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 );
             });
             asset.setId(UniqueIdentifierGenerator.generateId(asset.getName()));
-            asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
             asset = assetStorageService.merge(asset);
         }
 
@@ -921,7 +890,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 );
             });
             asset.setId(UniqueIdentifierGenerator.generateId(asset.getName()));
-            asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
             asset = assetStorageService.merge(asset);
         }
 
@@ -942,9 +910,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 new MetaItem<>(LABEL, "Percentage of total parking spaces in use"),
                                 new MetaItem<>(UNITS, Constants.units(Constants.UNITS_PERCENTAGE)),
                                 new MetaItem<>(CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))),
-                                new MetaItem<>(RULE_STATE),
-                                new MetaItem<>(READ_ONLY),
-                                new MetaItem<>(STORE_DATA_POINTS)));
+                                new MetaItem<>(READ_ONLY)));
         parkingGroupAsset.setId(UniqueIdentifierGenerator.generateId(parkingGroupAsset.getName()));
         parkingGroupAsset = assetStorageService.merge(parkingGroupAsset);
 
@@ -990,7 +956,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         parking1Asset.setPriceDaily(25.00);
         parking1Asset.setSpacesTotal(512);
         parking1Asset.setId(UniqueIdentifierGenerator.generateId(parking1Asset.getName()));
-        parking1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         parking1Asset = assetStorageService.merge(parking1Asset);
 
         ParkingAsset parking2Asset = createDemoParkingAsset("Lijnbaan", parkingGroupAsset, new GeoJSONPoint(4.47681, 51.91849));
@@ -1035,7 +1000,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         parking2Asset.setPriceDaily(23.00);
         parking2Asset.setSpacesTotal(390);
         parking2Asset.setId(UniqueIdentifierGenerator.generateId(parking2Asset.getName()));
-        parking2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         parking2Asset = assetStorageService.merge(parking2Asset);
 
         ParkingAsset parking3Asset = createDemoParkingAsset("Erasmusbrug", parkingGroupAsset, new GeoJSONPoint(4.48207, 51.91127));
@@ -1080,7 +1044,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         parking3Asset.setPriceDaily(20.00);
         parking3Asset.setSpacesTotal(373);
         parking3Asset.setId(UniqueIdentifierGenerator.generateId(parking3Asset.getName()));
-        parking3Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         parking3Asset = assetStorageService.merge(parking3Asset);
 
         // ### Crowd control ###
@@ -1137,7 +1100,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         });
         peopleCounter1Asset.setId(UniqueIdentifierGenerator.generateId(peopleCounter1Asset.getName()));
-        peopleCounter1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
 
         Asset<?> peopleCounter2Asset = createDemoPeopleCounterAsset("People Counter North", assetAreaStation, new GeoJSONPoint(4.469329, 51.923700), () ->
@@ -1180,7 +1142,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             );
         });
         peopleCounter2Asset.setId(UniqueIdentifierGenerator.generateId(peopleCounter2Asset.getName()));
-        peopleCounter2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
 
         MicrophoneAsset microphone1Asset = createDemoMicrophoneAsset("Microphone South", assetAreaStation, new GeoJSONPoint(4.470362, 51.923201), () ->
@@ -1215,7 +1176,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         microphone1Asset.setManufacturer("Sorama");
         microphone1Asset.setModel("CAM1K");
         microphone1Asset.setId(UniqueIdentifierGenerator.generateId(microphone1Asset.getName()));
-        microphone1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         microphone1Asset = assetStorageService.merge(microphone1Asset);
 
         MicrophoneAsset microphone2Asset = createDemoMicrophoneAsset("Microphone North", assetAreaStation, new GeoJSONPoint(4.469190, 51.923786), () -> 
@@ -1250,28 +1210,24 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         microphone2Asset.setManufacturer("Sorama");
         microphone2Asset.setModel("CAM1K");
         microphone2Asset.setId(UniqueIdentifierGenerator.generateId(microphone2Asset.getName()));
-        microphone2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         microphone2Asset = assetStorageService.merge(microphone2Asset);
 
         LightAsset lightStation1Asset = createDemoLightAsset("Station Light NW", assetAreaStation, new GeoJSONPoint(4.468874, 51.923881));
         lightStation1Asset.setManufacturer("Philips");
         lightStation1Asset.setModel("CityTouch");
         lightStation1Asset.setId(UniqueIdentifierGenerator.generateId(lightStation1Asset.getName()));
-        lightStation1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightStation1Asset = assetStorageService.merge(lightStation1Asset);
 
         LightAsset lightStation2Asset = createDemoLightAsset("Station Light NE", assetAreaStation, new GeoJSONPoint(4.470539, 51.923991));
         lightStation2Asset.setManufacturer("Philips");
         lightStation2Asset.setModel("CityTouch");
         lightStation2Asset.setId(UniqueIdentifierGenerator.generateId(lightStation2Asset.getName()));
-        lightStation2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightStation2Asset = assetStorageService.merge(lightStation2Asset);
 
         LightAsset lightStation3Asset = createDemoLightAsset("Station Light S", assetAreaStation, new GeoJSONPoint(4.470558, 51.923186));
         lightStation3Asset.setManufacturer("Philips");
         lightStation3Asset.setModel("CityTouch");
         lightStation3Asset.setId(UniqueIdentifierGenerator.generateId(lightStation3Asset.getName()));
-        lightStation3Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightStation3Asset = assetStorageService.merge(lightStation3Asset);
 
         // ### Lighting controller ###
@@ -1280,49 +1236,42 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         lightingControllerOPAsset.setManufacturer("Pharos");
         lightingControllerOPAsset.setModel("LPC X");
         lightingControllerOPAsset.setId(UniqueIdentifierGenerator.generateId(lightingControllerOPAsset.getName()));
-        lightingControllerOPAsset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightingControllerOPAsset = assetStorageService.merge(lightingControllerOPAsset);
 
         LightAsset lightOP1Asset = createDemoLightAsset("OnsPark1", lightingControllerOPAsset, new GeoJSONPoint(4.49626, 51.91516));
         lightOP1Asset.setManufacturer("Schréder");
         lightOP1Asset.setModel("Axia 2");
         lightOP1Asset.setId(UniqueIdentifierGenerator.generateId(lightOP1Asset.getName()));
-        lightOP1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightOP1Asset = assetStorageService.merge(lightOP1Asset);
 
         LightAsset lightOP2Asset = createDemoLightAsset("OnsPark2", lightingControllerOPAsset, new GeoJSONPoint(4.49705, 51.91549));
         lightOP2Asset.setManufacturer("Schréder");
         lightOP2Asset.setModel("Axia 2");
         lightOP2Asset.setId(UniqueIdentifierGenerator.generateId(lightOP2Asset.getName()));
-        lightOP2Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightOP2Asset = assetStorageService.merge(lightOP2Asset);
 
         LightAsset lightOP3Asset = createDemoLightAsset("OnsPark3", lightingControllerOPAsset, new GeoJSONPoint(4.49661, 51.91495));
         lightOP3Asset.setManufacturer("Schréder");
         lightOP3Asset.setModel("Axia 2");
         lightOP3Asset.setId(UniqueIdentifierGenerator.generateId(lightOP3Asset.getName()));
-        lightOP3Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightOP3Asset = assetStorageService.merge(lightOP3Asset);
 
         LightAsset lightOP4Asset = createDemoLightAsset("OnsPark4", lightingControllerOPAsset, new GeoJSONPoint(4.49704, 51.91520));
         lightOP4Asset.setManufacturer("Schréder");
         lightOP4Asset.setModel("Axia 2");
         lightOP4Asset.setId(UniqueIdentifierGenerator.generateId(lightOP4Asset.getName()));
-        lightOP4Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightOP4Asset = assetStorageService.merge(lightOP4Asset);
 
         LightAsset lightOP5Asset = createDemoLightAsset("OnsPark5", lightingControllerOPAsset, new GeoJSONPoint(4.49758, 51.91440));
         lightOP5Asset.setManufacturer("Schréder");
         lightOP5Asset.setModel("Axia 2");
         lightOP5Asset.setId(UniqueIdentifierGenerator.generateId(lightOP5Asset.getName()));
-        lightOP5Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightOP5Asset = assetStorageService.merge(lightOP5Asset);
 
         LightAsset lightOP6Asset = createDemoLightAsset("OnsPark6", lightingControllerOPAsset, new GeoJSONPoint(4.49786, 51.91452));
         lightOP6Asset.setManufacturer("Schréder");
         lightOP6Asset.setModel("Axia 2");
         lightOP6Asset.setId(UniqueIdentifierGenerator.generateId(lightOP6Asset.getName()));
-        lightOP6Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         lightOP6Asset = assetStorageService.merge(lightOP6Asset);
 
         // ### Ships ###
@@ -1565,7 +1514,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     );
                 });
         ship1Asset.setId(UniqueIdentifierGenerator.generateId(ship1Asset.getName()));
-        ship1Asset.getAttributes().forEach(attr -> attr.addMeta(new MetaItem<>(RULE_STATE)));
         ship1Asset = assetStorageService.merge(ship1Asset);
 
         // ### Mobile app config ###

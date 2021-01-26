@@ -654,14 +654,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         !currentTemperatureAttr.getValue().isPresent()
 
         MetaMap resultMeta = currentTemperatureAttr.getMeta()
-        resultMeta.size() == 9
+        resultMeta.size() == 6
         resultMeta.getValueOrDefault(LABEL) == "Current temperature"
         resultMeta.getValue(READ_ONLY).orElse(false)
         resultMeta.has(AGENT_LINK)
         resultMeta.getValueOrDefault(ACCESS_RESTRICTED_READ)
-        resultMeta.getValue(RULE_STATE).orElse(false)
-        resultMeta.getValue(STORE_DATA_POINTS).orElse(false)
-        resultMeta.getValue(SHOW_ON_DASHBOARD).orElse(false)
         resultMeta.getValueOrDefault(UNITS) != null
         resultMeta.getValueOrDefault(UNITS)[0] == UNITS_CELSIUS
 

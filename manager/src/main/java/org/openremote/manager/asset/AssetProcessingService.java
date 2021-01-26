@@ -22,9 +22,6 @@ package org.openremote.manager.asset;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.model.asset.agent.Protocol;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -37,9 +34,16 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
-import org.openremote.model.attribute.*;
-import org.openremote.model.asset.*;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.agent.Protocol;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
@@ -113,19 +117,19 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * successful.
  * <h2>Asset Datapoint Service processing logic</h2>
  * <p>
- * Checks if attribute has {@link MetaItemType#STORE_DATA_POINTS} {@link MetaItem}, and if so the {@link AttributeEvent}
- * is stored in a time series of historical data. Then allows the message to continue if the commit was successful.
+ * Checks if attribute has {@link MetaItemType#STORE_DATA_POINTS} set to false, and if so the {@link AttributeEvent}
+ * is not stored in a time series DB of historical data, otherwise the value is stored. Then allows the message to
+ * continue if the commit was successful.
  */
 @SuppressWarnings("unchecked")
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
     public static final int PRIORITY = AssetStorageService.PRIORITY + 1000;
-    private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
-
     // TODO: Some of these options should be configurable depending on expected load etc.
     // Message topic for communicating individual asset attribute changes
     public static final String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
-
+    private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
+    final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
@@ -140,7 +144,38 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
 
-    final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
+    protected static Processor handleAssetProcessingException(Logger logger) {
+        return exchange -> {
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
+
+            StringBuilder error = new StringBuilder();
+
+            Source source = exchange.getIn().getHeader(HEADER_SOURCE, "unknown source", Source.class);
+            if (source != null) {
+                error.append("Error processing from ").append(source);
+            }
+
+            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
+            if (protocolName != null) {
+                error.append(" (protocol: ").append(protocolName).append(")");
+            }
+
+            // TODO Better exception handling - dead letter queue?
+            if (exception instanceof AssetProcessingException) {
+                AssetProcessingException processingException = (AssetProcessingException) exception;
+                error.append(" - ").append(processingException.getMessage());
+                error.append(": ").append(event.toString());
+                logger.warning(error.toString());
+            } else {
+                error.append(": ").append(event.toString());
+                logger.log(Level.WARNING, error.toString(), exception);
+            }
+
+            // Make the exception available if MEP is InOut
+            exchange.getOut().setBody(exception);
+        };
+    }
 
     @Override
     public int getPriority() {
@@ -275,7 +310,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             } else {
                                 // Check realm, must be accessible
                                 if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext,
-                                                                                                       asset.getRealm())) {
+                                    asset.getRealm())) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
 
@@ -286,7 +321,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                                 // Regular user must have write attributes role
                                 if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ATTRIBUTES.getValue(),
-                                                                              Constants.KEYCLOAK_CLIENT_ID)) {
+                                    Constants.KEYCLOAK_CLIENT_ID)) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
 
@@ -294,7 +329,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                 if (identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId())) {
                                     // Must be asset linked to user
                                     if (!assetStorageService.isUserAsset(authContext.getUserId(),
-                                                                         event.getAssetId())) {
+                                        event.getAssetId())) {
                                         throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                     }
                                     // Must be writable by restricted client
@@ -307,7 +342,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                         case SENSOR:
                             Optional<Protocol<?>> protocol = oldAttribute.getMetaValue(AGENT_LINK)
-                                    .map(agentLink -> agentService.getProtocolInstance(agentLink.getId()));
+                                .map(agentLink -> agentService.getProtocolInstance(agentLink.getId()));
 
                             // Sensor event must be for an attribute linked to an agent
                             if (!protocol.isPresent()) {
@@ -413,17 +448,17 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     /**
-     * This deals with single {@link Attribute} updates and pushes them through the chain where each
-     * processor is given the opportunity to completely consume the update or allow its progress to the next
-     * processor, see {@link AssetUpdateProcessor#processAssetUpdate}. If no processor completely consumed the
-     * update, the attribute will be stored in the database.
+     * This deals with single {@link Attribute} updates and pushes them through the chain where each processor is given
+     * the opportunity to completely consume the update or allow its progress to the next processor, see {@link
+     * AssetUpdateProcessor#processAssetUpdate}. If no processor completely consumed the update, the attribute will be
+     * stored in the database.
      */
     protected boolean processAssetUpdate(EntityManager em,
                                          Asset<?> asset,
                                          Attribute<?> attribute,
                                          Source source) throws AssetProcessingException {
 
-        String attributeStr = "Asset ID=" + asset.getId() + ", Asset name=" +asset.getName() + ", " + attribute;
+        String attributeStr = "Asset ID=" + asset.getId() + ", Asset name=" + asset.getName() + ", " + attribute;
 
         LOG.fine(">>> Processing start: " + attributeStr);
 
@@ -461,39 +496,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         LOG.fine("<<< Processing complete: " + attributeStr);
         return complete;
-    }
-
-    protected static Processor handleAssetProcessingException(Logger logger) {
-        return exchange -> {
-            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-            Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
-
-            StringBuilder error = new StringBuilder();
-
-            Source source = exchange.getIn().getHeader(HEADER_SOURCE, "unknown source", Source.class);
-            if (source != null) {
-                error.append("Error processing from ").append(source);
-            }
-
-            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
-            if (protocolName != null) {
-                error.append(" (protocol: ").append(protocolName).append(")");
-            }
-
-            // TODO Better exception handling - dead letter queue?
-            if (exception instanceof AssetProcessingException) {
-                AssetProcessingException processingException = (AssetProcessingException) exception;
-                error.append(" - ").append(processingException.getMessage());
-                error.append(": ").append(event.toString());
-                logger.warning(error.toString());
-            } else {
-                error.append(": ").append(event.toString());
-                logger.log(Level.WARNING, error.toString(), exception);
-            }
-
-            // Make the exception available if MEP is InOut
-            exchange.getOut().setBody(exception);
-        };
     }
 
     protected void storeAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) throws AssetProcessingException {

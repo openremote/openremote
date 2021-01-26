@@ -341,19 +341,14 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                 new AssetQuery()
                     .attributes(
                         new AttributePredicate().meta(
-                        new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                    ),
-                        new AttributePredicate().meta(
-                        new NameValuePredicate(STORE_DATA_POINTS, null)
-                    ))
+                            new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
+                        ))
                     .select(AssetQuery.Select.selectExcludePathAndParentInfo()));
 
         List<Pair<String, Attribute<?>>> attributes = assets.stream()
                 .map(asset -> asset
                     .getAttributes().stream()
-                    .filter(assetAttribute ->
-                        assetAttribute.getMetaValue(STORE_DATA_POINTS).orElse(false)
-                                    && assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
+                    .filter(assetAttribute -> assetAttribute.hasMeta(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
                     .map(assetAttribute -> new Pair<String, Attribute<?>>(asset.getId(), assetAttribute))
                     .collect(toList()))
                 .flatMap(List::stream)

@@ -806,7 +806,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         when: "a gateway client asset is modified"
         MicrophoneAsset microphone1 = assetStorageService.find(managerTestSetup.microphone1Id)
         microphone1.setName("Microphone 1 Updated")
-        microphone1.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).ifPresent{it.addMeta(new MetaItem<>(SHOW_ON_DASHBOARD))}
         microphone1.addAttributes(
             new Attribute<>("test", NUMBER, 100d)
         )
@@ -816,7 +815,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def mirroredMicrophone = assetStorageService.find(mapAssetId(gateway.id, managerTestSetup.microphone1Id, false))
             assert mirroredMicrophone != null
-            assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap{it.getMetaItem(SHOW_ON_DASHBOARD)}.flatMap{it.getValue()}.orElse(false)
+            assert mirroredMicrophone.getAttributes().get(MicrophoneAsset.SOUND_LEVEL).flatMap{it.getMetaItem(READ_ONLY)}.flatMap{it.getValue()}.orElse(false)
             assert mirroredMicrophone.getAttribute("test").isPresent()
             assert mirroredMicrophone.getAttribute("test", Double.class).flatMap{it.getValue()}.orElse(0d) == 100d
         }

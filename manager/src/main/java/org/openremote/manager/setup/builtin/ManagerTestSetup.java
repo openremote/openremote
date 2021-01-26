@@ -51,14 +51,14 @@ import static org.openremote.model.value.ValueType.*;
 public class ManagerTestSetup extends AbstractManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 44;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 13;
-    public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
-    public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
-    public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
-    public static final int DEMO_RULE_STATES_SMART_CITY = 15;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 69;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 25;
+    public static final int DEMO_RULE_STATES_APARTMENT_3 = 9;
+    public static final int DEMO_RULE_STATES_SMART_OFFICE = 21;
+    public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3 + 6;
+    public static final int DEMO_RULE_STATES_SMART_CITY = 82;
     public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_SMART_BUILDING + DEMO_RULE_STATES_SMART_OFFICE + DEMO_RULE_STATES_SMART_CITY;
-    public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
+    public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 309;
     public static final int DEMO_RULE_STATES_SMART_BUILDING_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static GeoJSONPoint SMART_OFFICE_LOCATION = new GeoJSONPoint(5.460315214821094, 51.44541688237109);
     public static GeoJSONPoint SMART_BUILDING_LOCATION = new GeoJSONPoint(5.454027, 51.446308);
@@ -160,7 +160,7 @@ public class ManagerTestSetup extends AbstractManagerSetup {
         Asset<?> thing = new ThingAsset("Demo Thing");
         thing.setParent(agent);
         thing.getAttributes().addOrReplace(
-            new Attribute<>(Asset.LOCATION, SMART_OFFICE_LOCATION).addMeta(new MetaItem<>(RULE_STATE, true)),
+            new Attribute<>(Asset.LOCATION, SMART_OFFICE_LOCATION),
             new Attribute<>(thingLightToggleAttributeName, BOOLEAN, true)
                     .addOrReplaceMeta(
                         new MetaItem<>(
@@ -198,8 +198,7 @@ public class ManagerTestSetup extends AbstractManagerSetup {
                         new MetaItem<>(LABEL, "Light 1 Usage"),
                         new MetaItem<>(READ_ONLY, true),
                         new MetaItem<>(UNITS, Constants.units(UNITS_KILO, UNITS_WATT, UNITS_HOUR)),
-                        new MetaItem<>(AGENT_LINK, new SimulatorAgent.SimulatorAgentLink(agent.getId())),
-                        new MetaItem<>(STORE_DATA_POINTS, true)
+                        new MetaItem<>(AGENT_LINK, new SimulatorAgent.SimulatorAgentLink(agent.getId()))
                     )
         );
         thing = assetStorageService.merge(thing);
@@ -333,7 +332,6 @@ public class ManagerTestSetup extends AbstractManagerSetup {
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454227,51.446753)),
                 new Attribute<>("lights", BOOLEAN, true)
                         .addMeta(
-                                new MetaItem<>(RULE_STATE, true),
                                 new MetaItem<>(ACCESS_RESTRICTED_READ, true),
                                 new MetaItem<>(ACCESS_RESTRICTED_WRITE, true)
                         )
@@ -383,34 +381,28 @@ public class ManagerTestSetup extends AbstractManagerSetup {
                 new Attribute<>("motionSensor", BOOLEAN, false)
                     .addMeta(
                             new MetaItem<>(LABEL, "Motion Sensor"),
-                            new MetaItem<>(RULE_STATE, true),
                             new MetaItem<>(RULE_EVENT, true)
                     ),
                 new Attribute<>("presenceDetected", BOOLEAN, false)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Presence Detected"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Presence Detected")
                         ),
                 new Attribute<>("firstPresenceDetected", ValueType.TIMESTAMP)
                         .addMeta(
-                                new MetaItem<>(LABEL, "First Presence Timestamp"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "First Presence Timestamp")
                         ),
                 new Attribute<>("lastPresenceDetected", ValueType.TIMESTAMP)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Last Presence Timestamp"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Last Presence Timestamp")
                         ),
                 new Attribute<>("co2Level", POSITIVE_INTEGER, 350)
                         .addMeta(
                                 new MetaItem<>(LABEL, "CO2 Level"),
-                                new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION)),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(UNITS, Constants.units(UNITS_PART_PER_MILLION))
                         ),
                 new Attribute<>("lightSwitch", BOOLEAN, true)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Light Switch"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Light Switch")
                         ),
                 new Attribute<>("windowOpen", BOOLEAN, false)
                         .addMeta(
@@ -418,13 +410,11 @@ public class ManagerTestSetup extends AbstractManagerSetup {
                         ),
                 new Attribute<>("lightSwitchTriggerTimes", TEXT.asArray(), new String[] {"1800", "0830"})
                         .addMeta(
-                                new MetaItem<>(LABEL, "Lightswitch Trigger Times"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Lightswitch Trigger Times")
                         ),
                 new Attribute<>("plantsWaterLevels", JSON_OBJECT, objectMap)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Water levels of the plants"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Water levels of the plants")
                         )
         );
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
@@ -437,28 +427,23 @@ public class ManagerTestSetup extends AbstractManagerSetup {
                 new Attribute<>("motionSensor", BOOLEAN, false)
                         .addMeta(
                                 new MetaItem<>(LABEL, "Motion Sensor"),
-                                new MetaItem<>(RULE_STATE, true),
                                 new MetaItem<>(RULE_EVENT, true)
                         ),
                 new Attribute<>("presenceDetected", BOOLEAN, false)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Presence Detected"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Presence Detected")
                         ),
                 new Attribute<>("firstPresenceDetected", ValueType.TIMESTAMP)
                         .addMeta(
-                                new MetaItem<>(LABEL, "First Presence Timestamp"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "First Presence Timestamp")
                         ),
                 new Attribute<>("lastPresenceDetected", ValueType.TIMESTAMP)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Last Presence Timestamp"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Last Presence Timestamp")
                         ),
                 new Attribute<>("lightSwitch", BOOLEAN, true)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Light Switch"),
-                                new MetaItem<>(RULE_STATE, true)
+                                new MetaItem<>(LABEL, "Light Switch")
                         )
         );
         apartment2Bathroom = assetStorageService.merge(apartment2Bathroom);

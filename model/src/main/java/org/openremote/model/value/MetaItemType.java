@@ -86,7 +86,7 @@ public final class MetaItemType {
     /* DATA POINT META */
 
     /**
-     * Should attribute values be stored in time series database
+     * Can be set to false to prevent attribute values being stored in time series database
      */
     public static final MetaItemDescriptor<Boolean> STORE_DATA_POINTS = new MetaItemDescriptor<>("storeDataPoints", ValueType.BOOLEAN);
 
@@ -106,9 +106,9 @@ public final class MetaItemType {
     /* RULE META */
 
     /**
-     * Set maximum lifetime of {@link AssetState} temporary facts in rules, for example "PT1H30M5S". The rules engine will
-     * remove temporary {@link AssetState} facts if they are older than this value (using event source/value timestamp,
-     * not event processing time).
+     * Set maximum lifetime of {@link AssetState} temporary facts in rules, for example "PT1H30M5S". The rules engine
+     * will remove temporary {@link AssetState} facts if they are older than this value (using event source/value
+     * timestamp, not event processing time).
      * <p>
      * The default expiration for asset events can be configured with environment variable
      * <code>RULE_EVENT_EXPIRES</code>.
@@ -128,11 +128,11 @@ public final class MetaItemType {
     public static final MetaItemDescriptor<Boolean> RULE_EVENT = new MetaItemDescriptor<>("ruleEvent", ValueType.BOOLEAN);
 
     /**
-     * Should attribute writes be processed by the rules engines as {@link AssetState} facts, with a lifecycle that
-     * reflects the state of the asset attribute. Each attribute will have one fact at all times in rules memory. These
-     * state facts are kept in sync with asset changes: When the attribute is updated, the fact will be updated
-     * (replaced). If you want evaluate the change history of an attribute, you typically need to combine this with
-     * {@link #RULE_EVENT}.
+     * Can be set to false to exclude an attribute update from being processed by the rules engines as {@link
+     * AssetState} facts, with a lifecycle that reflects the state of the asset attribute. Each attribute will have one
+     * fact at all times in rules memory. These state facts are kept in sync with asset changes: When the attribute is
+     * updated, the fact will be updated (replaced). If you want evaluate the change history of an attribute, you
+     * typically need to combine this with {@link #RULE_EVENT}.
      */
     public static final MetaItemDescriptor<Boolean> RULE_STATE = new MetaItemDescriptor<>("ruleState", ValueType.BOOLEAN);
 

@@ -47,10 +47,7 @@ import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.RulesetQuery;
-import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
-import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
@@ -82,7 +79,7 @@ import static org.openremote.model.value.MetaItemType.RULE_STATE;
 /**
  * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.
  * <p>
- * If an updated attribute's {@link MetaItemType#RULE_STATE} is true, this implementation of {@link
+ * If an updated attribute doesn't have meta {@link MetaItemType#RULE_STATE} is false, this implementation of {@link
  * AssetUpdateProcessor} converts the update message to an {@link AssetState} fact. This service keeps the facts and
  * thus the state of rule facts are in sync with the asset state changes that occur. If an asset attribute value
  * changes, the {@link AssetState} in the rules engines will be updated to reflect the change.
@@ -341,7 +338,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         // We might process two facts for a single attribute update, if that is what the user wants
 
         // First as asset state
-        if (attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(false)) {
+        if (attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true)) {
             updateAssetState(new AssetState<>(asset, attribute, source));
         }
 
@@ -463,11 +460,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             switch (persistenceEvent.getCause()) {
                 case CREATE: {
-                    // New asset has been created so get attributes that have RULE_STATE meta
+                    // New asset has been created so get attributes that don't have RULE_STATE=false meta
                     List<Attribute<?>> ruleStateAttributes = asset
                         .getAttributes()
                         .stream()
-                        .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(false)).collect(Collectors.toList());
+                        .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true)).collect(Collectors.toList());
 
                     // Asset<?> used to be loaded for each attribute which is inefficient
                     Asset<?> loadedAsset = ruleStateAttributes.isEmpty() ? null : assetStorageService.find(asset.getId(),
@@ -501,12 +498,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
                     List<Attribute<?>> oldStateAttributes = ((AttributeMap)persistenceEvent.getPreviousState("attributes"))
                         .stream()
-                        .filter(attr -> attr.getMetaValue(RULE_STATE).orElse(false))
+                        .filter(attr -> attr.getMetaValue(RULE_STATE).orElse(true))
                         .collect(toList());
 
                     List<Attribute<?>> newStateAttributes = ((AttributeMap) persistenceEvent.getCurrentState("attributes"))
                         .stream()
-                        .filter(attr -> attr.getMetaValue(RULE_STATE).orElse(false))
+                        .filter(attr -> attr.getMetaValue(RULE_STATE).orElse(true))
                         .collect(Collectors.toList());
 
                     // Retract obsolete or modified attributes
@@ -531,7 +528,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 case DELETE:
                     // Retract any facts that were associated with this asset
                     asset.getAttributes().stream()
-                        .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(false))
+                        .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true))
                         .forEach(attribute -> {
                             AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                             LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
@@ -854,24 +851,20 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected Stream<Pair<Asset<?>, Stream<Attribute<?>>>> findRuleStateAttributes() {
-        List<Asset<?>> assets = assetStorageService.findAll(
-            new AssetQuery()
-                .attributes(
-                    new AttributePredicate().meta(
-                        new NameValuePredicate(MetaItemType.RULE_STATE, new BooleanPredicate(true)))));
+        // Get all assets then filter out any attributes with RULE_STATE=false
+        List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery());
 
         return assets.stream()
             .map(asset ->
                 new Pair<>(asset, asset.getAttributes().stream()
-                    .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(false)))
+                    .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true)))
             );
     }
 
     /**
-     * Called when an engine's rules change identifying assets with location attributes marked with {@link
-     * MetaItemType#RULE_STATE} that also have {@link LocationAttributePredicate} in the rules. The job here is to
-     * identify the asset's (via {@link AssetState}) that have modified {@link LocationAttributePredicate}s and to
-     * notify the {@link GeofenceAssetAdapter}s.
+     * Called when an engine's rules change identifying assets with location attributes that also have
+     * {@link LocationAttributePredicate} in the rules. The job here is to identify the asset's (via {@link AssetState})
+     * that have modified {@link LocationAttributePredicate}s and to notify the {@link GeofenceAssetAdapter}s.
      */
     protected void onEngineLocationRulesChanged(RulesEngine<?> rulesEngine, List<RulesEngine.AssetStateLocationPredicates> newEngineAssetStateLocationPredicates) {
         withLock(getClass().getSimpleName() + "::onEngineLocationRulesChanged", () -> {

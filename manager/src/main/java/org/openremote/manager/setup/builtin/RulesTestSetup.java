@@ -128,7 +128,6 @@ public class RulesTestSetup extends AbstractManagerSetup {
                     keycloakTestSetup.tenantCity.getRealm(), "Demo Geofences", Ruleset.Lang.JSON, rules
             ).setAccessPublicRead(true);
             ruleset.getMeta().addOrReplace(
-                new MetaItem<>(SHOW_ON_DASHBOARD),
                 new MetaItem<>(SHOW_ON_LIST));
             tenantSmartCityRulesetId = rulesetStorageService.merge(ruleset).getId();
         }

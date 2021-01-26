@@ -37,7 +37,6 @@ import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.MetaItemType;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -98,11 +97,9 @@ public class RulesEngine<T extends Ruleset> {
 
     // Separate logger for periodic stats printer
     public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
-
+    protected static BiConsumer<RulesEngine<?>, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
     // Here to facilitate testing
     protected static BiConsumer<RulesEngine<?>, RulesetDeployment> PAUSE_SCHEDULER = RulesEngine::schedulePause;
-    protected static BiConsumer<RulesEngine<?>, RulesetDeployment> UNPAUSE_SCHEDULER = RulesEngine::scheduleUnpause;
-
     final protected TimerService timerService;
     final protected ScheduledExecutorService executorService;
     final protected AssetStorageService assetStorageService;
@@ -356,6 +353,7 @@ public class RulesEngine<T extends Ruleset> {
             }
         }
     }
+
     public void stop() {
         stop(false);
     }
@@ -602,8 +600,7 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     /**
-     * This is called with all the asset's that have a location attribute marked with {@link MetaItemType#RULE_STATE} and
-     * that are in the scope of a rule containing a location predicate.
+     * This is called with all the asset's that have a location attribute currently loaded into this engine.
      */
     protected void processLocationRules(List<AssetStateLocationPredicates> assetStateLocationPredicates) {
         if (assetLocationPredicatesConsumer != null) {
@@ -667,7 +664,7 @@ public class RulesEngine<T extends Ruleset> {
 
     protected void schedulePause(RulesetDeployment deployment) {
         long delay = deployment.getValidTo() - timerService.getCurrentTimeMillis();
-        LOG.info("Scheduling pause of ruleset at '" + new Date(deployment.getValidTo()).toString() + "' ("+ delay + "ms): " + deployment.ruleset.getName());
+        LOG.info("Scheduling pause of ruleset at '" + new Date(deployment.getValidTo()).toString() + "' (" + delay + "ms): " + deployment.ruleset.getName());
         pauseTimers.put(deployment.getId(), executorService.schedule(() -> pauseRuleset(deployment), delay, TimeUnit.MILLISECONDS));
     }
 
@@ -697,7 +694,7 @@ public class RulesEngine<T extends Ruleset> {
 
     protected void scheduleUnpause(RulesetDeployment deployment) {
         long delay = deployment.getValidFrom() - timerService.getCurrentTimeMillis();
-        LOG.info("Scheduling un-pause of ruleset at '" + new Date(deployment.getValidFrom()).toString() + "' ("+ delay + "ms): " + deployment.ruleset.getName());
+        LOG.info("Scheduling un-pause of ruleset at '" + new Date(deployment.getValidFrom()).toString() + "' (" + delay + "ms): " + deployment.ruleset.getName());
         unpauseTimers.put(deployment.getId(), executorService.schedule(() -> unPauseRuleset(deployment), delay, TimeUnit.MILLISECONDS));
     }
 

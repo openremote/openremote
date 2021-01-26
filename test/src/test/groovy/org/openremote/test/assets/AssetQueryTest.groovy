@@ -491,14 +491,15 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                     .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
                     .attributes(
                         new AttributePredicate().meta(
-                            new NameValuePredicate(STORE_DATA_POINTS, new BooleanPredicate(true))
+                            new NameValuePredicate(READ_ONLY, new BooleanPredicate(true))
                         )
                     )
         )
 
         then: "result should match"
-        assets.size() == 1
-        assets.get(0).id == managerTestSetup.thingId
+        assets.size() == 2
+        assets.any{it.id == managerTestSetup.agentId}
+        assets.any{it.id == managerTestSetup.thingId}
 
         when: "a query is executed"
         assets = assetStorageService.findAll(

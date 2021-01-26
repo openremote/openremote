@@ -130,6 +130,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert tenantBuildingEngine != null
             assert tenantBuildingEngine.isRunning()
             assert tenantBuildingEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
+            assert tenantBuildingEngine.lastFireTimestamp > 0
             assert !tenantBuildingEngine.trackLocationPredicates
         }
 
