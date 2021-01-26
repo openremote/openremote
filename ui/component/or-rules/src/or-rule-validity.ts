@@ -1,4 +1,4 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
+import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
 import {OrRulesRuleChangedEvent} from "./index";
 import "@openremote/or-input";
@@ -6,15 +6,12 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 
-import {DialogAction, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {ByWeekday, RRule, Weekday} from 'rrule'
 import moment from "moment";
 
 @customElement("or-rule-validity")
 export class OrRuleValidity extends translate(i18next)(LitElement) {
-
-    @property({type: Number})
-    public rulesetId?: number | undefined;
 
     @property({type: Object})
     public ruleset?: RulesetUnion;
@@ -22,11 +19,11 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     @query("#radial-modal")
     protected dialog?: OrMwcDialog;
 
-    @property({type: Object})
-    public rrule: RRule = new RRule({
-        freq: RRule.DAILY,
-        dtstart: new Date()
-      });
+    @property()
+    protected _validity?: CalendarEvent;
+    @property()
+    protected _rrule?: RRule;
+    protected _dialog?: OrMwcDialog;
 
     constructor() {
         super();
@@ -40,17 +37,12 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
     protected updated(changedProps: PropertyValues) {
         super.updated(changedProps);
-        if(changedProps.has("ruleset") && this.ruleset) {
-            if(this.ruleset.id && this.ruleset.id != this.rulesetId) {
-                const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
-                if (dialog) dialog.close();
-                this.rulesetId = this.ruleset.id
-            }
-            const validity = this.ruleset.meta ? this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent : undefined;
-            if (validity && validity.recurrence) {
-                this.rrule = RRule.fromString(validity.recurrence)
-            } else {
-                this.rrule = new RRule();
+
+        if (changedProps.has("ruleset") && this.ruleset) {
+            this._validity = this.ruleset.meta ? this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent : undefined;
+
+            if (this._validity && this._validity.recurrence) {
+                this._rrule = RRule.fromString(this._validity.recurrence);
             }
         }
     }
@@ -75,142 +67,135 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     }
 
     isAllDay() {
-        if(this.ruleset && this.ruleset.meta) {
-            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
-            return validity && moment(validity.start).hours() === 0 && moment(validity.start).minutes() === 0
-            && moment(validity.end).hours() === 23 && moment(validity.end).minutes() === 59;
-        }
+        return this._validity && moment(this._validity.start).hours() === 0 && moment(this._validity.start).minutes() === 0
+            && moment(this._validity.end).hours() === 23 && moment(this._validity.end).minutes() === 59;
     }
 
-    protected setRRuleValue(value: any, key?: string) {
-        if (key && this.rrule && this.ruleset) {
-            const origOptions = this.rrule.origOptions;
-            if (!this.ruleset.meta) {
-                this.ruleset.meta = {};
-            }
-            if (!this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
-                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = {};
-            }
-            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
-            switch (key) {
-                case "all-day":
-                    if (value) {
-                        validity.start = moment(validity.start).startOf("day").toDate().getTime();
-                        validity.end = moment(validity.end).endOf("day").toDate().getTime();
-                    } else {
-                        validity.start = moment().toDate().getTime();
-                        validity.end = moment().add(1, 'hour').toDate().getTime();
-                    }
-                    break;
-                case "start":
-                    validity.start = moment(value).set({hour:0,minute:0,second:0,millisecond:0}).toDate().getTime();
-                    if (this.getValidityType() === "validityRecurrence") {
-                        origOptions.dtstart = moment(value).toDate();
-                        this.rrule = new RRule(origOptions);
-                    }
-                    break;
-                case "end":
-                    validity.end = moment(value).set({hour:23,minute:59,second:0,millisecond:0}).toDate().getTime();
-                    break;
-                case "never-ends":
-                    if (value) {
-                        delete origOptions.until
-                    } else {
-                        origOptions.until = moment().add(1, 'year').toDate();
-                    }
-                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
-                    break;
-                case "byweekday":
-                    if (!origOptions.byweekday) origOptions.byweekday = [];
-                    if (!Array.isArray(origOptions.byweekday)) origOptions.byweekday = [origOptions.byweekday as ByWeekday];
-                    if (value.checked) {
-                        const weekDay = this.getWeekDay(value.name);
-                        if (weekDay) origOptions.byweekday.push(weekDay);
-                    } else {
-                        origOptions.byweekday = origOptions.byweekday.filter((day) => day !== this.getWeekDay(value.name));
-                    }
-                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
-                    break;
-                case "until":
-                    if (this.rrule.options.until) {
-                        const newDate = moment(value)
-                        origOptions["until"] = new Date(moment(origOptions.until).set({year: newDate.year(), month: newDate.month(), date: newDate.date()}).format())
-                    }
-                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
-                    break;
-                case "dtstart-time":
-                    const timeParts = value.split(':');
-                    origOptions.dtstart = moment(origOptions.dtstart).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).toDate();
-                    validity.start = moment(origOptions.dtstart).toDate().getTime();
-                    if (this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
-                    break;
-                case "until-time":
-                    const untilParts = value.split(':');
-                    if (this.rrule.options.until) {
-                        origOptions.until = moment(origOptions.until).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate()
-                    }
-                    validity.end = moment(validity.end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate().getTime();
-                    if(this.getValidityType() === "validityRecurrence") this.rrule = new RRule(origOptions);
-                    break;
-            }
+    protected setRRuleValue(value: any, key: string) {
+        const origOptions = this._rrule ? this._rrule.origOptions : undefined;
+        const validity = this._validity!;
+
+        switch (key) {
+            case "all-day":
+                if (value) {
+                    validity.start = moment(validity.start).startOf("day").toDate().getTime();
+                    validity.end = moment(validity.end).endOf("day").toDate().getTime();
+                } else {
+                    validity.start = moment().toDate().getTime();
+                    validity.end = moment().add(1, 'hour').toDate().getTime();
+                }
+                break;
+            case "start":
+                validity.start = moment(value).set({hour:0,minute:0,second:0,millisecond:0}).toDate().getTime();
+                if (this.getValidityType() === "validityRecurrence") {
+                    origOptions!.dtstart = moment(value).toDate();
+                    this._rrule = new RRule(origOptions);
+                }
+                break;
+            case "end":
+                validity.end = moment(value).set({hour:23,minute:59,second:0,millisecond:0}).toDate().getTime();
+                break;
+            case "never-ends":
+                if (value) {
+                    delete origOptions!.until
+                } else {
+                    origOptions!.until = moment().add(1, 'year').toDate();
+                }
+                if (this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
+                break;
+            case "byweekday":
+                if (!origOptions!.byweekday) origOptions!.byweekday = [];
+                if (!Array.isArray(origOptions!.byweekday)) origOptions!.byweekday = [origOptions!.byweekday as ByWeekday];
+                if (value.checked) {
+                    const weekDay = this.getWeekDay(value.name);
+                    if (weekDay) origOptions!.byweekday.push(weekDay);
+                } else {
+                    origOptions!.byweekday = origOptions!.byweekday.filter((day) => day !== this.getWeekDay(value.name));
+                }
+                if (this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
+                break;
+            case "until":
+                if (this._rrule!.options.until) {
+                    const newDate = moment(value)
+                    origOptions!.until = new Date(moment(origOptions!.until).set({year: newDate.year(), month: newDate.month(), date: newDate.date()}).format())
+                }
+                if (this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
+                break;
+            case "dtstart-time":
+                const timeParts = value.split(':');
+                origOptions!.dtstart = moment(origOptions!.dtstart).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).toDate();
+                validity.start = moment(origOptions!.dtstart).toDate().getTime();
+                if (this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
+                break;
+            case "until-time":
+                const untilParts = value.split(':');
+                if (this._rrule!.options.until) {
+                    origOptions!.until = moment(origOptions!.until).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate()
+                }
+                validity.end = moment(validity.end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate().getTime();
+                if(this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
+                break;
         }
-        this.requestUpdate();
+        this.refreshDialogContent();
     }
 
     timeLabel() {
         if (this.getValidityType() === "validityAlways") {
             return i18next.t("validityAlways");
-        } else if (this.ruleset && this.ruleset.meta && this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] && (this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent).recurrence) {
-            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
+        } else if (this._validity && this._rrule) {
+            const validity = this._validity;
             const diff = moment(validity.end).diff(validity.start, "days");
             let diffString = "";
             if (this.isAllDay()) {
                 if(diff > 0) diffString = " "+i18next.t('forDays', {days: diff});
-                return this.rrule.toText() + diffString;
+                return this._rrule.toText() + diffString;
             } else {
                 if(diff > 0) diffString = i18next.t("fromToDays", {start: moment(validity.start).format("HH:mm"), end: moment(validity.end).format("HH:mm"), days: diff })
                 if(diff === 0) diffString = i18next.t("fromTo", {start: moment(validity.start).format("HH:mm"), end: moment(validity.end).format("HH:mm") })
-                return this.rrule.toText() + " " + diffString;
+                return this._rrule.toText() + " " + diffString;
             } 
-        } else if (this.ruleset && this.ruleset.meta && this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
-            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
+        } else if (this._validity) {
             let format = "DD-MM-YYYY";
             if(!this.isAllDay()) format = "DD-MM-YYYY HH:mm";
-            return i18next.t("activeFromTo", {start: moment(validity.start).format(format), end: moment(validity.end).format(format) })
+            return i18next.t("activeFromTo", {start: moment(this._validity.start).format(format), end: moment(this._validity.end).format(format) })
         }
     }
 
     setValidityType(value: any) {
-        if(!this.ruleset) return;
+        if (!this.ruleset) return;
 
         if (!this.ruleset.meta) this.ruleset.meta = {};
 
         switch (value) {
             case "validityAlways":
                 delete this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY];
+                this._validity = undefined;
+                this._rrule = undefined;
                 break;
             case "validityPeriod":
-                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = {
-                        start: moment().startOf('day').toDate().getTime(),
-                        end: moment().endOf('day').toDate().getTime()
-                    } as CalendarEvent;
+                this._validity = {
+                    start: moment().startOf("day").toDate().getTime(),
+                    end: moment().endOf("day").toDate().getTime()
+                };
                 break;
             case "validityRecurrence":
-                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = {
-                        start: moment().startOf("day").toDate().getTime(),
-                        end: moment().endOf("day").toDate().getTime(),
-                        recurrence: {}
-                    } as CalendarEvent;
+                if (!this._validity) {
+                    this._validity = {
+
+                    };
+                }
+                this._rrule = new RRule({
+                    freq: RRule.DAILY,
+                    dtstart: new Date()
+                });
                 break;
         }
-        this.requestUpdate("ruleset");
+        this.refreshDialogContent();
     }
 
     getValidityType () {
-        if(this.ruleset && this.ruleset.meta && this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
-            const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
-
-            if (validity.recurrence) {
+        if(this._validity) {
+            if (this._rrule) {
                 return "validityRecurrence";
             } else {
                 return "validityPeriod";
@@ -219,23 +204,66 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         return "validityAlways";
     }
 
-    renderDialogHTML() {
+    protected render() {
+        if(!this.ruleset) return html``;
 
-        if (!this.ruleset) {
+        return html`
+            <or-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @click="${() => this.showDialog()}"></or-input>
+        `;
+    }
+
+    protected showDialog() {
+
+        this._dialog = showDialog({
+            title: i18next.t("scheduleRuleActivity"),
+            actions: [
+                {
+                    actionName: "cancel",
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                    action: () => {
+                        this._dialog = undefined;
+                    }
+                },
+                {
+                    actionName: "ok",
+                    default: true,
+                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("apply")}"></or-input>`,
+                    action: () => {
+                        if (this.ruleset && this.ruleset.meta) {
+                            if (this.getValidityType() === "validityAlways") {
+                                delete this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY];
+                            } else {
+                                if (this.getValidityType() === "validityRecurrence") {
+                                    this._validity!.recurrence = this._rrule!.toString().split("RRULE:")[1];
+                                }
+                                this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] = this._validity;
+                            }
+                            this.dispatchEvent(new OrRulesRuleChangedEvent(true));
+                            this._dialog = undefined;
+                        }
+                    }
+                },
+            ],
+            content: this.getDialogContent()
+        });
+    }
+
+    protected refreshDialogContent() {
+        if (!this._dialog) {
             return;
         }
 
-        if (!this.dialog) {
-            return;
-        }
+        this._dialog.dialogContent = this.getDialogContent();
+    }
 
+    protected getDialogContent(): TemplateResult {
         const options = [RRule.MO.toString(), RRule.TU.toString(), RRule.WE.toString(), RRule.TH.toString(), RRule.FR.toString(), RRule.SA.toString(), RRule.SU.toString()];
         const validityTypes = ["validityAlways", "validityPeriod", "validityRecurrence"];
         const validityType = this.getValidityType();
-        const selectedOptions = this.rrule.options && this.rrule.options.byweekday ? this.rrule.options.byweekday.map(day => new Weekday(day).toString()) : [];
-        const validity = this.ruleset.meta ? this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent : undefined;
+        const selectedOptions = this._rrule && this._rrule.options && this._rrule.options.byweekday ? this._rrule.options.byweekday.map(day => new Weekday(day).toString()) : [];
+        const validity = this._validity;
 
-        this.dialog.dialogContent = html`
+        return html`
             <div style="min-height: 200px; min-width: 635px; display:grid; flex-direction: row;">
                 <div class="layout horizontal">
                     <or-input .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-input>
@@ -260,72 +288,19 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 ` : ``}
              
                 ${validityType  === "validityRecurrence" ? html`
-                    <label style="display:block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
+                    <label style="display: block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
                     <div class="layout horizontal">
                         <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
                     </div>
                     
                     <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
                     <div class="layout horizontal">                        
-                        <or-input .value="${!this.rrule.options.until}"  @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-input>
+                        <or-input .value="${!this._rrule!.options.until}"  @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-input>
                     </div>
                     <div class="layout horizontal">
-                        <or-input ?disabled="${!this.rrule.options.until}" .value="${this.rrule.options.until ? moment(this.rrule.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-input>
+                        <or-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-input>
                     </div>
-                ` : ``}
-                
+                ` : ``}                
             </div>`;
-    }
-
-    protected render() {
-        if(!this.ruleset) return html``;
-
-      
-        // @ts-ignore
-
-        const validityModalActions: DialogAction[] = [
-            {
-                actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
-                action: () => {
-                    // Nothing to do here
-                }
-            },
-            {
-                actionName: "ok",
-                default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("apply")}"></or-input>`,
-                action: () => {
-                    if(this.ruleset && this.ruleset.meta) {
-                        const validity = this.ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
-                        if(this.getValidityType() === "validityRecurrence") {
-                            validity.recurrence = this.rrule.toString().split("RRULE:")[1]
-                        }
-                        if(this.getValidityType() === "validityPeriod" || this.getValidityType() === "validityRecurrence") {
-                            validity.start = moment(validity.start).toDate().getTime();
-                            validity.end = moment(validity.end).toDate().getTime();
-                        }
-                        this.dispatchEvent(new OrRulesRuleChangedEvent(true));
-                        this.requestUpdate('ruleset')
-                    }
-                }
-            },
-        ];
-       
-      
-        const validityModalOpen = () => {
-            const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
-            if (dialog) {
-                dialog.open();
-                this.renderDialogHTML();
-            }
-        };
-
-        this.renderDialogHTML();
-        
-        return html`
-            <or-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @click="${validityModalOpen}"></or-input>
-            <or-mwc-dialog id="radial-modal" dialogTitle="${i18next.t("scheduleRuleActivity")}" .dialogActions="${validityModalActions}"></or-mwc-dialog>
-        `
     }
 }

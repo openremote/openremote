@@ -28,6 +28,7 @@ import {
     ClientRole,
     SharedEvent,
     WellknownAssets,
+    WellknownAttributes,
     WellknownMetaItems
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
@@ -440,12 +441,12 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
     if (panelConfig && panelConfig.type === "group") {
 
-        if (asset.type !== "urn:openremote:asset:group") {
+        if (asset.type !== "GroupAsset") {
             return;
         }
 
         // Get child asset type attribute value
-        const childAssetTypeAttribute = asset.attributes && asset.attributes["childAssetType"];
+        const childAssetTypeAttribute = asset.attributes && asset.attributes[WellknownAttributes.CHILDASSETTYPE];
         const groupConfig = panelConfig as GroupPanelConfig;
 
         if (!childAssetTypeAttribute || typeof childAssetTypeAttribute.value !== "string") {

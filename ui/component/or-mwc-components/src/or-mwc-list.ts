@@ -327,7 +327,7 @@ export class OrMwcList extends LitElement {
             return indexes;
         }, [] as number[]);
 
-        this._mdcComponent.selectedIndex = indexes.length === 1 ? indexes[0] : indexes.length > 1 ? indexes : -1;
+        this._mdcComponent.selectedIndex = this.type === ListType.CHECKBOX ? indexes : indexes.length >= 1 ? indexes[0] : -1;
     }
 
     protected _onSelected(ev: MDCListActionEvent) {

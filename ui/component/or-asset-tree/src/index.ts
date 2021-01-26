@@ -511,8 +511,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _onAddClicked() {
 
         const types = this._getAllowedChildTypes(this._selectedNodes[0]);
-        let dialog: OrMwcDialog;
+        const agentTypes = types.filter((t) => t.descriptorType === "agent");
+        const assetTypes = types.filter((t) => t.descriptorType === "asset");
         const parent = this._selectedNodes && this._selectedNodes.length === 1 ? this._selectedNodes[0].asset : undefined;
+        let dialog: OrMwcDialog;
 
         const onAddChanged = (ev: OrAddChangedEvent) => {
             const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
@@ -524,7 +526,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             {
                 title: i18next.t("addAsset"),
                 content: html`
-                    <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${types[0]}" .assetTypes="${types[1]}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
+                    <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${agentTypes}" .assetTypes="${assetTypes}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
                 `,
                 actions: [
                     {
@@ -547,7 +549,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             const asset: Asset = {
                                 name: name,
                                 type: descriptor.name,
-                                realm: manager.getRealm()
+                                realm: manager.displayRealm
                             };
 
                             if (this.selectedIds) {

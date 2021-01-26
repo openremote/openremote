@@ -352,7 +352,7 @@ export class OrEditAssetPanel extends LitElement {
         const meta = attribute.meta || {};
 
         const metaItemList: (ListItem | null)[] = assetTypeInfo.metaItemDescriptors.map((metaName) => AssetModelUtil.getMetaItemDescriptor(metaName)!)
-            .filter((descriptor) => meta.hasOwnProperty(descriptor.name!))
+            .filter((descriptor) => !meta.hasOwnProperty(descriptor.name!))
             .map((descriptor) => {
                 return {
                     text: Util.getMetaLabel(undefined, descriptor, this.asset!.type!, true),

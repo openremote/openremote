@@ -28,7 +28,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
     const menu: MenuItem[] = [];
 
     if (addAssetTypes && assetInfos) {
-        menu.push(...assetInfos.map((assetTypeInfo) => {
+        menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
 
             const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
             const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);

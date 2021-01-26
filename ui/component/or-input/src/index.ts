@@ -37,11 +37,12 @@ export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> 
 
     public static readonly NAME = "or-input-changed";
 
-    constructor(value?: any, previousValue?: any) {
+    constructor(value?: any, previousValue?: any, enterPressed?: boolean) {
         super(OrInputChangedEvent.NAME, {
             detail: {
                 value: value,
-                previousValue: previousValue
+                previousValue: previousValue,
+                enterPressed: enterPressed
             },
             bubbles: true,
             composed: true
@@ -52,6 +53,7 @@ export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> 
 export interface OrInputChangedEventDetail {
     value?: any;
     previousValue?: any;
+    enterPressed?: boolean;
 }
 
 declare global {
@@ -342,7 +344,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             .helperText="${helperText}" .helperPersistent="${true}"
         }}" @or-input-changed="${(e: OrInputChangedEvent) => {
             e.stopPropagation();
-            valueChangeNotifier(valueConverter ? valueConverter(e.detail.value) : e.detail.value);
+            e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
+            valueChangeNotifier(e);
         }}"></or-input>`
     };
 
@@ -785,9 +788,15 @@ export class OrInput extends LitElement {
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
                             @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
-                                <div id="menu-anchor" class="mdc-select__anchor select-class">
+                                <div id="menu-anchor" class="mdc-select__anchor" role="button"
+                                     aria-haspopup="listbox"
+                                     aria-expanded="false"
+                                     aria-labelledby="label selected-text">
                                     <span class="mdc-select__ripple"></span>
-                                    <span class="mdc-select__selected-text">${valueLabel ? i18next.t(valueLabel) : ""}</span>
+                                    ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
+                                    <span class="mdc-select__selected-text-container">
+                                      <span id="selected-text" class="mdc-select__selected-text">${valueLabel ? i18next.t(valueLabel) : ""}<</span>
+                                    </span>
                                     <span class="mdc-select__dropdown-icon">
                                         <svg
                                           class="mdc-select__dropdown-icon-graphic"
@@ -806,12 +815,11 @@ export class OrInput extends LitElement {
                                         </polygon>
                                       </svg>
                                     </span>
-                                    ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
 
-                                <div class="mdc-select__menu mdc-menu mdc-menu-surface select-class" role="listbox">
-                                    <ul class="mdc-list">
+                                <div class="mdc-select__menu mdc-menu mdc-menu-surface">
+                                    <ul class="mdc-list" role="listbox">
                                         ${opts ? opts.map(([optValue, optDisplay], index) => {
                                             if (this.value === optValue) {
                                                 this._selectedIndex = index;
@@ -1018,9 +1026,9 @@ export class OrInput extends LitElement {
                             step="${this.step ? this.step : "any"}" minlength="${ifDefined(this.minLength)}" pattern="${ifDefined(this.pattern)}"
                             maxlength="${ifDefined(this.maxLength)}" placeholder="${ifDefined(this.placeHolder)}"
                             .value="${valMinMax[0] !== null && valMinMax[0] !== undefined ? valMinMax[0] : ""}"
-                            @keyup="${(e: KeyboardEvent) => {
+                            @keydown="${(e: KeyboardEvent) => {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
-                                    this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value);
+                                    this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
                             @input="${(e: Event) => this.clearValidation(e)}" 
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
@@ -1188,7 +1196,7 @@ export class OrInput extends LitElement {
         if(input) input.setCustomValidity("");
     }
 
-    protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined) {
+    protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined, enterPressed?: boolean) {
         let valid = true;
 
         if (elem && this._mdcComponent) {
@@ -1242,7 +1250,7 @@ export class OrInput extends LitElement {
                     (this._mdcComponent2 as MDCTextField).value = newValue;
                 }
             }
-            this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue));
+            this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue, enterPressed));
         }
     }
 

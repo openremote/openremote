@@ -509,7 +509,14 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         // Fallback to simple input provider
-        this._templateProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (v: any) => this._onInputValueChanged(v), options);
+        const valueChangeHandler = (e: OrInputChangedEvent) => {
+            if (e.detail.enterPressed || !this._templateProvider || !this._templateProvider.supportsSendButton) {
+                this._onInputValueChanged(e.detail.value);
+            } else {
+                this._newValue = e.detail.value;
+            }
+        };
+        this._templateProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (e: any) => valueChangeHandler(e), options);
     }
 
     public getLabel(): string | undefined {

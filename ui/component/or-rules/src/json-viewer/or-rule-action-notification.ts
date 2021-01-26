@@ -315,7 +315,7 @@ export class OrRuleActionNotification extends LitElement {
             case ActionTargetType.ASSET:
                 if (!value || value === "allMatched") {
                     delete this.action.target;
-                } else if (value.startsWith("urn:")) {
+                } else if (value.endsWith("Asset")) {
                      // This is an asset type
                     this.action.target = {
                         matchedAssets: {

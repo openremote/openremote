@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
-import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset} from "@openremote/model";
+import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset, WellknownMetaItems, WellknownRulesetMetaItems} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {OREvent, Util} from "@openremote/core";
 import "@openremote/or-input";
@@ -333,8 +333,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         if (ruleset.enabled) {
 
             // Look at validity meta
-            if (ruleset.meta && ruleset.meta.hasOwnProperty("urn:openremote:rule:meta:validity")) {
-                const calendarEvent = ruleset.meta["urn:openremote:rule:meta:validity"] as CalendarEvent;
+            if (ruleset.meta && ruleset.meta[WellknownRulesetMetaItems.VALIDITY]) {
+                const calendarEvent = ruleset.meta[WellknownRulesetMetaItems.VALIDITY] as CalendarEvent;
                 const now = new Date().getTime();
 
                 if (calendarEvent.start) {
