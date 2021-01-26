@@ -238,7 +238,7 @@ include:
     - SSH "docker system prune -f"
   after_script:
     - *ssh_config
-    - SSH "docker-compose -p ${PROJECT_NAME} -f profile/${CI_ENVIRONMENT_SLUG}.yml logs > ${CI_ENVIRONMENT_SLUG}.log"
+    - SSH "docker-compose -p ${PROJECT_NAME} -f profile/${CI_ENVIRONMENT_SLUG}.yml logs --no-color --timestamp > ${CI_ENVIRONMENT_SLUG}.log"
     - SCP ${DEPLOYMENT_HOST_USER}@${DEPLOYMENT_HOST}:~/${CI_ENVIRONMENT_SLUG}.log .
     - SSH "rm ~/${CI_ENVIRONMENT_SLUG}.log"
   artifacts:
