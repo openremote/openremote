@@ -634,12 +634,17 @@ public class RulesFacts extends Facts implements RuleListener {
             LOG.fine("Location predicate found");
             // Collect asset states only where the attribute is location (location predicates only make sense when the location
             // attribute is exposed to rules - we don't support RULE_EVENT facts just RULE_STATE
+            Collection<AssetState<?>> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getName().equalsIgnoreCase(Asset.LOCATION.getName())).collect(Collectors.toSet());
+
             if (assetStateLocationPredicateMap == null) {
-                Collection<AssetState<?>> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getName().equalsIgnoreCase(Asset.LOCATION.getName())).collect(Collectors.toSet());
                 assetStateLocationPredicateMap = new HashMap<>(locationAssetStates.size());
-                locationAssetStates.forEach(assetState -> assetStateLocationPredicateMap.put(assetState.getId(), new HashSet<>()));
             }
 
+            locationAssetStates.forEach(assetState -> {
+                if (!assetStateLocationPredicateMap.containsKey(assetState.getId())) {
+                    assetStateLocationPredicateMap.put(assetState.getId(), new HashSet<>());
+                }
+            });
             assetStateLocationPredicateMap.forEach((assetState, locationPredicates) -> locationPredicates.addAll(foundLocationPredicates));
         }
     }
