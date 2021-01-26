@@ -249,28 +249,24 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   }
 
   private checkPassword(index) {
-
-    
     const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-"+index) as OrInput
     const passwordComponent = this.shadowRoot.getElementById("password-"+index)
 
     const repeatPassword = repeatPasswordComponent.shadowRoot.querySelector('input');
     const password = passwordComponent.shadowRoot.querySelector('input');
     if(repeatPassword.value !== password.value) {
-      if(repeatPasswordComponent) {
         const error = i18next.t("samePassword");
         repeatPassword.setCustomValidity(error);
         repeatPasswordComponent.helperText = error;
-      }
       return false
     } else {
       if(repeatPasswordComponent) {
-          repeatPassword.setCustomValidity("");
           repeatPasswordComponent.helperText = ""
       }
       return password.value
     }
   }
+
   private _createUser(user, index) {
     const password = this.checkPassword(index)
     manager.rest.api.UserResource.create(manager.displayRealm, user).then((response:any) => {

@@ -1022,6 +1022,7 @@ export class OrInput extends LitElement {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value);
                                 }}}"
+                            @input="${(e: Event) => this.clearValidation(e)}" 
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
@@ -1180,6 +1181,11 @@ export class OrInput extends LitElement {
                 <span class="mdc-notched-outline__trailing"></span>
             </span>
         `;
+    }
+
+    protected clearValidation(e:Event){
+        const input = e.target as HTMLInputElement
+        if(input) input.setCustomValidity("");
     }
 
     protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined) {
