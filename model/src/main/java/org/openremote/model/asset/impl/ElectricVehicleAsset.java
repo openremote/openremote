@@ -37,8 +37,6 @@ import static org.openremote.model.Constants.*;
 public class ElectricVehicleAsset extends ElectricityStorageAsset {
 
     public static final AttributeDescriptor<ElectricityChargerAsset.ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>("connectorType", ElectricityChargerAsset.CONNECTOR_TYPE_VALUE);
-    public static final AttributeDescriptor<Double> EFFICIENCY = new AttributeDescriptor<>("efficiency", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Integer> ODOMETER = new AttributeDescriptor<>("odometer", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_KILO, UNITS_METRE);
     public static final AttributeDescriptor<Boolean> CHARGER_CONNECTED = new AttributeDescriptor<>("chargerConnected", ValueType.BOOLEAN);
@@ -54,6 +52,154 @@ public class ElectricVehicleAsset extends ElectricityStorageAsset {
 
     public ElectricVehicleAsset(String name) {
         super(name);
+    }
+
+    public Optional<ElectricityChargerAsset.ConnectorType> getConnectorType() {
+        return getAttributes().getValue(CONNECTOR_TYPE);
+    }
+
+    public ElectricVehicleAsset setConnectorType(ElectricityChargerAsset.ConnectorType value) {
+        getAttributes().getOrCreate(CONNECTOR_TYPE).setValue(value);
+        return this;
+    }
+
+    public Optional<Integer> getOdometer() {
+        return getAttributes().getValue(ODOMETER);
+    }
+
+    public ElectricVehicleAsset setOdometer(Integer value) {
+        getAttributes().getOrCreate(ODOMETER).setValue(value);
+        return this;
+    }
+
+    public Optional<Boolean> getChargerConnected() {
+        return getAttributes().getValue(CHARGER_CONNECTED);
+    }
+
+    public ElectricVehicleAsset setChargerConnected(Boolean value) {
+        getAttributes().getOrCreate(CHARGER_CONNECTED).setValue(value);
+        return this;
+    }
+
+
+    @Override
+    public ElectricVehicleAsset setPower(Double value) {
+        super.setPower(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setPowerSetpoint(Double value) {
+        super.setPowerSetpoint(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setPowerImportMin(Double value) {
+        super.setPowerImportMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setPowerImportMax(Double value) {
+        super.setPowerImportMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setPowerExportMin(Double value) {
+        super.setPowerExportMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setPowerExportMax(Double value) {
+        super.setPowerExportMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEnergyImportTotal(Double value) {
+        super.setEnergyImportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEnergyExportTotal(Double value) {
+        super.setEnergyExportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEnergyCapacity(Double value) {
+        super.setEnergyCapacity(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEnergyLevel(Double value) {
+        super.setEnergyLevel(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEnergyLevelPercentage(Integer value) {
+        super.setEnergyLevelPercentage(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEnergyLevelPercentageMin(Integer value) {
+        super.setEnergyLevelPercentageMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEnergyLevelPercentageMax(Integer value) {
+        super.setEnergyLevelPercentageMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEfficiencyImport(Integer value) {
+        super.setEfficiencyImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setEfficiencyExport(Integer value) {
+        super.setEfficiencyExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setTariffImport(Double value) {
+        super.setTariffImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setTariffExport(Double value) {
+        super.setTariffExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setCarbonImport(Double value) {
+        super.setCarbonImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setCarbonExport(Double value) {
+        super.setCarbonExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setCarbonTotal(Integer value) {
+        super.setCarbonTotal(value);
+        return this;
     }
 
     @Override
@@ -161,42 +307,6 @@ public class ElectricVehicleAsset extends ElectricityStorageAsset {
     @Override
     public ElectricVehicleAsset setTags(String[] tags) {
         super.setTags(tags);
-        return this;
-    }
-
-    public Optional<ElectricityChargerAsset.ConnectorType> getConnectorType() {
-        return getAttributes().getValue(CONNECTOR_TYPE);
-    }
-
-    public ElectricVehicleAsset setConnectorType(ElectricityChargerAsset.ConnectorType value) {
-        getAttributes().getOrCreate(CONNECTOR_TYPE).setValue(value);
-        return this;
-    }
-
-    public Optional<Double> getEfficiency() {
-        return getAttributes().getValue(EFFICIENCY);
-    }
-
-    public ElectricVehicleAsset setEfficiency(Double value) {
-        getAttributes().getOrCreate(EFFICIENCY).setValue(value);
-        return this;
-    }
-
-    public Optional<Integer> getOdometer() {
-        return getAttributes().getValue(ODOMETER);
-    }
-
-    public ElectricVehicleAsset setOdometer(Integer value) {
-        getAttributes().getOrCreate(ODOMETER).setValue(value);
-        return this;
-    }
-
-    public Optional<Boolean> getChargerConnected() {
-        return getAttributes().getValue(CHARGER_CONNECTED);
-    }
-
-    public ElectricVehicleAsset setChargerConnected(Boolean value) {
-        getAttributes().getOrCreate(CHARGER_CONNECTED).setValue(value);
         return this;
     }
 }

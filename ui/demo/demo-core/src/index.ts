@@ -52,7 +52,7 @@ class OrDemo extends subscribe(manager)(LitElement) {
             <p><b>Translation Example: </b> <or-translate value="temperature"></or-translate>   <button @click="${() => this.toggleLanguage()}">${i18next.language}</button></p>
             
             ${ this.electricityConsumerAsset ? html`
-                <p><b>Electricity consumer power total (${Util.resolveUnits(Util.getAttributeUnits(this.electricityConsumerAsset.attributes![WellknownAttributes.POWERTOTAL], AssetModelUtil.getAttributeDescriptor(WellknownAttributes.POWERTOTAL, WellknownAssets.ELECTRICITYCONSUMERASSET), WellknownAssets.ELECTRICITYCONSUMERASSET))}): </b> ${Util.getAttributeValueAsString(this.electricityConsumerAsset.attributes![WellknownAttributes.POWERTOTAL], AssetModelUtil.getAttributeDescriptor(WellknownAttributes.POWERTOTAL, WellknownAssets.ELECTRICITYCONSUMERASSET), WellknownAssets.ELECTRICITYCONSUMERASSET, true, "-")} </p>        
+                <p><b>Electricity consumer power total (${Util.resolveUnits(Util.getAttributeUnits(this.electricityConsumerAsset.attributes![WellknownAttributes.POWER], AssetModelUtil.getAttributeDescriptor(WellknownAttributes.POWER, WellknownAssets.ELECTRICITYCONSUMERASSET), WellknownAssets.ELECTRICITYCONSUMERASSET))}): </b> ${Util.getAttributeValueAsString(this.electricityConsumerAsset.attributes![WellknownAttributes.POWER], AssetModelUtil.getAttributeDescriptor(WellknownAttributes.POWER, WellknownAssets.ELECTRICITYCONSUMERASSET), WellknownAssets.ELECTRICITYCONSUMERASSET, true, "-")} </p>        
             ` : ``}
             
             ${ this.electricityChargerAsset ? html`

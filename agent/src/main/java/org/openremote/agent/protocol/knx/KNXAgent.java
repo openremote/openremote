@@ -110,30 +110,27 @@ public class KNXAgent extends Agent<KNXAgent, KNXProtocol, KNXAgent.KNXAgentLink
         return getAttributes().getValue(MESSAGE_SOURCE_ADDRESS);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends KNXAgent> T setMessageSourceAddress(String value) {
+    public KNXAgent setMessageSourceAddress(String value) {
         getAttributes().getOrCreate(MESSAGE_SOURCE_ADDRESS).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Boolean> isNATMode() {
         return getAttributes().getValue(NAT_MODE);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends KNXAgent> T setNATMode(Boolean value) {
+    public KNXAgent setNATMode(Boolean value) {
         getAttributes().getOrCreate(NAT_MODE).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Boolean> isRoutingMode() {
         return getAttributes().getValue(ROUTING_MODE);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends KNXAgent> T setRoutingMode(Boolean value) {
+    public KNXAgent setRoutingMode(Boolean value) {
         getAttributes().getOrCreate(ROUTING_MODE).setValue(value);
-        return (T)this;
+        return this;
     }
 
     @Override

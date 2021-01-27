@@ -45,9 +45,9 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     public static final ValueDescriptor<PanelOrientation> PANEL_ORIENTATION_VALUE = new ValueDescriptor<>("panelOrientation", PanelOrientation.class);
 
     public static final AttributeDescriptor<PanelOrientation> PANEL_ORIENTATION = new AttributeDescriptor<>("panelOrientation", PANEL_ORIENTATION_VALUE);
-    public static final AttributeDescriptor<Double> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth", ValueType.POSITIVE_NUMBER
+    public static final AttributeDescriptor<Integer> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth", ValueType.POSITIVE_INTEGER
     ).withUnits(UNITS_DEGREE);
-    public static final AttributeDescriptor<Double> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_NUMBER
+    public static final AttributeDescriptor<Integer> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_INTEGER
     ).withUnits(UNITS_DEGREE);
 
     public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "8A293D", ElectricityProducerSolarAsset.class);
@@ -63,36 +63,6 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
         super(name);
     }
 
-    public ElectricityProducerSolarAsset setStatus(String value) {
-        getAttributes().getOrCreate(STATUS).setValue(value);
-        return this;
-    }
-
-    public ElectricityProducerSolarAsset setPower(Double value) {
-        getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
-        return this;
-    }
-
-    public ElectricityProducerSolarAsset setPowerForecastDeviation(Double value) {
-        getAttributes().getOrCreate(POWER_FORECAST_DEVIATION).setValue(value);
-        return this;
-    }
-
-    public ElectricityProducerSolarAsset setPowerCapacity(Double value) {
-        getAttributes().getOrCreate(POWER_CAPACITY).setValue(value);
-        return this;
-    }
-
-    public ElectricityProducerSolarAsset setEfficiency(Integer value) {
-        getAttributes().getOrCreate(EFFICIENCY).setValue(value);
-        return this;
-    }
-
-    public ElectricityProducerSolarAsset setEnergyTotal(Double value) {
-        getAttributes().getOrCreate(ENERGY_TOTAL).setValue(value);
-        return this;
-    }
-
     public Optional<PanelOrientation> getPanelOrientation() {
         return getAttributes().getValue(PANEL_ORIENTATION);
     }
@@ -102,21 +72,141 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
         return this;
     }
 
-    public Optional<Double> getPanelAzimuth() {
+    public Optional<Integer> getPanelAzimuth() {
         return getAttributes().getValue(PANEL_AZIMUTH);
     }
 
-    public ElectricityProducerSolarAsset setPanelAzimuth(Double value) {
+    public ElectricityProducerSolarAsset setPanelAzimuth(Integer value) {
         getAttributes().getOrCreate(PANEL_AZIMUTH).setValue(value);
         return this;
     }
 
-    public Optional<Double> getPanelPitch() {
+    public Optional<Integer> getPanelPitch() {
         return getAttributes().getValue(PANEL_PITCH);
     }
 
-    public ElectricityProducerSolarAsset setPanelPitch(Double value) {
+    public ElectricityProducerSolarAsset setPanelPitch(Integer value) {
         getAttributes().getOrCreate(PANEL_PITCH).setValue(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setPower(Double value) {
+        super.setPower(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setPowerSetpoint(Double value) {
+        super.setPowerSetpoint(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setPowerImportMin(Double value) {
+        super.setPowerImportMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setPowerImportMax(Double value) {
+        super.setPowerImportMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setPowerExportMin(Double value) {
+        super.setPowerExportMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setPowerExportMax(Double value) {
+        super.setPowerExportMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEnergyImportTotal(Double value) {
+        super.setEnergyImportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEnergyExportTotal(Double value) {
+        super.setEnergyExportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEnergyCapacity(Double value) {
+        super.setEnergyCapacity(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEnergyLevel(Double value) {
+        super.setEnergyLevel(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEnergyLevelPercentage(Integer value) {
+        super.setEnergyLevelPercentage(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEnergyLevelPercentageMin(Integer value) {
+        super.setEnergyLevelPercentageMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEnergyLevelPercentageMax(Integer value) {
+        super.setEnergyLevelPercentageMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEfficiencyImport(Integer value) {
+        super.setEfficiencyImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setEfficiencyExport(Integer value) {
+        super.setEfficiencyExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setTariffImport(Double value) {
+        super.setTariffImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setTariffExport(Double value) {
+        super.setTariffExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setCarbonImport(Double value) {
+        super.setCarbonImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setCarbonExport(Double value) {
+        super.setCarbonExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setCarbonTotal(Integer value) {
+        super.setCarbonTotal(value);
         return this;
     }
 

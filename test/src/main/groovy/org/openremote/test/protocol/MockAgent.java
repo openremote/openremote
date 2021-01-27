@@ -46,10 +46,9 @@ public class MockAgent extends Agent<MockAgent, MockProtocol, MockAgent.MockAgen
             return Optional.ofNullable(requiredValue);
         }
 
-        @SuppressWarnings("unchecked")
-        public <T extends MockAgentLink> T setRequiredValue(String requiredValue) {
+        public MockAgentLink setRequiredValue(String requiredValue) {
             this.requiredValue = requiredValue;
-            return (T)this;
+            return this;
         }
     }
 
@@ -74,10 +73,9 @@ public class MockAgent extends Agent<MockAgent, MockProtocol, MockAgent.MockAgen
         return getAttributes().getValue(REQUIRED);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends MockAgent> T setRequired(Boolean value) {
+    public MockAgent setRequired(Boolean value) {
         getAttributes().getOrCreate(REQUIRED).setValue(value);
-        return (T)this;
+        return this;
     }
 
     @Override

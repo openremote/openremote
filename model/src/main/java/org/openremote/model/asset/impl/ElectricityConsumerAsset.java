@@ -19,38 +19,12 @@
  */
 package org.openremote.model.asset.impl;
 
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
-import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
-
-@SuppressWarnings("unchecked")
 @Entity
-public class ElectricityConsumerAsset extends Asset<ElectricityConsumerAsset> {
-
-    public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("power", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_AVAILABLE_MAX = new AttributeDescriptor<>("powerAvailableMax", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_AVAILABLE_MIN = new AttributeDescriptor<>("powerAvailableMin", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> ENERGY_TOTAL = new AttributeDescriptor<>("energyTotal", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsumerAsset> {
 
     public static final AssetDescriptor<ElectricityConsumerAsset> DESCRIPTOR = new AssetDescriptor<>("power-plug", "8A293D", ElectricityConsumerAsset.class);
 
@@ -63,50 +37,5 @@ public class ElectricityConsumerAsset extends Asset<ElectricityConsumerAsset> {
 
     public ElectricityConsumerAsset(String name) {
         super(name);
-    }
-
-    public Optional<String> getStatus() {
-        return getAttributes().getValue(STATUS);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setStatus(String value) {
-        getAttributes().getOrCreate(STATUS).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getPower() {
-        return getAttributes().getValue(POWER_TOTAL);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setPower(Double value) {
-        getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getPowerAvailableMax() {
-        return getAttributes().getValue(POWER_AVAILABLE_MAX);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setPowerAvailableMax(Double value) {
-        getAttributes().getOrCreate(POWER_AVAILABLE_MAX).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getPowerAvailableMin() {
-        return getAttributes().getValue(POWER_AVAILABLE_MIN);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setPowerAvailableMin(Double value) {
-        getAttributes().getOrCreate(POWER_AVAILABLE_MIN).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Double> getEnergyTotal() {
-        return getAttributes().getValue(ENERGY_TOTAL);
-    }
-
-    public <T extends ElectricityConsumerAsset> T setEnergyTotal(Double value) {
-        getAttributes().getOrCreate(ENERGY_TOTAL).setValue(value);
-        return (T)this;
     }
 }

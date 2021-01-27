@@ -38,20 +38,20 @@ public class WeatherAsset extends Asset<WeatherAsset> {
     public static final AttributeDescriptor<Double> TEMPERATURE = new AttributeDescriptor<>("temperature", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_CELSIUS);
-    public static final AttributeDescriptor<Double> UV_INDEX = new AttributeDescriptor<>("uVIndex", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Integer> UV_INDEX = new AttributeDescriptor<>("uVIndex", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.LABEL, "UV index"),
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<Double> SUN_IRRADIANCE = new AttributeDescriptor<>("sunIrradiance", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Integer> SUN_IRRADIANCE = new AttributeDescriptor<>("sunIrradiance", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<Double> SUN_AZIMUTH = new AttributeDescriptor<>("sunAzimuth", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Integer> SUN_AZIMUTH = new AttributeDescriptor<>("sunAzimuth", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<Double> SUN_ZENITH = new AttributeDescriptor<>("sunZenith", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Integer> SUN_ZENITH = new AttributeDescriptor<>("sunZenith", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
-    public static final AttributeDescriptor<Double> SUN_ALTITUDE = new AttributeDescriptor<>("sunAltitude", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Integer> SUN_ALTITUDE = new AttributeDescriptor<>("sunAltitude", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
     public static final AttributeDescriptor<Double> WIND_SPEED = new AttributeDescriptor<>("windSpeed", ValueType.POSITIVE_NUMBER,
@@ -84,23 +84,23 @@ public class WeatherAsset extends Asset<WeatherAsset> {
         return getAttributes().getValue(TEMPERATURE);
     }
 
-    public Optional<Double> getUVIndex() {
+    public Optional<Integer> getUVIndex() {
         return getAttributes().getValue(UV_INDEX);
     }
 
-    public Optional<Double> getSunIrradiance() {
+    public Optional<Integer> getSunIrradiance() {
         return getAttributes().getValue(SUN_IRRADIANCE);
     }
 
-    public Optional<Double> getSunAzimuth() {
+    public Optional<Integer> getSunAzimuth() {
         return getAttributes().getValue(SUN_AZIMUTH);
     }
 
-    public Optional<Double> getSunZenith() {
+    public Optional<Integer> getSunZenith() {
         return getAttributes().getValue(SUN_ZENITH);
     }
 
-    public Optional<Double> getSunAltitude() {
+    public Optional<Integer> getSunAltitude() {
         return getAttributes().getValue(SUN_ALTITUDE);
     }
 

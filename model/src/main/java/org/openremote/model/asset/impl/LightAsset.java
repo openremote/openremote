@@ -61,39 +61,35 @@ public class LightAsset extends Asset<LightAsset> {
         return getAttributes().getValue(ON_OFF);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends LightAsset> T setOnOff(Boolean value) {
+    public LightAsset setOnOff(Boolean value) {
         getAttributes().getOrCreate(ON_OFF).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getBrightness() {
         return getAttributes().getValue(BRIGHTNESS);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends LightAsset> T setBrightness(Integer value) {
+    public LightAsset setBrightness(Integer value) {
         getAttributes().getOrCreate(BRIGHTNESS).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<ColourRGB> getColourRGB() {
         return getAttributes().getValue(COLOUR_RGB);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends LightAsset> T setColourRGB(ColourRGB value) {
+    public LightAsset setColourRGB(ColourRGB value) {
         getAttributes().getOrCreate(COLOUR_RGB).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getTemperature() {
         return getAttributes().getValue(COLOUR_TEMPERATURE);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends LightAsset> T setTemperature(Integer value) {
+    public LightAsset setTemperature(Integer value) {
         getAttributes().getOrCreate(COLOUR_TEMPERATURE).setValue(value);
-        return (T)this;
+        return this;
     }
 }

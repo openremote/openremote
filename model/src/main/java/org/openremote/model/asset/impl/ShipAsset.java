@@ -58,10 +58,9 @@ public class ShipAsset extends Asset<ShipAsset> {
         return getAttributes().getValue(MSSI_NUMBER);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ShipAsset> T setMSSINumber(Integer value) {
+    public ShipAsset setMSSINumber(Integer value) {
         getAttributes().getOrCreate(MSSI_NUMBER).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getIMONumber() {
@@ -69,48 +68,44 @@ public class ShipAsset extends Asset<ShipAsset> {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends ShipAsset> T setIMONumber(Integer value) {
+    public ShipAsset setIMONumber(Integer value) {
         getAttributes().getOrCreate(IMO_NUMBER).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getDirection() {
         return getAttributes().getValue(DIRECTION);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ShipAsset> T setDirection(Integer value) {
+    public ShipAsset setDirection(Integer value) {
         getAttributes().getOrCreate(DIRECTION).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getLength() {
         return getAttributes().getValue(LENGTH);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ShipAsset> T setLength(Integer value) {
+    public ShipAsset setLength(Integer value) {
         getAttributes().getOrCreate(LENGTH).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Double> getSpeed() {
         return getAttributes().getValue(SPEED);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ShipAsset> T setSpeed(Double value) {
+    public ShipAsset setSpeed(Double value) {
         getAttributes().getOrCreate(SPEED).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<String> getShipType() {
         return getAttributes().getValue(SHIP_TYPE);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ShipAsset> T setShipType(String value) {
+    public ShipAsset setShipType(String value) {
         getAttributes().getOrCreate(SHIP_TYPE).setValue(value);
-        return (T)this;
+        return this;
     }
 }

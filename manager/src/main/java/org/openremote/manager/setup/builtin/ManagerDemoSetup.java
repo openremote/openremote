@@ -144,7 +144,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         storage1Asset = assetStorageService.merge(storage1Asset);
 
         ElectricityConsumerAsset consumption1Asset = createDemoElectricityConsumerAsset("Consumption De Rotterdam", building1Asset, new GeoJSONPoint(4.487519, 51.906544));
-        consumption1Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        consumption1Asset.getAttribute(ElectricityConsumerAsset.POWER).ifPresent(assetAttribute -> {
                 assetAttribute.addMeta(
                     new MetaItem<>(
                         AGENT_LINK,
@@ -185,7 +185,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ElectricityProducerSolarAsset production1Asset = createDemoElectricitySolarProducerAsset("Solar De Rotterdam", building1Asset, new GeoJSONPoint(4.488592, 51.907047));
         production1Asset.setManufacturer("AEG");
         production1Asset.setModel("AS-P60");
-        production1Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        production1Asset.getAttribute(ElectricityProducerAsset.POWER).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -220,9 +220,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
-        production1Asset.setEnergyTotal(152689d);
-        production1Asset.setPowerCapacity(89.6);
-        production1Asset.setEfficiency(93);
+        production1Asset.setEnergyExportTotal(152689d);
+        production1Asset.setPowerExportMax(89.6);
+        production1Asset.setEfficiencyExport(93);
         production1Asset.setPanelOrientation(ElectricityProducerSolarAsset.PanelOrientation.EAST_WEST);
         production1Asset.setId(UniqueIdentifierGenerator.generateId(production1Asset.getName()));
         production1Asset = assetStorageService.merge(production1Asset);
@@ -248,7 +248,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         storage2Asset = assetStorageService.merge(storage2Asset);
 
         ElectricityConsumerAsset consumption2Asset = createDemoElectricityConsumerAsset("Consumption Stadhuis", building2Asset, new GeoJSONPoint(4.47933, 51.92259));
-        consumption2Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        consumption2Asset.getAttribute(ElectricityConsumerAsset.POWER).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -287,7 +287,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         consumption2Asset = assetStorageService.merge(consumption2Asset);
 
         ElectricityProducerSolarAsset production2Asset = createDemoElectricitySolarProducerAsset("Solar Stadhuis", building2Asset, new GeoJSONPoint(4.47945, 51.92301));
-        production2Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        production2Asset.getAttribute(ElectricityProducerAsset.POWER).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -322,9 +322,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
-        production2Asset.setEnergyTotal(88961d);
-        production2Asset.setPowerCapacity(19.2);
-        production2Asset.setEfficiency(79);
+        production2Asset.setEnergyExportTotal(88961d);
+        production2Asset.setPowerExportMax(19.2);
+        production2Asset.setEfficiencyExport(79);
         production2Asset.setPanelOrientation(ElectricityProducerSolarAsset.PanelOrientation.SOUTH);
         production2Asset.setManufacturer("Solarwatt");
         production2Asset.setModel("EasyIn 60M");
@@ -350,7 +350,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         building3Asset = assetStorageService.merge(building3Asset);
 
         ElectricityProducerSolarAsset production3Asset = createDemoElectricitySolarProducerAsset("Solar Markthal", building3Asset, new GeoJSONPoint(4.47945, 51.92301));
-        production3Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        production3Asset.getAttribute(ElectricityProducerAsset.POWER).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                 new MetaItem<>(
                         AGENT_LINK,
@@ -385,9 +385,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 )
             );
         });
-        production3Asset.setEnergyTotal(24134d);
-        production3Asset.setPowerCapacity(29.8);
-        production3Asset.setEfficiency(91);
+        production3Asset.setEnergyExportTotal(24134d);
+        production3Asset.setPowerExportMax(29.8);
+        production3Asset.setEfficiencyExport(91);
         production3Asset.setPanelOrientation(ElectricityProducerSolarAsset.PanelOrientation.SOUTH);
         production3Asset.setManufacturer("Sunpower");
         production3Asset.setModel("E20-327");
@@ -396,7 +396,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ElectricityChargerAsset charger1Asset = createDemoElectricityChargerAsset("Charger 1 Markthal", building3Asset, new GeoJSONPoint(4.486143, 51.920058));
         charger1Asset.setPower(0d);
-        charger1Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL).addMeta(
+        charger1Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER).addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
                             new SimulatorAgent.SimulatorAgentLink(smartcitySimulatorAgentId).setSimulatorReplayData(
@@ -436,7 +436,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ElectricityChargerAsset charger2Asset = createDemoElectricityChargerAsset("Charger 2 Markthal", building3Asset, new GeoJSONPoint(4.486188, 51.919957));
         charger2Asset.setPower(0d);
-        charger2Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL)
+        charger2Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER)
             .addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -477,7 +477,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ElectricityChargerAsset charger3Asset = createDemoElectricityChargerAsset("Charger 3 Markthal", building3Asset, new GeoJSONPoint(4.486232, 51.919856));
         charger3Asset.setPower(0d);
-        charger3Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL)
+        charger3Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER)
             .addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -518,7 +518,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ElectricityChargerAsset charger4Asset = createDemoElectricityChargerAsset("Charger 4 Markthal", building3Asset, new GeoJSONPoint(4.486286, 51.919733));
         charger4Asset.setPower(0d);
-        charger4Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER_TOTAL)
+        charger4Asset.getAttributes().getOrCreate(ElectricityChargerAsset.POWER)
             .addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -573,7 +573,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         building4Asset = assetStorageService.merge(building4Asset);
 
         ElectricityConsumerAsset consumption4Asset = createDemoElectricityConsumerAsset("Consumption Erasmianum", building4Asset, new GeoJSONPoint(4.468324, 51.912062));
-        consumption4Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        consumption4Asset.getAttribute(ElectricityConsumerAsset.POWER).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -626,7 +626,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         building5Asset = assetStorageService.merge(building5Asset);
 
         ElectricityConsumerAsset consumption5Asset = createDemoElectricityConsumerAsset("Consumption Zwembad", building5Asset, new GeoJSONPoint(4.498048, 51.925770));
-        consumption5Asset.getAttribute(ElectricityConsumerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        consumption5Asset.getAttribute(ElectricityConsumerAsset.POWER).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -665,7 +665,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         consumption5Asset = assetStorageService.merge(consumption5Asset);
 
         ElectricityProducerSolarAsset production5Asset = createDemoElectricitySolarProducerAsset("Solar Zwembad", building5Asset, new GeoJSONPoint(4.498281, 51.925507));
-        production5Asset.getAttribute(ElectricityProducerAsset.POWER_TOTAL).ifPresent(assetAttribute -> {
+        production5Asset.getAttribute(ElectricityProducerAsset.POWER).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                     new MetaItem<>(
                             AGENT_LINK,
@@ -700,9 +700,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
             );
         });
-        production5Asset.setEnergyTotal(23461d);
-        production5Asset.setPowerCapacity(76.2);
-        production5Asset.setEfficiency(86);
+        production5Asset.setEnergyExportTotal(23461d);
+        production5Asset.setPowerExportMax(76.2);
+        production5Asset.setEfficiencyExport(86);
         production5Asset.setPanelOrientation(ElectricityProducerSolarAsset.PanelOrientation.SOUTH);
         production5Asset.setManufacturer("S-Energy");
         production5Asset.setModel("SN260P-10");

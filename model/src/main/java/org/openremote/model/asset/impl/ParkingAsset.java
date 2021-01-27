@@ -56,59 +56,53 @@ public class ParkingAsset extends Asset<ParkingAsset> {
         return getAttributes().getValue(SPACES_TOTAL);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ParkingAsset> T setSpacesTotal(Integer value) {
+    public ParkingAsset setSpacesTotal(Integer value) {
         getAttributes().getOrCreate(SPACES_TOTAL).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getSpacesOccupied() {
         return getAttributes().getValue(SPACES_OCCUPIED);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ParkingAsset> T setSpacesOccupied(Integer value) {
+    public ParkingAsset setSpacesOccupied(Integer value) {
         getAttributes().getOrCreate(SPACES_OCCUPIED).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getSpacesOpen() {
         return getAttributes().getValue(SPACES_OPEN);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ParkingAsset> T setSpacesOpen(Integer value) {
+    public ParkingAsset setSpacesOpen(Integer value) {
         getAttributes().getOrCreate(SPACES_OPEN).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Integer> getSpacesBuffer() {
         return getAttributes().getValue(SPACES_BUFFER);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ParkingAsset> T setSpacesBuffer(Integer value) {
+    public ParkingAsset setSpacesBuffer(Integer value) {
         getAttributes().getOrCreate(SPACES_BUFFER).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Double> getPriceHourly() {
         return getAttributes().getValue(PRICE_HOURLY);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ParkingAsset> T setPriceHourly(Double value) {
+    public ParkingAsset setPriceHourly(Double value) {
         getAttributes().getOrCreate(PRICE_HOURLY).setValue(value);
-        return (T)this;
+        return this;
     }
 
     public Optional<Double> getPriceDaily() {
         return getAttributes().getValue(PRICE_DAILY);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ParkingAsset> T setPriceDaily(Double value) {
+    public ParkingAsset setPriceDaily(Double value) {
         getAttributes().getOrCreate(PRICE_DAILY).setValue(value);
-        return (T)this;
+        return this;
     }
 }

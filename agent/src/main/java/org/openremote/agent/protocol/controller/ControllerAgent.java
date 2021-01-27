@@ -121,9 +121,8 @@ public class ControllerAgent extends Agent<ControllerAgent, ControllerProtocol, 
         return getAttributes().getValue(CONTROLLER_URI);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends ControllerAgent> T setControllerURI(String uri) {
+    public ControllerAgent setControllerURI(String uri) {
         getAttributes().getOrCreate(CONTROLLER_URI).setValue(uri);
-        return (T)this;
+        return this;
     }
 }

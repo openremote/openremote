@@ -19,7 +19,6 @@
  */
 package org.openremote.model.asset.impl;
 
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
@@ -29,64 +28,18 @@ import org.openremote.model.value.ValueType;
 import javax.persistence.Entity;
 import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.UNITS_GRAM;
+import static org.openremote.model.Constants.UNITS_KILO;
 
 @Entity
-public class ElectricitySupplierAsset extends Asset<ElectricitySupplierAsset> {
+public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySupplierAsset> {
 
-    public static final AttributeDescriptor<String> STATUS = new AttributeDescriptor<>("status", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> POWER_CAPACITY = new AttributeDescriptor<>("powerCapacity", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_EDR_SETPOINT = new AttributeDescriptor<>("powerEDRSetpoint", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_EDR_RESERVE = new AttributeDescriptor<>("powerEDRReserve", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Integer> POWER_EDR_MIN_PERIOD = new AttributeDescriptor<>("powerEDRMinPeriod", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_SECOND);
-    public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.POSITIVE_NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.POSITIVE_NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-
-    public static final AttributeDescriptor<Double> ENERGY_TARIFF_IMPORT_FORECAST_DEVIATION = new AttributeDescriptor<>("tariffImportForecastDeviation", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> ENERGY_TARIFF_EXPORT_FORECAST_DEVIATION = new AttributeDescriptor<>("tariffExportForecastDeviation", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    );
-    public static final AttributeDescriptor<Double> ENERGY_TAX = new AttributeDescriptor<>("energyTax", ValueType.POSITIVE_NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> GRID_COST = new AttributeDescriptor<>("gridCost", ValueType.POSITIVE_NUMBER)
-        .withUnits("EUR");
-    public static final AttributeDescriptor<Double> GRID_CONNECTION_COST = new AttributeDescriptor<>("gridConnectionCost", ValueType.POSITIVE_NUMBER)
-        .withUnits("EUR");
-    public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> POWER_TOTAL = new AttributeDescriptor<>("power", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_FORECAST_DEVIATION = new AttributeDescriptor<>("powerForecastDeviation", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> ENERGY_TOTAL_IMPORT = new AttributeDescriptor<>("energyTotalImport", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_TOTAL_EXPORT = new AttributeDescriptor<>("energyTotalExport", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_TOTAL_IMPORT_COST = new AttributeDescriptor<>("energyTotalImportCost", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> ENERGY_IMPORT_COST = new AttributeDescriptor<>("energyImportCost", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY, true)
     ).withUnits("EUR");
-    public static final AttributeDescriptor<Double> ENERGY_TOTAL_EXPORT_INCOME = new AttributeDescriptor<>("energyTotalExportIncome", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> ENERGY_EXPORT_INCOME = new AttributeDescriptor<>("energyExportIncome", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY, true)
     ).withUnits("EUR");
-    public static final AttributeDescriptor<Integer> CARBON_TOTAL = new AttributeDescriptor<>("carbonTotal", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
     public static final AttributeDescriptor<Double> FINANCIAL_WALLET = new AttributeDescriptor<>("financialWallet", ValueType.POSITIVE_NUMBER).withUnits("EUR");
     public static final AttributeDescriptor<Integer> CARBON_WALLET = new AttributeDescriptor<>("carbonWallet", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
@@ -105,87 +58,19 @@ public class ElectricitySupplierAsset extends Asset<ElectricitySupplierAsset> {
         super(name);
     }
 
-    public Optional<String> getStatus() {
-        return getAttributes().getValue(STATUS);
+    public Optional<Double> getEnergyImportCost() {
+        return getAttributes().getValue(ENERGY_IMPORT_COST);
     }
 
-    public Optional<Double> getPowerCapacity() {
-        return getAttributes().getValue(POWER_CAPACITY);
+    public Optional<Double> getEnergyExportIncome() {
+        return getAttributes().getValue(ENERGY_EXPORT_INCOME);
     }
 
-    public Optional<Double> getPowerEDRSetpoint() {
-        return getAttributes().getValue(POWER_EDR_SETPOINT);
+    public Optional<Double> getFinancialWallet() {
+        return getAttributes().getValue(FINANCIAL_WALLET);
     }
 
-    public Optional<Double> getPowerEDRReserve() {
-        return getAttributes().getValue(POWER_EDR_RESERVE);
-    }
-
-    public Optional<Integer> getPowerEDRMinPeriod() {
-        return getAttributes().getValue(POWER_EDR_MIN_PERIOD);
-    }
-
-    public Optional<Double> getTariffImport() {
-        return getAttributes().getValue(TARIFF_IMPORT);
-    }
-
-    public Optional<Double> getTariffExport() {
-        return getAttributes().getValue(TARIFF_EXPORT);
-    }
-
-    public Optional<Double> getEnergyTariffImportForecastDeviation() {
-        return getAttributes().getValue(ENERGY_TARIFF_IMPORT_FORECAST_DEVIATION);
-    }
-
-    public Optional<Double> getEnergyTariffExportForecastDeviation() {
-        return getAttributes().getValue(ENERGY_TARIFF_EXPORT_FORECAST_DEVIATION);
-    }
-
-    public Optional<Double> getEnergyTax() {
-        return getAttributes().getValue(ENERGY_TAX);
-    }
-
-    public Optional<Double> getGridCost() {
-        return getAttributes().getValue(GRID_COST);
-    }
-
-    public Optional<Double> getGridConnectionCost() {
-        return getAttributes().getValue(GRID_CONNECTION_COST);
-    }
-
-    public Optional<Double> getCarbonImport() {
-        return getAttributes().getValue(CARBON_IMPORT);
-    }
-
-    public Optional<Double> getCarbonExport() {
-        return getAttributes().getValue(CARBON_EXPORT);
-    }
-
-    public Optional<Double> getPower() {
-        return getAttributes().getValue(POWER_TOTAL);
-    }
-
-    public Optional<Double> getPowerForecastDeviation() {
-        return getAttributes().getValue(POWER_FORECAST_DEVIATION);
-    }
-
-    public Optional<Double> getEnergyTotalImport() {
-        return getAttributes().getValue(ENERGY_TOTAL_IMPORT);
-    }
-
-    public Optional<Double> getEnergyTotalExport() {
-        return getAttributes().getValue(ENERGY_TOTAL_EXPORT);
-    }
-
-    public Optional<Double> getEnergyTotalImportCost() {
-        return getAttributes().getValue(ENERGY_TOTAL_IMPORT_COST);
-    }
-
-    public Optional<Double> getEnergyTotalExportIncome() {
-        return getAttributes().getValue(ENERGY_TOTAL_EXPORT_INCOME);
-    }
-
-    public Optional<Integer> getCarbonTotal() {
-        return getAttributes().getValue(CARBON_TOTAL);
+    public Optional<Integer> getCarbonWallet() {
+        return getAttributes().getValue(CARBON_WALLET);
     }
 }

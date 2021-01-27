@@ -42,6 +42,126 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
 
 
     @Override
+    public ElectricityProducerWindAsset setPower(Double value) {
+        super.setPower(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setPowerSetpoint(Double value) {
+        super.setPowerSetpoint(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setPowerImportMin(Double value) {
+        super.setPowerImportMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setPowerImportMax(Double value) {
+        super.setPowerImportMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setPowerExportMin(Double value) {
+        super.setPowerExportMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setPowerExportMax(Double value) {
+        super.setPowerExportMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEnergyImportTotal(Double value) {
+        super.setEnergyImportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEnergyExportTotal(Double value) {
+        super.setEnergyExportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEnergyCapacity(Double value) {
+        super.setEnergyCapacity(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEnergyLevel(Double value) {
+        super.setEnergyLevel(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEnergyLevelPercentage(Integer value) {
+        super.setEnergyLevelPercentage(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEnergyLevelPercentageMin(Integer value) {
+        super.setEnergyLevelPercentageMin(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEnergyLevelPercentageMax(Integer value) {
+        super.setEnergyLevelPercentageMax(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEfficiencyImport(Integer value) {
+        super.setEfficiencyImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setEfficiencyExport(Integer value) {
+        super.setEfficiencyExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setTariffImport(Double value) {
+        super.setTariffImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setTariffExport(Double value) {
+        super.setTariffExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setCarbonImport(Double value) {
+        super.setCarbonImport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setCarbonExport(Double value) {
+        super.setCarbonExport(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerWindAsset setCarbonTotal(Integer value) {
+        super.setCarbonTotal(value);
+        return this;
+    }
+
+    @Override
     public ElectricityProducerWindAsset setId(String id) {
         super.setId(id);
         return this;

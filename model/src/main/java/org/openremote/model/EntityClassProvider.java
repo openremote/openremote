@@ -24,7 +24,7 @@ import org.openremote.model.util.TsIgnore;
 import java.util.List;
 
 /**
- * Interface for providing a list of entity class names to be registered for JPA, this can be used for registering custom
+ * Interface for providing a list of entity class names to be registered for JPA, this can be used for registering
  * custom {@link org.openremote.model.asset.Asset} types etc. Instances should be registered using the standard
  * {@link java.util.ServiceLoader} mechanism.
  */
