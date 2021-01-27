@@ -269,6 +269,12 @@ deploy staging when tests fail:
     url: https://${CI_ENVIRONMENT_SLUG}.${PROJECT_NAME}.${DOMAIN}
   <<: *deploy_definition
 
+email failed deploy staging:
+  stage: notify_deploy_staging_fail
+  needs: ["deploy staging"]
+  <<: *notify_email
+  when: on_failure
+
 deploy staging FAILED:
   stage: notify_deploy_staging_fail
   needs: ["deploy staging"]
