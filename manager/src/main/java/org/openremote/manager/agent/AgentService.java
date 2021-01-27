@@ -442,7 +442,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
             } catch (Exception e) {
                 protocolInstanceMap.remove(agent.getId());
-                LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent);
+                LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
                 sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));
             }
         });

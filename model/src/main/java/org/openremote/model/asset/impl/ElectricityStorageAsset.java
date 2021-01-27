@@ -71,6 +71,14 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
         new MetaItem<>(MetaItemType.READ_ONLY)
     );
 
+    public static final AttributeDescriptor<Integer> CHARGE_EFFICIENCY = new AttributeDescriptor<>("chargeEfficiency", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+
+    public static final AttributeDescriptor<Double> FINANCIAL_WALLET = new AttributeDescriptor<>("financialWallet", ValueType.POSITIVE_NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Integer> CARBON_WALLET = new AttributeDescriptor<>("carbonWallet", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_KILO, UNITS_GRAM);
+
     public static final AssetDescriptor<ElectricityStorageAsset> DESCRIPTOR = new AssetDescriptor<>("battery-charging", "1B7C89", ElectricityStorageAsset.class);
 
     /**
@@ -138,5 +146,47 @@ public class ElectricityStorageAsset extends Asset<ElectricityStorageAsset> {
 
     public Optional<Integer> getChargeCycles() {
         return getAttributes().getValue(CHARGE_CYCLES);
+    }
+
+    public Optional<Double> getFinancialWallet() {
+        return getAttributes().getValue(FINANCIAL_WALLET);
+    }
+
+    public Optional<Integer> getCarbonWallet() {
+        return getAttributes().getValue(CARBON_WALLET);
+    }
+
+    public Optional<Integer> getChargeEfficiency() {
+        return getAttributes().getValue(CHARGE_EFFICIENCY);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ElectricityStorageAsset> T setEnergyLevelPercentage(Integer value) {
+        getAttributes().getOrCreate(ENERGY_LEVEL_PERCENTAGE).setValue(value);
+        return (T)this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ElectricityStorageAsset> T setEnergyLevel(Double value) {
+        getAttributes().getOrCreate(ENERGY_LEVEL).setValue(value);
+        return (T)this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ElectricityStorageAsset> T setEnergyTotalImport(Double value) {
+        getAttributes().getOrCreate(ENERGY_TOTAL_IMPORT).setValue(value);
+        return (T)this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ElectricityStorageAsset> T setEnergyTotalExport(Double value) {
+        getAttributes().getOrCreate(ENERGY_TOTAL_EXPORT).setValue(value);
+        return (T)this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends ElectricityStorageAsset> T setPowerTotal(Double value) {
+        getAttributes().getOrCreate(POWER_TOTAL).setValue(value);
+        return (T)this;
     }
 }
