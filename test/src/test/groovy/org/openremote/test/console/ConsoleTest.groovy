@@ -98,7 +98,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             keycloakTestSetup.tenantBuilding.realm,
             "Demo Tenant Building - Console Location",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ConsoleLocation.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine to become available and be running"

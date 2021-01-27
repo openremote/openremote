@@ -43,7 +43,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             managerTestSetup.apartment1Id,
             "Demo Apartment - Smart Start",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -173,7 +173,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             managerTestSetup.apartment1Id,
             "Demo Apartment - Smart Start",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -271,7 +271,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             managerTestSetup.apartment1Id,
             "Demo Apartment - Smart Start",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -393,7 +393,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             managerTestSetup.apartment1Id,
             "Demo Apartment - Smart Start",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -492,7 +492,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
             managerTestSetup.apartment1Id,
             "Demo Apartment - Smart Start",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceSmartSwitch.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"

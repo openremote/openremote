@@ -48,7 +48,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
             managerTestSetup.apartment1Id,
             "Demo Apartment - Auto Ventilation",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidenceAutoVentilation.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceAutoVentilation.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available, running and settled"

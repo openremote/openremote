@@ -53,15 +53,6 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
         // ################################ Rules demo data ###################################
 
-        // People counter
-//        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoSmartCityCamera.groovy")) {
-//            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-//            Ruleset ruleset = new AssetRuleset(
-//                managerDemoSetup.peopleCounter3AssetId, "PeopleCounter 3 Rules", GROOVY, rules
-//            );
-//            rulesetStorageService.merge(ruleset);
-//        }
-
         // SmartCity geofences
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/smartcity/DeKuip.json")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);

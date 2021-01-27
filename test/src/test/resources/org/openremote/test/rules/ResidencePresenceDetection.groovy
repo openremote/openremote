@@ -7,7 +7,7 @@ in a room over a time window that is internal to the sensor (e.g. the last minut
 'presenceDetected' attribute of the residence is set depending on whether any child room
 assets have presence set.
 */
-package demo.rules
+package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.impl.BuildingAsset

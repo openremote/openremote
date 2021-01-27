@@ -46,7 +46,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             managerTestSetup.apartment1Id,
             "Demo Apartment - Presence Detection with motion and CO2 sensors",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidencePresenceDetection.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
@@ -205,7 +205,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             managerTestSetup.apartment1Id,
             "Demo Apartment - Presence Detection with motion sensor",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidencePresenceDetection.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"

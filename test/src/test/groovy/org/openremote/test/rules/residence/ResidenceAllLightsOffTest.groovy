@@ -42,7 +42,7 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
             managerTestSetup.apartment2Id,
             "Demo Apartment - All Lights Off",
             Ruleset.Lang.JAVASCRIPT,
-            getClass().getResource("/demo/rules/DemoResidenceAllLightsOff.js").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceAllLightsOff.js").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"

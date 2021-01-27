@@ -58,35 +58,35 @@ public class RulesTestSetup extends AbstractManagerSetup {
         // ################################ Rules demo data ###################################
 
         // Apartment 1
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidencePresenceDetection.groovy")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/ResidencePresenceDetection.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                     managerTestSetup.apartment1Id, "Demo Residence - Presence Detection with motion and CO2 sensors", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidenceVacationMode.groovy")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/ResidenceVacationMode.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                     managerTestSetup.apartment1Id, "Demo Residence - Vacation Mode", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAutoVentilation.groovy")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/ResidenceAutoVentilation.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                     managerTestSetup.apartment1Id, "Demo Residence - Auto Ventilation", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/ResidenceNotifyAlarmTrigger.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                     managerTestSetup.apartment1Id, "Demo Residence - Notify Alarm Trigger", Ruleset.Lang.GROOVY, rules
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidenceSmartSwitch.groovy")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/ResidenceSmartSwitch.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                     managerTestSetup.apartment1Id, "Demo Residence - Smart Start Switch", Ruleset.Lang.GROOVY, rules
@@ -96,7 +96,7 @@ public class RulesTestSetup extends AbstractManagerSetup {
         }
 
         // Apartment 2
-//        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {
+//        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/ResidenceAllLightsOff.js")) {
 //            String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
 //            Ruleset ruleset = new AssetRuleset(
 //                    managerTestSetup.apartment2Id, "Demo Residence - All Lights Off", Ruleset.Lang.JAVASCRIPT, rules
@@ -104,7 +104,7 @@ public class RulesTestSetup extends AbstractManagerSetup {
 //            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
 //        }
 
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoConsoleLocation.groovy")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/ConsoleLocation.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new TenantRuleset(
                     keycloakTestSetup.tenantBuilding.getRealm(), "Demo Console Location", Ruleset.Lang.GROOVY, rules
@@ -113,7 +113,7 @@ public class RulesTestSetup extends AbstractManagerSetup {
         }
 
         // People counter
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoSmartCityCamera.groovy")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/SmartCityCamera.groovy")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new AssetRuleset(
                     managerTestSetup.peopleCounter3AssetId, "PeopleCounter 3 Rules", GROOVY, rules
@@ -122,7 +122,7 @@ public class RulesTestSetup extends AbstractManagerSetup {
         }
 
         // SmartCity geofences
-        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/demo/rules/DemoGeofence.json")) {
+        try (InputStream inputStream = RulesTestSetup.class.getResourceAsStream("/org/openremote/test/rules/Geofence.json")) {
             String rules = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             Ruleset ruleset = new TenantRuleset(
                     keycloakTestSetup.tenantCity.getRealm(), "Demo Geofences", Ruleset.Lang.JSON, rules

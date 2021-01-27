@@ -86,7 +86,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         Ruleset ruleset = new AssetRuleset(
             managerTestSetup.apartment1Id,
             "Demo Apartment - Notify Alarm Trigger",
-            Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text)
+            Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/ResidenceNotifyAlarmTrigger.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"

@@ -1,4 +1,4 @@
-package demo.rules
+package org.openremote.test.rules
 
 import groovy.transform.ToString
 import org.openremote.manager.rules.RulesBuilder

@@ -60,7 +60,7 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
             managerTestSetup.apartment1Id,
             "Demo Apartment - Vacation Mode",
             Ruleset.Lang.GROOVY,
-            getClass().getResource("/demo/rules/DemoResidenceVacationMode.groovy").text)
+            getClass().getResource("/org/openremote/test/rules/ResidenceVacationMode.groovy").text)
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
