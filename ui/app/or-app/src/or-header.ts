@@ -340,6 +340,8 @@ class OrHeader extends LitElement {
     public connectedCallback(): void {
         super.connectedCallback();
         window.addEventListener("hashchange", this._hashCallback, false);
+        const realm = window.sessionStorage.getItem('realm');
+        if (realm) manager.displayRealm = realm;
     }
 
     public disconnectedCallback(): void {
@@ -433,8 +435,6 @@ class OrHeader extends LitElement {
             return html``;
         }
 
-        const realm = window.sessionStorage.getItem('realm');
-        if(realm) manager.displayRealm = realm;
         const picker = this._getTenants().then((tenants) => {
 
             const menuItems = tenants.map((r) => {

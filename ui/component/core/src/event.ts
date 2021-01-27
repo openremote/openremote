@@ -12,6 +12,7 @@ import {
     EventRequestResponseWrapper,
     EventSubscription,
     ReadAssetsEvent,
+    ReadAttributeEvent,
     SharedEvent,
     TriggeredEventSubscription
 } from "@openremote/model";
@@ -37,8 +38,15 @@ export interface EventProvider {
 
     unsubscribe<T extends SharedEvent>(subscriptionId: string): void;
 
+    /**
+     * Subscribe to {@link AssetEvent}s for the specified {@link Asset}s for all {@link Asset}s
+     */
     subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string>;
 
+    /**
+     * Subscribe to {@link AttributeEvent}s for the specified {@link Asset}s and if {@link AttributeRef}s are provided
+     * then the attribute names from the refs will be used for each asset ID.
+     */
     subscribeAttributeEvents(ids: string[] | AttributeRef[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string>;
 
     sendEvent<T extends SharedEvent>(event: T): void;
@@ -83,8 +91,11 @@ abstract class EventProviderImpl implements EventProvider {
     protected _statusCallbacks: Array<(status: EventProviderStatus) => void> = [];
     protected _pendingSubscription: EventSubscriptionInfo<SharedEvent> | null = null;
     protected _queuedSubscriptions: EventSubscriptionInfo<SharedEvent>[] = [];
-    protected _subscriptionMap: { [id: string]: EventSubscriptionInfo<SharedEvent> } = {};
-    protected _assetSubscriptionMap: Map<string, AssetSubscriptionInfo> = new Map<string, AssetSubscriptionInfo>();
+    protected _subscriptionMap: Map<string, EventSubscriptionInfo<SharedEvent>> = new Map();
+    protected _assetEventPromise?: Promise<string>;
+    protected _assetEventCallbackMap: Map<string, (e: AssetEvent) => void> = new Map();
+    protected _attributeEventPromise?: Promise<string>;
+    protected _attributeEventCallbackMap: Map<string, (e: AttributeEvent) => void> = new Map();
     protected static _subscriptionCounter: number = 0;
 
     abstract get endpointUrl(): string;
@@ -186,7 +197,7 @@ abstract class EventProviderImpl implements EventProvider {
                     this._pendingSubscription = null;
 
                     // Store subscriptionId and callback
-                    this._subscriptionMap[subscriptionId] = subscription;
+                    this._subscriptionMap.set(subscriptionId, subscription);
 
                     this._processNextSubscription();
                     const deferred = subscription.deferred;
@@ -214,27 +225,31 @@ abstract class EventProviderImpl implements EventProvider {
         return this._pendingSubscription.deferred!.promise;
     }
 
-    public unsubscribe<T extends SharedEvent>(subscriptionId: string) {
+    public async unsubscribe<T extends SharedEvent>(subscriptionId: string): Promise<void> {
 
-        const callback = this._subscriptionMap[subscriptionId];
-
-        if (callback) {
-            delete this._subscriptionMap[subscriptionId];
+        if (this._subscriptionMap.delete(subscriptionId)) {
             this._doUnsubscribe(subscriptionId);
-        } else {
-            const removeSubscriptions: string[] = [];
-            this._assetSubscriptionMap.forEach((info, key) => {
-                const callbackMap = info.callbacks;
-                callbackMap.delete(subscriptionId);
-                if (callbackMap.size === 0) {
-                    removeSubscriptions.push(key);
-                }
-            });
+            return;
+        }
 
-            removeSubscriptions.forEach((subscriptionIdToRemove) => {
-                this._assetSubscriptionMap.delete(subscriptionIdToRemove);
-                this.unsubscribe(subscriptionIdToRemove);
-            });
+        if (this._assetEventCallbackMap.delete(subscriptionId)) {
+            if (this._assetEventPromise && this._assetEventCallbackMap.size === 0) {
+                // Remove the asset subscription
+                const assetEventSubscriptionId = await this._assetEventPromise;
+                this._assetEventPromise = undefined;
+                this.unsubscribe(assetEventSubscriptionId);
+            }
+            return;
+        }
+
+        if (this._attributeEventCallbackMap.delete(subscriptionId)) {
+            if (this._attributeEventPromise && this._attributeEventCallbackMap.size === 0) {
+                // Remove the attribute subscription
+                const attributeEventSubscriptionId = await this._attributeEventPromise;
+                this._attributeEventPromise = undefined;
+                this.unsubscribe(attributeEventSubscriptionId);
+            }
+            return;
         }
     }
 
@@ -254,71 +269,81 @@ abstract class EventProviderImpl implements EventProvider {
 
     public async subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string> {
 
-        const subscription: EventSubscription<AssetEvent> = {
-            eventType: "asset"
-        };
-
         const isAttributeRef = ids && typeof ids[0] !== "string";
         const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((ref) => ref.id!) : ids as string[] | null;
+        const subscriptionId = "AssetEvent" + EventProviderImpl._subscriptionCounter++;
 
-        if (filter || assetIds && assetIds.length > 0) {
+        // If not already done then create a single global subscription for asset events and filter for each callback
+        if (!this._assetEventPromise) {
 
-            if (!filter) {
-                filter = {
-                    filterType: "asset"
-                };
-            }
-
-            if (assetIds && assetIds.length > 0) {
-                filter.assetIds = assetIds;
-            }
-
-            subscription.filter = filter;
+            const subscription: EventSubscription<AssetEvent> = {
+                eventType: "asset"
+            };
+            this._assetEventPromise = this.subscribe(subscription, (event) => {
+                this._assetEventCallbackMap.forEach((callback) => callback(event));
+            });
         }
 
-        let subscriptionId: string | null = null;
+        // Build a filter to only respond to the callback for the requested assets
+        const eventFilter = (e: AssetEvent) => {
+            if (!assetIds) {
+                callback(e);
+                return;
+            }
+            if (!e.asset) {
+                return;
+            }
+            if (assetIds.find((id) => id === e.asset!.id)) {
+                callback(e);
+            }
+        };
 
-        try {
-            subscriptionId = await this.subscribe(subscription, callback);
+        this._assetEventCallbackMap.set(subscriptionId, eventFilter);
 
-            // Get the current state of the assets
-            if (assetIds && requestCurrentValues) {
-                const readRequest: EventRequestResponseWrapper<ReadAssetsEvent> = {
-                    messageId: "read-assets:" + assetIds.join(",") + ":" + subscriptionId,
-                    event: {
-                        eventType: "read-assets",
-                        assetQuery: {
-                            ids: assetIds
+        return this._assetEventPromise.then(() => {
+
+            try {
+                // Get the current state of the assets if requested
+                if (assetIds && requestCurrentValues) {
+                    const readRequest: EventRequestResponseWrapper<ReadAssetsEvent> = {
+                        messageId: "read-assets:" + assetIds.join(",") + ":" + subscriptionId,
+                        event: {
+                            eventType: "read-assets",
+                            assetQuery: {
+                                ids: assetIds
+                            }
                         }
                     }
-                }
-                const response: AssetsEvent = await this.sendEventWithReply(readRequest);
-                if (response.assets) {
-                    response.assets.forEach((asset) => {
-                        const assetEvent: AssetEvent = {
-                            eventType: "asset",
-                            asset: asset,
-                            cause: AssetEventCause.READ
-                        };
-                        callback(assetEvent);
-                    });
-                }
-            }
-        } catch (e) {
-            console.error("Failed to subscribe to asset events for assets: " + ids);
-            if (subscriptionId) {
-                this.unsubscribe(subscriptionId);
-            }
-            throw e;
-        }
+                    this.sendEventWithReply(readRequest)
+                        .then((e: SharedEvent) => {
+                            const assetsEvent = e as AssetsEvent;
+                            // Check subscription still exists
+                            if (!assetsEvent.assets || !this._assetEventCallbackMap.has(subscriptionId)) {
+                                return;
+                            }
 
-        return subscriptionId!;
+                            assetsEvent.assets.forEach((asset) => {
+                                const assetEvent: AssetEvent = {
+                                    eventType: "asset",
+                                    asset: asset,
+                                    cause: AssetEventCause.READ
+                                };
+                                eventFilter(assetEvent);
+                            });
+                        });
+                }
+            } catch (e) {
+                console.error("Failed to subscribe to asset events for assets: " + ids);
+                if (subscriptionId) {
+                    this.unsubscribe(subscriptionId);
+                }
+                throw e;
+            }
+
+            return subscriptionId;
+        });
     }
 
-    /**
-     * Subscribe for updates to a particular attribute; internally this creates subscriptions for all attributes of an
-     * asset and manages delivery of the update attributes to the subscribers
-     */
     public async subscribeAttributeEvents(ids: string[] | AttributeRef[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string> {
 
         if (!ids || ids.length === 0) {
@@ -330,115 +355,89 @@ abstract class EventProviderImpl implements EventProvider {
         const attributes = isAttributeRef ? ids as AttributeRef[] : undefined;
         const subscriptionId = "AttributeEvent" + EventProviderImpl._subscriptionCounter++;
 
-        // Check if we have an existing subscription for each asset, otherwise create one
-        const assetSubscriptions = assetIds.map(
-            (assetId) => {
-                const assetAttributes = attributes ? attributes.filter((ref) => ref.id === assetId) : undefined;
-                let info = this._assetSubscriptionMap.get(assetId);
-                let promise: Promise<any> = Promise.resolve(assetId);
+        // If not already done then create a single global subscription for asset events and filter for each callback
+        if (!this._attributeEventPromise) {
 
-                if (!info) {
-                    info = {
-                        callbacks: new Map<string, (attributeEvent: AttributeEvent) => void>()
-                    };
-
-                    this._assetSubscriptionMap.set(assetId, info);
-                    const subscription: EventSubscription<AttributeEvent> = {
-                        subscriptionId: assetId,
-                        eventType: "attribute",
-                        filter: {
-                            filterType: "asset",
-                            assetIds: [assetId]
-                        }
-                    };
-                    promise = this.subscribe(subscription, (evt) => {
-                        const assetSubscription = this._assetSubscriptionMap.get(assetId);
-
-                        if (!assetSubscription) {
-                            return;
-                        }
-
-                        // Keep cached asset in sync
-                        if (assetSubscription.asset) {
-                            if (evt.attributeState!.deleted) {
-                                delete assetSubscription.asset.attributes![evt.attributeState!.ref!.name!];
-                            } else {
-                                const attr = assetSubscription.asset.attributes![evt.attributeState!.ref!.name!];
-                                attr.value = evt.attributeState!.value;
-                                attr.timestamp = evt.timestamp;
-                            }
-                        }
-
-                        assetSubscription.callbacks.forEach((cb, key) => {
-                            cb(evt);
-                        });
-                    }).then((sId) => {
-                        // Get and store the asset so we can quickly provide the current value of attributes
-                        const readEvent: EventRequestResponseWrapper<ReadAssetsEvent> = {
-                            event: {
-                                eventType: "read-assets",
-                                assetQuery: {
-                                    ids: [assetId],
-                                    select: {
-                                        excludeParentInfo: true,
-                                        excludePath: true
-                                    }
-                                }
-                            }
-                        };
-                        return this.sendEventWithReply(readEvent);
-                    }).then((response) => {
-                        const assetsEvent = response as AssetsEvent;
-                        if (assetsEvent.assets && assetsEvent.assets.length === 1) {
-                            info!.asset = assetsEvent.assets[0];
-                        }
-                        info!.promise = undefined;
-                    })
-                    info.promise = promise;
-                } else if (info.promise) {
-                    promise = info.promise;
-                }
-
-                info.callbacks.set(subscriptionId, (evt) => {
-                    if (assetAttributes) {
-                        if (assetAttributes.find((attributeRef) => evt.attributeState!.ref!.name === attributeRef.name)) {
-                            callback(evt);
-                        }
-                    } else {
-                        callback(evt);
-                    }
-                });
-
-                return promise;
-            }
-        )
-
-        await Promise.all(assetSubscriptions);
-
-        if (requestCurrentValues) {
-            assetIds.forEach((assetId) => {
-                const info = this._assetSubscriptionMap.get(assetId);
-                if (info && info.asset) {
-                    Object.entries(info.asset.attributes!).forEach(([attributeName, attr]) => {
-                        if (!attributes || attributes.find((ref) => ref.id === info.asset!.id && ref.name === attributeName)) {
-                            callback({
-                                eventType: "attribute",
-                                timestamp: attr.timestamp,
-                                attributeState: {
-                                    value: attr.value,
-                                    ref: {
-                                        id: assetId,
-                                        name: attributeName
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
+            const subscription: EventSubscription<AttributeEvent> = {
+                eventType: "attribute"
+            };
+            this._attributeEventPromise = this.subscribe(subscription, (event) => {
+                this._attributeEventCallbackMap.forEach((callback) => callback(event));
             });
         }
 
-        return subscriptionId;
+        // Build a filter to only respond to the callback for the requested attributes
+        const eventFilter = (e: AttributeEvent) => {
+            ids.forEach((idOrRef: string | AttributeRef) => {
+                if (typeof (idOrRef) === "string") {
+                    if (e.attributeState!.ref!.id === idOrRef) {
+                        callback(e);
+                    }
+                } else {
+                    const eventRef = e.attributeState!.ref!;
+                    if (eventRef.id === idOrRef.id && eventRef.name === idOrRef.name) {
+                        callback(e);
+                    }
+                }
+            });
+        };
+
+        this._attributeEventCallbackMap.set(subscriptionId, eventFilter);
+
+        return this._attributeEventPromise.then(() => {
+
+            try {
+                // Get the current state of the attributes if requested
+                if (requestCurrentValues) {
+                    // Just request the whole asset(s) and let the event filter do the work
+                    const readRequest: EventRequestResponseWrapper<ReadAssetsEvent> = {
+                        messageId: "read-assets:" + assetIds.join(",") + ":" + subscriptionId,
+                        event: {
+                            eventType: "read-assets",
+                            assetQuery: {
+                                ids: assetIds
+                            }
+                        }
+                    }
+                    this.sendEventWithReply(readRequest)
+                        .then((e: SharedEvent) => {
+                            const assetsEvent = e as AssetsEvent;
+                            // Check subscription still exists
+                            if (!assetsEvent.assets || !this._attributeEventCallbackMap.has(subscriptionId)) {
+                                return;
+                            }
+
+                            assetsEvent.assets.forEach((asset) => {
+                                if (asset.attributes) {
+                                    Object.entries(asset.attributes!).forEach(([attributeName, attr]) => {
+                                        if (!attributes || attributes.find((ref) => ref.id === asset!.id && ref.name === attributeName)) {
+                                            eventFilter({
+                                                eventType: "attribute",
+                                                timestamp: attr.timestamp,
+                                                attributeState: {
+                                                    value: attr.value,
+                                                    ref: {
+                                                        id: asset.id,
+                                                        name: attributeName
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                }
+            } catch (e) {
+                console.error("Failed to subscribe to asset events for assets: " + ids);
+                if (subscriptionId) {
+                    this.unsubscribe(subscriptionId);
+                }
+                throw e;
+            }
+
+            return subscriptionId;
+        });
     }
 
     protected _processNextSubscription() {
@@ -484,7 +483,7 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onMessageReceived(subscriptionId: string, event: SharedEvent) {
-        const subscriptionInfo = this._subscriptionMap[subscriptionId];
+        const subscriptionInfo = this._subscriptionMap.get(subscriptionId);
 
         if (subscriptionInfo) {
             subscriptionInfo.callback(event);
@@ -496,11 +495,11 @@ abstract class EventProviderImpl implements EventProvider {
 
         if (Object.keys(this._subscriptionMap).length > 0) {
             for (const subscriptionId in this._subscriptionMap) {
-                if (this._subscriptionMap.hasOwnProperty(subscriptionId)) {
-                    this._queuedSubscriptions.unshift(this._subscriptionMap[subscriptionId]);
+                if (this._subscriptionMap.has(subscriptionId)) {
+                    this._queuedSubscriptions.unshift(this._subscriptionMap.get(subscriptionId)!);
                 }
             }
-            this._subscriptionMap = {};
+            this._subscriptionMap.clear();
         }
 
         this._processNextSubscription();

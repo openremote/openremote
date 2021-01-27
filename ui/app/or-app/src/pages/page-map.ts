@@ -11,7 +11,7 @@ import {
 } from "@openremote/or-map";
 import manager, {OREvent, Util} from "@openremote/core";
 import {createSelector} from "reselect";
-import {Asset, AssetEvent, AssetEventCause, AttributeEvent, GeoJSONPoint, Attribute, WellknownMetaItems, WellknownAttributes, AssetQueryOperator, LogicGroupOperator} from "@openremote/model";
+import {Asset, AssetEvent, AssetEventCause, AttributeEvent, GeoJSONPoint, Attribute, WellknownMetaItems, WellknownAttributes, LogicGroupOperator} from "@openremote/model";
 import {getAssetsRoute} from "./page-assets";
 import {Page, router} from "../types";
 import {AppStateKeyed} from "../app";
@@ -19,8 +19,6 @@ import {AppStateKeyed} from "../app";
 export interface MapState {
     assets: Asset[];
     currentAssetId: string;
-    assetSubscriptionId: string;
-    attributeSubscriptionId: string;
 }
 
 export interface MapStateKeyed extends AppStateKeyed {
@@ -29,9 +27,7 @@ export interface MapStateKeyed extends AppStateKeyed {
 
 const INITIAL_STATE: MapState = {
     assets: [],
-    currentAssetId: undefined,
-    assetSubscriptionId: undefined,
-    attributeSubscriptionId: undefined
+    currentAssetId: undefined
 };
 
 const pageMapSlice = createSlice({
@@ -74,23 +70,11 @@ const pageMapSlice = createSlice({
                 ...state,
                 assets: action.payload
             };
-        },
-        setAssetSubscriptionId(state, action: PayloadAction<string>) {
-            return {
-                ...state,
-                assetSubscriptionId: action.payload
-            };
-        },
-        setAttributeSubscriptionId(state, action: PayloadAction<string>) {
-            return {
-                ...state,
-                attributeSubscriptionId: action.payload
-            };
         }
     }
 });
 
-const {assetEventReceived, attributeEventReceived, setAssets, setAssetSubscriptionId, setAttributeSubscriptionId} = pageMapSlice.actions;
+const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
 export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?:MapAssetCardConfig) {
@@ -167,13 +151,19 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
     protected _assetSelector = (state: S) => state.map.assets;
     protected _paramsSelector = (state: S) => state.app.params;
+    protected subscribedRealm?: string;
+    protected assetSubscriptionId: string;
+    protected attributeSubscriptionId: string;
 
     protected subscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => async (dispatch) => {
+
+        const realm = manager.displayRealm;
+        this.subscribedRealm = realm;
 
         try {
             const result = await manager.rest.api.AssetResource.queryAssets({
                 tenant: {
-                    realm: manager.displayRealm
+                    realm: realm
                 },
                 select: {
                     attributes: [WellknownAttributes.LOCATION],
@@ -220,51 +210,60 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                 }
             });
 
+            if (realm !== this.subscribedRealm) {
+                // Realm has changed
+                return;
+            }
+
+            if (!this.isConnected) {
+                return;
+            }
+
             if (result.data) {
                 const assets = result.data;
 
-                dispatch(setAssets(assets))
+                dispatch(setAssets(assets));
 
                 const ids = result.data.map(
                     asset => asset.id
                 );
 
-                const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, false, {filterType: "asset", attributeNames: [WellknownAttributes.LOCATION]}, (event) => {
+                const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, false, undefined, (event) => {
                     dispatch(assetEventReceived(event));
                 });
 
-                if (!this.isConnected) {
+                if (!this.isConnected || realm !== this.subscribedRealm) {
                     manager.events.unsubscribe(assetSubscriptionId);
                     return;
                 }
 
-                dispatch(setAssetSubscriptionId(assetSubscriptionId));
+                this.assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(ids, false, (event) => {
                     dispatch(attributeEventReceived(event));
                 });
 
-                if (!this.isConnected) {
+                if (!this.isConnected || realm !== this.subscribedRealm) {
+                    manager.events.unsubscribe(assetSubscriptionId);
                     manager.events.unsubscribe(attributeSubscriptionId);
                     return;
                 }
 
-                dispatch(setAttributeSubscriptionId(attributeSubscriptionId));
+                this.attributeSubscriptionId = attributeSubscriptionId;
             }
-
         } catch (e) {
             console.error("Failed to subscribe to assets", e)
         }
     };
 
     protected unsubscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => (dispatch, getState) => {
-        if (getState().map.assetSubscriptionId) {
-            manager.events.unsubscribe(getState().map.assetSubscriptionId);
-            dispatch(setAssetSubscriptionId(null));
+        if (this.assetSubscriptionId) {
+            manager.events.unsubscribe(this.assetSubscriptionId);
+            this.assetSubscriptionId = undefined;
         }
-        if (getState().map.attributeSubscriptionId) {
-            manager.events.unsubscribe(getState().map.attributeSubscriptionId);
-            dispatch(setAttributeSubscriptionId(null));
+        if (this.attributeSubscriptionId) {
+            manager.events.unsubscribe(this.attributeSubscriptionId);
+            this.attributeSubscriptionId = undefined;
         }
     };
 
@@ -320,7 +319,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                             <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}"></or-map-marker-asset>
                         `;
                     })
-            }
+                }
             </or-map>
         `;
     }

@@ -507,7 +507,7 @@ export class Manager implements EventProviderFactory {
     }
 
     set displayRealm(realm: string) {
-        if (!this.isSuperUser()) {
+        if (!this.isSuperUser() || this._displayRealm === realm) {
             return;
         }
         this._displayRealm = realm;
