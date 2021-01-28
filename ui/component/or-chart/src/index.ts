@@ -832,7 +832,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         let attributes = Object.values(this.activeAsset.attributes);
         if (attributes && attributes.length > 0) {
             return attributes
-                .filter((attr) => !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) || !!Util.getMetaValue(attr, undefined, WellknownMetaItems.STOREDATAPOINTS))
+                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
                 .filter((attr) => (this.assetAttributes && !this.assetAttributes.some((assetAttr, index) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
                 .map((attr) => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);

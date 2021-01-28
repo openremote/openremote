@@ -116,17 +116,17 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             return;
         }
         this.selectedAsset = response.data[0];
-        if (this.selectedAsset.attributes != null) {
+        if (this.selectedAsset.attributes) {
             this.attributeNames = [];
-            for (const att of Object.keys(this.selectedAsset.attributes)) {
-                if (!!Util.getMetaValue(WellknownMetaItems.RULESTATE, this.selectedAsset.attributes[att])) {
-                    const label = Util.getAttributeLabel(this.selectedAsset.attributes[att], undefined, this.selectedAsset.type!, true)
+            Object.values(this.selectedAsset.attributes).forEach((attribute) => {
+                if (attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attribute.meta[WellknownMetaItems.RULESTATE] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK))) {
+                    const label = Util.getAttributeLabel(attribute, undefined, this.selectedAsset.type!, true);
                     this.attributeNames.push({
-                        name: att,
+                        name: attribute.name!,
                         label
                     });
                 }
-            }
+            });
             if (this.attributeNames.length !== 0) {
                 if (this.internal.value && this.internal.value.attributeName) {
                     this.assetIntialised = true;

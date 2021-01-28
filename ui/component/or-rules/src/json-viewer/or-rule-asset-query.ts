@@ -149,7 +149,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
 
         if (asset && asset.attributes) {
             attributes = Object.values(asset.attributes)
-                .filter((attr) => Util.hasMetaItem(WellknownMetaItems.RULESTATE, attr))
+                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attribute.meta[WellknownMetaItems.RULESTATE] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
                 .map((attr) => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
                     const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, false);

@@ -486,7 +486,7 @@ export class OrAttributeCard extends LitElement {
 
         if (attributes && attributes.length > 0) {
             return attributes
-                .filter((attr) => !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) || !!Util.getMetaValue(attr, undefined, WellknownMetaItems.STOREDATAPOINTS))
+                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
                 .map((attr: Attribute<any>) => {
                     const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr.name, attr);
                     return [attr.name!, Util.getAttributeLabel(attr, descriptors[0], this.asset!.type, false)];

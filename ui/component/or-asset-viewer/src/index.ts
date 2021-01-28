@@ -369,7 +369,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         const historyAttrs = Object.values(attributes).filter((attr) =>
             (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
             && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0)
-            && (!attr.meta || !attr.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) || !!Util.getMetaValue(WellknownMetaItems.STOREDATAPOINTS, attr)));
+            && (attr.meta && (attr.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attr.meta[WellknownMetaItems.STOREDATAPOINTS] : attr.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK))));
 
         if (historyAttrs.length === 0) {
             return undefined;
