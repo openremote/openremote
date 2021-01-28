@@ -86,7 +86,8 @@ public final class MetaItemType {
     /* DATA POINT META */
 
     /**
-     * Can be set to false to prevent attribute values being stored in time series database
+     * Can be set to false to prevent attribute values being stored in time series database; otherwise any attribute
+     * which also has an {@link #AGENT_LINK} meta item or {@link #STORE_DATA_POINTS} is set to true, will be stored.
      */
     public static final MetaItemDescriptor<Boolean> STORE_DATA_POINTS = new MetaItemDescriptor<>("storeDataPoints", ValueType.BOOLEAN);
 
@@ -129,7 +130,8 @@ public final class MetaItemType {
 
     /**
      * Can be set to false to exclude an attribute update from being processed by the rules engines as {@link
-     * AssetState} facts, with a lifecycle that reflects the state of the asset attribute. Each attribute will have one
+     * AssetState} facts, otherwise any attribute that also has an {@link #AGENT_LINK} meta item or {@link #RULE_STATE}
+     * is true, will be processed with a lifecycle that reflects the state of the asset attribute. Each attribute will have one
      * fact at all times in rules memory. These state facts are kept in sync with asset changes: When the attribute is
      * updated, the fact will be updated (replaced). If you want evaluate the change history of an attribute, you
      * typically need to combine this with {@link #RULE_EVENT}.

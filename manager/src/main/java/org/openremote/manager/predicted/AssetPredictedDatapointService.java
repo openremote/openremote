@@ -206,7 +206,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                         try (ResultSet rs = st.executeQuery()) {
                             List<ValueDatapoint<?>> result = new ArrayList<>();
                             while (rs.next()) {
-                                Object value = rs.getObject(2) != null ? Values.convert(rs.getString(2), attributeType) : null;
+                                Object value = rs.getObject(2) != null ? Values.getValueCoerced(rs.getObject(2), attributeType).orElse(null) : null;
                                 result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                             }
                             return result.toArray(new ValueDatapoint<?>[0]);

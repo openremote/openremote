@@ -117,7 +117,8 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * successful.
  * <h2>Asset Datapoint Service processing logic</h2>
  * <p>
- * Checks if attribute has {@link MetaItemType#STORE_DATA_POINTS} set to false, and if so the {@link AttributeEvent}
+ * Checks if attribute has {@link MetaItemType#STORE_DATA_POINTS} set to false or if the attribute does not have an
+ * {@link org.openremote.model.asset.agent.AgentLink} meta, and if so the {@link AttributeEvent}
  * is not stored in a time series DB of historical data, otherwise the value is stored. Then allows the message to
  * continue if the commit was successful.
  */

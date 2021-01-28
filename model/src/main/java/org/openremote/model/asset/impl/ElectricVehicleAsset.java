@@ -197,8 +197,14 @@ public class ElectricVehicleAsset extends ElectricityStorageAsset {
     }
 
     @Override
-    public ElectricVehicleAsset setCarbonTotal(Integer value) {
-        super.setCarbonTotal(value);
+    public ElectricVehicleAsset setCarbonImportTotal(Integer value) {
+        super.setCarbonImportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricVehicleAsset setCarbonExportTotal(Integer value) {
+        super.setCarbonExportTotal(value);
         return this;
     }
 

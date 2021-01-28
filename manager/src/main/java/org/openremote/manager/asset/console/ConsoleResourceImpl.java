@@ -122,6 +122,8 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     public static ConsoleAsset initConsoleAsset(ConsoleRegistration consoleRegistration, boolean allowPublicLocationWrite, boolean allowRestrictedLocationWrite) {
         ConsoleAsset consoleAsset = new ConsoleAsset(consoleRegistration.getName());
 
+        consoleAsset.getAttributes().getOrCreate(Asset.LOCATION).addOrReplaceMeta(new MetaItem<>(RULE_STATE));
+
         if (allowPublicLocationWrite) {
             consoleAsset.getAttributes().getOrCreate(Asset.LOCATION).addOrReplaceMeta(new MetaItem<>(ACCESS_PUBLIC_WRITE, true));
         }

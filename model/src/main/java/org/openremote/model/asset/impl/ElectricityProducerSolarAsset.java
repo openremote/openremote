@@ -205,8 +205,14 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     }
 
     @Override
-    public ElectricityProducerSolarAsset setCarbonTotal(Integer value) {
-        super.setCarbonTotal(value);
+    public ElectricityProducerSolarAsset setCarbonImportTotal(Integer value) {
+        super.setCarbonImportTotal(value);
+        return this;
+    }
+
+    @Override
+    public ElectricityProducerSolarAsset setCarbonExportTotal(Integer value) {
+        super.setCarbonExportTotal(value);
         return this;
     }
 

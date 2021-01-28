@@ -20,7 +20,6 @@
 package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.*;
 
@@ -28,7 +27,6 @@ import java.util.Optional;
 
 import static org.openremote.model.Constants.*;
 
-@SuppressWarnings("unchecked")
 public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends Asset<T> {
 
     public static final AttributeDescriptor<Double> POWER = new AttributeDescriptor<>("power", ValueType.POSITIVE_NUMBER,
@@ -80,7 +78,10 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> CARBON_TOTAL = new AttributeDescriptor<>("carbonTotal", ValueType.POSITIVE_INTEGER,
+    public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = new AttributeDescriptor<>("carbonImportTotal", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY, true)
+    ).withUnits(UNITS_KILO, UNITS_GRAM);
+    public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = new AttributeDescriptor<>("carbonExportTotal", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY, true)
     ).withUnits(UNITS_KILO, UNITS_GRAM);
 
@@ -266,12 +267,21 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         return (T)this;
     }
 
-    public Optional<Integer> getCarbonTotal() {
-        return getAttributes().getValue(CARBON_TOTAL);
+    public Optional<Integer> getCarbonImportTotal() {
+        return getAttributes().getValue(CARBON_IMPORT_TOTAL);
     }
 
-    public T setCarbonTotal(Integer value) {
-        getAttributes().getOrCreate(CARBON_TOTAL).setValue(value);
+    public T setCarbonImportTotal(Integer value) {
+        getAttributes().getOrCreate(CARBON_IMPORT_TOTAL).setValue(value);
+        return (T)this;
+    }
+
+    public Optional<Integer> getCarbonExportTotal() {
+        return getAttributes().getValue(CARBON_EXPORT_TOTAL);
+    }
+
+    public T setCarbonExportTotal(Integer value) {
+        getAttributes().getOrCreate(CARBON_EXPORT_TOTAL).setValue(value);
         return (T)this;
     }
 }

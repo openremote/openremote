@@ -79,10 +79,11 @@ import static org.openremote.model.value.MetaItemType.RULE_STATE;
 /**
  * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.
  * <p>
- * If an updated attribute doesn't have meta {@link MetaItemType#RULE_STATE} is false, this implementation of {@link
- * AssetUpdateProcessor} converts the update message to an {@link AssetState} fact. This service keeps the facts and
- * thus the state of rule facts are in sync with the asset state changes that occur. If an asset attribute value
- * changes, the {@link AssetState} in the rules engines will be updated to reflect the change.
+ * If an updated attribute doesn't have meta {@link MetaItemType#RULE_STATE} is false and the attribute has an {@link
+ * org.openremote.model.asset.agent.AgentLink} meta, this implementation of {@link AssetUpdateProcessor} converts the
+ * update message to an {@link AssetState} fact. This service keeps the facts and thus the state of rule facts are in
+ * sync with the asset state changes that occur. If an asset attribute value changes, the {@link AssetState} in the
+ * rules engines will be updated to reflect the change.
  * <p>
  * If an updated attribute's {@link MetaItemType#RULE_EVENT} is true, another temporary {@link AssetState} fact is
  * inserted in the rules engines in scope. This fact expires automatically if the lifetime set in {@link
@@ -330,6 +331,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
     }
 
+    protected static boolean attributeIsRuleState(Attribute<?> attribute) {
+        return attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(attribute.hasMeta(MetaItemType.AGENT_LINK));
+    }
+
     @Override
     public boolean processAssetUpdate(EntityManager em,
                                       Asset<?> asset,
@@ -338,7 +343,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         // We might process two facts for a single attribute update, if that is what the user wants
 
         // First as asset state
-        if (attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true)) {
+        if (attributeIsRuleState(attribute)) {
             updateAssetState(new AssetState<>(asset, attribute, source));
         }
 
@@ -464,7 +469,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     List<Attribute<?>> ruleStateAttributes = asset
                         .getAttributes()
                         .stream()
-                        .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true)).collect(Collectors.toList());
+                        .filter(RulesService::attributeIsRuleState).collect(Collectors.toList());
 
                     // Asset<?> used to be loaded for each attribute which is inefficient
                     Asset<?> loadedAsset = ruleStateAttributes.isEmpty() ? null : assetStorageService.find(asset.getId(),
@@ -496,14 +501,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     if (loadedAsset == null)
                         return;
 
-                    List<Attribute<?>> oldStateAttributes = ((AttributeMap)persistenceEvent.getPreviousState("attributes"))
+                    List<Attribute<?>> oldStateAttributes = ((AttributeMap) persistenceEvent.getPreviousState("attributes"))
                         .stream()
-                        .filter(attr -> attr.getMetaValue(RULE_STATE).orElse(true))
+                        .filter(RulesService::attributeIsRuleState)
                         .collect(toList());
 
                     List<Attribute<?>> newStateAttributes = ((AttributeMap) persistenceEvent.getCurrentState("attributes"))
                         .stream()
-                        .filter(attr -> attr.getMetaValue(RULE_STATE).orElse(true))
+                        .filter(RulesService::attributeIsRuleState)
                         .collect(Collectors.toList());
 
                     // Retract obsolete or modified attributes
@@ -528,7 +533,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 case DELETE:
                     // Retract any facts that were associated with this asset
                     asset.getAttributes().stream()
-                        .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true))
+                        .filter(RulesService::attributeIsRuleState)
                         .forEach(attribute -> {
                             AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
                             LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
@@ -857,14 +862,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         return assets.stream()
             .map(asset ->
                 new Pair<>(asset, asset.getAttributes().stream()
-                    .filter(attribute -> attribute.getMetaValue(MetaItemType.RULE_STATE).orElse(true)))
+                    .filter(RulesService::attributeIsRuleState))
             );
     }
 
     /**
-     * Called when an engine's rules change identifying assets with location attributes that also have
-     * {@link LocationAttributePredicate} in the rules. The job here is to identify the asset's (via {@link AssetState})
-     * that have modified {@link LocationAttributePredicate}s and to notify the {@link GeofenceAssetAdapter}s.
+     * Called when an engine's rules change identifying assets with location attributes that also have {@link
+     * LocationAttributePredicate} in the rules. The job here is to identify the asset's (via {@link AssetState}) that
+     * have modified {@link LocationAttributePredicate}s and to notify the {@link GeofenceAssetAdapter}s.
      */
     protected void onEngineLocationRulesChanged(RulesEngine<?> rulesEngine, List<RulesEngine.AssetStateLocationPredicates> newEngineAssetStateLocationPredicates) {
         withLock(getClass().getSimpleName() + "::onEngineLocationRulesChanged", () -> {
