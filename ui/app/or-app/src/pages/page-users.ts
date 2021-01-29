@@ -403,7 +403,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
                                       <div class="column">
                                           ${user.id ? html`
-                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}" .value="${this._userRoleMapper[user.id].id}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper[user.id] = e.detail.value;}}"></or-input>
+                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}" .value="${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].id : ""}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper[user.id] = e.detail.value;}}"></or-input>
                                           ` : html`
                                               <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper["newUser"] = e.detail.value;}}"></or-input>
                                           `}
