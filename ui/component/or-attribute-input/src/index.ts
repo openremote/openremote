@@ -23,7 +23,7 @@ import {
 } from "@openremote/model";
 import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-input";
-import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider, OrInputChangedEventDetail} from "@openremote/or-input";
 import "@openremote/or-map";
 import { geoJsonPointInputTemplateProvider } from "@openremote/or-map";
 
@@ -509,14 +509,14 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         }
 
         // Fallback to simple input provider
-        const valueChangeHandler = (e: OrInputChangedEvent) => {
-            if (e.detail.enterPressed || !this._templateProvider || !this._templateProvider.supportsSendButton) {
-                this._onInputValueChanged(e.detail.value);
+        const valueChangeHandler = (detail: OrInputChangedEventDetail) => {
+            if (detail.enterPressed || !this._templateProvider || !this._templateProvider.supportsSendButton) {
+                this._onInputValueChanged(detail.value);
             } else {
-                this._newValue = e.detail.value;
+                this._newValue = detail.value;
             }
         };
-        this._templateProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (e: any) => valueChangeHandler(e), options);
+        this._templateProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (e: OrInputChangedEventDetail) => valueChangeHandler(e), options);
     }
 
     public getLabel(): string | undefined {

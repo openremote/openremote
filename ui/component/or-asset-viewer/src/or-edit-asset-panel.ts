@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, TemplateResult, unsafeCSS} from "lit-element";
-import {InputType, OrInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder} from "@openremote/model";
 import {AssetModelUtil, DefaultColor5, Util} from "@openremote/core";
@@ -252,8 +252,9 @@ export class OrEditAssetPanel extends LitElement {
         this._onModified();
     }
 
-    protected _onMetaItemModified(metaItem: NameValueHolder<any>, value: any) {
-        metaItem.value = value;
+    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, detail: OrInputChangedEventDetail) {
+        metaItem.value = detail.value;
+        attribute.meta![metaItem.name!] = detail.value;
         this._onModified();
     }
 
@@ -274,7 +275,7 @@ export class OrEditAssetPanel extends LitElement {
             const options: ValueInputProviderOptions = {
                 label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true)
             };
-            const provider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (v: any) => this._onMetaItemModified(metaItem, v), options);
+            const provider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail: OrInputChangedEventDetail) => this._onMetaItemModified(attribute, metaItem, detail), options);
 
             if (provider.templateFunction) {
                 content = provider.templateFunction(metaItem.value, false, false, false, false, undefined);

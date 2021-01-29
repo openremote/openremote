@@ -110,7 +110,7 @@ export interface ValueInputProvider {
 
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult) | undefined;
 
-export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: any | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | any | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return inputType === InputType.NUMBER
@@ -345,7 +345,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         }}" @or-input-changed="${(e: OrInputChangedEvent) => {
             e.stopPropagation();
             e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
-            valueChangeNotifier(e);
+            valueChangeNotifier(e.detail);
         }}"></or-input>`
     };
 
