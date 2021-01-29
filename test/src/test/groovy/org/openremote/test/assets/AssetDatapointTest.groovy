@@ -44,12 +44,12 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the simulator protocol instance should have been initialised and attributes linked"
         conditions.eventually {
             assert agentService.protocolInstanceMap.get(managerTestSetup.agentId) != null
-            assert ((SimulatorProtocol)agentService.protocolInstanceMap.get(managerTestSetup.agentId)).linkedAttributes.size() == 4
-            assert ((SimulatorProtocol)agentService.protocolInstanceMap.get(managerTestSetup.agentId)).linkedAttributes.get(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption")).getValueAs(Double.class).orElse(0d) == 12.345d
+            assert ((SimulatorProtocol) agentService.protocolInstanceMap.get(managerTestSetup.agentId)).linkedAttributes.size() == 4
+            assert ((SimulatorProtocol) agentService.protocolInstanceMap.get(managerTestSetup.agentId)).linkedAttributes.get(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption")).getValueAs(Double.class).orElse(0d) == 12.345d
         }
 
         when: "an attribute linked to the simulator agent receives some values"
-        def simulatorProtocol = ((SimulatorProtocol)agentService.protocolInstanceMap.get(managerTestSetup.agentId))
+        def simulatorProtocol = ((SimulatorProtocol) agentService.protocolInstanceMap.get(managerTestSetup.agentId))
         advancePseudoClock(10, SECONDS, container)
         simulatorProtocol.updateSensor(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"), 13.3d)
         advancePseudoClock(10, SECONDS, container)
@@ -251,7 +251,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "the clock advances 3 times the purge duration"
-        advancePseudoClock(3*datapointPurgeDays, DAYS, container)
+        advancePseudoClock(3 * datapointPurgeDays, DAYS, container)
 
         and: "the purge routine runs"
         assetDatapointService.purgeDataPoints()
@@ -271,7 +271,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "the clock advances 3 times the purge duration"
-        advancePseudoClock(3*datapointPurgeDays, DAYS, container)
+        advancePseudoClock(3 * datapointPurgeDays, DAYS, container)
 
         and: "the purge routine runs"
         assetDatapointService.purgeDataPoints()
