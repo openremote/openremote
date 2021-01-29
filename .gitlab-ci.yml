@@ -259,6 +259,32 @@ test-master:
   retry:
     max: 2
 
+test-master-trigger:
+  stage: test
+  before_script:
+    - docker run -v $(pwd):/or
+      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/dev-testing.yml pull"
+    - docker run -v $(pwd):/or
+      -v /var/run/docker.sock:/var/run/docker.sock "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "docker-compose -f profile/dev-testing.yml up --no-build -d"
+  script:
+    - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+      /bin/sh -c "./gradlew clean test"
+  rules:
+    - if: $RUN_TESTS != "true"
+      when: never
+    - if: $RUN_TESTS == "true"
+      when: always
+  artifacts:
+    when: on_failure
+    paths:
+      - "test/build/reports/tests/test/*"
+      - "test/build/reports/tests/test/*/*"
+    expire_in: 4 weeks
+  retry:
+    max: 2
+
 deploy demo on OVH:
   stage: deploy_ovh
   allow_failure: true
