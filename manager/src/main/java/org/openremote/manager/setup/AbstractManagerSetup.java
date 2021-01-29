@@ -632,6 +632,7 @@ public abstract class AbstractManagerSetup implements Setup {
         microphoneAsset.getAttribute(MicrophoneAsset.SOUND_LEVEL).ifPresent(assetAttribute -> {
             assetAttribute.addMeta(
                 new MetaItem<>(RULE_STATE),
+                new MetaItem<>(READ_ONLY),
                 new MetaItem<>(STORE_DATA_POINTS)
             );
             if (agentLinker != null) {
