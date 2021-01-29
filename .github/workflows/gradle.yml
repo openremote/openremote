@@ -49,3 +49,13 @@ jobs:
           docker build --push --platform $PLATFORM -t openremote/proxy:latest proxy
           docker build --push --platform $KEYCLOAK_PLATFORM -t openremote/keycloak:latest keycloak
           docker build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
+      - name: run GitLab testing
+        id: gitlab
+        uses: wei/curl@v1.1.1
+        with:
+          args: >
+            -X POST -F token={{ secrets.GITLAB_TOKEN }} 
+            -F "variables[RUN_TESTS]=true" 
+            -F ref=master 
+            https://gitlab.com/api/v4/projects/18416539/trigger/pipeline
+
