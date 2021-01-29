@@ -228,6 +228,8 @@ email failed build:
   stage: build_fail
   <<: *notify_email
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: on_failure
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
@@ -238,6 +240,8 @@ build FAILED:
   stage: build_fail
   <<: *notify_whatsapp
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: on_failure
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
@@ -257,6 +261,7 @@ test-master:
     - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew clean test"
   rules:
+    - when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: delayed
       start_in: 2h # Give github actions time to finish (usually a little more than 1h)
@@ -332,19 +337,23 @@ redeploy demo on OVH:
 
 email failed tests:
   stage: tests_fail
-  needs: ["test-master"]
+  needs: ["test-master-trigger"]
   before_script:
     - export STAGE='tests'
   <<: *notify_email
   rules:
+    - if: $RUN_TESTS != "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
 test FAILED:
   stage: tests_fail
-  needs: ["test-master"]
+  needs: ["test-master-trigger"]
   <<: *notify_whatsapp
   rules:
+    - if: $RUN_TESTS != "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
