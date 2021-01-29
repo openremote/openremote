@@ -269,6 +269,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
   private _createUser(user, index) {
     const password = this.checkPassword(index)
+    if(password) return
     manager.rest.api.UserResource.create(manager.displayRealm, user).then((response:any) => {
         if(password){
           const id = response.data.id;
@@ -401,7 +402,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                       </div>
 
                                       <div class="column">
-                                          ${this._userRoleMapper[user.id] ? html`
+                                          ${user.id ? html`
                                               <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}" .value="${this._userRoleMapper[user.id].id}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper[user.id] = e.detail.value;}}"></or-input>
                                           ` : html`
                                               <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper["newUser"] = e.detail.value;}}"></or-input>
