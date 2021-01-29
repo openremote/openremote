@@ -269,7 +269,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
   private _createUser(user, index) {
     const password = this.checkPassword(index)
-    if(password) return
+    if(!password) return
     manager.rest.api.UserResource.create(manager.displayRealm, user).then((response:any) => {
         if(password){
           const id = response.data.id;
