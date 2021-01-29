@@ -37,6 +37,8 @@ lint-Dockerfile:
     - docker run --rm -i hadolint/hadolint < Dockerfile
   allow_failure: true
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: never
 
@@ -49,6 +51,8 @@ lint-swarm-Dockerfile:
   after_script:
     - env
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: never
 
@@ -62,6 +66,8 @@ build-enviroment:
     - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
       when: never
     - changes:
@@ -89,6 +95,8 @@ build-deployment-manager-swarm:
     - docker buildx build --push --platform $PLATFORM -t openremote/deployment:latest deployment
     - docker buildx build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
       when: manual
   retry:
@@ -115,6 +123,8 @@ build-keycloak-postgresql-proxy:
     - docker buildx build --push --platform linux/amd64 -t openremote/keycloak:latest keycloak
     - docker buildx build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE =~ /skip-build/
       when: never
     - changes:
@@ -247,6 +257,8 @@ test-master:
     - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew clean test"
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: delayed
       start_in: 2h # Give github actions time to finish (usually a little more than 1h)
@@ -289,6 +301,8 @@ deploy demo on OVH:
   stage: deploy_ovh
   allow_failure: true
   rules:
+    - if: $RUN_TESTS == "true"
+      when: never
     - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/
       when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-build/
