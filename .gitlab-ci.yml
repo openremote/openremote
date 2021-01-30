@@ -261,10 +261,7 @@ test-master:
     - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew clean test"
   rules:
-    - when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
-      when: delayed
-      start_in: 2h # Give github actions time to finish (usually a little more than 1h)
   artifacts:
     when: on_failure
     paths:
@@ -287,10 +284,10 @@ test-master-trigger:
     - docker run --network host -v $(pwd):/or "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
       /bin/sh -c "./gradlew clean test"
   rules:
-    - if: $RUN_TESTS != "true"
-      when: never
     - if: $RUN_TESTS == "true"
-      when: always
+    #  when: always
+    #- if: $RUN_TESTS != "true"
+      when: never
   artifacts:
     when: on_failure
     paths:
@@ -337,22 +334,22 @@ redeploy demo on OVH:
 
 email failed tests:
   stage: tests_fail
-  needs: ["test-master-trigger"]
+  needs: ["test-master"]
   before_script:
     - export STAGE='tests'
   <<: *notify_email
   rules:
-    - if: $RUN_TESTS != "true"
+    - if: $RUN_TESTS == "true"
       when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
 
 test FAILED:
   stage: tests_fail
-  needs: ["test-master-trigger"]
+  needs: ["test-master"]
   <<: *notify_whatsapp
   rules:
-    - if: $RUN_TESTS != "true"
+    - if: $RUN_TESTS == "true"
       when: never
     - if: $CI_COMMIT_MESSAGE !~ /skip-test/
       when: on_failure
