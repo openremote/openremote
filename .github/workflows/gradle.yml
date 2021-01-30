@@ -156,6 +156,10 @@ jobs:
         run: echo ${{ steps.buildx.outputs.platforms }}
       - name: login to docker hub
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+      - name: Download build artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-build
       - name: build and push images
         run: |
           docker build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
