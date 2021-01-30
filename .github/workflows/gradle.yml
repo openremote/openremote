@@ -185,14 +185,8 @@ jobs:
         with:
           name: dist-build
           path: |
-            ui/component/model/build
-            ui/component/rest/build
-            agent/build
-            container/build
             manager/build
             deployment/build
-            model/build
-            client/build
             !dist/**/*.md
           retention-days: 1
       - name: run GitLab testing
