@@ -14,7 +14,7 @@ env:
   KEYCLOAK_PLATFORM: linux/amd64
 
 jobs:
-  image_deployment:
+  image_keycloak:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -35,12 +35,11 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
       - name: build and push images
         run: |
-          docker build --push --platform $PLATFORM -t openremote/deployment:latest deployment
+          docker build --push --platform $KEYCLOAK_PLATFORM -t openremote/keycloak:latest keycloak
 
-  image_manager:
+  image_proxy:
     runs-on: ubuntu-latest
-    needs: [build, image_deployment]
-    
+    needs: [build]
     steps:
       - uses: actions/checkout@v2
       - name: set up QEMU
@@ -59,6 +58,56 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
       - name: build and push images
         run: |
+          docker build --push --platform $PLATFORM -t openremote/proxy:latest proxy
+
+  image_postgresql:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+      - name: available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+      - name: build and push images
+        run: |
+          docker build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
+
+  image_deployment_manager:
+    runs-on: ubuntu-latest
+    needs: [build]
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+      - name: available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+      - name: Download build artifacts
+        uses: actions/download-artifact@v2
+      - name: build and push images
+        run: |
+          docker build --push --platform $PLATFORM -t openremote/deployment:latest deployment
           docker build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
           docker build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
     
@@ -78,28 +127,21 @@ jobs:
         run: chmod +x gradlew
       - name: build with Gradle
         run: ./gradlew installDist
-      - name: set up QEMU
-        uses: docker/setup-qemu-action@v1
+      - name: Share build artifacts
+        uses: actions/upload-artifact@v2
         with:
-          platforms: all
-      - name: install buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          version: latest
-          install: true
-      - name: available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
-      - name: login to docker hub
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
-      - name: build and push images
-        run: |
-          ##docker build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
-          ##docker build --push --platform $PLATFORM -t openremote/deployment:latest deployment
-          ##docker build --push --platform $PLATFORM -t openremote/manager-swarm:latest -f manager/build/install/manager/swarm.Dockerfile manager/build/install/manager
-          #docker build --push --platform $PLATFORM -t openremote/proxy:latest proxy
-          #docker build --push --platform $KEYCLOAK_PLATFORM -t openremote/keycloak:latest keycloak
-          #docker build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
+          name: dist-build
+          path: |
+            ui/component/model/build
+            ui/component/rest/build
+            agent/build
+            container/build
+            manager/build
+            deployment/build
+            model/build
+            client/build
+            !dist/**/*.md
+          retention-days: 1
       - name: run GitLab testing
         id: gitlab
         uses: wei/curl@v1.1.1
