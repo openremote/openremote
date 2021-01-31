@@ -9,16 +9,18 @@ on:
   pull_request:
     branches: [master]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 env:
   PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
   KEYCLOAK_PLATFORM: linux/amd64
 
 jobs:
-
   image_deployment:
     runs-on: ubuntu-latest
     needs: [build]
-    
+
     steps:
       - uses: actions/checkout@v2
       - name: set up QEMU
@@ -42,11 +44,11 @@ jobs:
       - name: build and push images
         run: |
           docker build --push --platform $PLATFORM -t openremote/deployment:latest deployment
-    
+
   image_manager:
     runs-on: ubuntu-latest
     needs: [build]
-    
+
     steps:
       - uses: actions/checkout@v2
       - name: set up QEMU
@@ -74,7 +76,7 @@ jobs:
   image_manager_swarm:
     runs-on: ubuntu-latest
     needs: [image_deployment, image_manager]
-    
+
     steps:
       - uses: actions/checkout@v2
       - name: set up QEMU
@@ -105,7 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: n1hility/cancel-previous-runs@v2
-        with: 
+        with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: set up JDK 1.8
         uses: actions/setup-java@v1
