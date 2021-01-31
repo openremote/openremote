@@ -1,0 +1,41 @@
+# This is a basic workflow to help you get started with Actions
+
+name: build multirach postgresql Docker image and push to it dockerhub
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+    paths:
+      - postgresql/**
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  PLATFORM: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  image_postgresql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+      - name: available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+      - name: build and push images
+        run: |
+          docker build --push --platform $PLATFORM -t openremote/postgresql:latest postgresql
