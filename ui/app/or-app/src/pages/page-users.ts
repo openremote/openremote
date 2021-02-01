@@ -10,6 +10,7 @@ import {
 import manager, { OREvent } from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
+import { ifDefined } from "lit-html/directives/if-defined";
 import { EnhancedStore } from "@reduxjs/toolkit";
 import { AppStateKeyed } from "../app";
 import { Page } from "../types";
@@ -158,6 +159,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
       
         @media screen and (max-width: 768px){
+          #title {
+            padding: 0;
+            width: 100%;
+          }
           .hide-mobile {
             display: none;
           }
@@ -165,9 +170,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             display: block;
             flex-direction: column;
           }
-
           .panel {
             border-radius: 0;
+            width: calc(100% - 40px);
           }
 
           td, th {
@@ -239,7 +244,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         this._users = [...usersResponse.data];
         this._users.map(user => {
           manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id).then(userRoleResponse => {
-              this._userRoleMapper[user.id] = userRoleResponse.data.find(r => r.composite && r.assigned);
+              const role = userRoleResponse.data.find(r => r.composite && r.assigned);
+              this._userRoleMapper[user.id] = role ? role : {};
               this.requestUpdate()
           })
         })
@@ -268,7 +274,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
   private _createUser(user, index) {
     const password = this.checkPassword(index)
-    if(!password) return
+    if(password === false) return
     manager.rest.api.UserResource.create(manager.displayRealm, user).then((response:any) => {
         if(password){
           const id = response.data.id;
@@ -293,6 +299,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         this.getUsers()
       })
       this._userRoleMapper[user.id] = role;
+    } else {
+      this.getUsers();
     }
   }
 
@@ -373,6 +381,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                       ${this._users.map(
                         (user, index) => {
                           const isSameUser = user.username === manager.username;
+                          const userRole = this._userRoleMapper[user.id];
                           return html`
                           <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => expanderToggle(ev, index)}">
                             <td  class="padded-cell mdc-data-table__cell">
@@ -383,7 +392,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                               ${user.email}
                             </td>
                             <td  class="padded-cell mdc-data-table__cell">
-                            ${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].name : null}
+                            ${userRole ? userRole.name : null}
                             </td>
                             <td class="padded-cell mdc-data-table__cell hide-mobile">
                               ${user.enabled ? "Active" : "In active"}
@@ -402,7 +411,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
                                       <div class="column">
                                           ${user.id ? html`
-                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}" .value="${this._userRoleMapper[user.id] ? this._userRoleMapper[user.id].id : ""}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper[user.id] = e.detail.value;}}"></or-input>
+                                                <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .value="${ifDefined(userRole.id)}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper[user.id] = e.detail.value;}}"></or-input>
                                           ` : html`
                                               <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper["newUser"] = e.detail.value;}}"></or-input>
                                           `}
@@ -421,7 +430,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                       <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateUser(user, index)}"></or-input>   
                                   ` : html`
                                     <or-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._users.splice(-1,1); this._users = [...this._users]}}"></or-input>            
-                                    <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._createUser(user, index)}"></or-input>   
+                                    <or-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._createUser(user, index)}"></or-input>   
                                   `}    
                                   </div>
                               </div>

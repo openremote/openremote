@@ -180,13 +180,17 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
             display: block;
             flex-direction: column;
           }
-
-          .panel {
-            border-radius: 0;
-          }
         }
 
         @media screen and (max-width: 768px){
+          #title {
+            padding: 0;
+            width: 100%;
+          }
+          .panel {
+            width: calc(100% - 40px);
+            border-radius: 0;
+          }
           .hide-mobile {
             display: none;
           }
