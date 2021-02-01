@@ -342,11 +342,11 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}"
             .options="${selectOptions}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}"
-        }}" @or-input-changed="${(e: OrInputChangedEvent) => {
-            e.stopPropagation();
-            e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
-            valueChangeNotifier(e.detail);
-        }}"></or-input>`
+            @or-input-changed="${(e: OrInputChangedEvent) => {
+                e.stopPropagation();
+                e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
+                valueChangeNotifier(e.detail);
+            }}"></or-input>`
     };
 
     return {
@@ -493,6 +493,7 @@ const style = css`
     /* Give slider min width like select etc. */
     .mdc-slider {
         min-width: 200px;
+        flex: 1;
     }
     
     #field {
@@ -642,6 +643,10 @@ export class OrInput extends LitElement {
 
     @property({type: Boolean})
     public disabled: boolean = false;
+
+    @property({type: Boolean})
+    public continuous: boolean = false;
+
 
     /* TEXT INPUT STYLES END */
 
@@ -975,7 +980,8 @@ export class OrInput extends LitElement {
                                     break;
                             }
 
-                            // Numbers/dates must be in english locale
+                            // Numbers/dates must be in english locale without commas etc.
+                            format.useGrouping = false;
                             valMinMax = valMinMax.map((val) => val !== undefined ? Util.getValueAsString(val, () => format, "en-GB") : undefined) as [any,any,any];
                         }
                     }
@@ -1052,20 +1058,35 @@ export class OrInput extends LitElement {
                     }
 
                     if (this.type === InputType.RANGE) {
+
+                        const classes = {
+                            "mdc-slider": true,
+                            "mdc-slider--range": this.continuous,
+                            "mdc-slider--discreet": !this.continuous,
+                            "mdc-slider--disabled": this.disabled
+                        };
+
                         inputElem = html`
                             <span id="wrapper">
                                 ${this.label ? html`<label for="component" class="${this.disabled ? "mdc-switch--disabled" : ""}">${this.label}</label>` : ``}
-                                <div id="component" class="mdc-slider" @MDCSlider:change="${(ev:CustomEvent<MDCSliderChangeEventDetail>) => this.onValueChange(undefined, ev.detail.value)}">
-                                  <input class="mdc-slider__input" ?disabled="${this.readonly || this.disabled}" type="range" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}" value="${ifDefined(valMinMax[0])}" name="slider" aria-label="${this.label}">
-                                  <div class="mdc-slider__track">
-                                    <div class="mdc-slider__track--inactive"></div>
-                                    <div class="mdc-slider__track--active">
-                                      <div class="mdc-slider__track--active_fill"></div>
+                                <div id="component" class="${classMap(classes)}" @MDCSlider:change="${(ev:CustomEvent<MDCSliderChangeEventDetail>) => this.onValueChange(undefined, ev.detail.value)}">
+                                    <input class="mdc-slider__input" type="range" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}" value="${valMinMax[0] || valMinMax[1] || 0}" name="slider" step="${this.step || 1}" ?readonly="${this.readonly}" ?disabled="${this.disabled}" aria-label="${ifDefined(this.label)}" />
+                                    <div class="mdc-slider__track">
+                                        <div class="mdc-slider__track--inactive"></div>
+                                        <div class="mdc-slider__track--active">
+                                            <div class="mdc-slider__track--active_fill"></div>
+                                        </div>
                                     </div>
-                                  </div>
-                                  <div class="mdc-slider__thumb">
-                                    <div class="mdc-slider__thumb-knob"></div>
-                                  </div>
+                                    <div class="mdc-slider__thumb">
+                                        ${!this.continuous ? html`<div class="mdc-slider__value-indicator-container" aria-hidden="true">
+                                            <div class="mdc-slider__value-indicator">
+                                                <span class="mdc-slider__value-indicator-text">
+                                                  50
+                                                </span>
+                                            </div>
+                                        </div>` : ``}
+                                        <div class="mdc-slider__thumb-knob"></div>
+                                    </div>
                                 </div>
                                 ${inputElem ? html`<div style="width: 75px; margin-left: 20px;">${inputElem}</div>` : ``}
                             </span>

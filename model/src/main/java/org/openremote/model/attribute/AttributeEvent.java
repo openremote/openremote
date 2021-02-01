@@ -106,7 +106,7 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
     }
 
     @JsonCreator
-    public AttributeEvent(@JsonProperty("attributeState") AttributeState attributeState, @JsonProperty("t") long timestamp) {
+    public AttributeEvent(@JsonProperty("attributeState") AttributeState attributeState, @JsonProperty("timestamp") long timestamp) {
         super(timestamp);
         Objects.requireNonNull(attributeState);
         this.attributeState = attributeState;
