@@ -12,7 +12,7 @@ services:
 
   keycloak:
     extends:
-      file: deploy.yml
+      file: deploy-no-build.yml
       service: keycloak
     volumes:
       - ../ui/keycloak/themes:/deployment/keycloak/themes
@@ -25,7 +25,7 @@ services:
 
   postgresql:
     extends:
-      file: deploy.yml
+      file: deploy-no-build.yml
       service: postgresql
     # Access directly if needed on localhost
     ports:
