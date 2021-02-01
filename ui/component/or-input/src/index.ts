@@ -710,6 +710,17 @@ export class OrInput extends LitElement {
         }
     }
 
+    public setCustomValidity(msg?: string) {
+        const elem = this.shadowRoot!.getElementById("elem") as HTMLElement;
+        if (!elem || !(elem as any).setCustomValidity) {
+            return;
+        }
+        (elem as any).setCustomValidity(msg);
+        if (this._mdcComponent && (this._mdcComponent as any).valid) {
+            (this._mdcComponent as any).valid = (elem as any).checkValidity();
+        }
+    }
+
     protected render() {
 
         if (this.type) {
@@ -893,7 +904,8 @@ export class OrInput extends LitElement {
                                     return html`
                                     <div id="field" class="mdc-form-field">
                                         <div id="component" class="mdc-checkbox">
-                                            <input type="checkbox" 
+                                            <input type="checkbox"
+                                                id="elem"
                                                 ?checked="${this.value && this.value.includes(optValue)}"
                                                 ?required="${this.required}"
                                                 name="${optValue}"
@@ -915,6 +927,7 @@ export class OrInput extends LitElement {
                         <div id="field" class="mdc-form-field">
                             <div id="component" class="mdc-checkbox">
                                 <input type="checkbox" 
+                                    id="elem"
                                     ?checked="${this.value}"
                                     ?required="${this.required}"
                                     ?disabled="${this.disabled || this.readonly}"
@@ -1070,7 +1083,7 @@ export class OrInput extends LitElement {
                             <span id="wrapper">
                                 ${this.label ? html`<label for="component" class="${this.disabled ? "mdc-switch--disabled" : ""}">${this.label}</label>` : ``}
                                 <div id="component" class="${classMap(classes)}" @MDCSlider:change="${(ev:CustomEvent<MDCSliderChangeEventDetail>) => this.onValueChange(undefined, ev.detail.value)}">
-                                    <input class="mdc-slider__input" type="range" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}" value="${valMinMax[0] || valMinMax[1] || 0}" name="slider" step="${this.step || 1}" ?readonly="${this.readonly}" ?disabled="${this.disabled}" aria-label="${ifDefined(this.label)}" />
+                                    <input id="elem" class="mdc-slider__input" type="range" min="${ifDefined(valMinMax[1])}" max="${ifDefined(valMinMax[2])}" value="${valMinMax[0] || valMinMax[1] || 0}" name="slider" step="${this.step || 1}" ?readonly="${this.readonly}" ?disabled="${this.disabled}" aria-label="${ifDefined(this.label)}" />
                                     <div class="mdc-slider__track">
                                         <div class="mdc-slider__track--inactive"></div>
                                         <div class="mdc-slider__track--active">

@@ -196,7 +196,7 @@
   "user_role": "Role",
   "role_plural": "Roles",
   "description": "Description",
-  "samePassword":"Password are not the same",
+  "passwordMismatch":"Passwords do not match",
   "username":"Username",
   "firstName":"First name",
   "surname":"Surname",

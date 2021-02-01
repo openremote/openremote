@@ -199,7 +199,7 @@
   "username":"Gebruikersnaam",
   "deleteUserConfirm":"Deze gebruiker verwijderen?",
   "deleteRoleConfirm":"Deze rol verwijderen?",
-  "samePassword":"Wachtwoorden komen niet overeen",
+  "passwordMismatch":"Wachtwoorden komen niet overeen",
   "firstName":"Voornaam",
   "surname":"Achternaam",
   "realmRules": "Realm regels",

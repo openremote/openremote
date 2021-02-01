@@ -249,21 +249,20 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   }
 
   private checkPassword(index) {
-    const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-"+index) as OrInput
-    const passwordComponent = this.shadowRoot.getElementById("password-"+index)
+    const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-"+index) as OrInput;
+    const passwordComponent = this.shadowRoot.getElementById("password-"+index) as OrInput;
 
-    const repeatPassword = repeatPasswordComponent.shadowRoot.querySelector('input');
-    const password = passwordComponent.shadowRoot.querySelector('input');
-    if(repeatPassword.value !== password.value) {
-        const error = i18next.t("samePassword");
-        repeatPassword.setCustomValidity(error);
+    if (repeatPasswordComponent.value !== passwordComponent.value) {
+        const error = i18next.t("passwordMismatch");
+        repeatPasswordComponent.validationMessage = error;
+        repeatPasswordComponent.setCustomValidity(error);
         repeatPasswordComponent.helperText = error;
-      return false
+        return false;
     } else {
-      if(repeatPasswordComponent) {
-          repeatPasswordComponent.helperText = ""
+      if (repeatPasswordComponent) {
+          repeatPasswordComponent.helperText = "";
       }
-      return password.value
+      return passwordComponent.value;
     }
   }
 
