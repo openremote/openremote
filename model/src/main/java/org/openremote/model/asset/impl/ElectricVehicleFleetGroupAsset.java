@@ -46,7 +46,7 @@ public class ElectricVehicleFleetGroupAsset extends GroupAsset {
     }
 
     public ElectricVehicleFleetGroupAsset(String name) {
-        super(name, ElectricVehicleAsset.DESCRIPTOR);
+        super(name, ElectricVehicleAsset.class);
     }
 
     public Optional<String> getFleetCategory() {

@@ -669,7 +669,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             LOG.info(msg);
                             return new IllegalStateException(msg);
                         });
-                    if (!childAssetType.equals(asset.getType())) {
+
+                    // Look through type hierarchy for a match - this allows sub types
+                    Class<?> clazz = asset.getClass();
+                    boolean typeMatch = childAssetType.equals(clazz.getSimpleName());
+
+                    while (!typeMatch && clazz != Asset.class) {
+                        clazz = clazz.getSuperclass();
+                        typeMatch = childAssetType.equals(clazz.getSimpleName());
+                    }
+
+                    if (!typeMatch) {
                         String msg = "Asset type does not match parent GROUP asset's childAssetType attribute: asset=" + asset;
                         LOG.info(msg);
                         throw new IllegalStateException(msg);

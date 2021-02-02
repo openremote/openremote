@@ -164,7 +164,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         );
 
         if (consoleParent == null) {
-            consoleParent = new GroupAsset(CONSOLE_PARENT_ASSET_NAME, ConsoleAsset.DESCRIPTOR);
+            consoleParent = new GroupAsset(CONSOLE_PARENT_ASSET_NAME, ConsoleAsset.class);
             consoleParent.setChildAssetType(ConsoleAsset.DESCRIPTOR.getName());
             consoleParent.setRealm(tenant.getRealm());
             consoleParent = assetStorageService.merge(consoleParent);

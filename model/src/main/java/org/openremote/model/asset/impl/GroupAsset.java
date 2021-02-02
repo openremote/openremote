@@ -29,8 +29,8 @@ import javax.persistence.Entity;
 import java.util.Optional;
 
 /**
- * An asset for grouping other assets together; if the {@link #CHILD_ASSET_TYPE} {@link Attribute} is specified then
- * all children must be of the specified type.
+ * An asset for grouping other assets together; The {@link #CHILD_ASSET_TYPE} {@link Attribute} must be specified and
+ * all children must be of the specified type or a subtype of the specified type.
  */
 @Entity
 public class GroupAsset extends Asset<GroupAsset> {
@@ -45,13 +45,8 @@ public class GroupAsset extends Asset<GroupAsset> {
         super(null);
     }
 
-    protected GroupAsset(String name, AssetDescriptor<? extends GroupAsset> descriptor, String childAssetType) {
-        super(name);
-        setChildAssetType(childAssetType);
-    }
-
-    public GroupAsset(String name, AssetDescriptor<?> childAssetType) {
-        this(name, childAssetType.getName());
+    public GroupAsset(String name, Class<? extends Asset<?>> childAssetType) {
+        this(name, childAssetType.getSimpleName());
     }
 
     public GroupAsset(String name, String childAssetType) {

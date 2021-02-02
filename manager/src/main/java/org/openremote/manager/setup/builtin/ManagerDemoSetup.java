@@ -902,7 +902,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ### Parking ###
 
-        GroupAsset parkingGroupAsset = new GroupAsset("Parking group", ParkingAsset.DESCRIPTOR);
+        GroupAsset parkingGroupAsset = new GroupAsset("Parking group", ParkingAsset.class);
         parkingGroupAsset.setParent(mobilityAndSafety);
         parkingGroupAsset.getAttributes().addOrReplace(
                 new Attribute<>("totalOccupancy", POSITIVE_INTEGER)
@@ -1276,7 +1276,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ### Ships ###
 
-        GroupAsset shipGroupAsset = new GroupAsset("Ship group", ShipAsset.DESCRIPTOR);
+        GroupAsset shipGroupAsset = new GroupAsset("Ship group", ShipAsset.class);
         shipGroupAsset.setParent(mobilityAndSafety);
         shipGroupAsset.setId(UniqueIdentifierGenerator.generateId(shipGroupAsset.getName()));
         shipGroupAsset = assetStorageService.merge(shipGroupAsset);
