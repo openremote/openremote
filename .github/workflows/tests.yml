@@ -31,6 +31,7 @@ jobs:
       - name: tests with Gradle
         run: ./gradlew clean test
       - name: Share tests artifacts
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: tests-run-artifacts
