@@ -1526,7 +1526,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 false,
                 ConsoleAppConfig.MenuPosition.BOTTOM_LEFT,
                 null,
-                "#FAFAFA",
+                "#4D9D2A",
                 "#AFAFAF",
                 new ConsoleAppConfig.AppLink[]{
                     new ConsoleAppConfig.AppLink("Map", "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences")

@@ -510,7 +510,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div class="mdc-dialog__surface">
                     <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("addAttribute")}</h2>
                     <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
-                        <or-asset-tree id="chart-asset-tree" .selectedIds="${this.activeAsset ? [this.activeAsset.id] : undefined}"></or-asset-tree>
+                        <or-asset-tree id="chart-asset-tree" readonly .selectedIds="${this.activeAsset ? [this.activeAsset.id] : undefined}"></or-asset-tree>
                             ${this.activeAsset && this.activeAsset.attributes ? html`
                                 <or-input id="chart-attribute-picker" 
                                         style="display:flex;"

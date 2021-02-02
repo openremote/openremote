@@ -249,7 +249,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
               this.requestUpdate()
           })
         })
-        
       }
     );
   }
@@ -299,8 +298,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         this.getUsers()
       })
       this._userRoleMapper[user.id] = role;
-    } else {
-      this.getUsers();
     }
   }
 
@@ -310,10 +307,14 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         const credentials = {value: password}
         manager.rest.api.UserResource.resetPassword(manager.displayRealm, user.id, credentials);
       }
-      if(this._userRoleMapper[user.id]) {
-        this._updateRole(user, this._userRoleMapper[user.id])
-      }
-    manager.rest.api.UserResource.update(manager.displayRealm, user.id, user);
+    if(this._userRoleMapper[user.id]) {
+      this._updateRole(user, this._userRoleMapper[user.id])
+    }
+    
+    manager.rest.api.UserResource.update(manager.displayRealm, user.id, user).then(respoonse => {
+        this.getUsers();
+      
+    });
   }
 
   private _deleteUser(user) {
@@ -395,7 +396,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             ${userRole ? userRole.name : null}
                             </td>
                             <td class="padded-cell mdc-data-table__cell hide-mobile">
-                              ${user.enabled ? "Active" : "In active"}
+                              ${user.enabled ? "Active" : "Inactive"}
                             </td>
                           </tr>
                           <tr id="attribute-meta-row-${index}" class="attribute-meta-row${!user.id ? " expanded" : ""}">
@@ -410,10 +411,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                       </div>
 
                                       <div class="column">
-                                          ${user.id ? html`
-                                                <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .value="${ifDefined(userRole.id)}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper[user.id] = e.detail.value;}}"></or-input>
+                                          ${user.id && this._userRoleMapper[user.id] ? html`
+                                                <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .value="${userRole ? ifDefined(userRole.id) : ifDefined(null)}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => this._userRoleMapper[user.id] = e.detail.value}"></or-input>
                                           ` : html`
-                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {this._userRoleMapper["newUser"] = e.detail.value;}}"></or-input>
+                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {console.log(e.detail.value); this._userRoleMapper["newUser"] = e.detail.value;}}"></or-input>
                                           `}
 
                                             <or-input id="password-${index}" ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>            

@@ -533,6 +533,11 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     public isReadonly(): boolean {
+        if(!manager.hasRole("write:attributes")) {
+            this.readonly = !manager.hasRole("write:attributes");
+            return this.readonly;
+        }
+
         return this.readonly !== undefined ? this.readonly : Util.getMetaValue(WellknownMetaItems.READONLY, this.attribute, this._attributeDescriptor);
     }
 

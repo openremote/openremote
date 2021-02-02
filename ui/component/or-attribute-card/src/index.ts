@@ -426,7 +426,7 @@ export class OrAttributeCard extends LitElement {
                 ];
 
                 this._dialog.dialogContent = html`
-                    <or-asset-tree id="chart-asset-tree" 
+                    <or-asset-tree id="chart-asset-tree"  readonly
                         .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
                     ${this.asset && this.asset.attributes ? html`
                         <or-input id="attribute-picker" 
