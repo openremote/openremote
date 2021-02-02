@@ -37,4 +37,3 @@ jobs:
           name: tests-run-artifacts
           path: |
             test/build/reports/tests/test
-          retention-days: 30
