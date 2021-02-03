@@ -29,7 +29,7 @@ import static org.openremote.model.Constants.*;
 
 public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends Asset<T> {
 
-    public static final AttributeDescriptor<Double> POWER = new AttributeDescriptor<>("power", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> POWER = new AttributeDescriptor<>("power", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER,
