@@ -141,16 +141,18 @@ build manually staging docker images:
 # This step is executed when build fails. The purpose is to e-mail a git commiter about the problem.
 email failed pipeline:
   stage: build_fail
+  needs: ["build staging docker images"]
   <<: *notify_email
   when: on_failure
 
 build FAILED:
   stage: build_fail
+  needs: ["build staging docker images"]
   <<: *notify_whatsapp
   when: on_failure
 
 test-master:
-  stage: test
+  stage: build_staging
   allow_failure: false
   before_script:
     - docker run -v $(pwd):/or
