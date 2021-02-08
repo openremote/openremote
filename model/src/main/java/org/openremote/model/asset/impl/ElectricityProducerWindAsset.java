@@ -24,12 +24,20 @@ import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
 import java.util.Collection;
+import java.util.Optional;
+
+import static org.openremote.model.Constants.*;
 
 @Entity
 public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
+
+    public static final AttributeDescriptor<Double> WIND_SPEED_REFERENCE = new AttributeDescriptor<>("windSpeedReference", ValueType.POSITIVE_NUMBER
+    ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
 
     public static final AssetDescriptor<ElectricityProducerWindAsset> DESCRIPTOR = new AssetDescriptor<>("wind-turbine", "4B87EA", ElectricityProducerWindAsset.class);
 
@@ -40,6 +48,9 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
         super(name);
     }
 
+    public Optional<Double> getWindSpeedReference() {
+        return getAttributes().getValue(WIND_SPEED_REFERENCE);
+    }
 
     @Override
     public ElectricityProducerWindAsset setPower(Double value) {
