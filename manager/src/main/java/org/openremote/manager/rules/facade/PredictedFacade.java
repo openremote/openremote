@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.rules.facade;
 
-import org.openremote.manager.predicted.AssetPredictedDatapointService;
+import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;

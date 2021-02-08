@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.predicted;
+package org.openremote.manager.datapoint;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -28,7 +28,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.predicted.AssetPredictedDatapointResource;
+import org.openremote.model.datapoint.AssetPredictedDatapointResource;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
