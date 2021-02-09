@@ -28,6 +28,7 @@ import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
+import { ifDefined } from "lit-html/directives/if-defined";
 
 // language=CSS
 const style = css`
@@ -207,8 +208,10 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                         <span style="display: inline-flex; align-items: center;">&</span>
                         <or-attribute-input .inputType="${InputType.NUMBER}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "rangeValue", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${i18next.t("and")}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${valuePredicate.rangeValue}" .readonly="${this.readonly || false}"></or-attribute-input>
                     `;
-                }
-                return html`<or-attribute-input @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
+                }            
+                let inputType;
+                if(descriptors[0]?.format?.asSlider) inputType = InputType.NUMBER;
+                return html`<or-attribute-input  .inputType="${ifDefined(inputType)}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setValuePredicateProperty(valuePredicate, "value", ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
             case "radial":
                 return html`<or-rule-radial-modal .query="${this.query}" .assetDescriptor="${assetDescriptor}" .attributePredicate="${attributePredicate}"></or-rule-radial-modal>`;
             case "rect":
