@@ -126,9 +126,10 @@ trait ContainerTrait {
                             println("Purging ${assetRulesets.size()} asset ruleset(s)")
                             assetRulesets.forEach {
                                 rulesetStorageService.delete(AssetRuleset.class, it.id)
+                                def assetEngine = rulesService.assetEngines.get(((AssetRuleset) it).assetId)
                                 def rulesStopped = false
-                                while (!rulesStopped) {
-                                    rulesStopped = rulesService.assetEngines.isEmpty() || !rulesService.assetEngines.containsKey(((AssetRuleset) it).assetId) || !rulesService.assetEngines.get(((AssetRuleset) it).assetId).deployments.containsKey(it.id)
+                                while (assetEngine != null && !rulesStopped) {
+                                    rulesStopped = assetEngine.deployments.containsKey(it.id)
                                     if (counter++ > 100) {
                                         throw new IllegalStateException("Failed to purge ruleset: " + it.name)
                                     }
@@ -140,9 +141,10 @@ trait ContainerTrait {
                             println("Purging ${tenantRulesets.size()} tenant ruleset(s)")
                             tenantRulesets.forEach {
                                 rulesetStorageService.delete(TenantRuleset.class, it.id)
+                                def tenantEngine = rulesService.tenantEngines.get(((TenantRuleset) it).realm)
                                 def rulesStopped = false
-                                while (!rulesStopped) {
-                                    rulesStopped = rulesService.tenantEngines.isEmpty() || !rulesService.tenantEngines.containsKey(((TenantRuleset) it).realm) || !rulesService.tenantEngines.get(((TenantRuleset) it).realm).deployments.containsKey(it.id)
+                                while (tenantEngine != null && !rulesStopped) {
+                                    rulesStopped = !tenantEngine.deployments.containsKey(it.id)
                                     if (counter++ > 100) {
                                         throw new IllegalStateException("Failed to purge ruleset: " + it.name)
                                     }

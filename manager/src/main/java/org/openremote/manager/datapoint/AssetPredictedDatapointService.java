@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.predicted;
+package org.openremote.manager.datapoint;
 
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.agent.protocol.ProtocolPredictedAssetService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
@@ -39,13 +39,19 @@ import org.postgresql.util.PGInterval;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static java.time.temporal.ChronoUnit.DAYS;
 
 public class AssetPredictedDatapointService implements ContainerService, ProtocolPredictedAssetService {
 
@@ -54,6 +60,9 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
+    protected TimerService timerService;
+    protected ScheduledExecutorService executorService;
+    protected ScheduledFuture<?> dataPointsPurgeScheduledFuture;
 
     @Override
     public int getPriority() {
@@ -64,6 +73,8 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        timerService = container.getService(TimerService.class);
+        executorService = container.getExecutorService();
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new AssetPredictedDatapointResourceImpl(
@@ -77,12 +88,18 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
     @Override
     public void start(Container container) throws Exception {
-
+        dataPointsPurgeScheduledFuture = executorService.scheduleAtFixedRate(
+            this::purgeDataPoints,
+            getFirstRunMillis(timerService.getNow()),
+            Duration.ofDays(1).toMillis(), TimeUnit.MILLISECONDS
+        );
     }
 
     @Override
     public void stop(Container container) throws Exception {
-
+        if (dataPointsPurgeScheduledFuture != null) {
+            dataPointsPurgeScheduledFuture.cancel(true);
+        }
     }
 
     public long getDatapointsCount() {
@@ -270,5 +287,30 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
             "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE \n" +
             "  SET value = excluded.value", assetId, attributeName, value, timestamp))
             .executeUpdate();
+    }
+
+    protected void purgeDataPoints() {
+        LOG.info("Starting data points purge daily task");
+
+        try {
+            // Purge data points not in the above list using default duration
+            LOG.fine("Purging predicted data points older than 1 day");
+
+            persistenceService.doTransaction(em -> em.createQuery(
+                "delete from AssetPredictedDatapoint dp " +
+                    "where dp.timestamp < :dt"
+            ).setParameter("dt", Date.from(timerService.getNow().truncatedTo(DAYS).minus(1, DAYS))).executeUpdate());
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to run data points purge", e);
+        }
+
+        LOG.info("Finished data points purge daily task");
+    }
+
+    protected long getFirstRunMillis(Instant currentTime) {
+        // Schedule purge at approximately 2AM daily
+        return ChronoUnit.MILLIS.between(
+            currentTime,
+            currentTime.truncatedTo(DAYS).plus(26, ChronoUnit.HOURS));
     }
 }

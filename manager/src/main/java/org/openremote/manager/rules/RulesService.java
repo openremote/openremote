@@ -33,7 +33,7 @@ import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.predicted.AssetPredictedDatapointService;
+import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.flow.FlowResourceImpl;
 import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -74,7 +74,6 @@ import static org.openremote.container.persistence.PersistenceEvent.isPersistenc
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
-import static org.openremote.model.value.MetaItemType.RULE_STATE;
 
 /**
  * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.

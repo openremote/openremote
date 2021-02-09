@@ -37,7 +37,7 @@ import org.openremote.model.asset.UserAsset;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
-import org.openremote.model.predicted.AssetPredictedDatapoint;
+import org.openremote.model.datapoint.AssetPredictedDatapoint;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.TenantRuleset;

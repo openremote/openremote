@@ -20,14 +20,11 @@
 package org.openremote.manager.rules.facade;
 
 import org.openremote.manager.datapoint.AssetDatapointService;
-import org.openremote.manager.predicted.AssetPredictedDatapointService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.rules.HistoricDatapoints;
-import org.openremote.model.rules.PredictedDatapoints;
 import org.openremote.model.rules.Ruleset;
 
 import java.util.logging.Logger;

@@ -28,7 +28,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.predicted.AssetPredictedDatapointService;
+import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.rules.facade.*;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
