@@ -53,6 +53,9 @@ export interface ChartViewConfig {
     timestamp?: Date;
     compareTimestamp?: Date;
     period?: moment.unitOfTime.Base;
+    deltaFormat?: string;
+    decimals?: number;
+    periodCompare?: boolean;
 }
 
 export interface OrChartEventDetail {
@@ -719,6 +722,8 @@ export class OrChart extends translate(i18next)(LitElement) {
             this.assets = view.assetIds.map((assetId: string)  => assets.find(x => x.id === assetId)!);
             this.assetAttributes = view.attributes.map((attr: string, index: number) => assets[index] && assets[index].attributes ? assets[index].attributes![attr] : undefined).filter(attr => !!attr) as Attribute<any>[];
             this.period = view.period;
+            if(typeof view.periodCompare != 'undefined') this.periodCompare = view.periodCompare;
+            
         });
     }
 
@@ -748,7 +753,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         config.views[viewSelector][this.panelName] = {
             assetIds: assetIds,
             attributes: attributes,
-            period: this.period
+            period: this.period,
+            periodCompare: this.periodCompare
         };
         const message = {
             provider: "STORAGE",
@@ -870,6 +876,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     setPeriodCompare(periodCompare:boolean) {
         this.periodCompare = periodCompare;
         this._loadData();
+        this.saveSettings();
     }
 
     protected async _loadData() {

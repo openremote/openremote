@@ -362,7 +362,7 @@ export class OrAttributeCard extends LitElement {
                 ];
 
                 this._dialog.dialogContent = html`
-                    <or-input id="delta-mode-picker" value="${this.deltaFormat}" @or-input-changed="${(evt: OrInputChangedEvent) => this.deltaFormat = evt.detail.value}" .type="${InputType.LIST}" .options="${options}"></or-input>                
+                    <or-input id="delta-mode-picker" value="${this.deltaFormat}" @or-input-changed="${(evt: OrInputChangedEvent) => {this.deltaFormat = evt.detail.value;this.saveSettings();}}" .type="${InputType.LIST}" .options="${options}"></or-input>                
                 `;
             }
             else if (dialogContent === "editCurrentValue") {
@@ -390,6 +390,7 @@ export class OrAttributeCard extends LitElement {
                                 else if (input > 10) {this.mainValueDecimals = 10;}
                                 else {this.mainValueDecimals = input;}
                                 this.formattedMainValue = this.getFormattedValue(this.mainValue!);
+                                this.saveSettings();
                             }
                         }
                     }
@@ -539,6 +540,8 @@ export class OrAttributeCard extends LitElement {
                 if (this.assetAttributes && this.assetAttributes.length > 0) {
                     this.assetId = assets[0].id;
                     this.period = view.period;
+                    if(view.deltaFormat) this.deltaFormat = view.deltaFormat;
+                    if(view.decimals) this.mainValueDecimals = view.decimals;
                     this.attributeName = this.assetAttributes[0].name;
                     this.getData();
                 }
@@ -571,7 +574,9 @@ export class OrAttributeCard extends LitElement {
         config.views[viewSelector][this.panelName] = {
             assetIds: assetIds,
             attributes: attributes,
-            period: this.period
+            period: this.period,
+            deltaFormat: this.deltaFormat,
+            decimals: this.mainValueDecimals
         };
         const message = {
             provider: "STORAGE",
@@ -772,12 +777,11 @@ export class OrAttributeCard extends LitElement {
         const attr = this.asset.attributes![this.attributeName!];
         const roundedVal = +value.toFixed(this.mainValueDecimals); // + operator prevents str return
 
-        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(this.attributeName!);
+        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(this.attributeName!, this.asset!.type);
         const units = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, this.asset!.type));
         this.setMainValueSize(roundedVal.toString());
 
         if (!units) { return {value: roundedVal, unit: "" }; }
-
         return {
             value: roundedVal,
             unit: units

@@ -452,11 +452,20 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
 
+      
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
             selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
         }
-
+        const configStr = window.localStorage.getItem('OrAssetConfig')
+        const viewSelector = asset.id ? asset.id : window.location.hash;
+        if(configStr) {
+            const config = JSON.parse(configStr);
+            const view = config.views[viewSelector];
+            if(view) {
+                selectedAttributes = [...view]
+            }
+        }
         // Get available and selected attributes from asset descriptor if not defined in config
         if (availableAttributes.length === 0) {
             const descriptor = AssetModelUtil.getAssetTypeInfo(childAssetType);
@@ -530,6 +539,22 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 arr.unshift(childAsset.name!);
                 return arr;
             });
+
+    
+            let config = {
+                views: {
+                    [asset.id!]: selectedAttributes
+                }
+            }
+
+            const message = {
+                provider: "STORAGE",
+                action: "STORE",
+                key: "OrAssetConfig",
+                value: JSON.stringify(config)
+    
+            }
+            manager.console._doSendProviderMessage(message)
             window.setTimeout(() => OrAssetViewer.generateGrid(hostElement.shadowRoot), 0);
         };
 

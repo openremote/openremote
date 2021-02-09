@@ -547,7 +547,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         if (!this.assetType || !this._templateProvider) {
             return html``;
         }
-
+        
         // Check if attribute hasn't been loaded yet or pending write
         const loading = (this.attributeRefs && !this._attributeEvent) || !!this._writeTimeoutHandler;
         let content: TemplateResult;
