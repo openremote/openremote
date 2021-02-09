@@ -108,11 +108,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         energyManagement.getAttributes().addOrReplace(
                 new Attribute<>("powerTotalProducers", NUMBER)
                     .addOrReplaceMeta(
-                        new MetaItem<>(LABEL, "Combined power of all producers"),
                         new MetaItem<>(UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
                         new MetaItem<>(READ_ONLY, true)),
                 new Attribute<>("powerTotalConsumers", NUMBER).addOrReplaceMeta(
-                        new MetaItem<>(LABEL, "Combined power use of all consumers"),
                         new MetaItem<>(UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
                         new MetaItem<>(READ_ONLY, true))
         );
@@ -130,7 +128,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new Attribute<>(BuildingAsset.COUNTRY, "Netherlands"),
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(4.488324, 51.906577)),
                 new Attribute<>("powerBalance", NUMBER).addMeta(
-                        new MetaItem<>(LABEL, "Balance of power production and use"),
                         new MetaItem<>(UNITS, Constants.units(Constants.UNITS_KILO, Constants.UNITS_WATT)),
                         new MetaItem<>(READ_ONLY))
         );
@@ -343,7 +340,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(4.47945, 51.92301)),
                 new Attribute<>("allChargersInUse", BOOLEAN)
                         .addMeta(
-                                new MetaItem<>(LABEL, "All chargers in use"),
                                 new MetaItem<>(READ_ONLY))
         );
         building3Asset.setId(UniqueIdentifierGenerator.generateId(building3Asset.getName() + "building"));
@@ -907,7 +903,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         parkingGroupAsset.getAttributes().addOrReplace(
                 new Attribute<>("totalOccupancy", POSITIVE_INTEGER)
                         .addMeta(
-                                new MetaItem<>(LABEL, "Percentage of total parking spaces in use"),
                                 new MetaItem<>(UNITS, Constants.units(Constants.UNITS_PERCENTAGE)),
                                 new MetaItem<>(CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100))),
                                 new MetaItem<>(READ_ONLY)));

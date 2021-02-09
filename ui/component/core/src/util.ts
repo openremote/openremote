@@ -651,7 +651,7 @@ function getValueFormatConstraintOrUnits<T>(lookup: WellknownMetaItems.FORMAT | 
 
     // Look in meta
     if (nameValueHolder && (nameValueHolder as MetaHolder).meta) {
-        matched = getMetaValue(WellknownMetaItems.FORMAT, nameValueHolder as Attribute<any>, descriptor) as T;
+        matched = getMetaValue(lookup, nameValueHolder as Attribute<any>, descriptor) as T;
 
         if (matched) {
             if (lookup === WellknownMetaItems.FORMAT) {
