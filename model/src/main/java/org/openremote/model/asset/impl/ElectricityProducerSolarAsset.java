@@ -45,12 +45,12 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     public static final ValueDescriptor<PanelOrientation> PANEL_ORIENTATION_VALUE = new ValueDescriptor<>("panelOrientation", PanelOrientation.class);
 
     public static final AttributeDescriptor<PanelOrientation> PANEL_ORIENTATION = new AttributeDescriptor<>("panelOrientation", PANEL_ORIENTATION_VALUE);
-    public static final AttributeDescriptor<Integer> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth", ValueType.POSITIVE_INTEGER
+    public static final AttributeDescriptor<Integer> PANEL_AZIMUTH = new AttributeDescriptor<>("panelAzimuth", ValueType.INTEGER
     ).withUnits(UNITS_DEGREE);
     public static final AttributeDescriptor<Integer> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_INTEGER
     ).withUnits(UNITS_DEGREE);
 
-    public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "8A293D", ElectricityProducerSolarAsset.class);
+    public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "EABB4D", ElectricityProducerSolarAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)

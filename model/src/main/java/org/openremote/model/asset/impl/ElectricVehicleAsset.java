@@ -23,8 +23,10 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
@@ -37,9 +39,23 @@ import static org.openremote.model.Constants.*;
 public class ElectricVehicleAsset extends ElectricityStorageAsset {
 
     public static final AttributeDescriptor<ElectricityChargerAsset.ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>("connectorType", ElectricityChargerAsset.CONNECTOR_TYPE_VALUE);
-    public static final AttributeDescriptor<Integer> ODOMETER = new AttributeDescriptor<>("odometer", ValueType.POSITIVE_INTEGER)
+    public static final AttributeDescriptor<Integer> ODOMETER = new AttributeDescriptor<>("odometer", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY))
         .withUnits(UNITS_KILO, UNITS_METRE);
-    public static final AttributeDescriptor<Boolean> CHARGER_CONNECTED = new AttributeDescriptor<>("chargerConnected", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> CHARGER_CONNECTED = new AttributeDescriptor<>("chargerConnected", ValueType.BOOLEAN,
+        new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<String> CHARGER_ID = new AttributeDescriptor<>("chargerID", ValueType.TEXT,
+        new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Integer> MILEAGE_CAPACITY = new AttributeDescriptor<>("mileageCapacity", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<Double> MILEAGE_CHARGED = new AttributeDescriptor<>("mileageCharged", ValueType.POSITIVE_NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<Integer> MILEAGE_MIN = new AttributeDescriptor<>("mileageMin", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_KILO, UNITS_METRE);
+    public static final AttributeDescriptor<String> VEHICLE_CATEGORY = new AttributeDescriptor<>("vehicleCategory", ValueType.TEXT);
+
+    public static final AttributeDescriptor<Integer> CHARGE_CYCLES = ElectricityStorageAsset.CHARGE_CYCLES.withOptional(true);
 
     public static final AssetDescriptor<ElectricVehicleAsset> DESCRIPTOR = new AssetDescriptor<>("car-electric", "49B0D8", ElectricVehicleAsset.class);
 
@@ -81,6 +97,25 @@ public class ElectricVehicleAsset extends ElectricityStorageAsset {
         return this;
     }
 
+    public Optional<String> getChargerId() {
+        return getAttributes().getValue(CHARGER_ID);
+    }
+
+    public Optional<Integer> getMileageCapacity() {
+        return getAttributes().getValue(MILEAGE_CAPACITY);
+    }
+
+    public Optional<Double> getMileageCharged() {
+        return getAttributes().getValue(MILEAGE_CHARGED);
+    }
+
+    public Optional<Integer> getMileageMin() {
+        return getAttributes().getValue(MILEAGE_MIN);
+    }
+
+    public Optional<String> getVehicleCategory() {
+        return getAttributes().getValue(VEHICLE_CATEGORY);
+    }
 
     @Override
     public ElectricVehicleAsset setPower(Double value) {

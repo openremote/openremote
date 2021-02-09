@@ -32,18 +32,16 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
     public static final AttributeDescriptor<Double> POWER = new AttributeDescriptor<>("power", ValueType.NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
+    public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER)
+        .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = new AttributeDescriptor<>("powerImportMin", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = new AttributeDescriptor<>("powerExportMin", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT);
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.POSITIVE_NUMBER)
+        .withUnits(UNITS_KILO, UNITS_WATT);
 
     
     public static final AttributeDescriptor<Double> ENERGY_IMPORT_TOTAL = new AttributeDescriptor<>("energyImportTotal", ValueType.POSITIVE_NUMBER,
@@ -55,11 +53,11 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
     public static final AttributeDescriptor<Double> ENERGY_LEVEL = new AttributeDescriptor<>("energyLevel", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER,
+    public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER)
+        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MAX = new AttributeDescriptor<>("energyLevelPercentageMax", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MIN = new AttributeDescriptor<>("energyLevelPercentageMin", ValueType.POSITIVE_INTEGER)

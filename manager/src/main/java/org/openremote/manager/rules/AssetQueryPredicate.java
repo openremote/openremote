@@ -216,15 +216,14 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
                                 innerMetaPredicate.test(assetState)
                             );
                         });
+                        assetStatePredicates.add(metaPredicate.get());
                     }
 
                     if (p.previousValue != null) {
                         Predicate<Object> innerOldValuePredicate = p.previousValue.asPredicate(currentMillisProducer);
                         oldValuePredicate.set(nameValueHolder -> innerOldValuePredicate.test((nameValueHolder).getOldValue()));
+                        assetStatePredicates.add(oldValuePredicate.get());
                     }
-
-                    assetStatePredicates.add(metaPredicate.get());
-                    assetStatePredicates.add(oldValuePredicate.get());
                 });
         }
 

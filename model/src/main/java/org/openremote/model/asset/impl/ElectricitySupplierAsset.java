@@ -40,8 +40,8 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public static final AttributeDescriptor<Double> ENERGY_EXPORT_INCOME = new AttributeDescriptor<>("energyExportIncome", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY, true)
     ).withUnits("EUR");
-    public static final AttributeDescriptor<Double> FINANCIAL_WALLET = new AttributeDescriptor<>("financialWallet", ValueType.POSITIVE_NUMBER).withUnits("EUR");
-    public static final AttributeDescriptor<Integer> CARBON_WALLET = new AttributeDescriptor<>("carbonWallet", ValueType.POSITIVE_INTEGER,
+    public static final AttributeDescriptor<Double> FINANCIAL_WALLET = new AttributeDescriptor<>("financialWallet", ValueType.NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Integer> CARBON_WALLET = new AttributeDescriptor<>("carbonWallet", ValueType.INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_GRAM);
 
