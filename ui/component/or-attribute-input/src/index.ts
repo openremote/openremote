@@ -494,7 +494,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             readonly: this.isReadonly(),
             disabled: this.disabled,
             compact: this.compact,
-            label: this.getLabel()
+            label: this.getLabel(),
+            inputType: this.inputType
         };
 
         if (this.customProvider) {

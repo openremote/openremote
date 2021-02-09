@@ -99,6 +99,7 @@ export interface ValueInputProviderOptions {
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
+    inputType?: InputType;
 }
 
 export interface ValueInputProvider {
@@ -139,7 +140,7 @@ function inputTypeSupportsLabel(inputType: InputType) {
 
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: any | undefined) => void, options: ValueInputProviderOptions) => {
 
-    let inputType: InputType | undefined;
+    let inputType: InputType | undefined = options.inputType;
     let step: number | undefined;
     let pattern: string | undefined;
     let min: any;
@@ -153,86 +154,88 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const format: ValueFormat | undefined = (valueHolder && ((valueHolder as MetaHolder).meta) || (valueDescriptor && (valueDescriptor as MetaHolder).meta) ? Util.getAttributeValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType) : Util.getMetaValueFormat(valueHolder as Attribute<any>, valueHolderDescriptor as AttributeDescriptor, assetType));
 
     // Determine input type
-    switch (valueDescriptor.name) {
-        case WellknownValueTypes.TEXT:
-        case WellknownValueTypes.EMAIL:
-        case WellknownValueTypes.UUID:
-        case WellknownValueTypes.ASSETID:
-        case WellknownValueTypes.HOSTORIPADDRESS:
-        case WellknownValueTypes.IPADDRESS:
-            inputType = Util.getMetaValue(WellknownMetaItems.MULTILINE, valueHolder, valueHolderDescriptor) === true ? InputType.TEXTAREA : InputType.TEXT;
-            break;
-        case WellknownValueTypes.BOOLEAN:
-            if (format && format.asNumber) {
-                inputType = InputType.NUMBER;
-                step = 1;
-                min = 0;
-                max = 1;
-                valueConverter = (v) => !!v;
+    if (!inputType) {
+        switch (valueDescriptor.name) {
+            case WellknownValueTypes.TEXT:
+            case WellknownValueTypes.EMAIL:
+            case WellknownValueTypes.UUID:
+            case WellknownValueTypes.ASSETID:
+            case WellknownValueTypes.HOSTORIPADDRESS:
+            case WellknownValueTypes.IPADDRESS:
+                inputType = Util.getMetaValue(WellknownMetaItems.MULTILINE, valueHolder, valueHolderDescriptor) === true ? InputType.TEXTAREA : InputType.TEXT;
                 break;
-            }
-            if (format && (format.asOnOff || format.asOpenClosed)) {
-                inputType = InputType.SWITCH;
-            } else {
-                inputType = InputType.CHECKBOX;
-            }
+            case WellknownValueTypes.BOOLEAN:
+                if (format && format.asNumber) {
+                    inputType = InputType.NUMBER;
+                    step = 1;
+                    min = 0;
+                    max = 1;
+                    valueConverter = (v) => !!v;
+                    break;
+                }
+                if (format && (format.asOnOff || format.asOpenClosed)) {
+                    inputType = InputType.SWITCH;
+                } else {
+                    inputType = InputType.CHECKBOX;
+                }
 
-            if (format && format.asMomentary) {
-                inputType = InputType.BUTTON_MOMENTARY;
-            }
-            break;
-        case WellknownValueTypes.BIGNUMBER:
-        case WellknownValueTypes.NUMBER:
-        case WellknownValueTypes.POSITIVEINTEGER:
-        case WellknownValueTypes.POSITIVENUMBER:
-        case WellknownValueTypes.LONG:
-        case WellknownValueTypes.INTEGER:
-        case WellknownValueTypes.BYTE:
-        case WellknownValueTypes.INTEGERBYTE:
-        case WellknownValueTypes.DIRECTION:
-        case WellknownValueTypes.TCPIPPORTNUMBER:
-            if (valueDescriptor.name === WellknownValueTypes.BYTE || valueDescriptor.name === WellknownValueTypes.INTEGERBYTE) {
-                min = 0;
-                max = 255;
+                if (format && format.asMomentary) {
+                    inputType = InputType.BUTTON_MOMENTARY;
+                }
+                break;
+            case WellknownValueTypes.BIGNUMBER:
+            case WellknownValueTypes.NUMBER:
+            case WellknownValueTypes.POSITIVEINTEGER:
+            case WellknownValueTypes.POSITIVENUMBER:
+            case WellknownValueTypes.LONG:
+            case WellknownValueTypes.INTEGER:
+            case WellknownValueTypes.BYTE:
+            case WellknownValueTypes.INTEGERBYTE:
+            case WellknownValueTypes.DIRECTION:
+            case WellknownValueTypes.TCPIPPORTNUMBER:
+                if (valueDescriptor.name === WellknownValueTypes.BYTE || valueDescriptor.name === WellknownValueTypes.INTEGERBYTE) {
+                    min = 0;
+                    max = 255;
+                    step = 1;
+                } else if (valueDescriptor.name === WellknownValueTypes.INTEGER || valueDescriptor.name === WellknownValueTypes.LONG) {
+                    step = 1;
+                }
+                if (format && format.asDate) {
+                    inputType = InputType.DATETIME;
+                } else if (format && format.asBoolean) {
+                    inputType = InputType.CHECKBOX;
+                    valueConverter = (v) => v ? 1 : 0;
+                } else if (format && format.asSlider) {
+                    inputType = InputType.RANGE;
+                } else {
+                    inputType = InputType.NUMBER;
+                }
+                break;
+            case WellknownValueTypes.BIGINTEGER:
+                inputType = InputType.BIG_INT;
                 step = 1;
-            } else if (valueDescriptor.name === WellknownValueTypes.INTEGER || valueDescriptor.name === WellknownValueTypes.LONG) {
-                step = 1;
-            }
-            if (format && format.asDate) {
+                break;
+            case WellknownValueTypes.COLOURRGB:
+                inputType = InputType.COLOUR;
+                break;
+            case WellknownValueTypes.DATEANDTIME:
+            case WellknownValueTypes.TIMESTAMP:
+            case WellknownValueTypes.TIMESTAMPISO8601:
                 inputType = InputType.DATETIME;
-            } else if (format && format.asBoolean) {
-                inputType = InputType.CHECKBOX;
-                valueConverter = (v) => v ? 1 : 0;
-            } else if (format && format.asSlider) {
-                inputType = InputType.RANGE;
-            } else {
-                inputType = InputType.NUMBER;
-            }
-            break;
-        case WellknownValueTypes.BIGINTEGER:
-            inputType = InputType.BIG_INT;
-            step = 1;
-            break;
-        case WellknownValueTypes.COLOURRGB:
-            inputType = InputType.COLOUR;
-            break;
-        case WellknownValueTypes.DATEANDTIME:
-        case WellknownValueTypes.TIMESTAMP:
-        case WellknownValueTypes.TIMESTAMPISO8601:
-            inputType = InputType.DATETIME;
-            break;
-        case WellknownValueTypes.TIMERCRONEXPRESSION:
-            inputType = InputType.CRON;
-            break;
-        case WellknownValueTypes.TIMEDURATIONISO8601:
-            inputType = InputType.DURATION_TIME;
-            break;
-        case WellknownValueTypes.PERIODDURATIONISO8601:
-            inputType = InputType.DURATION_PERIOD;
-            break;
-        case WellknownValueTypes.TIMEANDPERIODDURATIONISO8601:
-            inputType = InputType.DURATION;
-            break;
+                break;
+            case WellknownValueTypes.TIMERCRONEXPRESSION:
+                inputType = InputType.CRON;
+                break;
+            case WellknownValueTypes.TIMEDURATIONISO8601:
+                inputType = InputType.DURATION_TIME;
+                break;
+            case WellknownValueTypes.PERIODDURATIONISO8601:
+                inputType = InputType.DURATION_PERIOD;
+                break;
+            case WellknownValueTypes.TIMEANDPERIODDURATIONISO8601:
+                inputType = InputType.DURATION;
+                break;
+        }
     }
 
     if (!inputType) {
