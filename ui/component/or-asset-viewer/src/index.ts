@@ -297,6 +297,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
         includedProperties.forEach((prop) => {
             const itemConfig = infoConfig.properties && infoConfig.properties.itemConfig ? infoConfig.properties.itemConfig[prop] : {};
+            if (itemConfig.label === undefined) {
+                itemConfig.label = i18next.t(prop);
+            }
             itemConfig.priority = itemConfig.priority || 0;
             items.push({
                 item: prop,
@@ -306,6 +309,11 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
         includedAttributes.forEach((attribute) => {
             const itemConfig = infoConfig.attributes && infoConfig.attributes.itemConfig && infoConfig.attributes.itemConfig[attribute.name!] ? infoConfig.attributes.itemConfig[attribute.name!] : {};
+            if (itemConfig.label === undefined) {
+                // Get label here so we can sort the attributes
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type!, attribute.name, attribute);
+                itemConfig.label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, true);
+            }
             itemConfig.priority = itemConfig.priority || 0;
             items.push({
                 item: attribute,
