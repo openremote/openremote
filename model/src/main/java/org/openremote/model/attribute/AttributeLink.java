@@ -55,7 +55,13 @@ public class AttributeLink implements Serializable {
          * Decrement the value of the linked attribute; the linked attribute's type must be
          * {@link Number}
          */
-        DECREMENT("@DECREMENT");
+        DECREMENT("@DECREMENT"),
+
+        /**
+         * Negates the value; the linked attribute's type must be
+         * {@link Number} or {@link Boolean}
+         */
+        NEGATE("@NEGATE");
 
         private final String value;
         // Prevents cloning of values each time fromString is called

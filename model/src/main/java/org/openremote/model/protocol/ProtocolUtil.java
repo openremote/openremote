@@ -27,6 +27,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.Pair;
@@ -185,6 +186,7 @@ public final class ProtocolUtil {
         return new Pair<>(false, valRef.get());
     }
 
+    @SuppressWarnings("unchecked")
     public static Pair<Boolean, Object> applyValueConverter(Object value, ObjectNode converter) {
 
         if (converter == null) {
@@ -207,12 +209,26 @@ public final class ProtocolUtil {
 
                 return new Pair<Boolean, Object>(false, node);
             })
-            .orElse(new Pair<>(true, value));
+            .orElse((Pair<Boolean, Object>) Optional.ofNullable(converter.get("*"))
+                .map(node -> {
+                    if (node.getNodeType() == JsonNodeType.STRING) {
+                        if (AttributeLink.ConverterType.NEGATE.getValue().equals(node.textValue())) {
+                            if (Values.isNumber(value.getClass())) {
+                                return new Pair<>(true, (Values.getValueCoerced(value, Double.class).orElse(0D) * -1));
+                            }
+                            if (Values.isBoolean(value.getClass())) {
+                                return new Pair<>(true, !(Values.getValueCoerced(value, Boolean.class).orElse(false)));
+                            }
+                        }
+                    }
+                    return new Pair<Boolean, Object>(false, node);
+                })
+                .orElse(new Pair<>(true, value)));
     }
 
     public static Consumer<String> createGenericAttributeMessageConsumer(String assetId, Attribute<?> attribute, AgentLink<?> agentLink, Supplier<Long> currentMillisSupplier, Consumer<AttributeState> stateConsumer) {
 
-        ValueFilter[] matchFilters =  agentLink.getMessageMatchFilters().orElse(null);
+        ValueFilter[] matchFilters = agentLink.getMessageMatchFilters().orElse(null);
         ValuePredicate matchPredicate = agentLink.getMessageMatchPredicate().orElse(null);
 
         if (matchPredicate == null) {
