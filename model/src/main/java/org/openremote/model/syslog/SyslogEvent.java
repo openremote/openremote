@@ -129,15 +129,14 @@ public class SyslogEvent extends SharedEvent {
     }
 
     public String getCategoryLabel() {
-        return getCategory().name() + getSubCategoryOptional().map(s -> " - " + s).orElse("");
+        return getCategory().name() + getSubCategory().map(s -> " - " + s).orElse("");
     }
 
     public void setCategory(SyslogCategory category) {
         this.category = category;
     }
 
-    // GWT Jackson doesn't like it if it has the same name as a field but different return type...
-    public Optional<String> getSubCategoryOptional() {
+    public Optional<String> getSubCategory() {
         return Optional.ofNullable(subCategory);
     }
 

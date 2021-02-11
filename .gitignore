@@ -35,7 +35,5 @@ ui/**/yarn.lock
 console/iOS/DerivedData
 console/iOS/Pods
 
-client/src/main/webapp/gwt/
-client/.externalToolBuilders/
 manager/.factorypath
 .sts4-cache/

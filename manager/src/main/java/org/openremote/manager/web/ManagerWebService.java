@@ -63,8 +63,6 @@ public class ManagerWebService extends WebService {
     public static final String APP_DOCROOT_DEFAULT = "deployment/build/manager/app";
     public static final String SHARED_DOCROOT = "SHARED_DOCROOT";
     public static final String SHARED_DOCROOT_DEFAULT = "deployment/manager/shared";
-    public static final String CONSOLE_USE_STATIC_BOWER_COMPONENTS = "CONSOLE_USE_STATIC_BOWER_COMPONENTS";
-    public static final boolean CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT = true;
     public static final String APP_DEFAULT = "APP_DEFAULT";
     public static final String APP_DEFAULT_DEFAULT = "main";
     public static final String API_PATH = "/api";
@@ -153,63 +151,17 @@ public class ManagerWebService extends WebService {
             }
         };
 
-        // TODO: Remove this once GWT client is replaced
-        // Add a file handler for GWT source files in dev mode
-        Path gwtSourceDir = Paths.get("client/src/main/webapp");
-
-        if (Files.exists(gwtSourceDir) && container.isDevMode()) {
-            final HttpHandler baseGwtFileHandler = createFileHandler(devMode, identityService, gwtSourceDir, null);
-            final HttpHandler gwtFileHandler = exchange -> {
-                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
-                    exchange.setRelativePath("/index.html");
-                }
-                baseGwtFileHandler.handleRequest(exchange);
-            };
-            HttpHandler standardHandler = appFileHandler;
-
-            appFileHandler = exchange -> {
-                String path = exchange.getRelativePath();
-                if (path.startsWith("/manager")) {
-                    exchange.setRelativePath(path.substring(8));
-                    gwtFileHandler.handleRequest(exchange);
-                } else if (path.startsWith("/app/manager")) {
-                    exchange.setRelativePath(path.substring(12));
-                    gwtFileHandler.handleRequest(exchange);
-                } else {
-                    standardHandler.handleRequest(exchange);
-                }
-            };
-        }
-        HttpHandler finalAppFileHandler = appFileHandler;
-
         // Serve deployment files
         PathHandler deploymentHandler = new PathHandler(appFileHandler)
                 // TODO: Update this static file http handler to use shared folder in deployment
                 .addPrefixPath(STATIC_PATH, exchange -> {
-                    // TODO: Remove this horrible hack for crappy polymer 2.x NPM package relative import issue
-                    if (exchange.getRelativePath().startsWith("/node_modules/@polymer/shadycss")) {
-                        exchange.setRelativePath("/node_modules/@webcomponents/shadycss" + exchange.getRequestPath().substring(38));
-                        exchange.setRequestPath(STATIC_PATH + exchange.getRelativePath());
-                    }
-
                     exchange.setRelativePath("/manager" + exchange.getRelativePath());
-                    finalAppFileHandler.handleRequest(exchange);
+                    appFileHandler.handleRequest(exchange);
                 })
                 .addPrefixPath(APP_PATH, appFileHandler)
                 // TODO: Remove this path prefix at some point
                 .addPrefixPath(CONSOLE_PATH, appFileHandler)
                 .addPrefixPath(SHARED_PATH, sharedFileHandler);
-
-        // TODO: Remove this once all apps updated to new structure
-        final boolean useStaticBowerComponents =
-                getBoolean(container.getConfig(), CONSOLE_USE_STATIC_BOWER_COMPONENTS, CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT);
-        if (useStaticBowerComponents) {
-            deploymentHandler.addPrefixPath("/bower_components", exchange -> {
-                exchange.setRequestPath("/manager/bower_components" + exchange.getRequestPath());
-                finalAppFileHandler.handleRequest(exchange);
-            });
-        }
-
 
         // Add all route handlers required by the manager in priority order
 

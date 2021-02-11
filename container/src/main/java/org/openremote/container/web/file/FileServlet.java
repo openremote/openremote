@@ -36,7 +36,7 @@ public class FileServlet extends AbstractFileServlet {
     private static final Logger LOG = Logger.getLogger(FileServlet.class.getName());
 
     public static final long DEFAULT_EXPIRE_SECONDS = 600; // 10 minutes
-    public static final long EXPIRES_SECONDS_CACHE_JS = 60 * 60 * 24 * 14; // 14 days for .cache.js of GWT
+    public static final long EXPIRES_SECONDS_CACHE_JS = 60 * 60 * 24 * 14; // 14 days
 
     final protected boolean devMode;
     final protected File base;
@@ -135,12 +135,6 @@ public class FileServlet extends AbstractFileServlet {
         String contentType = getContentType(request, file);
         if (mimeTypesExpireSeconds.containsKey(contentType))
             expireTime = mimeTypesExpireSeconds.get(contentType);
-
-        // Caching of GWT JS files
-        if (file.getName().contains(".nocache.js"))
-            expireTime = 0;
-        if (file.getName().contains(".cache.js"))
-            expireTime = EXPIRES_SECONDS_CACHE_JS;
 
         // Don't cache at all in dev mode
         expireTime = devMode ? 0 : expireTime;
