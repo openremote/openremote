@@ -36,7 +36,7 @@ import java.util.Optional;
 import static org.openremote.model.Constants.*;
 
 @Entity
-public class ElectricVehicleAsset extends ElectricityStorageAsset {
+public class ElectricVehicleAsset extends ElectricityBatteryAsset {
 
     public static final AttributeDescriptor<ElectricityChargerAsset.ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>("connectorType", ElectricityChargerAsset.CONNECTOR_TYPE_VALUE);
     public static final AttributeDescriptor<Integer> ODOMETER = new AttributeDescriptor<>("odometer", ValueType.POSITIVE_INTEGER,
@@ -54,8 +54,6 @@ public class ElectricVehicleAsset extends ElectricityStorageAsset {
     public static final AttributeDescriptor<Integer> MILEAGE_MIN = new AttributeDescriptor<>("mileageMin", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_KILO, UNITS_METRE);
     public static final AttributeDescriptor<String> VEHICLE_CATEGORY = new AttributeDescriptor<>("vehicleCategory", ValueType.TEXT);
-
-    public static final AttributeDescriptor<Integer> CHARGE_CYCLES = ElectricityStorageAsset.CHARGE_CYCLES.withOptional(true);
 
     public static final AssetDescriptor<ElectricVehicleAsset> DESCRIPTOR = new AssetDescriptor<>("car-electric", "49B0D8", ElectricVehicleAsset.class);
 

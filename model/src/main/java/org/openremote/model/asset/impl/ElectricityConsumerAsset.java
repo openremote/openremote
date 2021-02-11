@@ -39,11 +39,6 @@ public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsum
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = ElectricityAsset.POWER_EXPORT_MAX.withOptional(true);
     public static final AttributeDescriptor<Double> ENERGY_EXPORT_TOTAL = ElectricityAsset.ENERGY_EXPORT_TOTAL.withOptional(true);
-    public static final AttributeDescriptor<Double> ENERGY_LEVEL = ElectricityAsset.ENERGY_LEVEL.withOptional(true);
-    public static final AttributeDescriptor<Double> ENERGY_CAPACITY = ElectricityAsset.ENERGY_CAPACITY.withOptional(true);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = ElectricityAsset.ENERGY_LEVEL_PERCENTAGE.withOptional(true);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MAX = ElectricityAsset.ENERGY_LEVEL_PERCENTAGE_MAX.withOptional(true);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MIN = ElectricityAsset.ENERGY_LEVEL_PERCENTAGE_MIN.withOptional(true);
     public static final AttributeDescriptor<Integer> EFFICIENCY_IMPORT = ElectricityAsset.EFFICIENCY_IMPORT.withOptional(true);
     public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = ElectricityAsset.EFFICIENCY_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricityAsset.TARIFF_IMPORT.withOptional(true);

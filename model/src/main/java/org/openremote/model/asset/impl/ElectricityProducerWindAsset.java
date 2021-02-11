@@ -101,36 +101,6 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
     }
 
     @Override
-    public ElectricityProducerWindAsset setEnergyCapacity(Double value) {
-        super.setEnergyCapacity(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerWindAsset setEnergyLevel(Double value) {
-        super.setEnergyLevel(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerWindAsset setEnergyLevelPercentage(Integer value) {
-        super.setEnergyLevelPercentage(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerWindAsset setEnergyLevelPercentageMin(Integer value) {
-        super.setEnergyLevelPercentageMin(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerWindAsset setEnergyLevelPercentageMax(Integer value) {
-        super.setEnergyLevelPercentageMax(value);
-        return this;
-    }
-
-    @Override
     public ElectricityProducerWindAsset setEfficiencyImport(Integer value) {
         super.setEfficiencyImport(value);
         return this;

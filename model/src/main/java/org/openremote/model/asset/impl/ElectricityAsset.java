@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.openremote.model.Constants.*;
 
+@SuppressWarnings("unchecked")
 public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends Asset<T> {
 
     public static final AttributeDescriptor<Double> POWER = new AttributeDescriptor<>("power", ValueType.NUMBER,
@@ -50,18 +51,6 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
     public static final AttributeDescriptor<Double> ENERGY_EXPORT_TOTAL = new AttributeDescriptor<>("energyExportTotal", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_LEVEL = new AttributeDescriptor<>("energyLevel", ValueType.POSITIVE_NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MAX = new AttributeDescriptor<>("energyLevelPercentageMax", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MIN = new AttributeDescriptor<>("energyLevelPercentageMin", ValueType.POSITIVE_INTEGER)
-        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer> EFFICIENCY_IMPORT = new AttributeDescriptor<>("efficiencyImport", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = new AttributeDescriptor<>("efficiencyExport", ValueType.POSITIVE_INTEGER)
@@ -166,51 +155,6 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         return (T)this;
     }
 
-    public Optional<Double> getEnergyCapacity() {
-        return getAttributes().getValue(ENERGY_CAPACITY);
-    }
-    
-    public T setEnergyCapacity(Double value) {
-        getAttributes().getOrCreate(ENERGY_CAPACITY).setValue(value);
-        return (T)this;
-    }
-    
-    public Optional<Double> getEnergyLevel() {
-        return getAttributes().getValue(ENERGY_LEVEL);
-    }
-
-    public T setEnergyLevel(Double value) {
-        getAttributes().getOrCreate(ENERGY_LEVEL).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Integer> getEnergyLevelPercentage() {
-        return getAttributes().getValue(ENERGY_LEVEL_PERCENTAGE);
-    }
-
-    public T setEnergyLevelPercentage(Integer value) {
-        getAttributes().getOrCreate(ENERGY_LEVEL_PERCENTAGE).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Integer> getEnergyLevelPercentageMin() {
-        return getAttributes().getValue(ENERGY_LEVEL_PERCENTAGE_MIN);
-    }
-
-    public T setEnergyLevelPercentageMin(Integer value) {
-        getAttributes().getOrCreate(ENERGY_LEVEL_PERCENTAGE_MIN).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Integer> getEnergyLevelPercentageMax() {
-        return getAttributes().getValue(ENERGY_LEVEL_PERCENTAGE_MAX);
-    }
-    
-    public T setEnergyLevelPercentageMax(Integer value) {
-        getAttributes().getOrCreate(ENERGY_LEVEL_PERCENTAGE_MAX).setValue(value);
-        return (T)this;
-    }
-    
     public Optional<Integer> getEfficiencyImport() {
         return getAttributes().getValue(EFFICIENCY_IMPORT);
     }

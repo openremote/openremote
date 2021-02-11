@@ -19,21 +19,35 @@
  */
 package org.openremote.model.asset.impl;
 
-import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.Constants;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 
-import javax.persistence.Entity;
 import java.util.Optional;
 
-@Entity
-public class ElectricityStorageAsset extends ElectricityAsset<ElectricityStorageAsset> {
+import static org.openremote.model.Constants.*;
 
-    public static final AttributeDescriptor<Integer> CHARGE_CYCLES = new AttributeDescriptor<>("chargeCycles", ValueType.POSITIVE_INTEGER,
+public abstract class ElectricityStorageAsset extends ElectricityAsset<ElectricityStorageAsset> {
+
+
+    public static final AttributeDescriptor<Boolean> SUPPORTS_EXPORT = new AttributeDescriptor<>("supportsExport", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Double> ENERGY_LEVEL = new AttributeDescriptor<>("energyLevel", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    );
+    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER)
+        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MAX = new AttributeDescriptor<>("energyLevelPercentageMax", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MIN = new AttributeDescriptor<>("energyLevelPercentageMin", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Integer[][]> ENERGY_LEVEL_SCHEDULE = new AttributeDescriptor<>("energyLevelSchedule", ValueType.POSITIVE_INTEGER.asArray().asArray())
+        .withOptional(true);
 
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
@@ -41,8 +55,6 @@ public class ElectricityStorageAsset extends ElectricityAsset<ElectricityStorage
     public static final AttributeDescriptor<Double> CARBON_EXPORT = ElectricityAsset.CARBON_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = ElectricityAsset.CARBON_IMPORT_TOTAL.withOptional(true);
     public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = ElectricityAsset.CARBON_EXPORT_TOTAL.withOptional(true);
-
-    public static final AssetDescriptor<ElectricityStorageAsset> DESCRIPTOR = new AssetDescriptor<>("battery-charging", "1B7C89", ElectricityStorageAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
@@ -55,12 +67,66 @@ public class ElectricityStorageAsset extends ElectricityAsset<ElectricityStorage
         super(name);
     }
 
-    public Optional<Integer> getChargeCycles() {
-        return getAttributes().getValue(CHARGE_CYCLES);
+    public Optional<Boolean> isSupportsExport() {
+        return getAttributes().getValue(SUPPORTS_EXPORT);
     }
 
-    public ElectricityStorageAsset setChargeCycles(Integer value) {
-        getAttributes().getOrCreate(CHARGE_CYCLES).setValue(value);
+    public ElectricityStorageAsset setSupportsExport(Boolean value) {
+        getAttributes().getOrCreate(SUPPORTS_EXPORT).setValue(value);
+        return this;
+    }
+
+    public Optional<Double> getEnergyCapacity() {
+        return getAttributes().getValue(ENERGY_CAPACITY);
+    }
+
+    public ElectricityStorageAsset setEnergyCapacity(Double value) {
+        getAttributes().getOrCreate(ENERGY_CAPACITY).setValue(value);
+        return this;
+    }
+
+    public Optional<Double> getEnergyLevel() {
+        return getAttributes().getValue(ENERGY_LEVEL);
+    }
+
+    public ElectricityStorageAsset setEnergyLevel(Double value) {
+        getAttributes().getOrCreate(ENERGY_LEVEL).setValue(value);
+        return this;
+    }
+
+    public Optional<Integer> getEnergyLevelPercentage() {
+        return getAttributes().getValue(ENERGY_LEVEL_PERCENTAGE);
+    }
+
+    public ElectricityStorageAsset setEnergyLevelPercentage(Integer value) {
+        getAttributes().getOrCreate(ENERGY_LEVEL_PERCENTAGE).setValue(value);
+        return this;
+    }
+
+    public Optional<Integer> getEnergyLevelPercentageMin() {
+        return getAttributes().getValue(ENERGY_LEVEL_PERCENTAGE_MIN);
+    }
+
+    public ElectricityStorageAsset setEnergyLevelPercentageMin(Integer value) {
+        getAttributes().getOrCreate(ENERGY_LEVEL_PERCENTAGE_MIN).setValue(value);
+        return this;
+    }
+
+    public Optional<Integer> getEnergyLevelPercentageMax() {
+        return getAttributes().getValue(ENERGY_LEVEL_PERCENTAGE_MAX);
+    }
+
+    public ElectricityStorageAsset setEnergyLevelPercentageMax(Integer value) {
+        getAttributes().getOrCreate(ENERGY_LEVEL_PERCENTAGE_MAX).setValue(value);
+        return this;
+    }
+
+    public Optional<Integer[][]> getEnergyLevelSchedule() {
+        return getAttributes().getValue(ENERGY_LEVEL_SCHEDULE);
+    }
+
+    public ElectricityStorageAsset setEnergyLevelSchedule(Integer[][] value) {
+        getAttributes().getOrCreate(ENERGY_LEVEL_SCHEDULE).setValue(value);
         return this;
     }
 }

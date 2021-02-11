@@ -721,7 +721,7 @@ public abstract class AbstractManagerSetup implements Setup {
     }
 
     protected ElectricityStorageAsset createDemoElectricityStorageAsset(String name, Asset<?> area, GeoJSONPoint location) {
-        ElectricityStorageAsset electricityStorageAsset = new ElectricityStorageAsset(name);
+        ElectricityStorageAsset electricityStorageAsset = new ElectricityBatteryAsset(name);
         electricityStorageAsset.setParent(area);
         electricityStorageAsset.getAttributes().addOrReplace(
             new Attribute<>(Asset.LOCATION, location)

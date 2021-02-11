@@ -139,36 +139,6 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     }
 
     @Override
-    public ElectricityProducerSolarAsset setEnergyCapacity(Double value) {
-        super.setEnergyCapacity(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setEnergyLevel(Double value) {
-        super.setEnergyLevel(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setEnergyLevelPercentage(Integer value) {
-        super.setEnergyLevelPercentage(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setEnergyLevelPercentageMin(Integer value) {
-        super.setEnergyLevelPercentageMin(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setEnergyLevelPercentageMax(Integer value) {
-        super.setEnergyLevelPercentageMax(value);
-        return this;
-    }
-
-    @Override
     public ElectricityProducerSolarAsset setEfficiencyImport(Integer value) {
         super.setEfficiencyImport(value);
         return this;
