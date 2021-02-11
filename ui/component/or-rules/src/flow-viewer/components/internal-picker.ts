@@ -120,7 +120,8 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             this.attributeNames = [];
             Object.values(this.selectedAsset.attributes).forEach((attribute) => {
                 if (attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attribute.meta[WellknownMetaItems.RULESTATE] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK))) {
-                    const label = Util.getAttributeLabel(attribute, undefined, this.selectedAsset.type!, true);
+                    const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attribute.name, this.selectedAsset.type!);
+                    const label = Util.getAttributeLabel(attribute, attributeDescriptor, this.selectedAsset.type!, true);
                     this.attributeNames.push({
                         name: attribute.name!,
                         label

@@ -26,7 +26,7 @@
                         "value": {
                           "predicateType": "number",
                           "operator": "GREATER_THAN",
-                          "value": 1
+                          "value": 0
                         }
                       }
                     ]

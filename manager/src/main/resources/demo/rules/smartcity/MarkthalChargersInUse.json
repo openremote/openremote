@@ -21,12 +21,12 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "powerConsumption"
+                          "value": "power"
                         },
                         "value": {
                           "predicateType": "number",
                           "operator": "GREATER_EQUALS",
-                          "value": 0.01
+                          "value": 0
                         }
                       }
                     ]
@@ -47,12 +47,12 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "powerConsumption"
+                          "value": "power"
                         },
                         "value": {
                           "predicateType": "number",
                           "operator": "GREATER_EQUALS",
-                          "value": 0.01
+                          "value": 0
                         }
                       }
                     ]
@@ -73,12 +73,12 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "powerConsumption"
+                          "value": "power"
                         },
                         "value": {
                           "predicateType": "number",
                           "operator": "GREATER_EQUALS",
-                          "value": 0.01
+                          "value": 0
                         }
                       }
                     ]
@@ -99,12 +99,12 @@
                         "name": {
                           "predicateType": "string",
                           "match": "EXACT",
-                          "value": "powerConsumption"
+                          "value": "power"
                         },
                         "value": {
                           "predicateType": "number",
                           "operator": "GREATER_EQUALS",
-                          "value": 0.01
+                          "value": 0
                         }
                       }
                     ]

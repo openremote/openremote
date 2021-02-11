@@ -530,7 +530,7 @@
 					},
 					"value": {
 						"assetId": "7UUzmvnTuLdjVpTb8MnjSX",
-						"attributeName": "occupancyTotal"
+						"attributeName": "totalOccupancy"
 					}
 				}
 			],
