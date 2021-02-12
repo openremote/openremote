@@ -246,6 +246,10 @@ public abstract class Ruleset {
 
     @PreUpdate
     @PrePersist
+    protected void updateLastModified() {
+        setLastModified(new Date());
+    }
+
     public Ruleset setLastModified() {
         return setLastModified(new Date());
     }
