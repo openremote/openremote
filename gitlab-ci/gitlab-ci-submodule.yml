@@ -152,7 +152,8 @@ build FAILED:
   when: on_failure
 
 test-master:
-  stage: build_staging
+  stage: test
+  needs: []
   allow_failure: false
   before_script:
     - docker run -v $(pwd):/or
