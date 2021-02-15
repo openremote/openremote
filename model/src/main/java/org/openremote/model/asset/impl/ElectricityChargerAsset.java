@@ -51,6 +51,7 @@ public class ElectricityChargerAsset extends ElectricityStorageAsset {
 
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = ElectricityAsset.POWER_EXPORT_MAX.withOptional(true);
     public static final AttributeDescriptor<Double> ENERGY_EXPORT_TOTAL = ElectricityAsset.ENERGY_EXPORT_TOTAL.withOptional(true);
     public static final AttributeDescriptor<Double> ENERGY_LEVEL = ElectricityStorageAsset.ENERGY_LEVEL.withOptional(true);
     public static final AttributeDescriptor<Double> ENERGY_CAPACITY = ElectricityStorageAsset.ENERGY_CAPACITY.withOptional(true);
