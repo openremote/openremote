@@ -132,7 +132,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         const excludedAttributes = cardConfig && cardConfig.exclude ? cardConfig.exclude : [];
         const attrs = attributes.filter((attr) =>
             (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
-            && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0));
+            && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0))
+            .sort(Util.sortByString((listItem) => listItem.name!));
 
         return html`
             <div id="card-container" style="${styleStr}">

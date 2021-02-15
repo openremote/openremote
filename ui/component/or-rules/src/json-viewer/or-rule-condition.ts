@@ -40,7 +40,8 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
                 icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                 styleMap: styleMap
             } as MenuItem;
-        }));
+        })
+        .sort(Util.sortByString((listItem) => listItem.value!)));
     }
 
     if (addTimer) {
