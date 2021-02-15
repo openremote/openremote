@@ -447,6 +447,10 @@ const style = css`
     .or-input--rounded {
         border-radius: 50% !important;
     }
+    
+    .mdc-text-field__input::-webkit-calendar-picker-indicator {
+        display: block;
+    }
 
     ::-webkit-clear-button {display: none;}
     ::-webkit-inner-spin-button { display: none; }

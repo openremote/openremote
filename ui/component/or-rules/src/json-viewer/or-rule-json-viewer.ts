@@ -343,11 +343,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         if (!target) {
             return true;
         }
-
-        if (!target.assets && !target.conditionAssets) {
-            return false;
-        }
-
+        
         if (target.assets) {
             return this._validateAssetQuery(target.assets, false, false);
         }
@@ -355,9 +351,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
         if (target.matchedAssets) {
             return this._validateAssetQuery(target.matchedAssets, false, true);
         }
-
-        const typesAndTags = getTypeAndTagsFromGroup(rule.when!);
-        if (typesAndTags.findIndex((typeAndTag) => target.conditionAssets === typeAndTag[1]) < 0) {
+        
+        if (target.conditionAssets && getTypeAndTagsFromGroup(rule.when!).findIndex((typeAndTag) => target.conditionAssets === typeAndTag[1]) < 0) {
             return false;
         }
 
@@ -374,8 +369,8 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             if (!query.attributes || !query.attributes.items || query.attributes.items.length === 0) {
                 return false;
             }
-        } else {
-            if (!query.ids || query.ids.length === 0 && !isMatchedAssets) {
+        } else if (!isMatchedAssets) {
+            if (!query.ids || query.ids.length === 0) {
                 return false;
             }
         }

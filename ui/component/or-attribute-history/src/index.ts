@@ -260,6 +260,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
 
+    protected _updateTimestampTimer: number | null = null;
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
@@ -314,10 +315,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <or-input  .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions()}"></or-input>
                     <div id="ending-controls">
-                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.fromTimestamp}" @or-input-changed="${(evt: OrInputChangedEvent) =>  this.fromTimestamp = this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this.fromTimestamp = this._updateTimestamp(this.fromTimestamp!, false)}"></or-icon>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this.fromTimestamp = this._updateTimestamp(this.fromTimestamp!, true)}"></or-icon>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this.fromTimestamp = this._updateTimestamp(new Date())}"></or-icon>
+                        <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.fromTimestamp}" @or-input-changed="${(evt: OrInputChangedEvent) =>  this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.fromTimestamp!, false)}"></or-icon>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.fromTimestamp!, true)}"></or-icon>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this._updateTimestamp(new Date())}"></or-icon>
                     </div>
                 </div>
                 
@@ -712,13 +713,20 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
     }
     protected _updateTimestamp(timestamp: Date, forward?: boolean) {
-        const newMoment = moment(timestamp);
 
-        if (forward !== undefined) {
-            newMoment.add(forward ? 1 : -1, this.period);
+        if (this._updateTimestampTimer) {
+            window.clearTimeout(this._updateTimestampTimer);
+            this._updateTimestampTimer = null;
         }
+        this._updateTimestampTimer = window.setTimeout(() => {
+                const newMoment = moment(timestamp);
 
-        return newMoment.toDate();
+                if (forward !== undefined) {
+                    newMoment.add(forward ? 1 : -1, this.period);
+                }
+                    this.fromTimestamp = newMoment.toDate()
+        }, 1000);
     }
+    
     
 }

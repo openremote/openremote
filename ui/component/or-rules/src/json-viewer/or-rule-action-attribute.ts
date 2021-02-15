@@ -121,7 +121,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
 
             attributes = !assetTypeInfo || !assetTypeInfo.attributeDescriptors ? [] : assetTypeInfo.attributeDescriptors.filter((ad) => !Util.hasMetaItem(WellknownMetaItems.READONLY, ad))
                     .map((ad) => {
-                        const label = Util.getAttributeLabel(undefined, descriptors[0], assetType, false);
+                        const label = Util.getAttributeLabel(ad, descriptors[0], assetType, false);
                         return [ad.name!, label];
                     });
         }

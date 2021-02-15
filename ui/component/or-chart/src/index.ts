@@ -383,6 +383,8 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     protected _style!: CSSStyleDeclaration;
 
+    protected _updateTimestampTimer: number | null = null;
+    
     firstUpdated() {
         if (this._dialogElem) {
             this._dialog = new MDCDialog(this._dialogElem);
@@ -462,9 +464,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                             .type="${endDateInputType}" 
                             ?disabled="${disabled}" 
                             .value="${this.timestamp}" 
-                            @or-input-changed="${(evt: OrInputChangedEvent) => this.timestamp = this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
-                        <or-icon class="button-icon" icon="chevron-left" @click="${() => this.timestamp = this._updateTimestamp(this.timestamp!, false)}"></or-icon>
-                        <or-icon class="button-icon" icon="chevron-right" @click="${() => this.timestamp = this._updateTimestamp(this.timestamp!, true)}"></or-icon>
+                            @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                        <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false)}"></or-icon>
+                        <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true)}"></or-icon>
                     </div>
                     ${this.periodCompare ? html `
                         <div class="period-controls">
@@ -474,9 +476,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 .type="${endDateInputType}" 
                                 ?disabled="${disabled}" 
                                 .value="${this.compareTimestamp}" 
-                                @or-input-changed="${(evt: OrInputChangedEvent) => this.compareTimestamp = this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
-                            <or-icon class="button-icon" icon="chevron-left" @click="${() => this.compareTimestamp = this._updateTimestamp(this.compareTimestamp!, false)}"></or-icon>
-                            <or-icon class="button-icon" icon="chevron-right" @click="${() => this.compareTimestamp = this._updateTimestamp(this.compareTimestamp!, true)}"></or-icon>
+                                @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-input>
+                            <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true)}"></or-icon>
+                            <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true)}"></or-icon>
                         </div>
                     ` : html``}
 
@@ -1120,13 +1122,24 @@ export class OrChart extends translate(i18next)(LitElement) {
         return interval;
     }
 
-    protected _updateTimestamp(timestamp: Date, forward?: boolean) {
-        const newMoment = moment(timestamp);
+    protected _updateTimestamp(timestamp: Date, forward?: boolean, compare=false) {
 
-        if (forward !== undefined) {
-            newMoment.add(forward ? 1 : -1, this.period);
+        if (this._updateTimestampTimer) {
+            window.clearTimeout(this._updateTimestampTimer);
+            this._updateTimestampTimer = null;
         }
+        this._updateTimestampTimer = window.setTimeout(() => {
+                const newMoment = moment(timestamp);
 
-        return newMoment.toDate();
+                if (forward !== undefined) {
+                    newMoment.add(forward ? 1 : -1, this.period);
+                }
+                if(compare) {
+                    this.compareTimestamp = newMoment.toDate()
+                } else {
+                    this.timestamp = newMoment.toDate()
+                }
+        }, 1000);
     }
+        
 }

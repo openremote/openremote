@@ -548,12 +548,21 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 return arr;
             });
 
-    
-            let config = {
-                views: {
-                    [asset.id!]: selectedAttributes
+            let config;
+            const configStr = window.localStorage.getItem('OrAssetConfig')
+            if(configStr) {
+                config = JSON.parse(configStr);
+                if(asset.id) {
+                    config.views[asset.id] = selectedAttributes;
+                }
+            } else {
+                config = {
+                    views: {
+                        [asset.id!]: selectedAttributes
+                    }
                 }
             }
+           
 
             const message = {
                 provider: "STORAGE",

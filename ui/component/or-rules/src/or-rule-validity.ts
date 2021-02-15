@@ -86,14 +86,20 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 }
                 break;
             case "start":
-                validity.start = moment(value).set({hour:0,minute:0,second:0,millisecond:0}).toDate().getTime();
-                if (this.getValidityType() === "validityRecurrence") {
-                    origOptions!.dtstart = moment(value).toDate();
-                    this._rrule = new RRule(origOptions);
+                const newStartDate = moment(value);
+                    if(newStartDate.isValid()) {
+                    validity.start = newStartDate.set({hour:0,minute:0,second:0,millisecond:0}).toDate().getTime();
+                    if (this.getValidityType() === "validityRecurrence") {
+                        origOptions!.dtstart = newStartDate.toDate();
+                        this._rrule = new RRule(origOptions);
+                    }
                 }
                 break;
             case "end":
-                validity.end = moment(value).set({hour:23,minute:59,second:0,millisecond:0}).toDate().getTime();
+                const newEndDate = moment(value);
+                if(newEndDate.isValid()) {
+                    validity.end = newEndDate.set({hour:23,minute:59,second:0,millisecond:0}).toDate().getTime();
+                }
                 break;
             case "never-ends":
                 if (value) {
@@ -136,6 +142,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 if(this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
                 break;
         }
+        this._validity = {...validity}
         this.refreshDialogContent();
     }
 
@@ -177,11 +184,13 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     start: moment().startOf("day").toDate().getTime(),
                     end: moment().endOf("day").toDate().getTime()
                 };
+                this._rrule = undefined;
                 break;
             case "validityRecurrence":
                 if (!this._validity) {
                     this._validity = {
-
+                        start: moment().startOf("day").toDate().getTime(),
+                        end: moment().endOf("day").toDate().getTime()
                     };
                 }
                 this._rrule = new RRule({
