@@ -214,10 +214,10 @@ public final class ProtocolUtil {
                     if (node.getNodeType() == JsonNodeType.STRING) {
                         if (AttributeLink.ConverterType.NEGATE.getValue().equals(node.textValue())) {
                             if (Values.isNumber(value.getClass())) {
-                                return new Pair<>(true, (Values.getValueCoerced(value, Double.class).orElse(0D) * -1));
+                                return new Pair<>(false, (Values.getValueCoerced(value, Double.class).orElse(0D) * -1));
                             }
                             if (Values.isBoolean(value.getClass())) {
-                                return new Pair<>(true, !(Values.getValueCoerced(value, Boolean.class).orElse(false)));
+                                return new Pair<>(false, !(Values.getValueCoerced(value, Boolean.class).orElse(false)));
                             }
                         }
                     }
