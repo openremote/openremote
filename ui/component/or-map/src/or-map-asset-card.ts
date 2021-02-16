@@ -14,7 +14,8 @@ import {
     AssetEventCause,
     AttributeEvent,
     SharedEvent,
-    WellknownAttributes
+    WellknownAttributes,
+    WellknownMetaItems
 } from "@openremote/model";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
@@ -132,7 +133,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         const excludedAttributes = cardConfig && cardConfig.exclude ? cardConfig.exclude : [];
         const attrs = attributes.filter((attr) =>
             (!includedAttributes || includedAttributes.indexOf(attr.name!) >= 0)
-            && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0))
+            && (!excludedAttributes || excludedAttributes.indexOf(attr.name!) < 0)
+            && (!attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr)))
             .sort(Util.sortByString((listItem) => listItem.name!));
 
         return html`
