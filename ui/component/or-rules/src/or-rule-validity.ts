@@ -87,7 +87,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 break;
             case "start":
                 const newStartDate = moment(value);
-                    if(newStartDate.isValid()) {
+                if(newStartDate.isValid()) {
                     validity.start = newStartDate.set({hour:0,minute:0,second:0,millisecond:0}).toDate().getTime();
                     if (this.getValidityType() === "validityRecurrence") {
                         origOptions!.dtstart = newStartDate.toDate();

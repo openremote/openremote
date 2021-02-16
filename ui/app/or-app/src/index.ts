@@ -401,7 +401,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         let consoleStyles;
         if(manager.consoleAppConfig) {
             const consoleAppConfig = manager.consoleAppConfig;
-            const primary = "#4D9D2A" //consoleAppConfig.primaryColor;
+            const primary = consoleAppConfig.primaryColor;
             const secondary = consoleAppConfig.secondaryColor;
             consoleStyles = html`<style>:host {--or-console-primary-color:${primary};--or-console-secondary-color:${secondary};}</style>`;
         }

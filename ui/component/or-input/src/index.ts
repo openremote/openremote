@@ -447,7 +447,7 @@ const style = css`
     .or-input--rounded {
         border-radius: 50% !important;
     }
-    
+
     .mdc-text-field__input::-webkit-calendar-picker-indicator {
         display: block;
     }
@@ -1247,6 +1247,7 @@ export class OrInput extends LitElement {
             if (this._mdcComponent instanceof MDCTextField) {
                 this._mdcComponent.valid = valid;
             }
+            if(!valid) return
         }
 
         const previousValue = this.value;

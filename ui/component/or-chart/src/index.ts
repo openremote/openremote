@@ -465,8 +465,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                             ?disabled="${disabled}" 
                             .value="${this.timestamp}" 
                             @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
-                        <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false)}"></or-icon>
-                        <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true)}"></or-icon>
+                        <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
+                        <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
                     </div>
                     ${this.periodCompare ? html `
                         <div class="period-controls">
@@ -477,8 +477,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                                 ?disabled="${disabled}" 
                                 .value="${this.compareTimestamp}" 
                                 @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-input>
-                            <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true)}"></or-icon>
-                            <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true)}"></or-icon>
+                            <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
+                            <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
                         </div>
                     ` : html``}
 
@@ -1122,7 +1122,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         return interval;
     }
 
-    protected _updateTimestamp(timestamp: Date, forward?: boolean, compare=false) {
+    protected _updateTimestamp(timestamp: Date, forward?: boolean, compare=false, timeout=1500) {
 
         if (this._updateTimestampTimer) {
             window.clearTimeout(this._updateTimestampTimer);
@@ -1139,7 +1139,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 } else {
                     this.timestamp = newMoment.toDate()
                 }
-        }, 1000);
+        }, timeout);
     }
         
 }

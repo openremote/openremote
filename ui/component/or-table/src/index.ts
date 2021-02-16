@@ -25,6 +25,7 @@ const style = css`
 
     .mdc-data-table {
         width: 100%;
+        overflow: auto;
         max-height: 500px;
     }
 
