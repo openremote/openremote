@@ -576,7 +576,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     protected get showButton(): boolean {
-        if (this.isReadonly() || this.disabled || !this.disableButton || !this._getAttributeRef()) {
+        if (this.isReadonly() || this.disabled || this.disableButton || !this._getAttributeRef()) {
             return false;
         }
 
