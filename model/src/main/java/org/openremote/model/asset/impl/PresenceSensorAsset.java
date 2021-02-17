@@ -21,33 +21,34 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.ValueFormat;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
 import java.util.Optional;
 
 @Entity
-public class PlugAsset extends Asset<PlugAsset> {
+public class PresenceSensorAsset extends Asset<PresenceSensorAsset> {
 
-    public static final AttributeDescriptor<Boolean> ON_OFF = new AttributeDescriptor<>("onOff", ValueType.BOOLEAN)
-        .withFormat(ValueFormat.BOOLEAN_ON_OFF());
+    public static final AttributeDescriptor<Boolean> PRESENCE = new AttributeDescriptor<>("presence", ValueType.BOOLEAN,
+        new MetaItem<>(MetaItemType.READ_ONLY));
 
-    public static final AssetDescriptor<PlugAsset> DESCRIPTOR = new AssetDescriptor<>("power-socket-eu", "e6688a", PlugAsset.class);
+    public static final AssetDescriptor<PresenceSensorAsset> DESCRIPTOR = new AssetDescriptor<>("eye-circle", "5a20cc", PresenceSensorAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    PlugAsset() {
+    PresenceSensorAsset() {
         this(null);
     }
 
-    public PlugAsset(String name) {
+    public PresenceSensorAsset(String name) {
         super(name);
     }
 
-    public Optional<Boolean> getOnOff() {
-        return getAttributes().getValue(ON_OFF);
+    public Optional<Boolean> getPresence() {
+        return getAttributes().getValue(PRESENCE);
     }
 }

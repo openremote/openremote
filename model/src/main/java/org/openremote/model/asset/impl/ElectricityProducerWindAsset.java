@@ -38,6 +38,8 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
 
     public static final AttributeDescriptor<Double> WIND_SPEED_REFERENCE = new AttributeDescriptor<>("windSpeedReference", ValueType.POSITIVE_NUMBER
     ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
+    public static final AttributeDescriptor<Double> WIND_SPEED_MIN = new AttributeDescriptor<>("windSpeedMin", ValueType.POSITIVE_NUMBER
+    ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
 
     public static final AssetDescriptor<ElectricityProducerWindAsset> DESCRIPTOR = new AssetDescriptor<>("wind-turbine", "4B87EA", ElectricityProducerWindAsset.class);
 
@@ -50,6 +52,10 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
 
     public Optional<Double> getWindSpeedReference() {
         return getAttributes().getValue(WIND_SPEED_REFERENCE);
+    }
+
+    public Optional<Double> getWindSpeedMin() {
+        return getAttributes().getValue(WIND_SPEED_MIN);
     }
 
     @Override

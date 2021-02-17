@@ -21,33 +21,41 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.ValueFormat;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.*;
 
 import javax.persistence.Entity;
 import java.util.Optional;
 
+import static org.openremote.model.Constants.*;
+
 @Entity
-public class PlugAsset extends Asset<PlugAsset> {
+public class VentilationAsset extends Asset<VentilationAsset> {
 
-    public static final AttributeDescriptor<Boolean> ON_OFF = new AttributeDescriptor<>("onOff", ValueType.BOOLEAN)
-        .withFormat(ValueFormat.BOOLEAN_ON_OFF());
+    public static final AttributeDescriptor<Integer> FAN_SPEED = new AttributeDescriptor<>("fanSpeed", ValueType.POSITIVE_INTEGER)
+        .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
+    public static final AttributeDescriptor<Double> FLOW = new AttributeDescriptor<>("flow", ValueType.NUMBER,
+        new MetaItem<>(MetaItemType.READ_ONLY))
+        .withUnits(UNITS_METRE, UNITS_CUBED, UNITS_PER, UNITS_HOUR);
 
-    public static final AssetDescriptor<PlugAsset> DESCRIPTOR = new AssetDescriptor<>("power-socket-eu", "e6688a", PlugAsset.class);
+    public static final AssetDescriptor<VentilationAsset> DESCRIPTOR = new AssetDescriptor<>("fan", "0b99c3", VentilationAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    PlugAsset() {
+    VentilationAsset() {
         this(null);
     }
 
-    public PlugAsset(String name) {
+    public VentilationAsset(String name) {
         super(name);
     }
 
-    public Optional<Boolean> getOnOff() {
-        return getAttributes().getValue(ON_OFF);
+    public Optional<Double> getFlow() {
+        return getAttributes().getValue(FLOW);
+    }
+
+    public Optional<Integer> getFanSpeed() {
+        return getAttributes().getValue(FAN_SPEED);
     }
 }

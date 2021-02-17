@@ -30,8 +30,10 @@ import java.util.Optional;
 @Entity
 public class CityAsset extends Asset<CityAsset> {
 
-    public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT);
+    public static final AttributeDescriptor<String> REGION = new AttributeDescriptor<>("region", ValueType.TEXT);
     public static final AttributeDescriptor<String> COUNTRY = new AttributeDescriptor<>("country", ValueType.TEXT);
+    public static final AttributeDescriptor<String> CITY = new AttributeDescriptor<>("city", ValueType.TEXT)
+        .withOptional(true);
 
     public static final AssetDescriptor<CityAsset> DESCRIPTOR = new AssetDescriptor<>("city", null, CityAsset.class);
 
@@ -49,6 +51,10 @@ public class CityAsset extends Asset<CityAsset> {
     public Optional<String> getCity() {
         return getAttributes().getValue(CITY);
     }
+
+    public Optional<String> getRegion() { 
+		return getAttributes().getValue(REGION); 
+	}
 
     public Optional<String> getCountry() {
         return getAttributes().getValue(COUNTRY);
