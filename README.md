@@ -20,7 +20,7 @@ Before following this quickstart make sure you have [prepared your environment](
 
 ```bash
 python3 -m pip install -U openremote-cli
-openremote-cli -v
+openremote-cli -V
 ```
 
 ```openremote-cli``` (short ```or```) is a command line tool which can be used for installing an instance of OpenRemote stack on local machine. You should already have ```python```, ```docker``` and ```docker-compose``` installed.
@@ -31,7 +31,7 @@ or deploy --action create
 
 ### 1. Starting OpenRemote with images from Docker Hub
 
-We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/):
+We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/). First clone or download our [source code](https://github.com/openremote/openremote) and from the root directory:
 
 ```
 docker-compose pull
