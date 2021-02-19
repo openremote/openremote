@@ -43,7 +43,7 @@ you don't need to pull or build images in this case, docker swarm mode does this
 
 ### 2. Starting OpenRemote with source-build images
 
-Alternatively you can build the Docker images locally from source, please see [here](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment) for required tooling. This method is advised for developers who want to contribute to the project, or customize their local deployment. Let's first get the default manager running.
+Alternatively you can build the Docker images locally from source, please see [here](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment) for required tooling and checkout the openremote project. This method is advised for developers who want to contribute to the project, or customize their local deployment. Let's first get the default manager running.
 Build the code from the root project directory:
 
 ```
