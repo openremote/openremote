@@ -50,11 +50,6 @@ Build the code from the root project directory:
 ./gradlew clean installDist
 ```
 
-We have also embeded tooling in a docker container and you can use it instead in case you have different tooling installed, e.g. higer version of JDK than 8.
-```
-docker run --rm -v $(pwd):/or registry.gitlab.com/openremote/openremote:master ./gradlew clean installDist
-```
-
 Next, if you are using Docker Community Edition build the Docker images and start the stack with:
 
 ```
