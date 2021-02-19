@@ -18,12 +18,12 @@ Before following this quickstart make sure you have [prepared your environment](
 
 ### 0. Starting OpenRemote with command-line-interface CLI (beta)
 
+```openremote-cli``` (short ```or```) is a command line tool which can be used for installing an instance of OpenRemote stack on local machine. You should already have ```python```, ```wget```, ```docker``` and ```docker-compose``` installed.
+
 ```bash
 python3 -m pip install -U openremote-cli
 openremote-cli -V
 ```
-
-```openremote-cli``` (short ```or```) is a command line tool which can be used for installing an instance of OpenRemote stack on local machine. You should already have ```python```, ```docker``` and ```docker-compose``` installed.
 
 ```bash
 or deploy --action create
