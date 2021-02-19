@@ -11,33 +11,24 @@ We are currently working on OpenRemote Manager v3, a concise 100% open source Io
 
 ## Quickstart
 
-Before following this quickstart make sure you have [prepared your environment](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment). There are two options how to start with OpenRemote:
+Before following this quickstart make sure you have [prepared your environment](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment). There are three options how to start with OpenRemote:
 
-1. Starting OpenRemote with images from Docker Hub (easiest)
-2. Starting OpenRemote with source-build images
+1. Starting OpenRemote with images from Docker Hub, easiest for working with the default setup;
+2. Starting OpenRemote with source-build images, required for developers;
+3. Starting OpenRemote with Openremote CLI, in beta and only tested on MacOSX.
 
-### 0. Starting OpenRemote with command-line-interface CLI (beta)
-
-```openremote-cli``` (short ```or```) is a command line tool which can be used for installing an instance of OpenRemote stack on local machine. You should already have ```python```, ```wget```, ```docker``` and ```docker-compose``` installed.
-
-```bash
-python3 -m pip install -U openremote-cli
-openremote-cli -V
-```
-
-```bash
-or deploy --action create
-```
+After that you can use the openremote manager UI.
 
 ### 1. Starting OpenRemote with images from Docker Hub
 
-We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/). First clone or download our [source code](https://github.com/openremote/openremote) and from the root directory:
+Use this methods if you want the easiest way to set up OpenRemote locally and use the webapp as an admin user.
+We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/). First clone or download our [source code](https://github.com/openremote/openremote). Execute the following command from the checked out root project directory:
 
 ```
 docker-compose pull
 ```
 
-To run OpenRemote using Docker Hub images, execute the following command from the checked out root project directory:
+To run OpenRemote using Docker Hub images:
 
 ```
 docker-compose up --no-build
@@ -52,7 +43,8 @@ you don't need to pull or build images in this case, docker swarm mode does this
 
 ### 2. Starting OpenRemote with source-build images
 
-Alternatively you can build the Docker images locally from source, please see [here](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment) for required tooling. First build the code:
+Alternatively you can build the Docker images locally from source, please see [here](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment) for required tooling. This method is advised for developers who want to contribute to the project, or customize their local deployment. Let's first get the default manager running.
+Build the code from the root project directory:
 
 ```
 ./gradlew clean installDist
@@ -71,15 +63,41 @@ docker-compose up --build
 
 A first build will download many dependencies (and cache them locally for future builds), this can take up to 30 minutes.
 
-### Using the OpenRemote demo
+Next steps on working with the openremote code would be [Setting up an IDE](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Setting-up-an-IDE)
+and [Working on the UI](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Working-on-the-UI)
+
+### 3. Starting OpenRemote with command-line-interface CLI (beta)
+
+```openremote-cli``` (short ```or```) is a command line tool which can be used for installing an instance of OpenRemote stack on local machine. In this method you won't have to pull the openremote repository. You should already have ```python```, ```wget```, ```docker``` and ```docker-compose``` installed. Note that this method is in beta.
+
+```bash
+python3 -m pip install -U openremote-cli
+openremote-cli -V
+```
+
+```bash
+or deploy --action create
+```
+
+For Windows machines use these commands if `or deploy --action create` does not execute properly:
+```
+docker volume create openremote_deployment-data
+docker volume rm openremote_postgresql-data
+docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:latest
+wget -nc https://github.com/openremote/openremote/raw/master/swarm/swarm-docker-compose.yml
+docker swarm init
+docker-compose -f swarm-docker-compose.yml -p openremote up -d
+```
+
+### Using the OpenRemote manager
 
 When all Docker containers are ready, you can access the OpenRemote UI and API with a web browser (if you are using Docker Toolbox replace `localhost` with `192.168.99.100`):
 
-**OpenRemote Manager:** https://localhost  
+**OpenRemote Manager, master realm:** https://localhost  
 Username: admin  
 Password: secret
 
-**Demo Smart City App:** https://localhost/main/?realm=smartcity
+**Smart City realm with Demo setup:** https://localhost/main/?realm=smartcity
 Username: smartcity  
 Password: smartcity
 
