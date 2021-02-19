@@ -13,11 +13,11 @@ We are currently working on OpenRemote Manager v3, a concise 100% open source Io
 
 Before following this quickstart make sure you have [prepared your environment](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment). There are three options how to start with OpenRemote:
 
-1. Starting OpenRemote with images from Docker Hub, easiest for working with the default setup;
-2. Starting OpenRemote with source-build images, required for developers;
-3. Starting OpenRemote with Openremote CLI, in beta and only tested on MacOSX.
+1. [Starting OpenRemote with images from Docker Hub](https://github.com/openremote/openremote/blob/master/README.md#1-starting-openremote-with-images-from-docker-hub), easiest for working with the default setup;
+2. [Starting OpenRemote with source-build images](https://github.com/openremote/openremote/blob/master/README.md#2-starting-openremote-with-source-build-images), required for developers;
+3. [Starting OpenRemote with Openremote CLI](https://github.com/openremote/openremote/blob/master/README.md#3-starting-openremote-with-command-line-interface-cli-beta), in beta and only tested on MacOSX.
 
-After that you can use the openremote manager UI.
+After that you can [use the openremote manager UI](#using-the-openremote-manager).
 
 ### 1. Starting OpenRemote with images from Docker Hub
 
