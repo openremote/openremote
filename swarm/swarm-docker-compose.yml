@@ -48,6 +48,12 @@ services:
       - private
     depends_on:
       - manager
+    healthcheck:
+        interval: 3s
+        timeout: 3s
+        start_period: 2s
+        retries: 30
+        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:80"]
     environment:
       TZ: Europe/Amsterdam
       DOMAINNAME: ${DOMAINNAME:-localhost}
@@ -110,6 +116,12 @@ services:
       - private
     depends_on:
       - keycloak
+    healthcheck:
+        interval: 3s
+        timeout: 3s
+        start_period: 2s
+        retries: 120
+        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -215,7 +227,13 @@ services:
       - private
     depends_on:
       - postgresql
-      
+    healthcheck:
+        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/auth"]
+        interval: 3s
+        timeout: 3s
+        # This was 600s in the Dockerfile, but that seems way too long.
+        start_period: 60s
+        retries: 30
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -273,7 +291,12 @@ services:
     image: openremote/postgresql:${DATE_TAG:-latest}
     networks:
       - private
-      
+    healthcheck:
+        interval: 3s
+        timeout: 3s
+        start_period: 2s
+        retries: 30
+        test: ["CMD", "gosu", "postgres", "pg_isready"]
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
