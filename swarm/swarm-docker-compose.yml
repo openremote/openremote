@@ -262,10 +262,11 @@ services:
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms300m -Xmx300m
-                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=200m
+                  -XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m
                   -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
                   -XX:MaxDirectMemorySize=25m
                   -XX:NativeMemoryTracking=summary
+                  -XX:+ExitOnOutOfMemoryError
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
                   -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
 
