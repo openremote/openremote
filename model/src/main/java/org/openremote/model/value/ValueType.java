@@ -84,8 +84,16 @@ public final class ValueType {
         new ValueConstraint.Min(0)
     );
 
+    public static final ValueDescriptor<Integer> NEGATIVE_INTEGER = new ValueDescriptor<>("negativeInteger", Integer.class,
+        new ValueConstraint.Max(0)
+    );
+
     public static final ValueDescriptor<Double> POSITIVE_NUMBER = new ValueDescriptor<>("positiveNumber", Double.class,
         new ValueConstraint.Min(0)
+    );
+
+    public static final ValueDescriptor<Double> NEGATIVE_NUMBER = new ValueDescriptor<>("negativeNumber", Double.class,
+        new ValueConstraint.Max(0)
     );
 
     public static final ValueDescriptor<Integer> INT_BYTE = new ValueDescriptor<>("integerByte", Integer.class,

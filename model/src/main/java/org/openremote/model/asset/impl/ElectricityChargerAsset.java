@@ -63,7 +63,6 @@ public class ElectricityChargerAsset extends ElectricityStorageAsset {
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricityAsset.TARIFF_IMPORT.withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = ElectricityAsset.TARIFF_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricityAsset.CARBON_IMPORT.withOptional(true);
-    public static final AttributeDescriptor<Double> CARBON_EXPORT = ElectricityAsset.CARBON_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = ElectricityAsset.CARBON_IMPORT_TOTAL.withOptional(true);
     public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = ElectricityAsset.CARBON_EXPORT_TOTAL.withOptional(true);
 

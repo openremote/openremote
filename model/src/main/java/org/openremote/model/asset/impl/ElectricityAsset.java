@@ -39,9 +39,9 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = new AttributeDescriptor<>("powerExportMin", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = new AttributeDescriptor<>("powerExportMin", ValueType.NEGATIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.NEGATIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
 
     
@@ -57,14 +57,14 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
 
 
-    public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.NUMBER)
         .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.NUMBER)
         .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport", ValueType.POSITIVE_NUMBER)
+    public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport", ValueType.NUMBER)
         .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
+        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
     public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = new AttributeDescriptor<>("carbonImportTotal", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY, true)
     ).withUnits(UNITS_KILO, UNITS_GRAM);

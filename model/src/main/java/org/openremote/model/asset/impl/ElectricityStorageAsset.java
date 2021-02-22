@@ -34,11 +34,12 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
 
 
     public static final AttributeDescriptor<Boolean> SUPPORTS_EXPORT = new AttributeDescriptor<>("supportsExport", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> SUPPORTS_IMPORT = new AttributeDescriptor<>("supportsImport", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Double> ENERGY_LEVEL = new AttributeDescriptor<>("energyLevel", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
     public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
     public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
@@ -52,7 +53,6 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricityAsset.CARBON_IMPORT.withOptional(true);
-    public static final AttributeDescriptor<Double> CARBON_EXPORT = ElectricityAsset.CARBON_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = ElectricityAsset.CARBON_IMPORT_TOTAL.withOptional(true);
     public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = ElectricityAsset.CARBON_EXPORT_TOTAL.withOptional(true);
 
@@ -73,6 +73,15 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
 
     public ElectricityStorageAsset setSupportsExport(Boolean value) {
         getAttributes().getOrCreate(SUPPORTS_EXPORT).setValue(value);
+        return this;
+    }
+
+    public Optional<Boolean> isSupportsImport() {
+        return getAttributes().getValue(SUPPORTS_IMPORT);
+    }
+
+    public ElectricityStorageAsset setSupportsImport(Boolean value) {
+        getAttributes().getOrCreate(SUPPORTS_IMPORT).setValue(value);
         return this;
     }
 
