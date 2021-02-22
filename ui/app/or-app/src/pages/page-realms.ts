@@ -366,7 +366,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
                                   <div class="row" style="margin-bottom: 0;">
                                   ${tenant.id && !readonly ? html`
                                       ${tenant.realm !== "master" ? html`
-                                        <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteTenant(tenant)}"></or-input>  
+                                        <or-input hidden .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteTenant(tenant)}"></or-input>  
                                       ` : ``}
                                       <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateTenant(tenant)}"></or-input>   
                                   ` : html`
