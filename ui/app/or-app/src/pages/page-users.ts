@@ -419,7 +419,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
                                             <or-input id="password-${index}" ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>            
                                             <or-input id="repeatPassword-${index}" helperPersistent ?readonly="${readonly}" .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>   
-                                          <or-input  ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" required .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"></or-input>
+                                          <or-input  ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"></or-input>
                                       </div>
                                   </div>
 

@@ -25,6 +25,7 @@ import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
 import {getMapRoute} from "./pages/page-map";
+
 export * from "./app";
 export * from "./or-header";
 export * from "./types";
@@ -137,6 +138,16 @@ export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(or
         roles: ["write:admin"]
     };
 }
+export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: " account-circle",
+        value: "realms",
+        href: "realms",
+        text: "realms",
+        roles: ["write:admin"]
+    };
+}
+
 export function getRealmQueryParameter(): string {
     if(location.search && location.search !== "") {
         return Util.getQueryParameter(location.search, "realm");

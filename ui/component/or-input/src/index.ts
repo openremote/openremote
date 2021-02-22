@@ -1249,7 +1249,6 @@ export class OrInput extends LitElement {
             }
             if(!valid) return
         }
-
         const previousValue = this.value;
 
         if (newValue === "null") {
