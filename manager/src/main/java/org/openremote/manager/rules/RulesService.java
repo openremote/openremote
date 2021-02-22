@@ -403,7 +403,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             // Check if enabled status has changed
             boolean wasEnabled = Arrays.stream(tenants).anyMatch(t -> tenant.getRealm().equals(t.getRealm()) && tenant.getId().equals(t.getId()));
             boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
-            tenants = identityService.getIdentityProvider().getTenants();
+            tenants = Arrays.stream(identityService.getIdentityProvider().getTenants()).filter(Tenant::getEnabled).toArray(Tenant[]::new);
 
             if (wasEnabled == isEnabled) {
                 // Nothing to do here

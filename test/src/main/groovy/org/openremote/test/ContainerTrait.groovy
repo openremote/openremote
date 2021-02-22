@@ -270,31 +270,40 @@ trait ContainerTrait {
         def agentService = container.hasService(AgentService.class) ? container.getService(AgentService.class) : null
         def rulesService = container.hasService(RulesService.class) ? container.getService(RulesService.class) : null
         def assetProcessingService = container.hasService(AssetProcessingService.class) ? container.getService(AssetProcessingService.class) : null
+        int i=0
 
         if (agentService != null) {
             println("Waiting for agents to be deployed")
-            while (TestFixture.assets.stream().filter { it instanceof Agent }.any { !agentService.agentMap.containsKey(it.id) }) {
+            i=0
+            while (i < 100 && TestFixture.assets.stream().filter { it instanceof Agent }.any { !agentService.agentMap.containsKey(it.id) }) {
                 Thread.sleep(100)
+                i++
             }
             println("Agents are deployed")
         }
 
         if (rulesService != null) {
             println("Waiting for global rulesets to be deployed")
-            while (TestFixture.globalRulesets.stream().filter { it.enabled }.any { rulesService.globalEngine == null || !rulesService.globalEngine.deployments.containsKey(it.id) }) {
+            i=0
+            while (i < 100 && TestFixture.globalRulesets.stream().filter { it.enabled }.any { rulesService.globalEngine == null || !rulesService.globalEngine.deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
+                i++
             }
             println("Global rulesets are deployed")
 
             println("Waiting for tenant rulesets to be deployed")
-            while (TestFixture.tenantRulesets.stream().filter { it.enabled }.any { !rulesService.tenantEngines.containsKey(it.realm) || !rulesService.tenantEngines.get(it.realm).deployments.containsKey(it.id) }) {
+            i=0
+            while (i < 100 && TestFixture.tenantRulesets.stream().filter { it.enabled }.any { !rulesService.tenantEngines.containsKey(it.realm) || !rulesService.tenantEngines.get(it.realm).deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
+                i++
             }
             println("Tenant rulesets are deployed")
 
             println("Waiting for asset rulesets to be deployed")
-            while (TestFixture.assetRulesets.stream().filter { it.enabled }.any { !rulesService.assetEngines.containsKey(it.assetId) || !rulesService.assetEngines.get(it.assetId).deployments.containsKey(it.id) }) {
+            i=0
+            while (i < 100 && TestFixture.assetRulesets.stream().filter { it.enabled }.any { !rulesService.assetEngines.containsKey(it.assetId) || !rulesService.assetEngines.get(it.assetId).deployments.containsKey(it.id) }) {
                 Thread.sleep(100)
+                i++
             }
             println("Asset rulesets are deployed")
         }

@@ -90,7 +90,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         
 
         when: "KNX agents are created"
-        def knxAgent1 = new KNXAgent("KNX Agent 2")
+        def knxAgent1 = new KNXAgent("KNX Agent 1")
             .setHost("127.0.0.1")
             .setBindHost("127.0.0.1")
             .setRealm(Constants.MASTER_REALM)

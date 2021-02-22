@@ -492,7 +492,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         if (!complete) {
             LOG.fine("No processor consumed the update completely, storing: " + attributeStr);
             storeAttributeValue(em, asset, attribute);
-            em.flush(); // Make sure constraint violations are immediately visible
         }
 
         LOG.fine("<<< Processing complete: " + attributeStr);

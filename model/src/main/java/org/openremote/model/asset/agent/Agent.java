@@ -20,23 +20,26 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
- * An agent is a special sub type of {@link Asset} that is associated with a {@link Protocol} and is responsible
- * for providing an instance of the associated {@link Protocol} when requested via {@link #getProtocolInstance}.
+ * An agent is a special sub type of {@link Asset} that is associated with a {@link Protocol} and is responsible for
+ * providing an instance of the associated {@link Protocol} when requested via {@link #getProtocolInstance}.
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V extends AgentLink<?>> extends Asset<T> {
 
     public static final AttributeDescriptor<Boolean> DISABLED = new AttributeDescriptor<>("agentDisabled", ValueType.BOOLEAN);
@@ -77,8 +80,8 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     public static final AttributeDescriptor<String[]> MESSAGE_DELIMITERS = new AttributeDescriptor<>("messageDelimiters", ValueType.TEXT.asArray()).withOptional(true);
 
     /**
-     * For protocols that use {@link #MESSAGE_DELIMITERS}, this indicates whether or not the matched delimiter
-     * should be stripped from the message.
+     * For protocols that use {@link #MESSAGE_DELIMITERS}, this indicates whether or not the matched delimiter should be
+     * stripped from the message.
      */
     public static final AttributeDescriptor<Boolean> MESSAGE_STRIP_DELIMITER = new AttributeDescriptor<>("messageStripDelimiter", ValueType.BOOLEAN).withOptional(true);
 
@@ -127,7 +130,8 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      */
     public static final AttributeDescriptor<Integer> POLLING_MILLIS = new AttributeDescriptor<>("pollingMillis", ValueType.POSITIVE_INTEGER).withOptional(true);
 
-    protected Agent() {}
+    protected Agent() {
+    }
 
     protected Agent(String name) {
         super(name);
@@ -154,7 +158,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setDisabled(boolean disabled) {
         getAttributes().addOrReplace(new Attribute<>(DISABLED, disabled));
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<ConnectionStatus> getAgentStatus() {
@@ -168,7 +172,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setOAuthGrant(OAuthGrant value) {
         getAttributes().getOrCreate(OAUTH_GRANT).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<UsernamePassword> getUsernamePassword() {
@@ -178,7 +182,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setUsernamePassword(UsernamePassword value) {
         getAttributes().getOrCreate(USERNAME_AND_PASSWORD).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<String> getHost() {
@@ -188,7 +192,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setHost(String value) {
         getAttributes().getOrCreate(HOST).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<Integer> getPort() {
@@ -198,7 +202,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setPort(Integer value) {
         getAttributes().getOrCreate(PORT).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<Integer> getBindPort() {
@@ -208,7 +212,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setBindPort(Integer value) {
         getAttributes().getOrCreate(BIND_PORT).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<String> getBindHost() {
@@ -218,7 +222,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setBindHost(String value) {
         getAttributes().getOrCreate(BIND_HOST).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<String> getSerialPort() {
@@ -228,7 +232,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setSerialPort(String value) {
         getAttributes().getOrCreate(SERIAL_PORT).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<Integer> getSerialBaudrate() {
@@ -238,10 +242,32 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
     @SuppressWarnings("unchecked")
     public T setSerialBaudrate(Integer value) {
         getAttributes().getOrCreate(SERIAL_BAUDRATE).setValue(value);
-        return (T)this;
+        return (T) this;
     }
 
     public Optional<Integer> getPollingMillis() {
         return getAttributes().getValue(POLLING_MILLIS);
+    }
+
+    /**
+     * Indicates if the specified attribute name is a configuration attribute and therefore if an {@link
+     * org.openremote.model.attribute.AttributeEvent} is detected for this attribute the agent should be stopped and
+     * restarted. The default behaviour is any attribute that has an {@link AttributeDescriptor} defined on the {@link
+     * Agent} class or one of its' subclasses is considered to be a configuration attribute for the agent; excluding
+     * {@link Agent#STATUS}. Agent's can override this behaviour as required.
+     */
+    public boolean isConfigurationAttribute(String attributeName) {
+
+        // This is an event for an agent so is it for an attribute that has a descriptor which is defined in an agent class
+        // and it's not the status attribute (or we'll end up in a loop)
+        return !attributeName.equals(Agent.STATUS.getName())
+            && AssetModelUtil.getAssetInfo(getType())
+            .map(info ->
+                Arrays.stream(info.getAttributeDescriptors())
+                    .anyMatch(ad -> ad.getName().equals(attributeName)))
+            .orElse(false)
+            && AssetModelUtil.getAssetInfo(UnknownAsset.class)
+            .map(typeInfo -> Arrays.stream(typeInfo.getAttributeDescriptors()).noneMatch(ad -> ad.getName().equals(attributeName)))
+            .orElse(false);
     }
 }

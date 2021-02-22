@@ -105,4 +105,9 @@ public class MacroAgent extends Agent<MacroAgent, MacroProtocol, MacroAgent.Macr
     public Optional<AttributeExecuteStatus> getMacroStatus() {
         return getAttributes().getValue(MACRO_STATUS);
     }
+
+    @Override
+    public boolean isConfigurationAttribute(String attributeName) {
+        return !attributeName.equals(MACRO_STATUS.getName()) && super.isConfigurationAttribute(attributeName);
+    }
 }

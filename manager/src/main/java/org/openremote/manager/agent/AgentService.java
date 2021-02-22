@@ -52,7 +52,6 @@ import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.MetaItemType;
 
 import javax.persistence.EntityManager;
 import java.util.*;
@@ -69,15 +68,15 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
-import static org.openremote.container.persistence.PersistenceEvent.*;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.asset.agent.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.model.asset.agent.Protocol.SENSOR_QUEUE;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
-import static org.openremote.model.attribute.AttributeEvent.Source.GATEWAY;
-import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR;
+import static org.openremote.model.attribute.AttributeEvent.Source.*;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
 /**
@@ -157,7 +156,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void stop(Container container) throws Exception {
-        agentMap.values().forEach(this::stopAgent);
+        agentMap.values().stream().map(Agent::getId).forEach(this::stopAgent);
         agentMap.clear();
         protocolInstanceMap.clear();
     }
@@ -274,42 +273,33 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 break;
             case UPDATE:
-                Agent<?, ?, ?> oldAgent = getAgents().get(persistenceEvent.getEntity().getId());
-
-                // Old agent can be null if an update happens straight after the creation
-                if (oldAgent == null || !removeAgent(oldAgent)) {
-                    return;
-                }
-
-                stopAgent(oldAgent);
-                addReplaceAgent(agent);
-
-                if (agent.isDisabled().orElse(false)) {
-                    LOG.info("Agent is disabled so not starting: " + agent);
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
-                } else {
-                    startAgent(agent);
-                }
+                onAgentUpdated(agent);
                 break;
             case DELETE:
-                if (!removeAgent(agent)) {
+                if (!removeAgent(agent.getId())) {
                     return;
                 }
                 // Unlink any attributes that have an agent link to this agent
-                stopAgent(agent);
+                stopAgent(agent.getId());
                 break;
         }
     }
 
-    protected void onAgentUpdated(Agent<?,?,?> agent, AttributeEvent attributeEvent) {
-        if (Agent.DISABLED.getName().equals(attributeEvent.getAttributeName()) && !agent.isDisabled().orElse(false).equals(attributeEvent.getValue().orElse(false))) {
-            LOG.fine("Agent disabled status has been updated: agent=" + agent.getId() + ", event=" + attributeEvent);
+    protected void onAgentUpdated(Agent<?,?,?> agent) {
 
-            // Disabled status has changed
-            stopAgent(agent);
-            if (!attributeEvent.<Boolean>getValue().orElse(false)) {
-                startAgent(agent);
-            }
+        // Old agent can be null if an update happens straight after the creation
+        if (!removeAgent(agent.getId())) {
+            return;
+        }
+
+        stopAgent(agent.getId());
+        addReplaceAgent(agent);
+
+        if (agent.isDisabled().orElse(false)) {
+            LOG.info("Agent is disabled so not starting: " + agent);
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
+        } else {
+            startAgent(agent);
         }
     }
 
@@ -354,7 +344,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 getGroupedAgentLinkAttributes(
                     obsoleteOrModified.stream(),
                     attribute -> true
-                ).forEach((agent, attributes) -> unlinkAttributes(agent, asset.getId(), attributes));
+                ).forEach((agent, attributes) -> unlinkAttributes(agent.getId(), asset.getId(), attributes));
 
                 // Link new or modified attributes
                 getGroupedAgentLinkAttributes(
@@ -368,7 +358,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 // Unlink any AGENT_LINK attributes from the referenced protocol
                 getGroupedAgentLinkAttributes(asset.getAttributes().stream(), attribute -> true)
-                    .forEach((agent, attributes) -> unlinkAttributes(agent, asset.getId(), attributes));
+                    .forEach((agent, attributes) -> unlinkAttributes(agent.getId(), asset.getId(), attributes));
                 break;
             }
         }
@@ -448,9 +438,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         });
     }
 
-    protected void stopAgent(Agent<?,?,?> agent) {
+    protected void stopAgent(String agentId) {
         withLock(getClass().getSimpleName() + "::stopAgent", () -> {
-            Protocol<?> protocol = protocolInstanceMap.get(agent.getId());
+            Protocol<?> protocol = protocolInstanceMap.get(agentId);
 
             if (protocol == null) {
                 return;
@@ -460,7 +450,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 Collectors.groupingBy(entry -> entry.getKey().getId(), mapping(Map.Entry::getValue, toList()))
             );
 
-            groupedAttributes.forEach((assetId, linkedAttributes) -> unlinkAttributes(agent, assetId, linkedAttributes));
+            groupedAttributes.forEach((assetId, linkedAttributes) -> unlinkAttributes(agentId, assetId, linkedAttributes));
 
             // Stop the protocol instance
             try {
@@ -470,8 +460,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             }
 
             // Remove child asset subscriptions for this agent
-            childAssetSubscriptions.remove(agent.getId());
-            protocolInstanceMap.remove(agent.getId());
+            childAssetSubscriptions.remove(agentId);
+            protocolInstanceMap.remove(agentId);
         });
     }
 
@@ -499,9 +489,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         });
     }
 
-    protected void unlinkAttributes(Agent<?,?,?> agent, String assetId, List<Attribute<?>> attributes) {
+    protected void unlinkAttributes(String agentId, String assetId, List<Attribute<?>> attributes) {
         withLock(getClass().getSimpleName() + "::unlinkAttributes", () -> {
-            Protocol<?> protocol = getProtocolInstance(agent.getId());
+            Protocol<?> protocol = getProtocolInstance(agentId);
 
             if (protocol == null) {
                 return;
@@ -530,6 +520,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      * processing of this event by the processing chain. The protocol should raise sensor updates as
      * required (i.e. the protocol is responsible for synchronising state with the database).
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public boolean processAssetUpdate(EntityManager entityManager,
                                       Asset<?> asset,
@@ -543,11 +534,23 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         AttributeEvent attributeEvent = new AttributeEvent(new AttributeState(asset.getId(), attribute), attribute.getTimestamp().orElseGet(timerService::getCurrentTimeMillis));
 
         if (asset instanceof Agent) {
-            LOG.fine("Attribute write for agent attribute: agent=" + asset.getId() + ", attribute=" + attribute.getName());
-            onAgentUpdated(getAgents().get(asset.getId()), attributeEvent);
 
-            // Update in memory agent
-            Optional.ofNullable(getAgent(asset.getId())).ifPresent(agent -> agent.addOrReplaceAttributes(attribute));
+            // This is how we update the agent when an attribute event occurs on an agent's attribute by a client, this
+            // is not ideal as value is not committed to the DB and could in theory be consumed by another processor
+            // but we need to know the source which isn't available from the client event service.
+            // TODO: Expose event source to client event subscriptions
+            Agent<?, ?, ?> agent = getAgent(attributeEvent.getAssetId());
+
+            if (agent != null) {
+
+                // Update in memory agent
+                agent.addOrReplaceAttributes(attribute);
+
+                if (source == CLIENT && agent.isConfigurationAttribute(attribute.getName())) {
+                    LOG.fine("Agent attribute event occurred from a client for an agent config attribute so updating: agent=" + agent.getId() + ", event=" + attributeEvent);
+                    onAgentUpdated(agent);
+                }
+            }
 
             // Don't consume the event as we want the agent attribute to be updated in the DB
             return false;
@@ -610,8 +613,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     @SuppressWarnings("ConstantConditions")
-    protected boolean removeAgent(Agent<?, ?, ?> agent) {
-        return withLockReturning(getClass().getSimpleName() + "::removeAgent", () -> getAgents().remove(agent.getId()) != null);
+    protected boolean removeAgent(String agentId) {
+        return withLockReturning(getClass().getSimpleName() + "::removeAgent", () -> getAgents().remove(agentId) != null);
     }
 
     public Agent<?, ?, ?> getAgent(String agentId) {

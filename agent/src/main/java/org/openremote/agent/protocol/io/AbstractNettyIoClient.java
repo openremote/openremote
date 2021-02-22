@@ -452,15 +452,18 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
         this.connectionStatus = connectionStatus;
 
-        executorService.submit(() ->
-            connectionStatusConsumers.forEach(
-                consumer -> {
-                    try {
-                        consumer.accept(connectionStatus);
-                    } catch (Exception e) {
-                        LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
-                    }
-                }));
+        executorService.submit(() -> {
+            synchronized (connectionStatusConsumers) {
+                connectionStatusConsumers.forEach(
+                    consumer -> {
+                        try {
+                            consumer.accept(connectionStatus);
+                        } catch (Exception e) {
+                            LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
+                        }
+                    });
+            }
+        });
     }
 
     protected void setPermanentError(String message) {

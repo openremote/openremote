@@ -22,6 +22,7 @@ package org.openremote.model.asset;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import org.hibernate.annotations.Check;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.Constants;
 import org.openremote.model.IdentifiableEntity;
@@ -243,6 +244,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 @JsonTypeInfo(include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true, use = JsonTypeInfo.Id.CUSTOM, defaultImpl = UnknownAsset.class)
 @JsonTypeIdResolver(AssetTypeIdResolver.class)
 @AssetValid(groups = Asset.AssetSave.class)
+@DynamicUpdate
 @SuppressWarnings("unchecked")
 public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T> {
 

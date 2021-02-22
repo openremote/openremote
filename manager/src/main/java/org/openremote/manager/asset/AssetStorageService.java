@@ -1176,15 +1176,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
                 );
 
-                // Raise attribute event for each attribute
-                asset.getAttributes().forEach(newAttribute ->
-                    clientEventService.publishEvent(
-                        new AttributeEvent(asset.getId(),
-                            newAttribute.getName(),
-                            newAttribute.getValue().orElse(null),
-                            newAttribute.getTimestamp().orElse(timerService.getCurrentTimeMillis()))
-                            .setParentId(asset.getParentId()).setRealm(asset.getRealm())
-                    ));
+//                // Raise attribute event for each attribute
+//                asset.getAttributes().forEach(newAttribute ->
+//                    clientEventService.publishEvent(
+//                        new AttributeEvent(asset.getId(),
+//                            newAttribute.getName(),
+//                            newAttribute.getValue().orElse(null),
+//                            newAttribute.getTimestamp().orElse(timerService.getCurrentTimeMillis()))
+//                            .setParentId(asset.getParentId()).setRealm(asset.getRealm())
+//                    ));
                 break;
             case UPDATE:
 
