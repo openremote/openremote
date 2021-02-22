@@ -256,7 +256,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         ).forEach(this::deployGlobalRuleset);
 
         LOG.info("Deploying tenant rulesets");
-        tenants = identityService.getIdentityProvider().getTenants();
+        tenants = Arrays.stream(identityService.getIdentityProvider().getTenants()).filter(Tenant::getEnabled).toArray(Tenant[]::new);
         rulesetStorageService.findAll(
             TenantRuleset.class,
             new RulesetQuery()

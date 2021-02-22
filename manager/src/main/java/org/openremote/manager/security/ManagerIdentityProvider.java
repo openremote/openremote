@@ -188,7 +188,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     static Tenant[] getTenantsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
             List<Tenant> realms = entityManager.createQuery(
-                "select t from Tenant t where t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())"
+                "select t from Tenant t where t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now()"
                 , Tenant.class).getResultList();
 
             // Make sure the master tenant is always on top
