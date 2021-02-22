@@ -140,10 +140,10 @@ export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(or
 }
 export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
-        icon: " account-circle",
+        icon: "account-circle-outline",
         value: "realms",
         href: "realms",
-        text: "realms",
+        text: "realm management",
         roles: ["write:admin"]
     };
 }

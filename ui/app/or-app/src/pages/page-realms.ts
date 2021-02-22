@@ -269,17 +269,18 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
     this._getTenants()
   }
   
-  private _deleteRealms(role) {
+  private _deleteTenant(tenant) {
     showOkCancelDialog(i18next.t("delete"), i18next.t("deleteTenantConfirm"))
     .then((ok) => {
         if (ok) {
-          this.doDelete(role);
+          this._doDelete(tenant);
         }
     });
   }
   
-  private doDelete(realm) {
-    this._tenants = [...this._tenants.filter(u => u.id != realm.id)]
+  private async _doDelete(tenant) {
+    await manager.rest.api.TenantResource.delete(tenant.realm);
+    this._tenants = [...this._tenants.filter(u => u.id != tenant.id)]
   }
 
   private expanderToggle(ev: MouseEvent, index:number) {
@@ -322,8 +323,8 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
                       <thead>
                           <tr class="mdc-data-table__header-row">
                               <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="name"></or-translate></th>
-                              <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="description"></or-translate></th>
-                              <th class="mdc-data-table__header-cell hide-mobile large" role="columnheader" scope="col"><or-translate value="permissions"></or-translate></th>
+                              <th class="mdc-data-table__header-cell" role="columnheader" scope="col"><or-translate value="displayName"></or-translate></th>
+                              <th class="mdc-data-table__header-cell hide-mobile large" role="columnheader" scope="col"><or-translate value="status"></or-translate></th>
                           </tr>
                       </thead>
                       <tbody class="mdc-data-table__content">
@@ -364,7 +365,9 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
 
                                   <div class="row" style="margin-bottom: 0;">
                                   ${tenant.id && !readonly ? html`
-                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRealms(tenant)}"></or-input>          
+                                      ${tenant.realm !== "master" ? html`
+                                        <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteTenant(tenant)}"></or-input>  
+                                      ` : ``}
                                       <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateTenant(tenant)}"></or-input>   
                                   ` : html`
                                     <or-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._tenants.splice(-1,1); this._tenants = [...this._tenants]}}"></or-input>            

@@ -379,7 +379,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                           </tr>
                       </thead>
                       <tbody class="mdc-data-table__content">
-                      ${this._users.map(
+                      ${this._users.length > 0  ? this._users.map(
                         (user, index) => {
                           const isSameUser = user.username === manager.username;
                           const userRole = this._userRoleMapper[user.id];
@@ -414,7 +414,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                           ${user.id && this._userRoleMapper[user.id] ? html`
                                                 <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .value="${userRole ? ifDefined(userRole.id) : ifDefined(null)}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => this._userRoleMapper[user.id] = e.detail.value}"></or-input>
                                           ` : html`
-                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => {console.log(e.detail.value); this._userRoleMapper["newUser"] = e.detail.value;}}"></or-input>
+                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) =>  this._userRoleMapper["newUser"] = e.detail.value}"></or-input>
                                           `}
 
                                             <or-input id="password-${index}" ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>            
@@ -438,8 +438,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             </td>
                           </tr>
                         `
-                      })}
-                      ${!!this._users[this._users.length -1].id && !readonly ? html`
+                      }) : ``}
+                      ${this._users.length === 0 || this._users.length > 0 && !!this._users[this._users.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
                               <a class="button" @click="${() => this._users = [...this._users, {enabled: true}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("user")}</strong></a> 

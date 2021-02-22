@@ -464,7 +464,7 @@ class OrHeader extends LitElement {
     protected async _getTenants() {
         if (!this._tenants) {
             const response = await manager.rest.api.TenantResource.getAll();
-            this._tenants = response.data;
+            this._tenants = response.data.filter(t => t.enabled);
         }
 
         return this._tenants;
