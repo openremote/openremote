@@ -144,7 +144,7 @@ export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(o
         value: "realms",
         href: "realms",
         text: "realm management",
-        roles: ["write:admin"]
+        roles: {"master-realm": ["manage-clients"]}
     };
 }
 

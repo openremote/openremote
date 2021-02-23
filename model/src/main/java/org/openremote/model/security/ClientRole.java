@@ -59,6 +59,13 @@ public enum ClientRole {
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{
+        READ_ADMIN,
+        READ_LOGS,
+        READ_USERS,
+        READ_MAP,
+        READ_ASSETS,
+        READ_RULES,
+        READ_APPS,
         WRITE_USER,
         WRITE_ADMIN,
         WRITE_LOGS,

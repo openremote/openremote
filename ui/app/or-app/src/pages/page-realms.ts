@@ -265,8 +265,10 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
   }
 
   private async _createTenant(tenant) {
-    await manager.rest.api.TenantResource.create(tenant);
-    this._getTenants()
+    await manager.rest.api.TenantResource.create(tenant).then(response => {
+      //TODO improve this so that header realm picker is updated
+      window.location.reload()
+    });
   }
   
   private _deleteTenant(tenant) {
