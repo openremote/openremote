@@ -94,7 +94,8 @@ Resources:
           sudo gpasswd -a ubuntu docker
           sudo snap install docker
           # Install openremote-cli tool
-          sudo apt install python3-pip
+          sudo apt update
+          sudo apt install python3-pip -y
           sudo pip3 install -U openremote-cli
           # Prepare deployment files
           cd /home/ubuntu # we need this because on arm docker-compose cannot read /
