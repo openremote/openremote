@@ -221,7 +221,7 @@ services:
   keycloak:
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/keycloak:${DATE_TAG:-latest}
+    image: openremote/keycloak:${DATE_TAG:-multi}
     networks:
       - public
       - private
