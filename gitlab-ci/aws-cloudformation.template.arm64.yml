@@ -125,6 +125,7 @@ Resources:
           echo export LE_EMAIL=me@privacy.net >> deploy.sh
           echo docker-compose -f demo-basic-no-build.yml -p openremote up -d >> deploy.sh
           chmod +x deploy.sh
+          chown --recursive 1000:1000 *
           ./deploy.sh
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
