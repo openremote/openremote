@@ -93,33 +93,38 @@ Resources:
           sudo groupadd docker
           sudo gpasswd -a ubuntu docker
           sudo snap install docker
+          # Install openremote-cli tool
+          sudo apt install python3-pip
+          sudo pip3 install -U openremote-cli
           # Prepare deployment files
           cd /home/ubuntu # we need this because on arm docker-compose cannot read /
-          wget https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml
-          wget https://github.com/openremote/openremote/raw/master/profile/demo-basic-no-build.yml
+          echo wget https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml > deploy.sh
+          echo wget https://github.com/openremote/openremote/raw/master/profile/demo-basic-no-build.yml >> deploy.sh
           if [ ${HostName} ] && [ ${DomainName} ]
           then
-            export DOMAINNAME=${HostName}.${DomainName}
-            export IDENTITY_NETWORK_HOST=$DOMAINNAME
+            echo export DOMAINNAME=${HostName}.${DomainName} >> deploy.sh
+            echo export IDENTITY_NETWORK_HOST=$DOMAINNAME >> deploy.sh
             echo a $DOMAINNAME $IDENTITY_NETWORK_HOST
           elif [ ${DomainName} ]
           then
-            export DOMAINNAME=${DomainName}
-            export IDENTITY_NETWORK_HOST=$DOMAINNAME
+            echo export DOMAINNAME=${DomainName} >> deploy.sh
+            echo export IDENTITY_NETWORK_HOST=$DOMAINNAME >> deploy.sh
             echo b $DOMAINNAME $IDENTITY_NETWORK_HOST
           elif [ ${HostName} ]
           then
-            export DOMAINNAME=${HostName}
-            export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+            echo export DOMAINNAME=${HostName} >> deploy.sh
+            echo export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4) >> deploy.sh
             echo c $DOMAINNAME $IDENTITY_NETWORK_HOST
           else
-            export DOMAINNAME=localhost
-            export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+            echo export DOMAINNAME=localhost >> deploy.sh
+            echo export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4) >> deploy.sh
             echo d $DOMAINNAME $IDENTITY_NETWORK_HOST
           fi
-          export SETUP_ADMIN_PASSWORD=${OpenRemotePassword}
-          export LE_EMAIL=me@privacy.net
-          docker-compose -f demo-basic-no-build.yml -p openremote up -d
+          echo export SETUP_ADMIN_PASSWORD=${OpenRemotePassword} >> deploy.sh
+          echo export LE_EMAIL=me@privacy.net >> deploy.sh
+          echo docker-compose -f demo-basic-no-build.yml -p openremote up -d >> deploy.sh
+          chmod +x deploy.sh
+          ./deploy.sh
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
