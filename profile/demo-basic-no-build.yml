@@ -4,6 +4,7 @@
 version: '2.4'
 
 volumes:
+  proxy-data:
   postgresql-data:
   deployment-data:
 
@@ -24,6 +25,10 @@ services:
     depends_on:
       manager:
         condition: service_healthy
+    volumes:
+      - proxy-data:/deployment
+      # Override the haproxy.cfg with custom file
+      # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
 
   postgresql:
     restart: unless-stopped
