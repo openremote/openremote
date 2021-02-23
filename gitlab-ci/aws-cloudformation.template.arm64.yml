@@ -89,12 +89,12 @@ Resources:
           free -h
           cat /proc/sys/vm/swappiness
           cat /proc/sys/vm/vfs_cache_pressure
+          sudo apt update
           # Install docker
           sudo groupadd docker
           sudo gpasswd -a ubuntu docker
-          sudo snap install docker
+          sudo apt install docker.io
           # Install openremote-cli tool
-          sudo apt update
           sudo apt install python3-pip -y
           sudo pip3 install -U openremote-cli
           # Prepare deployment files
