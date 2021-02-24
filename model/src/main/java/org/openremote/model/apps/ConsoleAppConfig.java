@@ -85,4 +85,8 @@ public class ConsoleAppConfig {
     @Column(name = "LINKS", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
     protected AppLink[] links;
+
+    public String getRealm() {
+        return realm;
+    }
 }

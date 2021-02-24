@@ -20,7 +20,7 @@
 package org.openremote.manager.setup.builtin;
 
 import org.apache.commons.io.IOUtils;
-import org.openremote.manager.setup.AbstractManagerSetup;
+import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.rules.Ruleset;
@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 import static org.openremote.model.rules.Ruleset.Lang.SHOW_ON_LIST;
 import static org.openremote.model.value.MetaItemType.SHOW_ON_DASHBOARD;
 
-public class RulesDemoSetup extends AbstractManagerSetup {
+public class RulesDemoSetup extends ManagerSetup {
 
     private static final Logger LOG = Logger.getLogger(RulesDemoSetup.class.getName());
 

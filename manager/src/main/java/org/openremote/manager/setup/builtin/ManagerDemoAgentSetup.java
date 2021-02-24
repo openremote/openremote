@@ -21,7 +21,7 @@ package org.openremote.manager.setup.builtin;
 
 import org.openremote.agent.protocol.knx.KNXAgent;
 import org.openremote.agent.protocol.velbus.VelbusTcpAgent;
-import org.openremote.manager.setup.AbstractManagerSetup;
+import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.security.Tenant;
 
@@ -29,7 +29,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.*;
 
-public class ManagerDemoAgentSetup extends AbstractManagerSetup {
+public class ManagerDemoAgentSetup extends ManagerSetup {
 
     private static final Logger LOG = Logger.getLogger(ManagerDemoAgentSetup.class.getName());
 
@@ -65,6 +65,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
 
     @Override
     public void onStart() throws Exception {
+        super.onStart();
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;

@@ -1,0 +1,45 @@
+{
+    "name": "Wind Turbine",
+    "accessPublicRead": false,
+    "realm": "smartcity",
+    "type": "ElectricityProducerWindAsset",
+    "attributes": {
+        "notes": {
+            "name": "notes",
+            "type": "text"
+        },
+        "windSpeedMin": {
+            "name": "windSpeedMin",
+            "type": "positiveNumber",
+            "value": "10"
+        },
+        "windSpeedReference": {
+            "name": "windSpeedReference",
+            "type": "positiveNumber"
+        },
+        "powerExportMax": {
+            "name": "powerExportMax",
+            "type": "negativeNumber",
+            "value": "45.5"
+        },
+        "energyExportTotal": {
+            "name": "energyExportTotal",
+            "type": "positiveNumber"
+        },
+        "power": {
+            "name": "power",
+            "type": "number"
+        },
+        "location": {
+            "name": "location",
+            "type": "geoJSONPoint",
+            "value": {
+                "type": "Point",
+                "coordinates": [
+                    4.488424,
+                    51.906477
+                ]
+            }
+        }
+    }
+}

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.UserConfiguration;
-import org.openremote.manager.setup.AbstractManagerSetup;
+import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.apps.ConsoleAppConfig;
@@ -48,7 +48,7 @@ import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.*;
 
-public class ManagerTestSetup extends AbstractManagerSetup {
+public class ManagerTestSetup extends ManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 44;
@@ -108,6 +108,7 @@ public class ManagerTestSetup extends AbstractManagerSetup {
 
     @Override
     public void onStart() throws Exception {
+        super.onStart();
 
         KeycloakTestSetup keycloakTestSetup = setupService.getTaskOfType(KeycloakTestSetup.class);
         Tenant masterTenant = keycloakTestSetup.masterTenant;
@@ -608,21 +609,5 @@ public class ManagerTestSetup extends AbstractManagerSetup {
 
         LightAsset lightController_3Asset = createDemoLightControllerAsset("LightController 3", assetArea3, new GeoJSONPoint(5.487478, 51.446979));
         lightController_3Asset = assetStorageService.merge(lightController_3Asset);
-
-        persistenceService.doTransaction(entityManager -> {
-            entityManager.merge(new ConsoleAppConfig(
-                    realmCityTenant,
-                    "https://demo.openremote.io/mobile/?realm=smartcity&consoleProviders=geofence push storage",
-                    "https://demo.openremote.io/main/?realm=smartcity&consoleProviders=geofence push storage",
-                    true,
-                    ConsoleAppConfig.MenuPosition.BOTTOM_LEFT,
-                    null,
-                    "#4D9D2A",
-                    "#AFAFAF",
-                    new ConsoleAppConfig.AppLink[] {
-                        new ConsoleAppConfig.AppLink("Map", "https://demo.openremote.io/main/#!geofences?realm=smartcity&consoleProviders=geofence push storage")
-                    }
-            ));
-        });
     }
 }
