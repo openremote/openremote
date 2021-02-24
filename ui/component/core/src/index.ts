@@ -1016,8 +1016,8 @@ export class Manager implements EventProviderFactory {
         this._setAuthenticated(authenticated);
     }
 
-    public isSuperUser() {
-        return this.getRealm() && this.getRealm() === "master" && this.hasRealmRole("admin");
+    public isSuperUser(): boolean {
+        return !!(this.getRealm() && this.getRealm() === "master" && this.hasRealmRole("admin"));
     }
 
     public getApiBaseUrl() {

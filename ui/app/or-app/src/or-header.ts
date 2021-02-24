@@ -1,6 +1,7 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
 import {until} from "lit-html/directives/until";
 import manager, {
+    Util,
     DefaultBoxShadowBottom,
     DefaultColor1,
     DefaultColor2,
@@ -27,7 +28,7 @@ export interface HeaderItem {
    absolute?: boolean;
    action?: () => void;
    hideMobile?: boolean;
-   roles?: string[] | {[client: string]: string[]};
+   roles?: string[] | {[client: string]: string[]} | (() => boolean);
 }
 
 export interface Languages {
@@ -57,8 +58,13 @@ function hasRequiredRole(option: HeaderItem): boolean {
     if (!option.roles) {
         return true;
     }
+
     if (Array.isArray(option.roles)) {
         return option.roles.some((r) => manager.hasRole(r));
+    }
+
+    if (Util.isFunction(option.roles)) {
+        return (option.roles as () => boolean)();
     }
 
     return Object.entries(option.roles).some(([client, roles]) => roles.some((r) => manager.hasRole(r, client)));
