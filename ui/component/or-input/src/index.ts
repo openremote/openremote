@@ -879,7 +879,7 @@ export class OrInput extends LitElement {
                 case InputType.BUTTON_MOMENTARY: {
                     const isMomentary = this.type === InputType.BUTTON_MOMENTARY;
                     const isIconButton = !this.action && !this.label;
-                    const classes = {
+                    let classes = {
                         "mdc-icon-button": isIconButton,
                         "mdc-fab": !isIconButton && this.action,
                         "mdc-fab--extended": !isIconButton && this.action && !!this.label,
@@ -934,13 +934,17 @@ export class OrInput extends LitElement {
                             </div>
                     `;
                 case InputType.CHECKBOX:
+                    let classList = {
+                        "mdc-checkbox": true,
+                        "mdc-checkbox--disabled": this.disabled || this.readonly
+                    };
                     return html`
                         <div id="field" class="mdc-form-field">
-                            <div id="component" class="mdc-checkbox">
+                            <div id="component" class="${classMap(classList)}">
                                 <input type="checkbox" 
                                     id="elem"
                                     ?checked="${this.value}"
-                                    ?required="${this.required}"
+                                    ?required="${!this.required}"
                                     ?disabled="${this.disabled || this.readonly}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).checked)}"
                                     class="mdc-checkbox__native-control" id="elem"/>
@@ -1218,6 +1222,9 @@ export class OrInput extends LitElement {
             } else if (this.type === InputType.SWITCH && this._mdcComponent) {
                 const swtch = this._mdcComponent as MDCSwitch;
                 swtch.checked = this.value;
+            } else if (this.type === InputType.CHECKBOX && this._mdcComponent) {
+                const checkbox = this._mdcComponent as MDCCheckbox;
+                checkbox.disabled = this.disabled || this.readonly;
             }
         }
     }
