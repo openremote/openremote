@@ -217,6 +217,9 @@ export class OrEditAssetPanel extends LitElement {
             this._onModified();
         };
 
+        const descriptor = AssetModelUtil.getAttributeDescriptor(attribute.name!, assetType);
+        const canDelete = !descriptor || descriptor.optional;
+
         return html`
             <tr class="mdc-data-table__row">
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
@@ -224,7 +227,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
-                <td class="padded-cell mdc-data-table__cell actions-cell"><or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}"></td>
+                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
