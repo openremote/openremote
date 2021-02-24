@@ -14,6 +14,7 @@ ENV SHARED_DOCROOT /deployment/manager/shared
 ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
 ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
 ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
+ENV PROVISION_DOCROOT /deployment/manager/provisioning
 
 EXPOSE 8080
 

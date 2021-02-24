@@ -213,6 +213,9 @@ services:
       # MAP_TILESERVER_PORT: 8082
       # MAP_TILESERVER_REQUEST_TIMEOUT: 10000
 
+      # Location for the provisioning files
+      # PROVISION_DOCROOT: '/deployment/manager/provisioning'
+
       # Override logging.properties with a file of your choice.
       # LOGGING_CONFIG_FILE: '/deployment/manager/logging.properties'
 
