@@ -729,7 +729,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
     def "Verify gateway client service"() {
 
         given: "the container environment is started with the spy gateway client service"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 15, delay: 0.2)
         def services = Lists.newArrayList(defaultServices())
         def container = startContainer(defaultConfig(), services)
         def assetProcessingService = container.getService(AssetProcessingService.class)
