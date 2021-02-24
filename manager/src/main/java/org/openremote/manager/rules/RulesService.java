@@ -409,7 +409,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 // Nothing to do here
                 return;
             }
-i
+
             if (wasEnabled) {
                 // Remove tenant rules engine for this tenant if it exists
                 RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines.get(tenant.getRealm());
