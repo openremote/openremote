@@ -204,6 +204,10 @@ export function isObject(object: any): boolean {
     return false;
 }
 
+export function isFunction(object: any): boolean {
+    return !!(object && object.constructor && object.call && object.apply);
+}
+
 export function objectsEqual(obj1?: any, obj2?: any, deep: boolean = true): boolean {
     if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
         return obj1 === obj2;
