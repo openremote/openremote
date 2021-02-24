@@ -1,0 +1,25 @@
+embed-server --server-config=$configuration_file --std-out=discard
+/subsystem=elytron/key-store=kcTrustStore:add(path=$keycloak_tls_truststore_file,type=JKS,credential-reference={clear-text=$keycloak_tls_truststore_password})
+/subsystem=elytron/trust-manager=kcTrustManager:add(key-store=kcTrustStore)
+if (outcome != success) of /subsystem=elytron/server-ssl-context=kcSSLContext:read-resource
+    # Since WF requires a Key Manager for creating /subsystem=elytron/server-ssl-context, there's nothing we can do at this point.
+    # We can not automatically generate a self-signed key (Elytron doesn't support this, see https://docs.wildfly.org/13/WildFly_Elytron_Security.html#configure-ssltls),
+    # and we don't have anything else at hand.
+    # However, there is no big harm here - the Trust Store is more needed by Keycloak Truststore SPI.
+    echo "WARNING! There is no Key Manager (No Key Store specified). Skipping HTTPS Listener configuration..."
+else
+    # The SSL Context has been added by keystore, not much to do - just append trust store and we are done.
+	/subsystem=elytron/server-ssl-context=kcSSLContext:write-attribute(name=trust-manager, value=kcTrustManager)
+    /subsystem=elytron/server-ssl-context=kcSSLContext:write-attribute(name=want-client-auth, value=true)
+end-if
+
+if (outcome != success) of /subsystem=keycloak-server/spi=truststore:read-resource
+    /subsystem=keycloak-server/spi=truststore/:add
+end-if
+/subsystem=keycloak-server/spi=truststore/provider=file/:add(enabled=true,properties={ \
+    file => $keycloak_tls_truststore_file, \
+    password => $keycloak_tls_truststore_password, \
+    hostname-verification-policy => "WILDCARD", \
+disabled => "false"})
+
+stop-embedded-server

@@ -1,0 +1,3 @@
+embed-server --server-config=standalone.xml --std-out=echo
+run-batch --file=/opt/jboss/tools/cli/databases/oracle/change-database.cli
+stop-embedded-server

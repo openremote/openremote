@@ -1,0 +1,5 @@
+embed-server --server-config=standalone-ha.xml --std-out=echo
+batch
+/subsystem=undertow:write-attribute(name=statistics-enabled,value=true)
+run-batch
+stop-embedded-server

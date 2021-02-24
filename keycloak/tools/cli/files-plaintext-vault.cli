@@ -1,0 +1,6 @@
+embed-server --server-config=$configuration_file --std-out=discard
+echo ** Adding vault spi **
+/subsystem=keycloak-server/spi=vault/:add
+/subsystem=keycloak-server/spi=vault/provider=files-plaintext/:add(enabled=true,properties={dir => $plaintext_vault_provider_dir})
+stop-embedded-server
+
