@@ -266,7 +266,7 @@ export class AssetModelUtil {
         return match ? match.assetDescriptor : undefined;
     }
 
-    public static getAttributeDescriptor(attributeName?: string, assetTypeOrDescriptor?: string | AssetDescriptor | AssetTypeInfo): AttributeDescriptor | undefined {
+    public static getAttributeDescriptor(attributeName: string, assetTypeOrDescriptor: string | AssetDescriptor | AssetTypeInfo): AttributeDescriptor | undefined {
         if (!attributeName) {
             return;
         }

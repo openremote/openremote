@@ -485,7 +485,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div id="attribute-list">
                         ${this.assetAttributes && this.assetAttributes.map((attr, index) => {
 
-                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!);
+                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.assets[index]!.type!);
                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[index]!.type, attr.name, attr);
                             const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[index]!.type, true);
                             const bgColor = Util.getMetaValue('color', attr, undefined) ? Util.getMetaValue('color', attr, undefined) : "";

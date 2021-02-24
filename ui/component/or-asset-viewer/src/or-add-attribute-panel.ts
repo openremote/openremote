@@ -97,7 +97,7 @@ export class OrAddAttributePanel extends LitElement {
         } else {
             nameInput!.classList.add("hidden");
             typeInput!.classList.add("hidden");
-            const descriptor = AssetModelUtil.getAttributeDescriptor(name)!;
+            const descriptor = AssetModelUtil.getAttributeDescriptor(name, this.asset.type!)!;
             this.attribute = {};
             this.attribute.name = descriptor.name;
             this.attribute.type = descriptor.type;
