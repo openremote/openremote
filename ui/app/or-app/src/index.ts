@@ -13,6 +13,7 @@ import {unsafeHTML} from "lit-html/directives/unsafe-html";
 import {AppConfig, DefaultAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
+import "@openremote/or-mwc-components/dist/or-mwc-snackbar";
 import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
@@ -20,6 +21,7 @@ import i18next from "i18next";
 import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
 import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrMwcSnackbar} from "@openremote/or-mwc-components/dist/or-mwc-snackbar";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage} from "./app";
@@ -247,6 +249,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
         // Set this element as the host for dialogs
         OrMwcDialog.DialogHostElement = this;
+        OrMwcSnackbar.DialogHostElement = this;
     }
 
     connectedCallback() {

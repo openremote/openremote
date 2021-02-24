@@ -322,7 +322,10 @@
     "attribute": {}
   },
   "label": {
-    "asset": {},
+    "asset": {
+      "ElectricityProducerSolarAsset": "PV solar asset",
+      "ElectricityProducerWindAsset": "Wind turbine asset"
+    },
     "meta": {},
     "attribute": {},
     "value": {}

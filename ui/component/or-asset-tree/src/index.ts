@@ -10,8 +10,10 @@ import {
     AssetsEvent,
     AssetTreeNode,
     AssetTypeInfo,
+    Attribute,
     ClientRole,
-    SharedEvent
+    SharedEvent,
+    WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -24,6 +26,7 @@ import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-component
 import "@openremote/or-mwc-components/dist/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
+
 import {
     OrMwcDialog,
     showDialog,
@@ -32,6 +35,7 @@ import {
 } from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
+import { AgentDescriptor } from "@openremote/model";
 
 export interface AssetTreeTypeConfig {
     include?: string[];
@@ -187,7 +191,7 @@ export const getAssetTypes = async () => {
 }
 
 export function getDefaultAllowedAddAssetTypes(): AssetDescriptor[] {
-    return AssetModelUtil.getAssetDescriptors();
+    return AssetModelUtil.getAssetDescriptors().filter(ad => ad.name !== WellknownAssets.UNKNOWNASSET);
 }
 
 @customElement("or-asset-tree")
@@ -551,6 +555,26 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                 type: descriptor.name,
                                 realm: manager.displayRealm
                             };
+
+                            // Construct attributes
+                            const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name!);
+
+                            if (!assetTypeInfo) {
+                                return;
+                            }
+
+                            if (assetTypeInfo.attributeDescriptors) {
+                                asset.attributes = {};
+                                assetTypeInfo.attributeDescriptors
+                                    .filter((attributeDescriptor) => !attributeDescriptor.optional)
+                                    .forEach((attributeDescriptor) => {
+                                        asset.attributes![attributeDescriptor.name!] = {
+                                            name: attributeDescriptor.name,
+                                            type: attributeDescriptor.type,
+                                            meta: attributeDescriptor.meta ? {...attributeDescriptor.meta} : undefined
+                                        } as Attribute<any>;
+                                    });
+                            }
 
                             if (this.selectedIds) {
                                 asset.parentId = parent ? parent.id : undefined;

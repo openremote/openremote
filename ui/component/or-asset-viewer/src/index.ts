@@ -39,6 +39,8 @@ import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
+import "@openremote/or-mwc-components/dist/or-mwc-snackbar";
+import {showSnackbar} from "@openremote/or-mwc-components/dist/or-mwc-snackbar";
 
 export interface PanelConfig {
     type?: "info" | "history" | "group" | "survey" | "survey-results";
@@ -763,6 +765,7 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
         }
     } catch (e) {
         success = false;
+        showSnackbar(undefined, i18next.t("createAssetFailed"), i18next.t("dismiss"));
         console.error("Failed to save asset", e);
     }
 
@@ -901,6 +904,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             this._attributes = undefined;
 
             if (this.asset) {
+                if (!this.asset.attributes) {
+                    this.asset.attributes = {};
+                }
                 this._viewerConfig = this._getPanelConfig(this.asset);
                 this._attributes = this.asset.attributes;
                 this._assetModified = !this.asset.id;

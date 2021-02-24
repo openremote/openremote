@@ -11,6 +11,7 @@
   ],
   "references": [
     { "path": "../../component/core" },
+    { "path": "../../component/or-mwc-components" },
   	{ "path": "../../component/or-icon" },
   	{ "path": "../../component/or-map" },
   	{ "path": "../../component/or-input" },

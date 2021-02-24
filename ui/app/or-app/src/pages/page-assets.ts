@@ -54,25 +54,25 @@ export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
             typesParent: {
                 default: {
                     exclude: [
-                    WellknownAssets.GROUPASSET,
-                    WellknownAssets.CLIENTEVENTAGENT,
-                    WellknownAssets.ARTNETAGENT,
-                    WellknownAssets.MACROAGENT,
-                    WellknownAssets.CONTROLLERAGENT,
-                    WellknownAssets.SERIALAGENT,
-                    WellknownAssets.TCPCLIENTAGENT,
-                    WellknownAssets.UDPCLIENTAGENT,
-                    WellknownAssets.WEBSOCKETCLIENTAGENT,
-                    WellknownAssets.TRADFRILIGHTASSET,
-                    WellknownAssets.KNXAGENT,
-                    WellknownAssets.ZWAGENT,
-                    WellknownAssets.TRADFRIAGENT,
-                    WellknownAssets.TRADFRIPLUGASSET,
-                    WellknownAssets.VELBUSTCPAGENT,
-                    WellknownAssets.ARTNETLIGHTASSET,
-                    WellknownAssets.TIMERAGENT,
-                    WellknownAssets.VELBUSSERIALAGENT,
-                    WellknownAssets.UNKNOWNASSET
+                        WellknownAssets.GROUPASSET,
+                        WellknownAssets.CLIENTEVENTAGENT,
+                        WellknownAssets.ARTNETAGENT,
+                        WellknownAssets.MACROAGENT,
+                        WellknownAssets.CONTROLLERAGENT,
+                        WellknownAssets.SERIALAGENT,
+                        WellknownAssets.TCPCLIENTAGENT,
+                        WellknownAssets.UDPCLIENTAGENT,
+                        WellknownAssets.WEBSOCKETCLIENTAGENT,
+                        WellknownAssets.TRADFRILIGHTASSET,
+                        WellknownAssets.KNXAGENT,
+                        WellknownAssets.ZWAGENT,
+                        WellknownAssets.TRADFRIAGENT,
+                        WellknownAssets.TRADFRIPLUGASSET,
+                        WellknownAssets.VELBUSTCPAGENT,
+                        WellknownAssets.ARTNETLIGHTASSET,
+                        WellknownAssets.TIMERAGENT,
+                        WellknownAssets.VELBUSSERIALAGENT,
+                        WellknownAssets.CONSOLEASSET
                     ]
                 }
             }

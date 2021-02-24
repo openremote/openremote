@@ -287,7 +287,7 @@ export function camelCaseToSentenceCase(str: string): string {
             if (nextWord || (!previousCapital && !nextTwoCapitalsOrEndOfString)) v = v.toLowerCase();
         }
         return v;
-    }).join("");
+    }).join("").trim();
 }
 
 export function stringMatch(needle: string, haystack: string): boolean {
