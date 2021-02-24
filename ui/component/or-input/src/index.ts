@@ -236,6 +236,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
                 inputType = InputType.DURATION;
                 break;
         }
+
+        if (valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
+            inputType = InputType.JSON;
+        }
     }
 
     if (!inputType) {
