@@ -154,10 +154,14 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     protected get _allowedLanguages(): RulesetLang[] | undefined {
         const languages = this.config && this.config.controls && this.config.controls.allowedLanguages ? [...this.config.controls.allowedLanguages] : OrRuleList.DEFAULT_ALLOWED_LANGUAGES;
         const groovyIndex = languages.indexOf(RulesetLang.GROOVY);
+        const flowIndex = languages.indexOf(RulesetLang.FLOW);
         if(!manager.isSuperUser()) {
-            if(groovyIndex > 0) languages.splice(groovyIndex);
+            if(groovyIndex > 0) languages.splice(groovyIndex,1);
         } else if (groovyIndex < 0) {
             languages.push(RulesetLang.GROOVY);
+        }
+        if(this._globalRulesets) {
+            if(flowIndex > 0) languages.splice(flowIndex, 1);
         }
         return languages;
     }
