@@ -1,4 +1,4 @@
-name: build keycloak Docker image and push to it dockerhub
+name: keycloak-multi
 
 # Controls when the action will run. 
 on:
@@ -35,4 +35,4 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
       - name: build and push images
         run: |
-          docker build --push --platform $PLATFORM -t openremote/keycloak:multi -f keycloak/multi.Dockerfile keycloak
+          docker build --push --platform $PLATFORM -t openremote/keycloak:multi -f multi.Dockerfile keycloak
