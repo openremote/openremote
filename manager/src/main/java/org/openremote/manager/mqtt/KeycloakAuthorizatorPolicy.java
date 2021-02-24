@@ -57,7 +57,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
         return verifyRights(topic, username, clientId, ClientRole.READ_ASSETS);
     }
 
-    private boolean verifyRights(Topic topic, String username, String clientId, ClientRole... roles) {
+    protected boolean verifyRights(Topic topic, String username, String clientId, ClientRole... roles) {
         MqttConnection connection = mqttConnectionMap.get(clientId);
         if (connection == null) {
             LOG.info("No connection found for clientId: " + clientId);

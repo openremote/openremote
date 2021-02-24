@@ -38,4 +38,48 @@ public class MqttConnection {
     public int getNextSubscriptionId() {
         return ++subscriptionId;
     }
+
+
+    public String getRealm() {
+        return this.realm;
+    }
+
+
+    public String getClientId() {
+        return this.clientId;
+    }
+
+
+    public String getUsername() {
+        return this.username;
+    }
+
+
+    public byte[] getPassword() {
+        return this.password;
+    }
+
+
+    public Map<String,String> getAssetSubscriptions() {
+        return this.assetSubscriptions;
+    }
+
+
+    public Map<AttributeRef,String> getAssetAttributeSubscriptions() {
+        return this.assetAttributeSubscriptions;
+    }
+
+
+    public Map<AttributeRef,String> getAssetAttributeValueSubscriptions() {
+        return this.assetAttributeValueSubscriptions;
+    }
+
+
+    public String getAccessToken() {
+        return this.accessToken;
+    }
+
+    public int getSubscriptionId() {
+        return this.subscriptionId;
+    }        
 }

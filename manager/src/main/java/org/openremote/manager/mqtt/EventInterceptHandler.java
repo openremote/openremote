@@ -60,7 +60,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
     protected final MessageBrokerService messageBrokerService;
     protected final Map<String, MqttConnection> mqttConnectionMap;
 
-    EventInterceptHandler(ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
+    public EventInterceptHandler(ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
                           MessageBrokerService messageBrokerService,
                           Map<String, MqttConnection> mqttConnectionMap) {
 
