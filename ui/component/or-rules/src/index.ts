@@ -226,17 +226,21 @@ export function getAssetInfos(config: RulesConfig | undefined, useActionConfig: 
 
         const section = useActionConfig ? config.descriptors.action : config.descriptors.when;
 
-        if (section && section.includeAssets) {
-            allowedAssetTypes =  allowedAssetTypes.concat(section.includeAssets);
+        if ((section && section.includeAssets) || (config.descriptors.all && config.descriptors.all.includeAssets)) {
+            allowedAssetTypes = [];
+
+            if (section && section.includeAssets) {
+                allowedAssetTypes = [...section.includeAssets];
+            }
+
+            if (config.descriptors.all && config.descriptors.all.includeAssets) {
+                allowedAssetTypes = [...config.descriptors.all.includeAssets];
+            }
         }
 
-        if (config.descriptors.all && config.descriptors.all.includeAssets) {
-            allowedAssetTypes = allowedAssetTypes.concat(config.descriptors.all.includeAssets);
-        }
         if (section && section.excludeAssets) {
             excludedAssetTypes = [...section.excludeAssets];
         }
-
         if (config.descriptors.all && config.descriptors.all.excludeAssets) {
             excludedAssetTypes = excludedAssetTypes.concat(config.descriptors.all.excludeAssets);
         }
