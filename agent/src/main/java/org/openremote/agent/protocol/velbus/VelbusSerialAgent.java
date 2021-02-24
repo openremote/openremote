@@ -36,7 +36,7 @@ public class VelbusSerialAgent extends VelbusAgent<VelbusSerialAgent, VelbusSeri
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    VelbusSerialAgent() {
+    protected VelbusSerialAgent() {
     }
 
     public VelbusSerialAgent(String name) {

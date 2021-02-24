@@ -20,8 +20,7 @@ public class TradfriLightAsset extends LightAsset implements TradfriAsset {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    TradfriLightAsset() {
-        this(null);
+    protected TradfriLightAsset() {
     }
 
     public TradfriLightAsset(String name) {

@@ -51,7 +51,7 @@ public class ShipAsset extends Asset<ShipAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ShipAsset() {
+    protected ShipAsset() {
     }
 
     public ShipAsset(String name) {

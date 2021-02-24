@@ -104,8 +104,7 @@ public class ControllerAgent extends Agent<ControllerAgent, ControllerProtocol, 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ControllerAgent() {
-        this(null);
+    protected ControllerAgent() {
     }
 
     public ControllerAgent(String name) {

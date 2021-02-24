@@ -41,8 +41,11 @@ public class RoomAsset extends Asset<RoomAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    RoomAsset() {
-        this(null);
+    protected RoomAsset() {
+    }
+    
+    public RoomAsset(String name) {
+        super(name);
     }
 
     public Optional<Integer> getArea() {
@@ -51,9 +54,5 @@ public class RoomAsset extends Asset<RoomAsset> {
 
     public Optional<Integer> getRoomNumber() {
         return getAttributes().getValue(ROOM_NUMBER);
-    }
-
-    public RoomAsset(String name) {
-        super(name);
     }
 }

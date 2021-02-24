@@ -43,7 +43,10 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
 
     public static final AssetDescriptor<ElectricityProducerWindAsset> DESCRIPTOR = new AssetDescriptor<>("wind-turbine", "4B87EA", ElectricityProducerWindAsset.class);
 
-    ElectricityProducerWindAsset() {
+    /**
+     * For use by hydrators (i.e. JPA/Jackson)
+     */
+    protected ElectricityProducerWindAsset() {
     }
 
     public ElectricityProducerWindAsset(String name) {

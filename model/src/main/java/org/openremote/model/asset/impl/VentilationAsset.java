@@ -43,8 +43,7 @@ public class VentilationAsset extends Asset<VentilationAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    VentilationAsset() {
-        this(null);
+    protected VentilationAsset() {
     }
 
     public VentilationAsset(String name) {

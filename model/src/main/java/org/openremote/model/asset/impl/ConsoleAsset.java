@@ -43,8 +43,7 @@ public class ConsoleAsset extends Asset<ConsoleAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ConsoleAsset() {
-        this(null);
+    protected ConsoleAsset() {
     }
 
     public ConsoleAsset(String name) {

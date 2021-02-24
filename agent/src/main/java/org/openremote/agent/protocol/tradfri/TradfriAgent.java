@@ -43,8 +43,7 @@ public class TradfriAgent extends Agent<TradfriAgent, TradfriProtocol, AgentLink
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    TradfriAgent() {
-        this(null);
+    protected TradfriAgent() {
     }
 
     public TradfriAgent(String name) {

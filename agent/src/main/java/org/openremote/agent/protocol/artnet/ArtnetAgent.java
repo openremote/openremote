@@ -35,7 +35,7 @@ public class ArtnetAgent extends IoAgent<ArtnetAgent, ArtnetProtocol, AgentLink.
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ArtnetAgent() {
+    protected ArtnetAgent() {
     }
 
     public ArtnetAgent(String name) {

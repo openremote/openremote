@@ -48,8 +48,7 @@ public class BuildingAsset extends CityAsset {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    BuildingAsset() {
-        this(null);
+    protected BuildingAsset() {
     }
 
     public BuildingAsset(String name) {

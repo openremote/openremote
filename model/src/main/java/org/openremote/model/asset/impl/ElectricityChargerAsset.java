@@ -71,8 +71,7 @@ public class ElectricityChargerAsset extends ElectricityStorageAsset {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ElectricityChargerAsset() {
-        this(null);
+    protected ElectricityChargerAsset() {
     }
 
     public ElectricityChargerAsset(String name) {

@@ -80,7 +80,7 @@ public class WebsocketClientAgent extends IoAgent<WebsocketClientAgent, Websocke
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    WebsocketClientAgent() {
+    protected WebsocketClientAgent() {
     }
 
     public WebsocketClientAgent(String name) {

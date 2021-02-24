@@ -42,8 +42,7 @@ public class PeopleCounterAsset extends Asset<PeopleCounterAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    PeopleCounterAsset() {
-        this(null);
+    protected PeopleCounterAsset() {
     }
 
     public PeopleCounterAsset(String name) {

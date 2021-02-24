@@ -60,8 +60,7 @@ public class ElectricVehicleAsset extends ElectricityBatteryAsset {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ElectricVehicleAsset() {
-        this(null);
+    protected ElectricVehicleAsset() {
     }
 
     public ElectricVehicleAsset(String name) {

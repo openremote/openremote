@@ -37,7 +37,7 @@ public class ElectricityBatteryAsset extends ElectricityStorageAsset {
 
     public static final AssetDescriptor<ElectricityBatteryAsset> DESCRIPTOR = new AssetDescriptor<>("battery-charging", "1B7C89", ElectricityBatteryAsset.class);
 
-    ElectricityBatteryAsset() {
+    protected ElectricityBatteryAsset() {
     }
 
     public ElectricityBatteryAsset(String name) {

@@ -31,8 +31,7 @@ public class ArtnetLightAsset extends LightAsset {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ArtnetLightAsset() {
-        this(null);
+    protected ArtnetLightAsset() {
     }
 
     protected ArtnetLightAsset(String name) {

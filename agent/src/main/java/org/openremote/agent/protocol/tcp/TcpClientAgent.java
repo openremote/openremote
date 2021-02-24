@@ -35,7 +35,7 @@ public class TcpClientAgent extends IoAgent<TcpClientAgent, TcpClientProtocol, A
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    TcpClientAgent() {
+    protected TcpClientAgent() {
     }
 
     public TcpClientAgent(String name) {

@@ -40,8 +40,7 @@ public class PresenceSensorAsset extends Asset<PresenceSensorAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    PresenceSensorAsset() {
-        this(null);
+    protected PresenceSensorAsset() {
     }
 
     public PresenceSensorAsset(String name) {

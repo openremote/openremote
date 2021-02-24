@@ -50,8 +50,7 @@ public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsum
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ElectricityConsumerAsset() {
-        this(null);
+    protected ElectricityConsumerAsset() {
     }
 
     public ElectricityConsumerAsset(String name) {

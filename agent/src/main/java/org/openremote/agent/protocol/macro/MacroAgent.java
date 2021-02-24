@@ -71,8 +71,7 @@ public class MacroAgent extends Agent<MacroAgent, MacroProtocol, MacroAgent.Macr
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    MacroAgent() {
-        this(null);
+    protected MacroAgent() {
     }
 
     public MacroAgent(String name) {

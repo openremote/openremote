@@ -75,8 +75,7 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ElectricityAsset() {
-        this(null);
+    protected ElectricityAsset() {
     }
 
     public ElectricityAsset(String name) {

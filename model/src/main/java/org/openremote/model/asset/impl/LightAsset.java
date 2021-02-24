@@ -49,8 +49,7 @@ public class LightAsset extends Asset<LightAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    LightAsset() {
-        this(null);
+    protected LightAsset() {
     }
 
     public LightAsset(String name) {

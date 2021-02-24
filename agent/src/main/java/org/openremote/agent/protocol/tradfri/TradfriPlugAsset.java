@@ -21,8 +21,7 @@ public class TradfriPlugAsset extends PlugAsset implements TradfriAsset {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    TradfriPlugAsset() {
-        this(null);
+    protected TradfriPlugAsset() {
     }
 
     public TradfriPlugAsset(String name) {

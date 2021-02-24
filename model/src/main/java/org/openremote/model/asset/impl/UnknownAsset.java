@@ -37,6 +37,6 @@ public class UnknownAsset extends Asset<UnknownAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    UnknownAsset() {
+    protected UnknownAsset() {
     }
 }

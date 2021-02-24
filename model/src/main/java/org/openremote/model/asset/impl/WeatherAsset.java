@@ -72,8 +72,7 @@ public class WeatherAsset extends Asset<WeatherAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    WeatherAsset() {
-        this(null);
+    protected WeatherAsset() {
     }
 
     public WeatherAsset(String name) {

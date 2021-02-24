@@ -45,8 +45,7 @@ public class ClientEventAgent extends Agent<ClientEventAgent, ClientEventProtoco
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ClientEventAgent() {
-        this(null);
+    protected ClientEventAgent() {
     }
 
 

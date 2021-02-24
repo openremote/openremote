@@ -55,8 +55,7 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ElectricityProducerSolarAsset() {
-        this(null);
+    protected ElectricityProducerSolarAsset() {
     }
 
     public ElectricityProducerSolarAsset(String name) {

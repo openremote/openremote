@@ -39,8 +39,7 @@ public class PlugAsset extends Asset<PlugAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    PlugAsset() {
-        this(null);
+    protected PlugAsset() {
     }
 
     public PlugAsset(String name) {

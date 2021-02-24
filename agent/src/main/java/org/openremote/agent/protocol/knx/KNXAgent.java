@@ -98,8 +98,7 @@ public class KNXAgent extends Agent<KNXAgent, KNXProtocol, KNXAgent.KNXAgentLink
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    KNXAgent() {
-        this(null);
+    protected KNXAgent() {
     }
 
     public KNXAgent(String name) {

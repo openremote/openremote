@@ -41,8 +41,7 @@ public class GatewayAsset extends Asset<GatewayAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    GatewayAsset() {
-        this(null);
+    protected GatewayAsset() {
     }
 
     public GatewayAsset(String name) {

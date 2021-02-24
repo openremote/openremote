@@ -393,5 +393,7 @@
   "repetitionEnds": "Repetition ends",
   "repeatOccurrenceEvery": "Repeat occurrence every",
   "daysOfTheWeek": "days of the week",
+  "dismiss": "dismiss",
+  "createAssetFailed": "Failed to create asset",
   "logCategory": {}
 }

@@ -59,8 +59,7 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ElectricityStorageAsset() {
-        this(null);
+    protected ElectricityStorageAsset() {
     }
 
     public ElectricityStorageAsset(String name) {

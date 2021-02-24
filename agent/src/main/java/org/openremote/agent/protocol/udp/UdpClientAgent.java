@@ -35,7 +35,7 @@ public class UdpClientAgent extends IoAgent<UdpClientAgent, UdpClientProtocol, A
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    UdpClientAgent() {
+    protected UdpClientAgent() {
     }
 
     public UdpClientAgent(String name) {

@@ -69,8 +69,7 @@ public class TimerAgent extends Agent<TimerAgent, TimerProtocol, TimerAgent.Time
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    TimerAgent() {
-        this(null);
+    protected TimerAgent() {
     }
 
     public TimerAgent(String name) {

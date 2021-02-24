@@ -40,8 +40,7 @@ public class CityAsset extends Asset<CityAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    CityAsset() {
-        this(null);
+    protected CityAsset() {
     }
 
     public CityAsset(String name) {

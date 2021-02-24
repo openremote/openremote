@@ -65,8 +65,7 @@ public class ZWAgent extends Agent<ZWAgent, ZWProtocol, ZWAgent.ZWAgentLink> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ZWAgent() {
-        this(null);
+    protected ZWAgent() {
     }
 
     public ZWAgent(String name) {

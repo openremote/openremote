@@ -57,8 +57,7 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ElectricitySupplierAsset() {
-        this(null);
+    protected ElectricitySupplierAsset() {
     }
 
     public ElectricitySupplierAsset(String name) {

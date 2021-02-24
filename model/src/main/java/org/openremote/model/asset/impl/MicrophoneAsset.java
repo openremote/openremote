@@ -40,8 +40,7 @@ public class MicrophoneAsset extends Asset<MicrophoneAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    MicrophoneAsset() {
-        this(null);
+    protected MicrophoneAsset() {
     }
 
     public MicrophoneAsset(String name) {

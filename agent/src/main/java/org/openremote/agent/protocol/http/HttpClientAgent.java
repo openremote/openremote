@@ -140,10 +140,8 @@ public class HttpClientAgent extends Agent<HttpClientAgent, HttpClientProtocol, 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    HttpClientAgent() {
-        this(null);
+    protected HttpClientAgent() {
     }
-
 
     public HttpClientAgent(String name) {
         super(name);

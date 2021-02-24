@@ -40,14 +40,8 @@ import org.openremote.model.value.ValueType;
 
 import javax.persistence.*;
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Optional;
+import javax.validation.constraints.*;
+import java.util.*;
 
 import static javax.persistence.DiscriminatorType.STRING;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
@@ -364,7 +358,8 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     }
 
 
-    public T setName(String name) throws IllegalArgumentException {
+    public T setName(@NotNull String name) throws IllegalArgumentException {
+        Objects.requireNonNull(name);
         this.name = name;
         return (T) this;
     }

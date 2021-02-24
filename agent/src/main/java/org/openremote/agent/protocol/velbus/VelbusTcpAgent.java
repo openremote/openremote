@@ -37,7 +37,7 @@ public class VelbusTcpAgent extends VelbusAgent<VelbusTcpAgent, VelbusTcpProtoco
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    VelbusTcpAgent() {
+    protected VelbusTcpAgent() {
     }
 
     public VelbusTcpAgent(String name) {

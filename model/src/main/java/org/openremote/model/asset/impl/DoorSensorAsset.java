@@ -42,8 +42,7 @@ public class DoorSensorAsset extends Asset<DoorSensorAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    DoorSensorAsset() {
-        this(null);
+    protected DoorSensorAsset() {
     }
 
     public DoorSensorAsset(String name) {

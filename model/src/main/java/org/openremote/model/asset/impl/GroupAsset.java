@@ -41,8 +41,7 @@ public class GroupAsset extends Asset<GroupAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    GroupAsset() {
-        super(null);
+    protected GroupAsset() {
     }
 
     public GroupAsset(String name, Class<? extends Asset<?>> childAssetType) {

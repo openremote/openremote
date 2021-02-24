@@ -61,8 +61,7 @@ public class MockAgent extends Agent<MockAgent, MockProtocol, MockAgent.MockAgen
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    MockAgent() {
-        this(null);
+    protected MockAgent() {
     }
 
     public MockAgent(String name) {

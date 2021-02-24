@@ -63,8 +63,7 @@ public class EnvironmentSensorAsset extends Asset<EnvironmentSensorAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    EnvironmentSensorAsset() {
-        this(null);
+    protected EnvironmentSensorAsset() {
     }
 
     public EnvironmentSensorAsset(String name) {

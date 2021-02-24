@@ -47,8 +47,7 @@ public class ThermostatAsset extends Asset<ThermostatAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ThermostatAsset() {
-        this(null);
+    protected ThermostatAsset() {
     }
 
     public ThermostatAsset(String name) {

@@ -44,8 +44,7 @@ public class ParkingAsset extends Asset<ParkingAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ParkingAsset() {
-        this(null);
+    protected ParkingAsset() {
     }
 
     public ParkingAsset(String name) {

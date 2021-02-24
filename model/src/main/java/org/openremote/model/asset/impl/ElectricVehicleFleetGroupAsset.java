@@ -47,7 +47,7 @@ public class ElectricVehicleFleetGroupAsset extends GroupAsset {
 
     public static final AssetDescriptor<ElectricVehicleFleetGroupAsset> DESCRIPTOR = new AssetDescriptor<>("car-multiple", "49B0D8", ElectricVehicleFleetGroupAsset.class);
 
-    ElectricVehicleFleetGroupAsset() {
+    protected ElectricVehicleFleetGroupAsset() {
     }
 
     public ElectricVehicleFleetGroupAsset(String name) {

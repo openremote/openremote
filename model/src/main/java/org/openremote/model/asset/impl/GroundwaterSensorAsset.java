@@ -47,8 +47,7 @@ public class GroundwaterSensorAsset extends Asset<GroundwaterSensorAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    GroundwaterSensorAsset() {
-        this(null);
+    protected GroundwaterSensorAsset() {
     }
 
     public GroundwaterSensorAsset(String name) {

@@ -61,8 +61,7 @@ public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, Sim
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    SimulatorAgent() {
-        this(null);
+    protected SimulatorAgent() {
     }
 
     public SimulatorAgent(String name) {

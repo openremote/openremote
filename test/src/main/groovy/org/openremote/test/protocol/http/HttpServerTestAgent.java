@@ -32,7 +32,7 @@ public class HttpServerTestAgent extends AbstractHttpServerAgent<HttpServerTestA
         HttpServerTestAgent.class, TestHttpServerProtocol.class, AgentLink.Default.class
     );
 
-    HttpServerTestAgent() {}
+    protected HttpServerTestAgent() {}
 
     public HttpServerTestAgent(String name) {
         super(name);

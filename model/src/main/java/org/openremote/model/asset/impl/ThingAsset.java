@@ -36,7 +36,7 @@ public class ThingAsset extends Asset<ThingAsset> {
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    ThingAsset() {
+    protected ThingAsset() {
     }
 
     public ThingAsset(String name) {
