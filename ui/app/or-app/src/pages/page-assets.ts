@@ -24,7 +24,7 @@ import {Page, router} from "../types";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import i18next from "i18next";
-import {AssetEventCause} from "@openremote/model";
+import {AssetEventCause, WellknownAssets} from "@openremote/model";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -47,6 +47,38 @@ export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore
         }
     };
 }
+
+export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
+    tree: {
+        add: {
+            typesParent: {
+                default: {
+                    exclude: [
+                    WellknownAssets.GROUPASSET,
+                    WellknownAssets.CLIENTEVENTAGENT,
+                    WellknownAssets.ARTNETAGENT,
+                    WellknownAssets.MACROAGENT,
+                    WellknownAssets.CONTROLLERAGENT,
+                    WellknownAssets.SERIALAGENT,
+                    WellknownAssets.TCPCLIENTAGENT,
+                    WellknownAssets.UDPCLIENTAGENT,
+                    WellknownAssets.WEBSOCKETCLIENTAGENT,
+                    WellknownAssets.TRADFRILIGHTASSET,
+                    WellknownAssets.KNXAGENT,
+                    WellknownAssets.ZWAGENT,
+                    WellknownAssets.TRADFRIAGENT,
+                    WellknownAssets.TRADFRIPLUGASSET,
+                    WellknownAssets.VELBUSTCPAGENT,
+                    WellknownAssets.ARTNETLIGHTASSET,
+                    WellknownAssets.TIMERAGENT,
+                    WellknownAssets.VELBUSSERIALAGENT,
+                    WellknownAssets.UNKNOWNASSET
+                    ]
+                }
+            }
+        }
+    }
+};
 
 export function getAssetsRoute(editMode?: boolean, assetId?: string) {
     let route = "assets/" + (editMode ? "true" : "false");
@@ -131,7 +163,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected render(): TemplateResult | void {
         return html`
-            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : null}" class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}" .selectedIds="${this._assetIds}"></or-asset-tree>
+            <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}" class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}" .selectedIds="${this._assetIds}"></or-asset-tree>
             <or-asset-viewer id="viewer" .config="${this.config && this.config.viewer ? this.config.viewer : undefined}" class="${!this._assetIds || this._assetIds.length !== 1 ? "hideMobile" : ""}" .editMode="${this._editMode}"></or-asset-viewer>
         `;
     }

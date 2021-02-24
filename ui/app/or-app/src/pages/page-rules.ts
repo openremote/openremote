@@ -43,7 +43,10 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
         descriptors: {
             all: {
                 excludeAssets: [
-                    WellknownAssets.CITYASSET
+                    WellknownAssets.TRADFRILIGHTASSET,
+                    WellknownAssets.TRADFRIPLUGASSET,
+                    WellknownAssets.ARTNETLIGHTASSET,
+                    WellknownAssets.UNKNOWNASSET
                 ]
             }
         },

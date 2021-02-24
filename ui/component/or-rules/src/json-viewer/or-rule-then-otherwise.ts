@@ -82,6 +82,8 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
         } as MenuItem);
     }
 
+    menu.sort(Util.sortByString((listItem) => listItem.value!));
+
     return menu;
 }
 
