@@ -99,20 +99,45 @@ public class ElectricVehicleAsset extends ElectricityBatteryAsset {
         return getAttributes().getValue(CHARGER_ID);
     }
 
+    public ElectricVehicleAsset setChargerId(String value) {
+        getAttributes().getOrCreate(CHARGER_ID).setValue(value);
+        return this;
+    }
+
     public Optional<Integer> getMileageCapacity() {
         return getAttributes().getValue(MILEAGE_CAPACITY);
+    }
+
+    public ElectricVehicleAsset setMileageCapacity(Integer value) {
+        getAttributes().getOrCreate(MILEAGE_CAPACITY).setValue(value);
+        return this;
     }
 
     public Optional<Double> getMileageCharged() {
         return getAttributes().getValue(MILEAGE_CHARGED);
     }
 
+    public ElectricVehicleAsset setMileageCharged(Double value) {
+        getAttributes().getOrCreate(MILEAGE_CHARGED).setValue(value);
+        return this;
+    }
+
     public Optional<Integer> getMileageMin() {
         return getAttributes().getValue(MILEAGE_MIN);
     }
 
+    public ElectricVehicleAsset setMileageMin(Integer value) {
+        getAttributes().getOrCreate(MILEAGE_MIN).setValue(value);
+        return this;
+    }
+
     public Optional<String> getVehicleCategory() {
         return getAttributes().getValue(VEHICLE_CATEGORY);
+    }
+
+    public ElectricVehicleAsset setVehicleCategory(String value) {
+        getAttributes().getOrCreate(VEHICLE_CATEGORY).setValue(value);
+        return this;
     }
 
     @Override

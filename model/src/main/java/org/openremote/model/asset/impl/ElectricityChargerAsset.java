@@ -92,7 +92,17 @@ public class ElectricityChargerAsset extends ElectricityStorageAsset {
         return getAttributes().getValue(VEHICLE_CONNECTED);
     }
 
+    public ElectricityChargerAsset setVehicleConnected(boolean value) {
+        getAttributes().getOrCreate(VEHICLE_CONNECTED).setValue(value);
+        return this;
+    }
+
     public Optional<String> getVehicleID() {
         return getAttributes().getValue(VEHICLE_ID);
+    }
+
+    public ElectricityChargerAsset setVehicleID(String value) {
+        getAttributes().getOrCreate(VEHICLE_ID).setValue(value);
+        return this;
     }
 }
