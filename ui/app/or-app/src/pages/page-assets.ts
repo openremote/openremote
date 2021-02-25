@@ -253,10 +253,13 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     }
 
     protected _onAssetSave(result: SaveResult) {
-        if (result.success && result.isNew) {
+
+        if (!result.success) {
+            return;
+        }
+
+        if (result.isNew) {
             this._addedAssetId = result.assetId!;
-        } else {
-            this._viewer.assetId = result.assetId;
         }
     }
 

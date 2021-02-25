@@ -1079,9 +1079,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.wrapperElem.classList.remove("saving");
         this.saveBtnElem.disabled = false;
 
-        if (!result.success) {
-            showErrorDialog(i18next.t("saveAssetFailed"));
-        } else {
+        if (result.success) {
             this._assetModified = false;
             this.assetId = result.assetId;
             this.reloadAsset();

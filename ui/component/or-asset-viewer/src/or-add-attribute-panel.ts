@@ -75,7 +75,7 @@ export class OrAddAttributePanel extends LitElement {
                     <or-input .type="${InputType.SELECT}" .options="${attributeTypes}" .label="${i18next.t("type")}" @or-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-input>
                 </div>
                 <div id="name-input" class="hidden">
-                    <or-input .type="${InputType.TEXT}" .label="${i18next.t("name")}" pattern="\\w+" required @keyup="${(ev: KeyboardEvent) => this.onNameChanged((ev.target as OrInput).currentValue)}"  @or-input-changed="${(ev: OrInputChangedEvent) => this.onNameChanged(ev.detail.value)}"></or-input>
+                    <or-input .type="${InputType.TEXT}" .label="${i18next.t("name")}" pattern="\\w+" required @keyup="${(ev: KeyboardEvent) => this.onNameChanged((ev.target as OrInput).currentValue)}" @or-input-changed="${(ev: OrInputChangedEvent) => this.onNameChanged(ev.detail.value)}"></or-input>
                 </div>
                 <div id="type-input" class="hidden">
                     <or-input .type="${InputType.SELECT}" .options="${attributeValueTypes}" .label="${i18next.t("valueType")}" @or-input-changed="${(ev: OrInputChangedEvent) => this.onValueTypeChanged(ev.detail.value)}"></or-input>
