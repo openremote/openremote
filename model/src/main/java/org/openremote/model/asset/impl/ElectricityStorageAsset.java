@@ -19,7 +19,6 @@
  */
 package org.openremote.model.asset.impl;
 
-import org.openremote.model.Constants;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
@@ -37,9 +36,9 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
     public static final AttributeDescriptor<Boolean> SUPPORTS_IMPORT = new AttributeDescriptor<>("supportsImport", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Double> ENERGY_LEVEL = new AttributeDescriptor<>("energyLevel", ValueType.POSITIVE_NUMBER,
         new MetaItem<>(MetaItemType.READ_ONLY)
-    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
+    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Double> ENERGY_CAPACITY = new AttributeDescriptor<>("energyCapacity", ValueType.POSITIVE_NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
+        .withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
     public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = new AttributeDescriptor<>("energyLevelPercentage", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
