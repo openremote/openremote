@@ -129,6 +129,8 @@ declare global {
     }
 }
 
+const AssetNameRegex = /^\w+$/;
+
 @customElement("or-edit-asset-panel")
 export class OrEditAssetPanel extends LitElement {
 
@@ -299,7 +301,7 @@ export class OrEditAssetPanel extends LitElement {
         let attr: Attribute<any>;
 
         const onAttributeChanged = (attribute: Attribute<any>) => {
-            const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && attribute.type);
+            const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
             const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrInput;
             addBtn!.disabled = addDisabled;
             attr = attribute;
