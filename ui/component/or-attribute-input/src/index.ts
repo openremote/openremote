@@ -630,6 +630,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             return;
         }
 
+        if (this._newValue === undefined) {
+            return;
+        }
+
         const oldValue = this.getValue();
         const newValue = this._newValue;
         this._newValue = undefined;
