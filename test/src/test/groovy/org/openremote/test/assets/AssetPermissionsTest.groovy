@@ -237,15 +237,17 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         /* ############################################## READ ####################################### */
 
-        when: "the home assets of the authenticated user are retrieved"
+        when: "the assets of the authenticated user are retrieved"
         def assets = assetResource.getCurrentUserAssets(null)
 
-        then: "result should match"
-        assets.length == 1
-        assets[0].id == managerTestSetup.smartOfficeId
-        // Assets should not be completely loaded
-        assets[0].path == null
-        assets[0].attributes.size() == 6
+        then: "result should match (all assets in the master realm as user is not restricted)"
+        assets.length == 5
+        assets.find {it.id == managerTestSetup.smartOfficeId}.attributes.size() == 8
+        // Assets should not be completely loaded (no path or parent info)
+        assets.find {it.id == managerTestSetup.smartOfficeId}.path == null
+        assets.find {it.id == managerTestSetup.smartOfficeId}.parentId == null
+        assets.find {it.id == managerTestSetup.smartOfficeId}.parentName == null
+        assets.find {it.id == managerTestSetup.smartOfficeId}.parentType == null
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -404,12 +406,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the home assets of the authenticated user are retrieved"
         def assets = assetResource.getCurrentUserAssets(null)
 
-        then: "result should match"
-        assets.length == 1
-        assets[0].id == managerTestSetup.smartBuildingId
-        // Assets should not be completely loaded
-        assets[0].path == null
-        assets[0].attributes.size() == 6
+        then: "result should match (all assets in the building realm as user is not restricted)"
+        assets.length == 13
+        assets.find {it.id == managerTestSetup.smartBuildingId}.attributes.size() == 8
+        // Assets should not be completely loaded (no path or parent info)
+        assets.find {it.id == managerTestSetup.smartBuildingId}.path == null
+        assets.find {it.id == managerTestSetup.smartBuildingId}.parentId == null
+        assets.find {it.id == managerTestSetup.smartBuildingId}.parentName == null
+        assets.find {it.id == managerTestSetup.smartBuildingId}.parentType == null
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -556,7 +560,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.type == BuildingAsset.DESCRIPTOR.getName()
         apartment1.parentId == managerTestSetup.smartBuildingId
         apartment1.path == null
-        apartment1.attributes.size() == 6
+        apartment1.attributes.size() == 12
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerTestSetup.apartment1LivingroomId

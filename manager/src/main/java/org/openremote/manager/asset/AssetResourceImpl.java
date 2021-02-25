@@ -74,32 +74,19 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 return new Asset<?>[0];
             }
 
+            AssetQuery assetQuery = new AssetQuery()
+                .select(AssetQuery.Select.selectExcludePathAndParentInfo());
+
             if (!isRestrictedUser()) {
-                List<Asset<?>> result = assetStorageService.findAll(
-                    new AssetQuery()
-                        .select(selectExcludePathAndAttributes())
-                        .parents(new ParentPredicate(true))
-                        .tenant(new TenantPredicate(getAuthenticatedRealm()))
-                );
-                return result.toArray(new Asset<?>[0]);
+                assetQuery
+                    .tenant(new TenantPredicate(getAuthenticatedRealm()))
+                    .recursive(true);
+            } else {
+                assetQuery
+                    .userIds(getUserId());
             }
 
-            List<Asset<?>> assets = assetStorageService.findAll(
-                new AssetQuery()
-                    .select(selectExcludePathAndAttributes())
-                    .userIds(getUserId())
-            );
-
-            // Filter assets that might have been moved into a different realm and can no longer be accessed by user
-            // TODO: Should we forbid moving assets between realms?
-            Iterator<Asset<?>> it = assets.iterator();
-            while (it.hasNext()) {
-                Asset<?> asset = it.next();
-                if (!asset.getRealm().equals(getAuthenticatedRealm())) {
-                    LOG.warning("User '" + getUsername() + "' linked to asset in other realm, skipping: " + asset);
-                    it.remove();
-                }
-            }
+            List<Asset<?>> assets = assetStorageService.findAll(assetQuery);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
