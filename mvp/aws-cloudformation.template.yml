@@ -36,7 +36,7 @@ Parameters:
   InstanceAMI:
     Description: Managed AMI ID for EC2 Instance (don't change it unless you know what you are doing)
     Type : String
-    Default: ami-0e5657f6d3c3ea350
+    Default: ami-022e8cc8f0d3c52fd
 Conditions:
   DnsRecordCreate: !Equals [!Ref HostedZone, true]
   DomainName: !Not [ !Equals [!Ref DomainName, ""] ]
@@ -76,6 +76,15 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          sudo apt update
+          # Install docker
+          sudo groupadd docker
+          sudo gpasswd -a ubuntu docker
+          sudo apt install docker.io -y
+          sudo apt install docker-compose -y
+          # Install openremote-cli tool
+          sudo apt install python3-pip -y
+          sudo pip3 install -U openremote-cli
           # Create volume for deployment (needed for SWARM due to concurency in compose-file)
           docker volume create openremote_deployment-data
           docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:latest
