@@ -93,37 +93,39 @@ Resources:
           # Install docker
           sudo groupadd docker
           sudo gpasswd -a ubuntu docker
-          sudo apt install docker.io
+          sudo apt install docker.io -y
+          sudo apt install docker-compose -y
           # Install openremote-cli tool
           sudo apt install python3-pip -y
           sudo pip3 install -U openremote-cli
           # Prepare deployment files
           cd /home/ubuntu # we need this because on arm docker-compose cannot read /
-          echo wget https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml > deploy.sh
-          echo wget https://github.com/openremote/openremote/raw/master/profile/demo-basic-no-build.yml >> deploy.sh
+          wget -nc https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml
+          wget -nc https://github.com/openremote/openremote/raw/master/profile/demo-basic-no-build.yml
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             echo export DOMAINNAME=${HostName}.${DomainName} >> deploy.sh
-            echo export IDENTITY_NETWORK_HOST=$DOMAINNAME >> deploy.sh
-            echo a $DOMAINNAME $IDENTITY_NETWORK_HOST
+            echo 'export IDENTITY_NETWORK_HOST=$DOMAINNAME' >> deploy.sh
           elif [ ${DomainName} ]
           then
             echo export DOMAINNAME=${DomainName} >> deploy.sh
-            echo export IDENTITY_NETWORK_HOST=$DOMAINNAME >> deploy.sh
-            echo b $DOMAINNAME $IDENTITY_NETWORK_HOST
+            echo 'export IDENTITY_NETWORK_HOST=$DOMAINNAME' >> deploy.sh
           elif [ ${HostName} ]
           then
             echo export DOMAINNAME=${HostName} >> deploy.sh
-            echo export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4) >> deploy.sh
-            echo c $DOMAINNAME $IDENTITY_NETWORK_HOST
+            echo export 'IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)' >> deploy.sh
           else
             echo export DOMAINNAME=localhost >> deploy.sh
-            echo export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4) >> deploy.sh
-            echo d $DOMAINNAME $IDENTITY_NETWORK_HOST
+            echo export 'IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)' >> deploy.sh
           fi
           echo export SETUP_ADMIN_PASSWORD=${OpenRemotePassword} >> deploy.sh
           echo export LE_EMAIL=me@privacy.net >> deploy.sh
-          echo docker-compose -f demo-basic-no-build.yml -p openremote up -d >> deploy.sh
+          # Running docker-compose before docker stack deploy has to do with AWS
+          # problems to fetch letsencrypt CERT in the swarm mode.
+          echo 'docker-compose -f demo-basic-no-build.yml -p openremote up -d' >> deploy.sh
+          echo sleep 10 >> deploy.sh # give time to fetch CERT from letsencrypt
+          echo 'docker-compose -f demo-basic-no-build.yml -p openremote down' >> deploy.sh
+          echo or deploy -v >> deploy.sh
           chmod +x deploy.sh
           chown --recursive 1000:1000 *
           ./deploy.sh
@@ -139,6 +141,10 @@ Resources:
       - IpProtocol: tcp
         FromPort: '80'
         ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '8081'
+        ToPort: '8081'
         CidrIp: 0.0.0.0/0
       - IpProtocol: tcp
         FromPort: '443'
