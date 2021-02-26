@@ -7,22 +7,15 @@ import {
     OrApp,
     AppConfig,
     appReducer,
-    getRealmQueryParameter,
-    headerItemLogout,
-    headerItemLogs,
-    headerItemMap,
-    headerItemAssets,
-    headerItemRules,
-    headerItemAccount,
-    headerItemInsights} from "@openremote/or-app";
+    getRealmQueryParameter} from "@openremote/or-app";
 
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultHeaderHeight, ManagerConfig, Util, BasicLoginResult} from "@openremote/core";
-import "@openremote/or-app/dist/pages/page-mobile-onboarding";
-import {pageMobileOnboardingProvider, OnboardingConfig} from "@openremote/or-app/dist/pages/page-mobile-onboarding";
-import "@openremote/or-app/dist/pages/page-mobile-splash";
-import {pageMobileSplashProvider, SplashConfig} from "@openremote/or-app/dist/pages/page-mobile-splash";
+import {Auth, ManagerConfig} from "@openremote/core";
+import "./pages/page-mobile-onboarding";
+import {pageMobileOnboardingProvider, OnboardingConfig} from "./pages/page-mobile-onboarding";
+import "./pages/page-mobile-splash";
+import {pageMobileSplashProvider, SplashConfig} from "./pages/page-mobile-splash";
 import "@openremote/or-app/dist/pages/page-mobile-geofences";
-import {pageMobileGeofencesProvider, GeofencesConfig} from "@openremote/or-app/dist/pages/page-mobile-geofences";
+import {pageMobileGeofencesProvider} from "./pages/page-mobile-geofences";
 
 const onboardingConfig:OnboardingConfig  = {
     pages: [
@@ -83,15 +76,17 @@ const managerConfig: ManagerConfig = {
 };
 
 const appConfig: AppConfig<RootState> = {
-    pages: {
-        default: pageMobileSplashProvider(store, splashConfig),
-        geofences: pageMobileGeofencesProvider(store),
-        onboarding: pageMobileOnboardingProvider(store, onboardingConfig)
-    },
-    default: {
-        appTitle: "OpenRemote Demo",
-        logo: require("../images/logo.png"),
-        logoMobile: require("../images/logo-mobile.png")
+    pages: [
+        pageMobileSplashProvider(store, splashConfig),
+        pageMobileGeofencesProvider(store),
+        pageMobileOnboardingProvider(store, onboardingConfig)
+    ],
+    realms: {
+        default: {
+            appTitle: "OpenRemote Demo",
+            logo: require("../images/logo.png"),
+            logoMobile: require("../images/logo-mobile.png")
+        }
     }
 };
 orApp.managerConfig = managerConfig;

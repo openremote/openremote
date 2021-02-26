@@ -1,13 +1,18 @@
 import {css, customElement, html, property, TemplateResult} from "lit-element";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig} from "@openremote/or-data-viewer";
-import {AppStateKeyed} from "../app";
-import {Page} from "../types";
+import {Page, PageProvider} from "@openremote/or-app";
+import {AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
 
-export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?:DataViewerConfig) {
+export interface PageInsightsConfig {
+    dataViewer?: DataViewerConfig
+}
+
+export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: PageInsightsConfig): PageProvider<S> {
     return {
+        name: "insights",
         routes: [
             "insights",
             "insights/:id"
@@ -71,7 +76,7 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
     }
 
     @property()
-    public config?: DataViewerConfig;
+    public config?: PageInsightsConfig;
 
     @property()
     protected _assetId;
@@ -90,7 +95,7 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
                 <div id="title">
                     <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
                 </div>
-                <or-data-viewer></or-data-viewer>
+                <or-data-viewer .config="${this.config?.dataViewer}"></or-data-viewer>
             </div>
         `;
     }

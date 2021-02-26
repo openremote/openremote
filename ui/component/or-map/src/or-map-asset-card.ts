@@ -52,6 +52,15 @@ declare global {
     }
 }
 
+
+export const DefaultConfig: MapAssetCardConfig = {
+    default: {
+        exclude: ["notes"]
+    },
+    assetTypes: {
+    }
+};
+
 @customElement("or-map-asset-card")
 export class OrMapAssetCard extends subscribe(manager)(LitElement) {
 
@@ -110,12 +119,14 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         }
     }
     
-    getCardConfig() {
-        if (!this.config) { return; }
-        if (!this.asset) { return this.config.default; }
+    protected getCardConfig(): MapAssetCardTypeConfig | undefined {
+        let cardConfig = this.config || DefaultConfig;
 
-        const config = this.config.assetTypes && this.config.assetTypes.hasOwnProperty(this.asset.type!) ? this.config.assetTypes[this.asset.type!] : this.config.default;
-        return config;
+        if (!this.asset) {
+            return cardConfig.default;
+        }
+
+        return cardConfig.assetTypes && cardConfig.assetTypes.hasOwnProperty(this.asset.type!) ? cardConfig.assetTypes[this.asset.type!] : cardConfig.default;
     }
 
     protected render(): TemplateResult | undefined {

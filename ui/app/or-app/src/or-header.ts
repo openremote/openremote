@@ -67,7 +67,7 @@ function hasRequiredRole(option: HeaderItem): boolean {
         return (option.roles as () => boolean)();
     }
 
-    return Object.entries(option.roles).some(([client, roles]) => roles.some((r) => manager.hasRole(r, client)));
+    return Object.entries(option.roles).some(([client, roles]) => roles.some((r: string) => manager.hasRole(r, client)));
 }
 
 function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
@@ -356,7 +356,7 @@ class OrHeader extends LitElement {
     }
 
     public _onHashChanged(e: Event) {
-        const menu = getCurrentMenuItemRef(this.config.mainMenu?.length > 0 ? this.config.mainMenu[0].href : undefined);
+        const menu = getCurrentMenuItemRef(this.config && this.config.mainMenu?.length > 0 ? this.config.mainMenu[0].href : undefined);
         this.activeMenu = menu;
     }
 

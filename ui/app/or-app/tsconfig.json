@@ -4,7 +4,7 @@
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "rootDir": "src",
-    "strict": false
+    "strict": true
   },
   "include": [
     "./src"

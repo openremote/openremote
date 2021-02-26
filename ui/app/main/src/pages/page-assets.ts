@@ -19,8 +19,8 @@ import {
     OrAssetTreeSelectionEvent
 } from "@openremote/or-asset-tree";
 import {DefaultBoxShadow, Util} from "@openremote/core";
-import {AppStateKeyed} from "../app";
-import {Page, router} from "../types";
+import {Page, PageProvider, router} from "@openremote/or-app";
+import {AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 import i18next from "i18next";
@@ -31,8 +31,9 @@ export interface PageAssetsConfig {
     tree?: AssetTreeConfig;
 }
 
-export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: PageAssetsConfig) {
+export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: PageAssetsConfig): PageProvider<S> {
     return {
+        name: "assets",
         routes: [
             "assets",
             "assets/:editMode",

@@ -10,15 +10,6 @@ import Navigo from "navigo";
 // Configure routing
 export const router = new Navigo(null, true, "#!");
 
-export interface DefaultAppConfig {
-    appTitle: string;
-    logo: HTMLTemplateElement | string;
-    logoMobile: HTMLTemplateElement | string;
-    language?: string;
-    header?: HeaderConfig;
-    styles?: TemplateResult;
-}
-
 export interface RealmAppConfig {
     appTitle?: string;
     logo?: HTMLTemplateElement | string;
@@ -29,17 +20,16 @@ export interface RealmAppConfig {
 }
 
 export interface AppConfig<S extends AppStateKeyed> {
-    pages?: {
-        default: PageProvider<S>;
-        [name: string]: PageProvider<S>;
-    };
-    default?: DefaultAppConfig;
+    pages: PageProvider<S>[];
     realms?: {
+        // @ts-ignore
+        default?: RealmAppConfig;
         [realm: string]: RealmAppConfig;
     };
 }
 
 export interface PageProvider<S extends AppStateKeyed> {
+    name: string;
     routes: string[];
     pageCreator: () => Page<S>;
 }
@@ -58,21 +48,15 @@ export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(L
     }
 
     connectedCallback() {
-        if (super.connectedCallback) {
-            super.connectedCallback();
-        }
-
+        super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this._store.getState()));
         this.stateChanged(this._store.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-
-        if (super.disconnectedCallback) {
-            super.disconnectedCallback();
-        }
+        super.disconnectedCallback();
     }
 
-    abstract stateChanged(state: S);
+    abstract stateChanged(state: S): void;
 }

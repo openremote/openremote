@@ -12,8 +12,8 @@ import "@openremote/or-panel";
 import "@openremote/or-translate";
 import { ifDefined } from "lit-html/directives/if-defined";
 import { EnhancedStore } from "@reduxjs/toolkit";
-import { AppStateKeyed } from "../app";
-import { Page } from "../types";
+import {Page, PageProvider} from "@openremote/or-app";
+import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role, User } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
@@ -22,15 +22,14 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dial
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageUsersProvider<S extends AppStateKeyed>(
-  store: EnhancedStore<S>
-) {
-  return {
-    routes: ["users"],
-    pageCreator: () => {
-      return new PageUsers(store);
-    },
-  };
+export function pageUsersProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+    return {
+        name: "users",
+        routes: ["users"],
+        pageCreator: () => {
+            return new PageUsers(store);
+        },
+    };
 }
 
 @customElement("page-users")

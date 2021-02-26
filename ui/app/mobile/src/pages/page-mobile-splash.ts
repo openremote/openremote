@@ -1,6 +1,6 @@
 import {css, customElement, html, property} from "lit-element";
-import {AppStateKeyed} from "../app";
-import {Page} from "../types";
+import {AppStateKeyed} from "@openremote/or-app/dist/app";
+import {Page, PageProvider} from "@openremote/or-app/dist/types";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
 export interface SplashConfig {
@@ -9,8 +9,9 @@ export interface SplashConfig {
     logoMobile?: HTMLTemplateElement | string;
 }
 
-export function pageMobileSplashProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: SplashConfig) {
+export function pageMobileSplashProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: SplashConfig): PageProvider<S> {
     return {
+        name: "splash",
         routes: [
             "splash"
         ],
@@ -47,9 +48,11 @@ class PageMobileSplash<S extends AppStateKeyed> extends Page<S> {
 
     public connectedCallback() {
         super.connectedCallback();
-        setTimeout(() => {
-            window.location.href = this.config.redirect;
-        }, this.config.interval ? this.config.interval : 3000)
+        if (this.config) {
+            setTimeout(() => {
+                window.location.href = this.config!.redirect;
+            }, this.config.interval ? this.config.interval : 3000);
+        }
     }
     
 
@@ -62,7 +65,7 @@ class PageMobileSplash<S extends AppStateKeyed> extends Page<S> {
 
     protected render() {
         return html`
-            <div><img id="logo-mobile" src="${this.config.logoMobile}" /></div>
+            <div><img id="logo-mobile" src="${this.config?.logoMobile}" /></div>
         `;
     }
 }

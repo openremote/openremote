@@ -154,7 +154,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
     }
 
-    public config?: DataViewerConfig = {...OrDataViewer.DEFAULT_CONFIG};
+    public config?: DataViewerConfig;
 
     @property({type: Array, attribute: false})
     protected _assets?: Asset[];
@@ -237,7 +237,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
 
         if (!this.config) {
-            return html``;
+            this.config = {...OrDataViewer.DEFAULT_CONFIG};
         }
 
         return html`

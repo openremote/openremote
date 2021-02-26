@@ -4,12 +4,13 @@ import "@openremote/or-panel";
 import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
 import manager, {DefaultColor1, OREvent} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-input";
-import {AppStateKeyed} from "../app";
-import {Page} from "../types";
+import {Page, PageProvider} from "@openremote/or-app";
+import {AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
-export function pageGatewayProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+export function pageGatewayProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
     return {
+        name: "gateway",
         routes: [
             "gateway"
         ],

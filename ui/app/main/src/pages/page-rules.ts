@@ -3,15 +3,16 @@ import "@openremote/or-rules";
 import {ActionTargetType, RulesConfig} from "@openremote/or-rules";
 import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
-import {AppStateKeyed} from "../app";
-import {Page} from "../types";
+import {Page, PageProvider} from "@openremote/or-app";
+import {AppStateKeyed} from "@openremote/or-app";
 
 export interface PageRulesConfig {
     rules: RulesConfig;
 }
 
-export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT) {
+export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT): PageProvider<S> {
     return {
+        name: "rules",
         routes: [
             "rules",
             "rules/:id"

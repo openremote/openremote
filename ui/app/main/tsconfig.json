@@ -2,7 +2,7 @@
   "extends": "../../tsconfig",
   "compilerOptions": {
     "tsBuildInfoFile": "./.tsbuildinfo",
-    "strict": true
+    "strict": false
   },
   "include": [
     "./src"

@@ -10,7 +10,7 @@ import {
     unsafeCSS
 } from "lit-element";
 import {unsafeHTML} from "lit-html/directives/unsafe-html";
-import {AppConfig, DefaultAppConfig, router} from "./types";
+import {AppConfig, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/dist/or-mwc-menu";
 import "@openremote/or-mwc-components/dist/or-mwc-snackbar";
@@ -26,7 +26,6 @@ import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-input";
-import {getMapRoute} from "./pages/page-map";
 
 export * from "./app";
 export * from "./or-header";
@@ -37,123 +36,11 @@ declare var MANAGER_URL: string;
 
 export {HeaderConfig};
 
-export function headerItemMap<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "map",
-        href: getMapRoute(),
-        text: "map"
-    };
-}
-
-export function headerItemAssets<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "rhombus-split",
-        href: "assets",
-        text: "asset_plural",
-    };
-}
-
-export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "state-machine",
-        href: "rules",
-        text: "rule_plural",
-        hideMobile: true
-    };
-}
-
-export function headerItemInsights<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "chart-areaspline",
-        href: "insights",
-        text: "insights"
-    };
-}
-
-export function headerItemGatewayConnection<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "cloud",
-        value: "gateway",
-        href: "#!gateway",
-        text: "gatewayConnection",
-        roles: ["write:admin", "read:admin"]
-    };
-}
-
-export function headerItemLanguage<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "web",
-        value: "language",
-        text: "language",
-        action: () => {
-            orApp.showLanguageModal();
-        }
-    };
-}
-
-export function headerItemLogout<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "logout",
-        value: "logout",
-        text: "logout",
-        action: () => {
-            orApp.logout();
-        }
-    };
-}
-
-export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "file-document-box-search-outline",
-        value: "logs",
-        href: "logs",
-        text: "logs",
-        hideMobile: true
-    };
-}
-export function headerItemAccount<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "account",
-        value: "account",
-        href: "account",
-        text: "account",
-        roles: {
-            account: ["manage-account"]
-        }
-    };
-}
-export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "account-group",
-        value: "users",
-        href: "users",
-        text: "user_plural",
-        roles: ["write:admin"]
-    };
-}
-export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "account-box-multiple",
-        value: "roles",
-        href: "roles",
-        text: "role_plural",
-        roles: ["write:admin"]
-    };
-}
-export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
-    return {
-        icon: "account-circle-outline",
-        value: "realms",
-        href: "realms",
-        text: "realm management",
-        roles: () => manager.isSuperUser()
-    };
-}
-
-export function getRealmQueryParameter(): string {
+export function getRealmQueryParameter(): string | undefined {
     if(location.search && location.search !== "") {
         return Util.getQueryParameter(location.search, "realm");
     }
+
     if(location.hash) {
         const index = location.hash.indexOf("?");
         if(index > -1) {
@@ -166,7 +53,7 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     managerUrl: MANAGER_URL,
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: getRealmQueryParameter(),
+    realm: getRealmQueryParameter() || "master",
     consoleAutoEnable: true,
     loadTranslations: ["app", "or"]
 };
@@ -189,7 +76,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @property()
     protected _page?: string;
 
-    protected _config!: DefaultAppConfig;
+    protected _config!: RealmAppConfig;
 
     protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
     protected _storeUnsubscribe!: Unsubscribe;
@@ -253,20 +140,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     connectedCallback() {
-        if (super.connectedCallback) {
-            super.connectedCallback();
-        }
-
+        super.connectedCallback();
         this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this._store.getState()));
         this.stateChanged(this._store.getState());
     }
 
     disconnectedCallback() {
         this._storeUnsubscribe();
-
-        if (super.disconnectedCallback) {
-            super.disconnectedCallback();
-        }
+        super.disconnectedCallback();
     }
 
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
@@ -306,21 +187,21 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             if (success) {
                 this._initialised = true;
 
-                Object.entries(this.appConfig.pages).map(([pageName, provider]) => {
-                    if (provider.routes) {
-                        provider.routes.forEach((route) => {
+                this.appConfig.pages.forEach((pageProvider, index) => {
+                    if (pageProvider.routes) {
+                        pageProvider.routes.forEach((route) => {
                             router.on(
                                 route, (params, query) => {
-                                    this._store.dispatch(updatePage({page: pageName, params: params}));
+                                    this._store.dispatch(updatePage({page: pageProvider.name, params: params}));
                                 }
-                            )
+                            );
                         });
                     }
                 });
 
-                if (this.appConfig.pages.default) {
+                if (this.appConfig.pages.length > 0) {
                     router.on("*", (params, query) => {
-                        this._store.dispatch(updatePage("default"));
+                        this._store.dispatch(updatePage(this.appConfig.pages[0].name));
                     });
                 }
                
@@ -366,8 +247,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     action: () => {
                         deferred.resolve({
                             cancel: false,
-                            username: u,
-                            password: p
+                            username: u!,
+                            password: p!
                         });
                     },
                     content: html`<or-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-input>`
@@ -386,17 +267,20 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
 
         if (changedProps.has("_page")) {
-            const appTitle = this._config.appTitle || "OpenRemote Manager";
+            const appTitle = this._config.appTitle || "";
             let pageTitle = (i18next.isInitialized ? i18next.t(appTitle) : appTitle);
 
             if (this._mainElem) {
                 if (this._mainElem.firstElementChild) {
                     this._mainElem.firstElementChild.remove();
                 }
-                if (this._page && this.appConfig.pages[this._page]) {
-                    const pageElem = this.appConfig.pages[this._page].pageCreator();
-                    this._mainElem.appendChild(pageElem);
-                    pageTitle += (i18next.isInitialized ? " - " + i18next.t(pageElem.name) : " - " + pageElem.name);
+                if (this._page) {
+                    const pageProvider = this.appConfig.pages.find((page) => page.name === this._page);
+                    if (pageProvider) {
+                        const pageElem = pageProvider.pageCreator();
+                        this._mainElem.appendChild(pageElem);
+                        pageTitle += (i18next.isInitialized ? " - " + i18next.t(pageElem.name) : " - " + pageElem.name);
+                    }
                 }
             }
 
@@ -449,9 +333,11 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         this._page = state.app!.page;
     }
 
-    protected _getConfig(realm: string): DefaultAppConfig {
-         const realmConfig = this.appConfig.realms ? this.appConfig.realms![realm] : undefined;
-         return Object.assign({}, this.appConfig!.default, realmConfig);
+    protected _getConfig(realm: string | undefined): RealmAppConfig {
+        realm = realm || "default";
+        const defaultConfig = this.appConfig.realms ? this.appConfig.realms.default : {};
+        const realmConfig = this.appConfig.realms ? this.appConfig.realms![realm] : undefined;
+        return Util.mergeObjects(defaultConfig, realmConfig, false);
     }
 
     protected _getLanguageModalConfig(languages: Languages): DialogConfig {

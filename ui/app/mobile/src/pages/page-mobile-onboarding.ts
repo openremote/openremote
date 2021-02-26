@@ -1,6 +1,6 @@
 import {css, customElement, html, property} from "lit-element";
-import {AppStateKeyed} from "../app";
-import {Page} from "../types";
+import {AppStateKeyed} from "@openremote/or-app/dist/app";
+import {Page, PageProvider} from "@openremote/or-app/dist/types";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import manager from "@openremote/core";
 
@@ -22,8 +22,9 @@ export interface OnboardingConfig {
     redirect: string;
 }
 
-export function pageMobileOnboardingProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: OnboardingConfig) {
+export function pageMobileOnboardingProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: OnboardingConfig): PageProvider<S> {
     return {
+        name: "onboarding",
         routes: [
             "onboarding"
         ],

@@ -1,17 +1,19 @@
-import {css, customElement, html, property} from "lit-element";
-import {AppStateKeyed, Page} from "../index";
+import {css, customElement, html, property, PropertyValues} from "lit-element";
+import {AppStateKeyed} from "@openremote/or-app/dist/app";
+import {Page, PageProvider} from "@openremote/or-app/dist/types";
 import {NavigationControl} from "mapbox-gl";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import manager from "@openremote/core";
-import { JsonRulesetDefinition } from "@openremote/model";
-import { getGeoNotificationsFromRulesSet } from "@openremote/core/dist/util";
-import { OrMap, OrMapMarkerClickedEvent, OrMapClickedEvent } from "@openremote/or-map";
+import {JsonRulesetDefinition} from "@openremote/model";
+import {getGeoNotificationsFromRulesSet} from "@openremote/core/dist/util";
+import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@openremote/or-map";
 
 export interface GeofencesConfig {
 }
 
-export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: GeofencesConfig) {
+export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: GeofencesConfig): PageProvider<S> {
     return {
+        name: "geofences",
         routes: [
             "geofences"
         ],
@@ -195,7 +197,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     listItems = [];
 
     @property({type: Object})
-    activeItem;
+    activeItem?: any;
 
     get name(): string {
         return "mobile-geofences";
@@ -209,12 +211,12 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     }
 
     protected onMapMarkerClick(evt: OrMapMarkerClickedEvent) {
-        const marker:any = evt.detail.marker;
+        const marker = evt.detail.marker as any;
         this.activeItem = marker.marker;
     }
 
     protected onMapClick(e: OrMapClickedEvent) {
-        this.activeItem = null;
+        this.activeItem = undefined;
     }
 
     public stateChanged(state: S) {
@@ -224,9 +226,9 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     @property()
     public config?: GeofencesConfig;
 
-    protected updated(changedProperties) {
+    protected updated(changedProperties: PropertyValues) {
         if(changedProperties.has('view') && this.view === "map"){
-            const map = this.shadowRoot.querySelector('.or-map');
+            const map = this.shadowRoot!.querySelector('.or-map');
             const vectorMap = map as OrMap;
             vectorMap.resize()
         }
@@ -250,7 +252,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
                         `})}
                     </or-map>
                     ${this.activeItem ? html`
-                        <a class="marker-tooltip ${manager.consoleAppConfig.menuPosition ? manager.consoleAppConfig.menuPosition.toLowerCase()  : ""} ${manager.consoleAppConfig.menuEnabled ? "" : "full-width"}" href="${this.createUrl(this.activeItem.notification.action)}">
+                        <a class="marker-tooltip ${manager.consoleAppConfig!.menuPosition ? manager.consoleAppConfig!.menuPosition.toLowerCase()  : ""} ${manager.consoleAppConfig!.menuEnabled ? "" : "full-width"}" href="${this.createUrl(this.activeItem.notification.action)}">
                             <div class="flex marker-tooltip-inner" >
                                     <div style="flex-direction:row;" class="d-flex">
                                     <div class="flex">
@@ -291,7 +293,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
     }
 
 
-    protected checkPeriode(datetime){
+    protected checkPeriod(datetime) {
         const today = new Date().getTime();
         const startDate = new Date(datetime.start).getTime();
         const endDate = new Date(datetime.end).getTime();
@@ -357,7 +359,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
 
     protected getLocation() {
         console.info("getLocation pressed");
-        const map = this.shadowRoot.querySelector('.or-map');
+        const map = this.shadowRoot!.querySelector('.or-map');
         const vectorMap = map as OrMap;
 
         manager.console.sendProviderMessage({provider: 'geofence', action: "GET_LOCATION"}, true).then(response => {

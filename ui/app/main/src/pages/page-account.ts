@@ -3,11 +3,12 @@ import manager from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
 import {EnhancedStore} from "@reduxjs/toolkit";
-import {AppStateKeyed} from "../app";
-import {Page} from "../types";
+import {Page, PageProvider} from "@openremote/or-app";
+import {AppStateKeyed} from "@openremote/or-app";
 
-export function pageAccountProvider<S extends AppStateKeyed>(store: EnhancedStore<S>) {
+export function pageAccountProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
     return {
+        name: "account",
         routes: [
             "account"
         ],

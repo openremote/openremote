@@ -626,6 +626,62 @@ export function getMetaValueFormat(metaItem: NameValueHolder<any> | undefined, d
     return getValueFormatConstraintOrUnits(WellknownMetaItems.FORMAT, metaValueHolder, descriptor, assetType, false);
 }
 
+export function mergeObjects(a: object | undefined, b: object | undefined, mergeArrays: boolean): object {
+    if (a && !b) {
+        return {...a};
+    }
+    if (b && !a) {
+        return {...b};
+    }
+    const merged = {...a};
+    let path: string[] = [];
+    Object.entries(b!).forEach(([k, v]) => {
+        mergeObjectKey(merged, path, k, v,mergeArrays)
+    });
+    return merged;
+}
+
+function mergeObjectKey(destination: object, path: string[], key: string, value: any, mergeArrays: boolean) {
+    let dest: any = destination;
+
+    path.forEach((p) => {
+        if (!dest.hasOwnProperty(p)) {
+            dest[p] = {};
+        }
+        dest = dest[p];
+    });
+
+    if (!dest) {
+        return;
+    }
+
+    if (!dest[key]) {
+        if (Array.isArray(value)) {
+            dest[key] = [...value];
+        } else if (typeof(value) === "object") {
+            dest[key] = {...value};
+        } else {
+            dest[key] = value;
+        }
+    } else {
+        if (value === undefined || value === null) {
+            delete dest[key];
+        } else {
+            if (Array.isArray(dest[key])) {
+                if (mergeArrays) {
+                    dest[key] = [...dest[key], ...value];
+                } else {
+                    dest[key] = [...value];
+                }
+            } else if (typeof(value) === "object") {
+                dest[key] = mergeObjects({...dest[key]}, value, mergeArrays);
+            } else {
+                dest[key] = value;
+            }
+        }
+    }
+}
+
 /**
  * Looks for the requested {@link ValueFormat}, {@link ValueConstraint[]} or units string[] defined in the translation
  * file in several locations (see {@link doStandardTranslationLookup}).

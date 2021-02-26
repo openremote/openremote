@@ -13,8 +13,8 @@ import manager, {OREvent, Util} from "@openremote/core";
 import {createSelector} from "reselect";
 import {Asset, AssetEvent, AssetEventCause, AttributeEvent, GeoJSONPoint, Attribute, WellknownMetaItems, WellknownAttributes, LogicGroupOperator} from "@openremote/model";
 import {getAssetsRoute} from "./page-assets";
-import {Page, router} from "../types";
-import {AppStateKeyed} from "../app";
+import {Page, PageProvider, router} from "@openremote/or-app";
+import {AppStateKeyed} from "@openremote/or-app";
 
 export interface MapState {
     assets: Asset[];
@@ -77,8 +77,13 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
-export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?:MapAssetCardConfig) {
+export interface PageMapConfig {
+    card?: MapAssetCardConfig
+}
+
+export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?: PageMapConfig): PageProvider<S> {
     return {
+        name: "map",
         routes: [
             "map",
             "map/:id"
@@ -138,7 +143,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
     }
 
     @property()
-    public config?: MapAssetCardConfig;
+    public config?: PageMapConfig;
 
     @query("#map")
     protected _map?: OrMap;
@@ -267,14 +272,6 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         }
     };
 
-    protected mapCardConfig: MapAssetCardConfig = {
-        default: {
-            exclude: ["notes"]
-        },
-        assetTypes: {
-        }
-    };
-
     protected _getMapAssets = createSelector(
         [this._assetSelector],
         (assets) => {
@@ -306,7 +303,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
         return html`
             
-            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config ? this.config : this.mapCardConfig}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map">
                 ${
