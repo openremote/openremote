@@ -119,9 +119,6 @@ Delpoy the stack using docker on Windows:
 ```bash
 docker run --rm -ti -v %userprofile%\.aws:/root/.aws openremote/openremote-cli deploy --provider aws -v --dnsname test-win.mvp.openremote.io
 ```
-#### Deploy on OVH
-
-*TODO*
 
 ### Using the OpenRemote manager
 
