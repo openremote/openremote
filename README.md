@@ -37,7 +37,7 @@ docker-compose up --no-build
 To run OpenRemote is swarm mode, which uses Docker Hub images:
 
 ```
-docker stack deploy --compose-file swarm/swarm-docker-compose.yml openremote
+docker stack deploy --compose-file mvp/swarm-docker-compose.yml openremote
 ```
 you don't need to pull or build images in this case, docker swarm mode does this automatically.
 
@@ -66,9 +66,15 @@ and [Working on the UI](https://github.com/openremote/openremote/wiki/Developer-
 ```openremote-cli``` (short ```or```) is a command line tool which can be used for installing an instance of OpenRemote stack on local machine. In this method you won't have to pull the openremote repository. You should already have ```python```, ```wget```, ```docker``` and ```docker-compose``` installed. Note that this method is in beta.
 
 ```bash
-python3 -m pip install -U openremote-cli
+pip3 install -U openremote-cli
 openremote-cli -V
 ```
+There is also docker image provided:
+```bash
+docker run --rm -ti openremote/openremote-cli <command>
+```
+
+#### Deloy on localhost
 
 ```bash
 or deploy --action create
@@ -82,6 +88,23 @@ docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:
 wget -nc https://github.com/openremote/openremote/raw/master/swarm/swarm-docker-compose.yml
 docker swarm init
 docker-compose -f swarm-docker-compose.yml -p openremote up -d
+```
+#### Deploy on AWS
+
+Prerequisites:
+  - [aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
+  - `openremote-cli` AWS profile. If you have Id and AWS secret key, you can use following command:
+  ```bash
+  or configure_aws configure-aws --id <id> --secret <secret> -d -v
+  ```
+  
+Deploy the stack:
+```bash
+or deploy --provider aws --dnsname test.mvp.openremote.io -v
+```
+Remove the stack and clean resources:
+```bash
+or deploy -a remove --provider aws --dnsname test.mvp.openremote.io -v
 ```
 
 ### Using the OpenRemote manager
