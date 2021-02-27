@@ -98,8 +98,7 @@ Prerequisites:
   ```bash
   or configure_aws --id <id> --secret <secret> -d -v
   ```
-  At the moment the default region must be set to eu-west-1 (Ireland). Openremote-cli takes care of it, but mind in case you want to set credentials with 
-  *aws-cli*:
+  At the moment the default region must be set to eu-west-1 (Ireland), this is done by the OpenRemote-cli. This can be could be changed using *aws-cli* (not recommended):
   ```bash
   aws configure --profile=openremote-cli
   ```
