@@ -73,6 +73,7 @@ There is also docker image provided:
 ```bash
 docker run --rm -ti openremote/openremote-cli <command>
 ```
+Note that the image ENTRYPOINT is set to the openremote-cli command (the same way as amazon/aws-cli docker image) therefore ```docker run --rm -ti openremote/openremote-cli -V``` is equivalent to ```openremote-cli -V```.
 
 #### Deloy on localhost
 
