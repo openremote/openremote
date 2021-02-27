@@ -95,7 +95,12 @@ Prerequisites:
   - [aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
   - `openremote-cli` AWS profile. If you have Id and AWS secret key, you can use following command:
   ```bash
-  or configure_aws configure-aws --id <id> --secret <secret> -d -v
+  or configure_aws --id <id> --secret <secret> -d -v
+  ```
+  At the moment the default region must be set to eu-west-1 (Ireland). Openremote-cli takes care of it, but mind in case you want to set credentials with 
+  *aws-cli*:
+  ```bash
+  aws configure --profile=openremote-cli
   ```
   
 Deploy the stack:
@@ -106,6 +111,10 @@ Remove the stack and clean resources:
 ```bash
 or deploy -a remove --provider aws --dnsname test.mvp.openremote.io -v
 ```
+
+#### Deploy on OVH
+
+*TODO*
 
 ### Using the OpenRemote manager
 
