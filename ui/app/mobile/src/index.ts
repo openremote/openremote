@@ -14,7 +14,7 @@ import "./pages/page-mobile-onboarding";
 import {pageMobileOnboardingProvider, OnboardingConfig} from "./pages/page-mobile-onboarding";
 import "./pages/page-mobile-splash";
 import {pageMobileSplashProvider, SplashConfig} from "./pages/page-mobile-splash";
-import "@openremote/or-app/dist/pages/page-mobile-geofences";
+import "./pages/page-mobile-geofences";
 import {pageMobileGeofencesProvider} from "./pages/page-mobile-geofences";
 
 const onboardingConfig:OnboardingConfig  = {
