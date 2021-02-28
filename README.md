@@ -170,4 +170,3 @@ Join us on the [community forum](https://forum.openremote.io/).
 ## See also
 
 - [Next 'Get Started' step: Connecting to an HTTP API](https://github.com/openremote/openremote/wiki/User-Guide%3A-Connecting-to-a-HTTP-API)
-- [Get Started](https://openremote.io/get-started-manager/)
