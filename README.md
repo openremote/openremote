@@ -115,7 +115,7 @@ Deploy the stack using docker on Mac/Linux:
 ```bash
 docker run --rm -ti -v ~/.aws:/root/.aws openremote/openremote-cli deploy --provider aws -v --dnsname test-osx.mvp.openremote.io
 ```
-Delpoy the stack using docker on Windows:
+Deploy the stack using docker on Windows:
 ```bash
 docker run --rm -ti -v %userprofile%\.aws:/root/.aws openremote/openremote-cli deploy --provider aws -v --dnsname test-win.mvp.openremote.io
 ```
