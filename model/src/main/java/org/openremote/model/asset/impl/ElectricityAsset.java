@@ -39,9 +39,9 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = new AttributeDescriptor<>("powerExportMin", ValueType.NEGATIVE_NUMBER)
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = new AttributeDescriptor<>("powerExportMin", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.NEGATIVE_NUMBER)
+    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = new AttributeDescriptor<>("powerExportMax", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
 
     
