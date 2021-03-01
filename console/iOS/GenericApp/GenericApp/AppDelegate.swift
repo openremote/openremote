@@ -335,11 +335,15 @@ extension AppDelegate : MessagingDelegate {
         }
     }
 
-    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String) {
-        print("Firebase registration token: \(fcmToken)")
-        if let defaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
-            defaults.set(fcmToken, forKey: DefaultsKey.fcmTokenKey)
-            defaults.synchronize()
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        if let token = fcmToken {
+            print("Firebase registration token: \(token)")
+            if let defaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
+                defaults.set(token, forKey: DefaultsKey.fcmTokenKey)
+                defaults.synchronize()
+            }
+        } else {
+            print("No fcm token")
         }
     }
 }

@@ -135,7 +135,7 @@ class ORViewcontroller : UIViewController {
                         .arrowSize(.zero),
                     ]
                     return [
-                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: 20),
+                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20),
                         menuButton!.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -20)
                     ]
                 } else if appConfig!.menuPosition == "TOP_RIGHT" {
@@ -144,8 +144,8 @@ class ORViewcontroller : UIViewController {
                         .arrowSize(.zero),
                     ]
                     return [
-                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: 20),
-                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: 20)
+                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20),
+                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: sbHeight)
                     ]
                 } else if appConfig!.menuPosition == "TOP_LEFT" {
                     self.popoverOptions = [
@@ -154,7 +154,7 @@ class ORViewcontroller : UIViewController {
                     ]
                     return [
                         menuButton!.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
-                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: 20)
+                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: sbHeight)
                     ]
                 }
                 self.popoverOptions = [

@@ -19,7 +19,7 @@
         },
         "powerExportMax": {
             "name": "powerExportMax",
-            "type": "negativeNumber",
+            "type": "positiveNumber",
             "value": "45.5"
         },
         "energyExportTotal": {
