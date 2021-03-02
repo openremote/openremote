@@ -28,6 +28,7 @@ import org.openremote.model.asset.agent.ConnectionStatus
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+import org.openremote.test.protocol.velbus.MockVelbusClient
 
 import static spock.util.matcher.HamcrestMatchers.closeTo
 

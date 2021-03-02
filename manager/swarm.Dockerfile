@@ -9,8 +9,7 @@ LABEL git-commit=$GIT_COMMIT
 
 ENV JAVA_OPTS -Xmx1g
 
-ENV APP_DOCROOT /deployment/manager/app
-ENV SHARED_DOCROOT /deployment/manager/shared
+ENV APP_DOCROOT /opt/web
 ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
 ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
 ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json

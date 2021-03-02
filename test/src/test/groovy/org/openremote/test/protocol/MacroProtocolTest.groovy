@@ -1,10 +1,10 @@
 package org.openremote.test.protocol
 
-import org.openremote.container.timer.TimerService
+
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeExecuteStatus
 import org.openremote.test.ManagerContainerTrait

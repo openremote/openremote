@@ -6,7 +6,7 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
@@ -17,7 +17,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.HOURS
-import static org.openremote.manager.setup.builtin.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1
 
 @Ignore
 class ResidenceSmartSwitchTest extends Specification implements ManagerContainerTrait {

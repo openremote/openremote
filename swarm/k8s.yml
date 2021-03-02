@@ -113,8 +113,8 @@ spec:
     spec:
       containers:
       - env:
-        - name: APP_DEFAULT
-          value: manager
+        - name: ROOT_REDIRECT_PATH
+          value: "/manager"
         - name: DATABASE_CONNECTION_TIMEOUT_SECONDS
           value: "300"
         - name: DATABASE_CONNECTION_URL

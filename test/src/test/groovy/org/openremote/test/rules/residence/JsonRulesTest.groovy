@@ -15,8 +15,8 @@ import org.openremote.manager.rules.RulesetDeployment
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakTestSetup
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.KeycloakTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
@@ -45,7 +45,7 @@ import java.time.temporal.ChronoUnit
 
 import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
-import static org.openremote.manager.setup.builtin.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
+import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.value.Values.parse
 

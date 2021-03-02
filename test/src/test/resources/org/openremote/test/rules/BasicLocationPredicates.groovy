@@ -1,7 +1,7 @@
 package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.LocationAttributePredicate
 import org.openremote.model.query.filter.RadialGeofencePredicate

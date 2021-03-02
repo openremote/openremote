@@ -20,7 +20,7 @@
 package org.openremote.test.users
 
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.model.security.ClientRole
 import org.openremote.model.security.Role
 import org.openremote.model.security.UserResource
@@ -29,8 +29,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import javax.ws.rs.ForbiddenException
-import javax.ws.rs.NotAllowedException
-import java.lang.reflect.Array
 
 import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT

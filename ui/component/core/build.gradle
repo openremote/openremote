@@ -21,5 +21,5 @@ task publishUi() {
 task installDist(type: Copy) {
     dependsOn generate
     from "${buildDir}/mdi-icons.json"
-    into "${project(':deployment').buildDir}/manager/shared"
+    into "${resolveProject(':manager').buildDir}/install/manager/web/shared"
 }

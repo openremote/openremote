@@ -9,7 +9,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.MqttBrokerService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.value.Values
@@ -17,8 +17,6 @@ import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.RawClient
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import java.util.concurrent.TimeUnit
 
 import static org.openremote.container.util.MapAccess.*
 import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR

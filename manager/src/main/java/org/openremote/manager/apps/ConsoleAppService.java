@@ -66,7 +66,7 @@ public class ConsoleAppService implements ContainerService {
     }
 
     public String[] getInstalled() throws Exception {
-        return Files.list(managerWebService.getAppDocRoot())
+        return Files.list(managerWebService.getBuiltInAppDocRoot())
             .filter(Files::isDirectory)
             .map(dir -> dir.getFileName().toString())
             .toArray(String[]::new);

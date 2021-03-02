@@ -1,0 +1,17 @@
+{
+  "pages": [
+    {
+      "name": "map",
+      "hide": false
+    }
+  ],
+  "realms": {
+    "default": {
+      "appTitle": "OpenRemote Manager Rotterdam Demo",
+      "logo": "/logo.png",
+      "logoMobile": null,
+      "favicon": null,
+      "language": "en"
+    }
+  }
+}

@@ -655,8 +655,10 @@ function mergeObjectKey(destination: object, path: string[], key: string, value:
         return;
     }
 
-    if (!dest[key]) {
-        if (Array.isArray(value)) {
+    if (dest.hasOwnProperty(key)) {
+        if (value === null || value === undefined) {
+            delete dest[key];
+        } else if (Array.isArray(value)) {
             dest[key] = [...value];
         } else if (typeof(value) === "object") {
             dest[key] = {...value};
@@ -666,18 +668,16 @@ function mergeObjectKey(destination: object, path: string[], key: string, value:
     } else {
         if (value === undefined || value === null) {
             delete dest[key];
-        } else {
-            if (Array.isArray(dest[key])) {
+        } else if (Array.isArray(dest[key])) {
                 if (mergeArrays) {
                     dest[key] = [...dest[key], ...value];
                 } else {
                     dest[key] = [...value];
                 }
-            } else if (typeof(value) === "object") {
-                dest[key] = mergeObjects({...dest[key]}, value, mergeArrays);
-            } else {
-                dest[key] = value;
-            }
+        } else if (typeof(value) === "object") {
+            dest[key] = mergeObjects({...dest[key]}, value, mergeArrays);
+        } else {
+            dest[key] = value;
         }
     }
 }

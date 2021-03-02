@@ -22,8 +22,6 @@ package org.openremote.manager.setup;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.setup.builtin.BuiltinSetupTasks;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -38,7 +36,7 @@ import java.util.logging.Logger;
  * classpath using {@link ServiceLoader}. If multiple providers are found, an error
  * is raised. If a provider is found, only its tasks will be used.
  * <p>
- * If no {@link SetupTasks} provider is found on the classpath, the {@link BuiltinSetupTasks} are used.
+ * If no {@link SetupTasks} provider is found on the classpath, an instance of {@link EmptySetupTasks} is used.
  */
 public class SetupService implements ContainerService {
 
@@ -79,8 +77,8 @@ public class SetupService implements ContainerService {
         );
 
         if (setupTasks == null) {
-            LOG.info("No custom SetupTasks provider found on classpath, enabling: " + BuiltinSetupTasks.class.getName());
-            setupTasks = new BuiltinSetupTasks();
+            LOG.info("No custom SetupTasks provider found on classpath, system will be empty");
+            setupTasks = new EmptySetupTasks();
         }
 
         setupList.addAll(setupTasks.createTasks(container));

@@ -1,14 +1,13 @@
 package org.openremote.test.assets
 
 import net.fortuna.ical4j.model.Recur
-import org.h2.engine.Constants
 import org.openremote.agent.protocol.simulator.SimulatorAgent
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakTestSetup
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.KeycloakTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.impl.BuildingAsset
@@ -21,7 +20,6 @@ import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.AssetQuery.OrderBy
 import org.openremote.model.query.LogicGroup
 import org.openremote.model.query.filter.*
-import org.openremote.model.value.MetaItemType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification

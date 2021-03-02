@@ -28,22 +28,17 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
-import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.model.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
-import org.openremote.container.web.jsapi.JSAPIServlet;
-import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.Container;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -52,7 +47,6 @@ import java.util.regex.Pattern;
 import static io.undertow.util.RedirectBuilder.redirect;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
@@ -60,22 +54,20 @@ public class ManagerWebService extends WebService {
 
     public static final int PRIORITY = LOW_PRIORITY + 100;
     public static final String APP_DOCROOT = "APP_DOCROOT";
-    public static final String APP_DOCROOT_DEFAULT = "deployment/build/manager/app";
-    public static final String SHARED_DOCROOT = "SHARED_DOCROOT";
-    public static final String SHARED_DOCROOT_DEFAULT = "deployment/manager/shared";
-    public static final String APP_DEFAULT = "APP_DEFAULT";
-    public static final String APP_DEFAULT_DEFAULT = "main";
+    public static final String APP_DOCROOT_DEFAULT = "manager/src/web";
+    public static final String CUSTOM_APP_DOCROOT = "CUSTOM_APP_DOCROOT";
+    public static final String CUSTOM_APP_DOCROOT_DEFAULT = "deployment/manager/app";
+    public static final String ROOT_REDIRECT_PATH = "ROOT_REDIRECT_PATH";
+    public static final String ROOT_REDIRECT_PATH_DEFAULT = "/manager";
     public static final String API_PATH = "/api";
-    public static final String JSAPI_PATH = "/jsapi";
-    public static final String STATIC_PATH = "/static";
+    public static final String MANAGER_APP_PATH = "/manager";
+    public static final String CONSOLE_LOADER_APP_PATH = "/console_loader";
     public static final String SHARED_PATH = "/shared";
-    public static final String CONSOLE_PATH = "/console";
-    public static final String APP_PATH = "/app";
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
     protected static final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
-    protected Path appDocRoot;
-    protected Path sharedDocRoot;
+    protected Path builtInAppDocRoot;
+    protected Path customAppDocRoot;
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
 
@@ -91,15 +83,12 @@ public class ManagerWebService extends WebService {
         super.init(container);
 
         IdentityService identityService = container.getService(IdentityService.class);
-        String defaultApp = getString(container.getConfig(), APP_DEFAULT, APP_DEFAULT_DEFAULT);
+        String rootRedirectPath = getString(container.getConfig(), ROOT_REDIRECT_PATH, ROOT_REDIRECT_PATH_DEFAULT);
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), getApiSingletons(), true);
 
         // Serve REST API
         HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
-        // Serve JavaScript API
-        // TODO: Remove this once all apps updated to new structure
-        HttpHandler jsApiHandler = createJsApiHandler(identityService, resteasyDeployment);
 
         if (apiHandler != null) {
 
@@ -136,47 +125,55 @@ public class ManagerWebService extends WebService {
         }
 
         // Serve deployment files unsecured (explicitly map deployment folders to request paths)
-        appDocRoot = Paths.get(getString(container.getConfig(), APP_DOCROOT, APP_DOCROOT_DEFAULT));
-        sharedDocRoot = Paths.get(getString(container.getConfig(), SHARED_DOCROOT, SHARED_DOCROOT_DEFAULT));
-        HttpHandler sharedFileHandler = createFileHandler(devMode, identityService, sharedDocRoot, null);
-        HttpHandler appBaseFileHandler = Files.isDirectory(appDocRoot) ? createFileHandler(devMode, identityService, appDocRoot, null) : null;
+        builtInAppDocRoot = Paths.get(getString(container.getConfig(), APP_DOCROOT, APP_DOCROOT_DEFAULT));
+        customAppDocRoot = Paths.get(getString(container.getConfig(), CUSTOM_APP_DOCROOT, CUSTOM_APP_DOCROOT_DEFAULT));
 
-        // Default app file handler to use index.html
-        HttpHandler appFileHandler = exchange -> {
-            if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
-                exchange.setRelativePath("/index.html");
-            }
-            if (appBaseFileHandler != null) {
-                appBaseFileHandler.handleRequest(exchange);
-            }
-        };
+        HttpHandler defaultHandler = null;
+
+        if (Files.isDirectory(customAppDocRoot)) {
+            HttpHandler customBaseFileHandler = createFileHandler(devMode, identityService, customAppDocRoot, null);
+            defaultHandler = exchange -> {
+                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
+                    exchange.setRelativePath("/index.html");
+                }
+                if (customBaseFileHandler != null) {
+                    customBaseFileHandler.handleRequest(exchange);
+                }
+            };
+        }
+
+        PathHandler deploymentHandler = defaultHandler != null ? new PathHandler(defaultHandler) : new PathHandler();
 
         // Serve deployment files
-        PathHandler deploymentHandler = new PathHandler(appFileHandler)
-                // TODO: Update this static file http handler to use shared folder in deployment
-                .addPrefixPath(STATIC_PATH, exchange -> {
-                    exchange.setRelativePath("/manager" + exchange.getRelativePath());
-                    appFileHandler.handleRequest(exchange);
-                })
-                .addPrefixPath(APP_PATH, appFileHandler)
-                // TODO: Remove this path prefix at some point
-                .addPrefixPath(CONSOLE_PATH, appFileHandler)
-                .addPrefixPath(SHARED_PATH, sharedFileHandler);
+        if (Files.isDirectory(builtInAppDocRoot)) {
+            HttpHandler appBaseFileHandler = createFileHandler(devMode, identityService, builtInAppDocRoot, null);
+            HttpHandler appFileHandler = exchange -> {
+                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
+                    exchange.setRelativePath("/index.html");
+                }
+
+                // Reinstate the full path
+                exchange.setRelativePath(exchange.getRequestPath());
+                appBaseFileHandler.handleRequest(exchange);
+            };
+
+            deploymentHandler.addPrefixPath(MANAGER_APP_PATH, appFileHandler);
+            deploymentHandler.addPrefixPath(CONSOLE_LOADER_APP_PATH, appFileHandler);
+            deploymentHandler.addPrefixPath(SHARED_PATH, appFileHandler);
+        }
 
         // Add all route handlers required by the manager in priority order
 
         // Redirect / to default app
-        getRequestHandlers().add(
+        if (rootRedirectPath != null) {
+            getRequestHandlers().add(
                 new RequestHandler(
-                        "Default app redirect",
-                        exchange -> exchange.getRequestPath().equals("/"),
-                        exchange -> {
-                            LOG.fine("Handling root request, redirecting client to default app");
-                            new RedirectHandler(redirect(exchange, "/" + defaultApp)).handleRequest(exchange);
-                        }));
-
-        if (jsApiHandler != null) {
-            getRequestHandlers().add(pathStartsWithHandler("REST JS API Handler", JSAPI_PATH, jsApiHandler));
+                    "Default app redirect",
+                    exchange -> exchange.getRequestPath().equals("/"),
+                    exchange -> {
+                        LOG.fine("Handling root request, redirecting client to default app");
+                        new RedirectHandler(redirect(exchange, rootRedirectPath)).handleRequest(exchange);
+                    }));
         }
 
         if (apiHandler != null) {
@@ -207,12 +204,8 @@ public class ManagerWebService extends WebService {
         return apiSingletons;
     }
 
-    public Path getAppDocRoot() {
-        return appDocRoot;
-    }
-
-    public String getConsoleUrl(UriBuilder baseUri, String realm) {
-        return baseUri.path(CONSOLE_PATH).path(realm).build().toString();
+    public Path getBuiltInAppDocRoot() {
+        return builtInAppDocRoot;
     }
 
     protected HttpHandler createApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
@@ -240,30 +233,6 @@ public class ManagerWebService extends WebService {
         return addServletDeployment(identityService, deploymentInfo, resteasyDeployment.isSecurityEnabled());
     }
 
-    protected HttpHandler createJsApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
-        if (resteasyDeployment == null)
-            return null;
-
-        ServletInfo jsApiServlet = Servlets.servlet("RESTEasy JS Servlet", JSAPIServlet.class)
-                .setAsyncSupported(true)
-                .setLoadOnStartup(1)
-                .addMapping("/*");
-
-        DeploymentInfo deploymentInfo = new DeploymentInfo()
-                .setDeploymentName("RESTEasy JS Deployment")
-                .setContextPath(JSAPI_PATH)
-                .addServlet(jsApiServlet)
-                .setClassLoader(Container.class.getClassLoader());
-
-        deploymentInfo.addServletContextAttribute(
-                ResteasyContextParameters.RESTEASY_DEPLOYMENTS,
-                new HashMap<String, ResteasyDeployment>() {{
-                    put("", resteasyDeployment);
-                }}
-        );
-        return addServletDeployment(identityService, deploymentInfo, false);
-    }
-
     // TODO: Switch to use PathResourceManager
     public HttpHandler createFileHandler(boolean devMode, IdentityService identityService, Path filePath, String[] requiredRoles) {
         requiredRoles = requiredRoles == null ? new String[0] : requiredRoles;
@@ -274,7 +243,7 @@ public class ManagerWebService extends WebService {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "appDocRoot=" + appDocRoot +
+                "appDocRoot=" + builtInAppDocRoot +
                 '}';
     }
 }

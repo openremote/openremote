@@ -29,7 +29,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.ReadAttributeEvent

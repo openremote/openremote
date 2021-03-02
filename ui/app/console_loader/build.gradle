@@ -1,0 +1,8 @@
+buildDir = "dist"
+
+task installDist(type: Copy) {
+    dependsOn npmClean, npmBuild
+    mustRunAfter(resolveTask(":manager:installDist"))
+    from project.buildDir
+    into "${resolveProject(':manager').buildDir}/install/manager/web/${projectDir.name}"
+}

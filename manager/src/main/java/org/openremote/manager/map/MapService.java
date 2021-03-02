@@ -54,6 +54,7 @@ import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
 
+    public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
     public static final String MAP_TILES_PATH = "MAP_TILES_PATH";
     public static final String MAP_TILES_PATH_DEFAULT = "deployment/map/mapdata.mbtiles";
     public static final String MAP_SETTINGS_PATH = "MAP_SETTINGS_PATH";
@@ -313,7 +314,7 @@ public class MapService implements ContainerService {
         Optional.ofNullable(settings.has("sprite") && settings.get("sprite").isTextual() ? settings.get("sprite").asText() : null).ifPresent(sprite -> {
             String spriteUri =
                     baseUriBuilder.clone()
-                            .replacePath(ManagerWebService.SHARED_PATH)
+                            .replacePath(MAP_SHARED_DATA_BASE_URI)
                             .path(sprite)
                             .build().toString();
             settings.put("sprite", spriteUri);
@@ -323,7 +324,7 @@ public class MapService implements ContainerService {
         Optional.ofNullable(settings.has("glyphs") && settings.get("glyphs").isTextual() ? settings.get("glyphs").asText() : null).ifPresent(glyphs -> {
             String glyphsUri =
                     baseUriBuilder.clone()
-                            .replacePath(ManagerWebService.SHARED_PATH)
+                            .replacePath(MAP_SHARED_DATA_BASE_URI)
                             .build().toString() + "/fonts/" + glyphs;
             settings.put("glyphs", glyphsUri);
         });

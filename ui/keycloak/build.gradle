@@ -1,4 +1,4 @@
 task installDist(type: Copy) {
     from "themes"
-    into "${project(':deployment').buildDir}/${projectDir.name}/themes"
+    into "${project(':deployment').buildDir}/image/${projectDir.name}/themes"
 }

@@ -20,7 +20,6 @@
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.Converter;
-import cz.habarta.typescript.generator.Extension;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
 import cz.habarta.typescript.generator.compiler.ModelTransformer;
 import cz.habarta.typescript.generator.compiler.SymbolTable;
@@ -45,7 +44,7 @@ import java.util.stream.Collectors;
  * <li>{@link JsonSerialize#converter}</li>
  * </ul>
  */
-public class JsonSerializeExtension extends Extension {
+public class JsonSerializeExtension extends cz.habarta.typescript.generator.Extension {
 
     @Override
     public EmitterExtensionFeatures getFeatures() {
@@ -53,10 +52,9 @@ public class JsonSerializeExtension extends Extension {
     }
 
     @Override
-    public List<TransformerDefinition> getTransformers() {
+    public List<cz.habarta.typescript.generator.Extension.TransformerDefinition> getTransformers() {
         return Arrays.asList(
-            new TransformerDefinition(ModelCompiler.TransformationPhase.BeforeTsModel, new ModelTransformer() {
-                @SuppressWarnings("deprecation")
+            new cz.habarta.typescript.generator.Extension.TransformerDefinition(ModelCompiler.TransformationPhase.BeforeTsModel, new ModelTransformer() {
                 @Override
                 public TsModel transformModel(SymbolTable symbolTable, TsModel model) {
                     return model;

@@ -5,7 +5,7 @@ import org.openremote.manager.asset.*
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakTestSetup
+import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.ConnectionStatus

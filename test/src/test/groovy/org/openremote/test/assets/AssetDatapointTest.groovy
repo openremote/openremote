@@ -6,7 +6,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetDatapointService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
 import org.openremote.model.value.Values
@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT
-import static org.openremote.manager.setup.builtin.ManagerTestSetup.thingLightToggleAttributeName
+import static org.openremote.test.setup.ManagerTestSetup.thingLightToggleAttributeName
 
 class AssetDatapointTest extends Specification implements ManagerContainerTrait {
 

@@ -35,6 +35,7 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+import org.openremote.test.protocol.KNXTestingNetworkLink
 import tuwien.auto.calimero.server.Launcher
 import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
 

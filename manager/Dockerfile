@@ -15,8 +15,8 @@ LABEL git-commit=$GIT_COMMIT
 ENV JAVA_OPTS=${JAVA_OPTS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_TOOL_OPTIONS}
 
-ENV APP_DOCROOT /deployment/manager/app
-ENV SHARED_DOCROOT /deployment/manager/shared
+ENV APP_DOCROOT /opt/web
+ENV CUSTOM_APP_DOCROOT /deployment/manager/app
 ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
 ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
 ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
@@ -33,5 +33,6 @@ WORKDIR /opt/app
 RUN mkdir -p /deployment/manager/extensions
 
 ADD lib /opt/app/lib
+ADD web /opt/web
 
 ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main

@@ -6,7 +6,7 @@ import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.RoomAsset
 import org.openremote.model.attribute.AttributeEvent
@@ -14,7 +14,6 @@ import org.openremote.model.attribute.AttributeExecuteStatus
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TemporaryFact
-import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -23,7 +22,7 @@ import java.time.DayOfWeek
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
-import static org.openremote.manager.setup.builtin.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
+import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
 
 class ResidenceVacationModeTest extends Specification implements ManagerContainerTrait {
 

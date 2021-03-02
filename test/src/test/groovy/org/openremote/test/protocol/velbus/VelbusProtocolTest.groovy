@@ -16,6 +16,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+import org.openremote.test.protocol.velbus.MockVelbusAgent
+import org.openremote.test.protocol.velbus.MockVelbusProtocol
 
 import java.util.stream.Collectors
 

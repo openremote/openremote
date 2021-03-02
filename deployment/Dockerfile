@@ -6,4 +6,4 @@ ARG GIT_COMMIT=unknown
 LABEL git-commit=$GIT_COMMIT
 
 RUN mkdir -p /deployment/extensions
-ADD build /deployment
+ADD build/image /deployment

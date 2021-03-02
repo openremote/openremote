@@ -1,13 +1,18 @@
-task clean() {
-    doLast {
-        delete "build"
-    }
+apply plugin: "java"
+
+dependencies {
+    compile resolveProject(":manager")
 }
 
 task installDist(type: Copy) {
     mustRunAfter (parent.getTasksByName('installDist', true).findAll {it.project != project})
+    into "${buildDir}/image"
+
     from(projectDir) {
-        exclude "build.gradle", "Dockerfile", "build"
+        exclude "build.gradle", "Dockerfile", "build", "src"
     }
-    into project(":deployment").buildDir
+
+    into("manager/extensions") {
+        from jar.outputs
+    }
 }

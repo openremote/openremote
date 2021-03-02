@@ -32,7 +32,7 @@ function getAppConfig(mode, isDevServer, dirname) {
                     ]
                 },
                 {
-                    test: /\.(png|jpg|gif|svg|eot|ttf|woff|woff2)$/,
+                    test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2)$/,
                     type: "asset",
                     generator: {
                         filename: 'images/[hash][ext][query]'

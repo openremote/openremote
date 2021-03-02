@@ -608,7 +608,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 language:  this._allowedLanguages
             }
             try {
-                const response = await manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.config.realm, params);
+                const response = await manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.displayRealm, params);
                 if (response && response.data) {
                     this._buildTreeNodes(response.data, sortFunction);
                 }

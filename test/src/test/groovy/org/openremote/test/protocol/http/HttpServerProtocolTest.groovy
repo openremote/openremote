@@ -42,10 +42,12 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+import org.openremote.test.protocol.http.HttpServerTestAgent
+import org.openremote.test.protocol.http.TestHttpServerProtocol
+import org.openremote.test.protocol.http.TestResource
 
 import javax.ws.rs.ForbiddenException
 import javax.ws.rs.HttpMethod
-import javax.ws.rs.NotAllowedException
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
 import javax.ws.rs.core.*

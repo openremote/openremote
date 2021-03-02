@@ -178,11 +178,8 @@ services:
       # NOTIFICATION_FIREBASE_API_KEY = '...'
       # FIREBASE_CONFIG_FILE = '/deployment/manager/fcm.json'
 
-      # Custom location of the static applications.
-      # APP_DOCROOT: '/deployment/manager/app'
-      # SHARED_DOCROOT: '/deployment/manager/shared'
-      # Custom default app name to load when '/' is requested
-      APP_DEFAULT: ${APP_DEFAULT:-main}
+      # Redirect path when root URI is requested
+      ROOT_REDIRECT_PATH: ${ROOT_REDIRECT_PATH:-/manager}
 
       # Map related settings.
       # Provide a path to the map tiles database file (see https://openmaptiles.com/).

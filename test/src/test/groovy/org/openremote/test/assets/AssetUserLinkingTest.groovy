@@ -3,8 +3,8 @@ package org.openremote.test.assets
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakTestSetup
-import org.openremote.manager.setup.builtin.ManagerTestSetup
+import org.openremote.test.setup.KeycloakTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.UserAsset
 import org.openremote.test.ManagerContainerTrait

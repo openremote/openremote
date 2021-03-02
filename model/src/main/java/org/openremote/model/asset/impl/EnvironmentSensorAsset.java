@@ -58,7 +58,7 @@ public class EnvironmentSensorAsset extends Asset<EnvironmentSensorAsset> {
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_MICRO, UNITS_GRAM, UNITS_PER, UNITS_METRE, UNITS_CUBED);
 
-    public static final AssetDescriptor<EnvironmentSensorAsset> DESCRIPTOR = new AssetDescriptor<>("periodic-table-co2", "f18546", EnvironmentSensorAsset.class);
+    public static final AssetDescriptor<EnvironmentSensorAsset> DESCRIPTOR = new AssetDescriptor<>("molecule-co2", "f18546", EnvironmentSensorAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
