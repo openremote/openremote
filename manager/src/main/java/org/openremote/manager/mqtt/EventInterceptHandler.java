@@ -123,47 +123,51 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         MqttConnection connection = mqttConnectionMap.get(interceptSubscribeMessage.getClientID());
         if (connection != null) {
             String[] topicParts = interceptSubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
-            String assetId = topicParts[1];
-            AttributeRef attributeRef = null;
-            boolean isValueSubscription = false;
-            if (topicParts.length > 2) { //attribute specific
-                attributeRef = new AttributeRef(assetId, topicParts[2]);
-            }
-            if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
-                isValueSubscription = true;
-            }
-            String subscriptionId;
-            if (attributeRef == null) {
-                subscriptionId = connection.assetSubscriptions.remove(assetId);
-            } else {
-                if (isValueSubscription) {
-                    subscriptionId = connection.assetAttributeValueSubscriptions.remove(attributeRef);
-                } else {
-                    subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
+            if (topicParts.length > 1) {
+                String assetId = topicParts[1];
+                AttributeRef attributeRef = null;
+                boolean isValueSubscription = false;
+                if (topicParts.length > 2) { //attribute specific
+                    attributeRef = new AttributeRef(assetId, topicParts[2]);
                 }
-            }
-
-            AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
-            EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
-                    AttributeEvent.class,
-                    attributeAssetFilter,
-                    TextUtil.isNullOrEmpty(subscriptionId) ? String.valueOf(connection.getNextSubscriptionId()) : subscriptionId);
-
-            if (attributeRef == null) { //attribute specific
-                connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
-            } else {
-                attributeAssetFilter.setAttributeNames(attributeRef.getName());
-                if (isValueSubscription) {
-                    connection.assetAttributeValueSubscriptions.put(attributeRef, subscription.getSubscriptionId());
-                } else {
-                    connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
+                    isValueSubscription = true;
                 }
-            }
+                String subscriptionId;
+                if (attributeRef == null) {
+                    subscriptionId = connection.assetSubscriptions.remove(assetId);
+                } else {
+                    if (isValueSubscription) {
+                        subscriptionId = connection.assetAttributeValueSubscriptions.remove(attributeRef);
+                    } else {
+                        subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
+                    }
+                }
 
-            Map<String, Object> headers = prepareHeaders(connection);
-            messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
+                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
+                EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
+                        AttributeEvent.class,
+                        attributeAssetFilter,
+                        TextUtil.isNullOrEmpty(subscriptionId) ? String.valueOf(connection.getNextSubscriptionId()) : subscriptionId);
+
+                if (attributeRef == null) { //attribute specific
+                    connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
+                } else {
+                    attributeAssetFilter.setAttributeNames(attributeRef.getName());
+                    if (isValueSubscription) {
+                        connection.assetAttributeValueSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                    } else {
+                        connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                    }
+                }
+
+                Map<String, Object> headers = prepareHeaders(connection);
+                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
+            } else  {
+                LOG.info("Couldn't process message for topic: " + interceptSubscribeMessage.getTopicFilter());
+            }
         } else {
-            throw new IllegalStateException("Connection with clientId " + interceptSubscribeMessage.getClientID() + " not found.");
+            LOG.info("No connection found for clientId: " + interceptSubscribeMessage.getClientID());
         }
     }
 
@@ -172,23 +176,29 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         MqttConnection connection = mqttConnectionMap.get(interceptUnsubscribeMessage.getClientID());
         if (connection != null) {
             String[] topicParts = interceptUnsubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
-            String assetId = topicParts[1];
-            String subscriptionId;
+            if (topicParts.length > 1) {
+                String assetId = topicParts[1];
+                String subscriptionId;
 
-            if (topicParts.length > 2) { //attribute specific
-                if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
-                    subscriptionId = connection.assetAttributeValueSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+                if (topicParts.length > 2) { //attribute specific
+                    if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
+                        subscriptionId = connection.assetAttributeValueSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+                    } else {
+                        subscriptionId = connection.assetAttributeSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+                    }
                 } else {
-                    subscriptionId = connection.assetAttributeSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
+                    subscriptionId = connection.assetSubscriptions.remove(assetId);
                 }
-            } else {
-                subscriptionId = connection.assetSubscriptions.remove(assetId);
+                if (subscriptionId != null) {
+                    Map<String, Object> headers = prepareHeaders(connection);
+                    CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(AttributeEvent.class, subscriptionId);
+                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
+                }
+            } else  {
+                LOG.info("Couldn't process message for topic: " + interceptUnsubscribeMessage.getTopicFilter());
             }
-            if (subscriptionId != null) {
-                Map<String, Object> headers = prepareHeaders(connection);
-                CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(AttributeEvent.class, subscriptionId);
-                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
-            }
+        } else {
+            LOG.info("No connection found for clientId: " + interceptUnsubscribeMessage.getClientID());
         }
     }
 
@@ -197,42 +207,48 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         MqttConnection connection = mqttConnectionMap.get(msg.getClientID());
         if (connection != null) {
             String[] topicParts = msg.getTopicName().split(TOPIC_SEPARATOR);
-            String assetId = topicParts[1];
-            AttributeRef attributeRef = null;
-            if (topicParts.length > 2) { //attribute specific
-                attributeRef = new AttributeRef(assetId, topicParts[2]);
-            }
-            if (attributeRef == null) {
-                String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
-                Values.parse(payloadContent).flatMap(Values::asJSONObject).ifPresent(objectValue -> {
-                    Map<String, Object> headers = prepareHeaders(connection);
-                    Map.Entry<String, JsonNode> firstElem = objectValue.fields().next();
-                    AttributeEvent attributeEvent = new AttributeEvent(assetId, firstElem.getKey(), firstElem.getValue());
-                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
-                });
-            } else {
-                String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
-                Object value = null;
-                if (Character.isLetter(payloadContent.charAt(0))) {
-                    if (payloadContent.equals(Boolean.TRUE.toString())) {
-                        value = true;
+            if (topicParts.length > 1) {
+                String assetId = topicParts[1];
+                AttributeRef attributeRef = null;
+                if (topicParts.length > 2) { //attribute specific
+                    attributeRef = new AttributeRef(assetId, topicParts[2]);
+                }
+                if (attributeRef == null) {
+                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                    Values.parse(payloadContent).flatMap(Values::asJSONObject).ifPresent(objectValue -> {
+                        Map<String, Object> headers = prepareHeaders(connection);
+                        Map.Entry<String, JsonNode> firstElem = objectValue.fields().next();
+                        AttributeEvent attributeEvent = new AttributeEvent(assetId, firstElem.getKey(), firstElem.getValue());
+                        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                    });
+                } else {
+                    String payloadContent = msg.getPayload().toString(Charset.defaultCharset());
+                    Object value = null;
+                    if (Character.isLetter(payloadContent.charAt(0))) {
+                        if (payloadContent.equals(Boolean.TRUE.toString())) {
+                            value = true;
+                        }
+                        if (payloadContent.equals(Boolean.FALSE.toString())) {
+                            value = false;
+                        }
+                        payloadContent = '"' + payloadContent + '"';
                     }
-                    if (payloadContent.equals(Boolean.FALSE.toString())) {
-                        value = false;
+                    if (value == null) {
+                        value = Values.parse(payloadContent);
                     }
-                    payloadContent = '"' + payloadContent + '"';
-                }
-                if (value == null) {
-                    value = Values.parse(payloadContent);
-                }
-                if (value == null) {
-                    value = payloadContent;
-                }
+                    if (value == null) {
+                        value = payloadContent;
+                    }
 
-                Map<String, Object> headers = prepareHeaders(connection);
-                AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getName(), value);
-                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                    Map<String, Object> headers = prepareHeaders(connection);
+                    AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getName(), value);
+                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
+                }
+            } else {
+                LOG.info("Couldn't process message for topic: " + msg.getTopicName());
             }
+        } else {
+            LOG.info("No connection found for clientId: " + msg.getClientID());
         }
     }
 

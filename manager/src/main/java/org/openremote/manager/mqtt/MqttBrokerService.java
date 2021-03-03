@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.moquette.BrokerConstants;
 import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
+import io.moquette.broker.security.IAuthorizatorPolicy;
 import io.moquette.interception.InterceptHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -35,7 +36,6 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.value.Values;
@@ -51,7 +51,7 @@ import static org.openremote.agent.protocol.ProtocolClientEventService.getSessio
 
 public class MqttBrokerService implements ContainerService {
 
-    public static final int PRIORITY = ManagerWebService.PRIORITY - 100;
+    public static final int PRIORITY = MED_PRIORITY;
     private static final Logger LOG = Logger.getLogger(MqttBrokerService.class.getName());
 
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
@@ -67,8 +67,10 @@ public class MqttBrokerService implements ContainerService {
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
     protected MessageBrokerService messageBrokerService;
+    protected ORAuthorizatorPolicy mainAuthorizatorPolicy;
 
     protected Map<String, MqttConnection> mqttConnectionMap;
+    protected List<InterceptHandler> interceptHandlers;
 
     protected boolean active;
     protected String host;
@@ -85,7 +87,9 @@ public class MqttBrokerService implements ContainerService {
         host = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST);
         port = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT);
 
+        mainAuthorizatorPolicy = new ORAuthorizatorPolicy();
         mqttConnectionMap = new HashMap<>();
+        interceptHandlers = new ArrayList<>();
 
         clientEventService = container.getService(ClientEventService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
@@ -137,10 +141,12 @@ public class MqttBrokerService implements ContainerService {
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
-        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new EventInterceptHandler(identityProvider, messageBrokerService, mqttConnectionMap));
+        interceptHandlers.add(new EventInterceptHandler(identityProvider, messageBrokerService, mqttConnectionMap));
 
         AssetStorageService assetStorageService = container.getService(AssetStorageService.class);
-        mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, clientEventService, mqttConnectionMap));
+        mainAuthorizatorPolicy.addAuthorizatorPolicy(new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, clientEventService, mqttConnectionMap));
+
+        mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, new KeycloakAuthenticator(identityProvider), mainAuthorizatorPolicy);
         LOG.fine("Started MQTT broker");
     }
 
@@ -176,5 +182,14 @@ public class MqttBrokerService implements ContainerService {
                 .build();
 
         mqttBroker.internalPublish(publishMessage, clientId);
+    }
+
+    public MqttBrokerService addInterceptHandler(InterceptHandler interceptHandler) {
+        interceptHandlers.add(interceptHandler);
+        return this;
+    }
+
+    public void addAuthorizerPolicy(IAuthorizatorPolicy authorizatorPolicy) {
+        mainAuthorizatorPolicy.addAuthorizatorPolicy(authorizatorPolicy);
     }
 }
