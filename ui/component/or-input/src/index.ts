@@ -135,7 +135,7 @@ function inputTypeSupportsHelperText(inputType: InputType) {
 }
 
 function inputTypeSupportsLabel(inputType: InputType) {
-    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX || inputType === InputType.SWITCH;
+    return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX;
 }
 
 export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: any | undefined) => void, options: ValueInputProviderOptions) => {
@@ -468,11 +468,7 @@ const style = css`
     .mdc-text-field--focused .mdc-text-field__input:required ~ .mdc-notched-outline .mdc-floating-label::after {
         color: var(--mdc-theme-primary);
     }
-    
-    .mdc-text-field__input[type="color" i] {
-        width: unset;
-    }
-    
+
     .mdc-text-field, .mdc-text-field-helper-line {
         width: 100%;
     }
@@ -509,6 +505,10 @@ const style = css`
     .mdc-slider {
         min-width: 200px;
         flex: 1;
+    }
+    
+    .mdc-switch {
+        margin: 0 24px;
     }
     
     #field {

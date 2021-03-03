@@ -59,7 +59,7 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     if (helperText) {
         content = html`
                     <div id="wrapper-helper">
-                        ${label ? html`<div style="margin-left: 16px">${label}</div>` : ``}
+                        ${label ? html`<div id="wrapper-label">${label}</div>` : ``}
                         <div id="wrapper-input">${content}</div>
                         <div id="helper-text">${helperText}</div>
                     </div>
@@ -143,13 +143,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 display: flex;
             }
             
-            #wrapper-input > or-input {
+            #wrapper-label, #helper-text {
                 margin-left: 16px;
             }
             
             /* Copy of mdc text field helper text styles */
-            #helper-text {
-                margin-left: 16px;
+            #helper-text {                
                 min-width: 255px;
                 color: rgba(0, 0, 0, 0.6);
                 font-family: Roboto, sans-serif;
