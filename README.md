@@ -80,18 +80,9 @@ Note that the image ENTRYPOINT is set to the openremote-cli command (the same wa
 ```bash
 or deploy --action create
 ```
-alternatively deploy using docker
+using docker
 ```bash
 docker run --rm -ti -v /var/run/docker.sock:/var/run/docker.sock openremote/openremote-cli deploy
-```
-For Windows machines use these commands if `or deploy --action create` does not execute properly:
-```
-docker volume create openremote_deployment-data
-docker volume rm openremote_postgresql-data
-docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:latest
-wget -nc https://github.com/openremote/openremote/raw/master/swarm/swarm-docker-compose.yml
-docker swarm init
-docker-compose -f swarm-docker-compose.yml -p openremote up -d
 ```
 #### Deploy on AWS
 
