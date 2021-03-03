@@ -80,7 +80,10 @@ Note that the image ENTRYPOINT is set to the openremote-cli command (the same wa
 ```bash
 or deploy --action create
 ```
-
+alternatively deploy using docker
+```bash
+docker run --rm -ti -v /var/run/docker.sock:/var/run/docker.sock openremote/openremote-cli deploy
+```
 For Windows machines use these commands if `or deploy --action create` does not execute properly:
 ```
 docker volume create openremote_deployment-data
