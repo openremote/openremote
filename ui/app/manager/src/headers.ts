@@ -70,7 +70,7 @@ export function headerItemLogout<S extends AppStateKeyed, A extends AnyAction>(o
 
 export function headerItemLogs<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
-        icon: "file-document-box-search-outline",
+        icon: "text-box-search-outline",
         value: "logs",
         href: "logs",
         text: "logs",

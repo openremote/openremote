@@ -469,6 +469,10 @@ const style = css`
         color: var(--mdc-theme-primary);
     }
     
+    .mdc-text-field__input[type="color" i] {
+        width: unset;
+    }
+    
     .mdc-text-field, .mdc-text-field-helper-line {
         width: 100%;
     }

@@ -20,6 +20,7 @@ task publishUi() {
 
 task installDist(type: Copy) {
     dependsOn generate
+    mustRunAfter(resolveProject(":manager").getTasksByName('installDist', true))
     from "${buildDir}/mdi-icons.json"
-    into "${resolveProject(':manager').buildDir}/install/manager/web/shared"
+    into "${resolveProject(':manager').projectDir}/src/web/shared"
 }
