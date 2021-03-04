@@ -1262,7 +1262,7 @@ export class OrInput extends LitElement {
             if (this._mdcComponent instanceof MDCTextField) {
                 this._mdcComponent.valid = valid;
             }
-            if(!valid) return
+            if(!valid && this.type != InputType.CHECKBOX) return
         }
         const previousValue = this.value;
 
