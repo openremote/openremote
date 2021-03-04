@@ -90,7 +90,7 @@ Prerequisites:
   - [aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
   - `openremote-cli` AWS profile. If you have Id and AWS secret key, you can use following command:
   ```bash
-  or configure_aws --id <id> --secret <secret> -d -v
+  or configure_aws --id <id> --secret <secret> -v
   ```
   At the moment the default region must be set to eu-west-1 (Ireland), this is done by the OpenRemote-cli. This can be could be changed using *aws-cli* (not recommended):
   ```bash
