@@ -98,6 +98,11 @@ public class ManagerSetup implements Setup {
 
     @Override
     public void onStart() throws Exception {
+
+        if (!Files.exists(Paths.get(provisionDocRoot.toString()))) {
+            return;
+        }
+
         provisionConsoleAppConfig();
         provisionAssets();
     }
@@ -639,6 +644,11 @@ public class ManagerSetup implements Setup {
     }
 
     protected void provisionConsoleAppConfig() throws IOException {
+
+        if (!Files.exists(Paths.get(provisionDocRoot.toString(), "consoleappconfig"))) {
+            return;
+        }
+
         Log.info("Provisioning console app configs");
 
         Files.list(Paths.get(provisionDocRoot.toString(), "consoleappconfig")).filter(Files::isRegularFile)
@@ -656,6 +666,11 @@ public class ManagerSetup implements Setup {
     }
 
     protected void provisionAssets() throws IOException {
+
+        if (!Files.exists(Paths.get(provisionDocRoot.toString(), "assets"))) {
+            return;
+        }
+
         Log.info("Provisioning assets");
 
         Files.list(Paths.get(provisionDocRoot.toString(), "assets")).filter(Files::isRegularFile)
