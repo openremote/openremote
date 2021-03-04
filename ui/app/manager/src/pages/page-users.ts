@@ -7,7 +7,7 @@ import {
   TemplateResult,
   unsafeCSS,
 } from "lit-element";
-import manager, { OREvent } from "@openremote/core";
+import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
 import { ifDefined } from "lit-html/directives/if-defined";
@@ -54,6 +54,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
           width: calc(100% - 40px);
           max-width: 1360px;
           margin: 20px auto;
+          align-items: center;
+          display: flex;
         }
 
         #title or-icon {
@@ -63,7 +65,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
         .panel {
           width: calc(100% - 90px);
-          max-width: 1320px;
+          max-width: 1310px;
           background-color: white;
           border: 1px solid #e5e5e5;
           border-radius: 5px;
@@ -90,7 +92,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         .mdc-data-table__row {
-          border-top-color: lightgrey;
+          border-top-color: #D3D3D3;
         }
 
         td, th {
@@ -102,18 +104,20 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
           overflow: hidden;
           max-height: 0;
           transition: max-height 0.25s ease-out;
-          padding: 0 20px;
+          padding-left: 16px;
         }
 
         or-input {
             margin-bottom: 20px;
-            margin-right: 20px;
+            margin-right: 16px;
         }
 
         or-icon {
             vertical-align: middle;
             --or-icon-width: 20px;
             --or-icon-height: 20px;
+            margin-right: 2px;
+            margin-left: -5px;
         }
 
         .row {
@@ -133,6 +137,11 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
         .mdc-data-table__header-cell {
           font-weight: bold;
+          color: ${unsafeCSS(DefaultColor3)};
+        }
+
+        .mdc-data-table__header-cell:first-child {
+            padding-left: 36px;
         }
         
         .attribute-meta-row td {
@@ -145,16 +154,20 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
         
         .button {
-          cursor: pointer;
-          display: flex;
-          flex-direction: row;
-          align-content: center;
-          margin: 10px 15px;
-          align-items: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: row;
+            align-content: center;
+            padding: 16px;
+            align-items: center;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: var(--or-app-color4);
         }
 
         .button or-icon {
           --or-icon-fill: var(--or-app-color4);
+          margin-right: 5px;
         }
       
         @media screen and (max-width: 768px){
@@ -171,7 +184,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
           }
           .panel {
             border-radius: 0;
-            width: calc(100% - 40px);
+            border-left: 0px;
+            border-right: 0px;
+            width: calc(100% - 48px);
           }
 
           td, th {
@@ -413,12 +428,12 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                           ${user.id && this._userRoleMapper[user.id] ? html`
                                                 <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .value="${userRole ? ifDefined(userRole.id) : ifDefined(null)}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => this._userRoleMapper[user.id] = e.detail.value}"></or-input>
                                           ` : html`
-                                              <or-input ?readonly="${readonly}"  ?disabled="${isSameUser}"  .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) =>  this._userRoleMapper["newUser"] = e.detail.value}"></or-input>
+                                              <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) =>  this._userRoleMapper["newUser"] = e.detail.value}"></or-input>
                                           `}
 
-                                            <or-input id="password-${index}" ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>            
-                                            <or-input id="repeatPassword-${index}" helperPersistent ?readonly="${readonly}" .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>   
-                                          <or-input  ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"></or-input>
+                                          <or-input id="password-${index}" ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>
+                                          <or-input id="repeatPassword-${index}" helperPersistent ?readonly="${readonly}" .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>
+                                          <or-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}" style="height: 56px;"></or-input>
                                       </div>
                                   </div>
 
@@ -441,7 +456,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                       ${this._users.length === 0 || this._users.length > 0 && !!this._users[this._users.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
-                              <a class="button" @click="${() => this._users = [...this._users, {enabled: true}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("user")}</strong></a> 
+                              <a class="button" @click="${() => this._users = [...this._users, {enabled: true}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("user")}</a>
                           </td>
                         </tr>
                       ` : ``}

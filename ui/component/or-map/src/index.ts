@@ -292,7 +292,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                 </style>
                 <div id="geo-json-point-input-compact-wrapper">
                     <or-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
-                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact action icon="crosshairs-gps" @click="${onClick}"></or-input>
+                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @click="${onClick}"></or-input>
                 </div>
             `;
         }

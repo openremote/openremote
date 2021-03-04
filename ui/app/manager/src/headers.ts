@@ -40,7 +40,7 @@ export function headerItemGatewayConnection<S extends AppStateKeyed, A extends A
     return {
         icon: "cloud",
         value: "gateway",
-        href: "#!gateway",
+        href: "gateway",
         text: "gatewayConnection",
         roles: ["write:admin", "read:admin"]
     };
@@ -108,7 +108,7 @@ export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(or
 }
 export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
-        icon: "account-circle-outline",
+        icon: "domain",
         value: "realms",
         href: "realms",
         text: "realm management",

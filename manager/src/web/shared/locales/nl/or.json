@@ -353,5 +353,7 @@
   "validityRecurrence": "Herhaling plannen",
   "activeFromTo": "Actief van {{start}} tot {{end}}",
   "fromTo": "Van {{start}} tot {{end}}",
-  "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}"
+  "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
+  "readPermissions": "Leesrechten",
+  "writePermissions": "Schrijfrechten"
 }

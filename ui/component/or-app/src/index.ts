@@ -91,7 +91,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return css`
             :host {
                 --or-app-color2: ${unsafeCSS(DefaultColor2)};
-                --or-app-color3: #22211f;
+                --or-app-color3: #4C4C4C;
                 --or-app-color4: #4D9D2A;
                 --or-console-primary-color: #4D9D2A;
                 color: ${unsafeCSS(DefaultColor3)};

@@ -978,13 +978,13 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-input>` : html`<span>${this.asset.name}</span>`}
                     </div>
                     ${!this._isReadonly() ? html`
-                        <span id="edit-wrapper">
+                        <span id="edit-wrapper" class="mobileHidden">
                             <or-translate value="editAsset"></or-translate>
                             <or-input id="edit-btn" .type="${InputType.SWITCH}" .value="${this.editMode}" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggleClicked(ev.detail.value)}"></or-input>
                         </span>
                     `: ``}
-                    <div id="right-wrapper">
-                        ${this.asset!.createdOn ? html`<or-translate id="created-time" class="mobileHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``}
+                    <div id="right-wrapper" class="mobileHidden">
+                        ${this.asset!.createdOn ? html`<or-translate id="created-time" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``}
                         ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._onSaveClicked()}"></or-input>` : ``}
                     </div>
                 </div>

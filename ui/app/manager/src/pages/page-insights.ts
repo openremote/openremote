@@ -50,6 +50,8 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
                 font-weight: bold;
                 width: 100%;
                 max-width: 1360px;
+                align-items: center;
+                display: flex;
             }
 
             or-data-viewer {
@@ -61,6 +63,8 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
             #title > or-icon {
                 margin-right: 10px;
                 margin-left: 14px;
+                --or-icon-width: 20px;
+                --or-icon-height: 20px;
             }
             
             @media only screen and (min-width: 768px){

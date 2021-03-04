@@ -7,7 +7,7 @@ import {
   TemplateResult,
   unsafeCSS,
 } from "lit-element";
-import manager, { OREvent } from "@openremote/core";
+import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
 import { EnhancedStore } from "@reduxjs/toolkit";
@@ -54,6 +54,8 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
           width: calc(100% - 40px);
           max-width: 1360px;
           margin: 20px auto;
+          align-items: center;
+          display: flex;
         }
 
         #title or-icon {
@@ -64,7 +66,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
         .panel {
           width: calc(100% - 90px);
           padding: 0 20px;
-          max-width: 1320px;
+          max-width: 1310px;
           background-color: white;
           border: 1px solid #e5e5e5;
           border-radius: 5px;
@@ -92,7 +94,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
         }
 
         .mdc-data-table__row {
-          border-top-color: lightgrey;
+          border-top-color: #D3D3D3;
         }
         
         td, th {
@@ -109,12 +111,14 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
           overflow: hidden;
           max-height: 0;
           transition: max-height 0.25s ease-out;
-          padding: 0 20px;
+          padding-left: 16px;
         }
 
         or-input {
             margin-bottom: 10px;
-            margin-right: 20px;
+            margin-right: 16px;
+            margin-right: 2px;
+            margin-left: -5px;
         }
 
         or-icon {
@@ -139,7 +143,12 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
         }
 
         .mdc-data-table__header-cell {
-          font-weight: bold;
+            font-weight: bold;
+            color: ${unsafeCSS(DefaultColor3)};
+        }
+
+        .mdc-data-table__header-cell:first-child {
+            padding-left: 36px;
         }
         
         .padded-cell {
@@ -162,12 +171,15 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
         }
         
         .button {
-          cursor: pointer;
-          display: flex;
-          flex-direction: row;
-          align-content: center;
-          margin: 10px 15px;
-          align-items: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: row;
+            align-content: center;
+            padding: 16px;
+            align-items: center;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: var(--or-app-color4);
         }
 
         .button or-icon {
@@ -187,7 +199,9 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
             width: 100%;
           }
           .panel {
-            width: calc(100% - 40px);
+            border-left: 0px;
+            border-right: 0px;
+            width: calc(100% - 48px);
             border-radius: 0;
           }
           .hide-mobile {
@@ -313,7 +327,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
     return html`
          <div id="wrapper">
                 <div id="title">
-                <or-icon icon="account-box-multiple"></or-icon>${i18next.t(
+                <or-icon icon="domain"></or-icon>${i18next.t(
                   "realm management"
                 )}
                 </div>
@@ -354,12 +368,11 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
                                   <div class="row">
                                     <div class="column">
                                       <or-input ?readonly="${tenant.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${tenant.realm}" @or-input-changed="${(e: OrInputChangedEvent) => tenant.realm = e.detail.value}"></or-input>            
+                                      <or-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${tenant.enabled}" @or-input-changed="${(e: OrInputChangedEvent) =>tenant.enabled = e.detail.value}}"></or-input>
                                     </div>
                                     <div class="column">
                                       <or-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${tenant.displayName}" @or-input-changed="${(e: OrInputChangedEvent) => tenant.displayName = e.detail.value}"></or-input>            
                                     </div>
-                                    <or-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${tenant.enabled}" @or-input-changed="${(e: OrInputChangedEvent) =>tenant.enabled = e.detail.value}}"></or-input>
-
                                   </div>
 
 
@@ -383,7 +396,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
                         ${this._tenants.length > 0 && !!this._tenants[this._tenants.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
-                            <a class="button" @click="${() => this._tenants = [...this._tenants, {displayName:"", enabled: true}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("realm")}</strong></a> 
+                            <a class="button" @click="${() => this._tenants = [...this._tenants, {displayName:"", enabled: true}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("realm")}</a>
                           </td>
                         </tr>
                       ` : ``}

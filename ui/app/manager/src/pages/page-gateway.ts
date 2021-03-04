@@ -100,7 +100,6 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
                 or-panel {
                     width: 100%;
                     min-width: auto;
-                    margin: 0;
                 }
 
                 #title {

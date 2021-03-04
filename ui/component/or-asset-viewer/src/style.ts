@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit-element";
-import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor4} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor4, DefaultHeaderHeight} from "@openremote/core";
 
 // language=CSS
 export const panelStyles = css`
@@ -62,6 +62,7 @@ export const style = css`
         --internal-or-asset-viewer-panel-color: var(--or-asset-viewer-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-viewer-line-color: var(--or-asset-viewer-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
         --internal-or-asset-viewer-button-color: var(--or-asset-viewer-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
                 
         height: 100%;
         width: 100%;
@@ -98,6 +99,7 @@ export const style = css`
         grid-gap: 10px;
         grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
         grid-auto-rows: 5px;
+        min-height: calc(100vh - 68px - var(--internal-or-header-height));
 
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
@@ -253,6 +255,7 @@ export const style = css`
             grid-auto-rows: auto;
             grid-template-columns: 100% !important;
             padding: 20px 0;
+            min-height: unset;
         }
     }
 `;

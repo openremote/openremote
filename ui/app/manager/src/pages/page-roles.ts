@@ -7,7 +7,7 @@ import {
   TemplateResult,
   unsafeCSS,
 } from "lit-element";
-import manager, { OREvent } from "@openremote/core";
+import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
 import { EnhancedStore } from "@reduxjs/toolkit";
@@ -54,6 +54,8 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
           width: calc(100% - 40px);
           max-width: 1360px;
           margin: 20px auto;
+          align-items: center;
+          display: flex;
         }
 
         #title or-icon {
@@ -64,7 +66,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         .panel {
           width: calc(100% - 90px);
           padding: 0 20px;
-          max-width: 1320px;
+          max-width: 1310px;
           background-color: white;
           border: 1px solid #e5e5e5;
           border-radius: 5px;
@@ -92,7 +94,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         }
 
         .mdc-data-table__row {
-          border-top-color: lightgrey;
+          border-top-color: #D3D3D3;
         }
         
         td, th {
@@ -109,18 +111,20 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
           overflow: hidden;
           max-height: 0;
           transition: max-height 0.25s ease-out;
-          padding: 0 20px;
+          padding-left: 16px;
         }
 
         or-input {
             margin-bottom: 10px;
-            margin-right: 20px;
+            margin-right: 16px;
         }
 
         or-icon {
             vertical-align: middle;
             --or-icon-width: 20px;
             --or-icon-height: 20px;
+            margin-right: 2px;
+            margin-left: -5px;
         }
 
         .row {
@@ -135,16 +139,24 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
             flex-direction: column;
             margin: 0px;
             flex: 1 1 0;
-            
+        }
+
+        .column-title {
+            padding-bottom: 10px;
         }
 
         .mdc-data-table__header-cell {
-          font-weight: bold;
+            font-weight: bold;
+            color: ${unsafeCSS(DefaultColor3)};
+        }
+
+        .mdc-data-table__header-cell:first-child {
+            padding-left: 36px;
         }
         
         .padded-cell {
           overflow-wrap: break-word;
-          word-wrap: break-word
+          word-wrap: break-word;
         }
 
         .attribute-meta-row td {
@@ -162,16 +174,20 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         }
         
         .button {
-          cursor: pointer;
-          display: flex;
-          flex-direction: row;
-          align-content: center;
-          margin: 10px 15px;
-          align-items: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: row;
+            align-content: center;
+            padding: 16px;
+            align-items: center;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: var(--or-app-color4);
         }
 
         .button or-icon {
-          --or-icon-fill: var(--or-app-color4);
+            --or-icon-fill: var(--or-app-color4);
+            margin-right: 5px;
         }
 
         @media screen and (max-width: 1024px){
@@ -187,7 +203,9 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
             width: 100%;
           }
           .panel {
-            width: calc(100% - 40px);
+            border-left: 0px;
+            border-right: 0px;
+            width: calc(100% - 48px);
             border-radius: 0;
           }
           .hide-mobile {
@@ -364,7 +382,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                  
                                   <div class="row">
                                     <div class="column">
-                                      <or-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-input>            
+                                      <or-input .label="${i18next.t("user_role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-input>
                                     </div>
                                     <div class="column">
                                       <or-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-input>            
@@ -373,7 +391,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
                                   <div class="row">
                                       <div class="column">
-                                        <strong>${i18next.t("read")}</strong>
+                                        <strong class="column-title">${i18next.t("readPermissions")}</strong>
 
                                         ${readRoles.map(r => {
                                           return html`
@@ -384,7 +402,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                       </div>
 
                                       <div class="column">
-                                        <strong>${i18next.t("write")}</strong>
+                                        <strong class="column-title">${i18next.t("writePermissions")}</strong>
                                         ${writeRoles.map(r => {
                                           return html`
                                              <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}"  @or-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-input>              
@@ -419,7 +437,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                         ${!!this._compositeRoles[this._compositeRoles.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
-                            <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {composite:true, name:"", compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon><strong>${i18next.t("add")} ${i18next.t("role")}</strong></a> 
+                            <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {composite:true, name:"", compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("role")}</a>
                           </td>
                         </tr>
                       ` : ``}

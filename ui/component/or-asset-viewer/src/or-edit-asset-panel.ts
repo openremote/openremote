@@ -2,7 +2,7 @@ import {css, customElement, html, LitElement, property, TemplateResult, unsafeCS
 import {InputType, OrInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder} from "@openremote/model";
-import {AssetModelUtil, DefaultColor5, Util} from "@openremote/core";
+import {AssetModelUtil, DefaultColor5, DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-input";
 import {OrIcon} from "@openremote/or-icon";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
@@ -23,8 +23,9 @@ const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 const style = css`
     .panel {
         margin: 10px auto;
-        max-width: 1200px;    
-    }                
+        max-width: 1200px;
+    }
+
     #parent-edit-wrapper {
         display: flex;
         align-items: center;
@@ -37,32 +38,53 @@ const style = css`
     #change-parent-btn {
         margin-left: 20px;
     }
+
     .mdc-data-table__row:hover {
         background-color: inherit !important;
     }
+
+    .mdc-data-table__row {
+        border-top-color: #D3D3D3;
+    }
+
     #attribute-table {
         width: 100%;
     }
+
+    .mdc-data-table__header-cell {
+        font-weight: bold;
+        color: ${unsafeCSS(DefaultColor3)};
+    }
+
+    .mdc-data-table__header-cell:first-child {
+        padding-left: 36px;
+    }
     .expander-cell {
-        --or-icon-width: 18px;
-        --or-icon-height: 18px;
+        --or-icon-width: 20px;
+        --or-icon-height: 20px;
         cursor: pointer;
     }
     .expander-cell > * {
         pointer-events: none;
     }
     .expander-cell > or-icon {
-        margin-right: 16px;
+        vertical-align: middle;
+        margin-right: 6px;
+        margin-left: -5px;
+    }
+    .padded-cell {
+        padding: 10px 16px;
     }
     .actions-cell {
         text-align: right;
         width: 40px;
+        padding-right: 5px;
     }
     .meta-item-container {
         overflow: hidden;
         max-height: 0;
         transition: max-height 0.25s ease-out;
-        padding: 0 20px 0 50px;
+        padding: 0 16px 0 36px;
     }
     .attribute-meta-row.expanded .meta-item-container {
         max-height: 1000px;
@@ -83,7 +105,10 @@ const style = css`
     }
     .item-add {
         margin-bottom: 10px;                
-    }                    
+    }
+    .item-add-attribute {
+        margin: 10px 0px 10px 4px;
+    }
     .button-clear {
         background: none;
         color: ${unsafeCSS(DefaultColor5)};
@@ -91,7 +116,7 @@ const style = css`
         visibility: hidden;
         display: inline-block;
         border: none;
-        padding: 0;
+        padding: 0 0 0 5px;
         cursor: pointer;
     }                
     .button-clear:hover {
@@ -102,9 +127,6 @@ const style = css`
     }                
     .button-clear.hidden {
         visibility: hidden;
-    }
-    .padded-cell {
-        padding: 10px 0;
     }
     .overflow-visible {
         overflow: visible;
@@ -192,9 +214,9 @@ export class OrEditAssetPanel extends LitElement {
                     </thead>
                     <tbody class="mdc-data-table__content">
                         ${!this.asset.attributes ? `` : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getEditAttributeTemplate(this.asset.type!, attribute as Attribute<any>);})}
-                        <tr>
+                        <tr class="mdc-data-table__row">
                             <td colspan="4">
-                                <div class="item-add">
+                                <div class="item-add-attribute">
                                     <or-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._addAttribute()}"></or-input>
                                 </div>
                             </td>

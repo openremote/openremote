@@ -7,6 +7,7 @@ import manager, {
     DefaultColor2,
     DefaultColor3,
     DefaultColor4,
+    DefaultColor5,
     DefaultHeaderHeight
 } from "@openremote/core";
 import "@openremote/or-mwc-components/dist/or-mwc-dialog";
@@ -93,7 +94,7 @@ class OrHeader extends LitElement {
                 --internal-or-header-drawer-color: var(--or-header-drawer-color, var(--or-app-color2, ${unsafeCSS(DefaultColor2)}));
                 --internal-or-header-drawer-text-color: var(--or-header-drawer-text-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
                 --internal-or-header-drawer-item-size: var(--or-header-drawer-item-size, 30px);
-                --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+                --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
                 
                 display: block;
                 z-index: 99999;
@@ -145,7 +146,7 @@ class OrHeader extends LitElement {
                 --or-icon-fill: var(--internal-or-header-drawer-text-color);
                 --or-icon-height: calc(var(--internal-or-header-drawer-item-size) - 10px);
                 --or-icon-width: calc(var(--internal-or-header-drawer-item-size) - 10px);
-                overflow: hidden;
+                overflow: auto;
             }
             
             #drawer[opened] {
@@ -157,7 +158,7 @@ class OrHeader extends LitElement {
                 box-sizing: border-box;
                 width: 100%;
                 height: 100%;
-                padding: 6px 24px;            
+                padding: 10px 0px;
                 position: relative;
             }
               
@@ -185,8 +186,8 @@ class OrHeader extends LitElement {
     
             #mobile-bottom {
                 border-top: 1px solid var(--internal-or-header-drawer-separator-color);
-                margin-top: 20px;
-                padding-top: 10px;
+                margin-top: 16px;
+                padding-top: 8px;
             }
           
             .menu-item {
@@ -217,11 +218,12 @@ class OrHeader extends LitElement {
             #drawer .menu-item  {
                 display: block;
                 line-height: var(--internal-or-header-drawer-item-size);
-                margin: 10px 0;
+                margin: 6px 0;
+                padding: 8px 16px;
             }
             
             #drawer .menu-item  or-icon {
-                margin: 0 5px;
+                margin: 0 10px;
             }
 
             #desktop-left .menu-item[selected] {

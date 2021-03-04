@@ -398,5 +398,7 @@
   "daysOfTheWeek": "days of the week",
   "dismiss": "dismiss",
   "createAssetFailed": "Failed to create asset",
-  "logCategory": {}
+  "logCategory": {},
+  "readPermissions": "Read permissions",
+  "writePermissions": "Write permissions"
 }
