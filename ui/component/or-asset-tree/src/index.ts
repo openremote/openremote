@@ -347,7 +347,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = undefined;
         }
 
-        if (!this._nodes) {
+        if (!this._nodes || this._nodes.length === 0) {
             this._loadAssets();
             return true;
         }
