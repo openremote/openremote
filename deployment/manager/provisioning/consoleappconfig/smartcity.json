@@ -1,7 +1,7 @@
 {
     "realm": "smartcity",
     "initialUrl": "https://demo.openremote.io/console_loader/?realm=smartcity&consoleProviders=geofence push storage",
-    "url": "https://demo.openremote.io/main/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences",
+    "url": "https://demo.openremote.io/manager/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences",
     "menuEnabled": false,
     "menuPosition": "BOTTOM_RIGHT",
     "menuImage": null,
