@@ -122,7 +122,7 @@ When all Docker containers are ready, you can access the OpenRemote UI and API w
 Username: admin  
 Password: secret
 
-**Smart City realm with Demo setup:** https://localhost/main/?realm=smartcity
+**Smart City realm with Demo setup:** https://localhost/manager/?realm=smartcity
 Username: smartcity  
 Password: smartcity
 
