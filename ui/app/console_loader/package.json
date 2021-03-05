@@ -1,7 +1,7 @@
 {
-  "name": "mobile",
+  "name": "console_loader",
   "version": "1.0.4",
-  "description": "Mobile App",
+  "description": "Console App Loader",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "private": true,
