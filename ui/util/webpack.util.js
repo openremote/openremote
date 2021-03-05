@@ -4,9 +4,10 @@ const webpack = require("webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
-function getAppConfig(mode, isDevServer, dirname, managerUrl) {
+function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
     const production = mode === "production";
     managerUrl = managerUrl || (production ? undefined : "http://localhost:8080");
+    keycloakUrl = keycloakUrl || (production ? undefined : "http://localhost:8081/auth");
     const OUTPUT_PATH = isDevServer ? 'src' : 'dist';
 
     const config = {
@@ -89,6 +90,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl) {
         new webpack.DefinePlugin({
             PRODUCTION: JSON.stringify(production),
             MANAGER_URL: JSON.stringify(managerUrl),
+            KEYCLOAK_URL: JSON.stringify(keycloakUrl),
             "process.env":   {
                 BABEL_ENV: JSON.stringify(mode)
             }

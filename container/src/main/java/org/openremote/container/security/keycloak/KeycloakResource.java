@@ -30,7 +30,6 @@ import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.*;
 
-@Path("auth")
 public interface KeycloakResource {
 
     @GET

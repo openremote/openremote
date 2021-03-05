@@ -35,8 +35,9 @@ export * from "./app";
 export * from "./or-header";
 export * from "./types";
 
-// Declare MANAGER_URL - Global var injected by webpack
+// Declare MANAGER_URL and KEYCLOAK_URL - Global var injected by webpack
 declare var MANAGER_URL: string | undefined;
+declare var KEYCLOAK_URL: string | undefined;
 
 export {HeaderConfig};
 
@@ -55,6 +56,7 @@ export function getRealmQueryParameter(): string | undefined {
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     managerUrl: MANAGER_URL,
+    keycloakUrl: KEYCLOAK_URL,
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: getRealmQueryParameter(),

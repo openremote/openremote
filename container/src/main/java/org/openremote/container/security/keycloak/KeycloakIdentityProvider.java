@@ -150,7 +150,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             UriBuilder.fromPath("/")
                 .scheme("http")
                 .host(getString(container.getConfig(), KEYCLOAK_HOST, KEYCLOAK_HOST_DEFAULT))
-                .port(getInteger(container.getConfig(), KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT));
+                .port(getInteger(container.getConfig(), KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT))
+                .path("auth");
 
         LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
@@ -171,7 +172,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
         targetBuilder.setOAuthAuthentication(new OAuthPasswordGrant(
-            keycloakServiceUri.clone().path("/auth/realms/master/protocol/openid-connect/token").build().toString(),
+            keycloakServiceUri.clone().path("/realms/master/protocol/openid-connect/token").build().toString(),
             ADMIN_CLI_CLIENT_ID,
             null,
             "openid",
@@ -325,7 +326,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
                     // The auth-server-url in the adapter config must be reachable by this manager
                     adapterConfig.setAuthServerUrl(
-                        keycloakServiceUri.clone().replacePath("auth").build().toString()
+                        keycloakServiceUri.clone().build().toString()
                     );
 
                     return KeycloakDeploymentBuilder.build(adapterConfig);

@@ -24,6 +24,8 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    environment:
+      KEYCLOAK_FRONTEND_URL: 'http://localhost:8081/auth'
 
   postgresql:
     extends:
