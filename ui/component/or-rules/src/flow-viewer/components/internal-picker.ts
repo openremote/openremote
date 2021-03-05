@@ -84,7 +84,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     }
 
     private get assetTreeTemplate() {
-        return html`<or-asset-tree @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
+        return html`<or-asset-tree readonly @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
             if (!e.detail.detail || e.detail.detail.newNodes.length !== 1) {
                 e.detail.allow = false;
                 return;
