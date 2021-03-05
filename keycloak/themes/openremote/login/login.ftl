@@ -1,13 +1,12 @@
 <#import "template.ftl" as layout>
-<@layout.registrationLayout displayInfo=social.displayInfo; section>
+<@layout.registrationLayout displayMessage=!messagesPerField.existsError('username','password') displayInfo=realm.password && realm.registrationAllowed && !registrationDisabled??; section>
     <#if section = "title">
         ${msg("loginTitle",(realm.displayName!''))}
     <#elseif section = "header">
         ${msg("loginTitleHtml",(realm.displayNameHtml!''))}
     <#elseif section = "form">
         <#if realm.password>
-        <form action="${url.loginAction}" method="post">
-
+        <form onsubmit="login.disabled = true; return true;" action="${url.loginAction}" method="post">
             <div class="row">
                 <div class="input-field col s12">
                     <#if usernameEditDisabled??>
@@ -29,7 +28,7 @@
                 </div>
 
                 <div class="input-field col s12">
-                    <input id="password" name="password" type="password" autocomplete="off"/>
+                    <input id="password" name="password" type="password" autocomplete="off" aria-invalid="<#if messagesPerField.existsError('username','password')>true</#if>" />
                     <label for="password">${msg("password")}</label>
                 </div>
 
@@ -63,24 +62,31 @@
             </#if>
         </form>
         </#if>
-        <#elseif section = "info" >
+    <#elseif section = "info" >
 
-            <#if realm.password && realm.registrationAllowed && !usernameEditDisabled??>
-                <div id="kc-registration">
-                    <span>${msg("noAccount")} <a href="${url.registrationUrl}">${msg("doRegister")}</a></span>
-                </div>
-            </#if>
-
-
-            <#if realm.password && social.providers??>
-                <div id="kc-social-providers">
-                    <ul>
-                        <#list social.providers as p>
-                            <li><a href="${p.loginUrl}" id="zocial-${p.alias}" class="zocial ${p.providerId}"> <span
-                                    class="text">${p.alias}</span></a></li>
-                        </#list>
-                    </ul>
-                </div>
-            </#if>
+        <#if realm.password && realm.registrationAllowed && !usernameEditDisabled??>
+            <div id="kc-registration">
+                <span>${msg("noAccount")} <a href="${url.registrationUrl}">${msg("doRegister")}</a></span>
+            </div>
         </#if>
+
+
+        <#if realm.password && social.providers??>
+            <div id="kc-social-providers">
+                <ul>
+                    <#list social.providers as p>
+                        <a id="social-${p.alias}" class="${properties.kcFormSocialAccountListButtonClass!} <#if social.providers?size gt 3>${properties.kcFormSocialAccountGridItem!}</#if>"
+                           type="button" href="${p.loginUrl}">
+                            <#if p.iconClasses?has_content>
+                                <i class="${properties.kcCommonLogoIdP!} ${p.iconClasses!}" aria-hidden="true"></i>
+                                <span class="${properties.kcFormSocialAccountNameClass!} kc-social-icon-text">${p.displayName!}</span>
+                            <#else>
+                                <span class="${properties.kcFormSocialAccountNameClass!}">${p.displayName!}</span>
+                            </#if>
+                        </a>
+                    </#list>
+                </ul>
+            </div>
+        </#if>
+    </#if>
 </@layout.registrationLayout>

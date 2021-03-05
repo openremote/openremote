@@ -1,0 +1,11 @@
+embed-server --server-config=standalone-ha.xml --std-out=echo
+batch
+/subsystem=jgroups/stack=udp/protocol=PING:remove()
+/subsystem=jgroups/stack=udp/protocol=JDBC_PING:add(add-index=0, data-source=KeycloakDS, properties=$keycloak_jgroups_discovery_protocol_properties)
+
+/subsystem=jgroups/stack=tcp/protocol=MPING:remove()
+/subsystem=jgroups/stack=tcp/protocol=JDBC_PING:add(add-index=0, data-source=KeycloakDS, properties=$keycloak_jgroups_discovery_protocol_properties)
+
+/subsystem=jgroups/channel=ee:write-attribute(name="stack", value=$keycloak_jgroups_transport_stack)
+run-batch
+stop-embedded-server

@@ -1,11 +1,9 @@
 /subsystem=datasources/data-source=KeycloakDS: remove()
-/subsystem=datasources/data-source=KeycloakDS: add(jndi-name=java:jboss/datasources/KeycloakDS,enabled=true,use-java-context=true,use-ccm=true, connection-url="jdbc:sqlserver://${env.DB_ADDR:mssql}:${env.DB_PORT:1433};databaseName=${env.DB_DATABASE:keycloak};sendStringParametersAsUnicode=false;${env.JDBC_PARAMS:}", driver-name=sqlserver)
+/subsystem=datasources/data-source=KeycloakDS: add(jndi-name=java:jboss/datasources/KeycloakDS,enabled=true,use-java-context=true,use-ccm=true, connection-url=jdbc:h2:tcp://${env.DB_ADDR:h2}:${env.DB_PORT:9092}/${env.DB_DATABASE:keycloak};schema\=${env.DB_SCHEMA:public}${env.JDBC_PARAMS:}, driver-name=h2tcp)
 /subsystem=datasources/data-source=KeycloakDS: write-attribute(name=user-name, value=${env.DB_USER:keycloak})
 /subsystem=datasources/data-source=KeycloakDS: write-attribute(name=password, value=${env.DB_PASSWORD:password})
 /subsystem=datasources/data-source=KeycloakDS: write-attribute(name=check-valid-connection-sql, value="SELECT 1")
 /subsystem=datasources/data-source=KeycloakDS: write-attribute(name=background-validation, value=true)
 /subsystem=datasources/data-source=KeycloakDS: write-attribute(name=background-validation-millis, value=60000)
 /subsystem=datasources/data-source=KeycloakDS: write-attribute(name=flush-strategy, value=IdleConnections)
-/subsystem=datasources/jdbc-driver=sqlserver:add(driver-name=sqlserver,driver-module-name=com.microsoft.sqlserver.jdbc,driver-xa-datasource-class-name=com.microsoft.sqlserver.jdbc.SQLServerXADataSource)
-
-/subsystem=keycloak-server/spi=connectionsJpa/provider=default:write-attribute(name=properties.schema,value=${env.DB_SCHEMA:dbo})
+/subsystem=datasources/jdbc-driver=h2tcp:add(driver-name=h2tcp, driver-module-name=com.h2database.h2, driver-xa-datasource-class-name=org.h2.jdbcx.JdbcDataSource)

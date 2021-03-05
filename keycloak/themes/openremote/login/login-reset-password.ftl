@@ -1,5 +1,5 @@
 <#import "template.ftl" as layout>
-<@layout.registrationLayout displayInfo=true; section>
+<@layout.registrationLayout displayInfo=true displayMessage=!messagesPerField.existsError('username'); section>
     <#if section = "title">
         ${msg("emailForgotTitle")}
     <#elseif section = "header">
@@ -8,7 +8,18 @@
         <form id="kc-reset-password-form"  action="${url.loginAction}" method="post">
             <div class="row">
                 <div class="input-field col s12">
-                    <input type="text" id="username" name="username" autofocus required class="validate"/>
+                    <#if auth?has_content && auth.showUsername()>
+                        <input type="text" id="username" name="username" class="validate" autofocus value="${auth.attemptedUsername}" aria-invalid="<#if messagesPerField.existsError('username')>true</#if>"/>
+                    <#else>
+                        <input type="text" id="username" name="username" class="validate" autofocus aria-invalid="<#if messagesPerField.existsError('username')>true</#if>"/>
+                    </#if>
+
+                    <#if messagesPerField.existsError('username')>
+                        <span id="input-error-username" class="${properties.kcInputErrorMessageClass!}" aria-live="polite">
+                                    ${kcSanitize(messagesPerField.get('username'))?no_esc}
+                        </span>
+                    </#if>
+
                     <label for="username" class="${properties.kcLabelClass!}"><#if !realm.loginWithEmailAllowed>${msg("username")}<#elseif !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
                 </div>
             </div>
