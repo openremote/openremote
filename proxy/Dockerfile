@@ -27,8 +27,6 @@ ENV DOMAINNAME=${DOMAINNAME:-localhost}
 ENV LOCAL_CERT_FILE=$LOCAL_CERT_FILE
 ENV TERM xterm
 ENV PROXY_LOGLEVEL notice
-ENV PROXY_BACKEND_HOST=${PROXY_BACKEND_HOST:-manager}
-ENV PROXY_BACKEND_PORT=${PROXY_BACKEND_PORT:-8080}
 
 RUN mkdir /tmp/lua && cd /tmp/lua \
     && curl -sSL https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz -o lua.tar.gz \
