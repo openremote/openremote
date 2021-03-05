@@ -104,7 +104,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
         } catch (VerificationException e) {
             String suppliedClientSecret = new String(connection.password, StandardCharsets.UTF_8);
-            connection.accessToken = identityProvider.getExternalKeycloak().getAccessToken(connection.realm, new ClientCredentialsAuthForm(connection.username, suppliedClientSecret)).getToken();
+            connection.accessToken = identityProvider.getAccessToken(connection.realm, connection.username, suppliedClientSecret);
             try {
                 accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
             } catch (VerificationException verificationException) {

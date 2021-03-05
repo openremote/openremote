@@ -49,10 +49,6 @@ services:
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)
       # LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
 
-      # Traffic should be forwarded to this service (defaults to manager:8080)
-      # PROXY_BACKEND_HOST: manager
-      # PROXY_BACKEND_PORT: 8080
-
       # The proxy supports up to 10 custom redirects from hostname to any path on the
       # backend service. This can be used to give consoles a vanity domain name.
       # PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld
@@ -304,6 +300,7 @@ services:
       DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       KEYCLOAK_USER: admin
       PROXY_ADDRESS_FORWARDING: 'true'
+      KEYCLOAK_FRONTEND_URL: 'https://localhost/auth'
 
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}

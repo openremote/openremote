@@ -1,7 +1,7 @@
 #
 # Profile for doing development work on the manager in an IDE; uses proxy container to redirect to host machine.
 #
-# https://localhost/master
+# https://localhost/
 #
 # Your changes will be visible live on browser reload or after restart:
 #
@@ -33,7 +33,7 @@ services:
 
   proxy:
     extends:
-      file: deploy.yml
+      file: deploy-no-build.yml
       service: proxy
     volumes:
       # Store data either in host-mapped directory or a named Docker volume
@@ -44,20 +44,22 @@ services:
 
   keycloak:
     extends:
-      file: deploy.yml
+      file: deploy-no-build.yml
       service: keycloak
+    volumes:
+      - ../deployment:/deployment
+      - ../keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
+      - ../keycloak/scripts/disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
     # Access directly if needed on localhost
     ports:
       - "8081:8080"
-    volumes:
-      - ../ui/keycloak/themes:/deployment/keycloak/themes
     depends_on:
       postgresql:
         condition: service_healthy
 
   postgresql:
     extends:
-      file: deploy.yml
+      file: deploy-no-build.yml
       service: postgresql
     # Access directly if needed on localhost
     ports:

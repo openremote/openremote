@@ -100,7 +100,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public void start(Container container) {
         super.start(container);
-        enableAuthProxy(container.getService(WebService.class));
     }
 
     @Override

@@ -76,7 +76,7 @@ public abstract class IdentityService implements ContainerService {
 
     public void secureDeployment(DeploymentInfo deploymentInfo) {
         LOG.info("Securing web deployment: " + deploymentInfo.getContextPath());
-        deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
+        deploymentInfo.addInitialHandlerChainWrapper(AuthOverloadHandler::new);
         deploymentInfo.setSecurityDisabled(false);
         identityProvider.secureDeployment(deploymentInfo);
 

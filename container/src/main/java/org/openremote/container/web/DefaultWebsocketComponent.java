@@ -152,7 +152,11 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         deploymentInfo.addSecurityConstraints(constraint);
 
         HttpHandler handler = webService.addServletDeployment(identityService, deploymentInfo, true);
-        websocketHttpHandler = pathStartsWithHandler(deploymentName, WEBSOCKET_PATH, handler);
+
+        HttpHandler tempHandler = (exchange) -> {
+            handler.handleRequest(exchange);
+        };
+        websocketHttpHandler = pathStartsWithHandler(deploymentName, WEBSOCKET_PATH, tempHandler);
 
         // Give web socket handler higher priority than any other handlers already added
         webService.getRequestHandlers().add(0, websocketHttpHandler);

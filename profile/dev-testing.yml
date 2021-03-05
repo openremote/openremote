@@ -15,7 +15,9 @@ services:
       file: deploy-no-build.yml
       service: keycloak
     volumes:
-      - ../ui/keycloak/themes:/deployment/keycloak/themes
+      - ../deployment:/deployment
+      - ../keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
+      - ../keycloak/scripts/disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
     # Access directly if needed on localhost
     ports:
       - "8081:8080"

@@ -58,6 +58,7 @@ import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
 
+@SuppressWarnings("deprecation")
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(PushNotificationHandler.class.getName());

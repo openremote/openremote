@@ -4,9 +4,9 @@ const webpack = require("webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
-function getAppConfig(mode, isDevServer, dirname) {
+function getAppConfig(mode, isDevServer, dirname, managerUrl) {
     const production = mode === "production";
-    const managerUrl = production ? undefined : "http://localhost:8080";
+    managerUrl = managerUrl || (production ? undefined : "http://localhost:8080");
     const OUTPUT_PATH = isDevServer ? 'src' : 'dist';
 
     const config = {

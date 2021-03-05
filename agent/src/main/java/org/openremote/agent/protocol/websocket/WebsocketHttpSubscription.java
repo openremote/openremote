@@ -19,8 +19,6 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import org.openremote.model.value.ValueType;
-
 import java.util.List;
 import java.util.Map;
 
