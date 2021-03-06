@@ -18,6 +18,9 @@ afterEvaluate {
     it.getTasksByName('publishUi', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }
+    it.getTasksByName('npmBuild', true).forEach {
+        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
+    }
     it.getTasksByName('installDist', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }
