@@ -101,7 +101,7 @@ Resources:
           # Prepare deployment files
           cd /home/ubuntu # we need this because on arm docker-compose cannot read /
           wget -nc https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml
-          wget -nc https://github.com/openremote/openremote/raw/master/profile/demo-basic-no-build.yml
+          wget -nc https://github.com/openremote/openremote/raw/master/profile/demo-no-build.yml
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             echo export DOMAINNAME=${HostName}.${DomainName} >> deploy.sh
@@ -125,7 +125,7 @@ Resources:
           echo 'docker-compose -f demo-basic-no-build.yml -p openremote up -d' >> deploy.sh
           echo sleep 10 >> deploy.sh # give time to fetch CERT from letsencrypt
           echo 'docker-compose -f demo-basic-no-build.yml -p openremote down' >> deploy.sh
-          echo or deploy -v >> deploy.sh
+          echo openremote-cli deploy -v >> deploy.sh
           chmod +x deploy.sh
           chown --recursive 1000:1000 *
           ./deploy.sh
