@@ -138,10 +138,13 @@ services:
       # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
 
       # Configure SMTP smart host, to send password reset emails etc.
-      SETUP_EMAIL_HOST: email-smtp.eu-west-1.amazonaws.com
-      SETUP_EMAIL_USER: ${SETUP_EMAIL_USER:-smtp-user}
-      SETUP_EMAIL_PASSWORD: ${SETUP_EMAIL_PASSWORD:-smtp-password}
-      SETUP_EMAIL_PORT: ${SETUP_EMAIL_PORT:-25}
+      # We put here sandbox AWS account (allows max 1 msg/s, 200/day and recipient is support@openremote.io)
+      # by doing this we don't have initialization errors and we can see that somebody is using e-mail function
+      # and might be interested in production e-mail server.
+      SETUP_EMAIL_HOST: ${SETUP_EMAIL_HOST:-email-smtp.eu-west-2.amazonaws.com}
+      SETUP_EMAIL_USER: ${SETUP_EMAIL_USER:-AKIAR6UPFQB5OQT6HQ7O}
+      SETUP_EMAIL_PASSWORD: ${SETUP_EMAIL_PASSWORD:-BL+37Uy86pwT6NpM3FyRQkeYu6IQN2m6nc3zgiDI1wYp}
+      SETUP_EMAIL_PORT: ${SETUP_EMAIL_PORT:-587}
       SETUP_EMAIL_TLS: 'true'
       #SETUP_EMAIL_FROM_KEYCLOAK: 'no-reply@openremote.io'
       #SETUP_EMAIL_FROM_DEFAULT: 'no-reply@openremote.io'

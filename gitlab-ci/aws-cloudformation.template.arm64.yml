@@ -100,8 +100,11 @@ Resources:
           sudo pip3 install -U openremote-cli
           # Prepare deployment files
           cd /home/ubuntu # we need this because on arm docker-compose cannot read /
-          wget -nc https://github.com/openremote/openremote/raw/master/profile/deploy-no-build.yml
-          wget -nc https://github.com/openremote/openremote/raw/master/profile/demo-no-build.yml
+          # Create volume for deployment (needed for SWARM due to concurency in compose-file)
+          docker volume create openremote_deployment-data
+          docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:latest
+          wget https://github.com/openremote/openremote/raw/master/mvp/mvp-docker-compose.yml
+          docker swarm init
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             echo export DOMAINNAME=${HostName}.${DomainName} >> deploy.sh
@@ -122,10 +125,10 @@ Resources:
           echo export LE_EMAIL=me@privacy.net >> deploy.sh
           # Running docker-compose before docker stack deploy has to do with AWS
           # problems to fetch letsencrypt CERT in the swarm mode.
-          echo 'docker-compose -f demo-basic-no-build.yml -p openremote up -d' >> deploy.sh
-          echo sleep 10 >> deploy.sh # give time to fetch CERT from letsencrypt
-          echo 'docker-compose -f demo-basic-no-build.yml -p openremote down' >> deploy.sh
-          echo openremote-cli deploy -v >> deploy.sh
+          echo 'docker-compose -f mvp-docker-compose.yml -p openremote up -d' >> deploy.sh
+          #echo sleep 10 >> deploy.sh # give time to fetch CERT from letsencrypt
+          #echo 'docker-compose -f demo-basic-no-build.yml -p openremote down' >> deploy.sh
+          #echo openremote-cli deploy -v >> deploy.sh
           chmod +x deploy.sh
           chown --recursive 1000:1000 *
           ./deploy.sh
@@ -141,10 +144,6 @@ Resources:
       - IpProtocol: tcp
         FromPort: '80'
         ToPort: '80'
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: '8081'
-        ToPort: '8081'
         CidrIp: 0.0.0.0/0
       - IpProtocol: tcp
         FromPort: '443'
