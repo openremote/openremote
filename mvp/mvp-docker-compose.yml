@@ -108,7 +108,7 @@ services:
   # configuration files which were baked into the managers image.
   manager:
 
-    image: openremote/manager:${DATE_TAG:-latest}
+    image: openremote/manager:${DATE_TAG:-mvp}
     networks:
       - private
     depends_on:
