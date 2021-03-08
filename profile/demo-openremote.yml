@@ -101,6 +101,8 @@ services:
         condition: service_healthy
     volumes:
       - deployment-data:/deployment
+    environment:
+      IDENTITY_NETWORK_HOST: demo.openremote.io
 
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
