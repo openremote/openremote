@@ -115,16 +115,16 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
         }
 
         or-input {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             margin-right: 16px;
-            margin-right: 2px;
-            margin-left: -5px;
         }
 
         or-icon {
             vertical-align: middle;
             --or-icon-width: 20px;
             --or-icon-height: 20px;
+            margin-right: 2px;
+            margin-left: -5px;
         }
 
         .row {
