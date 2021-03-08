@@ -282,6 +282,7 @@ deploy demo on OVH:
       when: manual
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
+    IDENTITY_NETWORK_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: "true"
     DOCKER_IMAGE_TAG: latest
     NEW_IMAGES: "true"
@@ -298,6 +299,7 @@ redeploy demo on OVH:
       when: on_success
   variables:
     DEPLOYMENT_HOST: ${PROJECT_NAME}.openremote.io
+    IDENTITY_NETWORK_HOST: ${PROJECT_NAME}.openremote.io
     SETUP_WIPE_CLEAN_INSTALL: "true"
     DOCKER_IMAGE_TAG: latest
   environment:
