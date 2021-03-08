@@ -192,6 +192,7 @@ build-keycloak-postgresql-proxy:
     - if [ $DOCKER_IMAGE_TAG ]; then echo "export CI_ENVIRONMENT=$DOCKER_IMAGE_TAG" >> deploy.sh; fi
     - echo "export SETUP_WIPE_CLEAN_INSTALL=$SETUP_WIPE_CLEAN_INSTALL" >> deploy.sh
     - if [ $SETUP_ADMIN_PASSWORD ]; then echo "export SETUP_ADMIN_PASSWORD=$SETUP_ADMIN_PASSWORD" >> deploy.sh; fi
+    - if [ $IDENTITY_NETWORK_HOST ]; then echo "export IDENTITY_NETWORK_HOST=$IDENTITY_NETWORK_HOST" >> deploy.sh; fi
     - if [ $NEW_IMAGES ]; then echo "docker pull \$CI_REGISTRY_IMAGE/manager:\$CI_ENVIRONMENT"    >> deploy.sh; fi
     - if [ $NEW_IMAGES ]; then echo "docker pull \$CI_REGISTRY_IMAGE/deployment:\$CI_ENVIRONMENT" >> deploy.sh; fi
     - if [ $NEW_IMAGES ]; then echo "docker pull \$CI_REGISTRY_IMAGE/proxy:\$CI_ENVIRONMENT"      >> deploy.sh; fi
