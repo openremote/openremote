@@ -15,9 +15,5 @@ jar {
 task installDist(type: Copy) {
     into "${buildDir}/image"
 
-    from(projectDir) {
-        include "themes/**", "module.xml"
-    }
-
     from jar.outputs
 }

@@ -29,9 +29,9 @@ RUN chmod -R +x /opt/jboss/tools
 RUN /opt/jboss/tools/build-keycloak.sh
 
 RUN mkdir -p /opt/jboss/keycloak/providers
-ADD build/image/themes /opt/jboss/keycloak/themes
+ADD themes /opt/jboss/keycloak/themes
+ADD module.xml /opt/jboss/keycloak/providers
 ADD build/image/openremote-keycloak.jar /opt/jboss/keycloak/providers
-ADD build/image/module.xml /opt/jboss/keycloak/providers
 
 HEALTHCHECK --interval=3s --timeout=3s --start-period=600s --retries=30 CMD curl --fail --silent http://localhost:8080/auth || exit 1
 
