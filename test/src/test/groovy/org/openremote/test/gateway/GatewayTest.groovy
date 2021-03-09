@@ -109,7 +109,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def gatewayClient = new WebsocketIoClient<String>(
             new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=$managerTestSetup.realmBuildingTenant").build(),
             null,
-            new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingTenant/protocol/openid-connect/token",
+            new OAuthClientCredentialsGrant("http://127.0.0.1:8081/auth/realms/$managerTestSetup.realmBuildingTenant/protocol/openid-connect/token",
                 gateway.getClientId().orElse(""),
                 gateway.getClientSecret().orElse(""),
                 null).setBasicAuthHeader(true))

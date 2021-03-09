@@ -30,8 +30,8 @@ trait ManagerContainerTrait extends ContainerTrait {
         }
         [
                 (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
-                (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(serverPort),
                 (IDENTITY_NETWORK_HOST)          : "127.0.0.1",
+                (IDENTITY_NETWORK_WEBSERVER_PORT): "8081",
                 (SETUP_TESTS)                    : "true",
                 (SETUP_IMPORT_DEMO_ASSETS)       : "true",
                 (SETUP_IMPORT_DEMO_USERS)        : "true",
