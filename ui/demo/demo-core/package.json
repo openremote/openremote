@@ -18,7 +18,7 @@
     "@openremote/core": "^1.0.3",
     "@openremote/or-icon": "^1.0.3",
     "@openremote/or-translate": "^1.0.3",
-    "i18next": "^19.8.4",
+    "i18next": "^19.9.2",
     "lit-element": "^2.4.0"
   },
   "devDependencies": {

@@ -15,8 +15,8 @@
   "dependencies": {
     "@openremote/or-icon": "^1.0.3",
     "@openremote/rest": "^1.0.3",
-    "i18next": "^19.8.4",
-    "i18next-xhr-backend": "^3.2.2",
+    "i18next": "^19.9.2",
+    "i18next-http-backend": "^1.1.1",
     "moment": "^2.24.0",
     "platform": "^1.3.5",
     "qs": "^6.8.0",

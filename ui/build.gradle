@@ -1,3 +1,6 @@
+import java.nio.file.Path
+import java.nio.file.Paths
+
 afterEvaluate {
 
     // Ensure main repo ui installDist tasks are performed before the custom projects
@@ -8,6 +11,15 @@ afterEvaluate {
                 it.mustRunAfter(project(":openremote:ui").getTasksByName('installDist', true))
                 it.mustRunAfter(resolveTask(":deployment:installDist"))
             }
+        }
+    }
+
+    // Ensure yarn install in openremote repo is run if no package.json in custom project
+    if (isCustomProject() && parent != rootProject) {
+        def packageJsonFile = Paths.get(rootProject.projectDir.path, "package.json").toFile()
+        if (!packageJsonFile.exists()) {
+            println("Adding dependency on openremote yarn install to root project yarn install")
+            tasks.getByPath(":yarnInstall").dependsOn(resolveTask(":yarnInstall"))
         }
     }
 

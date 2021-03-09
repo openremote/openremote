@@ -27,6 +27,7 @@ import i18next from "i18next";
 import Qs from "qs";
 import {AssetModelUtil} from "./index";
 import moment from "moment";
+import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
 
 export class Deferred<T> {
 
@@ -533,7 +534,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
                             const weekNo = getWeekNumber(value);
                             valueStr = format.week === ValueFormatStyleRepresentation.DIGIT_2 ? String(weekNo).padStart(2,"0") : Number(weekNo).toString(10);
                         } else {
-                            valueStr = new Intl.DateTimeFormat(language || i18next.language, format).format(value);
+                            valueStr = new Intl.DateTimeFormat(language || i18next.language, format as DateTimeFormatOptions).format(value);
                         }
                         break;
                 }

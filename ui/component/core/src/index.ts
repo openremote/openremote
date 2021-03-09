@@ -4,7 +4,7 @@ import rest from "@openremote/rest";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next, { InitOptions } from "i18next";
-import i18nextXhr from "i18next-xhr-backend";
+import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
 import {
     AgentDescriptor,
@@ -757,7 +757,7 @@ export class Manager implements EventProviderFactory {
         }
 
         try {
-            await i18next.use(i18nextXhr).init(initOptions);
+            await i18next.use(i18nextBackend).init(initOptions);
         } catch (e) {
             console.error(e);
             this._setError(ORError.TRANSLATION_ERROR);
