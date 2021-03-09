@@ -6,8 +6,9 @@ module.exports = (env, argv) => {
 
     const customConfigDir = env.config;
     const managerUrl = env.managerUrl;
+    const keycloakUrl = env.keycloakUrl;
     const IS_DEV_SERVER = process.argv.find(arg => arg.includes("serve"));
-    const config = util.getAppConfig(argv.mode, IS_DEV_SERVER, __dirname, managerUrl);
+    const config = util.getAppConfig(argv.mode, IS_DEV_SERVER, __dirname, managerUrl, keycloakUrl);
 
     if (IS_DEV_SERVER && customConfigDir) {
         console.log("CUSTOM_CONFIG_DIR: " + customConfigDir);

@@ -15,6 +15,7 @@ LABEL git-commit=$GIT_COMMIT
 ENV JAVA_OPTS=${JAVA_OPTS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_TOOL_OPTIONS}
 
+ENV DEV_MODE false
 ENV APP_DOCROOT /opt/web
 ENV CUSTOM_APP_DOCROOT /deployment/manager/app
 ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties

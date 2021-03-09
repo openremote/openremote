@@ -33,18 +33,18 @@ services:
 
   proxy:
     extends:
-      file: deploy-no-build.yml
+      file: deploy.yml
       service: proxy
     volumes:
       # Store data either in host-mapped directory or a named Docker volume
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
       - proxy-data:/deployment
     environment:
-      PROXY_BACKEND_HOST: 'host.docker.internal'
+      MANAGER_HOST: 'host.docker.internal'
 
   keycloak:
     extends:
-      file: deploy-no-build.yml
+      file: deploy.yml
       service: keycloak
     volumes:
       - ../deployment:/deployment
@@ -59,7 +59,7 @@ services:
 
   postgresql:
     extends:
-      file: deploy-no-build.yml
+      file: deploy.yml
       service: postgresql
     # Access directly if needed on localhost
     ports:

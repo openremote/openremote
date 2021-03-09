@@ -61,9 +61,6 @@ services:
       # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
       # PROXY_LOGLEVEL: 'notice'
 
-      # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
-      # PROXY_BACKEND_HOST: 127.0.0.1
-
     # Run proxy, obtain and automatically renew SSL certificates if DOMAINNAME is not localhost. Use
     # the command 'help' to get a list of all options.
     command: run
@@ -173,12 +170,6 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
       MASTER_REALM_KEYCLOAK_THEME: ${MASTER_REALM_KEYCLOAK_THEME:-openremote}
-
-      # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
-      # Also remove (or comment) the already existing variables with the same name.
-      # KEYCLOAK_HOST: 127.0.0.1
-      # KEYCLOAK_PORT: 8081
-      # DATABASE_CONNECTION_URL: jdbc:postgresql://localhost/openremote
 
       # The service-internal webservice interface binding, bind to all interfaces
       # when running  in container. Default is 127.0.0.1.
@@ -300,6 +291,7 @@ services:
       DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       KEYCLOAK_USER: admin
       PROXY_ADDRESS_FORWARDING: 'true'
+      KEYCLOAK_FRONTEND_URL: 'https://${IDENTITY_NETWORK_HOST:-localhost}/auth'
 
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
@@ -324,10 +316,6 @@ services:
         # This was 600s in the Dockerfile, but that seems way too long.
         start_period: 60s
         retries: 30
-
-    # Uncomment to support the IKEA TRÅDFRI protocol. USE AT YOUR OWN RISK.
-    # ports:
-    #   - "8081:8080"
 
   # PostgreSQL DBMS
   postgresql:

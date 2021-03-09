@@ -47,6 +47,9 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         masterRealm.setDisplayName("Master");
         keycloakProvider.updateTenant(masterRealm);
 
+        // Check that frontend URL has been updated before we proceed; we can see this in
+        Thread.sleep(10000);
+
         // Create our client application with its default roles
         keycloakProvider.createOpenRemoteClientApplication(masterRealm.getRealm());
 

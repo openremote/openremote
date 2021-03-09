@@ -653,14 +653,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // Service-internal network (between manager and keycloak service containers) does not use SSL
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
 
-        // Update the frontend URL to match the external URL of the system
-        Map<String, String> attributes = realmRepresentation.getAttributes();
-        if (attributes == null) {
-            attributes = new HashMap<>();
-            realmRepresentation.setAttributes(attributes);
-        }
-        attributes.put("frontendUrl", externalServerUri.clone().path(KEYCLOAK_AUTH_PATH).build().toString());
-
         // Configure SMTP
         String host = container.getConfig().getOrDefault(SETUP_EMAIL_HOST, null);
         if (!TextUtil.isNullOrEmpty(host) && (realmRepresentation.getSmtpServer() == null || realmRepresentation.getSmtpServer().isEmpty())) {

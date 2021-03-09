@@ -144,7 +144,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         def agent = new WebsocketClientAgent("Test agent")
             .setRealm(Constants.MASTER_REALM)
             .setConnectUri("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=master")
-            .setOAuthGrant(new OAuthPasswordGrant("http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token",
+            .setOAuthGrant(new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
                 KEYCLOAK_CLIENT_ID,
                 null,
                 null,

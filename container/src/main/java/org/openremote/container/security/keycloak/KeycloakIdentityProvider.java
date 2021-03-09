@@ -78,7 +78,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         "security-admin-console");
 
     public static final String KEYCLOAK_HOST = "KEYCLOAK_HOST";
-    public static final String KEYCLOAK_HOST_DEFAULT = "localhost";
+    public static final String KEYCLOAK_HOST_DEFAULT = "127.0.0.1"; // Bug in keycloak default hostname provider means localhost causes problems with dev-proxy profile
     public static final String KEYCLOAK_PORT = "KEYCLOAK_PORT";
     public static final int KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
@@ -340,6 +340,11 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
                     AdapterConfig adapterConfig = keycloak.getAdapterConfig(
                         keycloakRealmClient.realm, keycloakRealmClient.clientId
+                    );
+
+                    // The auth-server-url in the adapter config must be reachable by this manager it will be the frontend URL by default
+                    adapterConfig.setAuthServerUrl(
+                        keycloakServiceUri.clone().build().toString()
                     );
 
                     return KeycloakDeploymentBuilder.build(adapterConfig);
