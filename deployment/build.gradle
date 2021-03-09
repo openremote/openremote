@@ -9,7 +9,7 @@ task installDist(type: Copy) {
     into "${buildDir}/image"
 
     from(projectDir) {
-        exclude "build.gradle", "Dockerfile", "build", "src"
+        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src"
     }
 
     into("manager/extensions") {
