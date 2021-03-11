@@ -4,12 +4,15 @@ import groovy.json.JsonSlurper
 import org.openremote.model.map.MapResource
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.*
 import static org.openremote.model.Constants.*
 
+// TODO: Remove this once map service is removed and we fallback to standalone tile server
+@Ignore
 class MapResourceTest extends Specification implements ManagerContainerTrait {
 
     def "Retrieve map settings"() {
