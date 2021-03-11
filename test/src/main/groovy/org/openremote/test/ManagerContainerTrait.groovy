@@ -5,7 +5,6 @@ import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.rules.RulesService
 import org.openremote.model.ContainerService
 import spock.util.concurrent.PollingConditions
@@ -21,6 +20,7 @@ import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
 import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
 import static org.openremote.manager.setup.SetupTasks.*
+import static org.openremote.test.setup.TestSetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
 
@@ -32,11 +32,10 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
                 (IDENTITY_NETWORK_HOST)          : "127.0.0.1",
                 (IDENTITY_NETWORK_WEBSERVER_PORT): "8081",
-                (SETUP_TESTS)                    : "true",
-                (SETUP_IMPORT_DEMO_ASSETS)       : "true",
-                (SETUP_IMPORT_DEMO_USERS)        : "true",
-                (SETUP_IMPORT_DEMO_SCENES)       : "false",
-                (SETUP_IMPORT_DEMO_RULES)        : "false",
+                (SETUP_CREATE_ASSETS)            : "true",
+                (SETUP_CREATE_USERS)             : "true",
+                (SETUP_CREATE_SCENES)            : "false",
+                (SETUP_CREATE_RULES)             : "false",
                 (MQTT_SERVER_LISTEN_HOST)        : "127.0.0.1", // Works best for cross platform test running
                 (TIMER_CLOCK_TYPE)               : PSEUDO.name()
         ]
@@ -56,8 +55,8 @@ trait ManagerContainerTrait extends ContainerTrait {
     }
 
     Container startContainerWithDemoScenesAndRules(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_SCENES): "true"]
-        config << [(SETUP_IMPORT_DEMO_RULES): "true"]
+        config << [(SETUP_CREATE_SCENES): "true"]
+        config << [(SETUP_CREATE_RULES): "true"]
         startContainer(config, services)
     }
 

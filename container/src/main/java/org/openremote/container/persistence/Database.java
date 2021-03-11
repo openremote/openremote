@@ -36,54 +36,60 @@ public interface Database {
      */
     Properties createProperties();
 
-        /**
-         * Modify persistence properties (e.g. set datasource) used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
-         */
-        void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
+    /**
+     * Modify persistence properties (e.g. set datasource) used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
+     */
+    void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
 
-        void close();
+    void close();
 
-        enum Product implements Database {
+    String getConnectorName();
 
-            POSTGRES {
-                protected HikariConfig hikariConfig;
-                protected HikariDataSource hikariDataSource;
+    enum Product implements Database {
 
-            @Override
-            public Properties createProperties() {
-                Properties properties = new Properties();
-                properties.put(AvailableSettings.DIALECT, PostgreSQL95Dialect.class.getName());
-                return properties;
-            }
+        POSTGRES {
+            protected HikariConfig hikariConfig;
+            protected HikariDataSource hikariDataSource;
 
-            @Override
-            public void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
-                hikariConfig = new HikariConfig();
-                hikariConfig.setRegisterMbeans(true);
-                hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME) ? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
-                hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
-                hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
-                hikariConfig.addDataSourceProperty("url", connectionUrl);
-                hikariConfig.setUsername(username);
-                hikariConfig.setPassword(password);
-                hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);
-                hikariConfig.setInitializationFailTimeout(connectionTimeoutSeconds * 1000);
-                hikariConfig.setMinimumIdle(minIdle);
-                hikariConfig.setMaximumPoolSize(maxPoolSize);
+        @Override
+        public Properties createProperties() {
+            Properties properties = new Properties();
+            properties.put(AvailableSettings.DIALECT, PostgreSQL95Dialect.class.getName());
+            return properties;
+        }
 
-                hikariDataSource = new HikariDataSource(hikariConfig);
+        @Override
+        public String getConnectorName() {
+            return "postgresql";
+        }
 
-                properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
-            }
+        @Override
+        public void open(Properties properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
+            hikariConfig = new HikariConfig();
+            hikariConfig.setRegisterMbeans(true);
+            hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME) ? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
+            hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
+            hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
+            hikariConfig.addDataSourceProperty("url", connectionUrl);
+            hikariConfig.setUsername(username);
+            hikariConfig.setPassword(password);
+            hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);
+            hikariConfig.setInitializationFailTimeout(connectionTimeoutSeconds * 1000);
+            hikariConfig.setMinimumIdle(minIdle);
+            hikariConfig.setMaximumPoolSize(maxPoolSize);
 
-            @Override
-            public void close() {
-                if (hikariDataSource != null)
-                    hikariDataSource.close();
-                hikariConfig = null;
-                hikariDataSource = null;
-            }
+            hikariDataSource = new HikariDataSource(hikariConfig);
+
+            properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
+        }
+
+        @Override
+        public void close() {
+            if (hikariDataSource != null)
+                hikariDataSource.close();
+            hikariConfig = null;
+            hikariDataSource = null;
         }
     }
-
+}
 }

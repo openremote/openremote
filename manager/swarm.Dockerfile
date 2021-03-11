@@ -7,22 +7,5 @@ FROM openremote/manager:latest
 ARG GIT_COMMIT=unknown
 LABEL git-commit=$GIT_COMMIT
 
-ENV JAVA_OPTS -Xmx1g
-
-ENV APP_DOCROOT /opt/web
-ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
-ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
-ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
-ENV PROVISION_DOCROOT /deployment/manager/provisioning
-
-EXPOSE 8080
-
-HEALTHCHECK --interval=3s --timeout=3s --start-period=300s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
-
-WORKDIR /opt/app
-
-RUN mkdir -p /deployment/extensions
-
 COPY --from=deployment /deployment/ /deployment/
 # hadolint ignore=DL3025
-ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main

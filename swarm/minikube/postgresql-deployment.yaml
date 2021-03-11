@@ -26,12 +26,6 @@ spec:
     spec:
       containers:
       - env:
-        - name: POSTGRES_DB
-          value: openremote
-        - name: POSTGRES_PASSWORD
-          value: CHANGE_ME_DB_USER_PASSWORD
-        - name: POSTGRES_USER
-          value: openremote
         - name: TZ
           value: Europe/Amsterdam
         image: openremote/postgresql:latest

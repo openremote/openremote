@@ -28,6 +28,9 @@ import java.util.concurrent.ScheduledExecutorService;
 @TsIgnore
 public interface Container {
 
+    String DEV_MODE = "DEV_MODE";
+    boolean DEV_MODE_DEFAULT = true;
+
     boolean isDevMode();
 
     Map<String, String> getConfig();

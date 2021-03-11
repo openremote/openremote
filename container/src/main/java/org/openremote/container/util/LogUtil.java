@@ -25,7 +25,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.logging.LogManager;
+
+import static org.openremote.model.Container.DEV_MODE;
 
 public class LogUtil {
 
@@ -38,12 +41,13 @@ public class LogUtil {
      * If system property <code>java.util.logging.config.file</code> has not been set, try to load the
      * logging configuration specified in environment variable <code>LOGGING_CONFIG_FILE</code> as a file.
      * If this wasn't set, try to find the file <code>/deployment/manager/logging.properties</code>.
-     * If this also wasn't found, load the given default logging configuration from the classpath.
+     * If this also wasn't found, load the given default logging configuration from the classpath
+     * (logging-dev.properties when DEV_MODE=true otherwise logging.properties).
      * <p>
      * This method should be called in a <code>static { ... }</code> block in the "first" class of your
      * application (typically where your <code>main()</code> method is located).
      */
-    public static void configureLogging(String defaultLoggingProperties) throws ExceptionInInitializerError {
+    public static void configureLogging() throws ExceptionInInitializerError {
         // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
             // Load the logging configuration file specified with an environment variable
@@ -69,9 +73,12 @@ public class LogUtil {
                     }
                 } else {
                     // Or load a default configuration from the classpath
-                    try (InputStream is = Container.class.getClassLoader().getResourceAsStream(defaultLoggingProperties)) {
+                    String devModeStr = System.getenv(DEV_MODE);
+                    boolean isDevMode = devModeStr == null || "TRUE".equals(devModeStr.toUpperCase(Locale.ROOT));
+                    String loggingFile = isDevMode ? "logging-dev.properties" : "logging.properties";
+                    try (InputStream is = Container.class.getClassLoader().getResourceAsStream(loggingFile)) {
                         if (is != null) {
-                            System.out.println("Using logging configuration: logging.properties on classpath");
+                            System.out.println("Using logging configuration on classpath: " + loggingFile);
                             LogManager.getLogManager().readConfiguration(is);
                         }
                     } catch (Exception ex) {

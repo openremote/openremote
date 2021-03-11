@@ -80,7 +80,7 @@ public class EmailNotificationHandler implements NotificationHandler {
 
         defaultFrom = container.getConfig().getOrDefault(SETUP_EMAIL_FROM, SETUP_EMAIL_FROM_DEFAULT);
 
-        if (!TextUtil.isNullOrEmpty(host)) {
+        if (!TextUtil.isNullOrEmpty(host) && !TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)) {
             MailerBuilder.MailerRegularBuilder mailerBuilder = MailerBuilder.withSMTPServer(host, port, user, password);
             boolean startTls = getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT);
 

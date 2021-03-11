@@ -7,7 +7,6 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
     const production = mode === "production";
     managerUrl = managerUrl || (production ? undefined : "http://localhost:8080");
-    keycloakUrl = keycloakUrl || (production ? undefined : "http://localhost:8080/auth");
     const OUTPUT_PATH = isDevServer ? 'src' : 'dist';
 
     const config = {

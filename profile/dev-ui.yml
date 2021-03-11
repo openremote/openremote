@@ -1,17 +1,12 @@
+# OpenRemote v3
 #
-# Profile for doing development work on full stack.
+# Profile for doing development work on UI components.
 #
-# Your changes will be visible live on browser reload or after restart:
-#
-# - Edit files in deployment/manager/
-# - Edit files in keycloak/theme/
-# - Mount the proxy-data volume in a new container and edit proxy configuration files
-# - Change the proxy configuration to a directory mount and edit configuration files
+# Please see deploy.yml for configuration details for each service.
 #
 version: '2.4'
 
 volumes:
-  proxy-data:
   postgresql-data:
 
 services:
@@ -26,9 +21,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Use local deployment data in host-mapped directory for easy development. The
-      # ../deployment directory is the one which will be baked into the managers image.
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}:/deployment
+      # DEPLOYMENT_DIR must be supplied and points to the dir that contains the custom code in development
+      - ${DEPLOYMENT_DIR:?DEPLOYMENT_DIR must be set}:/deployment
     environment:
       IDENTITY_NETWORK_WEBSERVER_PORT: 8080
       IDENTITY_NETWORK_SECURE: 'false'
@@ -45,7 +39,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ../ui/keycloak/themes:/deployment/keycloak/themes
+      - ${DEPLOYMENT_DIR:?DEPLOYMENT_DIR must be set}:/deployment
     depends_on:
       postgresql:
         condition: service_healthy

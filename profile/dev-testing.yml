@@ -1,18 +1,16 @@
+# OpenRemote v3
 #
 # Profile for doing IDE development work and running build tests.
 #
-# Run this in the background for full ./gradlew clean build
+# Please see profile/deploy.yml for configuration details for each service.
 #
 version: '2.4'
-
-volumes:
-  postgresql-data:
 
 services:
 
   keycloak:
     extends:
-      file: deploy-no-build.yml
+      file: deploy.yml
       service: keycloak
     volumes:
       - ../deployment:/deployment
@@ -25,15 +23,13 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      # Use manager dev mode reverse proxy to access keycloak
+      # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
       KEYCLOAK_FRONTEND_URL: 'http://localhost:8080/auth'
 
   postgresql:
     extends:
-      file: deploy-no-build.yml
+      file: deploy.yml
       service: postgresql
     # Access directly if needed on localhost
     ports:
       - "5432:5432"
-    volumes:
-      - postgresql-data:/var/lib/postgresql/data

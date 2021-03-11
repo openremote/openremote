@@ -152,16 +152,17 @@ public class MapService implements ContainerService {
 
         mapTilesPath = Paths.get(getString(container.getConfig(), MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
-            throw new IllegalStateException(
-                    "Map tiles data file not found (wrong working directory?): " + mapTilesPath.toAbsolutePath()
-            );
+            LOG.warning("Map tiles data file not found '" + mapTilesPath.toAbsolutePath() + "', map functionality will not work");
+            mapTilesPath = null;
+            return;
         }
 
         mapSettingsPath = Paths.get(getString(container.getConfig(), MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
-            throw new IllegalStateException(
-                    "Map settings file not found: " + mapSettingsPath.toAbsolutePath()
-            );
+            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', map functionality will not work");
+            mapTilesPath = null;
+            mapSettingsPath = null;
+            return;
         }
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
@@ -203,6 +204,10 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        if (mapTilesPath == null || mapSettingsPath == null) {
+            return;
+        }
+
         LOG.info("Starting map service with tile data: " + mapTilesPath.toAbsolutePath());
         Class.forName(org.sqlite.JDBC.class.getName());
         connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath.toAbsolutePath());

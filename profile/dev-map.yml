@@ -1,7 +1,9 @@
+# OpenRemote v3
 #
-# Profile for doing development work on raster map components.
+# Profile for running the map tile server on http://localhost:8082
 #
-# https://localhost:8082
+# Please see deploy.yml for configuration details for each service.
+#
 version: '2.4'
 
 services:

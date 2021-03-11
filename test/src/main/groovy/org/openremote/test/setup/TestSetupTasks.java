@@ -26,12 +26,42 @@ import org.openremote.model.Container;
 
 import java.util.List;
 
+import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.manager.setup.SetupTasks.*;
 
 /**
  * Builtin setup tasks.
  */
 public class TestSetupTasks extends EmptySetupTasks {
+
+    public static final String SETUP_CREATE_SCENES = "SETUP_CREATE_SCENES";
+    public static final String SETUP_CREATE_USERS = "SETUP_CREATE_USERS";
+    public static final String SETUP_CREATE_ASSETS = "SETUP_CREATE_ASSETS";
+    public static final String SETUP_CREATE_RULES = "SETUP_CREATE_RULES";
+    public static final String SETUP_IMPORT_DEMO_AGENT = "SETUP_CREATE_AGENT";
+
+    static boolean isImportDemoUsers(Container container) {
+        return isImportDemoAssets(container)
+            || getBoolean(container.getConfig(), SETUP_CREATE_USERS, container.isDevMode());
+    }
+
+    static boolean isImportDemoAssets(Container container) {
+        return isImportDemoAgent(container)
+            || isImportDemoRules(container)
+            || getBoolean(container.getConfig(), SETUP_CREATE_ASSETS, container.isDevMode());
+    }
+
+    static boolean isImportDemoRules(Container container) {
+        return getBoolean(container.getConfig(), SETUP_CREATE_RULES, container.isDevMode());
+    }
+
+    // Defaults to always disabled as agents might require actual protocol-specific hardware
+    static boolean isImportDemoAgent(Container container) {
+        return getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT, false);
+    }
+    static boolean isImportDemoScenes(Container container) {
+        return getBoolean(container.getConfig(), SETUP_CREATE_SCENES, container.isDevMode());
+    }
 
     @Override
     public List<Setup> createTasks(Container container) {
@@ -44,7 +74,7 @@ public class TestSetupTasks extends EmptySetupTasks {
                 addTask(new KeycloakTestSetup(container));
             }
 
-            if (isImportDemoAssets(container)) {
+            if (isImportDemoAssets(container) || isImportDemoScenes(container)) {
                 addTask(new ManagerTestSetup(container, isImportDemoScenes(container)));
             }
 

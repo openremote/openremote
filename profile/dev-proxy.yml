@@ -1,7 +1,7 @@
+# OpenRemote v3
 #
-# Profile for doing development work on the manager in an IDE; uses proxy container to redirect to host machine.
-#
-# https://localhost/
+# Profile for running the reverse proxy on https://localhost/ with the manager backend mapped to the host machine on
+# localhost:8080 and the keycloak backend mapped to the host machine on localhost:8081
 #
 # Your changes will be visible live on browser reload or after restart:
 #
@@ -9,24 +9,12 @@
 #       WEBSERVER_LISTEN_HOST=0.0.0.0
 #       IDENTITY_NETWORK_WEBSERVER_PORT=443
 #       IDENTITY_NETWORK_SECURE=true
-# - Edit files in deployment/manager/
-# - Edit files in keycloak/theme/
-# - Mount the proxy-data volume in a new container and edit proxy configuration files
-# - Change the proxy configuration to a directory mount and edit configuration files
+#
+# Please see deploy.yml for configuration details for each service.
 #
 version: '2.4'
 
-#networks:
-#  default:
-#    driver: bridge
-#    ipam:
-#      driver: default
-#      config:
-#        - subnet: 172.18.18.0/24
-#          gateway: 172.18.18.1
-
 volumes:
-  proxy-data:
   postgresql-data:
 
 services:
@@ -35,34 +23,7 @@ services:
     extends:
       file: deploy.yml
       service: proxy
-    volumes:
-      # Store data either in host-mapped directory or a named Docker volume
-      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
-      - proxy-data:/deployment
     environment:
       MANAGER_HOST: 'host.docker.internal'
-
-  keycloak:
-    extends:
-      file: deploy.yml
-      service: keycloak
-    volumes:
-      - ../deployment:/deployment
-      - ../keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
-      - ../keycloak/scripts/disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
-    # Access directly if needed on localhost
-    ports:
-      - "8081:8080"
-    depends_on:
-      postgresql:
-        condition: service_healthy
-
-  postgresql:
-    extends:
-      file: deploy.yml
-      service: postgresql
-    # Access directly if needed on localhost
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgresql-data:/var/lib/postgresql/data
+      KEYCLOAK_HOST: 'host.docker.internal'
+      KEYCLOAK_PORT: 8081

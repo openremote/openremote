@@ -90,7 +90,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String IDENTITY_SESSION_MAX_MINUTES = "IDENTITY_SESSION_MAX_MINUTES";
     public static final int IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
-    public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 60 * 24 * 14; // 14 days
+    public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 2628000; // 5 years
     public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";
     public static final boolean IDENTITY_NETWORK_SECURE_DEFAULT = false;
     public static final String IDENTITY_NETWORK_HOST = "IDENTITY_NETWORK_HOST";

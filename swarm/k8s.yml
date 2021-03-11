@@ -25,20 +25,6 @@ spec:
     spec:
       containers:
       - env:
-        - name: DB_ADDR
-          value: postgresql
-        - name: DB_DATABASE
-          value: openremote
-        - name: DB_PASSWORD
-          value: CHANGE_ME_DB_USER_PASSWORD
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_SCHEMA
-          value: public
-        - name: DB_USER
-          value: openremote
-        - name: DB_VENDOR
-          value: postgres
         - name: JAVA_OPTS
           value: -Xms300m -Xmx300m -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=200m
             -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m -XX:MaxDirectMemorySize=25m
@@ -113,22 +99,6 @@ spec:
     spec:
       containers:
       - env:
-        - name: ROOT_REDIRECT_PATH
-          value: "/manager"
-        - name: DATABASE_CONNECTION_TIMEOUT_SECONDS
-          value: "300"
-        - name: DATABASE_CONNECTION_URL
-          value: jdbc:postgresql://postgresql/openremote
-        - name: DATABASE_MAX_POOL_SIZE
-          value: "20"
-        - name: DATABASE_MIN_POOL_SIZE
-          value: "5"
-        - name: DATABASE_PASSWORD
-          value: CHANGE_ME_DB_USER_PASSWORD
-        - name: DATABASE_USERNAME
-          value: openremote
-        - name: DEV_MODE
-          value: "false"
         - name: IDENTITY_NETWORK_HOST
           value: localhost
         - name: IDENTITY_NETWORK_SECURE
@@ -143,30 +113,12 @@ spec:
           value: keycloak
         - name: KEYCLOAK_PORT
           value: "8080"
-        - name: MASTER_REALM_KEYCLOAK_THEME
-          value: openremote
         - name: SETUP_ADMIN_PASSWORD
           value: secret
-        - name: SETUP_IMPORT_DEMO_AGENT
-          value: "true"
-        - name: SETUP_IMPORT_DEMO_AGENT_KNX
-          value: "false"
-        - name: SETUP_IMPORT_DEMO_AGENT_VELBUS
-          value: "false"
-        - name: SETUP_IMPORT_DEMO_ASSETS
-          value: "true"
-        - name: SETUP_IMPORT_DEMO_RULES
-          value: "true"
-        - name: SETUP_IMPORT_DEMO_SCENES
-          value: "true"
-        - name: SETUP_IMPORT_DEMO_USERS
-          value: "true"
         - name: SETUP_WIPE_CLEAN_INSTALL
           value: "true"
         - name: TZ
           value: Europe/Amsterdam
-        - name: WEBSERVER_LISTEN_HOST
-          value: 0.0.0.0
         image: openremote/manager-swarm:latest
         imagePullPolicy: ""
         name: manager
@@ -219,12 +171,6 @@ spec:
     spec:
       containers:
       - env:
-        - name: POSTGRES_DB
-          value: openremote
-        - name: POSTGRES_PASSWORD
-          value: CHANGE_ME_DB_USER_PASSWORD
-        - name: POSTGRES_USER
-          value: openremote
         - name: TZ
           value: Europe/Amsterdam
         image: openremote/postgresql:latest

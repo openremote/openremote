@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 /**
  * Executes setup tasks for a clean installation when the application starts.
  * <p>
- * This service is disabled when {@link PersistenceService#SETUP_WIPE_CLEAN_INSTALL} is <code>false</code>.
+ * This service is disabled when {@link PersistenceService#isSetupWipeCleanInstall} is <code>false</code>.
  * <p>
  * First, this service will load an implementation of {@link SetupTasks} from the
  * classpath using {@link ServiceLoader}. If multiple providers are found, an error
@@ -58,7 +58,7 @@ public class SetupService implements ContainerService {
         boolean isClean = container.getService(PersistenceService.class).isSetupWipeCleanInstall();
 
         if (!isClean) {
-            LOG.info("Setup service disabled, " + PersistenceService.SETUP_WIPE_CLEAN_INSTALL + "=false");
+            LOG.info("Setup service disabled, clean install = false");
             return;
         }
 

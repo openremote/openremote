@@ -24,6 +24,7 @@ import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
 
 import java.util.*;
@@ -44,7 +45,7 @@ import static org.openremote.container.util.MapAccess.getInteger;
  * manage the life cycle of these services.
  * <p>
  * Access environment configuration through {@link #getConfig()} and the helper methods
- * in {@link org.openremote.container.util.MapAccess}. Consider using {@link #DEV_MODE}
+ * in {@link org.openremote.container.util.MapAccess}. Consider using {@link org.openremote.model.Container#DEV_MODE}
  * to distinguish between development and production environments.
  */
 public class Container implements org.openremote.model.Container {
@@ -77,12 +78,10 @@ public class Container implements org.openremote.model.Container {
     public static final int SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
 
     static {
-        LogUtil.configureLogging("logging.properties");
+        LogUtil.configureLogging();
         LOG = Logger.getLogger(Container.class.getName());
     }
 
-    public static final String DEV_MODE = "DEV_MODE";
-    public static final boolean DEV_MODE_DEFAULT = true;
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
 
@@ -109,7 +108,9 @@ public class Container implements org.openremote.model.Container {
 
     public Container(Map<String, String> config, Iterable<ContainerService> services) {
         for (Map.Entry<String, String> entry : config.entrySet()) {
-            this.config.put(entry.getKey(), entry.getValue());
+            if (!TextUtil.isNullOrEmpty(entry.getValue())) {
+                this.config.put(entry.getKey(), entry.getValue());
+            }
         }
 
         this.devMode = getBoolean(this.config, DEV_MODE, DEV_MODE_DEFAULT);

@@ -47,7 +47,7 @@ public class SchemaExporter {
             new ManagerPersistenceService() {
 
                 @Override
-                protected void openDatabase(org.openremote.model.Container container, Database database) {
+                protected void openDatabase(org.openremote.model.Container container, Database database, String username, String password, String connectionUrl) {
                     // Ignore, we don't want to connect to the database when exporting schema
                 }
 
