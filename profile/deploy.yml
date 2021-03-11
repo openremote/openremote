@@ -146,7 +146,7 @@ services:
       FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
 
       # Developer mode (see code for usages of DEV_MODE flag)
-      DEV_MODE: ${MANAGER_DEV_MODE:-false}
+      DEV_MODE: ${DEV_MODE:-false}
 
       # !! WARNING: This will wipe your database !!
       # Force a full clean and setup on startup irrespective of whether there is existing data
