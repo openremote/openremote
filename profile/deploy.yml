@@ -295,7 +295,7 @@ services:
       # It is important that all services have the same timezone and are time synchronized.
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: ${TZ:-Europe/Amsterdam}
-      PGTZ: ${TZ:-Europe/Amsterdam}
+      PGTZ: ${PGTZ:-Europe/Amsterdam}
 
       # Database settings
       POSTGRES_DB: ${DB_NAME:-openremote}
