@@ -1031,8 +1031,7 @@ class VelbusBasicTest extends Specification {
             assert device.getPropertyValue("CH22") == InputProcessor.ChannelState.PRESSED
         }
         if (network.client == messageProcessor) {
-            assert messageProcessor.sentMessages.size() == 1
-            assert messageProcessor.sentMessages[0].toString() == "0F F8 32 04 00 20 00 00 A3 04 00 00 00 00"
+            assert messageProcessor.sentMessages.contains("0F F8 32 04 00 20 00 00 A3 04 00 00 00 00")
         }
 
         when: "a button release is written to the device"
@@ -1042,8 +1041,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             assert device.getPropertyValue("CH22") == InputProcessor.ChannelState.RELEASED
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 2
-                assert messageProcessor.sentMessages[1].toString() == "0F F8 32 04 00 00 20 00 A3 04 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F F8 32 04 00 00 20 00 A3 04 00 00 00 00")
             }
         }
 
@@ -1091,8 +1089,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             device.getPropertyValue("CH1_LED") == FeatureProcessor.LedState.ON
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 1
-                assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F6 01 CD 04 00 00 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F FB 30 02 F6 01 CD 04 00 00 00 00 00 00")
             }
         }
 
@@ -1104,8 +1101,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             device.getPropertyValue("CH1_LED") == FeatureProcessor.LedState.SLOW
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 1
-                assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F7 01 CC 04 00 00 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F FB 30 02 F7 01 CC 04 00 00 00 00 00 00")
             }
         }
 
@@ -1117,8 +1113,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             device.getPropertyValue("CH1_LED") == FeatureProcessor.LedState.FAST
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 1
-                assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F8 01 CB 04 00 00 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F FB 30 02 F8 01 CB 04 00 00 00 00 00 00")
             }
         }
 
@@ -1130,8 +1125,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             device.getPropertyValue("CH1_LED") == FeatureProcessor.LedState.VERYFAST
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 1
-                assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F9 01 CA 04 00 00 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F FB 30 02 F9 01 CA 04 00 00 00 00 00 00")
             }
         }
 
@@ -1143,8 +1137,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             device.getPropertyValue("CH1_LED") == FeatureProcessor.LedState.OFF
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 1
-                assert messageProcessor.sentMessages[0].toString() == "0F FB 30 02 F5 01 CE 04 00 00 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F FB 30 02 F5 01 CE 04 00 00 00 00 00 00")
             }
         }
 
@@ -1230,8 +1223,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             assert device.getPropertyValue("CH3") == InputProcessor.ChannelState.PRESSED
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 1
-                assert messageProcessor.sentMessages[0].toString() == "0F F8 0A 04 00 04 00 00 E7 04 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F F8 0A 04 00 04 00 00 E7 04 00 00 00 00")
             }
         }
 
@@ -1242,8 +1234,7 @@ class VelbusBasicTest extends Specification {
         conditions.eventually {
             assert device.getPropertyValue("CH3") == InputProcessor.ChannelState.RELEASED
             if (network.client == messageProcessor) {
-                assert messageProcessor.sentMessages.size() == 2
-                assert messageProcessor.sentMessages[1].toString() == "0F F8 0A 04 00 00 04 00 E7 04 00 00 00 00"
+                assert messageProcessor.sentMessages.contains("0F F8 0A 04 00 00 04 00 E7 04 00 00 00 00")
             }
         }
     }
@@ -1692,20 +1683,21 @@ class VelbusBasicTest extends Specification {
         if (network.client == messageProcessor) {
             conditions.eventually {
                 assert device.getPropertyValue("MEMO_TEXT") == msg.substring(0, 62)
-                assert messageProcessor.sentMessages.size() == 13
-                assert messageProcessor.sentMessages[0].toString() == "0F FB 30 08 AC 00 00 48 65 6C 6C 6F 1E 04"
-                assert messageProcessor.sentMessages[1].toString() == "0F FB 30 08 AC 00 05 20 77 6F 72 6C 29 04"
-                assert messageProcessor.sentMessages[2].toString() == "0F FB 30 08 AC 00 0A 64 2E 20 54 68 9A 04"
-                assert messageProcessor.sentMessages[3].toString() == "0F FB 30 08 AC 00 0F 69 73 20 69 73 2B 04"
-                assert messageProcessor.sentMessages[4].toString() == "0F FB 30 08 AC 00 14 20 61 20 74 65 84 04"
-                assert messageProcessor.sentMessages[5].toString() == "0F FB 30 08 AC 00 19 73 74 20 6D 65 20 04"
-                assert messageProcessor.sentMessages[6].toString() == "0F FB 30 08 AC 00 1E 73 73 61 67 65 E1 04"
-                assert messageProcessor.sentMessages[7].toString() == "0F FB 30 08 AC 00 23 20 66 6F 72 20 68 04"
-                assert messageProcessor.sentMessages[8].toString() == "0F FB 30 08 AC 00 28 74 68 65 20 4F 3A 04"
-                assert messageProcessor.sentMessages[9].toString() == "0F FB 30 08 AC 00 2D 4C 45 44 20 70 80 04"
-                assert messageProcessor.sentMessages[10].toString() == "0F FB 30 08 AC 00 32 61 6E 65 6C 73 CD 04"
-                assert messageProcessor.sentMessages[11].toString() == "0F FB 30 08 AC 00 37 20 74 6F 20 6D 4B 04"
-                assert messageProcessor.sentMessages[12].toString() == "0F FB 30 06 AC 00 3C 61 6B 00 0C 04 00 00"
+                assert messageProcessor.sentMessages.size() >= 13
+                def firstPacketIndex = messageProcessor.sentMessages.indexOf("0F FB 30 08 AC 00 00 48 65 6C 6C 6F 1E 04")
+                assert firstPacketIndex >= 0
+                assert messageProcessor.sentMessages[firstPacketIndex + 1].toString() == "0F FB 30 08 AC 00 05 20 77 6F 72 6C 29 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 2].toString() == "0F FB 30 08 AC 00 0A 64 2E 20 54 68 9A 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 3].toString() == "0F FB 30 08 AC 00 0F 69 73 20 69 73 2B 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 4].toString() == "0F FB 30 08 AC 00 14 20 61 20 74 65 84 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 5].toString() == "0F FB 30 08 AC 00 19 73 74 20 6D 65 20 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 6].toString() == "0F FB 30 08 AC 00 1E 73 73 61 67 65 E1 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 7].toString() == "0F FB 30 08 AC 00 23 20 66 6F 72 20 68 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 8].toString() == "0F FB 30 08 AC 00 28 74 68 65 20 4F 3A 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 9].toString() == "0F FB 30 08 AC 00 2D 4C 45 44 20 70 80 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 10].toString() == "0F FB 30 08 AC 00 32 61 6E 65 6C 73 CD 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 11].toString() == "0F FB 30 08 AC 00 37 20 74 6F 20 6D 4B 04"
+                assert messageProcessor.sentMessages[firstPacketIndex + 12].toString() == "0F FB 30 06 AC 00 3C 61 6B 00 0C 04 00 00"
             }
         }
 
