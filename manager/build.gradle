@@ -46,6 +46,9 @@ distributions {
             into ("web") {
                 from("${projectDir}/src/web")
             }
+            into ("map") {
+                from("${projectDir}/src/map")
+            }
         }
     }
 }

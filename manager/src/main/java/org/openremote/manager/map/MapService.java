@@ -168,11 +168,11 @@ public class MapService implements ContainerService {
 //        }
 
         if (mapTilesPath == null) {
-            mapTilesPath = Paths.get(Objects.requireNonNull(Container.class.getClassLoader().getResource("mapdata.mbtiles")).toURI());
+            mapTilesPath = Paths.get("/opt/map/mapdata.mbtiles");
         }
 
         if (mapSettingsPath == null) {
-            mapSettingsPath = Paths.get(Objects.requireNonNull(Container.class.getClassLoader().getResource("mapsettings.json")).toURI());
+            mapSettingsPath = Paths.get("/opt/map/mapsettings.json");
         }
 
         container.getService(ManagerWebService.class).getApiSingletons().add(

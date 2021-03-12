@@ -77,5 +77,6 @@ RUN mkdir -p /deployment/manager/extensions
 
 ADD lib /opt/app/lib
 ADD web /opt/web
+ADD map /opt/map
 
 ENTRYPOINT java $MANAGER_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
