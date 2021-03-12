@@ -110,6 +110,18 @@ services:
     # Expose any devices required by agents
     #devices:
     #  - /dev/ttyACM0
+    #ports:
+    #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
+    logging:
+      options:
+        # Use very little logging for container STDOUT, this is
+        # quick to view and download with Docker remote client
+        # and `docker logs -f`. If you want to tail the whole
+        # and larger, rotated file log, use instead:
+        #
+        # docker exec -it openremote_manager_1 tail -f /deployment/openremote.log.0
+        #
+        max-size: 1m
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -243,6 +255,9 @@ services:
        -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
        -XX:MaxDirectMemorySize=25m -XX:NativeMemoryTracking=summary
        -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof}
+
+      # Custom JVM tool options (for remote debugging)
+      #JAVA_TOOL_OPTIONS: '-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n'
 
   # Keycloak identity provider
   keycloak:
