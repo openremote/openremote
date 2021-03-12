@@ -26,6 +26,6 @@ test {
     testLogging {
         outputs.upToDateWhen {false}
         // Enable this to show STDOUT/STDERR on console when running tests
-        showStandardStreams = true
+        // showStandardStreams = true
     }
 }

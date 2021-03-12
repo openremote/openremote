@@ -57,9 +57,9 @@ public class MapService implements ContainerService {
 
     public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
     public static final String MAP_TILES_PATH = "MAP_TILES_PATH";
-    public static final String MAP_TILES_PATH_DEFAULT = "deployment/map/mapdata.mbtiles";
+    public static final String MAP_TILES_PATH_DEFAULT = "manager/src/map/mapdata.mbtiles";
     public static final String MAP_SETTINGS_PATH = "MAP_SETTINGS_PATH";
-    public static final String MAP_SETTINGS_PATH_DEFAULT = "deployment/map/mapsettings.json";
+    public static final String MAP_SETTINGS_PATH_DEFAULT = "manager/src/map/mapsettings.json";
     public static final String MAP_TILESERVER_HOST = "MAP_TILESERVER_HOST";
     public static final String MAP_TILESERVER_HOST_DEFAULT = null;
     public static final String MAP_TILESERVER_PORT = "MAP_TILESERVER_PORT";
