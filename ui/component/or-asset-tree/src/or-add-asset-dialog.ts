@@ -163,7 +163,7 @@ export class OrAddAssetDialog extends LitElement {
 
         return html`
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
-            <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            <or-translate style="text-transform: capitalize" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
         `;
     }
 
