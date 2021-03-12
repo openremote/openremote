@@ -40,7 +40,7 @@ class VelbusBasicTest extends Specification {
     def static MockVelbusClient messageProcessor = new MockVelbusClient()
 
     @Shared
-    def static PollingConditions conditions = new PollingConditions(timeout: 10, delay: 0.2)
+    def static PollingConditions conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
     static loadDevicePackets(MockVelbusClient messageProcessor) {
         messageProcessor.mockPackets = [

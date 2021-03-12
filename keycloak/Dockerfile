@@ -12,7 +12,6 @@ ENV JDBC_MARIADB_VERSION 2.5.4
 ENV JDBC_MSSQL_VERSION 8.2.2.jre11
 
 ENV LAUNCH_JBOSS_IN_BACKGROUND 1
-ENV PROXY_ADDRESS_FORWARDING false
 ENV JBOSS_HOME /opt/jboss/keycloak
 ENV LANG en_US.UTF-8
 
@@ -20,11 +19,13 @@ ENV DB_VENDOR ${DB_VENDOR:-postgres}
 ENV DB_ADDR ${DB_ADDR:-postgresql}
 ENV DB_PORT ${DB_PORT:-5432}
 ENV DB_DATABASE ${DB_DATABASE:-openremote}
-ENV DB_USER ${DB_USER:-openremote}
-ENV DB_PASSWORD ${DB_PASSWORD:-openremote}
+ENV DB_USER ${DB_USER:-postgres}
+ENV DB_PASSWORD ${DB_PASSWORD:-postgres}
 ENV DB_SCHEMA ${DB_SCHEMA:-public}
 ENV KEYCLOAK_USER ${KEYCLOAK_USER:-admin}
+ENV KEYCLOAK_PASSWORD ${SETUP_ADMIN_PASSWORD:-secret}
 ENV PROXY_ADDRESS_FORWARDING ${PROXY_ADDRESS_FORWARDING:-true}
+ENV KEYCLOAK_FRONTEND_URL ${KEYCLOAK_FRONTEND_URL:-https://localhost/auth}
 ENV TZ ${TZ:-Europe/Amsterdam}
 
 ARG GIT_REPO
@@ -45,7 +46,7 @@ ADD themes /opt/jboss/keycloak/themes
 ADD module.xml /opt/jboss/keycloak/providers
 ADD build/image/openremote-keycloak.jar /opt/jboss/keycloak/providers
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=60s --retries=30 CMD curl --fail --silent http://localhost:8080/auth || exit 1
+HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=30 CMD curl --fail --silent http://localhost:8080/auth || exit 1
 
 USER 1000
 
