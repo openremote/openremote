@@ -43,6 +43,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -152,17 +153,26 @@ public class MapService implements ContainerService {
 
         mapTilesPath = Paths.get(getString(container.getConfig(), MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
-            LOG.warning("Map tiles data file not found '" + mapTilesPath.toAbsolutePath() + "', map functionality will not work");
+            LOG.warning("Map tiles data file not found '" + mapTilesPath.toAbsolutePath() + "', falling back to built in map");
             mapTilesPath = null;
-            return;
         }
 
         mapSettingsPath = Paths.get(getString(container.getConfig(), MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
-            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', map functionality will not work");
-            mapTilesPath = null;
+            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', faling back to built in map settings");
             mapSettingsPath = null;
-            return;
+        }
+
+//        if (mapTilesPath == null || mapSettingsPath == null) {
+//            return;
+//        }
+
+        if (mapTilesPath == null) {
+            mapTilesPath = Paths.get(Objects.requireNonNull(Container.class.getClassLoader().getResource("mapdata.mbtiles")).toURI());
+        }
+
+        if (mapSettingsPath == null) {
+            mapSettingsPath = Paths.get(Objects.requireNonNull(Container.class.getClassLoader().getResource("mapsettings.json")).toURI());
         }
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
@@ -204,6 +214,7 @@ public class MapService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+
         if (mapTilesPath == null || mapSettingsPath == null) {
             return;
         }
