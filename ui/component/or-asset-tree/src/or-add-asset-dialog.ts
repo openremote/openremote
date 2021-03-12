@@ -10,7 +10,7 @@ import {
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/dist/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {DefaultColor2, DefaultColor5, Util} from "@openremote/core";
+import {AssetModelUtil, DefaultColor2, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 
 export type OrAddAssetDetail = {
@@ -161,9 +161,19 @@ export class OrAddAssetDialog extends LitElement {
 
     protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor) {
 
+        if (!descriptor.name) {
+            return false;
+        }
+        
+        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name);
+         
         return html`
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
             <or-translate style="text-transform: capitalize" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            <h3>Attributes</h3>
+            <ul>${assetTypeInfo!.attributeDescriptors!.filter(e => !e.optional).map((item) => html`<li>${item.name}</li>`)}</ul>
+            <h3>Optional attributes</h3>
+            <ul>${assetTypeInfo!.attributeDescriptors!.filter(e => !!e.optional).map((item) => html`<li>${item.name}</li>`)}</ul>
         `;
     }
 
