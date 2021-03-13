@@ -53,12 +53,6 @@ We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs 
 
 For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
-
-## Running OpenRemote on ARM64 device
-
-OpenRemote images on Docker Hub are multi-arch created automatically by CI/CD pipeline, therefore there is no need to build them locally. The multi-arch build procedure is defined as [Github action](https://github.com/openremote/openremote/blob/master/.github/workflows/gradle.yml) and uses official Docker QEMU action.
-
-
 ## Discuss OpenRemote
 
 Join us on the [community forum](https://forum.openremote.io/).
