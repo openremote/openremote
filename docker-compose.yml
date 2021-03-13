@@ -10,9 +10,6 @@
 #
 version: '2.4'
 
-volumes:
-  postgresql-data:
-
 services:
 
   proxy:
