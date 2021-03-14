@@ -1,9 +1,8 @@
 # OpenRemote v3
 
 ![CI/CD](https://github.com/openremote/openremote/workflows/CI/CD/badge.svg)
-![tests](https://github.com/openremote/openremote/workflows/tests/badge.svg)
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
-
+<!-- ![tests](https://github.com/openremote/openremote/workflows/tests/badge.svg) -->
 
 [Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 
