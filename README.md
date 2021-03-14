@@ -34,7 +34,7 @@ Username: admin
 Password: secret
 
 ## What next
-Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote) for more information, some things to try:
+Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:
 
 - [Manager UI Guide](https://github.com/openremote/openremote/wiki/Demo-Smart-City)
 - [Creating a HTTP Agent](https://github.com/openremote/openremote/wiki/User-Guide%3A-Connecting-to-a-HTTP-API)
