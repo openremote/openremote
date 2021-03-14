@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 public class MockVelbusClient implements IoClient<VelbusPacket> {
     protected final List<Consumer<VelbusPacket>> messageConsumers = new ArrayList<>();
     protected final List<Consumer<ConnectionStatus>> statusConsumers = new ArrayList<>();
-    protected List<VelbusPacket> sentMessages = new ArrayList<>();
+    protected List<String> sentMessages = new ArrayList<>();
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
     protected Map<String, List<String>> mockPackets;
 
@@ -51,7 +51,7 @@ public class MockVelbusClient implements IoClient<VelbusPacket> {
 
     @Override
     public void sendMessage(VelbusPacket message) {
-        sentMessages.add(message);
+        sentMessages.add(message.toString());
 
         // If a mock packet mapping exists for this then return the result
         if (mockPackets != null) {

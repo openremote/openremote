@@ -1,4 +1,6 @@
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -12,11 +14,8 @@ import cz.habarta.typescript.generator.compiler.ModelCompiler;
 import cz.habarta.typescript.generator.compiler.ModelTransformer;
 import cz.habarta.typescript.generator.compiler.SymbolTable;
 import cz.habarta.typescript.generator.emitter.*;
-import cz.habarta.typescript.generator.parser.BeanModel;
-import cz.habarta.typescript.generator.parser.Model;
 import cz.habarta.typescript.generator.util.Pair;
 import cz.habarta.typescript.generator.util.Utils;
-import org.openremote.model.asset.Asset;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -75,6 +74,7 @@ import java.util.stream.Collectors;
  * </pre></blockquote>
  * <a href="https://github.com/vojtechhabarta/typescript-generator/issues/299">https://github.com/vojtechhabarta/typescript-generator/issues/299</a>
  */
+@SuppressWarnings("deprecation")
 public class EnumWithInterfacesExtension extends Extension {
 
     public static class EnumInterfaceModel {
