@@ -1029,9 +1029,9 @@ class VelbusBasicTest extends Specification {
         then: "the button press packet should have been sent to the message processor"
         conditions.eventually {
             assert device.getPropertyValue("CH22") == InputProcessor.ChannelState.PRESSED
-        }
-        if (network.client == messageProcessor) {
-            assert messageProcessor.sentMessages.contains("0F F8 32 04 00 20 00 00 A3 04 00 00 00 00")
+            if (network.client == messageProcessor) {
+                assert messageProcessor.sentMessages.contains("0F F8 32 04 00 20 00 00 A3 04 00 00 00 00")
+            }
         }
 
         when: "a button release is written to the device"
