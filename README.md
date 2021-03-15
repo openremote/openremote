@@ -20,7 +20,7 @@ You can quickly try the online demo with restricted access, login credentials ar
 
 The quickest way to get your own environment with full access is to make use of our docker images (both `amd64` and `arm64` are supported). First make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed (v18+). Then download the docker compose file:
 
-[OpenRemote Stack](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml)
+[OpenRemote Stack](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml) (Right click 'Save link as...')
 
 In a terminal `cd` to where you just saved the compose file and then run:
 
