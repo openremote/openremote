@@ -81,7 +81,7 @@ services:
         delay: 10s
     environment:
       SETUP_ADMIN_PASSWORD: ${PASSWORD:-secret}
-      IDENTITY_NETWORK_HOST: ${DOMAINNAME:-localhost}
+      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
       SETUP_EMAIL_HOST: ${EMAIL_HOST:-email-smtp.eu-west-1.amazonaws.com}
       SETUP_EMAIL_USER: ${EMAIL_USER}
       SETUP_EMAIL_PASSWORD: ${EMAIL_PASSWORD}
