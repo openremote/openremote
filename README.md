@@ -34,7 +34,7 @@ Username: admin
 Password: secret
 
 ### Not using localhost?
-The URL you use to access the system is important, by default keycloak expects it to be `https://localhost` if you are using a VM then you will need to tell keycloak at startup, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command (`BASH` syntax):
+The URL you use to access the system is important, by default keycloak expects it to be `https://localhost` if you are using a VM then you will need to tell keycloak at startup, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
 BASH: 
 ```
