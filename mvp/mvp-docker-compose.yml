@@ -24,6 +24,7 @@ networks:
 volumes:
   proxy-data:
   postgresql-data:
+  deployment-data:
 
 services:
   proxy:
@@ -71,7 +72,7 @@ services:
       retries: 120
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
     volumes:
-      - ./deployment:/deployment
+      - deployment-data:/deployment
     deploy:
       replicas: 1
       update_config:
@@ -107,7 +108,7 @@ services:
         order: start-first
         delay: 10m
     volumes:
-      - ./deployment:/deployment
+      - deployment-data:/deployment
     environment:
       KEYCLOAK_PASSWORD: ${PASSWORD:-secret}
       KEYCLOAK_FRONTEND_URL: "https://${DOMAINNAME:-localhost}/auth"
