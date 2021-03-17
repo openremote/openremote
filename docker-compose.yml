@@ -33,6 +33,8 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    environment:
+      KEYCLOAK_FRONTEND_URL: ${KEYCLOAK_FRONTEND_URL:-https://localhost/auth}
 
   postgresql:
     image: openremote/postgresql:${DATE_TAG:-latest}
