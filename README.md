@@ -33,6 +33,21 @@ certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-co
 Username: admin  
 Password: secret
 
+### Not using localhost?
+The URL you use to access the system is important, by default keycloak expects it to be `https://localhost` if you are using a VM then you will need to tell keycloak at startup, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command (`BASH` syntax):
+
+BASH: 
+```
+KEYCLOAK_FRONTEND_URL=https://192.168.55.21/auth docker-compose -p openremote up -d
+```
+or
+
+CMD:
+```
+cmd /C "set KEYCLOAK_FRONTEND_URL=https://192.168.55.21/auth && docker-compose -p openremote up -d"
+```
+
+
 ## What next
 Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:
 
