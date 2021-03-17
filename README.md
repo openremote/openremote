@@ -38,13 +38,13 @@ The URL you use to access the system is important, by default keycloak expects i
 
 BASH: 
 ```
-KEYCLOAK_FRONTEND_URL=https://192.168.55.21/auth docker-compose -p openremote up -d
+KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth docker-compose -p openremote up -d
 ```
 or
 
 CMD:
 ```
-cmd /C "set KEYCLOAK_FRONTEND_URL=https://192.168.55.21/auth && docker-compose -p openremote up -d"
+cmd /C "set KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth && docker-compose -p openremote up -d"
 ```
 
 
