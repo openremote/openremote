@@ -8,7 +8,7 @@
 #
 # Please see profile/deploy.yml for configuration details for each service.
 #
-version: "3.8"
+version: "3.7"
 
 networks:
   public:
@@ -111,7 +111,7 @@ services:
       - deployment-data:/deployment
     environment:
       KEYCLOAK_PASSWORD: ${PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: "https://${DOMAINNAME:-localhost}/auth"
+      KEYCLOAK_FRONTEND_URL: "https://${IDENTITY_NETWORK_HOST:-localhost}/auth"
 
   postgresql:
     image: openremote/postgresql:${DATE_TAG:-latest}
