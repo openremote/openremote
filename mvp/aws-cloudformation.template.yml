@@ -136,10 +136,10 @@ Resources:
             export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
             echo d $DOMAINNAME $IDENTITY_NETWORK_HOST
           fi
-          export SETUP_ADMIN_PASSWORD=${OpenRemotePassword}
-          export SETUP_EMAIL_USER=${AccessKeys}
-          export SETUP_EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet)
-          export SETUP_EMAIL_HOST=email-smtp.eu-west-1.amazonaws.com
+          export PASSWORD=${OpenRemotePassword}
+          export EMAIL_USER=${AccessKeys}
+          export EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet)
+          export EMAIL_HOST=email-smtp.eu-west-1.amazonaws.com
           docker-compose -f mvp-docker-compose.yml -p openremote up -d
           echo USER ${AccessKeys} > access.txt
           echo SECRET ${AccessKeys.SecretAccessKey} >> access.txt
