@@ -111,7 +111,7 @@ export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(o
         icon: "domain",
         value: "realms",
         href: "realms",
-        text: "realm management",
+        text: "realm_plural",
         roles: () => manager.isSuperUser()
     };
 }

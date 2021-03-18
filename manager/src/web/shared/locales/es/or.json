@@ -218,6 +218,7 @@
   "clientSecret": "Secreto del cliente",
   "clientId": "ID del cliente",
   "realm": "Realm",
+  "realm_plural": "Realms",
   "port": "Puerto",
   "host": "Hostname",
   "errorOccurred": "Se ha producido un error",
