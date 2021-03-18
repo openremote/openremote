@@ -19,8 +19,7 @@ jobs:
       max-parallel: 5
       matrix:
         java-version: [1.8]
-         # TODO to get it on windows-latest
-        os-version: [ubuntu-18.04, ubuntu-latest, macos-latest, macos-11.0]
+        os-version: [ubuntu-18.04, ubuntu-latest, macos-latest, ubuntu-16.04, windows-latest]
 
     runs-on: ${{ matrix.os-version }}
 
