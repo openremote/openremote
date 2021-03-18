@@ -33,8 +33,8 @@ services:
   # map a Docker volume or host directory to access/store proxy configuration files
   # and SSL certificates.
   proxy:
-    image: openremote/proxy:${DATE_TAG:-latest}
-    restart: unless-stopped
+    image: openremote/proxy:${PROXY_VERSION:-latest}
+    restart: always
     # Override the haproxy.cfg with custom file
     #volumes:
     #  -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
@@ -97,8 +97,8 @@ services:
 
   # The OpenRemote Manager
   manager:
-    image: openremote/manager:${DATE_TAG:-latest}
-    restart: unless-stopped
+    image: openremote/manager:${MANAGER_VERSION:-latest}
+    restart: always
     # Map any custom content into the /deployment dir:
     #   /deployment/manager/app - contains custom web content
     #   /deployment/manager/extensions - contains JARS to be loaded on the classpath
@@ -261,8 +261,8 @@ services:
 
   # Keycloak identity provider
   keycloak:
-    image: openremote/keycloak:${DATE_TAG:-latest}
-    restart: unless-stopped
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+    restart: always
     # Map any custom themes into the /deployment/keycloak/themes dir:
     #volumes:
     #  - deployment-data:/deployment
@@ -300,8 +300,8 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${DATE_TAG:-latest}
-    restart: unless-stopped
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     #volumes:
     #  - postgresql-data:/var/lib/postgresql/data
@@ -317,24 +317,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
 
-  #  # Standalone map tile server
-  #  map:
-  #    build: '../map'
-  #    image: openremote/tileserver-gl:${DATE_TAG:-latest}
-  #
-  #  # Manager for Docker swarm (embedding openremote/deployment and reduced size to save money on public cloud)
-  #  swarm:
-  #    build:
-  #      context: '../manager/build/install/manager'
-  #      dockerfile: swarm.Dockerfile
-  #    image: openremote/manager-swarm:${DATE_TAG:-latest}
-
-  # Standalone map tile server
-  map:
-    image: openremote/tileserver-gl:${DATE_TAG:-latest}
-    restart: unless-stopped
-
-  # Manager for Docker swarm (embedding openremote/deployment and reduced size to save money on public cloud)
-  swarm:
-    image: openremote/manager-swarm:${DATE_TAG:-latest}
-    restart: unless-stopped
+  # Map tile server
+  tileserver:
+    image: openremote/tileserver:${TILESERVER_VERSION:-latest}
+    restart: always
