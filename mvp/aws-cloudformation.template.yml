@@ -115,7 +115,7 @@ Resources:
           # docker volume create openremote_deployment-data
           # docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:mvp
           wget https://github.com/openremote/openremote/raw/master/mvp/mvp-docker-compose.yml
-          # docker swarm init
+          docker swarm init
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             export DOMAINNAME=${HostName}.${DomainName}
