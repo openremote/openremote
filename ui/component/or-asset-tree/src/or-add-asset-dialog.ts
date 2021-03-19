@@ -166,7 +166,9 @@ export class OrAddAssetDialog extends LitElement {
             return false;
         }
         
-        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name);
+        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name),
+            attributes = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
+            optionalAttributes = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
          
         return html`
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
