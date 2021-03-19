@@ -173,10 +173,24 @@ export class OrAddAssetDialog extends LitElement {
         return html`
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
             <or-translate style="text-transform: capitalize" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
-            <h3>Attributes</h3>
-            <ul>${assetTypeInfo!.attributeDescriptors!.filter(e => !e.optional).map((item) => html`<li>${item.name}</li>`)}</ul>
-            <h3>Optional attributes</h3>
-            <ul>${assetTypeInfo!.attributeDescriptors!.filter(e => !!e.optional).map((item) => html`<li>${item.name}</li>`)}</ul>
+
+            ${!attributes
+                ? html``
+                : html`
+                    <h3>Attributes</h3>
+                    <ul style="margin: 0 auto">
+                        ${attributes.map(item => html`<li><or-translate .value="${Util.getAttributeLabel(undefined, item, undefined, true)}"></or-translate></li>`)}
+                    </ul>
+                `}
+
+            ${!optionalAttributes
+                ? html``
+                : html`
+                <h3>Optional attributes</h3>
+                <ul style="margin: 0 auto">
+                    ${optionalAttributes.map(item => html`<li><or-translate .value="${Util.getAttributeLabel(undefined, item, undefined, true)}"></or-translate></li>`)}
+                </ul>
+            `} 
         `;
     }
 
