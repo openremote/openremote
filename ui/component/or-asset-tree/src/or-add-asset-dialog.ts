@@ -179,7 +179,7 @@ export class OrAddAssetDialog extends LitElement {
                 : html`
                     <h3>Attributes</h3>
                     <ul style="margin: 0 auto">
-                        ${attributes.map(item => html`<li><or-translate .value="${Util.getAttributeLabel(undefined, item, undefined, true)}"></or-translate></li>`)}
+                        ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
                     </ul>
                 `}
 
@@ -188,7 +188,7 @@ export class OrAddAssetDialog extends LitElement {
                 : html`
                 <h3>Optional attributes</h3>
                 <ul style="margin: 0 auto">
-                    ${optionalAttributes.map(item => html`<li><or-translate .value="${Util.getAttributeLabel(undefined, item, undefined, true)}"></or-translate></li>`)}
+                    ${optionalAttributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
                 </ul>
             `} 
         `;
