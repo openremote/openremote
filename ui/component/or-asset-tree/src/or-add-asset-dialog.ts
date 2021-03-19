@@ -88,6 +88,7 @@ export class OrAddAssetDialog extends LitElement {
             #asset-type-option-container {
                 padding: 15px;
                 flex: 1 1 auto;
+                overflow: auto;
                 max-width: 100%;
                 font-size: 16px;
                 background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
