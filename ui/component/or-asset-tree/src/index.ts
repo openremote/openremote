@@ -236,6 +236,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Array})
     public selectedIds?: string[];
 
+    @property({type: Boolean})
+    public showSortBtn?: boolean = true;
+
     @property({type: String})
     public sortBy?: string = "name";
 
@@ -310,7 +313,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
                     
                     ${getContentWithMenuTemplate(
-                            html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
+                            html`<or-input type="${InputType.BUTTON}" icon="sort-variant" ?hidden="${!this.showSortBtn}"></or-input>`,
                             ["name", "type", "createdOn", "status"].map((sort) => { return {value: sort, text: i18next.t(sort)} as MenuItem; }),
                             this.sortBy,
                             (v) => this._onSortClicked(v as string))}
