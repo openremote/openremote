@@ -172,25 +172,29 @@ export class OrAddAssetDialog extends LitElement {
          
         return html`
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
-            <or-translate style="text-transform: capitalize" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            <or-translate style="text-transform: capitalize; margin-bottom: 1.5em" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
 
             ${!attributes
                 ? html``
                 : html`
-                    <h3>Attributes</h3>
-                    <ul style="margin: 0 auto">
-                        ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
-                    </ul>
+                    <div>
+                        <strong>Attributes</strong>
+                        <ul style="margin-top: 0.5em">
+                            ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
+                        </ul>
+                    </div>
                 `}
 
             ${!optionalAttributes
                 ? html``
                 : html`
-                <h3>Optional attributes</h3>
-                <ul style="margin: 0 auto">
-                    ${optionalAttributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
-                </ul>
-            `} 
+                    <div>
+                        <strong>Optional attributes</strong>
+                        <ul style="margin-top: 0.5em">
+                            ${optionalAttributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
+                        </ul>
+                    </div>
+                `} 
         `;
     }
 
