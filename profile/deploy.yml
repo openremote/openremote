@@ -91,9 +91,9 @@ services:
 
     # Expose public services (web server, MQTT broker)
     ports:
-      - "80:80"
-      - "443:443"
-      - "8883:8883"
+      - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
+      - "443:443" # HTTPS /auth directs to keycloak and other paths direct to manager
+      - "8883:8883" # MQTTS
 
   # The OpenRemote Manager
   manager:
@@ -112,6 +112,7 @@ services:
     #  - /dev/ttyACM0
     #ports:
     #  - "8000:8000" # Remote debugging port - NOT FOR PRODUCTION USE!!!
+    #  - "8080:8080" # Web server port
     logging:
       options:
         # Use very little logging for container STDOUT, this is
@@ -266,6 +267,8 @@ services:
     # Map any custom themes into the /deployment/keycloak/themes dir:
     #volumes:
     #  - deployment-data:/deployment
+    #ports:
+    #  - "8081:8080" # Web server port
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -305,6 +308,8 @@ services:
     # Docker volume for persistent storage of DB; can alternatively map to host
     #volumes:
     #  - postgresql-data:/var/lib/postgresql/data
+    #ports:
+    #  - "5432:5432" # DB server
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -321,3 +326,5 @@ services:
   tileserver:
     image: openremote/tileserver:${TILESERVER_VERSION:-latest}
     restart: always
+    #ports:
+    #  - "8082:80" # Web server port
