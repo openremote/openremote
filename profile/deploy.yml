@@ -33,7 +33,7 @@ services:
   # map a Docker volume or host directory to access/store proxy configuration files
   # and SSL certificates.
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-latest}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.1}
     restart: always
     # Override the haproxy.cfg with custom file
     #volumes:
@@ -262,7 +262,7 @@ services:
 
   # Keycloak identity provider
   keycloak:
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-12.0.1.0}
     restart: always
     # Map any custom themes into the /deployment/keycloak/themes dir:
     #volumes:
@@ -303,7 +303,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     #volumes:

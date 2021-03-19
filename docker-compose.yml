@@ -13,7 +13,7 @@ version: '2.4'
 services:
 
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.0}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.1}
     restart: always
     depends_on:
       manager:
@@ -42,3 +42,5 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    environment:
+      DEV_MODE: ${DEV_MODE:-false}
