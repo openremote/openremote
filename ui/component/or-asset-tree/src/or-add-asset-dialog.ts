@@ -55,6 +55,9 @@ export class OrAddAssetDialog extends LitElement {
     @property({attribute: false})
     public selectedType?: AgentDescriptor | AssetDescriptor;
 
+    @property({attribute: false})
+    protected showParentAssetSelector: boolean = false;
+
     public name: string = "New Asset";
 
     @query("#name-input")
@@ -65,6 +68,9 @@ export class OrAddAssetDialog extends LitElement {
 
     @query("#asset-list")
     protected assetList?: OrMwcList;
+
+    @query("#parent-asset-list")
+    protected parentAssetList?: OrMwcList;
 
     public static get styles() {
         // language=CSS
