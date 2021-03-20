@@ -50,7 +50,8 @@ jobs:
       max-parallel: 5
       matrix:
         java-version: [1.8]
-        os-version: [macos-10.15, macos-11.0]
+        os-version: [macos-10.15]
+        #, macos-11.0]
 
     runs-on: ${{ matrix.os-version }}
 
