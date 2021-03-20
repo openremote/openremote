@@ -77,8 +77,7 @@ jobs:
         run: |
           eval "$(docker-machine env default)"
           docker-compose -f profile/dev-testing.yml up --no-build -d
-      - name: Check running containers
-        run: docker ps -a
+          docker ps -a
       - name: tests with Gradle
         run: ./gradlew clean test
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
