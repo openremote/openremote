@@ -106,7 +106,7 @@ jobs:
         with:
           java-version: ${{ matrix.java-version }}
       - name: I give up
-        run: echo I give up becuse I'm clueless how to run Linux containers here :-(
+        run: echo "I give up becuse I'm clueless how to run Linux containers here :-("
 #      - name: grant execute permission for gradlew
 #        run: chmod +x gradlew
 #      - name: start containers needed for testing
