@@ -50,7 +50,7 @@ jobs:
       max-parallel: 5
       matrix:
         java-version: [1.8]
-        os-version: [macos-latest]
+        os-version: [macos-10.15, macos-11.0]
 
     runs-on: ${{ matrix.os-version }}
 
@@ -62,7 +62,7 @@ jobs:
           brew install docker docker-machine docker-compose
           docker-machine create --driver virtualbox default
           docker-machine env default
-      - name: Run container
+      - name: run test container
         run: |
           eval "$(docker-machine env default)"
           docker run --rm openremote/openremote-cli -V -t
@@ -74,7 +74,9 @@ jobs:
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
       - name: start containers needed for testing
-        run: docker-compose -f profile/dev-testing.yml up --no-build -d
+        run: |
+          eval "$(docker-machine env default)"
+          docker-compose -f profile/dev-testing.yml up --no-build -d
       - name: Check running containers
         run: docker ps -a
       - name: tests with Gradle
