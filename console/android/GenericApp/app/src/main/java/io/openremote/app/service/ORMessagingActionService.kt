@@ -23,7 +23,7 @@ class ORMessagingActionService : IntentService("org.openremote.android.ORMessagi
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         manager.cancel(java.lang.Long.hashCode(notificationId))
         val consoleId = getSharedPreferences(
-            applicationContext.getString(R.string.OR_CONSOLE_NAME),
+            applicationContext.getString(R.string.app_name),
             MODE_PRIVATE
         ).getString("consoleId", "")
         if (!TextUtils.isEmpty(consoleId)) {
