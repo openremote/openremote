@@ -168,7 +168,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected void stopOptimisation(String optimisationAssetId) {
         Pair<EnergyOptimiser, ScheduledFuture<?>> optimiserAndScheduler = assetEnergyOptimiserMap.remove(optimisationAssetId);
 
-        if (optimiserAndScheduler == null) {
+        if (optimiserAndScheduler == null || optimiserAndScheduler.value == null) {
             return;
         }
 
@@ -214,12 +214,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             TimeUnit.SECONDS);
     }
 
+    /**
+     * Gets the start time of the current interval
+     */
     protected static Instant getOptimisationStartTime(long currentMillis, long periodSeconds) {
         Instant now = Instant.ofEpochMilli(currentMillis);
 
-        Instant optimisationStartTime = Instant.ofEpochMilli(currentMillis)
-            .minus(periodSeconds, ChronoUnit.SECONDS)
-            .truncatedTo(ChronoUnit.HOURS);
+        Instant optimisationStartTime = now
+            .truncatedTo(ChronoUnit.DAYS);
 
         while (optimisationStartTime.isBefore(now)) {
             optimisationStartTime = optimisationStartTime.plus(periodSeconds, ChronoUnit.SECONDS);

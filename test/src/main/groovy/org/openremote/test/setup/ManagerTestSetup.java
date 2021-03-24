@@ -99,6 +99,11 @@ public class ManagerTestSetup extends ManagerSetup {
     public String area1Id;
     public String microphone1Id;
     public String peopleCounter3AssetId;
+    public String electricityOptimisationAssetId;
+    public String electricityConsumerAssetId;
+    public String electricitySolarAssetId;
+    public String electricitySupplierAssetId;
+    public String electricityBatteryAssetId;
 
     public ManagerTestSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -205,20 +210,22 @@ public class ManagerTestSetup extends ManagerSetup {
         thingId = thing.getId();
 
         // ################################ Assets for 'energy' realm ###################################
-
         EnergyOptimisationAsset electricityOptimisationAsset = new EnergyOptimisationAsset("Optimisation");
         electricityOptimisationAsset.setIntervalSize(3d);
         electricityOptimisationAsset.setRealm(keycloakTestSetup.energyTenant.getRealm());
         electricityOptimisationAsset.setFinancialWeighting(100);
         electricityOptimisationAsset = assetStorageService.merge(electricityOptimisationAsset);
+        electricityOptimisationAssetId = electricityOptimisationAsset.getId();
 
         ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset("Consumer");
         electricityConsumerAsset.setParent(electricityOptimisationAsset);
         electricityConsumerAsset = assetStorageService.merge(electricityConsumerAsset);
+        electricityConsumerAssetId = electricityConsumerAsset.getId();
 
         ElectricityProducerSolarAsset electricitySolarAsset = new ElectricityProducerSolarAsset("Producer");
         electricitySolarAsset.setParent(electricityOptimisationAsset);
         electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
+        electricitySolarAssetId = electricitySolarAsset.getId();
 
         ElectricityBatteryAsset electricityBatteryAsset = new ElectricityBatteryAsset("Battery");
         electricityBatteryAsset.setParent(electricityOptimisationAsset);
@@ -230,13 +237,14 @@ public class ManagerTestSetup extends ManagerSetup {
         electricityBatteryAsset.setSupportsExport(true);
         electricityBatteryAsset.setSupportsImport(true);
         electricityBatteryAsset = assetStorageService.merge(electricityBatteryAsset);
+        electricityBatteryAssetId = electricityBatteryAsset.getId();
 
         ElectricitySupplierAsset electricitySupplierAsset = new ElectricitySupplierAsset("Supplier");
         electricitySupplierAsset.setParent(electricityOptimisationAsset);
         electricitySupplierAsset.setTariffExport(-0.05);
         electricitySupplierAsset.setTariffImport(0.08);
         electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
-
+        electricitySupplierAssetId = electricitySupplierAsset.getId();
 
         // ################################ Assets for 'building' realm ###################################
 
