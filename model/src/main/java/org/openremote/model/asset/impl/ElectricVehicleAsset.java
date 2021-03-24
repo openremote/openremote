@@ -230,42 +230,6 @@ public class ElectricVehicleAsset extends ElectricityBatteryAsset {
     }
 
     @Override
-    public ElectricVehicleAsset setTariffImport(Double value) {
-        super.setTariffImport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricVehicleAsset setTariffExport(Double value) {
-        super.setTariffExport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricVehicleAsset setCarbonImport(Double value) {
-        super.setCarbonImport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricVehicleAsset setCarbonExport(Double value) {
-        super.setCarbonExport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricVehicleAsset setCarbonImportTotal(Integer value) {
-        super.setCarbonImportTotal(value);
-        return this;
-    }
-
-    @Override
-    public ElectricVehicleAsset setCarbonExportTotal(Integer value) {
-        super.setCarbonExportTotal(value);
-        return this;
-    }
-
-    @Override
     public ElectricVehicleAsset setId(String id) {
         super.setId(id);
         return this;

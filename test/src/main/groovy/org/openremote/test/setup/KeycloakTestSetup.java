@@ -58,6 +58,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public String buildingUserId;
     public Tenant masterTenant;
     public Tenant tenantBuilding;
+    public Tenant energyTenant;
     public Tenant tenantCity;
 
     public KeycloakTestSetup(Container container) {
@@ -72,6 +73,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         masterTenant = identityService.getIdentityProvider().getTenant(Constants.MASTER_REALM);
         tenantBuilding = createTenant("building", "Building");
         tenantCity = createTenant("smartcity", "Smart City");
+        energyTenant = createTenant("energy", "Energy Test");
 
         // Don't allow demo users to write assets
         ClientRole[] demoUserRoles = Arrays.stream(REGULAR_USER_ROLES)
@@ -100,24 +102,22 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         this.smartCityUserId = smartCityUser.getId();
         keycloakProvider.updateUserRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
 
-        if (container.isDevMode()) {
-            /*
-             * MQTT Client
-             */
-            ClientRepresentation mqttClient = new ClientRepresentation();
-            String buildingMqttClientId = MqttBrokerService.MQTT_CLIENT_ID_PREFIX + UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm());
-            mqttClient.setClientId(buildingMqttClientId);
-            mqttClient.setName("MQTT");
-            mqttClient.setStandardFlowEnabled(false);
-            mqttClient.setImplicitFlowEnabled(false);
-            mqttClient.setDirectAccessGrantsEnabled(false);
-            mqttClient.setServiceAccountsEnabled(true);
-            mqttClient.setSecret(UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm()));
-            mqttClient = keycloakProvider.createClient(tenantBuilding.getRealm(), mqttClient);
+        /*
+         * MQTT Client
+         */
+        ClientRepresentation mqttClient = new ClientRepresentation();
+        String buildingMqttClientId = MqttBrokerService.MQTT_CLIENT_ID_PREFIX + UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm());
+        mqttClient.setClientId(buildingMqttClientId);
+        mqttClient.setName("MQTT");
+        mqttClient.setStandardFlowEnabled(false);
+        mqttClient.setImplicitFlowEnabled(false);
+        mqttClient.setDirectAccessGrantsEnabled(false);
+        mqttClient.setServiceAccountsEnabled(true);
+        mqttClient.setSecret(UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm()));
+        mqttClient = keycloakProvider.createClient(tenantBuilding.getRealm(), mqttClient);
 
-            // Add asset RW roles to service user
-            User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
-            keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
-        }
+        // Add asset RW roles to service user
+        User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
+        keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
     }
 }

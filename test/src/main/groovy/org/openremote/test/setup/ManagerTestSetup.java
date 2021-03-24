@@ -117,7 +117,7 @@ public class ManagerTestSetup extends ManagerSetup {
         this.realmBuildingTenant = tenantBuilding.getRealm();
         this.realmCityTenant = tenantCity.getRealm();
 
-        // ################################ Demo assets for 'master' realm ###################################
+        // ################################ Assets for 'master' realm ###################################
 
         BuildingAsset smartOffice = new BuildingAsset("Smart office");
         smartOffice.setRealm(masterRealm);
@@ -204,7 +204,41 @@ public class ManagerTestSetup extends ManagerSetup {
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
-        // ################################ Demo assets for 'building' realm ###################################
+        // ################################ Assets for 'energy' realm ###################################
+
+        EnergyOptimisationAsset electricityOptimisationAsset = new EnergyOptimisationAsset("Optimisation");
+        electricityOptimisationAsset.setIntervalSize(3d);
+        electricityOptimisationAsset.setRealm(keycloakTestSetup.energyTenant.getRealm());
+        electricityOptimisationAsset.setFinancialWeighting(100);
+        electricityOptimisationAsset = assetStorageService.merge(electricityOptimisationAsset);
+
+        ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset("Consumer");
+        electricityConsumerAsset.setParent(electricityOptimisationAsset);
+        electricityConsumerAsset = assetStorageService.merge(electricityConsumerAsset);
+
+        ElectricityProducerSolarAsset electricitySolarAsset = new ElectricityProducerSolarAsset("Producer");
+        electricitySolarAsset.setParent(electricityOptimisationAsset);
+        electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
+
+        ElectricityBatteryAsset electricityBatteryAsset = new ElectricityBatteryAsset("Battery");
+        electricityBatteryAsset.setParent(electricityOptimisationAsset);
+        electricityBatteryAsset.setEnergyCapacity(100d);
+        electricityBatteryAsset.setPowerImportMax(25d);
+        electricityBatteryAsset.setPowerExportMax(25d);
+        electricityBatteryAsset.setEfficiencyImport(95);
+        electricityBatteryAsset.setEfficiencyExport(98);
+        electricityBatteryAsset.setSupportsExport(true);
+        electricityBatteryAsset.setSupportsImport(true);
+        electricityBatteryAsset = assetStorageService.merge(electricityBatteryAsset);
+
+        ElectricitySupplierAsset electricitySupplierAsset = new ElectricitySupplierAsset("Supplier");
+        electricitySupplierAsset.setParent(electricityOptimisationAsset);
+        electricitySupplierAsset.setTariffExport(-0.05);
+        electricitySupplierAsset.setTariffImport(0.08);
+        electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
+
+
+        // ################################ Assets for 'building' realm ###################################
 
         BuildingAsset smartBuilding = new BuildingAsset("Smart building");
         smartBuilding.setRealm(this.realmBuildingTenant);
@@ -479,7 +513,7 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 
-        // ################################ Link demo users and assets ###################################
+        // ################################ Link users and assets ###################################
 
         assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.testuser3Id,

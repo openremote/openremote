@@ -151,16 +151,16 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
         })
     );
 
-    config.devtool = production ? false :"inline-source-map",
-        config.devServer = {
-            historyApiFallback: {
-                index: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
-            },
-            port: 9000,
-            publicPath: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
-            contentBase: OUTPUT_PATH,
-            disableHostCheck: true
-        };
+    config.devtool = production ? false : "inline-source-map";
+    config.devServer = {
+        historyApiFallback: {
+            index: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
+        },
+        port: 9000,
+        publicPath: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
+        contentBase: OUTPUT_PATH,
+        disableHostCheck: true
+    };
     config.watchOptions = {
         ignored: ['**/*.ts', 'node_modules']
     }

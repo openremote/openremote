@@ -150,42 +150,6 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     }
 
     @Override
-    public ElectricityProducerSolarAsset setTariffImport(Double value) {
-        super.setTariffImport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setTariffExport(Double value) {
-        super.setTariffExport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setCarbonImport(Double value) {
-        super.setCarbonImport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setCarbonExport(Double value) {
-        super.setCarbonExport(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setCarbonImportTotal(Integer value) {
-        super.setCarbonImportTotal(value);
-        return this;
-    }
-
-    @Override
-    public ElectricityProducerSolarAsset setCarbonExportTotal(Integer value) {
-        super.setCarbonExportTotal(value);
-        return this;
-    }
-
-    @Override
     public ElectricityProducerSolarAsset setId(String id) {
         super.setId(id);
         return this;
