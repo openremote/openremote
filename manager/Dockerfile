@@ -1,10 +1,25 @@
 # TODO: Switch to adoptopenjdk 8u232-b9 once it also supports armhf
 FROM debian:stretch-slim
 
+ENV S6_OVERLAY_VERSION=v2.2.0.3
+
 # JRE package expects man dir to exist but doesn't in slim
 RUN mkdir -p /usr/share/man/man1
 
-RUN apt-get update && apt-get install -y curl openjdk-8-jre-headless --no-install-recommends && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl openjdk-8-jre-headless --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+### S6 installation
+    apkArch="$(uname -m)"; \
+	case "$apkArch" in \
+        x86_64) s6Arch='amd64' ;; \
+        armv7) s6Arch='arm' ;; \
+        armv7l) s6Arch='arm' ;; \
+        armhf) s6Arch='armhf' ;; \
+        aarch64) s6Arch='aarch64' ;; \
+        ppc64le) s6Arch='ppc64le' ;; \
+        *) echo >&2 "Error: unsupported architecture ($apkArch)"; exit 1 ;; \
+	esac; \
+    curl -sSL https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${s6Arch}.tar.gz | tar xfz - -C /
+
 ENV JAVA_HOME /etc/alternatives/java
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
@@ -79,4 +94,5 @@ ADD lib /opt/app/lib
 ADD web /opt/web
 ADD map /opt/map
 
-ENTRYPOINT java $MANAGER_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
+ENTRYPOINT ["/init"]
+CMD java $MANAGER_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
