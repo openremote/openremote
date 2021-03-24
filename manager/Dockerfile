@@ -6,7 +6,7 @@ ENV S6_OVERLAY_VERSION=v2.2.0.3
 # JRE package expects man dir to exist but doesn't in slim
 RUN mkdir -p /usr/share/man/man1
 
-RUN apt-get update && apt-get install -y curl openjdk-8-jre-headless --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update && apt-get install -y curl && \
 ### S6 installation
     apkArch="$(uname -m)"; \
 	case "$apkArch" in \
@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y curl openjdk-8-jre-headless --no-instal
         *) echo >&2 "Error: unsupported architecture ($apkArch)"; exit 1 ;; \
 	esac; \
     curl -sSL https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${s6Arch}.tar.gz | tar xfz - -C /
+### End S6 installation
+
+RUN apt-get update && apt-get install -y openjdk-8-jre-headless --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 ENV JAVA_HOME /etc/alternatives/java
 
