@@ -97,7 +97,7 @@ Resources:
         - Ref: InstanceSecurityGroup
       Tags:
         - Key: "Name"
-          Value: "Openremote v3"
+          Value: !Join [ ".", [ !Ref HostName, !Ref DomainName ] ]
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
