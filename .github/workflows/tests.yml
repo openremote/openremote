@@ -74,13 +74,12 @@ jobs:
           java-version: ${{ matrix.java-version }}
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: start containers needed for testing
+      - name: start containers needed for testing and perform test
         run: |
           eval "$(docker-machine env default)"
           docker-compose -f profile/dev-testing.yml up --no-build -d
           docker ps -a
-      - name: tests with Gradle
-        run: ./gradlew clean test
+          ./gradlew clean test
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
         timeout-minutes: 30
       - name: Share tests artifacts
