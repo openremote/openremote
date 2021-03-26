@@ -169,8 +169,8 @@ export class OrAddAssetDialog extends LitElement {
                 <div id="name-wrapper">
                     <or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-input>
                     <or-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
-                    <or-input id="toggle-parent-selector" icon="plus" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
-                    <or-input id="remove-parent" ?hidden="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
+                    <or-input id="toggle-parent-selector" icon="pencil" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
+                    <or-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
                 </div>
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
