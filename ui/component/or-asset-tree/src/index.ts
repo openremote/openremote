@@ -548,6 +548,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
                             const descriptor = addAssetDialog.selectedType;
                             const name = addAssetDialog.name.trim();
+                            const parent = addAssetDialog.parent;
 
                             if (!descriptor) {
                                 return;
