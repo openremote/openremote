@@ -1,7 +1,7 @@
 import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
 import {AgentDescriptor, Asset, AssetDescriptor} from "@openremote/model";
 import "@openremote/or-input";
-import {AssetTreeConfig} from "./index";
+import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
 import {
     createListGroup,
     ListGroupItem,
@@ -107,6 +107,13 @@ export class OrAddAssetDialog extends LitElement {
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
         `;
+    }
+    
+    constructor() {
+        super();
+        this.addEventListener(OrAssetTreeSelectionEvent.NAME, (event: OrAssetTreeSelectionEvent) => {
+            this.parent = event.detail.newNodes[0].asset;
+        });
     }
 
     protected render() {
