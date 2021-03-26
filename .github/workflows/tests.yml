@@ -82,6 +82,11 @@ jobs:
           ./gradlew clean test
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
         timeout-minutes: 30
+      - name: check containers when failure
+        if: failure()
+        run: |
+          eval "$(docker-machine env default)"
+          docker-compose -f profile/dev-testing.yml logs
       - name: Share tests artifacts
         if: failure()
         uses: actions/upload-artifact@v2
