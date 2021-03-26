@@ -10,7 +10,7 @@ import {
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/dist/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {DefaultColor2, DefaultColor5, Util} from "@openremote/core";
+import {AssetModelUtil, DefaultColor2, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
 
 export type OrAddAssetDetail = {
@@ -88,6 +88,7 @@ export class OrAddAssetDialog extends LitElement {
             #asset-type-option-container {
                 padding: 15px;
                 flex: 1 1 auto;
+                overflow: auto;
                 max-width: 100%;
                 font-size: 16px;
                 background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
@@ -161,9 +162,39 @@ export class OrAddAssetDialog extends LitElement {
 
     protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor) {
 
+        if (!descriptor.name) {
+            return false;
+        }
+        
+        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name),
+            attributes = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
+            optionalAttributes = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
+         
         return html`
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
-            <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            <or-translate style="text-transform: capitalize; margin-bottom: 1.5em" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+
+            ${!attributes
+                ? html``
+                : html`
+                    <div>
+                        <strong>Attributes</strong>
+                        <ul style="margin-top: 0.5em">
+                            ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
+                        </ul>
+                    </div>
+                `}
+
+            ${!optionalAttributes
+                ? html``
+                : html`
+                    <div>
+                        <strong>Optional attributes</strong>
+                        <ul style="margin-top: 0.5em">
+                            ${optionalAttributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
+                        </ul>
+                    </div>
+                `} 
         `;
     }
 
