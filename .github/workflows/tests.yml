@@ -70,7 +70,7 @@ jobs:
       - name: run test container
         run: |
           eval "$(docker-machine env default)"
-          docker run --rm hello-world
+          docker run --rm openremote/openremote-cli -V -t
       - uses: actions/checkout@v2
       - name: set up JDK
         uses: actions/setup-java@v1
