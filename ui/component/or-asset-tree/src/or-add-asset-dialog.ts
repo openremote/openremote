@@ -149,20 +149,27 @@ export class OrAddAssetDialog extends LitElement {
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
         return html`
-            <div id="name-wrapper">
-                <or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-input>
-                <or-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}"></or-input>
+            <div class="col">
+                <div id="name-wrapper">
+                    <or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-input>
+                    <or-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
+                    <or-input id="open-asset-selector-btn" icon="plus" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
+                </div>
+                <form id="mdc-dialog-form-add">
+                    <div id="type-list">
+                        ${createListGroup(lists)}
+                    </div>
+                    <div id="asset-type-option-container">
+                        ${!this.selectedType 
+                        ? html`` 
+                        : this.getTypeTemplate(this.selectedType)}
+                    </div>
+                </form>
             </div>
-            <form id="mdc-dialog-form-add">
-                <div id="type-list">
-                    ${createListGroup(lists)}
-                </div>
-                <div id="asset-type-option-container">
-                    ${!this.selectedType 
-                    ? html`` 
-                    : this.getTypeTemplate(this.selectedType)}
-                </div>
-            </form>
+            ${!this.showParentAssetSelector
+                ? html``
+                : html`<or-asset-tree id="chart-asset-tree" .showSortBtn="${false}" selectedNodes readonly></or-asset-tree>`
+            }
         `;
     }
 
@@ -227,4 +234,9 @@ export class OrAddAssetDialog extends LitElement {
             descriptor: this.selectedType
         }));
     }
+
+    protected _onToggleParentAssetSelector(): void {
+        this.showParentAssetSelector = !this.showParentAssetSelector; 
+    }
+    
 }
