@@ -67,10 +67,6 @@ jobs:
           vboxmanage modifyvm default --natpf1 "postgresql,tcp,,5432,,5432"
           vboxmanage modifyvm default --natpf1 "keycloak,tcp,,8081,,8081"
           docker-machine start default
-      - name: run test container
-        run: |
-          eval "$(docker-machine env default)"
-          docker run --rm openremote/openremote-cli -V -t
       - uses: actions/checkout@v2
       - name: set up JDK
         uses: actions/setup-java@v1
