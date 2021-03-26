@@ -44,7 +44,7 @@ class PageLogs<S extends AppStateKeyed> extends Page<S> {
     public config?: PageLogsConfig;
 
     get name(): string {
-        return "account";
+        return "logs";
     }
 
     constructor(store: EnhancedStore<S>) {

@@ -242,7 +242,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match (all assets in the master realm as user is not restricted)"
         assets.length == 5
-        assets.find {it.id == managerTestSetup.smartOfficeId}.attributes.size() == 8
+        assets.find {it.id == managerTestSetup.smartOfficeId}.attributes.size() == 7
         // Assets should not be completely loaded (no path or parent info)
         assets.find {it.id == managerTestSetup.smartOfficeId}.path == null
         assets.find {it.id == managerTestSetup.smartOfficeId}.parentId == null
@@ -408,7 +408,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match (all assets in the building realm as user is not restricted)"
         assets.length == 13
-        assets.find {it.id == managerTestSetup.smartBuildingId}.attributes.size() == 8
+        assets.find {it.id == managerTestSetup.smartBuildingId}.attributes.size() == 7
         // Assets should not be completely loaded (no path or parent info)
         assets.find {it.id == managerTestSetup.smartBuildingId}.path == null
         assets.find {it.id == managerTestSetup.smartBuildingId}.parentId == null

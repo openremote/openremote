@@ -74,7 +74,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
             if (notificationIdStr != null && notificationIdStr.isNotEmpty()) {
                 notificationId = notificationIdStr.toLong()
                 val consoleId: String? = getSharedPreferences(
-                    applicationContext.getString(R.string.OR_CONSOLE_NAME),
+                    applicationContext.getString(R.string.app_name),
                     Context.MODE_PRIVATE
                 ).getString("consoleId", "")
                 if (!consoleId.isNullOrBlank()) {

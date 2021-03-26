@@ -20,6 +20,7 @@
 package org.openremote.container.util;
 
 import org.openremote.model.Container;
+import org.openremote.model.util.TextUtil;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -51,7 +52,7 @@ public class LogUtil {
         // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
             // Load the logging configuration file specified with an environment variable
-            if (System.getenv(LOGGING_CONFIG_FILE) != null) {
+            if (!TextUtil.isNullOrEmpty(System.getenv(LOGGING_CONFIG_FILE))) {
                 Path loggingConfigFile = Paths.get(System.getenv(LOGGING_CONFIG_FILE));
                 if (!Files.isReadable(loggingConfigFile)) {
                     throw new ExceptionInInitializerError("LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile.toAbsolutePath());

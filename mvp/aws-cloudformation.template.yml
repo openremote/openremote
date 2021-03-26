@@ -97,7 +97,7 @@ Resources:
         - Ref: InstanceSecurityGroup
       Tags:
         - Key: "Name"
-          Value: "Openremote v3"
+          Value: !Join [ ".", [ !Ref HostName, !Ref DomainName ] ]
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -112,8 +112,8 @@ Resources:
           sudo pip3 install -U openremote-cli
           cd /home/ubuntu
           # Create volume for deployment (needed for SWARM due to concurency in compose-file)
-          docker volume create openremote_deployment-data
-          docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:mvp
+          # docker volume create openremote_deployment-data
+          # docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:mvp
           wget https://github.com/openremote/openremote/raw/master/mvp/mvp-docker-compose.yml
           docker swarm init
           if [ ${HostName} ] && [ ${DomainName} ]
@@ -136,10 +136,11 @@ Resources:
             export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
             echo d $DOMAINNAME $IDENTITY_NETWORK_HOST
           fi
-          export SETUP_ADMIN_PASSWORD=${OpenRemotePassword}
-          export SETUP_EMAIL_USER=${AccessKeys}
-          export SETUP_EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet)
-          export SETUP_EMAIL_HOST=email-smtp.eu-west-1.amazonaws.com
+          openremote-cli -V -t
+          export PASSWORD=${OpenRemotePassword}
+          export EMAIL_USER=${AccessKeys}
+          export EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet)
+          export EMAIL_HOST=email-smtp.eu-west-1.amazonaws.com
           docker-compose -f mvp-docker-compose.yml -p openremote up -d
           echo USER ${AccessKeys} > access.txt
           echo SECRET ${AccessKeys.SecretAccessKey} >> access.txt

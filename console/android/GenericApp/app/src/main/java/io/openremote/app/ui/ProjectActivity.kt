@@ -9,24 +9,28 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.openremote.app.R
+import io.openremote.app.databinding.ActivityProjectBinding
 import io.openremote.app.network.ApiManager
-import kotlinx.android.synthetic.main.activity_project.*
 
 class ProjectActivity : Activity() {
+
+    private lateinit var binding: ActivityProjectBinding
+
     var sharedPreferences: SharedPreferences? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_project)
+        binding = ActivityProjectBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-        realm_input.setOnEditorActionListener { textView, actionId, keyEvent ->
+        binding.realmInput.setOnEditorActionListener { textView, actionId, keyEvent ->
             if (actionId == EditorInfo.IME_ACTION_GO) {
-                if (!project_input.text.isNullOrBlank() && !realm_input.text.isNullOrBlank()) {
-                    requestAppConfig(project_input.text.toString(), realm_input.text.toString())
+                if (!binding.projectInput.text.isNullOrBlank() && !binding.realmInput.text.isNullOrBlank()) {
+                    requestAppConfig(binding.projectInput.text.toString(), binding.realmInput.text.toString())
                 }
                 true
             } else {
@@ -34,18 +38,18 @@ class ProjectActivity : Activity() {
             }
         }
 
-        connect_button.setOnClickListener {
-            if (!project_input.text.isNullOrBlank() && !realm_input.text.isNullOrBlank()) {
-                requestAppConfig(project_input.text.toString(), realm_input.text.toString())
+        binding.connectButton.setOnClickListener {
+            if (!binding.projectInput.text.isNullOrBlank() && !binding.realmInput.text.isNullOrBlank()) {
+                requestAppConfig(binding.projectInput.text.toString(), binding.realmInput.text.toString())
             }
         }
     }
 
     private fun requestAppConfig(project: String, realm: String) {
-        progressBar.visibility = View.VISIBLE
+        binding.progressBar.visibility = View.VISIBLE
         val apiManager = ApiManager("https://${project}.openremote.io/api/${realm}")
         apiManager.getAppConfig { statusCode, appConfig, error ->
-            progressBar.visibility = View.INVISIBLE
+            binding.progressBar.visibility = View.INVISIBLE
             if (statusCode in 200..299) {
                 sharedPreferences?.edit()?.putString("project", project)?.apply()
                 sharedPreferences?.edit()?.putString("realm", realm)?.apply()
@@ -54,11 +58,13 @@ class ProjectActivity : Activity() {
                 startActivity(intent)
                 finish()
             } else {
-                Toast.makeText(
-                    this,
-                    "Error occurred getting app config. Check your input and try again",
-                    Toast.LENGTH_LONG
-                ).show()
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "Error occurred getting app config. Check your input and try again",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }

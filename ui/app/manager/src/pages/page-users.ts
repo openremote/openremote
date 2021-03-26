@@ -213,7 +213,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   public realm?: string;
 
   get name(): string {
-    return "users";
+    return "user_plural";
   }
 
   constructor(store: EnhancedStore<S>) {

@@ -13,10 +13,6 @@ typealias ResponseBlock<T> = (statusCode: Int, model: T?, error: Throwable?) -> 
 
 class ApiManager(private val baseUrl: String) {
 
-    companion object {
-        var accessToken: String? = null
-    }
-
     enum class HttpMethod {
         GET,
         POST,
@@ -67,7 +63,7 @@ class ApiManager(private val baseUrl: String) {
     ) {
         thread(start = true) {
             val urlRequest = createUrlRequest(HttpMethod.GET, pathComponents, queryParameters)
-            parseResponse<T>(urlRequest, callback)
+            parseResponse(urlRequest, callback)
         }
     }
 
@@ -103,34 +99,26 @@ class ApiManager(private val baseUrl: String) {
         noinline callback: ResponseBlock<T>?
     ) {
         with(httpConnection) {
-            val model = if (this.responseCode == 200) {
-                try {
-                    jacksonObjectMapper().readValue(
-                        this.inputStream.bufferedReader().readText(),
-                        T::class.java
+            val parsedResult = try {
+                if (this.responseCode in 200..299) {
+                    Triple(
+                        this.responseCode, jacksonObjectMapper().readValue(
+                            this.inputStream.bufferedReader().readText(),
+                            T::class.java
+                        ), null
                     )
-                } catch (e: Exception) {
-                    Log.e(this::class.simpleName, e.message, e)
-                    null
-                }
-            } else {
-                null
-            }
-            val error = try {
-
-                if (this.responseCode !in 200..299) {
-                    val errorResponse = this.errorStream.bufferedReader().readText()
-                    Throwable(errorResponse)
                 } else {
-                    null
+                    val errorResponse = this.errorStream.bufferedReader().readText()
+                    Triple(this.responseCode, null, Throwable(errorResponse))
                 }
             } catch (e: Exception) {
-                e
+                Triple(0, null, e)
             }
-            error?.let {
+
+            parsedResult.third?.let {
                 Log.e(this::class.simpleName, it.message, it)
             }
-            callback?.invoke(this.responseCode, model, error)
+            callback?.invoke(parsedResult.first, parsedResult.second, parsedResult.third)
             this.disconnect()
         }
     }

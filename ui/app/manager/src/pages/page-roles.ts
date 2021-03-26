@@ -231,7 +231,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
   public realm?: string;
 
   get name(): string {
-    return "roles";
+    return "role_plural";
   }
 
   constructor(store: EnhancedStore<S>) {

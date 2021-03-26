@@ -34,7 +34,7 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP());
+        .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP()).withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = new AttributeDescriptor<>("powerImportMin", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax", ValueType.POSITIVE_NUMBER)
@@ -56,21 +56,10 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
     public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = new AttributeDescriptor<>("efficiencyExport", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
 
-
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = new AttributeDescriptor<>("tariffImport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = new AttributeDescriptor<>("tariffExport", ValueType.NUMBER)
-        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport", ValueType.NUMBER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR);
-    public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
-    public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = new AttributeDescriptor<>("carbonImportTotal", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
-    public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = new AttributeDescriptor<>("carbonExportTotal", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
+        .withUnits("EUR", UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
@@ -180,49 +169,13 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         getAttributes().getOrCreate(TARIFF_IMPORT).setValue(value);
         return (T)this;
     }
-    
+
     public Optional<Double> getTariffExport() {
         return getAttributes().getValue(TARIFF_EXPORT);
     }
 
     public T setTariffExport(Double value) {
         getAttributes().getOrCreate(TARIFF_EXPORT).setValue(value);
-        return (T)this;
-    }
-    
-    public Optional<Double> getCarbonImport() {
-        return getAttributes().getValue(CARBON_IMPORT);
-    }
-
-    public T setCarbonImport(Double value) {
-        getAttributes().getOrCreate(CARBON_IMPORT).setValue(value);
-        return (T)this;
-    }
-    
-    public Optional<Double> getCarbonExport() {
-        return getAttributes().getValue(CARBON_EXPORT);
-    }
-
-    public T setCarbonExport(Double value) {
-        getAttributes().getOrCreate(CARBON_EXPORT).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Integer> getCarbonImportTotal() {
-        return getAttributes().getValue(CARBON_IMPORT_TOTAL);
-    }
-
-    public T setCarbonImportTotal(Integer value) {
-        getAttributes().getOrCreate(CARBON_IMPORT_TOTAL).setValue(value);
-        return (T)this;
-    }
-
-    public Optional<Integer> getCarbonExportTotal() {
-        return getAttributes().getValue(CARBON_EXPORT_TOTAL);
-    }
-
-    public T setCarbonExportTotal(Integer value) {
-        getAttributes().getOrCreate(CARBON_EXPORT_TOTAL).setValue(value);
         return (T)this;
     }
 }

@@ -6,16 +6,21 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import io.openremote.app.R
+import io.openremote.app.databinding.ActivitySplashBinding
 import io.openremote.app.network.ApiManager
 import io.openremote.app.ui.MainActivity.Companion.APP_CONFIG_KEY
 
 class SplashActivity : Activity() {
+
+    private lateinit var binding: ActivitySplashBinding
+
     var sharedPreferences: SharedPreferences? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_splash)
+        binding = ActivitySplashBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 

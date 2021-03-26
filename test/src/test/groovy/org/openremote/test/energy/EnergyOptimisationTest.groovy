@@ -2,7 +2,7 @@ package org.openremote.test.energy
 
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.energy.EnergyOptimiser
-import org.openremote.model.asset.impl.ElectricityAsset
+import org.openremote.model.asset.impl.ElectricitySupplierAsset
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.util.Pair
 import spock.lang.Specification
@@ -48,18 +48,7 @@ class EnergyOptimisationTest extends Specification {
     def "Check basic import optimiser"() {
 
         given: "an energy optimisation instance"
-        def predictedProvider = {
-            AttributeRef attributeRef ->
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_IMPORT.name) {
-                    return Collections.rotate(tariffImports.collect(), currentInterval)
-                }
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_EXPORT.name) {
-                    return Collections.rotate(tariffExports.collect(), currentInterval)
-                }
-        }
-        def optimisation = new EnergyOptimiser(intervalSize, 1d, predictedProvider, { -> System.currentTimeMillis()})
+        def optimisation = new EnergyOptimiser(intervalSize, 1d)
 
         and: "some import parameters"
         def powerImportMax = 7d
@@ -148,18 +137,7 @@ class EnergyOptimisationTest extends Specification {
 
         given: "an energy optimisation instance"
         currentInterval = 0
-        def predictedProvider = {
-            AttributeRef attributeRef ->
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_IMPORT.name) {
-                    return Collections.rotate(tariffImports.collect(), currentInterval)
-                }
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_EXPORT.name) {
-                    return Collections.rotate(tariffExports.collect(), currentInterval)
-                }
-        }
-        def optimisation = new EnergyOptimiser(intervalSize, 1d, predictedProvider, { -> System.currentTimeMillis()})
+        def optimisation = new EnergyOptimiser(intervalSize, 1d)
 
         and: "some storage export parameters"
         def powerExportMax = -20d
@@ -211,18 +189,7 @@ class EnergyOptimisationTest extends Specification {
         given: "an energy optimisation instance"
         currentInterval = 0
         def currentTime = Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDate().atTime(23, 00).toEpochSecond(ZoneOffset.UTC) * 1000
-        def predictedProvider = {
-            AttributeRef attributeRef ->
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_IMPORT.name) {
-                    return Collections.rotate(tariffImports.collect(), currentInterval)
-                }
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_EXPORT.name) {
-                    return Collections.rotate(tariffExports.collect(), currentInterval)
-                }
-        }
-        def optimisation = new EnergyOptimiser(intervalSize, 1d, predictedProvider, { -> System.currentTimeMillis()})
+        def optimisation = new EnergyOptimiser(intervalSize, 1d)
 
         and: "some input parameters"
         double energyCapacity = 200d
@@ -274,7 +241,7 @@ class EnergyOptimisationTest extends Specification {
 
         when: "the optimisation is changed to have an interval size less than 1 hour"
         energyMinLevels = new double[24*4]
-        optimisation = new EnergyOptimiser(0.25d, 1d, predictedProvider, { -> System.currentTimeMillis()})
+        optimisation = new EnergyOptimiser(0.25d, 1d)
         optimisation.applyEnergySchedule(energyMinLevels, energyCapacity, energyLevelMin, energyLevelMax, energyScheduleWeek, currentTime)
 
         then: "the energy min levels should be correct"
@@ -287,18 +254,7 @@ class EnergyOptimisationTest extends Specification {
         given: "an energy optimisation instance"
         currentInterval = 0
         def currentTime = Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDate().atTime(23, 00).toEpochSecond(ZoneOffset.UTC) * 1000
-        def predictedProvider = {
-            AttributeRef attributeRef ->
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_IMPORT.name) {
-                    return Collections.rotate(tariffImports.collect(), currentInterval)
-                }
-
-                if (attributeRef.id == gridId && attributeRef.name == ElectricityAsset.TARIFF_EXPORT.name) {
-                    return Collections.rotate(tariffExports.collect(), currentInterval)
-                }
-        }
-        def optimisation = new EnergyOptimiser(intervalSize, 1d, predictedProvider, { -> System.currentTimeMillis()})
+        def optimisation = new EnergyOptimiser(intervalSize, 1d)
 
         and: "some input parameters"
         double energyCapacity = 200d

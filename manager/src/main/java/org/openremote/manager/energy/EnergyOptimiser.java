@@ -19,11 +19,7 @@
  */
 package org.openremote.manager.energy;
 
-import org.openremote.model.asset.impl.ElectricityAsset;
-import org.openremote.model.asset.impl.ElectricityConsumerAsset;
-import org.openremote.model.asset.impl.ElectricityProducerAsset;
 import org.openremote.model.asset.impl.ElectricityStorageAsset;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.util.Pair;
 
 import java.time.Instant;
@@ -34,63 +30,34 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class EnergyOptimiser {
 
-    /**
-     * A comparator for sorting {@link ElectricityAsset}s ready for power optimisation calculations; consumers/producers
-     * that cannot be optimised have the highest priority as they cannot be influenced in any way; consumers that can be
-     * optimised should then be next followed by producers that can be optimised. Storage assets should have the lowest
-     * priority as they can potentially adapt to the demands of the other assets.
-     */
-    public static final Comparator<ElectricityAsset<?>> assetComparator = Comparator.comparingInt(asset -> {
-        if (asset instanceof ElectricityStorageAsset) {
-            if (((ElectricityStorageAsset) asset).isSupportsExport().orElse(false)) {
-                return 20000;
-            }
-
-            return 10000;
-        }
-
-        if (asset instanceof ElectricityProducerAsset) {
-            return 1000;
-        }
-
-        return 2000;
-    });
     private static final Logger LOG = Logger.getLogger(EnergyOptimiser.class.getName());
     protected double intervalSize;
     protected double financialWeighting;
-    protected Supplier<Long> currentMillisSupplier;
-    Function<AttributeRef, double[]> predictedDataSupplier;
 
     /**
      * 24 divided by intervalSize must be a whole number
      */
-    public EnergyOptimiser(double intervalSize, double financialWeighting, Function<AttributeRef, double[]> predictedDataSupplier, Supplier<Long> currentMillisSupplier) {
+    public EnergyOptimiser(double intervalSize, double financialWeighting) throws IllegalArgumentException {
         if ((24d / intervalSize) != (int) (24d / intervalSize)) {
             throw new IllegalArgumentException("24 divided by intervalSizeHours must be whole number");
         }
         this.intervalSize = intervalSize;
         this.financialWeighting = Math.max(0, Math.min(1d, financialWeighting));
-        this.predictedDataSupplier = predictedDataSupplier;
-        this.currentMillisSupplier = currentMillisSupplier;
     }
 
-//    public double[] getGridImportCosts(ElectricitySupplierAsset asset) {
-//
-//    }
-//
-//    /**
-//     * Function to calculate the powerMaxExport for the given asset at interval n
-//     */
-//    public Function<Integer, Double> getPowerExportMaxCalculator(ElectricityAsset<?> asset) {
-//
-//    }
+    public double getIntervalSize() {
+        return intervalSize;
+    }
+
+    public double getFinancialWeighting() {
+        return financialWeighting;
+    }
 
     public int get24HourIntervalCount() {
         return (int) (24d / intervalSize);
@@ -210,112 +177,6 @@ public class EnergyOptimiser {
 //            });
 //        };
 //    }
-
-    /**
-     * Returns the power setpoint calculator for the specified asset (for producers power demand will only ever be
-     * negative, for consumers it will only ever be positive and for storage assets that support export (i.e. supports
-     * producer and consumer) it can be positive or negative at a given interval. For this to work the supplied
-     * parameters should be updated when the system changes and not replaced so that references maintained by the
-     * calculator are valid and up to date.
-     */
-    public Supplier<double[]> getPowerSetpointCalculator(ElectricityAsset<?> asset, double[] powerNets, double[] powerNetLimits, double[] tariffImports, double[] tariffExports) {
-
-        int intervalCount = get24HourIntervalCount();
-
-        if (asset instanceof ElectricityProducerAsset
-            || asset instanceof ElectricityConsumerAsset) {
-            // Get predicted data from prediction provider
-            return () -> predictedDataSupplier.apply(new AttributeRef(asset.getId(), ElectricityProducerAsset.POWER.getName()));
-        }
-
-        if (!(asset instanceof ElectricityStorageAsset)) {
-            return () -> new double[intervalCount];
-        }
-
-        ElectricityStorageAsset storageAsset = (ElectricityStorageAsset) asset;
-        boolean hasSetpoint = storageAsset.hasAttribute(ElectricityStorageAsset.POWER_SETPOINT);
-        boolean supportsExport = storageAsset.isSupportsExport().orElse(false);
-        boolean supportsImport = storageAsset.isSupportsImport().orElse(false);
-
-
-        if (!supportsExport && !supportsImport) {
-            LOG.info("Storage asset doesn't support import or export: " + asset.getId());
-            return () -> new double[intervalCount];
-        }
-
-        if (!hasSetpoint) {
-            LOG.info("Storage asset has no setpoint attribute so cannot be controlled: " + asset.getId());
-            return () -> new double[intervalCount];
-        }
-
-        return () -> {
-
-            double energyCapacity = storageAsset.getEnergyCapacity().orElse(0d);
-            double energyLevel = Math.min(energyCapacity, storageAsset.getEnergyLevel().orElse(-1d));
-
-            if (energyCapacity <= 0d || energyLevel < 0) {
-                LOG.info("Storage asset has no capacity or energy level so cannot import or export energy: " + asset.getId());
-                return new double[intervalCount];
-            }
-
-            double energyLevelMax = Math.min(energyCapacity, ((double) storageAsset.getEnergyLevelPercentageMax().orElse(100) / 100) * energyCapacity);
-            double energyLevelMin = Math.min(energyCapacity, ((double) storageAsset.getEnergyLevelPercentageMin().orElse(0) / 100) * energyCapacity);
-            double[] energyLevelMins = new double[intervalCount];
-
-            // Does the storage support import and have an energy level schedule
-            Optional<Integer[][]> energyLevelScheduleOptional = storageAsset.getEnergyLevelSchedule();
-            boolean hasEnergyMinRequirement = energyLevelMin > 0 || energyLevelScheduleOptional.isPresent();
-            double powerExportMax = storageAsset.getPowerExportMax().orElse(Double.MIN_VALUE);
-            double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
-            int[][] energySchedule = energyLevelScheduleOptional.map(dayArr -> Arrays.stream(dayArr).map(hourArr -> Arrays.stream(hourArr).mapToInt(Integer::intValue).toArray()).toArray(int[][]::new)).orElse(null);
-
-            applyEnergySchedule(energyLevelMins, energyCapacity, energyLevelMin, energyLevelMax, energySchedule, currentMillisSupplier.get());
-
-            // TODO: Make these a function of energy level
-            Function<Integer, Double> powerImportMaxCalculator = interval -> powerImportMax;
-            Function<Integer, Double> powerExportMaxCalculator = interval -> powerExportMax;
-
-            if (hasEnergyMinRequirement) {
-                normaliseEnergyMinRequirements(energyLevelMins, powerImportMaxCalculator, powerExportMaxCalculator, energyLevel);
-            }
-
-            double[][] exportCostAndPower = null;
-            double[][] importCostAndPower = null;
-            double[] powerSetpoints = new double[intervalCount];
-
-            Function<Integer, Double> energyLevelCalculator = interval ->
-                Math.min(
-                    energyLevelMax,
-                    energyLevel + IntStream.range(0, interval).mapToDouble(j -> powerSetpoints[j] * intervalSize).sum()
-                );
-
-            // If asset supports exporting energy (V2G, battery storage, etc.) then need to determine if there are
-            // opportunities to export energy to save/earn, taking into consideration the cost of exporting from this asset
-            if (supportsExport) {
-                // Find intervals that save/earn by exporting energy from this storage asset by looking at power levels
-                BiFunction<Integer, Double, double[]> exportOptimiser = getExportOptimiser(powerNets, powerNetLimits, tariffImports, tariffExports, asset.getTariffExport().orElse(0d));
-                exportCostAndPower = IntStream.range(0, intervalCount).mapToObj(it -> exportOptimiser.apply(it, powerExportMax))
-                    .toArray(double[][]::new);
-            }
-
-            // If asset supports importing energy then need to determine if there are opportunities to import energy to
-            // save/earn, taking into consideration the cost of importing to this asset, also need to ensure that min
-            // energy demands are met.
-            if (supportsImport) {
-                BiFunction<Integer, double[], double[]> importOptimiser = getImportOptimiser(powerNets, powerNetLimits, tariffImports, tariffExports, asset.getTariffImport().orElse(0d));
-                importCostAndPower = IntStream.range(0, intervalCount).mapToObj(it -> importOptimiser.apply(it, new double[]{0d, powerImportMax}))
-                    .toArray(double[][]::new);
-
-                if (hasEnergyMinRequirement) {
-                    applyEnergyMinImports(importCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, importOptimiser, powerImportMaxCalculator);
-                }
-            }
-
-            applyEarningOpportunities(importCostAndPower, exportCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, energyLevelMax);
-
-            return powerSetpoints;
-        };
-    }
 
     /**
      * Will take the supplied 24x7 energy schedule percentages and energy level min/max values and apply them to the
