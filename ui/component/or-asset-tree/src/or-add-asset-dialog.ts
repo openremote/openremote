@@ -91,6 +91,7 @@ export class OrAddAssetDialog extends LitElement {
             
             #parent-selector {
                 max-width: 250px;
+                border-left: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
             
             #mdc-dialog-form-add {
