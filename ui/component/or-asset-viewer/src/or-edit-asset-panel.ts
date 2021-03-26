@@ -353,6 +353,10 @@ export class OrEditAssetPanel extends LitElement {
             title: i18next.t("addAttribute"),
             actions: [
                 {
+                    actionName: "cancel",
+                    content: i18next.t("cancel")
+                },
+                {
                     default: true,
                     actionName: "add",
                     action: () => {
@@ -360,10 +364,6 @@ export class OrEditAssetPanel extends LitElement {
                         this._onModified();
                     },
                     content: html`<or-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-input>`
-                },
-                {
-                    actionName: "cancel",
-                    content: i18next.t("cancel")
                 }
             ],
             dismissAction: null
@@ -417,6 +417,10 @@ export class OrEditAssetPanel extends LitElement {
             title: i18next.t("addMetaItems"),
             actions: [
                 {
+                    actionName: "cancel",
+                    content: i18next.t("cancel")
+                },
+                {
                     default: true,
                     actionName: "add",
                     action: () => {
@@ -436,10 +440,6 @@ export class OrEditAssetPanel extends LitElement {
                         }
                     },
                     content: i18next.t("add")
-                },
-                {
-                    actionName: "cancel",
-                    content: i18next.t("cancel")
                 }
             ],
             dismissAction: null
@@ -521,7 +521,8 @@ export class OrEditAssetPanel extends LitElement {
                                 height: 100%;
                             }
                         </style>
-                    `
+                    `,
+                     dismissAction: null
                 }
             );
         };

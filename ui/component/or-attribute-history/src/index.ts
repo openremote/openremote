@@ -109,13 +109,13 @@ const style = css`
         --internal-or-attribute-history-graph-fill-color: var(--or-attribute-history-graph-fill-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
         --internal-or-attribute-history-graph-fill-opacity: var(--or-attribute-history-graph-fill-opacity, 1);       
         --internal-or-attribute-history-graph-line-color: var(--or-attribute-history-graph-line-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));       
-        --internal-or-attribute-history-graph-point-color: var(--or-attribute-history-graph-point-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
-        --internal-or-attribute-history-graph-point-border-color: var(--or-attribute-history-graph-point-border-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
-        --internal-or-attribute-history-graph-point-radius: var(--or-attribute-history-graph-point-radius, 4);
+        --internal-or-attribute-history-graph-point-color: var(--or-attribute-history-graph-point-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-attribute-history-graph-point-border-color: var(--or-attribute-history-graph-point-border-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-attribute-history-graph-point-radius: var(--or-attribute-history-graph-point-radius, 2);
         --internal-or-attribute-history-graph-point-hit-radius: var(--or-attribute-history-graph-point-hit-radius, 20);       
         --internal-or-attribute-history-graph-point-border-width: var(--or-attribute-history-graph-point-border-width, 2);
-        --internal-or-attribute-history-graph-point-hover-color: var(--or-attribute-history-graph-point-hover-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));       
-        --internal-or-attribute-history-graph-point-hover-border-color: var(--or-attribute-history-graph-point-hover-border-color, var(--or-app-color3, ${unsafeCSS(DefaultColor3)}));
+        --internal-or-attribute-history-graph-point-hover-color: var(--or-attribute-history-graph-point-hover-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-attribute-history-graph-point-hover-border-color: var(--or-attribute-history-graph-point-hover-border-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
         --internal-or-attribute-history-graph-point-hover-radius: var(--or-attribute-history-graph-point-hover-radius, 4);      
         --internal-or-attribute-history-graph-point-hover-border-width: var(--or-attribute-history-graph-point-hover-border-width, 2);
         
@@ -362,7 +362,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 }
 
                 this._chart = new Chart(this._chartElem, {
-                    type: "bar",
+                    type: "line",
                     data: {
                         datasets: [
                             {
@@ -377,7 +377,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                                 pointHoverBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-color"),
                                 pointHoverRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-radius")),
                                 pointHoverBorderWidth: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hover-border-width")),
-                                pointHitRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hit-radius"))
+                                pointHitRadius: Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-point-hit-radius")),
+                                fill: false
                             }
                         ]
                     },
@@ -390,14 +391,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         },
                         tooltips: {
                             displayColors: false,
-                            callbacks: {
-                                label: (tooltipItem, data) => {
-                                    return tooltipItem.yLabel; // Removes the colon before the label
-                                },
-                                footer: () => {
-                                    return " "; // Hack the broken vertical alignment of body with footerFontSize: 0
-                                }
-                            } as ChartTooltipCallback
+                            xPadding: 10,
+                            yPadding: 10,
+                            titleMarginBottom: 10
                         },
                         scales: {
                             yAxes: [{
@@ -411,6 +407,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                             xAxes: [{
                                 type: "time",
                                 time: {
+                                    tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
                                     displayFormats: {
                                         millisecond: 'HH:mm:ss.SSS',
                                         second: 'HH:mm:ss',

@@ -407,7 +407,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
         return {
             title: title,
-            actions: actions
+            actions: actions,
+            dismissAction: null
         };
     }
 }

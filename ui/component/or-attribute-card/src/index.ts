@@ -341,7 +341,7 @@ export class OrAttributeCard extends LitElement {
                     ["absolute", "Absolute"]
                 ];
 
-                this._dialog.dialogTitle= i18next.t("editDelta");
+                this._dialog.dialogTitle = i18next.t("editDelta");
 
                 this._dialog.dialogActions = [
                     {
@@ -364,10 +364,12 @@ export class OrAttributeCard extends LitElement {
                 this._dialog.dialogContent = html`
                     <or-input id="delta-mode-picker" value="${this.deltaFormat}" @or-input-changed="${(evt: OrInputChangedEvent) => {this.deltaFormat = evt.detail.value;this.saveSettings();}}" .type="${InputType.LIST}" .options="${options}"></or-input>                
                 `;
+
+                this._dialog.dismissAction = null;
             }
             else if (dialogContent === "editCurrentValue") {
 
-                this._dialog.dialogTitle= i18next.t("editCurrentValue");
+                this._dialog.dialogTitle = i18next.t("editCurrentValue");
 
                 this._dialog.dialogActions = [
                     {
@@ -399,10 +401,12 @@ export class OrAttributeCard extends LitElement {
                 this._dialog.dialogContent = html`
                     <or-input id="current-value-decimals" .label="${i18next.t("decimals")}" value="${this.mainValueDecimals}" .type="${InputType.TEXT}"></or-input>
                 `;
+
+                this._dialog.dismissAction = null;
             }
             else {
 
-                this._dialog.dialogTitle= i18next.t("addAttribute");
+                this._dialog.dialogTitle = i18next.t("addAttribute");
 
                 this._dialog.dialogActions = [
                     {
@@ -438,6 +442,8 @@ export class OrAttributeCard extends LitElement {
                             .value="${this.attributeName}"></or-input>
                     ` : ``}
                 `;
+
+                this._dialog.dismissAction = null;
             }
         }
     }

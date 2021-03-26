@@ -71,6 +71,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
                 }
             });
             dialog.dialogContent = html`${container}`;
+            dialog.dismissAction = null;
             this.requestUpdate();
         }
     }

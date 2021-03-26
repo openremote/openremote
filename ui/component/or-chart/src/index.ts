@@ -650,7 +650,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                     },
                     tooltips: {
                         mode: 'x',
-                        intersect: false
+                        intersect: false,
+                        xPadding: 10,
+                        yPadding: 10,
+                        titleMarginBottom: 10
                     },
                     hover: {
                         mode: 'x',
@@ -668,6 +671,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         xAxes: [{
                             type: "time",
                             time: {
+                                tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
                                 displayFormats: {
                                     quarter: 'MMM YYYY',
                                     minute: "HH:mm",

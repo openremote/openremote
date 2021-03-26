@@ -50,6 +50,7 @@
   "notContainsKey": "Does not contain key",
   "true": "Is true",
   "false": "Is false",
+  "radiusMin": "Radius (min. 100m)",
   "withinRadius": "Inside circle",
   "outsideRadius": "Outside circle",
   "withinRectangle": "Inside rectangle",
@@ -189,7 +190,7 @@
   "openInBrowser": "Open in browser (for external websites)",
   "buttonTextConfirm": "Text for action button",
   "buttonTextDecline": "Text for decline button",
-  "custom": "Manual input",
+  "custom": "Custom attribute",
   "tenant": "Tenant",
   "tenant_plural": "Tenants",
   "displayName":"Friendly name",
@@ -401,5 +402,6 @@
   "createAssetFailed": "Failed to create asset",
   "logCategory": {},
   "readPermissions": "Read permissions",
-  "writePermissions": "Write permissions"
+  "writePermissions": "Write permissions",
+  "valueType": "Value type"
 }
