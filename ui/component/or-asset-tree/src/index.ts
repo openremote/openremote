@@ -305,8 +305,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     <or-translate id="title" value="asset_plural"></or-translate>
                 </div>
 
-                <div id="header-btns">                
-                    <or-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
+                <div id="header-btns">
                     <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
                     <or-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-input>
@@ -476,10 +475,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 }
             });
         }
-    }
-
-    protected _onDeselectClicked() {
-        this._onNodeClicked(null, null);
     }
 
     protected async _onCopyClicked() {
