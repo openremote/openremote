@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
  * <li>{@link JsonSerialize#converter}</li>
  * </ul>
  */
+@SuppressWarnings("deprecation")
 public class JsonSerializeExtension extends cz.habarta.typescript.generator.Extension {
 
     @Override

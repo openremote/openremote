@@ -262,7 +262,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         switch (persistenceEvent.getCause()) {
             case CREATE:
 
-                addReplaceAgent(agent);
+                agent = addReplaceAgent(agent);
 
                 if (agent.isDisabled().orElse(false)) {
                     LOG.info("Agent is disabled so not starting: " + agent);
@@ -285,15 +285,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
     }
 
-    protected void onAgentUpdated(Agent<?,?,?> agent) {
+    protected Agent<?,?,?> onAgentUpdated(Agent<?,?,?> agent) {
 
         // Old agent can be null if an update happens straight after the creation
         if (!removeAgent(agent.getId())) {
-            return;
+            return agent;
         }
 
         stopAgent(agent.getId());
-        addReplaceAgent(agent);
+        agent = addReplaceAgent(agent);
+
+        if (agent == null) {
+            return null;
+        }
 
         if (agent.isDisabled().orElse(false)) {
             LOG.info("Agent is disabled so not starting: " + agent);
@@ -301,6 +305,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         } else {
             startAgent(agent);
         }
+
+        return agent;
     }
 
     /**
@@ -603,13 +609,22 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         return getClass().getSimpleName() + "{" + "}";
     }
 
-    protected void addReplaceAgent(Agent<?, ?, ?> agent) {
-        // Fully load agent asset
-        final Agent<?, ?, ?> loadedAgent = assetStorageService.find(agent.getId(), true, Agent.class);
-        if (loadedAgent == null) {
-            return;
+    protected Agent<?, ?, ?> addReplaceAgent(Agent<?, ?, ?> agent) {
+
+        // Fully load agent asset if path and parent info not loaded
+        if (agent.getPath() == null || (agent.getPath().length > 1 && agent.getParentId() == null)) {
+            LOG.info("Agent is not fully loaded so retrieving the agent from the DB: " + agent.getId());
+            final Agent<?, ?, ?> loadedAgent = assetStorageService.find(agent.getId(), true, Agent.class);
+            if (loadedAgent == null) {
+                LOG.info("Agent not found in the DB, maybe it has been removed: " + agent.getId());
+                return null;
+            }
+            agent = loadedAgent;
         }
-        withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(loadedAgent.getId(), loadedAgent));
+
+        Agent<?, ?, ?> finalAgent = agent;
+        withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(finalAgent.getId(), finalAgent));
+        return agent;
     }
 
     @SuppressWarnings("ConstantConditions")

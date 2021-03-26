@@ -8,8 +8,8 @@ default:
 variables:
   PROJECT_NAME: demo
   GIT_SUBMODULE_STRATEGY: normal
-  DEPLOYMENT_HOST_USER: root
-  DEPLOYMENT_PORT: 2222
+  DEPLOYMENT_HOST_USER: ubuntu
+  DEPLOYMENT_PORT: 22
   DAST_WEBSITE: https://staging.${PROJECT_NAME}.openremote.io
   PLATFORM: linux/amd64,linux/arm64
 
@@ -22,7 +22,7 @@ workflow:
 stages:
   - prebuild
   - build
-  - deploy_ovh
+  - deploy_aws
   - build_fail
   - test
   - tests_fail
@@ -271,8 +271,8 @@ test-master:
   retry:
     max: 2
 
-deploy demo on OVH:
-  stage: deploy_ovh
+deploy demo on AWS:
+  stage: deploy_aws
   allow_failure: true
   rules:
     - if: $RUN_TESTS == "true"
@@ -292,8 +292,8 @@ deploy demo on OVH:
     url: https://${PROJECT_NAME}.openremote.io
   <<: *deploy_definition
 
-redeploy demo on OVH:
-  stage: deploy_ovh
+redeploy demo on AWS:
+  stage: deploy_aws
   allow_failure: true
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /deploy-demo/

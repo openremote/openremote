@@ -137,7 +137,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
     };
 
     get name(): string {
-        return "gateway";
+        return "gatewayConnection";
     }
 
     constructor(store: EnhancedStore<S>) {

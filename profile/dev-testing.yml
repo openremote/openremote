@@ -13,9 +13,9 @@ services:
       file: deploy.yml
       service: keycloak
     volumes:
-      - ../deployment:/deployment
-      - ../keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
-      - ../keycloak/scripts/disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
+      # Map custom themes
+      #- ../deployment/keycloak/themes:/deployment/keycloak/themes
+      - ./disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
     # Access directly if needed on localhost
     ports:
       - "8081:8080"
@@ -24,7 +24,7 @@ services:
         condition: service_healthy
     environment:
       # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: 'http://localhost:8080/auth'
+      KEYCLOAK_FRONTEND_URL: ${KEYCLOAK_FRONTEND_URL:-http://localhost:8080/auth}
 
   postgresql:
     extends:

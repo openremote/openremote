@@ -20,7 +20,7 @@
 package org.openremote.manager.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -32,7 +32,6 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
@@ -393,12 +392,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         if (pushMessage.getData() != null) {
-            Iterable<Map.Entry<String, JsonNode>> iterable = () -> pushMessage.getData().fields();
-            StreamSupport.stream(iterable.spliterator(), false).forEach(stringValuePair -> {
-                if (stringValuePair.getValue() != null) {
-                    builder.putData(stringValuePair.getKey(), stringValuePair.getValue().toString());
-                }
-            });
+            builder.putAllData(Values.JSON.convertValue(pushMessage.getData(), new TypeReference<Map<String, String>>(){}));
 
             if (dataOnly) {
                 apsBuilder.setContentAvailable(true);

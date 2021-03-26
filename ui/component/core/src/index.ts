@@ -990,22 +990,32 @@ export class Manager implements EventProviderFactory {
 
             // Update basic token so we can use rest api to make calls
             this._basicIdentity!.token = btoa(result.username + ":" + result.password);
-            const userResponse = await rest.api.UserResource.getCurrent();
-            const status = userResponse.status;
+            let success = false;
 
-            if (status === 200) {
+            try {
+                const userResponse = await rest.api.UserResource.getCurrent();
+                if (userResponse.status === 200) {
+                    success = true;
+                    this._basicIdentity!.user = userResponse.data;
+                }
+
+                if (!success) {
+                    // Undertow incorrectly returns 403 when no authorization header and a 401 when it is set and not valid
+                    if (userResponse.status === 401 || userResponse.status === 403) {
+                        console.log("Basic authentication invalid credentials, trying again");
+                    }
+                }
+            } catch (e) {
+                console.error("Basic auth failed: ", e);
+            }
+
+            if (success) {
                 console.log("Basic authentication successful");
                 authenticated = true;
-                this._basicIdentity!.user = userResponse.data;
 
                 // Get user roles
                 const rolesResponse = await rest.api.UserResource.getCurrentUserRoles();
                 this._basicIdentity!.roles = rolesResponse.data;
-
-                // Undertow incorrectly returns 403 when no authorization header and a 401 when it is set and not valid
-            } else if (status === 401 || status === 403) {
-                console.log("Basic authentication invalid credentials, trying again");
-                this._basicIdentity = undefined;
             } else {
                 console.log("Unkown response so aborting");
                 this._basicIdentity = undefined;

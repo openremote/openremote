@@ -222,7 +222,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
   public realm?: string;
 
   get name(): string {
-    return "roles";
+    return "realm_plural";
   }
 
   constructor(store: EnhancedStore<S>) {
@@ -328,11 +328,11 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
          <div id="wrapper">
                 <div id="title">
                 <or-icon icon="domain"></or-icon>${i18next.t(
-                  "realm management"
+                  "realm_plural"
                 )}
                 </div>
                 <div class="panel">
-                <p class="panel-title">${i18next.t("realms")}</p>
+                <p class="panel-title">${i18next.t("realm_plural")}</p>
                   <div id="table-roles" class="mdc-data-table">
                   <table class="mdc-data-table__table" aria-label="attribute list" >
                       <thead>

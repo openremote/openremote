@@ -34,8 +34,7 @@ public class DoorSensorAsset extends Asset<DoorSensorAsset> {
 
     public static final AttributeDescriptor<Boolean> OPEN = new AttributeDescriptor<>("open", ValueType.BOOLEAN,
         new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AttributeDescriptor<Boolean> LOCKED = new AttributeDescriptor<>("locked", ValueType.BOOLEAN,
-        new MetaItem<>(MetaItemType.READ_ONLY));
+    public static final AttributeDescriptor<Boolean> LOCKED = new AttributeDescriptor<>("locked", ValueType.BOOLEAN);
 
     public static final AssetDescriptor<DoorSensorAsset> DESCRIPTOR = new AssetDescriptor<>("door", "ae2eb6", DoorSensorAsset.class);
 

@@ -1,47 +1,33 @@
 # OpenRemote v3
 #
-# By default running this profile installs the stack in swarm on https://localhost using a
-# self-signed SSL certificate, with username 'admin' and password 'secret'.
+# Profile that runs the vanilla stack on https://localhost using a self-signed SSL certificate,
+# with username 'admin' and password 'secret'. There is no map data available in the vanilla
+# system so the map tile server will not function. Persistent data is stored in a docker
+# volume called postgresql-data between restarts, simply delete this volume to reset the
+# system to an empty state.
 #
-# Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
+# Please see profile/deploy.yml for configuration details for each service.
 #
-# Start a demo stack in the project root directory with:
-#
-#   dosker swarm init
-#   docker pull openremote/deployment
-#   docker-compose -p demo up -d --no-build deployment 
-#   docker stack deploy --compose-file swarm-docker-compose.yml demo
-#
-# Stop the stack:
-#
-#   docker stack rm demo
-#
-# For full documentation, see profile/deploy.yml
-#
-# For swarm (production) use version 3, for developement use version 2 
-version: '3.7'
+version: "3.7"
 
 networks:
   public:
     driver: overlay
     driver_opts:
-      encrypted: 'true'
+      encrypted: "true"
   private:
     driver: overlay
     driver_opts:
-      encrypted: 'true'
+      encrypted: "true"
     attachable: false
 
-# If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
   proxy-data:
-  deployment-data:
   postgresql-data:
+  deployment-data:
 
 services:
-
   proxy:
-
     image: openremote/proxy:${DATE_TAG:-latest}
     networks:
       - public
@@ -49,143 +35,61 @@ services:
     depends_on:
       - manager
     healthcheck:
-        interval: 3s
-        timeout: 3s
-        start_period: 2s
-        retries: 30
-        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:80"]
-    environment:
-      TZ: Europe/Amsterdam
-      DOMAINNAME: ${DOMAINNAME:-localhost}
-      LE_EMAIL: ${LE_EMAIL:-me@privacy.net}
-
-      # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
-      # when testing (this is important, you are limited to 5 duplicate certificates per week!)
-      # LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
-
-
-      # The proxy supports up to 10 custom redirects from hostname to any path on the
-      # backend service. This can be used to give consoles a vanity domain name.
-      # PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld
-      # PROXY_HOST_REDIRECT_1_TARGET: /console/master
-      # PROXY_HOST_REDIRECT_2_NAME: www.my-console-tenant-a.tld
-      # PROXY_HOST_REDIRECT_2_TARGET: /console/building
-      # PROXY_HOST_REDIRECT_3_NAME: ...
-
-      # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
-      # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
-      # PROXY_LOGLEVEL: 'notice'
-
-    # Run proxy, obtain and automatically renew SSL certificates if DOMAINNAME is not localhost. Use
-    # the command 'help' to get a list of all options.
-    command: run
-
-    # Expose a public web service mapped to ports on the host.
+      interval: 3s
+      timeout: 3s
+      start_period: 2s
+      retries: 3
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:80"]
     ports:
       - "80:80"
       - "443:443"
-
+      - "8883:8883"
     volumes:
       - proxy-data:/deployment
-      # Override the haproxy.cfg with custom file
-      # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
-
     deploy:
       replicas: 1
       restart_policy:
-        # Have a chance to look inside log before restarts to prevent hitting
-        # letsencrypt limit of number issued certificates per week, which is 5
         delay: 10s
         window: 30s
-      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
         order: start-first
         delay: 30m
+    environment:
+      DOMAINNAME: ${DOMAINNAME:-localhost}
+      LE_EMAIL: admin@${DOMAINNAME}
 
-  # This configuration uses the manager's deployment-specific data such as map tiles,
-  # console application static resources (HTML, JS, CSS), extensions, and other
-  # configuration files which were baked into the managers image.
   manager:
-
-    image: openremote/manager:${DATE_TAG:-mvp}
+    image: openremote/manager:${DATE_TAG:-latest}
     networks:
       - private
     depends_on:
       - keycloak
     healthcheck:
-        interval: 3s
-        timeout: 3s
-        start_period: 2s
-        retries: 120
-        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
-    environment:
-
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
-      TZ: Europe/Amsterdam
-
-      # If developer mode is enabled, all setup tasks will be executed on application startup.
-      # This will clean all data in the database, and then import demo/test data. Some caching and
-      # other runtime performance-optimizations will also be disabled.
-      DEV_MODE: ${DEV_MODE:-false}
-
-      # This switch can wipe your database, this is the factory reset!
-      SETUP_WIPE_CLEAN_INSTALL: ${SETUP_WIPE_CLEAN_INSTALL:-true}
-      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
-
-      # When you are ready to permanently install your project, replace it with the next lines...
-      # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
-
-      # Configure SMTP smart host, to send password reset emails etc.
-      # We put here sandbox AWS account (allows max 1 msg/s, 200/day and recipient is support@openremote.io)
-      # by doing this we don't have initialization errors and we can see that somebody is using e-mail function
-      # and might be interested in production e-mail server.
-      SETUP_EMAIL_HOST: ${SETUP_EMAIL_HOST:-email-smtp.eu-west-2.amazonaws.com}
-      SETUP_EMAIL_USER: ${SETUP_EMAIL_USER:-AKIAR6UPFQB5OQT6HQ7O}
-      SETUP_EMAIL_PASSWORD: ${SETUP_EMAIL_PASSWORD:-BL+37Uy86pwT6NpM3FyRQkeYu6IQN2m6nc3zgiDI1wYp}
-      SETUP_EMAIL_PORT: ${SETUP_EMAIL_PORT:-587}
-      SETUP_EMAIL_TLS: 'true'
-      #SETUP_EMAIL_FROM_KEYCLOAK: 'no-reply@openremote.io'
-      #SETUP_EMAIL_FROM_DEFAULT: 'no-reply@openremote.io'
-
-
-      # The public host name of this OpenRemote installation. This name is used in bearer tokens
-      # and must be the name you access the web services under. If you change proxy#DOMAINNAME, also
-      # change this to match.
-      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
-
-      # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
-      IDENTITY_NETWORK_SECURE: 'true'
-
-      # The public port of this OpenRemote installation.
-      IDENTITY_NETWORK_WEBSERVER_PORT: 443
-
-      # The service-internal host name and port of the identity provider.
-      KEYCLOAK_HOST: keycloak
-      KEYCLOAK_PORT: 8080
-
-      JAVA_OPTS: -Xms400m -Xmx400m
-                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
-                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
-                  -XX:MaxDirectMemorySize=25m
-                  -XX:NativeMemoryTracking=summary
-                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
-
+      interval: 3s
+      timeout: 3s
+      start_period: 2s
+      retries: 120
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080"]
     volumes:
       - deployment-data:/deployment
-
     deploy:
       replicas: 1
-      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
         order: start-first
         delay: 10s
+    environment:
+      SETUP_ADMIN_PASSWORD: ${PASSWORD:-secret}
+      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
+      SETUP_EMAIL_HOST: ${EMAIL_HOST:-email-smtp.eu-west-1.amazonaws.com}
+      SETUP_EMAIL_USER: ${EMAIL_USER}
+      SETUP_EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      SETUP_EMAIL_PORT: ${SETUP_EMAIL_PORT:-587}
+      SETUP_EMAIL_FROM_KEYCLOAK: no-reply@${DOMAINNAME}
+      SETUP_EMAIL_FROM_DEFAULT: admin@${DOMAINNAME}
 
   keycloak:
-
-    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/keycloak:${DATE_TAG:-latest}
     networks:
       - public
@@ -193,82 +97,38 @@ services:
     depends_on:
       - postgresql
     healthcheck:
-        test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/auth"]
-        interval: 3s
-        timeout: 3s
-        # This was 600s in the Dockerfile, but that seems way too long.
-        start_period: 60s
-        retries: 30
-    environment:
-
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
-      TZ: Europe/Amsterdam
-
-      # Switch to DEBUG to diagnose Keycloak problems.
-      KEYCLOAK_LOGLEVEL: INFO
-
-      # When you are ready to permanently install your project, replace it with the next line ...
-      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
-
-      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
-      KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
-
-      # Custom JVM options (increase heap size if required)
-      JAVA_OPTS: -Xms300m -Xmx300m
-                  -XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m
-                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
-                  -XX:MaxDirectMemorySize=25m
-                  -XX:NativeMemoryTracking=summary
-                  -XX:+ExitOnOutOfMemoryError
-                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
-                  -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
-
-    ports:
-      - "8081:8080"
-
-    volumes:
-      - deployment-data:/deployment
-
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/auth"]
+      interval: 3s
+      timeout: 3s
+      start_period: 60s
+      retries: 30
     deploy:
       replicas: 1
-      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
         order: start-first
         delay: 10m
+    volumes:
+      - deployment-data:/deployment
+    environment:
+      KEYCLOAK_PASSWORD: ${PASSWORD:-secret}
+      KEYCLOAK_FRONTEND_URL: "https://${IDENTITY_NETWORK_HOST:-localhost}/auth"
 
-  # This configuration stores postgresql data in a Docker volume. You manage this volume
-  # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
-  # Alternatively, you can store postgresql data in a directory on your host.
   postgresql:
-    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/postgresql:${DATE_TAG:-latest}
     networks:
       - private
     healthcheck:
-        interval: 3s
-        timeout: 3s
-        start_period: 2s
-        retries: 30
-        test: ["CMD", "gosu", "postgres", "pg_isready"]
-    environment:
-
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
-      TZ: Europe/Amsterdam
-
-      # You can open an SQL console on a running container with:
-      # docker exec -it <container ID> psql -U openremote
-
-    volumes:
-      - postgresql-data:/var/lib/postgresql/data
-
+      interval: 3s
+      timeout: 3s
+      start_period: 2s
+      retries: 30
+      test: ["CMD", "gosu", "postgres", "pg_isready"]
     deploy:
       replicas: 1
-      # Configure uninterrupted updates with rollback
       update_config:
         failure_action: rollback
         order: start-first
         delay: 20m
-
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data

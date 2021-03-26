@@ -57,9 +57,9 @@ public class MapService implements ContainerService {
 
     public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
     public static final String MAP_TILES_PATH = "MAP_TILES_PATH";
-    public static final String MAP_TILES_PATH_DEFAULT = "deployment/map/mapdata.mbtiles";
+    public static final String MAP_TILES_PATH_DEFAULT = "manager/src/map/mapdata.mbtiles";
     public static final String MAP_SETTINGS_PATH = "MAP_SETTINGS_PATH";
-    public static final String MAP_SETTINGS_PATH_DEFAULT = "deployment/map/mapsettings.json";
+    public static final String MAP_SETTINGS_PATH_DEFAULT = "manager/src/map/mapsettings.json";
     public static final String MAP_TILESERVER_HOST = "MAP_TILESERVER_HOST";
     public static final String MAP_TILESERVER_HOST_DEFAULT = null;
     public static final String MAP_TILESERVER_PORT = "MAP_TILESERVER_PORT";
@@ -168,11 +168,19 @@ public class MapService implements ContainerService {
 //        }
 
         if (mapTilesPath == null) {
-            mapTilesPath = Paths.get(Objects.requireNonNull(Container.class.getClassLoader().getResource("mapdata.mbtiles")).toURI());
+            if (Files.isRegularFile(Paths.get("/opt/map/mapdata.mbtiles"))) {
+                mapTilesPath = Paths.get("/opt/map/mapdata.mbtiles");
+            } else if (Files.isRegularFile(Paths.get("manager/src/map/mapdata.mbtiles"))) {
+                mapTilesPath = Paths.get("manager/src/map/mapdata.mbtiles");
+            }
         }
 
         if (mapSettingsPath == null) {
-            mapSettingsPath = Paths.get(Objects.requireNonNull(Container.class.getClassLoader().getResource("mapsettings.json")).toURI());
+            if (Files.isRegularFile(Paths.get("/opt/map/mapsettings.json"))) {
+                mapSettingsPath = Paths.get("/opt/map/mapsettings.json");
+            } else if (Files.isRegularFile(Paths.get("manager/src/map/mapsettings.json"))) {
+                mapSettingsPath = Paths.get("manager/src/map/mapsettings.json");
+            }
         }
 
         container.getService(ManagerWebService.class).getApiSingletons().add(

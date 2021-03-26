@@ -2,7 +2,6 @@ package io.openremote.app.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
 import android.app.Activity
 import android.app.DownloadManager
 import android.content.*
@@ -23,19 +22,18 @@ import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.firebase.iid.FirebaseInstanceId
+import com.google.firebase.messaging.FirebaseMessaging
 import io.openremote.app.R
+import io.openremote.app.databinding.ActivityMainBinding
 import io.openremote.app.models.ORAppConfig
 import io.openremote.app.network.ApiManager
 import io.openremote.app.service.GeofenceProvider
-import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.*
@@ -43,6 +41,9 @@ import java.util.logging.Level
 import java.util.logging.Logger
 
 class MainActivity : Activity() {
+
+    private lateinit var binding: ActivityMainBinding
+
     private val connectivityChangeReceiver: ConnectivityChangeReceiver =
         ConnectivityChangeReceiver()
     private var timeOutHandler: Handler? = null
@@ -81,6 +82,10 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
+
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         try {
@@ -95,9 +100,9 @@ class MainActivity : Activity() {
             LOG.info("Enabling remote debugging")
             WebView.setWebContentsDebuggingEnabled(true)
         }
-        setContentView(R.layout.activity_main)
+
         if (savedInstanceState != null) {
-            webView?.restoreState(savedInstanceState)
+            binding.webView.restoreState(savedInstanceState)
         } else {
             initializeWebView()
         }
@@ -210,7 +215,7 @@ class MainActivity : Activity() {
                     popupMenu.show()
                 }
 
-                activity_web.addView(floatingActionButton)
+                binding.activityWeb.addView(floatingActionButton)
             }
         }
     }
@@ -261,17 +266,15 @@ class MainActivity : Activity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (webView != null) {
-            if (event.action == KeyEvent.ACTION_DOWN) {
-                when (keyCode) {
-                    KeyEvent.KEYCODE_BACK -> {
-                        if (webView.canGoBack()) {
-                            webView.goBack()
-                        } else {
-                            finish()
-                        }
-                        return true
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_BACK -> {
+                    if (binding.webView.canGoBack()) {
+                        binding.webView.goBack()
+                    } else {
+                        finish()
                     }
+                    return true
                 }
             }
         }
@@ -279,11 +282,11 @@ class MainActivity : Activity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        webView.saveState(outState)
+        binding.webView.saveState(outState)
     }
 
     private fun reloadWebView() {
-        var url = webView.url
+        var url = binding.webView.url
         if ("about:blank" == url) {
             url = clientUrl
             LOG.fine("Reloading web view: $url")
@@ -295,211 +298,201 @@ class MainActivity : Activity() {
     fun initializeWebView() {
         LOG.fine("Initializing web view")
         val webAppInterface = WebAppInterface(this)
-        webView.addJavascriptInterface(webAppInterface, "MobileInterface")
-        val webSettings = webView.settings
-        webSettings.javaScriptEnabled = true
-        webSettings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-        webSettings.cacheMode = WebSettings.LOAD_DEFAULT
-        webSettings.domStorageEnabled = true
-        webSettings.databaseEnabled = true
-        webSettings.setSupportMultipleWindows(true)
-        webView.setOnLongClickListener { true }
-        webView.isLongClickable = false
-        webView.webViewClient = object : WebViewClient() {
-            override fun onReceivedHttpError(
-                view: WebView,
-                request: WebResourceRequest,
-                errorResponse: WebResourceResponse
-            ) {
-                // When initialising Keycloak with an invalid offline refresh token (e.g. wrong nonce because
-                // server was reinstalled), we detect the failure and then don't show an error view. We clear the stored
-                // invalid token. The web app will then start a new login.
-                if (request.url.lastPathSegment != null && request.url.lastPathSegment == "token" && request.method == "POST" && errorResponse.statusCode == 400) {
-                    storeData(getString(R.string.SHARED_PREF_REFRESH_TOKEN), null)
-                    return
-                }
-                handleError(
-                    errorResponse.statusCode,
-                    errorResponse.reasonPhrase,
-                    request.url.toString(),
-                    request.isForMainFrame
-                )
-            }
-
-            override fun onReceivedError(
-                view: WebView,
-                errorCode: Int,
-                description: String,
-                failingUrl: String
-            ) {
-                handleError(errorCode, description, failingUrl, true)
-            }
-
-            @TargetApi(Build.VERSION_CODES.M)
-            override fun onReceivedError(
-                view: WebView,
-                request: WebResourceRequest,
-                error: WebResourceError
-            ) {
-
-                // Remote debugging session from Chrome wants to load about:blank and then fails with "ERROR_UNSUPPORTED_SCHEME", ignore
-                if ("net::ERR_CACHE_MISS".contentEquals(error.description)) {
-                    return
-                }
-                if (request.url.toString() == "about:blank" && error.errorCode == ERROR_UNSUPPORTED_SCHEME) {
-                    return
-                }
-                handleError(
-                    error.errorCode, error.description.toString(),
-                    request.url.toString(), request.isForMainFrame
-                )
-            }
-
-            override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
-                progressBar!!.visibility = View.VISIBLE
-                timeOutRunnable = Runnable {
-                    if (!webViewLoaded) {
-                        handleError(ERROR_TIMEOUT, "Connection timed out", url, true)
-                    }
-                }
-                timeOutHandler = Handler(Looper.myLooper())
-                timeOutHandler!!.postDelayed(timeOutRunnable, 5000)
-            }
-
-            override fun onPageFinished(view: WebView, url: String) {
-                webViewLoaded = true
-                progressBar!!.visibility = View.GONE
-                timeOutHandler!!.removeCallbacks(timeOutRunnable)
-            }
-
-            override fun shouldOverrideUrlLoading(
-                view: WebView,
-                request: WebResourceRequest
-            ): Boolean {
-                if (request.url.scheme.equals("webbrowser", ignoreCase = true)) {
-                    val newUrl = request.url.buildUpon().scheme("https").build().toString()
-                    val i = Intent(Intent.ACTION_VIEW)
-                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    i.data = Uri.parse(newUrl)
-                    startActivity(i)
-                    return true
-                }
-                return super.shouldOverrideUrlLoading(view, request)
-            }
-
-            private fun handleError(
-                errorCode: Int,
-                description: String,
-                failingUrl: String?,
-                isForMainFrame: Boolean
-            ) {
-                LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
-
-                // This will be the URL loaded into the webview itself (false for images etc. of the main page)
-                if (isForMainFrame) {
-
-                    // Check page load error URL
-                    val errorUrl = getString(R.string.OR_CONSOLE_LOAD_ERROR_URL)
-                    if (!TextUtils.isEmpty(errorUrl) && failingUrl != errorUrl) {
-                        LOG.info("Loading error URL: $errorUrl")
-                        loadUrl(errorUrl)
-                        return
-                    }
-                } else {
-                    if (java.lang.Boolean.parseBoolean(getString(R.string.OR_CONSOLE_IGNORE_PAGE_ERRORS))) {
+        binding.webView.apply {
+            addJavascriptInterface(webAppInterface, "MobileInterface")
+            settings.javaScriptEnabled = true
+            settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            settings.cacheMode = WebSettings.LOAD_DEFAULT
+            settings.domStorageEnabled = true
+            settings.databaseEnabled = true
+            settings.setSupportMultipleWindows(true)
+            webViewClient = object : WebViewClient() {
+                override fun onReceivedHttpError(
+                    view: WebView,
+                    request: WebResourceRequest,
+                    errorResponse: WebResourceResponse
+                ) {
+                    //When initialising Keycloak with an invalid offline refresh token (e.g. wrong nonce because
+                    // server was reinstalled), we detect the failure and then don't show an error view. We clear the stored
+                    // invalid token. The web app will then start a new login.
+                    if (request.url.lastPathSegment != null && request.url.lastPathSegment == "token" && request.method == "POST" && errorResponse.statusCode == 400) {
+                        storeData(getString(R.string.SHARED_PREF_REFRESH_TOKEN), null)
                         return
                     }
 
-                    //TODO should we always ignore image errors?
-                    if (failingUrl != null && (failingUrl.endsWith("png")
-                                || failingUrl.endsWith("jpg")
-                                || failingUrl.endsWith("ico"))
-                    ) {
-                        LOG.info("Ignoring error loading image resource")
+                    handleError(
+                        errorResponse.statusCode,
+                        errorResponse.reasonPhrase,
+                        request.url.toString(),
+                        request.isForMainFrame
+                    )
+                }
+
+                override fun onReceivedError(
+                    view: WebView,
+                    request: WebResourceRequest,
+                    error: WebResourceError
+                ) {
+                    // Remote debugging session from Chrome wants to load about:blank and then fails with "ERROR_UNSUPPORTED_SCHEME", ignore
+                    if ("net::ERR_CACHE_MISS".contentEquals(error.description)) {
                         return
                     }
+                    if (request.url.toString() == "about:blank" && error.errorCode == ERROR_UNSUPPORTED_SCHEME) {
+                        return
+                    }
+                    handleError(
+                        error.errorCode,
+                        error.description.toString(),
+                        request.url.toString(),
+                        request.isForMainFrame
+                    )
                 }
-            }
-        }
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                val msg =
-                    "WebApp console (" + consoleMessage.sourceId() + ":" + consoleMessage.lineNumber() + "): " + consoleMessage.message()
-                when (consoleMessage.messageLevel()) {
-                    MessageLevel.DEBUG, MessageLevel.TIP -> LOG.fine(msg)
-                    MessageLevel.LOG -> LOG.info(msg)
-                    else -> LOG.severe(msg)
+
+                override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                    progressBar!!.visibility = View.VISIBLE
+                    timeOutRunnable = Runnable {
+                        if (!webViewLoaded) {
+                            handleError(ERROR_TIMEOUT, "Connection timed out", url, true)
+                        }
+                    }
+                    timeOutHandler = Looper.myLooper()?.let { Handler(it) }
+                    timeOutHandler!!.postDelayed(timeOutRunnable!!, 5000)
                 }
-                return true
-            }
 
-            override fun onProgressChanged(view: WebView, progress: Int) {
-                progressBar!!.progress = progress
-            }
+                override fun onPageFinished(view: WebView, url: String) {
+                    webViewLoaded = true
+                    progressBar!!.visibility = View.GONE
+                    timeOutRunnable?.let { timeOutHandler!!.removeCallbacks(it) }
+                }
 
-            override fun onCreateWindow(
-                view: WebView,
-                dialog: Boolean,
-                userGesture: Boolean,
-                resultMsg: Message
-            ): Boolean {
-                val newWebView = WebView(this@MainActivity)
-                view.addView(newWebView)
-                val transport = resultMsg.obj as WebViewTransport
-                transport.webView = newWebView
-                resultMsg.sendToTarget()
-                newWebView.webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                        val browserIntent = Intent(Intent.ACTION_VIEW)
-                        browserIntent.data = Uri.parse(url)
-                        startActivity(browserIntent)
+                override fun shouldOverrideUrlLoading(
+                    view: WebView,
+                    request: WebResourceRequest
+                ): Boolean {
+                    if (request.url.scheme.equals("webbrowser", ignoreCase = true)) {
+                        val newUrl = request.url.buildUpon().scheme("https").build().toString()
+                        val i = Intent(Intent.ACTION_VIEW)
+                        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        i.data = Uri.parse(newUrl)
+                        startActivity(i)
                         return true
                     }
+                    return super.shouldOverrideUrlLoading(view, request)
                 }
-                return true
+            }
+            webChromeClient = object : WebChromeClient() {
+                override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                    val msg =
+                        "WebApp console (" + consoleMessage.sourceId() + ":" + consoleMessage.lineNumber() + "): " + consoleMessage.message()
+                    when (consoleMessage.messageLevel()) {
+                        MessageLevel.DEBUG, MessageLevel.TIP -> LOG.fine(msg)
+                        MessageLevel.LOG -> LOG.info(msg)
+                        else -> LOG.severe(msg)
+                    }
+                    return true
+                }
+
+                override fun onProgressChanged(view: WebView, progress: Int) {
+                    progressBar!!.progress = progress
+                }
+
+                override fun onCreateWindow(
+                    view: WebView,
+                    dialog: Boolean,
+                    userGesture: Boolean,
+                    resultMsg: Message
+                ): Boolean {
+                    val newWebView = WebView(this@MainActivity)
+                    view.addView(newWebView)
+                    val transport = resultMsg.obj as WebViewTransport
+                    transport.webView = newWebView
+                    resultMsg.sendToTarget()
+                    newWebView.webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                            val browserIntent = Intent(Intent.ACTION_VIEW)
+                            browserIntent.data = Uri.parse(url)
+                            startActivity(browserIntent)
+                            return true
+                        }
+                    }
+                    return true
+                }
+            }
+
+            setDownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
+                val writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                if (ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        writePermission
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    // Write permission has not been granted yet, request it.
+                    requestPermissions(
+                        arrayOf(writePermission),
+                        WRITE_PERMISSION_FOR_DOWNLOAD
+                    )
+                } else {
+                    val request = DownloadManager.Request(Uri.parse(url))
+                    request.setMimeType(mimetype)
+                    //------------------------COOKIE!!------------------------
+                    val cookies = CookieManager.getInstance().getCookie(url)
+                    request.addRequestHeader("cookie", cookies)
+                    //------------------------COOKIE!!------------------------
+                    request.addRequestHeader("User-Agent", userAgent)
+                    request.setDescription("Downloading file...")
+                    request.setTitle(
+                        URLUtil.guessFileName(
+                            url,
+                            contentDisposition,
+                            mimetype
+                        )
+                    )
+                    request.allowScanningByMediaScanner()
+                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    request.setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS,
+                        URLUtil.guessFileName(url, contentDisposition, mimetype)
+                    )
+                    val dm =
+                        getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+                    Toast.makeText(applicationContext, R.string.downloading_file, Toast.LENGTH_LONG)
+                        .show()
+                    dm.enqueue(request)
+                }
             }
         }
+    }
 
-        webView.setDownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
-            val writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE
-            if (ContextCompat.checkSelfPermission(
-                    this@MainActivity,
-                    writePermission
-                ) != PackageManager.PERMISSION_GRANTED
+    private fun handleError(
+        errorCode: Int,
+        description: String,
+        failingUrl: String?,
+        isForMainFrame: Boolean
+    ) {
+        LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
+
+        // This will be the URL loaded into the webview itself (false for images etc. of the main page)
+        if (isForMainFrame) {
+
+            // Check page load error URL
+            val errorUrl = getString(R.string.OR_CONSOLE_LOAD_ERROR_URL)
+            if (!TextUtils.isEmpty(errorUrl) && failingUrl != errorUrl) {
+                LOG.info("Loading error URL: $errorUrl")
+                loadUrl(errorUrl)
+                return
+            }
+        } else {
+            if (java.lang.Boolean.parseBoolean(getString(R.string.OR_CONSOLE_IGNORE_PAGE_ERRORS))) {
+                return
+            }
+
+            //TODO should we always ignore image errors?
+            if (failingUrl != null && (failingUrl.endsWith("png")
+                        || failingUrl.endsWith("jpg")
+                        || failingUrl.endsWith("ico"))
             ) {
-                // Write permission has not been granted yet, request it.
-                ActivityCompat.requestPermissions(
-                    this@MainActivity,
-                    arrayOf(writePermission),
-                    WRITE_PERMISSION_FOR_DOWNLOAD
-                )
-            } else {
-                val request = DownloadManager.Request(Uri.parse(url))
-                request.setMimeType(mimetype)
-                //------------------------COOKIE!!------------------------
-                val cookies = CookieManager.getInstance().getCookie(url)
-                request.addRequestHeader("cookie", cookies)
-                //------------------------COOKIE!!------------------------
-                request.addRequestHeader("User-Agent", userAgent)
-                request.setDescription("Downloading file...")
-                request.setTitle(
-                    URLUtil.guessFileName(
-                        url,
-                        contentDisposition,
-                        mimetype
-                    )
-                )
-                request.allowScanningByMediaScanner()
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                request.setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS,
-                    URLUtil.guessFileName(url, contentDisposition, mimetype)
-                )
-                val dm =
-                    getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-                Toast.makeText(applicationContext, R.string.downloading_file, Toast.LENGTH_LONG)
-                    .show()
-                dm.enqueue(request)
+                LOG.info("Ignoring error loading image resource")
+                return
             }
         }
     }
@@ -507,7 +500,7 @@ class MainActivity : Activity() {
     private fun loadUrl(url: String?) {
         webViewLoaded = false
         val temp = url!!.replace(" ", "%20")
-        webView.loadUrl(temp)
+        binding.webView.loadUrl(temp)
     }
 
     override fun onRequestPermissionsResult(
@@ -520,11 +513,10 @@ class MainActivity : Activity() {
                 Toast.makeText(applicationContext, R.string.downloading_file, Toast.LENGTH_LONG)
                     .show()
             }
-        } else if (requestCode == GeofenceProvider.locationReponseCode) {
-            geofenceProvider?.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        } else if (requestCode == GeofenceProvider.locationResponseCode) {
+            geofenceProvider?.onRequestPermissionsResult(this)
         }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     private inner class WebAppInterface(
@@ -644,7 +636,7 @@ class MainActivity : Activity() {
                         .remove(PUSH_PROVIDER_DISABLED_KEY)
                         .apply()
                     // TODO: Implement topic support
-                    FirebaseInstanceId.getInstance().instanceId.addOnCompleteListener { task ->
+                    FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                         val response: MutableMap<String, Any?> =
                             HashMap()
                         response["action"] = "PROVIDER_ENABLE"
@@ -654,7 +646,7 @@ class MainActivity : Activity() {
                         val responseData: MutableMap<String, Any> =
                             HashMap()
                         if (task.isSuccessful) {
-                            responseData["token"] = task.result.token
+                            responseData["token"] = task.result
                         }
                         response["data"] = responseData
                         notifyClient(response)
@@ -724,10 +716,11 @@ class MainActivity : Activity() {
     }
 
     private fun notifyClient(data: Map<String, Any?>?) {
+        LOG.info("notifyClient with message: $data")
         try {
             val jsonString = ObjectMapper().writeValueAsString(data)
             runOnUiThread {
-                webView.evaluateJavascript(
+                binding.webView.evaluateJavascript(
                     String.format(
                         "OpenRemoteConsole._handleProviderResponse('%s')",
                         jsonString

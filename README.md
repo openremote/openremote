@@ -1,154 +1,65 @@
 # OpenRemote v3
 
 ![CI/CD](https://github.com/openremote/openremote/workflows/CI/CD/badge.svg)
-![tests](https://github.com/openremote/openremote/workflows/tests/badge.svg)
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
-
+<!-- ![tests](https://github.com/openremote/openremote/workflows/tests/badge.svg) -->
 
 [Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://forum.openremote.io) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 
-We are currently working on OpenRemote Manager v3, a concise 100% open source IoT platform. This is **beta** software.
+Welcome to the OpenRemote 3.0 platform; an intuitive user-friendly 100% open source IoT platform. We have our origins in Home Automation
+but our 3.0 platform is focused on generic IoT applications and is a completely different stack to any of our 2.x services. As the code
+base is 100% open source then the applications are limitless. Here's an architecture overview:
+
+![Architecture 3.0](https://github.com/openremote/Documentation/blob/master/manuscript/figures/architecture-3.jpg)
 
 ## Quickstart
 
-Before following this quickstart make sure you have [prepared your environment](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment). There are three options how to start with OpenRemote:
+You can quickly try the online demo with restricted access, login credentials are `smartcity:smartcity`:
 
-1. [Starting OpenRemote with images from Docker Hub](#1-starting-openremote-with-images-from-docker-hub), easiest for working with the default setup;
-2. [Starting OpenRemote with source-build images](#2-starting-openremote-with-source-build-images), required for developers;
-3. [Starting OpenRemote with Openremote CLI](#3-starting-openremote-with-command-line-interface-cli-beta), in beta and only tested on MacOSX.
+[Online demo](https://demo.openremote.io/manager/?realm=smartcity)
 
-After that you can [use the openremote manager UI](#using-the-openremote-manager).
+The quickest way to get your own environment with full access is to make use of our docker images (both `amd64` and `arm64` are supported). 
+1. Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed (v18+). 
+2. Download the docker compose file:
+[OpenRemote Stack](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml) (Right click 'Save link as...')
+3. In a terminal `cd` to where you just saved the compose file and then run:
 
-### 1. Starting OpenRemote with images from Docker Hub
+    `docker-compose -p openremote up`
 
-Use this methods if you want the easiest way to set up OpenRemote locally and use the webapp as an admin user.
-We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/). First clone or download our [source code](https://github.com/openremote/openremote). Execute the following command from the checked out root project directory:
+If all goes well then you should now be able to access the OpenRemote Manager UI at [https://localhost](https://localhost). You will need to accept the self-signed 
+certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-connection-is-not-private-message) for details how to do this in Chrome (similar for other browsers).
 
-```
-docker-compose pull
-```
-
-To run OpenRemote using Docker Hub images:
-
-```
-docker-compose up --no-build
-```
-
-To run OpenRemote is swarm mode, which uses Docker Hub images:
-
-```
-docker stack deploy --compose-file mvp/swarm-docker-compose.yml openremote
-```
-you don't need to pull or build images in this case, docker swarm mode does this automatically.
-
-### 2. Starting OpenRemote with source-build images
-
-Alternatively you can build the Docker images locally from source, please see [here](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment) for required tooling and checkout the openremote project. This method is advised for developers who want to contribute to the project, or customize their local deployment. Let's first get the default manager running.
-Build the code from the root project directory:
-
-```
-./gradlew clean installDist
-```
-
-Next, if you are using Docker Community Edition build the Docker images and start the stack with:
-
-```
-docker-compose up --build
-```
-
-A first build will download many dependencies (and cache them locally for future builds), this can take up to 30 minutes.
-
-Next steps on working with the openremote code would be [Setting up an IDE](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Setting-up-an-IDE)
-and [Working on the UI](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Working-on-the-UI)
-
-### 3. Starting OpenRemote with command-line-interface CLI (beta)
-
-```openremote-cli``` (short ```or```) is a command line tool which can be used for installing an instance of OpenRemote stack on local machine. In this method you won't have to pull the openremote repository. You should already have ```python```, ```wget```, ```docker``` and ```docker-compose``` installed. Note that this method is in beta.
-
-```bash
-pip3 install -U openremote-cli
-openremote-cli -V
-```
-There is also docker image provided:
-```bash
-docker run --rm -ti openremote/openremote-cli <command>
-```
-Note that the image ENTRYPOINT is set to the openremote-cli command (the same way as amazon/aws-cli docker image) therefore ```docker run --rm -ti openremote/openremote-cli -V``` is equivalent to ```openremote-cli -V```.
-
-#### Deploy on localhost
-
-```bash
-or deploy --action create
-```
-using docker
-```bash
-docker run --rm -ti -v /var/run/docker.sock:/var/run/docker.sock openremote/openremote-cli deploy
-```
-#### Deploy on AWS
-
-Prerequisites:
-  - [aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html)
-  - `openremote-cli` AWS profile. If you have Id and AWS secret key, you can use following command:
-  ```bash
-  or configure_aws --id <id> --secret <secret> -v
-  ```
-  At the moment the default region must be set to eu-west-1 (Ireland), this is done by the OpenRemote-cli. This can be could be changed using *aws-cli* (not recommended):
-  ```bash
-  aws configure --profile=openremote-cli
-  ```
-  
-Deploy the stack:
-```bash
-or deploy --provider aws --dnsname test.mvp.openremote.io -v
-```
-Remove the stack and clean resources:
-```bash
-or deploy -a remove --provider aws --dnsname test.mvp.openremote.io -v
-```
-Deploy the stack using docker on Mac/Linux:
-```bash
-docker run --rm -ti -v ~/.aws:/root/.aws openremote/openremote-cli deploy --provider aws -v --dnsname test-osx.mvp.openremote.io
-```
-Deploy the stack using docker on Windows:
-```bash
-docker run --rm -ti -v %userprofile%\.aws:/root/.aws openremote/openremote-cli deploy --provider aws -v --dnsname test-win.mvp.openremote.io
-```
-
-### Using the OpenRemote manager
-
-When all Docker containers are ready, you can access the OpenRemote UI and API with a web browser (if you are using Docker Toolbox replace `localhost` with `192.168.99.100`):
-
-**OpenRemote Manager, master realm:** https://localhost  
+### Login credentials
 Username: admin  
 Password: secret
 
-**Smart City realm with Demo setup:** https://localhost/manager/?realm=smartcity
-Username: smartcity  
-Password: smartcity
+### Not using localhost?
+The URL you use to access the system is important, by default keycloak expects it to be `https://localhost` if you are using a VM then you will need to tell keycloak at startup, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
 
-You must accept and make an exception for the 'insecure' self-signed SSL certificate. You can configure a production installation of OpenRemote with a your own certificate or automatically use one from [Let's Encrypt](https://letsencrypt.org/).
-
-### Preserving data and configuration
-
-Interrupting the `docker-compose up` execution stops the stack running in the foreground. The OpenRemote containers will stop but not be removed. To stop **and** remove the containers, use:
-
+BASH: 
 ```
-docker-compose down
+KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth docker-compose -p openremote up -d
+```
+or
+
+CMD:
+```
+cmd /C "set KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth && docker-compose -p openremote up -d"
 ```
 
-This will not affect your data, which is durably stored independently from containers in Docker volumes (see all with `docker volume ls`):
 
-- `openremote_deployment-data` (map tiles, static resources)
-- `openremote_postgresql-data` (user/asset database storage)
-- `openremote_proxy-data` (SSL proxy configuration and certificates)
+## What next
+Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:
 
-If you want to create a backup of your installation, make a copy of these volumes.
+- [Manager UI Guide](https://github.com/openremote/openremote/wiki/Demo-Smart-City)
+- [Creating a HTTP Agent](https://github.com/openremote/openremote/wiki/User-Guide%3A-Connecting-to-a-HTTP-API)
+- [Setting up an IDE](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Setting-up-an-IDE)
+- [Working on the UI](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Working-on-the-UI)
 
-**The default configuration will wipe the user/asset database storage and import demo data when containers are started!** This can be changed with the environment variable `SETUP_WIPE_CLEAN_INSTALL`.  Set it to to `false` in `docker-compose.yml` or provide it on the command line.
+## Where's the data stored?
+Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_postgresql-data` docker volume which is durably stored independently of the running containers (see all with `docker volume ls`).
+If you want to create a backup of your installation, just make a copy of this volume.
 
-When a configuration environment variable is changed, you must recreate containers. Stop and remove them with `docker-compose down` and then `docker-compose up` the stack again.
-
-More configuration options of the images are documented [in the deploy.yml profile](https://github.com/openremote/openremote/blob/master/profile/deploy.yml).
 
 ## Contributing to OpenRemote
 
@@ -156,31 +67,6 @@ We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs 
 
 For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
-## Running OpenRemote on ARM64 device
-
-This procedure was tested on AWS t4g EC2 instance using [CloudFormation template](https://github.com/openremote/openremote/gitlab-ci/aws-cloudformation.template.arm64.yml).
-
-OpenRemote images on Docker Hub are multi-arch created automatically by CI/CD pipeline, therefore there is no need to build them locally. The multi-arch build procedure is defined as [Github action](https://github.com/openremote/openremote/blob/master/.github/workflows/gradle.yml) and uses official Docker QEMU action.
-
-There is no official base Keycloak ARM image provided, therefore the stack uses basic http authentication.  
-TODO: use central remote Keycloak installation.
-
-To start the OpenRemote stack:
-- login to ARM device;
-- install *docker* with *docker-compose* if necessary;
-- start the stack:
-```bash
-docker-compose -p openremote -f profile/demo-basic-no-build.yml up -d
-```
-
-**Tip:** [AWS CloudFormation template](https://github.com/openremote/openremote/gitlab-ci/aws-cloudformation.template.arm64.yml) Resources.EC2Instance.Properties.UserData section contains installation script for AWS Linux ARM device. The minimum RAM is 512M, which can be run on [BeagleBoneBlack](http://beagleboard.org/black).  
-TODO: test it on actual device.
-
-
 ## Discuss OpenRemote
 
 Join us on the [community forum](https://forum.openremote.io/).
-
-## See also
-
-- [Next 'Get Started' step: Connecting to an HTTP API](https://github.com/openremote/openremote/wiki/User-Guide%3A-Connecting-to-a-HTTP-API)

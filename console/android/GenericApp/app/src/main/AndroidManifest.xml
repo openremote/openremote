@@ -18,7 +18,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/OpenRemoteTheme">
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
@@ -46,9 +46,8 @@
         </activity>
         <activity
             android:name=".ui.ProjectActivity"
-            android:label="@string/title_activity_project"
-            android:exported="true">
-        </activity>
+            android:exported="true"
+            android:label="@string/title_activity_project" />
         <activity android:name=".ui.MainActivity" />
 
         <service android:name="io.openremote.app.service.ORFirebaseMessagingService">

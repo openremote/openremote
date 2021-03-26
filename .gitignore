@@ -13,7 +13,9 @@ bin-release/
 .vagrant/
 .node/
 .classpath/
+.classpath
 .project/
+.project
 .vscode/
 .idea/
 .sts4-cache/
