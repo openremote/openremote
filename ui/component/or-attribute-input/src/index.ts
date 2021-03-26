@@ -54,7 +54,7 @@ declare global {
     }
 }
 
-export function getAttributeInputWrapper(content: TemplateResult, value: any, loading: boolean, disabled: boolean, helperText: string | undefined, label: string | undefined, buttonIcon?: string, sendValue?: () => void): TemplateResult {
+export function getAttributeInputWrapper(content: TemplateResult, value: any, loading: boolean, disabled: boolean, helperText: string | undefined, label: string | undefined, buttonIcon?: string, sendValue?: () => void, fullWidth?: boolean): TemplateResult {
 
     if (helperText) {
         content = html`
@@ -79,7 +79,7 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     }
 
     return html`
-            <div id="wrapper" class="${buttonIcon === undefined || buttonIcon ? "no-padding" : "right-padding"}">
+            <div id="wrapper" class="${(buttonIcon === undefined || buttonIcon || fullWidth) ? "no-padding" : "right-padding"}">
                 ${content}
                 <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
             </div>
@@ -345,6 +345,9 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Boolean})
     public compact: boolean = false;
 
+    @property({type: Boolean})
+    public fullWidth?: boolean;
+
     @property()
     protected _attributeEvent?: AttributeEvent;
 
@@ -563,7 +566,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             content = html`<or-translate .value="attributeUnsupported"></or-translate>`;
         }
 
-        content = getAttributeInputWrapper(content, value, loading, !!this.disabled, this._templateProvider.supportsHelperText ? undefined : helperText, this._templateProvider.supportsLabel ? undefined : this.getLabel(), this._templateProvider.supportsSendButton ? buttonIcon : undefined, () => this._updateValue());
+        content = getAttributeInputWrapper(content, value, loading, !!this.disabled, this._templateProvider.supportsHelperText ? undefined : helperText, this._templateProvider.supportsLabel ? undefined : this.getLabel(), this._templateProvider.supportsSendButton ? buttonIcon : undefined, () => this._updateValue(), this.fullWidth);
         return content;
     }
 

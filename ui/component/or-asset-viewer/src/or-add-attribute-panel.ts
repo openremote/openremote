@@ -61,7 +61,7 @@ export class OrAddAttributePanel extends LitElement {
         attributeTypes = [["@custom", i18next.t("custom")], ...attributeTypes];
 
         const attributeValueTypes: [string, string][] = (AssetModelUtil.getAssetTypeInfo(this.asset.type!)?.valueDescriptors || [])
-            .sort()
+            .sort(Util.sortByString((descriptor) => descriptor[0]))
             .map((descriptor) => {
                 return [
                     descriptor,

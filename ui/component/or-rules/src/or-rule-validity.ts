@@ -253,7 +253,8 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                     }
                 },
             ],
-            content: this.getDialogContent()
+            content: this.getDialogContent(),
+            dismissAction: null
         });
     }
 

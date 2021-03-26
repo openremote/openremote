@@ -600,7 +600,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             padding: 0 !important;
                         }
                     </style>
-                `
+                `,
+                dismissAction: null
             }
         )
     }

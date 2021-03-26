@@ -49,6 +49,7 @@
   "notContainsKey": "Bevat geen keys",
   "true": "Waar",
   "false": "Niet waar",
+  "radiusMin": "Straal (min. 100m)",
   "withinRadius": "Binnen cirkel",
   "outsideRadius": "Buiten cirkel",
   "withinRectangle": "Binnen rechthoek",
@@ -189,7 +190,7 @@
   "openInBrowser": "Openen in browser (voor externe websites)",
   "buttonTextConfirm": "Tekst voor actie knop",
   "buttonTextDecline": "Tekst voor negeerknop",
-  "custom": "Handmatig input",
+  "custom": "Nieuw attribuut",
   "tenant": "Tenant",
   "tenant_plural": "Tenants",
   "displayName":"Friendly name",
@@ -356,5 +357,6 @@
   "fromTo": "Van {{start}} tot {{end}}",
   "fromToDays": "van {{start}} tot {{days}} dagen later {{end}}",
   "readPermissions": "Leesrechten",
-  "writePermissions": "Schrijfrechten"
+  "writePermissions": "Schrijfrechten",
+  "valueType": "Value type"
 }
