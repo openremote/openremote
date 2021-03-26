@@ -106,6 +106,9 @@ export class OrAddAssetDialog extends LitElement {
                 text-transform: capitalize;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
+            #parent-selector {
+                max-width: 250px;
+            }
         `;
     }
     
@@ -162,21 +165,21 @@ export class OrAddAssetDialog extends LitElement {
                     <or-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
                     <or-input id="open-asset-selector-btn" icon="plus" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
                 </div>
-                <form id="mdc-dialog-form-add">
-                    <div id="type-list">
+                <form id="mdc-dialog-form-add" class="row">
+                    <div id="type-list" class="col">
                         ${createListGroup(lists)}
                     </div>
-                    <div id="asset-type-option-container">
+                    <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
                         ? html`` 
                         : this.getTypeTemplate(this.selectedType)}
                     </div>
+                    ${!this.showParentAssetSelector
+                        ? html``
+                        : html`<or-asset-tree id="parent-selector" class="col" .showSortBtn="${false}" selectedNodes readonly></or-asset-tree>`
+                    }
                 </form>
             </div>
-            ${!this.showParentAssetSelector
-                ? html``
-                : html`<or-asset-tree id="chart-asset-tree" .showSortBtn="${false}" selectedNodes readonly></or-asset-tree>`
-            }
         `;
     }
 
