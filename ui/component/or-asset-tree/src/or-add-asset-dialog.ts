@@ -82,7 +82,15 @@ export class OrAddAssetDialog extends LitElement {
             
             #name-wrapper > * {
                 margin: 0 5px;
-                flex: 1 1 auto;
+                flex: 1;
+            }
+            #toggle-parent-selector,
+            #remove-parent {
+                flex: 0 0 50px;
+            }
+            
+            #parent-selector {
+                max-width: 250px;
             }
             
             #mdc-dialog-form-add {
@@ -106,9 +114,7 @@ export class OrAddAssetDialog extends LitElement {
                 text-transform: capitalize;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
-            #parent-selector {
-                max-width: 250px;
-            }
+            
         `;
     }
     
@@ -163,8 +169,8 @@ export class OrAddAssetDialog extends LitElement {
                 <div id="name-wrapper">
                     <or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-input>
                     <or-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
-                    <or-input id="open-asset-selector-btn" icon="plus" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
-                    <or-input ?hidden="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
+                    <or-input id="toggle-parent-selector" icon="plus" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
+                    <or-input id="remove-parent" ?hidden="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
                 </div>
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
