@@ -228,6 +228,10 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         return optimisationStartTime.minus(periodSeconds, ChronoUnit.SECONDS);
     }
 
+    protected String getLogPrefix(String optimisationAssetId) {
+        return "Optimisation '" + optimisationAssetId + "': ";
+    }
+
     /**
      * Runs the optimisation routine for the specified time; it is important that this method does not throw an
      * exception as it will cancel the scheduled task thus stopping future optimisations.
@@ -239,7 +243,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             return;
         }
 
-        LOG.finer("Running optimiser for optimisation asset: " + optimisationAssetId + ", for time: " + formatter.format(optimisationTime));
+        LOG.finer(getLogPrefix(optimisationAssetId) + "Running for time '" + formatter.format(optimisationTime));
 
         EnergyOptimiser optimiser = optimiserAndScheduler.key;
         int intervalCount = optimiser.get24HourIntervalCount();
@@ -252,7 +256,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 .parents(optimisationAssetId)
         );
 
-        LOG.finest("Optimisation asset child asset count: " + childElectricityAssets.size());
+        LOG.finest(getLogPrefix(optimisationAssetId) + "Child asset count = " + childElectricityAssets.size());
 
         List<ElectricitySupplierAsset> supplierAssets = childElectricityAssets.stream()
             .filter(asset -> (asset instanceof ElectricitySupplierAsset) && asset.hasAttribute(ElectricitySupplierAsset.TARIFF_IMPORT))
@@ -260,7 +264,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             .collect(Collectors.toList());
 
         if (supplierAssets.size() != 1) {
-            LOG.warning("Optimisation routine expects exactly one " + ElectricitySupplierAsset.class.getSimpleName() + " asset with a '" + ElectricitySupplierAsset.TARIFF_IMPORT.getName() + "' attribute but found: " + supplierAssets.size());
+            LOG.warning(getLogPrefix(optimisationAssetId) + "Expected exactly one " + ElectricitySupplierAsset.class.getSimpleName() + " asset with a '" + ElectricitySupplierAsset.TARIFF_IMPORT.getName() + "' attribute but found: " + supplierAssets.size());
             return;
         }
 
@@ -272,7 +276,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             .collect(Collectors.toList());
 
         if (optimisableStorageAssets.isEmpty()) {
-            LOG.warning("Optimisation routine expects at least one " + ElectricityStorageAsset.class.getSimpleName() + " asset with a '" + ElectricityAsset.POWER_SETPOINT.getName() + "' attribute but found none");
+            LOG.warning(getLogPrefix(optimisationAssetId) + "Expected at least one " + ElectricityStorageAsset.class.getSimpleName() + " asset with a '" + ElectricityAsset.POWER_SETPOINT.getName() + "' attribute but found none");
             return;
         }
 
@@ -311,10 +315,18 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         if (financialWeightingImport < 1d || financialWeightingExport < 1d) {
             double[] carbonImport = get24HAttributeValues(supplierAsset.getId(), supplierAsset.getAttribute(ElectricitySupplierAsset.CARBON_IMPORT).orElse(null), optimiser.getIntervalSize(), intervalCount, optimisationTime);
             double[] carbonExport = get24HAttributeValues(supplierAsset.getId(), supplierAsset.getAttribute(ElectricitySupplierAsset.CARBON_EXPORT).orElse(null), optimiser.getIntervalSize(), intervalCount, optimisationTime);
+
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Adjusting costs to include some carbon weighting, financialWeightingImport=" + financialWeightingImport + ", financialWeightingExport=" + financialWeightingExport);
+
             for (int i = 0; i < costsImport.length; i++) {
-                costsImport[i] += carbonImport[i];
-                costsExport[i] += carbonExport[i];
+                costsImport[i] = (financialWeightingImport * costsImport[i]) + ((1-financialWeightingImport) * carbonImport[i]);
+                costsExport[i] = (financialWeightingExport * costsExport[i]) + ((1-financialWeightingExport) * carbonExport[i]);
             }
+        }
+
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Import costs: " + Arrays.toString(costsImport));
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Export costs: " + Arrays.toString(costsExport));
         }
 
         // Optimise storage assets with priority on storage assets with an energy schedule (already sorted above)
@@ -327,8 +339,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         long periodSeconds = (long)(optimiser.getIntervalSize()*60*60);
 
         optimisableStorageAssets.forEach(storageAsset -> {
-            LOG.finest("Optimising storage asset setpoints: " + storageAsset);
-            double[] setpoints = getStoragePowerSetpoints(optimiser, storageAsset, powerNets, importPowerMaxes, exportPowerMaxes, costsImport, costsExport);
+
+            double[] setpoints = getStoragePowerSetpoints(optimiser, optimisationAssetId, storageAsset, powerNets, importPowerMaxes, exportPowerMaxes, costsImport, costsExport);
 
             // Assume these setpoints will be applied so update the power net values with these
             for (int i = 0; i < powerNets.length; i++) {
@@ -401,7 +413,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
      * parameters should be updated when the system changes and not replaced so that references maintained by the
      * calculator are valid and up to date.
      */
-    protected double[] getStoragePowerSetpoints(EnergyOptimiser optimiser, ElectricityStorageAsset storageAsset, double[] powerNets, double[] importPowerLimits, double[] exportPowerLimits, double[] costImports, double[] costExports) {
+    protected double[] getStoragePowerSetpoints(EnergyOptimiser optimiser, String optimisationAssetId, ElectricityStorageAsset storageAsset, double[] powerNets, double[] importPowerLimits, double[] exportPowerLimits, double[] costImports, double[] costExports) {
 
         int intervalCount = powerNets.length;
         boolean hasSetpoint = storageAsset.hasAttribute(ElectricityStorageAsset.POWER_SETPOINT);
@@ -409,12 +421,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         boolean supportsImport = storageAsset.isSupportsImport().orElse(false);
 
         if (!supportsExport && !supportsImport) {
-            LOG.info("Storage asset doesn't support import or export: " + storageAsset.getId());
+            LOG.finest(getLogPrefix(optimisationAssetId) + "Storage asset doesn't support import or export: " + storageAsset.getId());
             return new double[intervalCount];
         }
 
+        LOG.finer(getLogPrefix(optimisationAssetId) + "Optimising storage asset: " + storageAsset);
+
         if (!hasSetpoint) {
-            LOG.info("Storage asset has no '" + ElectricityStorageAsset.POWER_SETPOINT.getName() + "' attribute so cannot be controlled: " + storageAsset.getId());
+            LOG.info(getLogPrefix(optimisationAssetId) + "Storage asset has no '" + ElectricityStorageAsset.POWER_SETPOINT.getName() + "' attribute so cannot be controlled: " + storageAsset.getId());
             return new double[intervalCount];
         }
 
@@ -422,7 +436,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         double energyLevel = Math.min(energyCapacity, storageAsset.getEnergyLevel().orElse(-1d));
 
         if (energyCapacity <= 0d || energyLevel < 0) {
-            LOG.info("Storage asset has no capacity or energy level so cannot import or export energy: " + storageAsset.getId());
+            LOG.info(getLogPrefix(optimisationAssetId) + "Storage asset has no capacity or energy level so cannot import or export energy: " + storageAsset.getId());
             return new double[intervalCount];
         }
 
@@ -437,13 +451,17 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
         int[][] energySchedule = energyLevelScheduleOptional.map(dayArr -> Arrays.stream(dayArr).map(hourArr -> Arrays.stream(hourArr).mapToInt(Integer::intValue).toArray()).toArray(int[][]::new)).orElse(null);
 
-        optimiser.applyEnergySchedule(energyLevelMins, energyCapacity, energyLevelMin, energyLevelMax, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
+        if (energySchedule != null) {
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Applying energy schedule for storage asset: " + storageAsset.getId());
+            optimiser.applyEnergySchedule(energyLevelMins, energyCapacity, energyLevelMin, energyLevelMax, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
+        }
 
         // TODO: Make these a function of energy level
         Function<Integer, Double> powerImportMaxCalculator = interval -> powerImportMax;
         Function<Integer, Double> powerExportMaxCalculator = interval -> powerExportMax;
 
         if (hasEnergyMinRequirement) {
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Normalising min energy requirements for storage asset: " + storageAsset.getId());
             optimiser.normaliseEnergyMinRequirements(energyLevelMins, powerImportMaxCalculator, powerExportMaxCalculator, energyLevel);
         }
 
@@ -460,6 +478,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         // If asset supports exporting energy (V2G, battery storage, etc.) then need to determine if there are
         // opportunities to export energy to save/earn, taking into consideration the cost of exporting from this asset
         if (supportsExport) {
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Storage asset supports export so calculating export cost and power levels for each interval: " + storageAsset.getId());
             // Find intervals that save/earn by exporting energy from this storage asset by looking at power levels
             BiFunction<Integer, Double, double[]> exportOptimiser = optimiser.getExportOptimiser(powerNets, exportPowerLimits, costImports, costExports, storageAsset.getTariffExport().orElse(0d));
             exportCostAndPower = IntStream.range(0, intervalCount).mapToObj(it -> exportOptimiser.apply(it, powerExportMax))
@@ -470,16 +489,32 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         // save/earn, taking into consideration the cost of importing to this asset, also need to ensure that min
         // energy demands are met.
         if (supportsImport) {
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Storage asset supports import so calculating export cost and power levels for each interval: " + storageAsset.getId());
             BiFunction<Integer, double[], double[]> importOptimiser = optimiser.getImportOptimiser(powerNets, importPowerLimits, costImports, costExports, storageAsset.getTariffImport().orElse(0d));
             importCostAndPower = IntStream.range(0, intervalCount).mapToObj(it -> importOptimiser.apply(it, new double[]{0d, powerImportMax}))
                 .toArray(double[][]::new);
 
             if (hasEnergyMinRequirement) {
+                LOG.finer(getLogPrefix(optimisationAssetId) + "Applying imports to achieve min energy level requirements for storage asset: " + storageAsset.getId());
                 optimiser.applyEnergyMinImports(importCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, importOptimiser, powerImportMaxCalculator);
             }
         }
 
+        LOG.finer(getLogPrefix(optimisationAssetId) + "Applying earning opportunities for storage asset: " + storageAsset.getId());
         optimiser.applyEarningOpportunities(importCostAndPower, exportCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, energyLevelMax);
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity power set points = " + Arrays.toString(powerSetpoints));
+
+            double[][] finalImportCostAndPower = importCostAndPower;
+            double[][] finalExportCostAndPower = exportCostAndPower;
+            double totalCost = IntStream.range(0, powerSetpoints.length).mapToDouble(i -> {
+                double setpoint = powerSetpoints[i];
+                double cost = setpoint < 0d ? finalExportCostAndPower[i][0] : finalImportCostAndPower[i][0];
+                return cost * setpoint;
+            }).reduce(0, Double::sum);
+
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity cost = " + totalCost);
+        }
 
         return powerSetpoints;
     }

@@ -33,13 +33,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.openremote.manager.energy.EnergyOptimisationService.LOG;
+
 public class EnergyOptimiser {
 
-    private static final Logger LOG = Logger.getLogger(EnergyOptimiser.class.getName());
     protected double intervalSize;
     protected double financialWeighting;
 
@@ -187,12 +187,13 @@ public class EnergyOptimiser {
      * time.
      */
     public void applyEnergySchedule(double[] energyLevelMins, double energyCapacity, double energyLevelMin, double energyLevelMax, int[][] energyLevelSchedule, LocalDateTime currentTime) {
-        energyLevelMin = Math.min(energyLevelMax, Math.max(0d, energyLevelMin));
-        Arrays.fill(energyLevelMins, energyLevelMin);
 
         if (energyLevelSchedule == null) {
             return;
         }
+
+        energyLevelMin = Math.min(energyLevelMax, Math.max(0d, energyLevelMin));
+        Arrays.fill(energyLevelMins, energyLevelMin);
 
         // Extract the schedule for the next 24 hour period starting at current hour plus 1 (need to attain energy level by the time the hour starts)
         OffsetDateTime date = currentTime.plus(1, ChronoUnit.HOURS).atOffset(ZoneOffset.UTC);
@@ -393,12 +394,14 @@ public class EnergyOptimiser {
                 // import opportunity and interval still available to import power
                 //noinspection ConstantConditions
                 applyImportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval, energyLevelMax);
+                LOG.finest("Applied import earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
 
             } else if (isExportOpportunity(costAndPower, powerSetpoints[interval], interval, powerExportMaxCalculator)) {
 
                 // export opportunity and interval still available to export power
                 //noinspection ConstantConditions
                 applyExportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval, energyLevelMax);
+                LOG.finest("Applied export earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
             }
         }
     }
