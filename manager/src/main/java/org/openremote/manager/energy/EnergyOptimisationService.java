@@ -42,10 +42,7 @@ import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaItemType;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -215,7 +212,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     }
 
     /**
-     * Gets the start time of the current interval
+     * Gets the start time of the interval that the currentMillis value is within
      */
     protected static Instant getOptimisationStartTime(long currentMillis, long periodSeconds) {
         Instant now = Instant.ofEpochMilli(currentMillis);
@@ -284,11 +281,10 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         childElectricityAssets.stream()
             .filter(asset ->
-                // Filter consumers and producers or group asset of consumers and producers that have a power attribute
-                asset instanceof ElectricityConsumerAsset
-                    || asset instanceof ElectricityProducerAsset
-                    || isProducerOrConsumerGroupAsset(asset))
-            .filter(asset -> asset.hasAttribute(ElectricityAsset.POWER))
+                // Filter electricity asset or group asset of consumers and producers that have a power attribute
+                asset instanceof ElectricityAsset
+                    || isElectricityGroupAsset(asset))
+            .filter(asset -> asset.hasAttribute(ElectricityAsset.POWER) && !asset.hasAttribute(ElectricityAsset.POWER_SETPOINT))
             .forEach(asset -> {
                 @SuppressWarnings("OptionalGetWithoutIsPresent")
                 Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
@@ -328,7 +324,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         double[] exportPowerMaxes = new double[intervalCount];
         Arrays.fill(importPowerMaxes, importPowerMax);
         Arrays.fill(exportPowerMaxes, exportPowerMax);
-        long periodSeconds = (long)optimiser.getIntervalSize()*60*60;
+        long periodSeconds = (long)(optimiser.getIntervalSize()*60*60);
 
         optimisableStorageAssets.forEach(storageAsset -> {
             LOG.finest("Optimising storage asset setpoints: " + storageAsset);
@@ -344,14 +340,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 assetPredictedDatapointService.updateValue(
                     new AttributeRef(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT.getName()),
                     setpoints[i],
-                    optimisationTime.plus(periodSeconds*i, ChronoUnit.SECONDS).toEpochMilli());
+                    LocalDateTime.ofInstant(optimisationTime.plus(periodSeconds*i, ChronoUnit.SECONDS), ZoneId.systemDefault()));
             }
             assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, setpoints[0]));
         });
 
     }
 
-    protected boolean isProducerOrConsumerGroupAsset(Asset<?> asset) {
+    protected boolean isElectricityGroupAsset(Asset<?> asset) {
         if (!(asset instanceof GroupAsset)) {
             return false;
         }
@@ -362,8 +358,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             .orElse(null);
 
         return assetClass != null &&
-            (ElectricityConsumerAsset.class.isAssignableFrom(assetClass)
-                || ElectricityProducerAsset.class.isAssignableFrom(assetClass));
+            ElectricityAsset.class.isAssignableFrom(assetClass);
     }
 
     protected double[] get24HAttributeValues(String assetId, Attribute<Double> attribute, double intervalSize, int intervalCount, Instant optimisationTime) {
@@ -377,20 +372,22 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         AttributeRef ref = new AttributeRef(assetId, attribute.getName());
 
         if (attribute.hasMeta(MetaItemType.HAS_PREDICTED_DATA_POINTS)) {
+            LocalDateTime timestamp = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault());
             ValueDatapoint<?>[] predictedData = assetPredictedDatapointService.getValueDatapoints(
                 ref,
                 "minute",
-                ((long) intervalSize * 60) + " minute",
-                optimisationTime.toEpochMilli(), optimisationTime.plus(24, HOURS).toEpochMilli()
+                (long)(intervalSize * 60) + " minute",
+                timestamp,
+                timestamp.plus(24, HOURS).minus((long)(intervalSize * 60), ChronoUnit.MINUTES)
             );
             if (predictedData.length != values.length) {
                 LOG.warning("Returned predicted data point count does not match interval count: Ref=" + ref + ", expected=" + values.length + ", actual=" + predictedData.length);
             } else {
                 IntStream.range(0, predictedData.length).forEach(i ->
-                    values[i] = (double)(Object)predictedData[i].getValue());
+                    values[i] = predictedData[i].getValue() != null ? (double)(Object)predictedData[i].getValue() : 0d);
             }
         } else {
-            LOG.fine("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
+            LOG.finer("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
         }
 
         values[0] = attribute.getValue().orElse(0d);
@@ -436,11 +433,11 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         // Does the storage support import and have an energy level schedule
         Optional<Integer[][]> energyLevelScheduleOptional = storageAsset.getEnergyLevelSchedule();
         boolean hasEnergyMinRequirement = energyLevelMin > 0 || energyLevelScheduleOptional.isPresent();
-        double powerExportMax = storageAsset.getPowerExportMax().orElse(Double.MIN_VALUE);
+        double powerExportMax = storageAsset.getPowerExportMax().map(power -> -1*power).orElse(Double.MIN_VALUE);
         double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
         int[][] energySchedule = energyLevelScheduleOptional.map(dayArr -> Arrays.stream(dayArr).map(hourArr -> Arrays.stream(hourArr).mapToInt(Integer::intValue).toArray()).toArray(int[][]::new)).orElse(null);
 
-        optimiser.applyEnergySchedule(energyLevelMins, energyCapacity, energyLevelMin, energyLevelMax, energySchedule, timerService.getCurrentTimeMillis());
+        optimiser.applyEnergySchedule(energyLevelMins, energyCapacity, energyLevelMin, energyLevelMax, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
 
         // TODO: Make these a function of energy level
         Function<Integer, Double> powerImportMaxCalculator = interval -> powerImportMax;

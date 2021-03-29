@@ -19,6 +19,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.Executors
 
@@ -44,7 +46,6 @@ import static spock.util.matcher.HamcrestMatchers.closeTo
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-@Ignore
 class EnergyOptimisationAssetTest extends Specification implements ManagerContainerTrait {
     def "Test storage asset with consumer and producer"() {
 
@@ -84,49 +85,48 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         when: "supplier tariff values are set for the next 24hrs"
         def tariffExports = [-5, -2, -8, 2, 2, 5, -2, -2]
         def tariffImports = [3, -5, 10, 1, 3, -5, 7, 8]
-        now = Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.HOURS)
+        def optimisationDateTime = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault())
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name, tariffImports.get(0)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_EXPORT.name, tariffExports.get(0)))
 
         for (int i = 1; i < tariffExports.size(); i++) {
-            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name), tariffImports.get(i), now.plus((long)(optimiser.intervalSize * 60)*(i-1), ChronoUnit.MINUTES).toEpochMilli())
-            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_EXPORT.name), tariffExports.get(i), now.plus((long)(optimiser.intervalSize * 60)*(i-1), ChronoUnit.MINUTES).toEpochMilli())
+            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_IMPORT.name), tariffImports.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
+            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySupplierAssetId, ElectricityAsset.TARIFF_EXPORT.name), tariffExports.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
         }
 
         and: "consumer and producer prediction values are set for the next 24hrs"
-        [-5, -25, 15, 0, 0, -5, -5, -2]
-        def consumerPower = [0, 5, 10, 0, 0, 10, 5, 0]
+        def consumerPower = [0, 5, 20, 0, 0, 10, 5, 0]
         def producerPower = [-5, -30, -5, 0, 0, -15, -10, -2]
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(0)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(0)))
 
         for (int i = 1; i < consumerPower.size(); i++) {
-            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name), tariffImports.get(i), now.plus((long)(optimiser.intervalSize * 60)*(i-1), ChronoUnit.MINUTES).toEpochMilli())
-            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name), tariffExports.get(i), now.plus((long)(optimiser.intervalSize * 60)*(i-1), ChronoUnit.MINUTES).toEpochMilli())
+            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name), consumerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
+            assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name), producerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
         }
 
         and: "the optimisation runs"
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime)
 
-        then: "the setpoints of the storage asset for the next 24hrs should be correctly optimised"
+        then: "the setpoints of the storage asset for the next 24hrs should be correctly optimised [-20.0, 7.0, -20.0, 7.0, 0.0, 7.0, -14.0, 0.0]"
         conditions.eventually {
-            assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 7d
+            assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
             def setpoints = assetPredictedDatapointService.getValueDatapoints(
                     new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
                     "minute",
-                    ((long)optimiser.intervalSize * 60) + " minute",
-                    timerService.currentTimeMillis,
-                    Instant.ofEpochMilli(timerService.currentTimeMillis).plus(1, ChronoUnit.DAYS).toEpochMilli()
+                    (long)(optimiser.intervalSize * 60) + " minute",
+                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
             )
 
             assert setpoints.size() == 7
-            assert setpoints[0].value == 7d
-            assert setpoints[1].value == 7d
-            assert that(setpoints[2].value, closeTo(2.33333, 0.0001))
-            assert that(setpoints[3].value, closeTo(-4.66666, 0.0001))
+            assert setpoints[0].value == 0d
+            assert setpoints[1].value == -20d
+            assert setpoints[2].value == 7d //that(setpoints[2].value, closeTo(2.33333, 0.0001))
+            assert setpoints[3].value == 0d
             assert setpoints[4].value == 7d
-            assert setpoints[5].value == -20d
-            assert that(setpoints[6].value, closeTo(-5.66666, 0.0001))
+            assert setpoints[5].value == -14d
+            assert setpoints[6].value == 0d
         }
     }
 }

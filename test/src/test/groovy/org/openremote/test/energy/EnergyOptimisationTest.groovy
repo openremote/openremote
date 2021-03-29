@@ -8,8 +8,10 @@ import org.openremote.model.util.Pair
 import spock.lang.Specification
 
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.function.Function
 import java.util.stream.IntStream
 
@@ -188,7 +190,8 @@ class EnergyOptimisationTest extends Specification {
 
         given: "an energy optimisation instance"
         currentInterval = 0
-        def currentTime = Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDate().atTime(23, 00).toEpochSecond(ZoneOffset.UTC) * 1000
+        def startOfDay = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
+        def currentTime = startOfDay.plus(23, ChronoUnit.HOURS)
         def optimisation = new EnergyOptimiser(intervalSize, 1d)
 
         and: "some input parameters"
@@ -233,7 +236,7 @@ class EnergyOptimisationTest extends Specification {
         energyMinLevels == [40d, 40d, 160d, 40d, 40d, 40d, 40d, 40d] as double[]
 
         when: "the energy min levels are regenerated for a different time"
-        currentTime = Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDate().atTime(06, 00).toEpochSecond(ZoneOffset.UTC) * 1000
+        currentTime = currentTime.plus(7, ChronoUnit.HOURS)
         optimisation.applyEnergySchedule(energyMinLevels, energyCapacity, energyLevelMin, energyLevelMax, energyScheduleWeek, currentTime)
 
         then: "the energy min levels should be correct"
@@ -253,7 +256,8 @@ class EnergyOptimisationTest extends Specification {
 
         given: "an energy optimisation instance"
         currentInterval = 0
-        def currentTime = Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDate().atTime(23, 00).toEpochSecond(ZoneOffset.UTC) * 1000
+        def startOfDay = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS)
+        def currentTime = startOfDay.plus(23, ChronoUnit.HOURS)
         def optimisation = new EnergyOptimiser(intervalSize, 1d)
 
         and: "some input parameters"
@@ -354,10 +358,10 @@ class EnergyOptimisationTest extends Specification {
         powerSetpoints[0] == 7d
         powerSetpoints[1] == 7d
         powerSetpoints[2] == 7d
-        powerSetpoints[3] closeTo(2.33333, 0.0001)
+        powerSetpoints[3] == 0d
         powerSetpoints[4] closeTo(-4.66666, 0.0001)
         powerSetpoints[5] == 7d
         powerSetpoints[6] == -20d
-        powerSetpoints[7] closeTo(-5.66666, 0.0001)
+        powerSetpoints[7] closeTo(-3.33333, 0.0001)
     }
 }
