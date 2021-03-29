@@ -482,7 +482,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                             return;
 
                         AssetState<?> assetState = buildAssetState.apply(loadedAsset, attribute);
-                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
+                        LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
                         updateAssetState(assetState);
                     });
                     break;
@@ -515,7 +515,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
                     obsoleteOrModified.forEach(attribute -> {
                         AssetState<?> assetState = buildAssetState.apply(loadedAsset, attribute);
-                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
+                        LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });
 
@@ -524,7 +524,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         !oldStateAttributes.contains(attr) || obsoleteOrModified.contains(attr))
                         .forEach(attribute -> {
                             AssetState<?> assetState = buildAssetState.apply(loadedAsset, attribute);
-                            LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
+                            LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
                             updateAssetState(assetState);
                         });
                     break;
@@ -535,7 +535,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         .filter(RulesService::attributeIsRuleState)
                         .forEach(attribute -> {
                             AssetState<?> assetState = new AssetState<>(asset, attribute, Source.INTERNAL);
-                            LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
+                            LOG.finer("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                             retractAssetState(assetState);
                         });
                     break;
@@ -788,7 +788,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         withLock(getClass().getSimpleName() + "::updateAssetState", () -> {
             // TODO: implement rules processing error state handling
 
-            LOG.fine("Updating asset state: " + assetState);
+            LOG.finer("Updating asset state: " + assetState);
 
             // Get the chain of rule engines that we need to pass through
             List<RulesEngine<?>> rulesEngines = getEnginesInScope(assetState.getRealm(), assetState.getPath());
@@ -812,7 +812,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         assetStates.remove(assetState);
 
         if (rulesEngines.size() == 0) {
-            LOG.fine("Ignoring as there are no matching rules engines: " + assetState);
+            LOG.finer("Ignoring as there are no matching rules engines: " + assetState);
         }
 
         // Pass through each rules engine

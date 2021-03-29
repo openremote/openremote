@@ -252,7 +252,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException(BAD_REQUEST);
         }
         if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
+            LOG.info("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         ruleset = rulesetStorageService.merge(ruleset);

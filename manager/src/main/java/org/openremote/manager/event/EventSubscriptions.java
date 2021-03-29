@@ -121,7 +121,7 @@ public class EventSubscriptions {
     public void createOrUpdate(String sessionKey, boolean restrictedUser, EventSubscription<?> subscription) {
         synchronized (this.sessionSubscriptionIdMap) {
             // TODO Check if the user can actually subscribe to the events it wants, how do we do that?
-            LOG.fine("For session '" + sessionKey + "', creating/updating: " + subscription);
+            LOG.finer("For session '" + sessionKey + "', creating/updating: " + subscription);
             SessionSubscriptions sessionSubscriptions =
                 this.sessionSubscriptionIdMap.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
             sessionSubscriptions.createOrUpdate(restrictedUser, subscription);
@@ -132,7 +132,7 @@ public class EventSubscriptions {
         synchronized (this.sessionSubscriptionIdMap) {
             SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
             if (sessionSubscriptions != null) {
-                LOG.fine("For session '" + sessionKey + "', updating: " + Arrays.toString(subscriptionIds));
+                LOG.finer("For session '" + sessionKey + "', updating: " + Arrays.toString(subscriptionIds));
                 sessionSubscriptions.update(restrictedUser, subscriptionIds);
             }
         }
@@ -146,7 +146,7 @@ public class EventSubscriptions {
             if (subscription.getEventType() == null && subscription.getSubscriptionId() == null) {
                 return;
             }
-            LOG.fine("For session '" + sessionKey + "', cancelling: " + subscription);
+            LOG.finer("For session '" + sessionKey + "', cancelling: " + subscription);
             SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
             if (!TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
                 sessionSubscriptions.cancelById(subscription.getSubscriptionId());
@@ -159,7 +159,7 @@ public class EventSubscriptions {
     public void cancelAll(String sessionKey) {
         synchronized (this.sessionSubscriptionIdMap) {
             if (this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
-                LOG.fine("Cancelling all subscriptions for session: " + sessionKey);
+                LOG.finer("Cancelling all subscriptions for session: " + sessionKey);
                 this.sessionSubscriptionIdMap.remove(sessionKey);
             }
         }
@@ -190,7 +190,7 @@ public class EventSubscriptions {
 
                 if (sessionSubscription.subscription.getFilter() == null
                     || sessionSubscription.subscription.getFilter().apply(event)) {
-                    LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
+                    LOG.finer("Creating message for subscribed session '" + sessionKey + "': " + event);
                     List<SharedEvent> events = Collections.singletonList(event);
                     TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSubscription.subscriptionId);
 

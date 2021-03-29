@@ -981,9 +981,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
     def "DateTime queries"() {
         when: "the lobby has an opening date and the date falls is between the filtering date"
         def lobby = assetStorageService.find(managerTestSetup.lobbyId, true)
-
         lobby.addAttributes(
-                new Attribute<>("openingDate", TIMESTAMP_ISO8601, "2018-01-28T15:00:00+00:00")
+                new Attribute<>("openingDate", TIMESTAMP_ISO8601, ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).format(ISO_ZONED_DATE_TIME)) // 28/01/2018 @ 2:00pm (UTC)
         )
         lobby = assetStorageService.merge(lobby)
 

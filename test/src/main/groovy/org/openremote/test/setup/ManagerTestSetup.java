@@ -34,6 +34,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -219,23 +220,36 @@ public class ManagerTestSetup extends ManagerSetup {
 
         ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset("Consumer");
         electricityConsumerAsset.setParent(electricityOptimisationAsset);
+        electricityConsumerAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricityConsumerAsset = assetStorageService.merge(electricityConsumerAsset);
         electricityConsumerAssetId = electricityConsumerAsset.getId();
 
         ElectricityProducerSolarAsset electricitySolarAsset = new ElectricityProducerSolarAsset("Producer");
         electricitySolarAsset.setParent(electricityOptimisationAsset);
+        electricitySolarAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
         electricitySolarAssetId = electricitySolarAsset.getId();
 
         ElectricityBatteryAsset electricityBatteryAsset = new ElectricityBatteryAsset("Battery");
         electricityBatteryAsset.setParent(electricityOptimisationAsset);
-        electricityBatteryAsset.setEnergyCapacity(100d);
-        electricityBatteryAsset.setPowerImportMax(25d);
-        electricityBatteryAsset.setPowerExportMax(25d);
+        electricityBatteryAsset.setEnergyCapacity(200d);
+        electricityBatteryAsset.setEnergyLevelPercentageMin(20);
+        electricityBatteryAsset.setEnergyLevelPercentageMax(80);
+        electricityBatteryAsset.setEnergyLevel(100d);
+        electricityBatteryAsset.setPowerImportMax(7d);
+        electricityBatteryAsset.setPowerExportMax(20d);
+        electricityBatteryAsset.setPowerSetpoint(0d);
         electricityBatteryAsset.setEfficiencyImport(95);
         electricityBatteryAsset.setEfficiencyExport(98);
         electricityBatteryAsset.setSupportsExport(true);
         electricityBatteryAsset.setSupportsImport(true);
+        electricityBatteryAsset.getAttribute(ElectricityAsset.POWER_SETPOINT).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricityBatteryAsset = assetStorageService.merge(electricityBatteryAsset);
         electricityBatteryAssetId = electricityBatteryAsset.getId();
 
@@ -243,6 +257,12 @@ public class ManagerTestSetup extends ManagerSetup {
         electricitySupplierAsset.setParent(electricityOptimisationAsset);
         electricitySupplierAsset.setTariffExport(-0.05);
         electricitySupplierAsset.setTariffImport(0.08);
+        electricitySupplierAsset.getAttribute(ElectricityAsset.TARIFF_IMPORT).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
+        electricitySupplierAsset.getAttribute(ElectricityAsset.TARIFF_EXPORT).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
         electricitySupplierAssetId = electricitySupplierAsset.getId();
 

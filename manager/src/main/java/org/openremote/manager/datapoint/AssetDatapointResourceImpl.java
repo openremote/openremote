@@ -33,6 +33,9 @@ import org.openremote.model.http.RequestParams;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.logging.Logger;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
@@ -71,7 +74,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             if (!isTenantActiveAndAccessible(asset.getRealm())) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
+                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -82,8 +85,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             return assetDatapointService.getValueDatapoints(assetId,
                 attribute,
                 interval,
-                fromTimestamp,
-                toTimestamp);
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault()),
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault()));
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

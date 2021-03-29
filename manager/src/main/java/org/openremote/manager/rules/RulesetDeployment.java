@@ -270,7 +270,7 @@ public class RulesetDeployment {
             jsonRulesBuilder = new JsonRulesBuilder(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationsFacade, historicDatapointsFacade, predictedDatapointsFacade, this::scheduleRuleAction);
 
             for (Rule rule : jsonRulesBuilder.build()) {
-                RulesEngine.LOG.fine("Registering JSON rule: " + rule.getName());
+                RulesEngine.LOG.finer("Registering JSON rule: " + rule.getName());
                 rules.register(rule);
             }
 
@@ -416,7 +416,7 @@ public class RulesetDeployment {
                 throw new IllegalArgumentException("Defined 'then' is not a function in rule: " + name);
             }
 
-            RulesEngine.LOG.fine("Registering javascript rule: " + name);
+            RulesEngine.LOG.finer("Registering javascript rule: " + name);
 
             rules.register(
                     new RuleBuilder().name(name).description(description).priority(priority).when(when).then(then).build()
@@ -441,7 +441,7 @@ public class RulesetDeployment {
             script.setBinding(binding);
             script.run();
             for (Rule rule : rulesBuilder.build()) {
-                RulesEngine.LOG.fine("Registering groovy rule: " + rule.getName());
+                RulesEngine.LOG.finer("Registering groovy rule: " + rule.getName());
                 rules.register(rule);
             }
 

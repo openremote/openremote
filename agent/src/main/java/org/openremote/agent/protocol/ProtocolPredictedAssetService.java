@@ -22,9 +22,11 @@ package org.openremote.agent.protocol;
 import org.openremote.model.ContainerService;
 import org.openremote.model.attribute.AttributeRef;
 
+import java.time.LocalDateTime;
+
 public interface ProtocolPredictedAssetService extends ContainerService {
 
-    void updateValue(AttributeRef attributeRef, Object value, long timestamp);
+    void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp);
 
-    void updateValue(String assetId, String attributeName, Object value, long timestamp);
+    void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
 }

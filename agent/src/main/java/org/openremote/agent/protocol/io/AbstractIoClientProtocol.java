@@ -146,7 +146,7 @@ public abstract class AbstractIoClientProtocol<T extends AbstractIoClientProtoco
             LOG.fine("Created IO client '" + client.ioClient.getClientUri() + "' for protocol: " + this);
             client.connect();
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create IO client for protocol: " + this, e);
+            LOG.log(Level.WARNING, "Failed to create IO client for protocol: " + this, e);
             setConnectionStatus(ConnectionStatus.ERROR);
         }
     }

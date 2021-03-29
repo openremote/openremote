@@ -115,7 +115,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                                       Attribute<?> attribute,
                                       Source source) throws AssetProcessingException {
         if (source == ATTRIBUTE_LINKING_SERVICE) {
-            LOG.fine("Attribute update came from this service so ignoring to avoid infinite loops: " + attribute);
+            LOG.finest("Attribute update came from this service so ignoring to avoid infinite loops: " + attribute);
             return false;
         }
 
@@ -128,14 +128,14 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
     }
 
     protected void sendAttributeEvent(AttributeEvent attributeEvent) {
-        LOG.fine("Sending attribute event for linked attribute: " + attributeEvent);
+        LOG.finer("Sending attribute event for linked attribute: " + attributeEvent);
         assetProcessingService.sendAttributeEvent(attributeEvent, ATTRIBUTE_LINKING_SERVICE);
     }
 
     protected void processLinkedAttributeUpdate(EntityManager em, AttributeLink attributeLink, AttributeState attributeState) {
         if (attributeState == null)
             return;
-        LOG.fine("Processing attribute state for linked attribute");
+        LOG.finer("Processing attribute state for linked attribute");
 
         if (attributeLink == null) {
             throw new AssetProcessingException(Reason.INVALID_ATTRIBUTE_LINK);
@@ -150,7 +150,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
         );
 
         if (sendConvertedValue.key) {
-            LOG.fine("Value converter matched ignore value");
+            LOG.finer("Value converter matched ignore value");
             return;
         }
 

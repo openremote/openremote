@@ -177,7 +177,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
          * Build Sensor Status info for polling request
          */
         if (sensorName != null) {
-            LOG.fine("### Adding new sensor [" + deviceName + "," + sensorName + "] linked to " + agent.getId() + " (" + agent.getName() + ")");
+            LOG.finer("### Adding new sensor [" + deviceName + "," + sensorName + "] linked to " + agent.getId() + " (" + agent.getName() + ")");
             controller.addSensor(attributeRef, new ControllerSensor(deviceName, sensorName));
 
             // Properly stop previously existing polling on device name --> use of false parameter
@@ -229,7 +229,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
      */
     @Override
     protected void doLinkedAttributeWrite(Attribute<?> attribute, ControllerAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        LOG.fine("### Process Linked Attribute Write");
+        LOG.finer("### Process Linked Attribute Write");
 
         AttributeRef attributeRef = event.getAttributeRef();
         ControllerCommand controllerCommand = controller.getCommand(attributeRef);
@@ -290,7 +290,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
     private void onInitialStatusResponse(AttributeRef attributeRef, String deviceName, String sensorName, Response response) {
         if (response != null) {
             if (response.getStatusInfo().equals(Response.Status.OK)) {
-                LOG.fine("### New sensor [" + sensorName + "] status received");
+                LOG.finer("### New sensor [" + sensorName + "] status received");
                 ArrayNode arrayValue = response.readEntity(ArrayNode.class);
 
                 if (arrayValue.isEmpty()) {
@@ -435,7 +435,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
 
     private void onAttributeWriteResponse(Response response) {
         if (response != null) {
-            LOG.fine("### Response from command (204 is a valid and success return) : " + response.getStatus());
+            LOG.finer("### Response from command (204 is a valid and success return) : " + response.getStatus());
             if (response.getStatus() != 204) {
                 LOG.severe("### Linked attribute Write request return with an error (different from 204) : " + response.getStatusInfo().getReasonPhrase());
             }

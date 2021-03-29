@@ -15,6 +15,9 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.DAYS
@@ -129,8 +132,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                 thing.getId(),
                 thing.getAttribute("light1PowerConsumption").orElseThrow({ new RuntimeException("Missing attribute") }),
                 DatapointInterval.MINUTE,
-                getClockTimeOf(container),
-                getClockTimeOf(container) + 3600000
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).plus(1, ChronoUnit.HOURS)
             )
             assert aggregatedDatapoints.size() == 61
         }
@@ -194,8 +197,8 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
                 thing.getId(),
                 thing.getAttribute(thingLightToggleAttributeName).orElseThrow({ new RuntimeException("Missing attribute") }),
                 DatapointInterval.MINUTE,
-                getClockTimeOf(container),
-                getClockTimeOf(container) + 3600000
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()),
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(getClockTimeOf(container)), ZoneId.systemDefault()).plus(1, ChronoUnit.HOURS)
             )
             assert aggregatedDatapoints.size() == 61
         }

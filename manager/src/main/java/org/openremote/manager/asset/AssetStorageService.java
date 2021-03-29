@@ -359,7 +359,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .choice()
                 .when(or(body().isInstanceOf(ReadAssetEvent.class), body().isInstanceOf(ReadAttributeEvent.class)))
                     .process(exchange -> {
-                        LOG.fine("Handling from client: " + exchange.getIn().getBody());
+                        LOG.finer("Handling from client: " + exchange.getIn().getBody());
 
                         String assetId;
                         String attributeName = null;

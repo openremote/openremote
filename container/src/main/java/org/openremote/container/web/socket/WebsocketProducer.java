@@ -97,7 +97,7 @@ public class WebsocketProducer extends DefaultProducer {
         if (session != null && session.isOpen()) {
             if (message instanceof String) {
                 if (LOG.isLoggable(Level.FINE))
-                    LOG.fine("Sending to session " + session.getId() + ": " + message);
+                    LOG.finer("Sending to session " + session.getId() + ": " + message);
                 session.getBasicRemote().sendText((String) message);
             }
         }

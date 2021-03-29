@@ -47,24 +47,7 @@ public class ElectricityChargerAsset extends ElectricityStorageAsset {
     public static final AttributeDescriptor<Boolean> VEHICLE_CONNECTED = new AttributeDescriptor<>("vehicleConnected", ValueType.BOOLEAN,
         new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AttributeDescriptor<String> VEHICLE_ID = new AttributeDescriptor<>("vehicleID", ValueType.TEXT,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)).withOptional(true);
-
-    public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
-    public static final AttributeDescriptor<Double> POWER_EXPORT_MAX = ElectricityAsset.POWER_EXPORT_MAX.withOptional(true);
-    public static final AttributeDescriptor<Double> ENERGY_EXPORT_TOTAL = ElectricityAsset.ENERGY_EXPORT_TOTAL.withOptional(true);
-    public static final AttributeDescriptor<Double> ENERGY_LEVEL = ElectricityStorageAsset.ENERGY_LEVEL.withOptional(true);
-    public static final AttributeDescriptor<Double> ENERGY_CAPACITY = ElectricityStorageAsset.ENERGY_CAPACITY.withOptional(true);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE = ElectricityStorageAsset.ENERGY_LEVEL_PERCENTAGE.withOptional(true);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MAX = ElectricityStorageAsset.ENERGY_LEVEL_PERCENTAGE_MAX.withOptional(true);
-    public static final AttributeDescriptor<Integer> ENERGY_LEVEL_PERCENTAGE_MIN = ElectricityStorageAsset.ENERGY_LEVEL_PERCENTAGE_MIN.withOptional(true);
-    public static final AttributeDescriptor<Integer> EFFICIENCY_IMPORT = ElectricityAsset.EFFICIENCY_IMPORT.withOptional(true);
-    public static final AttributeDescriptor<Integer> EFFICIENCY_EXPORT = ElectricityAsset.EFFICIENCY_EXPORT.withOptional(true);
-    public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricitySupplierAsset.TARIFF_IMPORT.withOptional(true);
-    public static final AttributeDescriptor<Double> TARIFF_EXPORT = ElectricitySupplierAsset.TARIFF_EXPORT.withOptional(true);
-    public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricitySupplierAsset.CARBON_IMPORT.withOptional(true);
-    public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = ElectricitySupplierAsset.CARBON_IMPORT_TOTAL.withOptional(true);
-    public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = ElectricitySupplierAsset.CARBON_EXPORT_TOTAL.withOptional(true);
+        new MetaItem<>(MetaItemType.READ_ONLY, true));
 
     public static final AssetDescriptor<ElectricityChargerAsset> DESCRIPTOR = new AssetDescriptor<>("ev-station", "8A293D", ElectricityChargerAsset.class);
 

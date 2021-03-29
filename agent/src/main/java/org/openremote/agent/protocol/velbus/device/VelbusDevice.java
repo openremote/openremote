@@ -150,7 +150,7 @@ public class VelbusDevice {
         // Send the status request packets for this device
         if (isInitialisedAndValid() && featureProcessors != null) {
 
-            LOG.fine("Sending module status request packets");
+            LOG.finer("Sending module status request packets");
             velbusNetwork.sendPackets(Arrays.stream(featureProcessors)
                 .flatMap(processor -> processor.getStatusRequestPackets(this).stream())
                 .distinct().toArray(VelbusPacket[]::new));
@@ -195,7 +195,7 @@ public class VelbusDevice {
 
     public void writeProperty(String property, Object value) {
         if (!isInitialisedAndValid()) {
-            LOG.fine("Ignoring property write as device is not initialised and/or it is invalid");
+            LOG.finer("Ignoring property write as device is not initialised and/or it is invalid");
             return;
         }
 

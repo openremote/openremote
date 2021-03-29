@@ -66,7 +66,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         if (tenant == null)
             throw new WebApplicationException(NOT_FOUND);
         if (!isTenantActiveAndAccessible(tenant)) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
+            LOG.info("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         return tenant;

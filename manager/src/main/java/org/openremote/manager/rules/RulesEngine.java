@@ -633,7 +633,7 @@ public class RulesEngine<T extends Ruleset> {
                 engineInfo
             );
 
-            LOG.fine("Publishing rules engine status event: " + event);
+            LOG.finer("Publishing rules engine status event: " + event);
 
             // Notify clients
             clientEventService.publishEvent(event);
@@ -655,7 +655,7 @@ public class RulesEngine<T extends Ruleset> {
                 ruleset
             );
 
-            LOG.fine("Publishing ruleset status event: " + event);
+            LOG.finer("Publishing ruleset status event: " + event);
 
             // Notify clients
             clientEventService.publishEvent(event);

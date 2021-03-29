@@ -96,7 +96,7 @@ public class TimerProtocol extends AbstractProtocol<TimerAgent, TimerAgent.Timer
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, TimerAgent.TimerAgentLink agentLink) throws RuntimeException {
         TimerValue timerValue = getOrThrowAgentLinkProperty(agentLink.getTimerValue(), "timer value");
 
-        LOG.fine("Attribute is linked to timer value: " + timerValue);
+        LOG.finer("Attribute is linked to timer value: " + timerValue);
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         updateLinkedAttributeTimerValue(timerValue, attributeRef);
     }
@@ -121,7 +121,7 @@ public class TimerProtocol extends AbstractProtocol<TimerAgent, TimerAgent.Timer
                 if (this.active == active) {
                     return;
                 } else {
-                    LOG.fine("Updating timer enabled status: " + active);
+                    LOG.finer("Updating timer enabled status: " + active);
                     updateActive(active);
                     updateAgentAttribute(new AttributeState(agent.getId(), TimerAgent.TIMER_ACTIVE.getName(), active));
                     updateLinkedAttributesTimerValues();
