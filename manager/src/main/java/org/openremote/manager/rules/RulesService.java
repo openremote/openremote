@@ -99,7 +99,7 @@ import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttribu
  */
 public class RulesService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
-    public static final int PRIORITY = AssetProcessingService.PRIORITY + 100;
+    public static final int PRIORITY = LOW_PRIORITY;
     public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
     public static final String RULE_EVENT_EXPIRES_DEFAULT = "PT1H";
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
