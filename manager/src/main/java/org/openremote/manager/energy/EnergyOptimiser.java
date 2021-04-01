@@ -186,14 +186,11 @@ public class EnergyOptimiser {
      * supplied energyLevelMins also adjusting for any intervalSize difference. The energy schedule should be in UTC
      * time.
      */
-    public void applyEnergySchedule(double[] energyLevelMins, double energyCapacity, double energyLevelMin, double energyLevelMax, int[][] energyLevelSchedule, LocalDateTime currentTime) {
+    public void applyEnergySchedule(double[] energyLevelMins, double[] energyLevelMaxs, double energyCapacity, int[][] energyLevelSchedule, LocalDateTime currentTime) {
 
         if (energyLevelSchedule == null) {
             return;
         }
-
-        energyLevelMin = Math.min(energyLevelMax, Math.max(0d, energyLevelMin));
-        Arrays.fill(energyLevelMins, energyLevelMin);
 
         // Extract the schedule for the next 24 hour period starting at current hour plus 1 (need to attain energy level by the time the hour starts)
         OffsetDateTime date = currentTime.plus(1, ChronoUnit.HOURS).atOffset(ZoneOffset.UTC);
@@ -219,7 +216,7 @@ public class EnergyOptimiser {
 
             for (i = 0; i < schedule.length; i++) {
                 // Put energy level schedule value into first interval for the hour
-                energyLevelMins[(hourIntervals * i)] = Math.min(energyLevelMax, Math.max(energyLevelMins[(hourIntervals * i)], schedule[i]));
+                energyLevelMins[(hourIntervals * i)] = Math.min(energyLevelMaxs[hourIntervals * i], Math.max(energyLevelMins[hourIntervals * i], schedule[i]));
             }
         } else {
             int takeSize = (int) intervalSize;
@@ -227,7 +224,7 @@ public class EnergyOptimiser {
 
             for (i = 0; i < hourIntervals; i++) {
                 // Take largest energy level for the intervals
-                energyLevelMins[i] = Math.min(energyLevelMax, Math.max(energyLevelMins[i], java.util.Arrays.stream(schedule, (i * takeSize), (i * takeSize) + takeSize).max().orElse(0)));
+                energyLevelMins[i] = Math.min(energyLevelMaxs[i], Math.max(energyLevelMins[i], java.util.Arrays.stream(schedule, (i * takeSize), (i * takeSize) + takeSize).max().orElse(0)));
             }
         }
     }
@@ -363,7 +360,7 @@ public class EnergyOptimiser {
      * chronological order (reallocating earlier import/exports if it cost beneficial). The powerSetpoints will be
      * updated as a result.
      */
-    public void applyEarningOpportunities(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator, double energyLevelMax) {
+    public void applyEarningOpportunities(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] energyLevelMaxs, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator) {
 
         // Look for import and export earning opportunities
         double[][] primary = importCostAndPower != null ? importCostAndPower : exportCostAndPower; // Never null
@@ -393,14 +390,14 @@ public class EnergyOptimiser {
 
                 // import opportunity and interval still available to import power
                 //noinspection ConstantConditions
-                applyImportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval, energyLevelMax);
+                applyImportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval);
                 LOG.finest("Applied import earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
 
             } else if (isExportOpportunity(costAndPower, powerSetpoints[interval], interval, powerExportMaxCalculator)) {
 
                 // export opportunity and interval still available to export power
                 //noinspection ConstantConditions
-                applyExportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval, energyLevelMax);
+                applyExportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval);
                 LOG.finest("Applied export earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
             }
         }
@@ -420,7 +417,7 @@ public class EnergyOptimiser {
      * interval then an earlier cost effective export opportunity will be attempted to offset the requirement. The
      * powerSetpoints will be updated as a result.
      */
-    public void applyImportOpportunity(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator, int interval, double energyLevelMax) {
+    public void applyImportOpportunity(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] energyLevelMaxs, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator, int interval) {
         double[] costAndPower = importCostAndPower[interval];
         double impPowerMin = costAndPower[1];
         double impPowerMax = Math.min(powerImportMaxCalculator.apply(interval), costAndPower[2]);
@@ -431,7 +428,7 @@ public class EnergyOptimiser {
             return;
         }
 
-        double energySpace = energyLevelMax - energyLevelCalculator.apply(interval);
+        double energySpace = energyLevelMaxs[interval] - energyLevelCalculator.apply(interval);
         double energySpaceMax = powerCapacity * intervalSize;
         double energySpaceMin = impPowerMin * intervalSize;
         List<Pair<Integer, Double>> pastIntervalPowerDeltas = new ArrayList<>();
@@ -524,7 +521,7 @@ public class EnergyOptimiser {
      * interval then an earlier cost effective import opportunity will be attempted to offset the requirement. The
      * powerSetpoints will be updated as a result.
      */
-    public void applyExportOpportunity(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator, int interval, double energyLevelMax) {
+    public void applyExportOpportunity(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] energyLevelMaxs, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator, int interval) {
         double[] costAndPower = exportCostAndPower[interval];
         double expPowerMin = costAndPower[2];
         double expPowerMax = Math.max(powerExportMaxCalculator.apply(interval), costAndPower[1]);
@@ -610,14 +607,14 @@ public class EnergyOptimiser {
                 }
 
                 double energySpaceMin = pastCostAndPower[1] * intervalSize;
-                double energySpace = energyLevelMax - energyLevelCalculator.apply(pastInterval);
+                double energySpace = energyLevelMaxs[interval] - energyLevelCalculator.apply(pastInterval);
                 energySpace = Math.max(energySpace, energySpace - energySurplusMax);
 
                 // We have spare energy capacity and power check if we don't violate energy max for any future imports
                 k = pastInterval;
                 while (k < powerSetpoints.length && energySurplus > 0 && energySpace >= energySpaceMin) {
 
-                    double futureEnergySpace = energyLevelMax - energyLevelCalculator.apply(k);
+                    double futureEnergySpace = energyLevelMaxs[k] - energyLevelCalculator.apply(k);
                     energySpace = Math.min(energySpace, futureEnergySpace);
                     k++;
 

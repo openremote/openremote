@@ -69,6 +69,11 @@ public class TimerService implements ContainerService {
             public void start() {
                 // NOOP
             }
+
+            @Override
+            public void reset() {
+                // NOOP
+            }
         },
         PSEUDO {
             protected AtomicLong offset = new AtomicLong();
@@ -104,12 +109,18 @@ public class TimerService implements ContainerService {
                     stopTime = null;
                 }
             }
+
+            @Override
+            public void reset() {
+                offset.set(0L);
+            }
         };
 
         public abstract void init();
         public abstract long getCurrentTimeMillis();
         public abstract void stop();
         public abstract void start();
+        public abstract void reset();
         public abstract long advanceTime(long amount, TimeUnit unit);
     }
 

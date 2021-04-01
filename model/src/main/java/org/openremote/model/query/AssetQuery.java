@@ -345,8 +345,14 @@ public class AssetQuery {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
+    public final <T extends Asset<?>> AssetQuery types(Class<T> type) {
+        this.types = new Class[] {type};
+        return this;
+    }
+
     @SafeVarargs
-    public final <T extends Asset<?>> AssetQuery types(Class<T>... types) {
+    public final AssetQuery types(Class<? extends Asset<?>>... types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;

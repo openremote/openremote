@@ -34,6 +34,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.Values;
 import org.postgresql.util.PGInterval;
 import org.postgresql.util.PGobject;
@@ -46,6 +47,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -277,29 +279,40 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
     }
 
     public void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) {
-        persistenceService.doTransaction(em -> upsertValue(em, assetId, attributeName, value, timestamp));
+        updateValues(assetId, attributeName, Collections.singletonList(new Pair<>(value, timestamp)));
     }
 
-    protected void upsertValue(EntityManager em, String assetId, String attributeName, Object value, LocalDateTime timestamp) {
-        PGobject pgJsonValue = new PGobject();
-        pgJsonValue.setType("jsonb");
-        try {
-            pgJsonValue.setValue(Values.asJSON(value).orElse("null"));
-        } catch (SQLException e) {
-            LOG.log(Level.WARNING, "Failed to store predicted data point: " + new AttributeRef(assetId, attributeName), e);
-        }
+    public void updateValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) {
+        persistenceService.doTransaction(em -> upsertValue(em, assetId, attributeName, valuesAndTimestamps));
+    }
 
+    protected void upsertValue(EntityManager em, String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) {
         em.unwrap(Session.class).doWork(connection -> {
             PreparedStatement st = connection.prepareStatement("INSERT INTO asset_predicted_datapoint (entity_id, attribute_name, value, timestamp) \n" +
                 "VALUES (?, ?, ?, ?)\n" +
                 "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE \n" +
                 "  SET value = excluded.value");
 
-            st.setString(1, assetId);
-            st.setString(2, attributeName);
-            st.setObject(3, pgJsonValue);
-            st.setObject(4, timestamp);
-            st.executeUpdate();
+            valuesAndTimestamps.forEach(valueAndTimestamp -> {
+
+                PGobject pgJsonValue = new PGobject();
+                pgJsonValue.setType("jsonb");
+                try {
+                    pgJsonValue.setValue(Values.asJSON(valueAndTimestamp.key).orElse("null"));
+                    st.setString(1, assetId);
+                    st.setString(2, attributeName);
+                    st.setObject(3, pgJsonValue);
+                    st.setObject(4, valueAndTimestamp.value);
+                    st.addBatch();
+
+                } catch (Exception e) {
+                    String msg = "Failed to store predicted data point: " + new AttributeRef(assetId, attributeName);
+                    LOG.log(Level.WARNING, msg, e);
+                    throw new IllegalStateException(msg, e);
+                }
+            });
+
+            st.executeBatch();
         });
     }
 

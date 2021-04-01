@@ -38,6 +38,10 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.LogicGroup;
+import org.openremote.model.query.filter.AttributePredicate;
+import org.openremote.model.query.filter.BooleanPredicate;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaItemType;
@@ -49,6 +53,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -248,18 +253,16 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         EnergyOptimiser optimiser = optimiserAndScheduler.key;
         int intervalCount = optimiser.get24HourIntervalCount();
 
-        // Get all child assets
-        List<Asset<?>> childElectricityAssets = assetStorageService.findAll(
+        LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching child assets of type '" + ElectricitySupplierAsset.class.getSimpleName() + "'");
+
+        List<ElectricitySupplierAsset> supplierAssets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new AssetQuery.Select().excludePath(true))
+                .types(ElectricitySupplierAsset.class)
                 .recursive(true)
                 .parents(optimisationAssetId)
-        );
-
-        LOG.finest(getLogPrefix(optimisationAssetId) + "Child asset count = " + childElectricityAssets.size());
-
-        List<ElectricitySupplierAsset> supplierAssets = childElectricityAssets.stream()
-            .filter(asset -> (asset instanceof ElectricitySupplierAsset) && asset.hasAttribute(ElectricitySupplierAsset.TARIFF_IMPORT))
+        ).stream()
+            .filter(asset -> asset.hasAttribute(ElectricitySupplierAsset.TARIFF_IMPORT))
             .map(asset -> (ElectricitySupplierAsset)asset)
             .collect(Collectors.toList());
 
@@ -268,33 +271,69 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             return;
         }
 
-        List<ElectricityStorageAsset> optimisableStorageAssets = childElectricityAssets.stream()
-            .filter(asset ->  (asset instanceof ElectricityStorageAsset)
-                && asset.hasAttribute(ElectricityAsset.POWER_SETPOINT))
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(getLogPrefix(optimisationAssetId) + "Found child asset of type '" + ElectricitySupplierAsset.class.getSimpleName() + "': " + supplierAssets.get(0));
+        }
+
+        LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching optimisable child assets of type '" + ElectricityStorageAsset.class.getSimpleName() + "'");
+
+        AssetQuery query = new AssetQuery()
+            .select(new AssetQuery.Select().excludePath(true))
+            .recursive(true)
+            .parents(optimisationAssetId)
+            .types(ElectricityStorageAsset.class)
+            .attributes(new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER_SETPOINT.getName())));
+        query.attributes.groups = new ArrayList<>();
+        query.attributes.groups.add(
+            new LogicGroup<>(
+            LogicGroup.Operator.OR,
+            new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true)),
+            new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true)))
+        );
+
+        List<ElectricityStorageAsset> optimisableStorageAssets = assetStorageService.findAll(query).stream()
             .map(asset -> (ElectricityStorageAsset)asset)
             .sorted(Comparator.comparingInt(asset -> asset.getEnergyLevelSchedule().map(schedule -> 0).orElse(1)))
             .collect(Collectors.toList());
 
         if (optimisableStorageAssets.isEmpty()) {
-            LOG.warning(getLogPrefix(optimisationAssetId) + "Expected at least one " + ElectricityStorageAsset.class.getSimpleName() + " asset with a '" + ElectricityAsset.POWER_SETPOINT.getName() + "' attribute but found none");
+            LOG.warning(getLogPrefix(optimisationAssetId) + "Expected at least one optimisable '" + ElectricityStorageAsset.class.getSimpleName() + " asset with a '" + ElectricityAsset.POWER_SETPOINT.getName() + "' attribute but found none");
             return;
+        }
+
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(getLogPrefix(optimisationAssetId) + "Found optimisable child assets of type '" + ElectricityStorageAsset.class.getSimpleName() + "': " + optimisableStorageAssets.stream().map(Asset::getId).collect(Collectors.joining(", ")));
         }
 
         // Get consumers and producers and sum power demand for the next 24hrs
         double[] powerNets = new double[intervalCount];
 
-        childElectricityAssets.stream()
-            .filter(asset ->
-                // Filter electricity asset or group asset of consumers and producers that have a power attribute
-                asset instanceof ElectricityAsset
-                    || isElectricityGroupAsset(asset))
-            .filter(asset -> asset.hasAttribute(ElectricityAsset.POWER) && !asset.hasAttribute(ElectricityAsset.POWER_SETPOINT))
+        LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching child assets of type '" + ElectricityProducerAsset.class.getSimpleName() + "', '" + ElectricityConsumerAsset.class.getSimpleName() + "', '" + GroupAsset.class.getSimpleName() + "' (with child type of consumer or producer)");
+
+        AtomicInteger count = new AtomicInteger(0);
+        assetStorageService.findAll(
+            new AssetQuery()
+                .select(new AssetQuery.Select().excludePath(true))
+                .recursive(true)
+                .parents(optimisationAssetId)
+                .types(ElectricityConsumerAsset.class, ElectricityProducerAsset.class, GroupAsset.class)
+                .attributes(new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())))
+        )
+            .stream()
+            .filter(asset -> !(asset instanceof GroupAsset) || isElectricityGroupAsset(asset))
             .forEach(asset -> {
                 @SuppressWarnings("OptionalGetWithoutIsPresent")
                 Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
                 double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
                 IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
+                count.incrementAndGet();
             });
+
+        if (LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(getLogPrefix(optimisationAssetId) + "Found child assets of type '" + ElectricityProducerAsset.class.getSimpleName() + "', '" + ElectricityConsumerAsset.class.getSimpleName() + "', '" + GroupAsset.class.getSimpleName() + "' (with child type of consumer or producer): count=" + count.get());
+            LOG.finest("Calculated net power of consumers and producers: " + Arrays.toString(powerNets));
+            LOG.finest("Getting supply costs for each interval");
+        }
 
         // Get supplier costs for each interval
         ElectricitySupplierAsset supplierAsset = supplierAssets.get(0);
@@ -338,25 +377,49 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         Arrays.fill(exportPowerMaxes, exportPowerMax);
         long periodSeconds = (long)(optimiser.getIntervalSize()*60*60);
 
-        optimisableStorageAssets.forEach(storageAsset -> {
+        LOG.finer(getLogPrefix(optimisationAssetId) + "Optimising each storage asset");
+
+        for (ElectricityStorageAsset storageAsset : optimisableStorageAssets) {
+            boolean hasSetpoint = storageAsset.hasAttribute(ElectricityStorageAsset.POWER_SETPOINT);
+            boolean supportsExport = storageAsset.isSupportsExport().orElse(false);
+            boolean supportsImport = storageAsset.isSupportsImport().orElse(false);
+
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Optimising power set points for storage asset: " + storageAsset);
+            }
+
+            if (!supportsExport && !supportsImport) {
+                LOG.finest(getLogPrefix(optimisationAssetId) + "Storage asset doesn't support import or export: " + storageAsset.getId());
+                continue;
+            }
+
+            if (!hasSetpoint) {
+                LOG.info(getLogPrefix(optimisationAssetId) + "Storage asset has no '" + ElectricityStorageAsset.POWER_SETPOINT.getName() + "' attribute so cannot be controlled: " + storageAsset.getId());
+                continue;
+            }
 
             double[] setpoints = getStoragePowerSetpoints(optimiser, optimisationAssetId, storageAsset, powerNets, importPowerMaxes, exportPowerMaxes, costsImport, costsExport);
 
-            // Assume these setpoints will be applied so update the power net values with these
-            for (int i = 0; i < powerNets.length; i++) {
-                powerNets[i] += setpoints[i];
+            if (setpoints != null) {
+
+                // Assume these setpoints will be applied so update the power net values with these
+                for (int i = 0; i < powerNets.length; i++) {
+                    powerNets[i] += setpoints[i];
+                }
+
+                // Push the setpoints into the prediction service for the storage asset's setpoint attribute and set current setpoint
+                List<Pair<?, LocalDateTime>> valuesAndTimestamps = IntStream.range(1, setpoints.length).mapToObj(i ->
+                    new Pair<>(setpoints[i],
+                        LocalDateTime.ofInstant(optimisationTime.plus(periodSeconds * i, ChronoUnit.SECONDS), ZoneId.systemDefault()))
+                ).collect(Collectors.toList());
+
+                assetPredictedDatapointService.updateValues(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT.getName(), valuesAndTimestamps);
+            }else {
+                LOG.finest("Cannot optimise power set points for storage asset: " + storageAsset.getId());
             }
 
-            // Push the setpoints into the prediction service for the storage asset's setpoint attribute and set current setpoint
-            for (int i = 1; i < setpoints.length; i++) {
-                assetPredictedDatapointService.updateValue(
-                    new AttributeRef(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT.getName()),
-                    setpoints[i],
-                    LocalDateTime.ofInstant(optimisationTime.plus(periodSeconds*i, ChronoUnit.SECONDS), ZoneId.systemDefault()));
-            }
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, setpoints[0]));
-        });
-
+            assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, setpoints != null ? setpoints[0] : null));
+        }
     }
 
     protected boolean isElectricityGroupAsset(Asset<?> asset) {
@@ -416,33 +479,25 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected double[] getStoragePowerSetpoints(EnergyOptimiser optimiser, String optimisationAssetId, ElectricityStorageAsset storageAsset, double[] powerNets, double[] importPowerLimits, double[] exportPowerLimits, double[] costImports, double[] costExports) {
 
         int intervalCount = powerNets.length;
-        boolean hasSetpoint = storageAsset.hasAttribute(ElectricityStorageAsset.POWER_SETPOINT);
         boolean supportsExport = storageAsset.isSupportsExport().orElse(false);
         boolean supportsImport = storageAsset.isSupportsImport().orElse(false);
 
-        if (!supportsExport && !supportsImport) {
-            LOG.finest(getLogPrefix(optimisationAssetId) + "Storage asset doesn't support import or export: " + storageAsset.getId());
-            return new double[intervalCount];
-        }
-
         LOG.finer(getLogPrefix(optimisationAssetId) + "Optimising storage asset: " + storageAsset);
-
-        if (!hasSetpoint) {
-            LOG.info(getLogPrefix(optimisationAssetId) + "Storage asset has no '" + ElectricityStorageAsset.POWER_SETPOINT.getName() + "' attribute so cannot be controlled: " + storageAsset.getId());
-            return new double[intervalCount];
-        }
 
         double energyCapacity = storageAsset.getEnergyCapacity().orElse(0d);
         double energyLevel = Math.min(energyCapacity, storageAsset.getEnergyLevel().orElse(-1d));
 
         if (energyCapacity <= 0d || energyLevel < 0) {
             LOG.info(getLogPrefix(optimisationAssetId) + "Storage asset has no capacity or energy level so cannot import or export energy: " + storageAsset.getId());
-            return new double[intervalCount];
+            return null;
         }
 
         double energyLevelMax = Math.min(energyCapacity, ((double) storageAsset.getEnergyLevelPercentageMax().orElse(100) / 100) * energyCapacity);
         double energyLevelMin = Math.min(energyCapacity, ((double) storageAsset.getEnergyLevelPercentageMin().orElse(0) / 100) * energyCapacity);
         double[] energyLevelMins = new double[intervalCount];
+        double[] energyLevelMaxs = new double[intervalCount];
+        Arrays.fill(energyLevelMins, energyLevelMin);
+        Arrays.fill(energyLevelMaxs, energyLevelMax);
 
         // Does the storage support import and have an energy level schedule
         Optional<Integer[][]> energyLevelScheduleOptional = storageAsset.getEnergyLevelSchedule();
@@ -453,7 +508,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         if (energySchedule != null) {
             LOG.finer(getLogPrefix(optimisationAssetId) + "Applying energy schedule for storage asset: " + storageAsset.getId());
-            optimiser.applyEnergySchedule(energyLevelMins, energyCapacity, energyLevelMin, energyLevelMax, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
+            optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
         }
 
         // TODO: Make these a function of energy level
@@ -470,10 +525,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         double[] powerSetpoints = new double[intervalCount];
 
         Function<Integer, Double> energyLevelCalculator = interval ->
-            Math.min(
-                energyLevelMax,
-                energyLevel + IntStream.range(0, interval).mapToDouble(j -> powerSetpoints[j] * optimiser.getIntervalSize()).sum()
-            );
+                energyLevel + IntStream.range(0, interval).mapToDouble(j -> powerSetpoints[j] * optimiser.getIntervalSize()).sum();
 
         // If asset supports exporting energy (V2G, battery storage, etc.) then need to determine if there are
         // opportunities to export energy to save/earn, taking into consideration the cost of exporting from this asset
@@ -501,7 +553,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         LOG.finer(getLogPrefix(optimisationAssetId) + "Applying earning opportunities for storage asset: " + storageAsset.getId());
-        optimiser.applyEarningOpportunities(importCostAndPower, exportCostAndPower, energyLevelMins, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, energyLevelMax);
+        optimiser.applyEarningOpportunities(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator);
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity power set points = " + Arrays.toString(powerSetpoints));
 

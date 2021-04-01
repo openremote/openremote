@@ -156,7 +156,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void stop(Container container) throws Exception {
-        agentMap.values().stream().map(Agent::getId).forEach(this::stopAgent);
+        List<Agent<?,?,?>> agents = new ArrayList<>(agentMap.values());
+        agents.forEach(agent -> this.stopAgent(agent.getId()));
         agentMap.clear();
         protocolInstanceMap.clear();
     }
@@ -637,6 +638,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected Map<String, Agent<?, ?, ?>> getAgents() {
+
+        if (agentMap != null) {
+            return agentMap;
+        }
+
         return withLockReturning(getClass().getSimpleName() + "::getAgents", () -> {
             if (agentMap == null) {
                 agentMap = assetStorageService.findAll(
