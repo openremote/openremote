@@ -27,7 +27,6 @@ import org.openremote.model.Container;
 import java.util.List;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.manager.setup.SetupTasks.*;
 
 /**
  * Builtin setup tasks.

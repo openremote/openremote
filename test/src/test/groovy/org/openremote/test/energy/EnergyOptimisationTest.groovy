@@ -199,7 +199,9 @@ class EnergyOptimisationTest extends Specification {
         double energyLevelMin = 40d
         double energyLevelMax = 160d
         double[] energyMinLevels = new double[intervalCount]
+        double[] energyMaxLevels = new double[intervalCount]
         Arrays.fill(energyMinLevels, energyLevelMin)
+        Arrays.fill(energyMaxLevels, energyLevelMax)
 
         when: "an energy schedule is defined and the energy min levels generated from this"
         int[] energyScheduleDay = [
@@ -230,22 +232,26 @@ class EnergyOptimisationTest extends Specification {
         ]
         int[][] energyScheduleWeek = new int[24][7]
         Arrays.fill(energyScheduleWeek, energyScheduleDay)
-        optimisation.applyEnergySchedule(energyMinLevels, energyCapacity, energyLevelMin, energyLevelMax, energyScheduleWeek, currentTime)
+        optimisation.applyEnergySchedule(energyMinLevels, energyMaxLevels, energyCapacity, energyScheduleWeek, currentTime)
 
         then: "the energy min levels should be correct"
         energyMinLevels == [40d, 40d, 160d, 40d, 40d, 40d, 40d, 40d] as double[]
 
         when: "the energy min levels are regenerated for a different time"
         currentTime = currentTime.plus(7, ChronoUnit.HOURS)
-        optimisation.applyEnergySchedule(energyMinLevels, energyCapacity, energyLevelMin, energyLevelMax, energyScheduleWeek, currentTime)
+        Arrays.fill(energyMinLevels, energyLevelMin)
+        optimisation.applyEnergySchedule(energyMinLevels, energyMaxLevels, energyCapacity, energyScheduleWeek, currentTime)
 
         then: "the energy min levels should be correct"
         energyMinLevels == [160d, 40d, 40d, 40d, 40d, 40d, 40d, 40d] as double[]
 
         when: "the optimisation is changed to have an interval size less than 1 hour"
         energyMinLevels = new double[24*4]
+        energyMaxLevels = new double[24*4]
+        Arrays.fill(energyMinLevels, energyLevelMin)
+        Arrays.fill(energyMaxLevels, energyLevelMax)
         optimisation = new EnergyOptimiser(0.25d, 1d)
-        optimisation.applyEnergySchedule(energyMinLevels, energyCapacity, energyLevelMin, energyLevelMax, energyScheduleWeek, currentTime)
+        optimisation.applyEnergySchedule(energyMinLevels, energyMaxLevels, energyCapacity, energyScheduleWeek, currentTime)
 
         then: "the energy min levels should be correct"
         energyMinLevels[0] == 160d
@@ -267,7 +273,9 @@ class EnergyOptimisationTest extends Specification {
         double currentEnergyLevel = 100d
         double[] powerSetpoints = new double[intervalCount]
         double[] energyMinLevels = new double[intervalCount]
+        double[] energyMaxLevels = new double[intervalCount]
         Arrays.fill(energyMinLevels, energyLevelMin)
+        Arrays.fill(energyMaxLevels, energyLevelMax)
         Function<Integer, Double> powerImportMaxCalculator = {interval -> 7d}
         Function<Integer, Double> powerExportMaxCalculator = {interval -> -20d}
 
@@ -300,7 +308,7 @@ class EnergyOptimisationTest extends Specification {
         ]
         int[][] energyScheduleWeek = new int[24][7]
         Arrays.fill(energyScheduleWeek, energyScheduleDay)
-        optimisation.applyEnergySchedule(energyMinLevels, energyCapacity, energyLevelMin, energyLevelMax, energyScheduleWeek, currentTime)
+        optimisation.applyEnergySchedule(energyMinLevels, energyMaxLevels, energyCapacity, energyScheduleWeek, currentTime)
 
         then: "the energy min levels should be correct"
         energyMinLevels == [40d, 40d, 160d, 40d, 40d, 40d, 40d, 40d] as double[]
@@ -312,7 +320,7 @@ class EnergyOptimisationTest extends Specification {
         energyMinLevels == [118d, 139d, 160d, 100d, 40d, 40d, 40d, 40d] as double[]
 
         when: "the energy min levels are modified to improve code coverage in this test"
-        energyLevelMax = 170d
+        Arrays.fill(energyMaxLevels, 170d)
         energyMinLevels = [133d, 150d, 166d, 130d, 130d, 100d, 10d, 100d] as double[]
 
         and: "the energy min levels are normalised"
@@ -334,10 +342,7 @@ class EnergyOptimisationTest extends Specification {
 
         and: "the applyEnergyMinImports routine is run on the input parameters"
         Function<Integer, Double> energyLevelCalculator = {int interval ->
-            Math.min(
-                    energyLevelMax,
-                    currentEnergyLevel + IntStream.range(0, interval).mapToDouble({j -> powerSetpoints[j] * intervalSize}).sum()
-            )
+            currentEnergyLevel + IntStream.range(0, interval).mapToDouble({j -> powerSetpoints[j] * intervalSize}).sum()
         }
         optimisation.applyEnergyMinImports(optimisedImport, energyMinLevels, powerSetpoints, energyLevelCalculator, importCostCalculator, powerImportMaxCalculator)
 
@@ -352,7 +357,7 @@ class EnergyOptimisationTest extends Specification {
         powerSetpoints[7] == 0d
 
         when: "the earning opportunities are applied to the power setpoints"
-        optimisation.applyEarningOpportunities(optimisedImport, optimisedExport, energyMinLevels, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, energyLevelMax)
+        optimisation.applyEarningOpportunities(optimisedImport, optimisedExport, energyMinLevels, energyMaxLevels, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator)
 
         then: "the power setpoints should have been updated to reflect utilisation of earning opportunities"
         powerSetpoints[0] == 7d

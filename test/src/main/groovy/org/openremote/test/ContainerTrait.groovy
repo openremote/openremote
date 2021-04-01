@@ -54,12 +54,14 @@ import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
+import spock.util.concurrent.PollingConditions
 
 import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
 import javax.websocket.Session
 import javax.websocket.WebSocketContainer
 import javax.ws.rs.core.UriBuilder
+import java.util.concurrent.TimeUnit
 import java.util.logging.Handler
 import java.util.stream.Collectors
 import java.util.stream.IntStream
@@ -112,6 +114,14 @@ trait ContainerTrait {
                         def gatewayConnections = getGatewayConnections()
                         println("Purging ${gatewayConnections.size()} gateway connection(s)")
                         gatewayClientService.deleteConnections(gatewayConnections.stream().map { it.localRealm }.collect(Collectors.toList()))
+                    }
+
+                    // Reset and start clock in case previous test stopped it
+                    def timerService = container.getService(TimerService.class)
+                    if (timerService != null) {
+                        timerService.getClock().reset()
+                        timerService.getClock().advanceTime(-1, TimeUnit.MILLISECONDS) // Put time back so attribute events with the same timestamp don't get rejected
+                        timerService.getClock().start()
                     }
 
                     // Reset rulesets
@@ -226,12 +236,6 @@ trait ContainerTrait {
                             }
                         }
                     }
-
-                    // Start clock in case previous test stopped it
-                    def timerService = container.getService(TimerService.class)
-                    if (timerService != null) {
-                        timerService.getClock().start();
-                    }
                 } catch (IllegalStateException e) {
                     System.out.println("Failed to clean the existing container so creating a new one")
                     stopContainer()
@@ -310,7 +314,11 @@ trait ContainerTrait {
 
         if (assetProcessingService != null) {
             println("Waiting for the system to settle down")
-            noEventProcessedIn(assetProcessingService, 300)
+            def j=0
+            while (j < 100 && !noEventProcessedIn(assetProcessingService, 300)) {
+                Thread.sleep(100)
+                j++
+            }
         }
 
         return container

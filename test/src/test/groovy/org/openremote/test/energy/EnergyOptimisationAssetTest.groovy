@@ -9,12 +9,14 @@ import org.openremote.manager.energy.EnergyOptimisationService
 import org.openremote.manager.energy.EnergyOptimiser
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.ElectricityAsset
+import org.openremote.model.asset.impl.ElectricityConsumerAsset
+import org.openremote.model.asset.impl.ElectricityProducerSolarAsset
 import org.openremote.model.asset.impl.ElectricityStorageAsset
+import org.openremote.model.asset.impl.ElectricitySupplierAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -22,10 +24,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.Executors
-
-import static org.spockframework.util.Assert.that
-import static spock.util.matcher.HamcrestMatchers.closeTo
+import java.util.concurrent.TimeUnit
 
 /*
  * Copyright 2021, OpenRemote Inc.
@@ -51,7 +50,6 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def scheduler = Executors.newScheduledThreadPool(1);
         def services = Lists.newArrayList(defaultServices())
         def spyOptimisationService = Spy(EnergyOptimisationService) {
             scheduleOptimisation(_ as String, _ as EnergyOptimiser) >> {
@@ -75,12 +73,17 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert optimisationService.assetEnergyOptimiserMap.get(managerTestSetup.electricityOptimisationAssetId) != null
         }
 
-        and: "the optimisation start time should be correctly calculated"
-        def optimiser = optimisationService.assetEnergyOptimiserMap.get(managerTestSetup.electricityOptimisationAssetId).key
+        when: "the pseudo clock is stopped and the system time is set to midnight of next day"
+        stopPseudoClock()
         def now = Instant.ofEpochMilli(timerService.getCurrentTimeMillis())
+        now = now.truncatedTo(ChronoUnit.DAYS).plus(1, ChronoUnit.DAYS)
+        advancePseudoClock(now.toEpochMilli()-timerService.getCurrentTimeMillis(), TimeUnit.MILLISECONDS, container)
+
+        then: "the optimisation start time should be correctly calculated"
+        def optimiser = optimisationService.assetEnergyOptimiserMap.get(managerTestSetup.electricityOptimisationAssetId).key
         def optimisationTime = optimisationService.getOptimisationStartTime(now.toEpochMilli(), (long)optimiser.intervalSize * 60 * 60)
         assert optimisationTime.isBefore(now)
-        assert optimisationTime.plus((long)optimiser.intervalSize*60, ChronoUnit.MINUTES).isAfter(now)
+        assert optimisationTime.plus((long)optimiser.intervalSize*60, ChronoUnit.MINUTES).equals(now)
 
         when: "supplier tariff values are set for the next 24hrs"
         def tariffExports = [-5, -2, -8, 2, 2, 5, -2, -2]
@@ -105,7 +108,15 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assetPredictedDatapointService.updateValue(new AttributeRef(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name), producerPower.get(i), optimisationDateTime.plus((long)(optimiser.intervalSize * 60)*i, ChronoUnit.MINUTES))
         }
 
-        and: "the optimisation runs"
+        then: "the current values of each attribute should have reached the DB"
+        conditions.eventually {
+            assert (assetStorageService.find(managerTestSetup.electricitySupplierAssetId) as ElectricitySupplierAsset).getTariffImport().orElse(0d) == tariffImports.get(0)
+            assert (assetStorageService.find(managerTestSetup.electricitySupplierAssetId) as ElectricitySupplierAsset).getTariffExport().orElse(0d) == tariffExports.get(0)
+            assert (assetStorageService.find(managerTestSetup.electricityConsumerAssetId) as ElectricityConsumerAsset).getPower().orElse(-1d) == consumerPower.get(0)
+            assert (assetStorageService.find(managerTestSetup.electricitySolarAssetId) as ElectricityProducerSolarAsset).getPower().orElse(-1d) == producerPower.get(0)
+        }
+
+        when: "the optimisation runs"
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime)
 
         then: "the setpoints of the storage asset for the next 24hrs should be correctly optimised [-20.0, 7.0, -20.0, 7.0, 0.0, 7.0, -14.0, 0.0]"
