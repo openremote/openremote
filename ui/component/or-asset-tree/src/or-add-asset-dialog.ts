@@ -59,6 +59,9 @@ export class OrAddAssetDialog extends LitElement {
     @property({attribute: false})
     protected showParentAssetSelector: boolean = false;
 
+    @property({attribute: false})
+    selectedChildAssetType: string = "";
+
     public name: string = "New Asset";
 
     @query("#name-input")
@@ -209,12 +212,12 @@ export class OrAddAssetDialog extends LitElement {
             
             ${descriptor.name !== "GroupAsset"
                 ? html ``
-                : getContentWithMenuTemplate(
-                    html`<or-input type="${InputType.SELECT}" value="${this.selectedType}"></or-input>`, 
-                    this.getAssetMenuItems(),
-                    undefined,
-                    (values: string | string[]) => console.log(values)
-                )
+                : html`
+                    <p>${this.selectedChildAssetType}</p>
+                    <or-input type="${InputType.SELECT}" value="${this.selectedType}" .options="${this.getAssetMenuItems()}" 
+                              @or-input-changed="${(e: OrInputChangedEvent) => this.selectedChildAssetType = e.detail.value}" 
+                              style="display:block;text-transform: capitalize;"></or-input>
+                `
             }
     
             ${!attributes
@@ -241,27 +244,10 @@ export class OrAddAssetDialog extends LitElement {
         `;
     }
 
-    protected getAssetMenuItems(): MenuItem[] {
-        const menu: MenuItem[] = [];
-        
-        menu.push(...AssetModelUtil.getAssetTypeInfos()
-            .filter((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name !== "GroupAsset")
-            .map((assetTypeInfo) => {
-
-                const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo),
-                    icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo),
-                    styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
-    
-                return {
-                    text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
-                    value: assetTypeInfo.assetDescriptor!.name,
-                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
-                    styleMap: {...styleMap, "text-transform": "capitalize"}
-                } as MenuItem;
-            })
-            .sort(Util.sortByString((listItem) => listItem.value!)));
-        
-        return menu;
+    protected getAssetMenuItems() {
+        return AssetModelUtil.getAssetDescriptors()
+            .map(e => [e.name, Util.getAssetTypeLabel(e)])
+            .sort(Util.sortByString(listItem => listItem[1]!));
     }
 
     protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
