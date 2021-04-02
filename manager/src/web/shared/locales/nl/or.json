@@ -8,6 +8,8 @@
   "asset_plural": "Assets",
   "assets": "Assets",
   "attribute": "Attribuut",
+  "attribute_plural": "Attributen",
+  "optional_attributes": "Optionele attributen",
   "insights": "Inzicht",
   "scenes": "Scenes",
   "settings": "Instellingen",

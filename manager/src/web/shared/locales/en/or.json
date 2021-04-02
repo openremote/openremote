@@ -9,6 +9,7 @@
   "assets": "Assets",
   "attribute": "Attribute",
   "attribute_plural": "Attributes",
+  "optional_attributes": "Optional attributes",
   "insights": "Insights",
   "scenes": "Scenes",
   "settings": "Settings",

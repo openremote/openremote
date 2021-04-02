@@ -209,7 +209,7 @@ export class OrAddAssetDialog extends LitElement {
                 ? html``
                 : html`
                     <div>
-                        <strong>Attributes</strong>
+                        <strong>${i18next.t("attribute_plural")}</strong>
                         <ul style="margin-top: 0.5em">
                             ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
                         </ul>
@@ -220,7 +220,7 @@ export class OrAddAssetDialog extends LitElement {
                 ? html``
                 : html`
                     <div>
-                        <strong>Optional attributes</strong>
+                        <strong>${i18next.t("optional_attributes")}</strong>
                         <ul style="margin-top: 0.5em">
                             ${optionalAttributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
                         </ul>
