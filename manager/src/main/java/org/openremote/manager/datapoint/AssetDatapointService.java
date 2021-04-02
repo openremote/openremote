@@ -32,6 +32,7 @@ import javax.persistence.TypedQuery;
 import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -194,8 +195,8 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
     public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                DatapointInterval datapointInterval,
-                                               long fromTimestamp,
-                                               long toTimestamp) {
+                                               LocalDateTime fromTimestamp,
+                                               LocalDateTime toTimestamp) {
 
         Asset<?> asset = assetStorageService.find(attributeRef.getId());
         if (asset == null) {
@@ -210,12 +211,12 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
     public ValueDatapoint<?>[] getValueDatapoints(String assetId, Attribute<?> attribute,
                                                DatapointInterval datapointInterval,
-                                               long fromTimestamp,
-                                               long toTimestamp) {
+                                               LocalDateTime fromTimestamp,
+                                               LocalDateTime toTimestamp) {
 
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
-        LOG.fine("Getting datapoints for: " + attributeRef);
+        LOG.finer("Getting datapoints for: " + attributeRef);
 
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint<?>[]>() {
@@ -266,7 +267,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                             query.append("select PERIOD.TS as X, coalesce(AVG_VALUE, null) as Y " +
                                 " from ( " +
                                 "       select date_trunc(?, GS)::timestamp TS " +
-                                "       from generate_series(to_timestamp(?), to_timestamp(?), ?) GS " +
+                                "       from generate_series(?, ?, ?) GS " +
                                 "       ) PERIOD " +
                                 "  left join ( " +
                                 "       select " +
@@ -280,9 +281,9 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
                             query.append(" from ASSET_DATAPOINT " +
                                 "         where " +
-                                "           TIMESTAMP >= to_timestamp(?) " +
+                                "           TIMESTAMP >= ? " +
                                 "           and " +
-                                "           TIMESTAMP <= to_timestamp(?) " +
+                                "           TIMESTAMP <= ? " +
                                 "           and " +
                                 "           ENTITY_ID = ? and ATTRIBUTE_NAME = ? " +
                                 "         group by TS " +
@@ -292,9 +293,9 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                         } else {
                             query.append("select distinct TIMESTAMP AS X, value AS Y from ASSET_DATAPOINT " +
                                 "where " +
-                                "TIMESTAMP >= to_timestamp(?)" +
+                                "TIMESTAMP >= ?" +
                                 "and " +
-                                "TIMESTAMP <= to_timestamp(?) " +
+                                "TIMESTAMP <= ? " +
                                 "and " +
                                 "ENTITY_ID = ? and ATTRIBUTE_NAME = ? "
                             );
@@ -302,22 +303,20 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
                         try (PreparedStatement st = connection.prepareStatement(query.toString())) {
 
-                            long fromTimestampSeconds = fromTimestamp / 1000;
-                            long toTimestampSeconds = toTimestamp / 1000;
                             if (downsample) {
                                 st.setString(1, truncateX);
-                                st.setLong(2, fromTimestampSeconds);
-                                st.setLong(3, toTimestampSeconds);
+                                st.setObject(2, fromTimestamp);
+                                st.setObject(3, toTimestamp);
                                 st.setObject(4, new PGInterval(interval));
                                 st.setString(5, truncateX);
-                                st.setLong(6, fromTimestampSeconds);
-                                st.setLong(7, toTimestampSeconds);
+                                st.setObject(6, fromTimestamp);
+                                st.setObject(7, toTimestamp);
                                 st.setString(8, attributeRef.getId());
                                 st.setString(9, attributeRef.getName());
                                 st.setObject(10, new PGInterval(interval));
                             } else {
-                                st.setLong(1, fromTimestampSeconds);
-                                st.setLong(2, toTimestampSeconds);
+                                st.setObject(1, fromTimestamp);
+                                st.setObject(2, toTimestamp);
                                 st.setString(3, attributeRef.getId());
                                 st.setString(4, attributeRef.getName());
                             }

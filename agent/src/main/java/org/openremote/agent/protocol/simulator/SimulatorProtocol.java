@@ -106,7 +106,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
         }
 
         // Assume write through and endpoint returned the value we sent
-        LOG.fine("Write to linked attribute so simulating that the endpoint returned the written value");
+        LOG.finer("Write to linked attribute so simulating that the endpoint returned the written value");
         updateSensor(event.getAttributeRef(), processedValue);
     }
 
@@ -141,7 +141,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     }
 
     protected ScheduledFuture<?> scheduleReplay(AttributeRef attributeRef, SimulatorReplayDatapoint[] simulatorReplayDatapoints) {
-        LOG.fine("Scheduling linked attribute replay update");
+        LOG.finer("Scheduling linked attribute replay update");
 
         long now = LocalDateTime.now().get(ChronoField.SECOND_OF_DAY);
 

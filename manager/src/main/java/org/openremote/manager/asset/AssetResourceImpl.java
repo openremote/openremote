@@ -198,7 +198,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(NOT_FOUND);
 
             if (!isTenantActiveAndAccessible(asset.getRealm())) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
+                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -222,17 +222,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Realm of asset must be accessible
             if (!isTenantActiveAndAccessible(storageAsset.getRealm())) {
-                LOG.fine("Tenant not accessible by user '" + getUsername() + "', can't update: " + storageAsset);
+                LOG.info("Tenant not accessible by user '" + getUsername() + "', can't update: " + storageAsset);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
             if (!storageAsset.getRealm().equals(asset.getRealm())) {
-                LOG.fine("Cannot change asset's realm: " + storageAsset);
+                LOG.info("Cannot change asset's realm: " + storageAsset);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
             if (!storageAsset.getType().equals(asset.getType())) {
-                LOG.fine("Cannot change asset's type: " + storageAsset);
+                LOG.info("Cannot change asset's type: " + storageAsset);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -268,7 +268,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                         // If the existing attribute is not writable by restricted client, ignore it
                         if (!existingAttribute.getMetaValue(ACCESS_RESTRICTED_WRITE).orElse(false)) {
-                            LOG.fine("Existing attribute not writable by restricted client, ignoring update of: " + updatedAttributeName);
+                            LOG.info("Existing attribute not writable by restricted client, ignoring update of: " + updatedAttributeName);
                             continue;
                         }
 
@@ -400,7 +400,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             if (asset == null) {
-                LOG.fine("No asset in request");
+                LOG.finer("No asset in request");
                 throw new WebApplicationException(BAD_REQUEST);
             }
 
@@ -408,7 +408,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (asset.getRealm() == null || asset.getRealm().length() == 0) {
                 asset.setRealm(getAuthenticatedTenant().getRealm());
             } else if (!isTenantActiveAndAccessible(asset.getRealm())) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "', can't create: " + asset);
+                LOG.info("Forbidden access for user '" + getUsername() + "', can't create: " + asset);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
@@ -475,7 +475,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             if (assets.stream().map(Asset::getRealm).distinct().anyMatch(asset -> !isTenantActiveAndAccessible(asset))) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "', can't delete requested assets");
+                LOG.info("Forbidden access for user '" + getUsername() + "', can't delete requested assets");
                 throw new WebApplicationException(FORBIDDEN);
             }
 

@@ -49,6 +49,7 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
     public static final AttributeDescriptor<Integer[][]> ENERGY_LEVEL_SCHEDULE = new AttributeDescriptor<>("energyLevelSchedule", ValueType.POSITIVE_INTEGER.asArray().asArray())
         .withOptional(true);
 
+    public static final AttributeDescriptor<Double> POWER_SETPOINT = ElectricityAsset.POWER_SETPOINT.withOptional(false);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_EXPORT_MIN = ElectricityAsset.POWER_EXPORT_MIN.withOptional(true);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricitySupplierAsset.CARBON_IMPORT.withOptional(true);

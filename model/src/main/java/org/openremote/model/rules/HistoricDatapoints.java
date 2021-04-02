@@ -24,6 +24,8 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.util.TsIgnore;
 
+import java.time.LocalDateTime;
+
 /**
  * Facade for historic data points in rules
  */
@@ -32,6 +34,6 @@ public abstract class HistoricDatapoints {
 
     public abstract ValueDatapoint<?>[] getValueDataPoints(AttributeRef attributeRef,
                                                         DatapointInterval interval,
-                                                        long fromTimestamp,
-                                                        long toTimestamp);
+                                                        LocalDateTime fromTimestamp,
+                                                        LocalDateTime toTimestamp);
 }

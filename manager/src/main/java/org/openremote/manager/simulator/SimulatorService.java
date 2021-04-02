@@ -101,7 +101,7 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
             .filter(body().isInstanceOf(RequestSimulatorState.class))
             .process(exchange -> {
                 RequestSimulatorState event = exchange.getIn().getBody(RequestSimulatorState.class);
-                LOG.fine("Handling from client: " + event);
+                LOG.finer("Handling from client: " + event);
 
                 String sessionKey = getSessionKey(exchange);
                 AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
@@ -116,7 +116,7 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
     }
 
     protected void publishSimulatorState(String sessionKey, String agentId) {
-        LOG.fine("Attempting to publish simulator state: Agent ID=" + agentId);
+        LOG.finer("Attempting to publish simulator state: Agent ID=" + agentId);
 
         Protocol<?> protocol = agentService.getProtocolInstance(agentId);
 

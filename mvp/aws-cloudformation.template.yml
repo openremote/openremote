@@ -148,7 +148,7 @@ Resources:
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: SSH + HTTP + HTTPS
+      GroupDescription: SSH + HTTP + HTTPS + MQTT + ping
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: '22'
@@ -161,6 +161,10 @@ Resources:
       - IpProtocol: tcp
         FromPort: '443'
         ToPort: '443'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '8883'
+        ToPort: '8883'
         CidrIp: 0.0.0.0/0
       - IpProtocol: icmp
         FromPort: '8'

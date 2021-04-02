@@ -27,6 +27,7 @@ import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.rules.HistoricDatapoints;
 import org.openremote.model.rules.Ruleset;
 
+import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
 public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
@@ -41,7 +42,7 @@ public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
     }
 
     @Override
-    public ValueDatapoint<?>[] getValueDataPoints(AttributeRef attributeRef, DatapointInterval interval, long fromTimestamp, long toTimestamp) {
+    public ValueDatapoint<?>[] getValueDataPoints(AttributeRef attributeRef, DatapointInterval interval, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
         return assetDatapointService.getValueDatapoints(attributeRef, interval, fromTimestamp, toTimestamp);
     }
 }

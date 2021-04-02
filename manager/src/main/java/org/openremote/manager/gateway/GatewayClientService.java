@@ -309,7 +309,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 if (assetEvent.getCause() == AssetEvent.Cause.CREATE || assetEvent.getCause() == AssetEvent.Cause.UPDATE) {
                     Asset asset = assetEvent.getAsset();
                     asset.setRealm(connection.getLocalRealm());
-                    LOG.fine("Request from central manager to create/update an asset: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId());
+                    LOG.finer("Request from central manager to create/update an asset: Realm=" + connection.getLocalRealm() + ", Asset<?> ID=" + asset.getId());
                     try {
                         asset = assetStorageService.merge(asset, true);
                     } catch (Exception e) {
@@ -318,7 +318,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                 }
             } else if (event instanceof DeleteAssetsRequestEvent) {
                 DeleteAssetsRequestEvent deleteRequest = (DeleteAssetsRequestEvent)event;
-                LOG.fine("Request from central manager to delete asset(s): Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
+                LOG.finer("Request from central manager to delete asset(s): Realm=" + connection.getLocalRealm() + ", Asset<?> IDs=" + Arrays.toString(deleteRequest.getAssetIds().toArray()));
                 boolean success = false;
                 try {
                     success = assetStorageService.delete(deleteRequest.getAssetIds());

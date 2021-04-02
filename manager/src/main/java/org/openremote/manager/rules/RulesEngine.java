@@ -502,7 +502,7 @@ public class RulesEngine<T extends Ruleset> {
                     long startTimestamp = System.currentTimeMillis();
                     lastFireTimestamp = startTimestamp;
                     engine.fire(deployment.getRules(), facts);
-                    RULES_LOG.fine("Rules executed in: " + (System.currentTimeMillis() - startTimestamp) + "ms");
+                    RULES_FIRED_LOG.fine("Rules deployment '" + deployment.getName() + "' executed in: " + (System.currentTimeMillis() - startTimestamp) + "ms");
                 }
 
             } catch (Exception ex) {
@@ -633,7 +633,7 @@ public class RulesEngine<T extends Ruleset> {
                 engineInfo
             );
 
-            LOG.fine("Publishing rules engine status event: " + event);
+            LOG.finer("Publishing rules engine status event: " + event);
 
             // Notify clients
             clientEventService.publishEvent(event);
@@ -655,7 +655,7 @@ public class RulesEngine<T extends Ruleset> {
                 ruleset
             );
 
-            LOG.fine("Publishing ruleset status event: " + event);
+            LOG.finer("Publishing ruleset status event: " + event);
 
             // Notify clients
             clientEventService.publishEvent(event);

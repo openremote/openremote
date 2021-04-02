@@ -30,8 +30,11 @@ import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 

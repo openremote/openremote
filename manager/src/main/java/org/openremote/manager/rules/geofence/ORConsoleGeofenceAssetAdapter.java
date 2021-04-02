@@ -225,7 +225,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
         if (assetStateLocationPredicates == null) {
             // No geofences exist for this asset
-            LOG.fine("Request for console '" + assetId + "' geofences: 0 found");
+            LOG.finer("Request for console '" + assetId + "' geofences: 0 found");
             return new GeofenceDefinition[0];
         }
 
@@ -235,7 +235,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     locationPredicate))
             .toArray(GeofenceDefinition[]::new);
 
-        LOG.fine("Request for console '" + assetId + "' geofences: " + geofences.length + " found");
+        LOG.finer("Request for console '" + assetId + "' geofences: " + geofences.length + " found");
         return geofences;
     }
 

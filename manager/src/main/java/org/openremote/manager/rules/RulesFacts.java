@@ -631,7 +631,7 @@ public class RulesFacts extends Facts implements RuleListener {
     protected void storeLocationPredicates(List<GeofencePredicate> foundLocationPredicates) {
 
         if (foundLocationPredicates != null && !foundLocationPredicates.isEmpty()) {
-            LOG.fine("Location predicate found");
+            LOG.finer("Location predicate found");
             // Collect asset states only where the attribute is location (location predicates only make sense when the location
             // attribute is exposed to rules - we don't support RULE_EVENT facts just RULE_STATE
             Collection<AssetState<?>> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getName().equalsIgnoreCase(Asset.LOCATION.getName())).collect(Collectors.toSet());

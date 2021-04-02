@@ -19,7 +19,6 @@ import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
 import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
-import static org.openremote.manager.setup.SetupTasks.*
 import static org.openremote.test.setup.TestSetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {

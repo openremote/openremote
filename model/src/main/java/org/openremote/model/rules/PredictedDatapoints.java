@@ -24,6 +24,9 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.util.TsIgnore;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 /**
  * Facade for predicted datapoints in rules
  */
@@ -34,15 +37,15 @@ public abstract class PredictedDatapoints {
     public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                         String truncate,
                                                         String interval,
-                                                        long fromTimestamp,
-                                                        long toTimestamp);
+                                                        LocalDateTime fromTimestamp,
+                                                        LocalDateTime toTimestamp);
 
 
     public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                         DatapointInterval interval,
-                                                        long fromTimestamp,
-                                                        long toTimestamp);
+                                                        LocalDateTime fromTimestamp,
+                                                        LocalDateTime toTimestamp);
 
-    public abstract void updateValue(String assetId, String attributeName, Object value, long timestamp);
-    public abstract void updateValue(AttributeRef attributeRef, Object value, long timestamp);
+    public abstract void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
+    public abstract void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp);
 }

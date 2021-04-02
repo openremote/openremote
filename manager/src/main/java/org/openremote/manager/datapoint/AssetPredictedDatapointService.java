@@ -34,16 +34,20 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.Values;
 import org.postgresql.util.PGInterval;
+import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -130,8 +134,8 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
     public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
                                                String truncate,
                                                String interval,
-                                               long fromTimestamp,
-                                               long toTimestamp) {
+                                               LocalDateTime fromTimestamp,
+                                               LocalDateTime toTimestamp) {
         String assetId = attributeRef.getId();
         String attributeName = attributeRef.getName();
 
@@ -143,7 +147,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
         Attribute<?> attribute = asset.getAttribute(attributeName)
             .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeName));
 
-        LOG.fine("Getting predicted datapoints for: " + attributeName);
+        LOG.finer("Getting predicted datapoints for: " + attributeName);
 
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<ValueDatapoint<?>[]>() {
@@ -155,14 +159,14 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                     boolean isNumber = Number.class.isAssignableFrom(attributeType);
                     boolean isBoolean = Boolean.class.isAssignableFrom(attributeType);
                     StringBuilder query = new StringBuilder();
-                    boolean downsample = isNumber || isBoolean;;
+                    boolean downsample = isNumber || isBoolean;
 
                     if (downsample) {
                         // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
                         query.append("select PERIOD.TS as X, coalesce(AVG_VALUE, null) as Y " +
                             " from ( " +
                             "       select date_trunc(?, GS)::timestamp TS " +
-                            "       from generate_series(to_timestamp(?), to_timestamp(?), ?) GS " +
+                            "       from generate_series(?, ?, ?) GS " +
                             "       ) PERIOD " +
                             "  left join ( " +
                             "       select " +
@@ -176,9 +180,9 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
                         query.append(" from ASSET_PREDICTED_DATAPOINT " +
                             "         where " +
-                            "           TIMESTAMP >= to_timestamp(?) " +
+                            "           TIMESTAMP >= ? " +
                             "           and " +
-                            "           TIMESTAMP <= to_timestamp(?) " +
+                            "           TIMESTAMP <= ? " +
                             "           and " +
                             "           ENTITY_ID = ? and ATTRIBUTE_NAME = ? " +
                             "         group by TS " +
@@ -189,9 +193,9 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
                     } else {
                         query.append("select distinct TIMESTAMP AS X, value AS Y from ASSET_PREDICTED_DATAPOINT " +
                             "where " +
-                            "TIMESTAMP >= to_timestamp(?) " +
+                            "TIMESTAMP >= ? " +
                             "and " +
-                            "TIMESTAMP < to_timestamp(?) " +
+                            "TIMESTAMP < ? " +
                             "and " +
                             "ENTITY_ID = ? and ATTRIBUTE_NAME = ? "
                         );
@@ -199,23 +203,20 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
                     try (PreparedStatement st = connection.prepareStatement(query.toString())) {
 
-                        long fromTimestampSeconds = fromTimestamp / 1000;
-                        long toTimestampSeconds = toTimestamp / 1000;
-
                         if (downsample) {
                             st.setString(1, truncate);
-                            st.setLong(2, fromTimestampSeconds);
-                            st.setLong(3, toTimestampSeconds);
+                            st.setObject(2, fromTimestamp);
+                            st.setObject(3, toTimestamp);
                             st.setObject(4, new PGInterval(interval));
                             st.setString(5, truncate);
-                            st.setLong(6, fromTimestampSeconds);
-                            st.setLong(7, toTimestampSeconds);
+                            st.setObject(6, fromTimestamp);
+                            st.setObject(7, toTimestamp);
                             st.setString(8, assetId);
                             st.setString(9, attributeName);
                             st.setObject(10, new PGInterval(interval));
                         } else {
-                            st.setLong(1, fromTimestampSeconds);
-                            st.setLong(2, toTimestampSeconds);
+                            st.setObject(1, fromTimestamp);
+                            st.setObject(2, toTimestamp);
                             st.setString(3, assetId);
                             st.setString(4, attributeName);
                         }
@@ -235,9 +236,9 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
     }
 
     public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                               DatapointInterval datapointInterval,
-                                               long fromTimestamp,
-                                               long toTimestamp) {
+                                                  DatapointInterval datapointInterval,
+                                                  LocalDateTime fromTimestamp,
+                                                  LocalDateTime toTimestamp) {
         String truncateX;
         String interval;
 
@@ -273,20 +274,46 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
         return getValueDatapoints(attributeRef, truncateX, interval, fromTimestamp, toTimestamp);
     }
 
-    public void updateValue(AttributeRef attributeRef, Object value, long timestamp) {
-        persistenceService.doTransaction(em -> upsertValue(em, attributeRef.getId(), attributeRef.getName(), value, timestamp));
+    public void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp) {
+        updateValue(attributeRef.getId(), attributeRef.getName(), value, timestamp);
     }
 
-    public void updateValue(String assetId, String attributeName, Object value, long timestamp) {
-        updateValue(new AttributeRef(assetId, attributeName), value, timestamp);
+    public void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) {
+        updateValues(assetId, attributeName, Collections.singletonList(new Pair<>(value, timestamp)));
     }
 
-    private void upsertValue(EntityManager entityManager, String assetId, String attributeName, Object value, long timestamp) {
-        entityManager.createNativeQuery(String.format("INSERT INTO asset_predicted_datapoint (entity_id, attribute_name, value, timestamp) \n" +
-            "VALUES ('%1$s', '%2$s', '%3$s', to_timestamp(%4$d))\n" +
-            "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE \n" +
-            "  SET value = excluded.value", assetId, attributeName, value, timestamp))
-            .executeUpdate();
+    public void updateValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) {
+        persistenceService.doTransaction(em -> upsertValue(em, assetId, attributeName, valuesAndTimestamps));
+    }
+
+    protected void upsertValue(EntityManager em, String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) {
+        em.unwrap(Session.class).doWork(connection -> {
+            PreparedStatement st = connection.prepareStatement("INSERT INTO asset_predicted_datapoint (entity_id, attribute_name, value, timestamp) \n" +
+                "VALUES (?, ?, ?, ?)\n" +
+                "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE \n" +
+                "  SET value = excluded.value");
+
+            valuesAndTimestamps.forEach(valueAndTimestamp -> {
+
+                PGobject pgJsonValue = new PGobject();
+                pgJsonValue.setType("jsonb");
+                try {
+                    pgJsonValue.setValue(Values.asJSON(valueAndTimestamp.key).orElse("null"));
+                    st.setString(1, assetId);
+                    st.setString(2, attributeName);
+                    st.setObject(3, pgJsonValue);
+                    st.setObject(4, valueAndTimestamp.value);
+                    st.addBatch();
+
+                } catch (Exception e) {
+                    String msg = "Failed to store predicted data point: " + new AttributeRef(assetId, attributeName);
+                    LOG.log(Level.WARNING, msg, e);
+                    throw new IllegalStateException(msg, e);
+                }
+            });
+
+            st.executeBatch();
+        });
     }
 
     protected void purgeDataPoints() {
@@ -294,7 +321,7 @@ public class AssetPredictedDatapointService implements ContainerService, Protoco
 
         try {
             // Purge data points not in the above list using default duration
-            LOG.fine("Purging predicted data points older than 1 day");
+            LOG.finer("Purging predicted data points older than 1 day");
 
             persistenceService.doTransaction(em -> em.createQuery(
                 "delete from AssetPredictedDatapoint dp " +

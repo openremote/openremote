@@ -123,7 +123,7 @@ public class EventBus {
                     }
                 }
             } else if (LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Dropping vetoed event: " + event);
+                LOG.finer("Dropping vetoed event: " + event);
             }
         }
     }

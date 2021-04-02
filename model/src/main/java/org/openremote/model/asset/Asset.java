@@ -530,6 +530,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
             ", name='" + name + '\'' +
             ", type ='" + type + '\'' +
             ", parentId='" + parentId + '\'' +
+            ", realm='" + realm + '\'' +
             '}';
     }
 

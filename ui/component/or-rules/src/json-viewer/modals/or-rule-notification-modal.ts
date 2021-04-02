@@ -12,7 +12,7 @@ import {translate} from "@openremote/or-translate";
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
 const checkValidity = (form:HTMLElement | null, dialog:OrMwcDialog) => {
     if(form) {
-        const inputs = form.querySelectorAll('or-input')
+        const inputs = form.querySelectorAll('or-input');
         const elements = Array.prototype.slice.call(inputs);
 
         const valid = elements.every((element) => {
@@ -81,23 +81,21 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
             this.renderDialogHTML(this.action);
         }
     }
-    
-    
 
     checkForm() {
         const dialog: OrMwcDialog = this.shadowRoot!.host as OrMwcDialog;
 
         if (this.shadowRoot) {
-            const messageNotification = this.shadowRoot.querySelector('or-rule-form-message');
+            const messageNotification = this.shadowRoot.querySelector('or-rule-form-email-message');
             const pushNotification = this.shadowRoot.querySelector('or-rule-form-push-notification');
 
             if(pushNotification && pushNotification.shadowRoot) {
-                const form = pushNotification.shadowRoot.querySelector('form')
-                return checkValidity(form, dialog)
+                const form = pushNotification.shadowRoot.querySelector('form');
+                return checkValidity(form, dialog);
             }
             else if(messageNotification && messageNotification.shadowRoot) {
-                const form = messageNotification.shadowRoot.querySelector('form')
-                return checkValidity(form, dialog)
+                const form = messageNotification.shadowRoot.querySelector('form');
+                return checkValidity(form, dialog);
             }
         }
     }
@@ -129,7 +127,7 @@ export class OrRuleNotificationModal extends translate(i18next)(LitElement) {
 
         return html`
             <or-input .type="${InputType.BUTTON}" .label="${i18next.t("message")}" @click="${notificationPickerModalOpen}"></or-input>
-            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}"  .dialogActions="${notificationPickerModalActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="notification-modal" dialogTitle="${this.title}" .dialogActions="${notificationPickerModalActions}"></or-mwc-dialog>
             <slot class="notification-form-slot"></slot>
         `
     }

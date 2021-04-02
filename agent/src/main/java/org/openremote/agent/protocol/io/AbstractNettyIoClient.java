@@ -193,12 +193,12 @@ public abstract class AbstractNettyIoClient<T, U extends SocketAddress> implemen
     public void connect() {
         synchronized (this) {
             if (permanentError) {
-                LOG.fine("Unable to connect as permanent error has been set");
+                LOG.info("Unable to connect as permanent error has been set");
                 return;
             }
 
             if (connectionStatus != ConnectionStatus.DISCONNECTED) {
-                LOG.finest("Must be disconnected before calling connect: " + getClientUri());
+                LOG.finer("Must be disconnected before calling connect: " + getClientUri());
                 return;
             }
 

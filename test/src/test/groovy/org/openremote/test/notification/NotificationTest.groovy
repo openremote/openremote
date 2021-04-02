@@ -13,6 +13,9 @@ import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.query.UserQuery
+import org.openremote.model.query.filter.TenantPredicate
+import org.openremote.model.util.TextUtil
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.attribute.AttributeRef
@@ -558,6 +561,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def users = identityService.getIdentityProvider().getUsers(keycloakTestSetup.tenantBuilding.realm)
             assert users.size() == 4
+            assert users.count { !TextUtil.isNullOrEmpty(it.email)} == 3
         }
 
         when: "an email notification is sent to a tenant through same mechanism as rules"

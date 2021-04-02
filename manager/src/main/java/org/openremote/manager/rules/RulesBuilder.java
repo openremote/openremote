@@ -114,7 +114,6 @@ public class RulesBuilder {
                     }
                 })
                 .then(facts -> {
-                    RULES_FIRED_LOG.info("Rule fired '" + builder.name + "'");
                     builder.action.execute((RulesFacts) facts);
                 }).build();
             rules.add(rule);

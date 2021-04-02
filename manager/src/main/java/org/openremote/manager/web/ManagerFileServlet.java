@@ -122,7 +122,7 @@ public class ManagerFileServlet extends FileServlet {
             String requestPath = exchange.getRequestPath();
             Matcher staticMatcher = requestPattern.matcher(requestPath);
             if (staticMatcher.matches()) {
-                LOG.fine("Serving static resource: " + requestPath);
+                LOG.finer("Serving static resource: " + requestPath);
                 String remaining = staticMatcher.group(1);
                 String relativePath = remaining == null || remaining.length() == 0 ? "/" : remaining;
                 exchange.setRelativePath(relativePath);

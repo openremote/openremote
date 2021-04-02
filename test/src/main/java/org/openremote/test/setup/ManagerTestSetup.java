@@ -99,6 +99,11 @@ public class ManagerTestSetup extends ManagerSetup {
     public String area1Id;
     public String microphone1Id;
     public String peopleCounter3AssetId;
+    public String electricityOptimisationAssetId;
+    public String electricityConsumerAssetId;
+    public String electricitySolarAssetId;
+    public String electricitySupplierAssetId;
+    public String electricityBatteryAssetId;
 
     public ManagerTestSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -205,38 +210,60 @@ public class ManagerTestSetup extends ManagerSetup {
         thingId = thing.getId();
 
         // ################################ Assets for 'energy' realm ###################################
-
         EnergyOptimisationAsset electricityOptimisationAsset = new EnergyOptimisationAsset("Optimisation");
         electricityOptimisationAsset.setIntervalSize(3d);
         electricityOptimisationAsset.setRealm(keycloakTestSetup.energyTenant.getRealm());
         electricityOptimisationAsset.setFinancialWeighting(100);
         electricityOptimisationAsset = assetStorageService.merge(electricityOptimisationAsset);
+        electricityOptimisationAssetId = electricityOptimisationAsset.getId();
 
         ElectricityConsumerAsset electricityConsumerAsset = new ElectricityConsumerAsset("Consumer");
         electricityConsumerAsset.setParent(electricityOptimisationAsset);
+        electricityConsumerAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricityConsumerAsset = assetStorageService.merge(electricityConsumerAsset);
+        electricityConsumerAssetId = electricityConsumerAsset.getId();
 
         ElectricityProducerSolarAsset electricitySolarAsset = new ElectricityProducerSolarAsset("Producer");
         electricitySolarAsset.setParent(electricityOptimisationAsset);
+        electricitySolarAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
+        electricitySolarAssetId = electricitySolarAsset.getId();
 
         ElectricityBatteryAsset electricityBatteryAsset = new ElectricityBatteryAsset("Battery");
         electricityBatteryAsset.setParent(electricityOptimisationAsset);
-        electricityBatteryAsset.setEnergyCapacity(100d);
-        electricityBatteryAsset.setPowerImportMax(25d);
-        electricityBatteryAsset.setPowerExportMax(25d);
+        electricityBatteryAsset.setEnergyCapacity(200d);
+        electricityBatteryAsset.setEnergyLevelPercentageMin(20);
+        electricityBatteryAsset.setEnergyLevelPercentageMax(80);
+        electricityBatteryAsset.setEnergyLevel(100d);
+        electricityBatteryAsset.setPowerImportMax(7d);
+        electricityBatteryAsset.setPowerExportMax(20d);
+        electricityBatteryAsset.setPowerSetpoint(0d);
         electricityBatteryAsset.setEfficiencyImport(95);
         electricityBatteryAsset.setEfficiencyExport(98);
         electricityBatteryAsset.setSupportsExport(true);
         electricityBatteryAsset.setSupportsImport(true);
+        electricityBatteryAsset.getAttribute(ElectricityAsset.POWER_SETPOINT).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricityBatteryAsset = assetStorageService.merge(electricityBatteryAsset);
+        electricityBatteryAssetId = electricityBatteryAsset.getId();
 
         ElectricitySupplierAsset electricitySupplierAsset = new ElectricitySupplierAsset("Supplier");
         electricitySupplierAsset.setParent(electricityOptimisationAsset);
         electricitySupplierAsset.setTariffExport(-0.05);
         electricitySupplierAsset.setTariffImport(0.08);
+        electricitySupplierAsset.getAttribute(ElectricityAsset.TARIFF_IMPORT).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
+        electricitySupplierAsset.getAttribute(ElectricityAsset.TARIFF_EXPORT).ifPresent(attr ->
+            attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
         electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
-
+        electricitySupplierAssetId = electricitySupplierAsset.getId();
 
         // ################################ Assets for 'building' realm ###################################
 

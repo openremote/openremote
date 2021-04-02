@@ -164,7 +164,7 @@ public class MacroProtocol extends AbstractProtocol<MacroAgent, MacroAgent.Macro
 
         // Check for executable meta item
         if (attribute.getType().getType() == AttributeExecuteStatus.class) {
-            LOG.fine("Macro linked attribute is marked as executable so it will be linked to the firing of the macro");
+            LOG.finer("Macro linked attribute is marked as executable so it will be linked to the firing of the macro");
             // Update the command Status of this attribute
             updateLinkedAttribute(
                 new AttributeState(
@@ -185,11 +185,11 @@ public class MacroProtocol extends AbstractProtocol<MacroAgent, MacroAgent.Macro
         Object actionValue = null;
 
         if (actions.isEmpty()) {
-            LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + this);
+            LOG.finer("No actions are available for the linked macro, maybe it is disabled?: " + this);
         } else {
             actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
             actionValue = actions.get(actionIndex).getAttributeState().getValue().orElse(null);
-            LOG.fine("Attribute is linked to the value of macro action index: actionIndex");
+            LOG.finer("Attribute is linked to the value of macro action index: actionIndex");
         }
 
         // Push the value of this macro action into the attribute
