@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
-import {AgentDescriptor, Asset, AssetDescriptor} from "@openremote/model";
+import {AgentDescriptor, Asset, AssetDescriptor, WellknownAssets} from "@openremote/model";
 import "@openremote/or-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
 import {
@@ -12,6 +12,7 @@ import {
 import {i18next} from "@openremote/or-translate";
 import {AssetModelUtil, DefaultColor2, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -200,21 +201,32 @@ export class OrAddAssetDialog extends LitElement {
         const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name),
             attributes = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
             optionalAttributes = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
-         
+
         return html`
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
             <or-translate style="text-transform: capitalize; margin-bottom: 1.5em" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
-
+            
+            
+            ${descriptor.name !== "GroupAsset"
+                ? html ``
+                : getContentWithMenuTemplate(
+                    html`<or-input type="${InputType.SELECT}" value="${this.selectedType}"></or-input>`, 
+                    this.getAssetMenuItems(),
+                    undefined,
+                    (values: string | string[]) => console.log(values)
+                )
+            }
+    
             ${!attributes
                 ? html``
                 : html`
                     <div>
                         <strong>${i18next.t("attribute_plural")}</strong>
-                        <ul style="margin-top: 0.5em">
-                            ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
-                        </ul>
-                    </div>
-                `}
+                            <ul style="margin-top: 0.5em">
+                                ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
+                            </ul>
+                        </div>
+                    `}
 
             ${!optionalAttributes
                 ? html``
@@ -227,6 +239,29 @@ export class OrAddAssetDialog extends LitElement {
                     </div>
                 `} 
         `;
+    }
+
+    protected getAssetMenuItems(): MenuItem[] {
+        const menu: MenuItem[] = [];
+        
+        menu.push(...AssetModelUtil.getAssetTypeInfos()
+            .filter((assetTypeInfo) => assetTypeInfo.assetDescriptor!.name !== "GroupAsset")
+            .map((assetTypeInfo) => {
+
+                const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo),
+                    icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo),
+                    styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+    
+                return {
+                    text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
+                    value: assetTypeInfo.assetDescriptor!.name,
+                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
+                    styleMap: {...styleMap, "text-transform": "capitalize"}
+                } as MenuItem;
+            })
+            .sort(Util.sortByString((listItem) => listItem.value!)));
+        
+        return menu;
     }
 
     protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
