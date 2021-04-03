@@ -1051,10 +1051,6 @@ export class Manager implements EventProviderFactory {
     }
 
     public getAuthorizationHeader(): string | undefined {
-        if (!this.authenticated) {
-            return;
-        }
-
         if (this.getKeycloakToken()) {
             return "Bearer " + this.getKeycloakToken();
         }
