@@ -10,7 +10,7 @@ android {
         applicationId "io.openremote.app"
         minSdkVersion 25
         targetSdkVersion 30
-        versionCode 21
+        versionCode 22
         versionName "1.0.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -47,4 +47,5 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:26.0.0')
     implementation 'com.google.firebase:firebase-messaging-ktx'
     implementation 'com.google.android.material:material:1.3.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }

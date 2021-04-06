@@ -19,6 +19,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/OpenRemoteTheme">
+        <activity android:name=".ui.PrivacyPolicyActivity"></activity>
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
@@ -50,27 +51,22 @@
             android:label="@string/title_activity_project" />
         <activity android:name=".ui.MainActivity" />
 
-        <service android:name="io.openremote.app.service.ORFirebaseMessagingService">
+        <service android:name=".service.ORFirebaseMessagingService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
-        <service android:name="io.openremote.app.service.ORMessagingActionService">
-
-        </service>
+        <service android:name=".service.ORMessagingActionService"></service>
 
         <receiver android:name=".service.GeofenceBootCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-
         <receiver
             android:name=".service.GeofenceTransitionsIntentService"
             android:enabled="true"
             android:exported="true" />
-
     </application>
 
 </manifest>

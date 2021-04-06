@@ -20,4 +20,5 @@
     <string name="location_background_disabled_title">Background location disabled</string>
     <string name="background_location_decline">No</string>
     <string name="background_location_accept">Yes</string>
+    <string name="button_accept">Accept</string>
 </resources>
