@@ -22,6 +22,7 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
+    ValueDatapoint,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
@@ -881,4 +882,16 @@ export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEv
     });
 
     return deferred.promise;
+}
+
+//TODO: should we keep it like this?
+//Added to fill in gaps with null values
+export function fillInDatapointGaps(data: ValueDatapoint<any>[]) {
+    var prevValue: ValueDatapoint<any>;
+    data.forEach(value => {
+        if (prevValue && prevValue.y && !value.y) {
+            value.y = prevValue.y;
+        }
+        prevValue = value;
+    });
 }

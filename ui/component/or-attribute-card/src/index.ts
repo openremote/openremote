@@ -266,6 +266,7 @@ export class OrAttributeCard extends LitElement {
             return;
         }
 
+        Util.fillInDatapointGaps(this.data);
         if (!this._chart) {
             this._chart = new Chart(this._chartElem, {
                 type: "line",
@@ -314,6 +315,7 @@ export class OrAttributeCard extends LitElement {
             });
         } else {
             if (changedProperties.has("data")) {
+                Util.fillInDatapointGaps(this.data);
                 this._chart.data.datasets![0].data = this.data;
                 this._chart.update();
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));

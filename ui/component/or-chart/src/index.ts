@@ -618,6 +618,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (!this._data) {
             return;
         }
+
+        Util.fillInDatapointGaps(this._data);
         if (!this._chart) {
             this._chart = new Chart(this._chartElem, {
                 type: "line",
@@ -696,6 +698,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
         } else {
             if (changedProperties.has("_data")) {
+                Util.fillInDatapointGaps(this._data);
                 this._chart.data.datasets = this._data;
                 this._chart.update();
             }

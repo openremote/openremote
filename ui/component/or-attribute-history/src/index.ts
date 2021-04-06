@@ -15,7 +15,7 @@ import {
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
-import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
+import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import "@openremote/or-input";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
@@ -360,7 +360,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         bgColor = bgColor.substring(0, bgColor.length - 1) + opacity;
                     }
                 }
-
+                Util.fillInDatapointGaps(this._data);
                 this._chart = new Chart(this._chartElem, {
                     type: "line",
                     data: {
@@ -433,6 +433,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 });
             } else {
                 if (changedProperties.has("_data")) {
+                    Util.fillInDatapointGaps(this._data);
                     this._chart.data.datasets![0].data = this._data;
                     this._chart.update();
                 }
