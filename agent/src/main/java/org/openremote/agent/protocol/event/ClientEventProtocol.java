@@ -77,6 +77,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
             );
 
         protocolClientEventService.addClientCredentials(clientCredentials);
+        updateAgentAttribute(new AttributeState(agent.getId(), ClientEventAgent.CLIENT_SECRET.getName(), clientSecret));
     }
 
     @Override
