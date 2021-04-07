@@ -272,7 +272,7 @@ export class OrAttributeCard extends LitElement {
                 data: {
                     datasets: [
                         {
-                            data: Util.filterNullValueDatapoints(this.data),
+                            data: this.data.filter(value => value.y != null),
                             lineTension: 0.1,
                             spanGaps: true,
                             backgroundColor: "transparent",
@@ -314,7 +314,7 @@ export class OrAttributeCard extends LitElement {
             });
         } else {
             if (changedProperties.has("data")) {
-                this._chart.data.datasets![0].data = Util.filterNullValueDatapoints(this.data);
+                this._chart.data.datasets![0].data = this.data.filter(value => value.y != null);
                 this._chart.update();
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
             }

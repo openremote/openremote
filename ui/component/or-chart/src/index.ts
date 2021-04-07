@@ -905,7 +905,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         let data = this.assetAttributes.map(async (attribute, index) => {
             var valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.timestamp);
             if (valuepoints) {
-                valuepoints = Util.filterNullValueDatapoints(valuepoints);
+                valuepoints =  valuepoints.filter(value => value.y != null);
             }
             const dataset = {...datasetBases[index],
                 data: valuepoints
@@ -926,7 +926,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         const predictedData = this.assetAttributes.map(async (attribute, index) => {
             var valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.timestamp);
             if (valuepoints) {
-                valuepoints = Util.filterNullValueDatapoints(valuepoints);
+                valuepoints = valuepoints.filter(value => value.y != null);
             }
             const dataset = {...datasetBases[index],
                 data: valuepoints,
@@ -947,7 +947,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             const cData = this.assetAttributes.map(async (attribute, index) => {
                 var valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.compareTimestamp);
                 if (valuepoints) {
-                    valuepoints = Util.filterNullValueDatapoints(valuepoints);
+                    valuepoints = valuepoints.filter(value => value.y != null);
                 }
                 const dataset = {...datasetBases[index],
                     data: valuepoints,
@@ -966,7 +966,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             let cPredictedData = this.assetAttributes.map(async (attribute, index) => {
                 var valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.compareTimestamp);
                 if (valuepoints) {
-                    valuepoints = Util.filterNullValueDatapoints(valuepoints);
+                    valuepoints = valuepoints.filter(value => value.y != null);
                 }
                 const dataset = {...datasetBases[index],
                     data: valuepoints,

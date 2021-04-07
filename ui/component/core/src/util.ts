@@ -883,9 +883,3 @@ export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEv
 
     return deferred.promise;
 }
-
-//TODO: should we keep it like this?
-//Added to fill in gaps with null values
-export function filterNullValueDatapoints(data: ValueDatapoint<any>[]) {
-    return data.filter(value => value.y != null);
-}
