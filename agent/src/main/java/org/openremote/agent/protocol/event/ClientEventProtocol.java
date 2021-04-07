@@ -25,6 +25,7 @@ import org.openremote.agent.protocol.ProtocolClientEventService;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeState;
@@ -77,6 +78,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
             );
 
         protocolClientEventService.addClientCredentials(clientCredentials);
+        setConnectionStatus(ConnectionStatus.CONNECTED);
         updateAgentAttribute(new AttributeState(agent.getId(), ClientEventAgent.CLIENT_SECRET.getName(), clientSecret));
     }
 
