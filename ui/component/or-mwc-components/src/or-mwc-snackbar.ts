@@ -123,8 +123,8 @@ export class OrMwcSnackbar extends LitElement {
                     </div>
                     ${!this.buttonText ? html`` : html`
                         <div class="mdc-snackbar__actions" aria-atomic="true">
-                            <or-input type="button" class="mdc-button mdc-snackbar__action" .label="${this.buttonText}">                                
-                            </or-input>
+                            <or-mwc-input type="button" class="mdc-button mdc-snackbar__action" .label="${this.buttonText}">                                
+                            </or-mwc-input>
                         </div>
                     `};
                 </div>

@@ -11,6 +11,6 @@
   "references": [
     { "path": "../core" },
     { "path": "../or-chart" },
-    { "path": "../or-input" }
+    { "path": "../or-mwc-components" }
   ]
 }

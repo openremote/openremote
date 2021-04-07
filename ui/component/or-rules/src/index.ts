@@ -28,7 +28,7 @@ import {
     WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
-import "@openremote/or-mwc-components/dist/or-mwc-drawer";
+import "@openremote/or-mwc-components/or-mwc-drawer";
 import {translate} from "@openremote/or-translate";
 import "./or-rule-list";
 import "./or-rule-viewer";
@@ -36,8 +36,8 @@ import "./flow-viewer/flow-viewer";
 import {OrRuleList} from "./or-rule-list";
 import {OrRuleViewer} from "./or-rule-viewer";
 import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
-import {ValueInputProviderGenerator} from "@openremote/or-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export const enum ConditionType {
     ASSET_QUERY = "assetQuery",

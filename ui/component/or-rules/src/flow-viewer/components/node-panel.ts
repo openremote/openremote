@@ -1,9 +1,9 @@
 import { LitElement, html, customElement, css, property, query } from "lit-element";
 import { NodeType, Node } from "@openremote/model";
 import { i18next, translate } from "@openremote/or-translate";
-import { OrMwcDrawer } from "@openremote/or-mwc-components/dist/or-mwc-drawer";
+import { OrMwcDrawer } from "@openremote/or-mwc-components/or-mwc-drawer";
 import { FlowEditor } from "./flow-editor";
-import { OrInputChangedEvent } from "@openremote/or-input";
+import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
 @customElement("node-panel")
 export class NodePanel extends translate(i18next)(LitElement)  {

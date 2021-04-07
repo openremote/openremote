@@ -20,7 +20,7 @@ import {
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
-import { InputType } from "@openremote/or-input";
+import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 
 export interface MapAssetCardTypeConfig {
@@ -165,7 +165,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                     </ul>
                 </div>
                 <div id="footer">
-                    <or-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @click="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-input>          
+                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @click="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>          
                 </div>
             </div>
         `;

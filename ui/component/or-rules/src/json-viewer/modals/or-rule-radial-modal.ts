@@ -8,13 +8,13 @@ import {
 import {
     getAssetTypeFromQuery,
 } from "../../index";
-import "@openremote/or-input";
-import {InputType} from "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
 
-import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMap, OrMapClickedEvent} from '@openremote/or-map';
 import '@openremote/or-map/dist/markers/or-map-marker';
 import {LngLatLike} from "mapbox-gl";
@@ -122,7 +122,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         const radiusPickerModalActions: DialogAction[] = [
             {
                 actionName: "cancel",
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
                 action: () => {
                     // Nothing to do here
                 }
@@ -130,7 +130,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
             {
                 actionName: "ok",
                 default: true,
-                content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-input>`,
+                content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("ok")}"></or-mwc-input>`,
                 action: () => {
                 }
             }
@@ -150,7 +150,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         this.renderDialogHTML(value);
         
         return html`
-            <or-input .type="${InputType.BUTTON}" .label="${i18next.t("area")}" @click="${radialPickerModalOpen}"></or-input>
+            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("area")}" @click="${radialPickerModalOpen}"></or-mwc-input>
             <or-mwc-dialog id="radial-modal" dialogTitle="area" .dialogActions="${radiusPickerModalActions}"></or-mwc-dialog>
         `
     }

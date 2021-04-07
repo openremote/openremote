@@ -27,13 +27,13 @@ export class ConfirmationDialog extends translate(i18next)(LitElement) {
         return html`
         <div class="question">${this.question}</div>
         <div class="container">
-            <or-input type="button" unElevated label="${this.agreeText}"
+            <or-mwc-input type="button" unElevated label="${this.agreeText}"
                 @click="${() => { this.dispatchEvent(new CustomEvent("agreed")); }}">
-            </or-input>
+            </or-mwc-input>
 
-            <or-input type="button" label="${this.disagreeText}"
+            <or-mwc-input type="button" label="${this.disagreeText}"
                 @click="${() => { this.dispatchEvent(new CustomEvent("disagreed")); }}">
-            </or-input>
+            </or-mwc-input>
         </div>
         `;
     }

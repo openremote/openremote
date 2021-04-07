@@ -10,9 +10,9 @@ import manager, {
     DefaultColor5,
     DefaultHeaderHeight
 } from "@openremote/core";
-import "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/or-mwc-menu";
 import {Tenant} from "@openremote/model";
 import {router} from "./index";
 

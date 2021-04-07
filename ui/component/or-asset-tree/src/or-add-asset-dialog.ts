@@ -1,6 +1,6 @@
 import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
 import {AgentDescriptor, Asset, AssetDescriptor} from "@openremote/model";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
 import {
     createListGroup,
@@ -8,10 +8,10 @@ import {
     ListItem,
     OrMwcList,
     OrMwcListChangedEvent
-} from "@openremote/or-mwc-components/dist/or-mwc-list";
+} from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import {AssetModelUtil, DefaultColor2, DefaultColor5, Util} from "@openremote/core";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -168,10 +168,10 @@ export class OrAddAssetDialog extends LitElement {
         return html`
             <div class="col">
                 <div id="name-wrapper">
-                    <or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-input>
-                    <or-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
-                    <or-input id="toggle-parent-selector" icon="pencil" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-input>
-                    <or-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-input>
+                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
+                    <or-mwc-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
+                    <or-mwc-input id="toggle-parent-selector" icon="pencil" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
+                    <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-mwc-input>
                 </div>
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">

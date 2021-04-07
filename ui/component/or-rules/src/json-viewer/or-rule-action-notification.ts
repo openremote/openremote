@@ -11,7 +11,7 @@ import {
     UserQuery,
     WellknownAssets
 } from "@openremote/model";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import "./modals/or-rule-notification-modal";
 import "./forms/or-rule-form-email-message";
@@ -103,7 +103,7 @@ export class OrRuleActionNotification extends LitElement {
         if (targetType === ActionTargetType.CUSTOM) {
 
             const template = html`
-                <or-input .type="${InputType.TEXT}" @or-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" ?readonly="${readonly}" .value="${action.target!.custom}" ></or-input>            
+                <or-mwc-input .type="${InputType.TEXT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" ?readonly="${readonly}" .value="${action.target!.custom}" ></or-mwc-input>            
             `;
             targetValueTemplate = Promise.resolve(template);
 
@@ -191,24 +191,24 @@ export class OrRuleActionNotification extends LitElement {
                 }
 
                 return html`
-                    <or-input type="${InputType.SELECT}" 
+                    <or-mwc-input type="${InputType.SELECT}" 
                         .options="${values}"
                         .label="${label}"
                         .value="${value}"
-                        @or-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" 
-                        ?readonly="${readonly}"></or-input>
+                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" 
+                        ?readonly="${readonly}"></or-mwc-input>
                 `;
             });
         }
 
         targetValueTemplate = targetValueTemplate.then((valueTemplate) => {
             return html`
-                <or-input type="${InputType.SELECT}" 
+                <or-mwc-input type="${InputType.SELECT}" 
                             .options="${allowedTargetTypes}"
                             .value="${targetType}"
                             .label="${i18next.t("recipients")}"
-                            @or-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as ActionTargetType)}" 
-                            ?readonly="${readonly}"></or-input>
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as ActionTargetType)}" 
+                            ?readonly="${readonly}"></or-mwc-input>
                 ${valueTemplate}
             `;
         });

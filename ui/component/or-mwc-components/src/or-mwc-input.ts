@@ -35,7 +35,7 @@ const sliderStyle = require("@material/slider/dist/mdc.slider.css");
 
 export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> {
 
-    public static readonly NAME = "or-input-changed";
+    public static readonly NAME = "or-mwc-input-changed";
 
     constructor(value?: any, previousValue?: any, enterPressed?: boolean) {
         super(OrInputChangedEvent.NAME, {
@@ -345,15 +345,15 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
 
-        return html`<or-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
+        return html`<or-mwc-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}"
             .options="${selectOptions}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}"
-            @or-input-changed="${(e: OrInputChangedEvent) => {
+            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                 e.stopPropagation();
                 e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
                 valueChangeNotifier(e.detail);
-            }}"></or-input>`
+            }}"></or-mwc-input>`
     };
 
     return {
@@ -369,12 +369,12 @@ const style = css`
     
     :host {
         display: inline-block;
-        --internal-or-input-color: var(--or-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-        --internal-or-input-text-color: var(--or-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));    
+        --internal-or-mwc-input-color: var(--or-mwc-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
+        --internal-or-mwc-input-text-color: var(--or-mwc-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));    
         
-        --mdc-theme-primary: var(--internal-or-input-color);
-        --mdc-theme-on-primary: var(--internal-or-input-text-color);
-        --mdc-theme-secondary: var(--internal-or-input-color);
+        --mdc-theme-primary: var(--internal-or-mwc-input-color);
+        --mdc-theme-on-primary: var(--internal-or-mwc-input-text-color);
+        --mdc-theme-secondary: var(--internal-or-mwc-input-color);
     }
     
     :host([hidden]) {
@@ -448,7 +448,7 @@ const style = css`
         color: var(--or-app-color2);
         background-color: var(--mdc-theme-primary);
     }
-    .or-input--rounded {
+    .or-mwc-input--rounded {
         border-radius: 50% !important;
     }
 
@@ -498,7 +498,7 @@ const style = css`
 
     .mdc-icon-button {
         padding: 0;
-        color: var(--internal-or-input-color);
+        color: var(--internal-or-mwc-input-color);
     }
     
     /* Give slider min width like select etc. */
@@ -516,7 +516,7 @@ const style = css`
     }
 `;
 
-@customElement("or-input")
+@customElement("or-mwc-input")
 export class OrInput extends LitElement {
 
     static get styles() {
@@ -892,7 +892,7 @@ export class OrInput extends LitElement {
                         "mdc-button--raised": !isIconButton && !this.action && this.raised,
                         "mdc-button--unelevated": !isIconButton && !this.action && this.unElevated,
                         "mdc-button--outlined": !isIconButton && !this.action && this.outlined,
-                        "or-input--rounded": !isIconButton && !this.action && this.rounded
+                        "or-mwc-input--rounded": !isIconButton && !this.action && this.rounded
                     };
                     return html`
                         <button id="component" class="${classMap(classes)}"

@@ -16,8 +16,8 @@ import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
-import { InputType, OrInputChangedEvent } from "@openremote/or-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -114,7 +114,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
           padding-left: 16px;
         }
 
-        or-input {
+        or-mwc-input {
             margin-bottom: 10px;
             margin-right: 16px;
         }
@@ -382,10 +382,10 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                  
                                   <div class="row">
                                     <div class="column">
-                                      <or-input .label="${i18next.t("user_role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-input>
+                                      <or-mwc-input .label="${i18next.t("user_role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
-                                      <or-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-input>            
+                                      <or-mwc-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>            
                                     </div>
                                   </div>
 
@@ -395,7 +395,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
                                         ${readRoles.map(r => {
                                           return html`
-                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-input>        
+                                             <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-mwc-input>        
                                           `
                                         })}
                                       
@@ -405,7 +405,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                         <strong class="column-title">${i18next.t("writePermissions")}</strong>
                                         ${writeRoles.map(r => {
                                           return html`
-                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}"  @or-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-input>              
+                                             <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}"  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-mwc-input>              
                                           `
                                         })}
                                       </div>
@@ -414,7 +414,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                       <div class="column">
                                         ${otherRoles.map(r => {
                                           return html`
-                                             <or-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-input>            
+                                             <or-mwc-input ?readonly="${readonly}" .label="${r.name.split(":")[1]}: ${r.description}" .type="${InputType.CHECKBOX}" .value="${role.compositeRoleIds && role.compositeRoleIds.find(id => id === r.id)}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.addRemoveRole(e, r, index) }"></or-mwc-input>            
                                           `
                                         })}
                                       </div>
@@ -422,11 +422,11 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
                                   <div class="row" style="margin-bottom: 0;">
                                   ${role.id && !readonly ? html`
-                                      <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role)}"></or-input>          
-                                      <or-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
+                                      <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role)}"></or-mwc-input>          
+                                      <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>   
                                   ` : html`
-                                    <or-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._compositeRoles.splice(-1,1); this._compositeRoles = [...this._compositeRoles]}}"></or-input>            
-                                    <or-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-input>   
+                                    <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._compositeRoles.splice(-1,1); this._compositeRoles = [...this._compositeRoles]}}"></or-mwc-input>            
+                                    <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>   
                                   `}    
                                   </div>
                               </div>

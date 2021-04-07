@@ -7,6 +7,12 @@
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx tsc -b"
   },
+  "exports": {
+    "./*": "./dist/*.js"
+  },
+  "typesVersions": {
+    "*": { "*": ["dist/*"] }
+  },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
@@ -15,7 +21,7 @@
     "@material/menu": "^9.0.0",
     "@material/snackbar": "^9.0.0",
     "@openremote/core": "^1.0.3",
-    "@openremote/or-input": "^1.0.3",
+
     "@openremote/or-translate": "^1.0.3",
     "lit-element": "^2.4.0"
   },

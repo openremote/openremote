@@ -209,8 +209,8 @@ export class EditorWorkspace extends translate(i18next)(LitElement) {
         </svg>
         <selection-box .workspace="${this}"></selection-box>
         <div class="view-options" style="z-index: ${this.topNodeZindex + 1}">
-            ${!this.isCameraInDefaultPosition ? html`<or-input type="button" icon="vector-square" @click="${this.resetCamera}" label="${i18next.t("resetView", "Reset view")!}"></or-input>` : null}
-            ${project.nodes.length !== 0 ? html`<or-input type="button" icon="fit-to-page-outline" @click="${() => this.fitCamera(project.nodes)}" label="${i18next.t("fitView", "Fit view")!}"></or-input>` : null}
+            ${!this.isCameraInDefaultPosition ? html`<or-mwc-input type="button" icon="vector-square" @click="${this.resetCamera}" label="${i18next.t("resetView", "Reset view")!}"></or-mwc-input>` : null}
+            ${project.nodes.length !== 0 ? html`<or-mwc-input type="button" icon="fit-to-page-outline" @click="${() => this.fitCamera(project.nodes)}" label="${i18next.t("fitView", "Fit view")!}"></or-mwc-input>` : null}
         </div>
         `;
     }

@@ -1,7 +1,7 @@
 import { LitElement, property, customElement, html, css, TemplateResult } from "lit-element";
 import { Node, PickerType, AttributeInternalValue, AssetState, WellknownMetaItems, Asset, NodeDataType } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
-import { OrInputChangedEvent } from "@openremote/or-input";
+import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import rest from "@openremote/rest";
 import "@openremote/or-asset-tree";
 import { OrAssetTreeRequestSelectionEvent } from "@openremote/or-asset-tree";
@@ -173,13 +173,13 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     private get assetAttributeInput(): TemplateResult {
         const hasAssetSelected = this.selectedAsset;
         return html`
-        <or-input type="button" fullwidth label="${hasAssetSelected ? this.selectedAsset.name! : (i18next.t("selectAsset", "Select asset")!)}" 
+        <or-mwc-input type="button" fullwidth label="${hasAssetSelected ? this.selectedAsset.name! : (i18next.t("selectAsset", "Select asset")!)}" 
         icon="format-list-bulleted-square" 
         @click="${() => {
                 modal.element.content = this.assetTreeTemplate;
                 modal.element.header = i18next.t("assets", "Assets");
                 modal.element.open();
-            }}"></or-input>
+            }}"></or-mwc-input>
             ${
             hasAssetSelected ? (
                 this.attributeNames.length === 0 ?
@@ -201,7 +201,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     }
 
     private get colorInput(): TemplateResult {
-        return html`<or-input type="color"></or-input>`; // looks strange
+        return html`<or-mwc-input type="color"></or-mwc-input>`; // looks strange
     }
 
     private get doubleDropdownInput(): TemplateResult {
@@ -215,10 +215,10 @@ export class InternalPicker extends translate(i18next)(LitElement) {
 
     private get checkBoxInput(): TemplateResult {
         return html`<input type="checkbox" ?checked="${this.internal.value || false}" @input="${(e: any) => this.setValue(e.target.checked)}"/>`;
-        return html`<or-input type="checkbox" 
-        @or-input-changed="${(e: OrInputChangedEvent) => {
+        return html`<or-mwc-input type="checkbox" 
+        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                 this.setValue(e.detail.value);
-            }}"></or-input>`;
+            }}"></or-mwc-input>`;
     }
 
     private get multilineInput(): TemplateResult {

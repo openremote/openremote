@@ -2,11 +2,11 @@ import {css, customElement, html, LitElement, property, query, TemplateResult} f
 import {AssetTypeInfo, RuleCondition, WellknownAssets} from "@openremote/model";
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
-import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import "@openremote/or-mwc-components/or-mwc-menu";
+import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/or-mwc-menu";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
-import {InputType} from "@openremote/or-input";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {AssetModelUtil, Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
@@ -147,13 +147,13 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
             }
             if(this.readonly) {
                 typeTemplate = html`
-                    <or-input readonly type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>
+                    <or-mwc-input readonly type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
                 `;
             } else {
                 typeTemplate = html`
-                <div id="type" style="--or-input-color: #${buttonColor}">
+                <div id="type" style="--or-mwc-input-color: #${buttonColor}">
                     ${getContentWithMenuTemplate(
-                        html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                        html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
                         getWhenTypesMenu(this.config, this.assetInfos),
                         type,
                         (values: string[] | string) => this.type = values as ConditionType)}

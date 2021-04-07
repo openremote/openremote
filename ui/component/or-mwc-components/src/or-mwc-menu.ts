@@ -83,12 +83,12 @@ export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (
 const style = css`
     :host {
         white-space: nowrap;
-        --internal-or-input-color: var(--or-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-        --internal-or-input-text-color: var(--or-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));
+        --internal-or-mwc-input-color: var(--or-mwc-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
+        --internal-or-mwc-input-text-color: var(--or-mwc-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));
         
-        --mdc-theme-primary: var(--internal-or-input-color);
-        --mdc-theme-on-primary: var(--internal-or-input-text-color);
-        --mdc-theme-secondary: var(--internal-or-input-color);
+        --mdc-theme-primary: var(--internal-or-mwc-input-color);
+        --mdc-theme-on-primary: var(--internal-or-mwc-input-text-color);
+        --mdc-theme-secondary: var(--internal-or-mwc-input-color);
     }
     
     .mdc-list-item__graphic {
@@ -127,12 +127,7 @@ export class OrMwcMenu extends LitElement {
     public visible?: boolean;
 
     @property({type: Boolean, attribute: true})
-    public noSurface?: boolean = false;
-    
-    @property({type: Boolean, attribute: true})
     public twoLine?: boolean;
-
-    public anchorElem?: HTMLElement;
 
     @query("#wrapper")
     protected _wrapperElem!: HTMLElement;
@@ -162,7 +157,7 @@ export class OrMwcMenu extends LitElement {
 
         return html`
             <div id="wrapper" class="mdc-menu-surface--anchor">
-                <div class="mdc-menu ${this.noSurface ? "" : "mdc-menu-surface"}" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
+                <div class="mdc-menu mdc-menu-surface" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
                     <ul class="mdc-list ${this.twoLine ? "mdc-list--two-line" : ""}" role="menu" aria-hidden="true" aria-orientation="vertical" tabindex="-1">
                         ${this.getItemsTemplate(this.menuItems)}
                     </ul>
@@ -243,10 +238,17 @@ export class OrMwcMenu extends LitElement {
         super.firstUpdated(_changedProperties);
         if (this._mdcElem) {
             this._mdcComponent = new MDCMenu(this._mdcElem);
+
+            // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
+            (this._mdcComponent as any).menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
+                const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
+                if (this.adapter.isElementInContainer(el)) {
+                    return;
+                }
+                this.close();
+            };
+
             this._mdcComponent!.quickOpen = true;
-            const elem = this.anchorElem || this._wrapperElem;
-            // This doesn't work
-            //this._mdcComponent.setAnchorElement(elem);
         }
     }
 
@@ -266,9 +268,7 @@ export class OrMwcMenu extends LitElement {
 
         if (!this.multiSelect) {
             this.values = value;
-            if(!this.noSurface){
-                this._mdcComponent!.open = false;
-            }
+            this._mdcComponent!.open = false;
         } else {
             if (!Array.isArray(this.values)) {
                 this.values = this.values ? [this.values] : [];

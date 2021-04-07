@@ -1,6 +1,6 @@
 import { LitElement, html, customElement, css, property } from "lit-element";
 import { IdentityDomLink } from "../node-structure";
-import { OrInputChangedEvent } from "@openremote/or-input";
+import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { Utilities } from "../utils";
 import { i18next, translate } from "@openremote/or-translate";
 import { project, modal, input, exporter, FlowEditor } from "./flow-editor";
@@ -90,19 +90,19 @@ export class TopBar extends translate(i18next)(LitElement) {
         let chosenDesc = "";
         modal.element.content = html`
             <div style="display: flex; flex-direction: column; width: auto; justify-content: space-between; align-items: stretch;">
-            <or-input style="margin-bottom: 16px; width:100%;" required type="text" label="${i18next.t("name", "Name")!}"
-            @or-input-changed="${(e: OrInputChangedEvent) => { chosenName = e.detail.value; }}"
-            ></or-input>
-            <or-input style="margin-bottom: 16px; width:100%;" fullwidth type="textarea" label="${i18next.t("description", "Description")!}"
-            @or-input-changed="${(e: OrInputChangedEvent) => { chosenDesc = e.detail.value; }}"
-            ></or-input>
+            <or-mwc-input style="margin-bottom: 16px; width:100%;" required type="text" label="${i18next.t("name", "Name")!}"
+            @or-mwc-input-changed="${(e: OrInputChangedEvent) => { chosenName = e.detail.value; }}"
+            ></or-mwc-input>
+            <or-mwc-input style="margin-bottom: 16px; width:100%;" fullwidth type="textarea" label="${i18next.t("description", "Description")!}"
+            @or-mwc-input-changed="${(e: OrInputChangedEvent) => { chosenDesc = e.detail.value; }}"
+            ></or-mwc-input>
             <div>
-                <or-input style="text-align: left; margin-right: 10px" type="button" label="${i18next.t("cancel", "Cancel")!}" @click="${modal.element.close}"></or-input>
-                <or-input style="text-align: right" type="button" unelevated label="${i18next.t("save", "Save")!}" @click="${() => {
+                <or-mwc-input style="text-align: left; margin-right: 10px" type="button" label="${i18next.t("cancel", "Cancel")!}" @click="${modal.element.close}"></or-mwc-input>
+                <or-mwc-input style="text-align: right" type="button" unelevated label="${i18next.t("save", "Save")!}" @click="${() => {
                 if (!chosenName) { return; }
                 exporter.exportAsNew(project.toNodeCollection(chosenName, chosenDesc));
                 modal.element.close();
-            }}"></or-input>
+            }}"></or-mwc-input>
             </div>
             </div>
         `;

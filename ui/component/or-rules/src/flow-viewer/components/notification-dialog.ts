@@ -29,9 +29,9 @@ export class NotificationDialog extends translate(i18next)(LitElement) {
         return html`
         <div class="message">${this.message}</div>
         <div class="container">
-            <or-input type="button" unElevated label="${this.buttonText}"
+            <or-mwc-input type="button" unElevated label="${this.buttonText}"
                 @click="${() => { this.dispatchEvent(new CustomEvent("closed")); }}">
-            </or-input>
+            </or-mwc-input>
         </div>
         `;
     }

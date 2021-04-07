@@ -6,8 +6,8 @@ import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
-import { OrInput, InputType, ValueInputProviderGenerator, ValueInputTemplateFunction } from "@openremote/or-input";
-import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import { OrInput, InputType, ValueInputProviderGenerator, ValueInputTemplateFunction } from "@openremote/or-mwc-components/or-mwc-input";
+import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./markers/or-map-marker-asset";
 import { i18next } from "@openremote/or-translate";
 
@@ -291,8 +291,8 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     }
                 </style>
                 <div id="geo-json-point-input-compact-wrapper">
-                    <or-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-input>
-                    <or-input style="width: auto;" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @click="${onClick}"></or-input>
+                    <or-mwc-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-mwc-input>
+                    <or-mwc-input style="width: auto;" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @click="${onClick}"></or-mwc-input>
                 </div>
             `;
         }

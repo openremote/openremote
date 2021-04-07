@@ -19,7 +19,7 @@
     "@openremote/or-attribute-input": "^1.0.4",
     "@openremote/or-chart": "^1.0.4",
     "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-input": "^1.0.4",
+    "@openremote/or-mwc-components/or-mwc-input": "^1.0.4",
     "@openremote/or-mwc-components": "^1.0.3",
     "@openremote/or-panel": "^1.0.3",
     "@openremote/or-survey": "^1.0.3",

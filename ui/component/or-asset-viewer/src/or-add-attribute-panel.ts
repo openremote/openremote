@@ -1,9 +1,9 @@
 import {customElement, html, LitElement, property, css} from "lit-element";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {Asset, Attribute} from "@openremote/model";
 import {AssetModelUtil, Util} from "@openremote/core";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 
 export class OrAddAttributePanelAttributeChangedEvent extends CustomEvent<Attribute<any>> {
 
@@ -38,7 +38,7 @@ export class OrAddAttributePanel extends LitElement {
                 padding: 20px;                        
             }
 
-            #attribute-creator > * or-input {
+            #attribute-creator > * or-mwc-input {
                 width: 300px;
             }
 
@@ -72,13 +72,13 @@ export class OrAddAttributePanel extends LitElement {
         return html`
             <div id="attribute-creator">
                 <div>
-                    <or-input .type="${InputType.SELECT}" .options="${attributeTypes}" .label="${i18next.t("type")}" @or-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-input>
+                    <or-mwc-input .type="${InputType.SELECT}" .options="${attributeTypes}" .label="${i18next.t("type")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-mwc-input>
                 </div>
                 <div id="name-input" class="hidden">
-                    <or-input .type="${InputType.TEXT}" .label="${i18next.t("name")}" pattern="\\w+" required @keyup="${(ev: KeyboardEvent) => this.onNameChanged((ev.target as OrInput).currentValue)}" @or-input-changed="${(ev: OrInputChangedEvent) => this.onNameChanged(ev.detail.value)}"></or-input>
+                    <or-mwc-input .type="${InputType.TEXT}" .label="${i18next.t("name")}" pattern="\\w+" required @keyup="${(ev: KeyboardEvent) => this.onNameChanged((ev.target as OrInput).currentValue)}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onNameChanged(ev.detail.value)}"></or-mwc-input>
                 </div>
                 <div id="type-input" class="hidden">
-                    <or-input .type="${InputType.SELECT}" .options="${attributeValueTypes}" .label="${i18next.t("valueType")}" @or-input-changed="${(ev: OrInputChangedEvent) => this.onValueTypeChanged(ev.detail.value)}"></or-input>
+                    <or-mwc-input .type="${InputType.SELECT}" .options="${attributeValueTypes}" .label="${i18next.t("valueType")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onValueTypeChanged(ev.detail.value)}"></or-mwc-input>
                 </div>
             </div>
         `;

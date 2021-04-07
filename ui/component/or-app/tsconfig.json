@@ -14,7 +14,6 @@
     { "path": "../../component/or-mwc-components" },
   	{ "path": "../../component/or-icon" },
   	{ "path": "../../component/or-map" },
-  	{ "path": "../../component/or-input" },
   	{ "path": "../../component/or-attribute-input" },
     { "path": "../../component/or-asset-tree" },
     { "path": "../../component/or-asset-viewer" },

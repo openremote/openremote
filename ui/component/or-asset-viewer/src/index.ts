@@ -3,7 +3,7 @@ declare function require(name: string): any;
 
 import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
 import "@openremote/or-icon";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
@@ -11,11 +11,11 @@ import "@openremote/or-survey";
 import "@openremote/or-survey-results";
 import "@openremote/or-table";
 import "@openremote/or-panel";
-import "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import "@openremote/or-mwc-components/dist/or-mwc-list";
+import "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
@@ -39,8 +39,8 @@ import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
-import "@openremote/or-mwc-components/dist/or-mwc-snackbar";
-import {showSnackbar} from "@openremote/or-mwc-components/dist/or-mwc-snackbar";
+import "@openremote/or-mwc-components/or-mwc-snackbar";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PanelConfig {
     type?: "info" | "history" | "group" | "survey" | "survey-results";
@@ -436,7 +436,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 }
             </style>
             <div id="history-controls">
-                <or-input id="history-attribute-picker" .checkAssetWrite="${false}" .value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-input>
+                <or-mwc-input id="history-attribute-picker" .checkAssetWrite="${false}" .value="${historyAttrs[0].name}" .label="${i18next.t("attribute")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => attributeChanged(evt.detail.value)}" .type="${InputType.SELECT}" .options="${options}"></or-mwc-input>
             </div>        
             <or-attribute-history id="attribute-history" .config="${viewerConfig.historyConfig}" .assetType="${asset.type}" .assetId="${asset.id}"></or-attribute-history>
         `;
@@ -497,8 +497,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     <div style="display: grid">
                         ${availableAttributes.sort().map((attribute) =>
                             html`<div style="grid-column: 1 / -1;">
-                                    <or-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
-                                        @or-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-input>
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
+                                        @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
                                 </div>`)}
                     </div>
                 `
@@ -681,7 +681,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
             break;
     }
 
-    return html`<or-input id="property-${property}" .type="${type}" dense .value="${value}" .readonly="${itemConfig.readonly !== undefined ? itemConfig.readonly : true}" .label="${itemConfig.label}"></or-input>`;
+    return html`<or-mwc-input id="property-${property}" .type="${type}" dense .value="${value}" .readonly="${itemConfig.readonly !== undefined ? itemConfig.readonly : true}" .label="${itemConfig.label}"></or-mwc-input>`;
 }
 
 export function getField(name: string, itemConfig?: InfoPanelItemConfig, content?: TemplateResult): TemplateResult {
@@ -975,17 +975,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
-                        ${editMode ? html`<or-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-input>` : html`<span>${this.asset.name}</span>`}
+                        ${editMode ? html`<or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-mwc-input>` : html`<span>${this.asset.name}</span>`}
                     </div>
                     ${!this._isReadonly() ? html`
                         <span id="edit-wrapper" class="mobileHidden">
                             <or-translate value="editAsset"></or-translate>
-                            <or-input id="edit-btn" .type="${InputType.SWITCH}" .value="${this.editMode}" @or-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggleClicked(ev.detail.value)}"></or-input>
+                            <or-mwc-input id="edit-btn" .type="${InputType.SWITCH}" .value="${this.editMode}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggleClicked(ev.detail.value)}"></or-mwc-input>
                         </span>
                     `: ``}
                     <div id="right-wrapper" class="mobileHidden">
                         ${this.asset!.createdOn ? html`<or-translate id="created-time" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``}
-                        ${editMode ? html`<or-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-input-changed="${() => this._onSaveClicked()}"></or-input>` : ``}
+                        ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
                     </div>
                 </div>
                 ${content}

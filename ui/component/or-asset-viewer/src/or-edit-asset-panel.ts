@@ -1,12 +1,12 @@
 import {css, customElement, html, LitElement, property, TemplateResult, unsafeCSS} from "lit-element";
-import {InputType, OrInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-input";
+import {InputType, OrInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder} from "@openremote/model";
 import {AssetModelUtil, DefaultColor5, DefaultColor3, Util} from "@openremote/core";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
-import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/dist/or-mwc-list";
+import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {ListItem, ListType, OrMwcList} from "@openremote/or-mwc-components/or-mwc-list";
 import "./or-add-attribute-panel";
 import {getField, getPanel, getPropertyTemplate} from "./index";
 import {
@@ -90,7 +90,7 @@ const style = css`
         max-height: 1000px;
         transition: max-height 1s ease-in;
     }
-    .meta-item-container or-input {
+    .meta-item-container or-mwc-input {
         width: 100%;
     }
     .meta-item-wrapper {
@@ -178,7 +178,7 @@ export class OrEditAssetPanel extends LitElement {
         const properties: TemplateResult[] = [
             getField("type", undefined, getPropertyTemplate(this.asset, "type", this, undefined, undefined, {readonly: true, label: i18next.t("assetType")})),
             getField("parent", undefined, this._getParentTemplate()),
-            html`<div @or-input-changed="${(ev: OrInputChangedEvent) => updatePublicRead(ev.detail.value as boolean)}">
+            html`<div @or-mwc-input-changed="${(ev: OrInputChangedEvent) => updatePublicRead(ev.detail.value as boolean)}">
                     ${getField("accessPublicRead", undefined, getPropertyTemplate(this.asset, "accessPublicRead", this, undefined, undefined, {readonly: false, label: i18next.t("accessPublicRead")}))}
                 </div>`
         ];
@@ -217,7 +217,7 @@ export class OrEditAssetPanel extends LitElement {
                         <tr class="mdc-data-table__row">
                             <td colspan="4">
                                 <div class="item-add-attribute">
-                                    <or-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._addAttribute()}"></or-input>
+                                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._addAttribute()}"></or-mwc-input>
                                 </div>
                             </td>
                         </tr>
@@ -251,7 +251,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
-                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
+                <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
@@ -260,7 +260,7 @@ export class OrEditAssetPanel extends LitElement {
                             ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
                         </div>
                         <div class="item-add">
-                            <or-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-input>
+                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
                         </div>
                     </div>                     
                 </td>
@@ -363,7 +363,7 @@ export class OrEditAssetPanel extends LitElement {
                         this.asset.attributes![attr.name!] = attr;
                         this._onModified();
                     },
-                    content: html`<or-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
                 }
             ],
             dismissAction: null
@@ -530,7 +530,7 @@ export class OrEditAssetPanel extends LitElement {
         return html`
             <div id="parent-edit-wrapper">
                 ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: false, label: i18next.t("parent")})}
-                <or-input id="change-parent-btn" type="${InputType.BUTTON}" raised .label="${i18next.t("edit")}" @or-input-changed="${openDialog}"></or-input>
+                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" raised .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
             </div>
         `;
     }

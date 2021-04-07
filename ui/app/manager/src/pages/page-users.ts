@@ -17,8 +17,8 @@ import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role, User } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
-import { InputType, OrInput, OrInputChangedEvent } from "@openremote/or-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import { InputType, OrInput, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -107,7 +107,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
           padding-left: 16px;
         }
 
-        or-input {
+        or-mwc-input {
             margin-bottom: 20px;
             margin-right: 16px;
         }
@@ -418,34 +418,34 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                               <div class="meta-item-container">
                                   <div class="row">
                                       <div class="column">
-                                          <or-input ?readonly="${readonly}" .label="${i18next.t("username")}" .type="${InputType.TEXT}" min="1" required .value="${user.username}" @or-input-changed="${(e: OrInputChangedEvent) => user.username = e.detail.value}"></or-input>            
-                                          <or-input ?readonly="${readonly}" .label="${i18next.t("email")}" .type="${InputType.EMAIL}" min="1" .value="${user.email}" @or-input-changed="${(e: OrInputChangedEvent) => user.email = e.detail.value}"></or-input>            
-                                          <or-input ?readonly="${readonly}" .label="${i18next.t("firstName")}" .type="${InputType.TEXT}" min="1" .value="${user.firstName}" @or-input-changed="${(e: OrInputChangedEvent) => user.firstName = e.detail.value}"></or-input>            
-                                          <or-input ?readonly="${readonly}" .label="${i18next.t("surname")}" .type="${InputType.TEXT}" min="1" .value="${user.lastName}" @or-input-changed="${(e: OrInputChangedEvent) => user.lastName = e.detail.value}"></or-input>            
+                                          <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("username")}" .type="${InputType.TEXT}" min="1" required .value="${user.username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.username = e.detail.value}"></or-mwc-input>            
+                                          <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("email")}" .type="${InputType.EMAIL}" min="1" .value="${user.email}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.email = e.detail.value}"></or-mwc-input>            
+                                          <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("firstName")}" .type="${InputType.TEXT}" min="1" .value="${user.firstName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.firstName = e.detail.value}"></or-mwc-input>            
+                                          <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("surname")}" .type="${InputType.TEXT}" min="1" .value="${user.lastName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.lastName = e.detail.value}"></or-mwc-input>            
                                       </div>
 
                                       <div class="column">
                                           ${user.id && this._userRoleMapper[user.id] ? html`
-                                                <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .value="${userRole ? ifDefined(userRole.id) : ifDefined(null)}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) => this._userRoleMapper[user.id] = e.detail.value}"></or-input>
+                                                <or-mwc-input ?readonly="${readonly}" ?disabled="${isSameUser}" .value="${userRole ? ifDefined(userRole.id) : ifDefined(null)}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._userRoleMapper[user.id] = e.detail.value}"></or-mwc-input>
                                           ` : html`
-                                              <or-input ?readonly="${readonly}" ?disabled="${isSameUser}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-input-changed="${(e: OrInputChangedEvent) =>  this._userRoleMapper["newUser"] = e.detail.value}"></or-input>
+                                              <or-mwc-input ?readonly="${readonly}" ?disabled="${isSameUser}" .type="${InputType.SELECT}" .options="${selectOptions}" .label="${i18next.t("role")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>  this._userRoleMapper["newUser"] = e.detail.value}"></or-mwc-input>
                                           `}
 
-                                          <or-input id="password-${index}" ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>
-                                          <or-input id="repeatPassword-${index}" helperPersistent ?readonly="${readonly}" .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-input>
-                                          <or-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${user.enabled}" @or-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}" style="height: 56px;"></or-input>
+                                          <or-mwc-input id="password-${index}" ?readonly="${readonly}" .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-mwc-input>
+                                          <or-mwc-input id="repeatPassword-${index}" helperPersistent ?readonly="${readonly}" .label="${i18next.t("repeatPassword")}" .type="${InputType.PASSWORD}" min="1" @or-mwc-input-changed="${(e: OrInputChangedEvent) => { this.checkPassword(index) }}"></or-mwc-input>
+                                          <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${user.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}" style="height: 56px;"></or-mwc-input>
                                       </div>
                                   </div>
 
                                   <div class="row" style="margin-bottom: 0;">
                                   ${user.id && !readonly ? html`
                                       ${!isSameUser ? html`
-                                        <or-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteUser(user)}"></or-input>            
+                                        <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteUser(user)}"></or-mwc-input>            
                                       ` : ``}
-                                      <or-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateUser(user, index)}"></or-input>   
+                                      <or-mwc-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateUser(user, index)}"></or-mwc-input>   
                                   ` : html`
-                                    <or-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._users.splice(-1,1); this._users = [...this._users]}}"></or-input>            
-                                    <or-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._createUser(user, index)}"></or-input>   
+                                    <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._users.splice(-1,1); this._users = [...this._users]}}"></or-mwc-input>            
+                                    <or-mwc-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._createUser(user, index)}"></or-mwc-input>   
                                   `}    
                                   </div>
                               </div>

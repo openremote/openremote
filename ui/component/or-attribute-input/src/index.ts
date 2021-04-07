@@ -22,8 +22,8 @@ import {
     WellknownValueTypes
 } from "@openremote/model";
 import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
-import "@openremote/or-input";
-import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider, OrInputChangedEventDetail} from "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-map";
 import { geoJsonPointInputTemplateProvider } from "@openremote/or-map";
 
@@ -69,12 +69,12 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     if (buttonIcon) {
         content = html`
                 ${content}
-                <or-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-input-changed="${(e: OrInputChangedEvent) => {
+                <or-mwc-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
             e.stopPropagation();
             if (sendValue) {
                 sendValue();
             }
-        }}"></or-input>
+        }}"></or-mwc-input>
             `;
     }
 
@@ -115,7 +115,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
                 display: inline-block;
             }
             
-            #wrapper or-input, #wrapper or-map {
+            #wrapper or-mwc-input, #wrapper or-map {
                 width: 100%;
             }
             

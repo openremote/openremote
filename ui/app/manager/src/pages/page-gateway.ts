@@ -3,7 +3,7 @@ import i18next from "i18next";
 import "@openremote/or-panel";
 import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
 import manager, {DefaultColor1, OREvent} from "@openremote/core";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
@@ -80,7 +80,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
                 padding: 10px;
             }
             
-            #fields > or-input {
+            #fields > or-mwc-input {
                 margin: 10px 0;
                 width: 100%;
             }
@@ -89,7 +89,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
                 text-align: right;
             }
             
-            #buttons > or-input {
+            #buttons > or-mwc-input {
                 margin: 10px;                
             }
 
@@ -187,18 +187,18 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
                         ${this._connectionStatus}
                     </div>
                     <div id="fields">
-                        <or-input .label="${i18next.t("host")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.host : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("host", e.detail.value)}"></or-input>
-                        <or-input .label="${i18next.t("port")}" .type="${InputType.NUMBER}" ?disabled="${this._loading || this._readonly}" min="1" max="65536" step="1" .value="${connection ? connection.port : undefined}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("port", e.detail.value)}"></or-input>
-                        <or-input .label="${i18next.t("realm")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.realm : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("realm", e.detail.value)}"></or-input>
-                        <or-input .label="${i18next.t("clientId")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientId : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientId", e.detail.value)}"></or-input>
-                        <or-input .label="${i18next.t("clientSecret")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientSecret : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientSecret", e.detail.value)}"></or-input>
-                        <or-input .label="${i18next.t("secured")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.secured : false}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("secured", e.detail.value)}"></or-input>
-                        <or-input .label="${i18next.t("disabled")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.disabled : false}" @or-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", e.detail.value)}"></or-input>
+                        <or-mwc-input .label="${i18next.t("host")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.host : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("host", e.detail.value)}"></or-mwc-input>
+                        <or-mwc-input .label="${i18next.t("port")}" .type="${InputType.NUMBER}" ?disabled="${this._loading || this._readonly}" min="1" max="65536" step="1" .value="${connection ? connection.port : undefined}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("port", e.detail.value)}"></or-mwc-input>
+                        <or-mwc-input .label="${i18next.t("realm")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.realm : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("realm", e.detail.value)}"></or-mwc-input>
+                        <or-mwc-input .label="${i18next.t("clientId")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientId : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientId", e.detail.value)}"></or-mwc-input>
+                        <or-mwc-input .label="${i18next.t("clientSecret")}" .type="${InputType.TEXT}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.clientSecret : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("clientSecret", e.detail.value)}"></or-mwc-input>
+                        <or-mwc-input .label="${i18next.t("secured")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.secured : false}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("secured", e.detail.value)}"></or-mwc-input>
+                        <or-mwc-input .label="${i18next.t("disabled")}" .type="${InputType.SWITCH}" ?disabled="${this._loading || this._readonly}" .value="${connection ? connection.disabled : false}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._setConnectionProperty("disabled", e.detail.value)}"></or-mwc-input>
                     </div>
                     <div id="buttons">
-                        <or-input .label="${i18next.t("reset")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._reset()}"></or-input>                
-                        <or-input .label="${i18next.t("delete")}" ?disabled="${this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._delete()}"></or-input>                
-                        <or-input .label="${i18next.t("save")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-input>                
+                        <or-mwc-input .label="${i18next.t("reset")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._reset()}"></or-mwc-input>                
+                        <or-mwc-input .label="${i18next.t("delete")}" ?disabled="${this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._delete()}"></or-mwc-input>                
+                        <or-mwc-input .label="${i18next.t("save")}" ?disabled="${!this._dirty || this._loading || this._readonly}" .type="${InputType.BUTTON}" raised @click="${() => this._save()}"></or-mwc-input>                
                     </div>
                 </or-panel>
             </div>

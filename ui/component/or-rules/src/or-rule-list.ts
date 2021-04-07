@@ -2,8 +2,8 @@ import {css, customElement, html, LitElement, property, PropertyValues, Template
 import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset, WellknownMetaItems, WellknownRulesetMetaItems} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {OREvent, Util} from "@openremote/core";
-import "@openremote/or-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
     AddEventDetail,
@@ -16,12 +16,11 @@ import {
     RulesConfig,
     RulesetNode
 } from "./index";
-import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import "@openremote/or-mwc-components/or-mwc-menu";
+import {MenuItem, getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {translate} from "@openremote/or-translate";
 import i18next from "i18next";
-import {getContentWithMenuTemplate} from "../../or-mwc-components/dist/or-mwc-menu";
-import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {GenericAxiosResponse} from "@openremote/rest";
 
 // language=CSS
@@ -60,7 +59,7 @@ const style = css`
     }
     
     #header-btns {
-        --or-input-color: var(--internal-or-rules-text-color);
+        --or-mwc-input-color: var(--internal-or-rules-text-color);
     }
     
     .header-ruleset-type p {
@@ -256,14 +255,14 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         if (!this._isReadonly()) {
             if (allowedLanguages && allowedLanguages.length > 1) {
                 addTemplate = getContentWithMenuTemplate(
-                    html`<or-input type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                    html`<or-mwc-input type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                     allowedLanguages.map((l) => {
                         return {value: l, text: i18next.t(l)} as MenuItem;
                     }),
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
             } else {
-                addTemplate = html`<or-input type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked(this.language!)}"></or-input>`;
+                addTemplate = html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked(this.language!)}"></or-mwc-input>`;
             }
         }
         return html`
@@ -273,7 +272,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         <p>${i18next.t("realmRules")}</p>
                         
                         <div style="flex: 1 1 0; display: flex;">
-                            <or-input style="margin: auto;" type="${InputType.SWITCH}" @or-input-changed="${(evt: OrInputChangedEvent) => this._globalRulesets = evt.detail.value}"></or-input>
+                            <or-mwc-input style="margin: auto;" type="${InputType.SWITCH}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._globalRulesets = evt.detail.value}"></or-mwc-input>
                         </div>
 
                         <p>${i18next.t("globalRules")}</p>
@@ -286,13 +285,13 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     </div>
         
                     <div id="header-btns">
-                        <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-input>
-                        <or-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-input>
+                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-mwc-input>
+                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-mwc-input>
                         ${addTemplate}
-                        <or-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-input>
+                        <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
                         
                         ${getContentWithMenuTemplate(
-            html`<or-input type="${InputType.BUTTON}" icon="sort-variant"></or-input>`,
+            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant"></or-mwc-input>`,
             sortOptions.map((sort) => { return { value: sort, text: i18next.t(sort) } as MenuItem; }),
             this.sortBy,
             (v) => this._onSortClicked(v as string))}
