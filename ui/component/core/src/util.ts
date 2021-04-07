@@ -889,7 +889,7 @@ export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEv
 export function fillInDatapointGaps(data: ValueDatapoint<any>[]) {
     var prevValue: ValueDatapoint<any>;
     data.forEach(value => {
-        if (prevValue && prevValue.y && !value.y) {
+        if (value.y == null && prevValue && prevValue.y) {
             value.y = prevValue.y;
         }
         prevValue = value;
