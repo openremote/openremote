@@ -360,13 +360,13 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         bgColor = bgColor.substring(0, bgColor.length - 1) + opacity;
                     }
                 }
-                Util.fillInDatapointGaps(this._data);
+
                 this._chart = new Chart(this._chartElem, {
                     type: "line",
                     data: {
                         datasets: [
                             {
-                                data: this._data,
+                                data: Util.filterNullValueDatapoints(this._data),
                                 backgroundColor: bgColor,
                                 borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
                                 pointBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-color"),
@@ -433,8 +433,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 });
             } else {
                 if (changedProperties.has("_data")) {
-                    Util.fillInDatapointGaps(this._data);
-                    this._chart.data.datasets![0].data = this._data;
+                    this._chart.data.datasets![0].data = Util.filterNullValueDatapoints(this._data);;
                     this._chart.update();
                 }
             }

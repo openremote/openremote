@@ -619,7 +619,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             return;
         }
 
-        Util.fillInDatapointGaps(this._data);
         if (!this._chart) {
             this._chart = new Chart(this._chartElem, {
                 type: "line",
@@ -698,7 +697,6 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
         } else {
             if (changedProperties.has("_data")) {
-                Util.fillInDatapointGaps(this._data);
                 this._chart.data.datasets = this._data;
                 this._chart.update();
             }
@@ -905,7 +903,10 @@ export class OrChart extends translate(i18next)(LitElement) {
         });
 
         let data = this.assetAttributes.map(async (attribute, index) => {
-            const valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.timestamp);
+            var valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.timestamp);
+            if (valuepoints) {
+                valuepoints = Util.filterNullValueDatapoints(valuepoints);
+            }
             const dataset = {...datasetBases[index],
                 data: valuepoints
             };
@@ -923,7 +924,10 @@ export class OrChart extends translate(i18next)(LitElement) {
         }));
 
         const predictedData = this.assetAttributes.map(async (attribute, index) => {
-            const valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.timestamp);
+            var valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.timestamp);
+            if (valuepoints) {
+                valuepoints = Util.filterNullValueDatapoints(valuepoints);
+            }
             const dataset = {...datasetBases[index],
                 data: valuepoints,
                 borderDash: [2, 4]
@@ -941,7 +945,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if(this.periodCompare) {
             const cData = this.assetAttributes.map(async (attribute, index) => {
-                const valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                var valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                if (valuepoints) {
+                    valuepoints = Util.filterNullValueDatapoints(valuepoints);
+                }
                 const dataset = {...datasetBases[index],
                     data: valuepoints,
                     borderDash: [10, 10]
@@ -957,7 +964,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
             
             let cPredictedData = this.assetAttributes.map(async (attribute, index) => {
-                const valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                var valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                if (valuepoints) {
+                    valuepoints = Util.filterNullValueDatapoints(valuepoints);
+                }
                 const dataset = {...datasetBases[index],
                     data: valuepoints,
                     borderDash: [2, 4]

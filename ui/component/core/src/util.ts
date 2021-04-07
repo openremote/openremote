@@ -886,12 +886,6 @@ export function dispatchCancellableEvent<T>(target: EventTarget, event: CustomEv
 
 //TODO: should we keep it like this?
 //Added to fill in gaps with null values
-export function fillInDatapointGaps(data: ValueDatapoint<any>[]) {
-    var prevValue: ValueDatapoint<any>;
-    data.forEach(value => {
-        if (value.y == null && prevValue && prevValue.y) {
-            value.y = prevValue.y;
-        }
-        prevValue = value;
-    });
+export function filterNullValueDatapoints(data: ValueDatapoint<any>[]) {
+    return data.filter(value => value.y != null);
 }
