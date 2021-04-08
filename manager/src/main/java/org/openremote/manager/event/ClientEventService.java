@@ -335,10 +335,10 @@ public class ClientEventService implements ProtocolClientEventService {
 
         // Check if exists already
         ClientRepresentation clientRepresentation = keycloakIdentityProvider.getClient(clientCredentials.getRealm(), clientCredentials.getClientId());
+        boolean isNew = clientRepresentation == null;
 
         if (clientRepresentation == null) {
             clientRepresentation = new ClientRepresentation();
-            clientRepresentation.setId(UUID.nameUUIDFromBytes(clientCredentials.getClientId().getBytes()).toString());
             clientRepresentation.setStandardFlowEnabled(false);
             clientRepresentation.setImplicitFlowEnabled(false);
             clientRepresentation.setDirectAccessGrantsEnabled(false);
@@ -349,11 +349,15 @@ public class ClientEventService implements ProtocolClientEventService {
 
         clientRepresentation.setSecret(clientCredentials.getSecret());
         LOG.info("Creating/updating client event service client credentials: " + clientCredentials);
-        keycloakIdentityProvider.createClient(clientCredentials.getRealm(), clientRepresentation);
+        if (isNew) {
+            keycloakIdentityProvider.createClient(clientCredentials.getRealm(), clientRepresentation);
+        } else {
+            keycloakIdentityProvider.updateClient(clientCredentials.getRealm(), clientRepresentation);
+        }
 
         User serviceUser = keycloakIdentityProvider.getClientServiceUser(clientCredentials.getRealm(), clientCredentials.getClientId());
         if (clientCredentials.getRoles() != null && clientCredentials.getRoles().length > 0) {
-            keycloakIdentityProvider.updateUserRoles(clientCredentials.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(clientCredentials.getRoles()).map(ClientRole::getValue).toArray(String[]::new));
+            keycloakIdentityProvider.updateUserRoles(clientCredentials.getRealm(), serviceUser.getId(), clientCredentials.getClientId(), Arrays.stream(clientCredentials.getRoles()).filter(Objects::nonNull).map(ClientRole::getValue).toArray(String[]::new));
         }
     }
 

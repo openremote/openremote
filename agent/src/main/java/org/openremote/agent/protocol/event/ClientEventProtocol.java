@@ -64,7 +64,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
 
         protocolClientEventService.addExchangeInterceptor(this::onMessageIntercept);
 
-        String clientId = CLIENT_ID_PREFIX + agent.getId();
+        String clientId = CLIENT_ID_PREFIX + agent.getId().substring(12);
 
         String clientSecret = agent.getClientSecret().orElse(UUID.randomUUID().toString());
         ClientRole[] roles = agent.getClientRoles().orElse(null);

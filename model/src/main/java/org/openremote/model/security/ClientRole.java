@@ -19,7 +19,6 @@
  */
 package org.openremote.model.security;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.model.Constants;
 
@@ -99,7 +98,6 @@ public enum ClientRole {
         this.composites = null;
     }
 
-    @JsonValue
     public String getValue() {
         return value;
     }
