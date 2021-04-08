@@ -20,7 +20,8 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {MDCDataTable} from "@material/data-table";
 import moment from "moment";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -336,13 +337,13 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         return Object.keys((Model as any)["SyslogLevel"]).map((key) => [key, i18next.t(key.toLocaleLowerCase())]);
     }
 
-    protected _getCategoryMenuItems(): MenuItem[] {
+    protected _getCategoryMenuItems(): ListItem[] {
         const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
         return categories.map((cat) => {
             return {
                 text: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))}),
                 value: cat
-            } as MenuItem;
+            } as ListItem;
         });
     }
 

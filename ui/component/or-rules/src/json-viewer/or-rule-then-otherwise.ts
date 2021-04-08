@@ -13,7 +13,8 @@ import {
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {AssetModelUtil, Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
@@ -22,7 +23,7 @@ import {translate} from "@openremote/or-translate";
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): MenuItem[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): ListItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
@@ -37,7 +38,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     }
 
 
-    const menu: MenuItem[] = [];
+    const menu: ListItem[] = [];
 
     if (addAssetTypes && assetInfos) {
         menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
@@ -51,7 +52,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
                 value: assetTypeInfo.assetDescriptor!.name,
                 icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                 styleMap: styleMap
-            } as MenuItem;
+            } as ListItem;
         }));
     }
 
@@ -61,7 +62,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             icon: "email",
             value: ActionType.EMAIL,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        } as MenuItem);
+        } as ListItem);
     }
     
     if (addPushNotification) {
@@ -70,7 +71,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             icon: "cellphone-message",
             value: ActionType.PUSH_NOTIFICATION,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        } as MenuItem);
+        } as ListItem);
     }
 
     if (addWait) {
@@ -79,7 +80,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             icon: "timer",
             value: ActionType.WAIT,
             styleMap: {"--or-icon-fill": "#" + WAIT_COLOR}
-        } as MenuItem);
+        } as ListItem);
     }
 
     menu.sort(Util.sortByString((listItem) => listItem.value!));
@@ -99,7 +100,7 @@ export enum RecurrenceOption {
     ONCE_PER_WEEK = "oncePerWeek",
 }
 
-function getRecurrenceMenu(config?: RulesConfig): MenuItem[] {
+function getRecurrenceMenu(config?: RulesConfig): ListItem[] {
 
     if (config && config.controls && config.controls.allowedRecurrenceOptions) {
         return config.controls.allowedRecurrenceOptions.map((value) => {

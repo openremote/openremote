@@ -13,8 +13,37 @@ import {MDCList, MDCListActionEvent} from "@material/list";
 import {MDCFormField, MDCFormFieldInput} from "@material/form-field";
 import {MDCIconButtonToggle, MDCIconButtonToggleEventDetail} from "@material/icon-button";
 import {DefaultColor4, DefaultColor8, Util} from "@openremote/core";
-import i18next from "i18next";
-import { ValueFormat, ValueFormatStyleRepresentation, AssetDescriptor, ValueDescriptorHolder, ValueDescriptor, WellknownValueTypes, MetaHolder, WellknownMetaItems, ValueHolder, NameHolder, Attribute, ValueConstraint, AttributeDescriptor, ValueConstraintSize, ValueConstraintPattern, ValueConstraintMax, ValueConstraintMin, ValueConstraintAllowedValues, ValueConstraintPastOrPresent, ValueConstraintPast, ValueConstraintFuture, ValueConstraintFutureOrPresent, ValueConstraintNotNull, ValueConstraintNotBlank, ValueConstraintNotEmpty, NameValueHolder } from "@openremote/model";
+import "@openremote/or-icon";
+import {OrIcon} from "@openremote/or-icon";
+import {
+    AssetDescriptor,
+    Attribute,
+    AttributeDescriptor,
+    MetaHolder,
+    NameHolder,
+    NameValueHolder,
+    ValueConstraint,
+    ValueConstraintAllowedValues,
+    ValueConstraintFuture,
+    ValueConstraintFutureOrPresent,
+    ValueConstraintMax,
+    ValueConstraintMin,
+    ValueConstraintNotBlank,
+    ValueConstraintNotEmpty,
+    ValueConstraintNotNull,
+    ValueConstraintPast,
+    ValueConstraintPastOrPresent,
+    ValueConstraintPattern,
+    ValueConstraintSize,
+    ValueDescriptor,
+    ValueDescriptorHolder,
+    ValueFormat,
+    ValueFormatStyleRepresentation,
+    ValueHolder,
+    WellknownMetaItems,
+    WellknownValueTypes
+} from "@openremote/model";
+import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -145,6 +174,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     let pattern: string | undefined;
     let min: any;
     let max: any;
+    let multiple: any;
     let required: boolean | undefined;
     let selectOptions: [string, string][] | undefined;
     let valueConverter: (v: any) => any | undefined;
@@ -310,6 +340,10 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             return ["" + v, label || "" + v];
         });
         inputType = InputType.SELECT;
+
+        if (valueDescriptor.arrayDimensions && valueDescriptor.arrayDimensions > 0) {
+            multiple = true;
+        }
     }
 
     if (inputType === InputType.DATETIME) {
@@ -346,7 +380,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         const label = supportsLabel ? options.label : undefined;
 
         return html`<or-mwc-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
-            .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}"
+            .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}"
             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
@@ -668,6 +702,7 @@ export class OrInput extends LitElement {
     protected _mdcComponent?: MDCComponent<any>;
     protected _mdcComponent2?: MDCComponent<any>;
     protected _selectedIndex = -1;
+    protected _tempValue: any;
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
@@ -811,9 +846,47 @@ export class OrInput extends LitElement {
                     };
 
                     const opts = this.resolveOptions(this.options);
-                    const value = opts && opts.find(([optValue, optDisplay], index) => this.value === optValue);
-                    const valueLabel = value ? value[1] : typeof this.value === "string" ? this.value : "";
-                    this._selectedIndex = -1;
+
+                    const itemClickHandler: (ev: MouseEvent, item: ListItem) => void = (ev, item) => {
+                        const value = item.value;
+
+                        if (this.multiple) {
+                            ev.stopPropagation();
+                            let inputValue = this._tempValue || this.value;
+                            if (!Array.isArray(inputValue)) {
+                                inputValue = inputValue ? [this.value] : [];
+                            }
+                            const index = inputValue.findIndex((v: any) => v === value);
+                            if (index >= 0) {
+                                inputValue.splice(index, 1);
+                            } else {
+                                inputValue.push(value);
+                            }
+                            const icon = (ev.composedPath()[0] as HTMLElement).getElementsByTagName("or-icon")[0] as OrIcon;
+                            if (icon) {
+                                icon.icon = index >= 0 ? undefined : "check";
+                            }
+                            this._tempValue = inputValue;
+                        }
+                    };
+
+                    const menuCloseHandler = () => {
+
+                        const v = (this._tempValue || this.value);
+                        window.setTimeout(() => {
+                            if (this._mdcComponent) {
+                                // Hack to stop label moving down when there is a value set
+                                (this._mdcComponent as any).foundation.adapter.floatLabel(v && (!Array.isArray(v) || v.length > 0));
+                            }
+                        });
+
+                        if (!this._tempValue) {
+                            return;
+                        }
+                        const val = [...this._tempValue];
+                        this._tempValue = undefined;
+                        this.onValueChange(undefined, val);
+                    };
 
                     return html`
                         <div id="component"
@@ -826,7 +899,7 @@ export class OrInput extends LitElement {
                                     <span class="mdc-select__ripple"></span>
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     <span class="mdc-select__selected-text-container">
-                                      <span id="selected-text" class="mdc-select__selected-text">${valueLabel ? i18next.t(valueLabel) : ""}<</span>
+                                      <span id="selected-text" class="mdc-select__selected-text">${this.getSelectedTextValue()}</span>
                                     </span>
                                     <span class="mdc-select__dropdown-icon">
                                         <svg
@@ -848,19 +921,26 @@ export class OrInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-
-                                <div class="mdc-select__menu mdc-menu mdc-menu-surface">
-                                    <ul class="mdc-list" role="listbox">
-                                        ${opts ? opts.map(([optValue, optDisplay], index) => {
-                                            if (this.value === optValue) {
-                                                this._selectedIndex = index;
-                                            }
-                                            return html`<li class="mdc-list-item ${this._selectedIndex === index ? "mdc-list-item--selected" : ""}" role="option" aria-selected="${this._selectedIndex === index}"  data-value="${optValue}">
-                                                            <span class="mdc-list-item__ripple"></span>
-                                                            <span class="mdc-list-item__text">${i18next.t(optDisplay)}</span>
-                                                         </li>`;
-                                        }) : ``}
-                                    </ul>
+                                
+                                <div class="mdc-select__menu mdc-menu mdc-menu-surface" @MDCMenuSurface:closed="${menuCloseHandler}">
+                                    ${getListTemplate(
+                                        this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                        opts ? html`${opts.map(([optValue, optDisplay], index) => {
+                                            return getItemTemplate(
+                                                {
+                                                    text: optDisplay,
+                                                    value: optValue                                                
+                                                },
+                                                index,
+                                                Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
+                                                this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                                false,    
+                                                itemClickHandler
+                                            )
+                                        })}` : html``,
+                                        false,
+                                        undefined
+                                    )}
                                 </div>
 
                                 ${hasHelper ? html`
@@ -1137,8 +1217,6 @@ export class OrInput extends LitElement {
         if (this.format) {
             return this.format;
         }
-
-
     }
 
     protected updated(_changedProperties: PropertyValues): void {
@@ -1165,7 +1243,22 @@ export class OrInput extends LitElement {
                     case InputType.SELECT:
                         const mdcSelect = new MDCSelect(component);
                         this._mdcComponent = mdcSelect;
-                        mdcSelect.selectedIndex = this._selectedIndex;
+
+                        if (!this.value) {
+                            mdcSelect.selectedIndex = -1; // Without this first option will be shown as selected
+                        }
+
+                        (this._mdcComponent as any).foundation.adapter.floatLabel(this.value && (!Array.isArray(this.value) || this.value.length > 0));
+
+                        // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
+                        (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
+                            const el = evt.composedPath()[0]; // Use composed path not evt target to work with webcomponents
+                            if (this.adapter.isElementInContainer(el)) {
+                                return;
+                            }
+                            (mdcSelect as any).menu.menuSurface_.close();
+                        };
+
                         break;
                     case InputType.RADIO:
                         break;
@@ -1216,7 +1309,9 @@ export class OrInput extends LitElement {
         } else {
             // some components need to be kept in sync with the DOM
             if (this.type === InputType.SELECT && this._mdcComponent) {
-                (this._mdcComponent as MDCSelect).selectedIndex = this._selectedIndex;
+                const selectedText = this.getSelectedTextValue();
+                (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
+                (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
             } else if (this.type === InputType.RANGE && this._mdcComponent) {
                 const slider = this._mdcComponent as MDCSlider;
                 slider.setDisabled(this.disabled || this.readonly);
@@ -1262,16 +1357,25 @@ export class OrInput extends LitElement {
             if (this._mdcComponent instanceof MDCTextField) {
                 this._mdcComponent.valid = valid;
             }
-            if(!valid && this.type != InputType.CHECKBOX) return
+            if (!valid && this.type !== InputType.CHECKBOX) return;
         }
-        const previousValue = this.value;
 
-        if (newValue === "null") {
-            newValue = null;
+        let previousValue = this.value;
+
+        if (previousValue === undefined) {
+            previousValue = null;
         }
 
         if (newValue === "undefined") {
             newValue = undefined;
+        }
+
+        if (newValue === undefined) {
+            newValue = null;
+        }
+
+        if (newValue === "null") {
+            newValue = null;
         }
 
         if (typeof(newValue) === "string") {
@@ -1337,5 +1441,12 @@ export class OrInput extends LitElement {
         }
 
         return resolved;
+    }
+
+    protected getSelectedTextValue(): string {
+        const opts = this.resolveOptions(this.options);
+        const value = this.value;
+        const values = Array.isArray(value) ? value as string[] : value ? [value as string] : undefined;
+        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map(opt => opt && opt[1]).join(",");
     }
 }

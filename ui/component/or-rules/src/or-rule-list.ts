@@ -17,7 +17,8 @@ import {
     RulesetNode
 } from "./index";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {MenuItem, getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {translate} from "@openremote/or-translate";
 import i18next from "i18next";
 import {showErrorDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -257,7 +258,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 addTemplate = getContentWithMenuTemplate(
                     html`<or-mwc-input type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                     allowedLanguages.map((l) => {
-                        return {value: l, text: i18next.t(l)} as MenuItem;
+                        return {value: l, text: i18next.t(l)} as ListItem;
                     }),
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
@@ -292,7 +293,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         
                         ${getContentWithMenuTemplate(
             html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant"></or-mwc-input>`,
-            sortOptions.map((sort) => { return { value: sort, text: i18next.t(sort) } as MenuItem; }),
+            sortOptions.map((sort) => { return { value: sort, text: i18next.t(sort) } as ListItem; }),
             this.sortBy,
             (v) => this._onSortClicked(v as string))}
                     </div>

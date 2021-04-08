@@ -392,7 +392,7 @@ export class OrEditAssetPanel extends LitElement {
         const dialog = showDialog({
             content: html`
                 <div id="meta-creator">
-                    <or-mwc-list id="meta-creator-list" .type="${ListType.CHECKBOX}" .listItems="${metaItemList}"></or-mwc-list>
+                    <or-mwc-list id="meta-creator-list" .type="${ListType.MULTI_CHECKBOX}" .listItems="${metaItemList}"></or-mwc-list>
                 </div>
             `,
             styles: html`

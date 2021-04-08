@@ -3,7 +3,8 @@ import {AssetTypeInfo, RuleCondition, WellknownAssets} from "@openremote/model";
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
@@ -15,7 +16,7 @@ import {OrRuleAssetQuery} from "./or-rule-asset-query";
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
 
-export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): MenuItem[] {
+export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): ListItem[] {
 
     let addAssetTypes = true;
     let addTimer = true;
@@ -25,7 +26,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
         addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIMER) >= 0;
     }
 
-    const menu: MenuItem[] = [];
+    const menu: ListItem[] = [];
 
     if (addAssetTypes && assetInfos) {
         menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
@@ -39,7 +40,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
                 value: assetTypeInfo.assetDescriptor!.name,
                 icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                 styleMap: styleMap
-            } as MenuItem;
+            } as ListItem;
         })
         .sort(Util.sortByString((listItem) => listItem.value!)));
     }
@@ -50,7 +51,7 @@ export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInf
             icon: "timer",
             value: ConditionType.TIMER,
             styleMap: {"--or-icon-fill": "#" + TIMER_COLOR}
-        } as MenuItem);
+        } as ListItem);
     }
 
     return menu;

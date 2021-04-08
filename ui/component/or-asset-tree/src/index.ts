@@ -22,7 +22,8 @@ import {InputType, OrInput} from "@openremote/or-mwc-components/or-mwc-input";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-dialog";
@@ -313,7 +314,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     
                     ${getContentWithMenuTemplate(
                             html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant" ?hidden="${!this.showSortBtn}"></or-mwc-input>`,
-                            ["name", "type", "createdOn", "status"].map((sort) => { return {value: sort, text: i18next.t(sort)} as MenuItem; }),
+                            ["name", "type", "createdOn", "status"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
                             this.sortBy,
                             (v) => this._onSortClicked(v as string))}
                 </div>

@@ -9,25 +9,16 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit-element";
-import {styleMap} from "lit-html/directives/style-map";
 import {MDCMenu} from "@material/menu";
-import { DefaultColor8, DefaultColor4 } from "@openremote/core";
+import {DefaultColor4, DefaultColor8} from "@openremote/core";
 
 // @ts-ignore
 import listStyle from "@material/list/dist/mdc.list.css";
 // @ts-ignore
 import menuSurfaceStyle from "@material/menu-surface/dist/mdc.menu-surface.css";
+import {getItemTemplate, getListTemplate, ListItem, ListType, MDCListActionEvent} from "./or-mwc-list";
 // @ts-ignore
 const menuStyle = require("@material/menu/dist/mdc.menu.css");
-
-export interface MenuItem {
-    icon?: string;
-    trailingIcon?: string;
-    text?: string;
-    secondaryText?: string;
-    value: string;
-    styleMap?: {[style: string]: string};
-}
 
 export class OrMwcMenuChangedEvent extends CustomEvent<string | string[]> {
 
@@ -61,7 +52,7 @@ declare global {
     }
 }
 
-export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (MenuItem | MenuItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false): TemplateResult {
+export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true): TemplateResult {
 
     const openMenu = (evt: Event) => {
         if (!menuItems) {
@@ -74,7 +65,7 @@ export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (
     return html`
         <span>
             <span @click="${openMenu}">${content}</span>
-            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .values="${selectedValues}" .menuItems="${menuItems}" id="menu"></or-mwc-menu>` : ``}
+            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" id="menu"></or-mwc-menu>` : ``}
         </span>
     `;
 }
@@ -115,7 +106,7 @@ export class OrMwcMenu extends LitElement {
     }
 
     @property({type: Array})
-    public menuItems?: (MenuItem | MenuItem[] | null)[];
+    public menuItems?: (ListItem | ListItem[] | null)[];
 
     @property({type: Array})
     public values?: string[] | string;
@@ -127,7 +118,7 @@ export class OrMwcMenu extends LitElement {
     public visible?: boolean;
 
     @property({type: Boolean, attribute: true})
-    public twoLine?: boolean;
+    public translateValues?: boolean;
 
     @query("#wrapper")
     protected _wrapperElem!: HTMLElement;
@@ -155,83 +146,37 @@ export class OrMwcMenu extends LitElement {
             return html``;
         }
 
+        const content = this.getItemsTemplate(this.menuItems, this.translateValues);
+        const isTwoLine = this.menuItems && this.menuItems.some((item) => item && !Array.isArray(item) && !!item.secondaryText);
+
         return html`
             <div id="wrapper" class="mdc-menu-surface--anchor">
                 <div class="mdc-menu mdc-menu-surface" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
-                    <ul class="mdc-list ${this.twoLine ? "mdc-list--two-line" : ""}" role="menu" aria-hidden="true" aria-orientation="vertical" tabindex="-1">
-                        ${this.getItemsTemplate(this.menuItems)}
-                    </ul>
+                    ${getListTemplate(ListType.MULTI_TICK, content, isTwoLine, "menu")}
                 </div>
             </div>
         `;
     }
 
-    protected getItemsTemplate(items: (MenuItem | MenuItem[] | null)[]): TemplateResult {
+    protected getItemsTemplate(items: (ListItem | ListItem[] | null)[], translate?: boolean): TemplateResult {
 
-        const hasIcon = this.multiSelect || items.find((mi) => mi && !Array.isArray(mi) && mi.icon);
+        const type = this.multiSelect ? ListType.MULTI_TICK : ListType.PLAIN;
 
         return html`
-            ${items.map((item) => {
-                if (item === null) {
-                    return html`<li class="mdc-list-divider" role="separator"></li>`;
-                }
-                if (Array.isArray(item)) {
-                    return html`
-                        <li>
-                            <ul class="mdc-menu__selection-group">
-                                ${this.getItemsTemplate(item)}
-                            </ul>
-                        </li>
-                    `;
-                }
+            ${items.map((item, index) => {
 
-                const isSelected = this.isValueSelected((item as MenuItem).value);
-                let icon = item.icon;
-                const text = item.text !== undefined ? item.text : item.value;
-                let leftTemplate: TemplateResult | string = ``;
-                let rightTemplate: TemplateResult | string = ``;
-                
-                if (this.multiSelect) {
-                    icon = isSelected ? "check" : undefined;
-                }
-                
-                if (hasIcon) {
-                    leftTemplate = html`<span class="mdc-list-item__graphic mdc-menu__selection-group-icon" aria-hidden="true">
-                        <or-icon icon="${icon}"></or-icon>
-                    </span>`;
-                }
-                
-                if (item.trailingIcon) {
-                    rightTemplate = html`<span class="mdc-list-item__meta" aria-hidden="true">
-                        <or-icon icon="${item.trailingIcon}"></or-icon>
-                    </span>`;
-                }
-                
+            if (Array.isArray(item)) {
                 return html`
-                    <li @click="${(e: MouseEvent) => {this._itemClicked(e, item)}}" style="${item.styleMap ? styleMap(item.styleMap) : ""}" class="mdc-list-item ${isSelected ? "mdc-menu-item--selected" : ""}" role="menuitem" aria-checked="${isSelected}">
-                        ${leftTemplate}
-                        ${!text ? html`` : html`
-                            <span class="mdc-list-item__text">
-                                <span class="${this.twoLine ? "mdc-list-item__primary-text" : ""}"><or-translate value="${item.text}"></or-translate></span>
-                                ${this.twoLine ? html`<span class="mdc-list-item__secondary-text"><or-translate value="${item.secondaryText}"></or-translate></span>` : ``}
-                            </span>
-                        `}
-                        ${rightTemplate}
+                    <li>
+                        <ul class="mdc-menu__selection-group">
+                            ${this.getItemsTemplate(item, translate)}
+                        </ul>
                     </li>
                 `;
-            })}
-        `;
-    }
-
-    protected isValueSelected(value: string): boolean {
-
-        if (Array.isArray(this.values) && this.values.length > 0) {
-            if (this.multiSelect) {
-                return !!this.values.find((v) => v === value);
             }
-            return this.values[0] === value;
-        }
-        return this.values === value;
+
+            return getItemTemplate(item, index, this.values, type, translate, (e, item) => this._itemClicked(e, item));
+        })}`;
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -262,7 +207,7 @@ export class OrMwcMenu extends LitElement {
         this.dispatchEvent(new OrMwcMenuClosedEvent());
     }
 
-    private _itemClicked(e: MouseEvent, item: MenuItem) {
+    private _itemClicked(e: MouseEvent, item: ListItem) {
         e.stopPropagation();
         const value = item.value;
 
