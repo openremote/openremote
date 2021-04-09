@@ -208,17 +208,6 @@ export class OrAddAssetDialog extends LitElement {
             <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
             <or-translate style="text-transform: capitalize; margin-bottom: 1.5em" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
             
-            
-            ${descriptor.name !== "GroupAsset"
-                ? html ``
-                : html`
-                    <p>${this.selectedChildAssetType}</p>
-                    <or-mwc-input type="${InputType.SELECT}" value="${this.selectedType}" .options="${this.getAssetMenuItems()}" 
-                              @or-input-changed="${(e: OrInputChangedEvent) => this.onChildAssetTypeChange(e.detail.value)}" 
-                              style="display:block;text-transform: capitalize;"></or-mwc-input>
-                `
-            }
-    
             ${!attributes
                 ? html``
                 : html`
@@ -241,16 +230,6 @@ export class OrAddAssetDialog extends LitElement {
                     </div>
                 `} 
         `;
-    }
-
-    protected getAssetMenuItems() {
-        return AssetModelUtil.getAssetDescriptors()
-            .map(e => [e.name, Util.getAssetTypeLabel(e)])
-            .sort(Util.sortByString(listItem => listItem[1]!));
-    }
-
-    protected onChildAssetTypeChange(childAssetTypeName: string) {
-        this.selectedChildAssetType = childAssetTypeName;
     }
 
     protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
