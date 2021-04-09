@@ -1,8 +1,8 @@
 import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS, PropertyValues} from "lit-element";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
-import "@openremote/or-input";
-import {InputType} from "@openremote/or-input";
+import "./or-mwc-input";
+import {InputType} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { Util } from "@openremote/core";
 
@@ -274,7 +274,7 @@ export class OrMwcDialog extends LitElement {
                                 ${this.dialogActions ? this.dialogActions.map((action) => {
                                     return html`
                                     <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.actionName}">
-                                        ${typeof(action.content) === "string" ? html`<or-input .type="${InputType.BUTTON}" .disabled="${action.disabled}" .label="${action.content}"></or-input>` : action.content}
+                                        ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
                                     </div>`;
                                 }) : ``}
                             </footer>

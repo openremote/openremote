@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.*
 import io.openremote.app.R
@@ -373,12 +374,26 @@ class GeofenceProvider(val context: Context) {
         LOG.info("Requesting geofence permissions")
         if (context.checkSelfPermission(ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                activity.requestPermissions(
-                    arrayOf(
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity,
                         ACCESS_BACKGROUND_LOCATION
-                    ),
-                    locationResponseCode
-                )
+                    )
+                ) {
+                    AlertDialog.Builder(activity)
+                        .setIcon(R.mipmap.ic_launcher)
+                        .setTitle(R.string.location_background_disabled_title)
+                        .setMessage(R.string.background_location_alert_body)
+                        .setNegativeButton(R.string.background_location_decline, null)
+                        .setPositiveButton(R.string.background_location_accept) { dialog, which ->
+                            activity.requestPermissions(
+                                arrayOf(
+                                    ACCESS_BACKGROUND_LOCATION
+                                ),
+                                locationResponseCode
+                            )
+                        }
+                        .show()
+                }
             }
         } else {
             activity.requestPermissions(
@@ -397,20 +412,26 @@ class GeofenceProvider(val context: Context) {
             if (context.checkSelfPermission(ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
                 context.checkSelfPermission(ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
             ) {
-                AlertDialog.Builder(activity)
-                    .setIcon(R.mipmap.ic_launcher)
-                    .setTitle(R.string.background_location_alert_title)
-                    .setMessage(R.string.background_location_alert_body)
-                    .setNegativeButton(R.string.background_location_decline, null)
-                    .setPositiveButton(R.string.background_location_accept) { dialog, which ->
-                        activity.requestPermissions(
-                            arrayOf(
-                                ACCESS_BACKGROUND_LOCATION
-                            ),
-                            locationResponseCode
-                        )
-                    }
-                    .show()
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        activity,
+                        ACCESS_BACKGROUND_LOCATION
+                    )
+                ) {
+                    AlertDialog.Builder(activity)
+                        .setIcon(R.mipmap.ic_launcher)
+                        .setTitle(R.string.background_location_alert_title)
+                        .setMessage(R.string.background_location_alert_body)
+                        .setNegativeButton(R.string.background_location_decline, null)
+                        .setPositiveButton(R.string.background_location_accept) { dialog, which ->
+                            activity.requestPermissions(
+                                arrayOf(
+                                    ACCESS_BACKGROUND_LOCATION
+                                ),
+                                locationResponseCode
+                            )
+                        }
+                        .show()
+                }
             }
         }
     }

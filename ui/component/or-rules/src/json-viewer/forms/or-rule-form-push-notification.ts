@@ -1,9 +1,9 @@
 import {customElement, html, LitElement, css, property} from "lit-element";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import "@openremote/or-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {
     RuleActionNotification,
     PushNotificationMessage
@@ -20,7 +20,7 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
 
     static get styles() {
         return css`
-            or-input {
+            or-mwc-input {
                 margin-bottom: 20px;
                 min-width: 420px;
                 width: 100%;
@@ -47,43 +47,43 @@ export class OrRuleFormPushNotification extends translate(i18next)(LitElement) {
         const buttons = message && message.buttons ? message.buttons : [];
         return html`
             <form style="display:grid">
-                <or-input value="${title}" 
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "title")}" 
+                <or-mwc-input value="${title}" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "title")}" 
                     .label="${i18next.t("subject")}" 
                     type="${InputType.TEXT}" 
                     required 
-                    placeholder=" "></or-input>
+                    placeholder=" "></or-mwc-input>
 
-                <or-input value="${body}" 
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "body")}" 
+                <or-mwc-input value="${body}" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "body")}" 
                     .label="${i18next.t("message")}" 
                     type="${InputType.TEXTAREA}" 
                     required 
-                    placeholder=" " ></or-input>
-                <or-input value="${actionUrl}" 
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "action.url")}" 
+                    placeholder=" " ></or-mwc-input>
+                <or-mwc-input value="${actionUrl}" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "action.url")}" 
                     .label="${i18next.t("openWebsiteUrl")}" 
                     type="${InputType.TEXT}" 
                     required 
-                    placeholder=" "></or-input>
+                    placeholder=" "></or-mwc-input>
 
-                <or-input .value="${action && typeof action.openInBrowser !== "undefined" ? (action && action.openInBrowser) : true}" 
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "action.openInBrowser")}" 
+                <or-mwc-input .value="${action && typeof action.openInBrowser !== "undefined" ? (action && action.openInBrowser) : true}" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "action.openInBrowser")}" 
                     .label="${i18next.t("openInBrowser")}" 
                     type="${InputType.SWITCH}" 
-                    placeholder=" "></or-input>  
+                    placeholder=" "></or-mwc-input>  
                 
-                <or-input value="${buttons && buttons[0] && buttons[0].title ? buttons[0].title : ""}" 
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "buttons.0.title")}" 
+                <or-mwc-input value="${buttons && buttons[0] && buttons[0].title ? buttons[0].title : ""}" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "buttons.0.title")}" 
                     .label="${i18next.t("buttonTextConfirm")}" 
                     type="${InputType.TEXT}" 
                     required 
-                    placeholder=" "></or-input>
-                <or-input value="${buttons && buttons[1] && buttons[1].title ? buttons[1].title : ""}" 
-                    @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "buttons.1.title")}" 
+                    placeholder=" "></or-mwc-input>
+                <or-mwc-input value="${buttons && buttons[1] && buttons[1].title ? buttons[1].title : ""}" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "buttons.1.title")}" 
                     .label="${i18next.t("buttonTextDecline")}" 
                     type="${InputType.TEXT}" 
-                    placeholder=" "></or-input>
+                    placeholder=" "></or-mwc-input>
             </form>
         `
     }

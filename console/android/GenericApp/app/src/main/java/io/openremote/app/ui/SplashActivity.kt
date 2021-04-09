@@ -12,6 +12,8 @@ import io.openremote.app.ui.MainActivity.Companion.APP_CONFIG_KEY
 
 class SplashActivity : Activity() {
 
+    private val SHOW_CONDITIONS_REQUEST = 34563
+
     private lateinit var binding: ActivitySplashBinding
 
     var sharedPreferences: SharedPreferences? = null
@@ -24,6 +26,17 @@ class SplashActivity : Activity() {
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
+        val privacyPolicyAccepted = sharedPreferences!!.getBoolean("privacyPolicyAccepted", false)
+
+        if (!privacyPolicyAccepted) {
+            val intent = Intent(this@SplashActivity, PrivacyPolicyActivity::class.java)
+            startActivityForResult(intent, SHOW_CONDITIONS_REQUEST)
+        } else {
+            startNextActivity()
+        }
+    }
+
+    private fun startNextActivity() {
         val project = sharedPreferences!!.getString("project", null)
         val realm = sharedPreferences!!.getString("realm", null)
 
@@ -32,7 +45,11 @@ class SplashActivity : Activity() {
             apiManager.getAppConfig { statusCode, appConfig, error ->
                 if (statusCode in 200..299) {
                     val intent = Intent(this@SplashActivity, MainActivity::class.java)
-                    intent.putExtra(APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
+                    intent.putExtra(
+                        APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(
+                            appConfig
+                        )
+                    )
                     startActivity(intent)
                     finish()
                 } else {
@@ -44,5 +61,15 @@ class SplashActivity : Activity() {
             startActivity(Intent(this@SplashActivity, ProjectActivity::class.java))
             finish()
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if(requestCode == SHOW_CONDITIONS_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                sharedPreferences!!.edit().putBoolean("privacyPolicyAccepted", true).apply()
+                startNextActivity()
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 }

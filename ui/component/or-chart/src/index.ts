@@ -21,16 +21,16 @@ import manager, {
     Util
 } from "@openremote/core";
 import "@openremote/or-asset-tree";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-panel";
 import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
 import Chart, {ChartDataSets, ChartOptions} from "chart.js";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import * as ChartAnnotation from "chartjs-plugin-annotation";
 export class OrChartEvent extends CustomEvent<OrChartEventDetail> {
 
@@ -264,7 +264,7 @@ const style = css`
         flex: 1 1 0;
     }
     
-    .dialog-container > or-input{
+    .dialog-container > or-mwc-input {
         background-color: var(--or-app-color2);
         border-left: 3px solid var(--or-app-color4);
     }
@@ -442,15 +442,15 @@ export class OrChart extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <div class="interval-controls" style="margin-right: 6px;">
                         ${getContentWithMenuTemplate(
-            html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-input>`,
+            html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
             this._getPeriodOptions(),
             this.period,
             (value) => this.setPeriodOption(value))}
 
                         ${this.periodCompare ? html `
-                                <or-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-input>
+                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
                         ` : html`
-                                <or-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(true)}" icon="plus"></or-input>
+                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(true)}" icon="plus"></or-mwc-input>
                         `}
                     </div>
                   
@@ -459,24 +459,24 @@ export class OrChart extends translate(i18next)(LitElement) {
                         ${this.periodCompare ? html `
                             <span class="line-label solid"></span>
                         `: ``}
-                        <or-input id="ending-date" 
+                        <or-mwc-input id="ending-date" 
                             .checkAssetWrite="${false}"
                             .type="${endDateInputType}" 
                             ?disabled="${disabled}" 
                             .value="${this.timestamp}" 
-                            @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
+                            @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
                         <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
                         <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
                     </div>
                     ${this.periodCompare ? html `
                         <div class="period-controls">
                         <span class="line-label dashed"></span>
-                            <or-input id="ending-date" 
+                            <or-mwc-input id="ending-date" 
                                 .checkAssetWrite="${false}"
                                 .type="${endDateInputType}" 
                                 ?disabled="${disabled}" 
                                 .value="${this.compareTimestamp}" 
-                                @or-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-input>
+                                @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-mwc-input>
                             <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
                             <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
                         </div>
@@ -501,7 +501,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             `
                         })}
                     </div>
-                    <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-input>
+                    <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
 
                 </div>
             </div>
@@ -517,28 +517,28 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
                         <or-asset-tree id="chart-asset-tree" readonly .selectedIds="${this.activeAsset ? [this.activeAsset.id] : undefined}"></or-asset-tree>
                             ${this.activeAsset && this.activeAsset.attributes ? html`
-                                <or-input id="chart-attribute-picker" 
+                                <or-mwc-input id="chart-attribute-picker" 
                                         style="display:flex;"
                                         .label="${i18next.t("attribute")}" 
                                         .type="${InputType.LIST}"
-                                        .options="${this._getAttributeOptions()}"></or-input>
+                                        .options="${this._getAttributeOptions()}"></or-mwc-input>
                             `:``}
                     </div>
                     <footer class="mdc-dialog__actions">
-                        <or-input class="button" 
+                        <or-mwc-input class="button" 
                                 slot="secondaryAction"
                                 .type="${InputType.BUTTON}" 
                                 label="${i18next.t("cancel")}" 
                                 class="mdc-button mdc-dialog__button" 
-                                data-mdc-dialog-action="no"></or-input>
+                                data-mdc-dialog-action="no"></or-mwc-input>
 
-                        <or-input class="button" 
+                        <or-mwc-input class="button" 
                             slot="primaryAction"
                             .type="${InputType.BUTTON}" 
                             label="${i18next.t("add")}" 
                             class="mdc-button mdc-dialog__button" 
                             data-mdc-dialog-action="yes"
-                            @click="${this.addAttribute}"></or-input>
+                            @click="${this.addAttribute}"></or-mwc-input>
 
                     </footer>
                     </div>
@@ -618,6 +618,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (!this._data) {
             return;
         }
+
         if (!this._chart) {
             this._chart = new Chart(this._chartElem, {
                 type: "line",
@@ -902,7 +903,10 @@ export class OrChart extends translate(i18next)(LitElement) {
         });
 
         let data = this.assetAttributes.map(async (attribute, index) => {
-            const valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.timestamp);
+            var valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.timestamp);
+            if (valuepoints) {
+                valuepoints =  valuepoints.filter(value => value.y != null);
+            }
             const dataset = {...datasetBases[index],
                 data: valuepoints
             };
@@ -920,7 +924,10 @@ export class OrChart extends translate(i18next)(LitElement) {
         }));
 
         const predictedData = this.assetAttributes.map(async (attribute, index) => {
-            const valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.timestamp);
+            var valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.timestamp);
+            if (valuepoints) {
+                valuepoints = valuepoints.filter(value => value.y != null);
+            }
             const dataset = {...datasetBases[index],
                 data: valuepoints,
                 borderDash: [2, 4]
@@ -938,7 +945,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if(this.periodCompare) {
             const cData = this.assetAttributes.map(async (attribute, index) => {
-                const valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                var valuepoints = await this._loadAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                if (valuepoints) {
+                    valuepoints = valuepoints.filter(value => value.y != null);
+                }
                 const dataset = {...datasetBases[index],
                     data: valuepoints,
                     borderDash: [10, 10]
@@ -954,7 +964,10 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
             
             let cPredictedData = this.assetAttributes.map(async (attribute, index) => {
-                const valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                var valuepoints = await this._loadPredictedAttributeData(this.assets[index], attribute, this.compareTimestamp);
+                if (valuepoints) {
+                    valuepoints = valuepoints.filter(value => value.y != null);
+                }
                 const dataset = {...datasetBases[index],
                     data: valuepoints,
                     borderDash: [2, 4]

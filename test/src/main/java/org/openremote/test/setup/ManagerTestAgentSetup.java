@@ -33,13 +33,13 @@ public class ManagerTestAgentSetup extends ManagerSetup {
 
     private static final Logger LOG = Logger.getLogger(ManagerTestAgentSetup.class.getName());
 
-    public static final String SETUP_IMPORT_DEMO_AGENT_KNX = "SETUP_IMPORT_DEMO_AGENT_KNX";
-    public static final String SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP = "SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP";
-    public static final String SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP = "SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP";
+    public static final String SETUP_CREATE_AGENT_KNX = "SETUP_CREATE_AGENT_KNX";
+    public static final String SETUP_CREATE_AGENT_KNX_GATEWAY_IP = "SETUP_CREATE_AGENT_KNX_GATEWAY_IP";
+    public static final String SETUP_CREATE_AGENT_KNX_LOCAL_IP = "SETUP_CREATE_AGENT_KNX_LOCAL_IP";
 
-    public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS = "SETUP_IMPORT_DEMO_AGENT_VELBUS";
-    public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST = "SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST";
-    public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT = "SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT";
+    public static final String SETUP_CREATE_AGENT_VELBUS = "SETUP_CREATE_AGENT_VELBUS";
+    public static final String SETUP_CREATE_AGENT_VELBUS_HOST = "SETUP_CREATE_AGENT_VELBUS_HOST";
+    public static final String SETUP_CREATE_AGENT_VELBUS_PORT = "SETUP_CREATE_AGENT_VELBUS_PORT";
 
     public String masterRealm;
 
@@ -54,13 +54,13 @@ public class ManagerTestAgentSetup extends ManagerSetup {
     public ManagerTestAgentSetup(Container container) {
         super(container);
 
-        this.knx = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_KNX, false);
-        this.knxGatewayIp = getString(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP, "localhost");
-        this.knxLocalIp = getString(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP, "localhost");
+        this.knx = getBoolean(container.getConfig(), SETUP_CREATE_AGENT_KNX, false);
+        this.knxGatewayIp = getString(container.getConfig(), SETUP_CREATE_AGENT_KNX_GATEWAY_IP, "localhost");
+        this.knxLocalIp = getString(container.getConfig(), SETUP_CREATE_AGENT_KNX_LOCAL_IP, "localhost");
 
-        this.velbus = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS, false);
-        this.velbusHost = getString(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS_HOST, "localhost");
-        this.velbusPort = getInteger(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS_PORT, 6000);
+        this.velbus = getBoolean(container.getConfig(), SETUP_CREATE_AGENT_VELBUS, false);
+        this.velbusHost = getString(container.getConfig(), SETUP_CREATE_AGENT_VELBUS_HOST, "localhost");
+        this.velbusPort = getInteger(container.getConfig(), SETUP_CREATE_AGENT_VELBUS_PORT, 6000);
     }
 
     @Override

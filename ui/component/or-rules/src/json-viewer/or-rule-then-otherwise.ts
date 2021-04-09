@@ -12,8 +12,9 @@ import {
     WellknownAssets
 } from "@openremote/model";
 import i18next from "i18next";
-import {InputType} from "@openremote/or-input";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {AssetModelUtil, Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
@@ -22,7 +23,7 @@ import {translate} from "@openremote/or-translate";
 const NOTIFICATION_COLOR = "4B87EA";
 const WAIT_COLOR = "EACC54";
 
-function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): MenuItem[] {
+function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): ListItem[] {
 
     let addAssetTypes = true;
     let addWait = true;
@@ -37,7 +38,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
     }
 
 
-    const menu: MenuItem[] = [];
+    const menu: ListItem[] = [];
 
     if (addAssetTypes && assetInfos) {
         menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
@@ -51,7 +52,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
                 value: assetTypeInfo.assetDescriptor!.name,
                 icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
                 styleMap: styleMap
-            } as MenuItem;
+            } as ListItem;
         }));
     }
 
@@ -61,7 +62,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             icon: "email",
             value: ActionType.EMAIL,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        } as MenuItem);
+        } as ListItem);
     }
     
     if (addPushNotification) {
@@ -70,7 +71,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             icon: "cellphone-message",
             value: ActionType.PUSH_NOTIFICATION,
             styleMap: {"--or-icon-fill": "#" + NOTIFICATION_COLOR}
-        } as MenuItem);
+        } as ListItem);
     }
 
     if (addWait) {
@@ -79,7 +80,7 @@ function getActionTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]):
             icon: "timer",
             value: ActionType.WAIT,
             styleMap: {"--or-icon-fill": "#" + WAIT_COLOR}
-        } as MenuItem);
+        } as ListItem);
     }
 
     menu.sort(Util.sortByString((listItem) => listItem.value!));
@@ -99,7 +100,7 @@ export enum RecurrenceOption {
     ONCE_PER_WEEK = "oncePerWeek",
 }
 
-function getRecurrenceMenu(config?: RulesConfig): MenuItem[] {
+function getRecurrenceMenu(config?: RulesConfig): ListItem[] {
 
     if (config && config.controls && config.controls.allowedRecurrenceOptions) {
         return config.controls.allowedRecurrenceOptions.map((value) => {
@@ -233,13 +234,13 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         }
         if(readonly) {
             recurrenceTemplate = html`
-             <or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>
+             <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>
             `;
         } else {
         recurrenceTemplate = html`
-                <div style="--or-input-color: #${buttonColor}; margin-right: 6px;">
+                <div style="--or-mwc-input-color: #${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
-                        html`<or-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-input>`,
+                        html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>`,
                         getRecurrenceMenu(this.config),
                         value,
                         (value) => this.setRecurrenceOption(value as RecurrenceOption))}
@@ -297,13 +298,13 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
             if(readonly) {
                 typeTemplate = html`
-                  <or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>
+                  <or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
                 `;
             } else {
                 typeTemplate = html`
-                    <div id="type" style="--or-input-color: #${buttonColor}">
+                    <div id="type" style="--or-mwc-input-color: #${buttonColor}">
                         ${getContentWithMenuTemplate(
-                            html`<or-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-input>`,
+                            html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
                             getActionTypesMenu(this.config, this.assetInfos),
                             action.action,
                             (values: string[] | string) => this.setActionType(actions, action, values as string))}
@@ -353,7 +354,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                     ${thenAllowAdd ? html`
                         <span class="add-button-wrapper">
                             ${getContentWithMenuTemplate(
-                                html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                                html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                                 getActionTypesMenu(this.config, this.assetInfos),
                                 undefined,
                                 (values: string[] | string) => this.addAction(values as string))}

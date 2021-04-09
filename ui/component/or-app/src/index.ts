@@ -12,20 +12,20 @@ import {
 import {unsafeHTML} from "lit-html/directives/unsafe-html";
 import {AppConfig, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
-import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import "@openremote/or-mwc-components/dist/or-mwc-snackbar";
+import "@openremote/or-mwc-components/or-mwc-menu";
+import "@openremote/or-mwc-components/or-mwc-snackbar";
 import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
 import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult, OREvent} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
-import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
-import {OrMwcSnackbar} from "@openremote/or-mwc-components/dist/or-mwc-snackbar";
+import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage} from "./app";
-import { InputType, OrInputChangedEvent } from "@openremote/or-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
 const DefaultLogo = require("../images/logo.png");
 const DefaultMobileLogo = require("../images/logo-mobile.png");
@@ -248,7 +248,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 height: 24px;
             }
             
-            #login_wrapper > or-input {
+            #login_wrapper > or-mwc-input {
                 margin: 10px 0;
                 width: 100%;
             }
@@ -259,8 +259,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             title: html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`,
             content: html`
                 <div id="login_wrapper">
-                    <or-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-input>            
-                    <or-input .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-input>           
+                    <or-mwc-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
+                    <or-mwc-input .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
                 </div>
             `,
             actions: [
@@ -274,7 +274,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                             password: p!
                         });
                     },
-                    content: html`<or-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-input>`
+                    content: html`<or-mwc-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-mwc-input>`
                 }
             ]
         }, document.body); // Attach to document as or-app isn't visible until initialised

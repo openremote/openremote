@@ -24,7 +24,7 @@ Internet Explorer 11 is also supported.
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/live-xxx.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-input
+[npm-url]: https://npmjs.org/package/@openremote/or-chart
 [travis-image]: https://img.shields.io/travis/live-js/live-xxx/master.svg
 [travis-url]: https://travis-ci.org/live-js/live-xxx
 [coveralls-image]: https://img.shields.io/coveralls/live-js/live-xxx/master.svg

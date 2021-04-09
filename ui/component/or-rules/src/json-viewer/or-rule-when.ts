@@ -4,10 +4,10 @@ import {OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {buttonStyle} from "../style";
 import "./or-rule-condition";
 import i18next from "i18next";
-import {InputType} from "@openremote/or-input";
+import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {getWhenTypesMenu, updateRuleConditionType} from "./or-rule-condition";
-import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import { translate } from "@openremote/or-translate";
 
 enum ResetOption {
@@ -193,7 +193,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             addTemplate = html`
                 <span class="add-button-wrapper">
                     ${getContentWithMenuTemplate(
-                        html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                        html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                         getWhenTypesMenu(this.config, this.assetInfos),
                         undefined,
                         (values: string[] | string) => this.addCondition(group, values as string))}
@@ -248,7 +248,7 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
                 <or-panel>
                     <span class="add-button-wrapper">
                         ${getContentWithMenuTemplate(
-                            html`<or-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-input>`,
+                            html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                             getWhenTypesMenu(this.config, this.assetInfos),
                             undefined,
                             (values: string[] | string) => this.addGroup(this.rule!.when!, values as string))}

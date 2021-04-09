@@ -395,6 +395,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         List<RoleRepresentation> addRoles = roles == null ? Collections.emptyList() : Arrays.stream(roles)
             .filter(cr -> clientMappedRoles.stream().noneMatch(r -> r.getName().equals(cr)))
             .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr)).findFirst().orElse(null))
+            .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
         // Remove obsolete roles

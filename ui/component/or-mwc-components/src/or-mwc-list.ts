@@ -13,9 +13,11 @@ import {styleMap} from "lit-html/directives/style-map";
 import {ifDefined} from "lit-html/directives/if-defined";
 import {MDCList, MDCListActionEvent} from "@material/list";
 import { DefaultColor8, DefaultColor4, Util } from "@openremote/core";
-import i18next from "i18next";
+import "@openremote/or-translate";
 const listStyle = require("@material/list/dist/mdc.list.css");
 const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
+
+export {MDCListActionEvent};
 
 export interface ListItem {
     icon?: string;
@@ -46,33 +48,12 @@ declare global {
     }
 }
 
-// language=CSS
-const style = css`
-    :host {
-        white-space: nowrap;
-        --internal-or-input-color: var(--or-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
-        --internal-or-input-text-color: var(--or-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));
-        
-        --mdc-theme-primary: var(--internal-or-input-color);
-        --mdc-theme-on-primary: var(--internal-or-input-text-color);
-        --mdc-theme-secondary: var(--internal-or-input-color);
-    }
-    
-    .mdc-list-item__graphic {
-        margin-right: 16px;
-    }
-
-    a {
-        text-decoration: none;
-        color: rgba(0, 0, 0, 0.87);
-    }     
-`;
-
 export enum ListType {
     PLAIN = "PLAIN",
-    SELECTABLE = "SELECTABLE",
+    SELECT = "SELECT",
     RADIO = "RADIO",
-    CHECKBOX = "CHECKBOX"
+    MULTI_CHECKBOX = "MULTI_CHECKBOX",
+    MULTI_TICK = "MULTI_TICK"
 }
 
 export type ListGroupItem = {
@@ -93,6 +74,161 @@ export function createListGroup(lists: ListGroupItem[]) {
     `;
 }
 
+export function getListTemplate(type: ListType, content: TemplateResult, isTwoLine?: boolean, role?: string, actionHandler?: (ev: MDCListActionEvent) => void): TemplateResult {
+
+    role = role || "listbox";
+
+    switch (type) {
+        case ListType.RADIO:
+            role = "radiogroup";
+            break;
+        case ListType.MULTI_CHECKBOX:
+            role = "group";
+            break;
+    }
+
+    return html`
+        <ul id="list" class="mdc-list${isTwoLine ? " mdc-list--two-line" : ""}" role="${ifDefined(role)}" @MDCList:action="${(ev: MDCListActionEvent) => actionHandler && actionHandler(ev)}" aria-hidden="true" aria-orientation="vertical" tabindex="-1">
+            ${content}
+        </ul>
+    `;
+}
+
+export function getItemTemplate(item: ListItem | null, index: number, selectedValues: string | string[] | undefined, type: ListType, translate?: boolean, itemClickCallback?: (e: MouseEvent, item: ListItem) => void): TemplateResult {
+
+    if (item === null) {
+        // Divider
+        return html`<li role="separator" class="mdc-list-divider"></li>`;
+    }
+
+    const listItem = item as ListItem;
+    const multiSelect = type === ListType.MULTI_CHECKBOX || type === ListType.MULTI_TICK;
+    const value = listItem.value;
+    const isSelected = type !== ListType.PLAIN && (selectedValues === value || (Array.isArray(selectedValues) && selectedValues.length > 0 && ((multiSelect && selectedValues.some((v) => v === value)) || (!multiSelect && selectedValues[0] === value))));
+    const text = listItem.text !== undefined ? listItem.text : listItem.value;
+    const secondaryText = listItem.secondaryText;
+    let role: string | undefined = "menuitem";
+    let ariaSelected: string | undefined;
+    let ariaChecked: string | undefined;
+    let tabIndex: string | undefined;
+    let textTemplate: TemplateResult | string = ``;
+    let leftTemplate: TemplateResult | string = ``;
+    let rightTemplate: TemplateResult | string = ``;
+    let icon = listItem.icon;
+    let selectedClassName = "mdc-list-item--selected";
+    translate = translate || item.translate;
+
+    if (multiSelect && type === ListType.MULTI_TICK) {
+        icon = isSelected ? "check" : undefined;
+    }
+
+    if (type === ListType.MULTI_TICK || icon) {
+        leftTemplate = html`
+                <span class="mdc-list-item__graphic">
+                    <or-icon icon="${icon}"></or-icon>
+                </span>
+            `;
+    }
+
+    if (listItem.trailingIcon) {
+        rightTemplate = html`
+                <span class="mdc-list-item__meta" aria-hidden="true">
+                    <or-icon icon="${listItem.trailingIcon}"></or-icon>
+                </span>
+            `;
+    }
+
+    switch (type) {
+        case ListType.SELECT:
+            ariaSelected = isSelected ? "true" : "false";
+            tabIndex = isSelected || ((!selectedValues || selectedValues.length === 0) && index === 0) ? "0" : undefined;
+            role = "option";
+            break;
+        case ListType.RADIO:
+            ariaChecked = isSelected ? "true" : "false";
+            role = "radio";
+            leftTemplate = html`
+                    <span class="mdc-list-item__graphic">
+                        <div class="mdc-radio">
+                            <input class="mdc-radio__native-control" id="radio-item-${index+1}" type="radio" value="${value}" />
+                            <div class="mdc-radio__background">
+                                <div class="mdc-radio__outer-circle"></div>
+                                <div class="mdc-radio__inner-circle"></div>
+                            </div>
+                        </div>
+                    </span>
+                `;
+            break;
+        case ListType.MULTI_CHECKBOX:
+            ariaChecked = isSelected ? "true" : "false";
+            role = "checkbox";
+            leftTemplate = html`
+                    <div class="mdc-checkbox">
+                        <input type="checkbox" class="mdc-checkbox__native-control" />
+                        <div class="mdc-checkbox__background">
+                            <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+                                <path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+                            </svg>
+                            <div class="mdc-checkbox__mixedmark"></div>
+                        </div>
+                    </div>
+                `;
+            break;
+        case ListType.MULTI_TICK:
+            ariaChecked = isSelected ? "true" : "false";
+            selectedClassName = "mdc-menu-item--selected";
+            break;
+    }
+
+    if (text) {
+        if (secondaryText !== undefined) {
+            textTemplate = html`
+                    <span class="mdc-list-item__text">
+                        <span class="mdc-list-item__primary-text">${translate ? html`<or-translate .value="${text}"></or-translate>` : text}</span>
+                        <span class="mdc-list-item__secondary-text">${translate ? html`<or-translate .value="${secondaryText || ""}"></or-translate>` : secondaryText || ""}</span>
+                    </span>
+                `;
+        } else {
+            if (type === ListType.RADIO) {
+                textTemplate = html`<label class="mdc-list-item__text" for="radio-item-${index+1}">${translate ? html`<or-translate .value="${text}"></or-translate>` : text}</label>`;
+            } else {
+                textTemplate = html`<span class="mdc-list-item__text">${translate ? html`<or-translate .value="${text}"></or-translate>` : text}</span>`;
+            }
+        }
+    }
+
+    return html`
+        <li @click="${(e: MouseEvent) => itemClickCallback && itemClickCallback(e, item)}" style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item ${isSelected ? selectedClassName : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}" data-value="${value}">
+            <span class="mdc-list-item__ripple"></span>
+            ${leftTemplate}
+            ${textTemplate}
+            ${rightTemplate}
+        </li>
+    `;
+}
+
+// language=CSS
+const style = css`
+    :host {
+        white-space: nowrap;
+        --internal-or-mwc-input-color: var(--or-mwc-input-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));    
+        --internal-or-mwc-input-text-color: var(--or-mwc-input-text-color, var(--or-app-color1, ${unsafeCSS(DefaultColor8)}));
+        
+        --mdc-theme-primary: var(--internal-or-mwc-input-color);
+        --mdc-theme-on-primary: var(--internal-or-mwc-input-text-color);
+        --mdc-theme-secondary: var(--internal-or-mwc-input-color);
+    }
+    
+    .mdc-list-item__graphic {
+        margin-right: 16px;
+    }
+
+    a {
+        text-decoration: none;
+        color: rgba(0, 0, 0, 0.87);
+    }     
+`;
+
 @customElement("or-mwc-list")
 export class OrMwcList extends LitElement {
 
@@ -111,7 +247,7 @@ export class OrMwcList extends LitElement {
     public values?: string[] | string;
 
     @property({type: String, attribute: true})
-    public type: ListType = ListType.SELECTABLE;
+    public type: ListType = ListType.SELECT;
 
     @query("#wrapper")
     protected _wrapperElem!: HTMLElement;
@@ -123,7 +259,6 @@ export class OrMwcList extends LitElement {
 
     constructor() {
         super();
-
     }
 
     disconnectedCallback(): void {
@@ -135,7 +270,6 @@ export class OrMwcList extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-
         if (this._mdcComponent && _changedProperties.has("values")) {
             if (!Util.objectsEqual(this.values, _changedProperties.get("values"))) {
                 const vals = this.values ? Array.isArray(this.values) ? this.values : [this.values] : [];
@@ -147,152 +281,16 @@ export class OrMwcList extends LitElement {
     }
 
     protected render() {
-
-        if (!this.listItems || this.listItems.length === 0) {
-            return html``;
-        }
-
-        return this.getItemsTemplate(this.listItems, this.values, this.type);
-    }
-
-    protected getItemsTemplate(items: (ListItem | null)[], values: string | string[] | undefined, type: ListType): TemplateResult {
-
-        const isTwoLine = items.some((item) => item && !!item.secondaryText);
-        let role: string | undefined;
-
-        switch (type) {
-            case ListType.SELECTABLE:
-                role = "listbox";
-                break;
-            case ListType.RADIO:
-                role = "radiogroup";
-                break;
-            case ListType.CHECKBOX:
-                role = "group";
-                break;
-        }
-
-        return html`
-            <ul id="list" class="mdc-list${isTwoLine ? " mdc-list--two-line" : ""}" role="${ifDefined(role)}" @MDCList:action="${(ev: MDCListActionEvent) => this._onSelected(ev)}">
-                ${items.map((listItem, index) => this.getItemTemplate(listItem, index, values, type))}
-            </ul>
-        `;
-    }
-
-    protected getItemTemplate(item: ListItem | null, index: number, values: string | string[] | undefined, type: ListType): TemplateResult {
-
-        if (item === null) {
-            // Divider
-            return html`<li role="separator" class="mdc-list-divider"></li>`;
-        }
-
-        const listItem = item as ListItem;
-        const multiSelect = type === ListType.CHECKBOX;
-        const value = listItem.value;
-        const isSelected = type !== ListType.PLAIN && (values === value || (Array.isArray(values) && values.length > 0 && ((multiSelect && values.some((v) => v === value)) || (!multiSelect && values[0] === value))));
-        let text = listItem.text !== undefined ? listItem.text : listItem.value;
-        let secondaryText = listItem.secondaryText;
-
-        if (listItem.translate !== false) {
-            text = i18next.t(text);
-            if (secondaryText) {
-                secondaryText = i18next.t(secondaryText);
-            }
-        }
-        let role: string | undefined;
-        let ariaSelected: string | undefined;
-        let ariaChecked: string | undefined;
-        let tabIndex: string | undefined;
-        let textTemplate: TemplateResult | string = ``;
-        let leftTemplate: TemplateResult | string = ``;
-        let rightTemplate: TemplateResult | string = ``;
-
-        if (listItem.icon) {
-            leftTemplate = html`
-                <span class="mdc-list-item__graphic">
-                    <or-icon icon="${listItem.icon}"></or-icon>
-                </span>
-            `;
-        }
-
-        if (listItem.trailingIcon) {
-            rightTemplate = html`
-                <span class="mdc-list-item__meta" aria-hidden="true">
-                    <or-icon icon="${listItem.trailingIcon}"></or-icon>
-                </span>
-            `;
-        }
-
-        switch (type) {
-            case ListType.SELECTABLE:
-                ariaSelected = isSelected ? "true" : "false";
-                tabIndex = isSelected || ((!values || values.length === 0) && index === 0) ? "0" : undefined;
-                role = "option";
-                break;
-            case ListType.RADIO:
-                ariaChecked = isSelected ? "true" : "false";
-                role = "radio";
-                leftTemplate = html`
-                    <span class="mdc-list-item__graphic">
-                        <div class="mdc-radio">
-                            <input class="mdc-radio__native-control" id="radio-item-${index+1}" type="radio" value="${value}" />
-                            <div class="mdc-radio__background">
-                                <div class="mdc-radio__outer-circle"></div>
-                                <div class="mdc-radio__inner-circle"></div>
-                            </div>
-                        </div>
-                    </span>
-                `;
-                break;
-            case ListType.CHECKBOX:
-                ariaChecked = isSelected ? "true" : "false";
-                role = "checkbox";
-                leftTemplate = html`
-                    <div class="mdc-checkbox">
-                        <input type="checkbox" class="mdc-checkbox__native-control" />
-                        <div class="mdc-checkbox__background">
-                            <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
-                                <path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
-                            </svg>
-                            <div class="mdc-checkbox__mixedmark"></div>
-                        </div>
-                    </div>
-                `;
-                break;
-        }
-
-        if (text) {
-            if (secondaryText !== undefined) {
-                textTemplate = html`
-                    <span class="mdc-list-item__text">
-                        <span class="mdc-list-item__primary-text">${text}</span>
-                        <span class="mdc-list-item__secondary-text">${secondaryText || ""}</or-translate></span>
-                    </span>
-                `;
-            } else {
-                if (type === ListType.RADIO) {
-                    textTemplate = html`<label class="mdc-list-item__text" for="radio-item-${index+1}">${text}</label>`;
-                } else {
-                    textTemplate = html`<span class="mdc-list-item__text">${text}</span>`;
-                }
-            }
-        }
-
-        return html`
-            <li style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item${isSelected ? " mdc-list-item--selected" : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}">
-                <span class="mdc-list-item__ripple"></span>
-                ${leftTemplate}
-                ${textTemplate}
-                ${rightTemplate}
-            </li>
-        `;
+        const content = !this.listItems ? html`` : html`${this.listItems.map((listItem, index) => getItemTemplate(listItem, index, this.values, this.type))}`;
+        const isTwoLine = this.listItems && this.listItems.some((item) => item && !!item.secondaryText);
+        return getListTemplate(this.type, content, isTwoLine, undefined, (ev) => this._onSelected(ev));
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
         if (this._mdcElem) {
             this._mdcComponent = new MDCList(this._mdcElem);
-            if (this.type === ListType.SELECTABLE || this.type === ListType.RADIO) {
+            if (this.type === ListType.SELECT || this.type === ListType.RADIO) {
                 this._mdcComponent.singleSelection = true;
             }
         }
@@ -327,7 +325,7 @@ export class OrMwcList extends LitElement {
             return indexes;
         }, [] as number[]);
 
-        this._mdcComponent.selectedIndex = this.type === ListType.CHECKBOX ? indexes : indexes.length >= 1 ? indexes[0] : -1;
+        this._mdcComponent.selectedIndex = this.type === ListType.MULTI_CHECKBOX ? indexes : indexes.length >= 1 ? indexes[0] : -1;
     }
 
     protected _onSelected(ev: MDCListActionEvent) {
@@ -335,28 +333,4 @@ export class OrMwcList extends LitElement {
         ev.stopPropagation();
         this.dispatchEvent(new OrMwcListChangedEvent(this.selectedItems));
     }
-
-    // private _itemClicked(e: MouseEvent, item: MenuItem) {
-    //     e.stopPropagation();
-    //     const value = item.value;
-    //
-    //     if (!this.multiSelect) {
-    //         this.values = value;
-    //         if(!this.noSurface){
-    //             this._mdcComponent!.open = false;
-    //         }
-    //     } else {
-    //         if (!Array.isArray(this.values)) {
-    //             this.values = this.values ? [this.values] : [];
-    //         }
-    //         const index = this.values.findIndex((v) => v === value);
-    //         if (index >= 0) {
-    //             this.values.splice(index, 1);
-    //         } else {
-    //             this.values.push(value);
-    //         }
-    //         this.requestUpdate();
-    //     }
-    //     this.dispatchEvent(new OrMwcMenuChangedEvent(this.values));
-    // }
 }

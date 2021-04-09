@@ -1,4 +1,4 @@
-# @openremote/or-input  \<or-smart-notify\>
+# @openremote/or-smart-notify  \<or-smart-notify\>
 [![NPM Version][npm-image]][npm-url]
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]

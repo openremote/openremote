@@ -1,12 +1,12 @@
 import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
 import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
 import {OrRulesRuleChangedEvent} from "./index";
-import "@openremote/or-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 
-import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {ByWeekday, RRule, Weekday} from 'rrule'
 import moment from "moment";
 
@@ -217,7 +217,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         if(!this.ruleset) return html``;
 
         return html`
-            <or-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @click="${() => this.showDialog()}"></or-input>
+            <or-mwc-input .type="${InputType.BUTTON}" .label="${this.timeLabel()}" @click="${() => this.showDialog()}"></or-mwc-input>
         `;
     }
 
@@ -228,7 +228,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
             actions: [
                 {
                     actionName: "cancel",
-                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-input>`,
+                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
                     action: () => {
                         this._dialog = undefined;
                     }
@@ -236,7 +236,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 {
                     actionName: "ok",
                     default: true,
-                    content: html`<or-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("apply")}"></or-input>`,
+                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("apply")}"></or-mwc-input>`,
                     action: () => {
                         if (this.ruleset && this.ruleset.meta) {
                             if (this.getValidityType() === "validityAlways") {
@@ -276,39 +276,39 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         return html`
             <div style="min-height: 200px; min-width: 635px; display:grid; flex-direction: row;">
                 <div class="layout horizontal">
-                    <or-input .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-input>
+                    <or-mwc-input .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-mwc-input>
                 </div>
 
                 ${validity && (validityType  === "validityPeriod" || validityType  === "validityRecurrence") ? html`
                     <label style="display:block; margin-top: 20px;"><or-translate value="period"></or-translate></label>
                     <div style="display: flex; justify-content: space-between;" class="layout horizontal">
                         <div> 
-                            <or-input value="${moment(validity.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-input>
-                            <or-input .disabled=${this.isAllDay()} .value="${moment(validity.start).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-input>
+                            <or-mwc-input value="${moment(validity.start).format("YYYY-MM-DD")}" .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "start")}" .label="${i18next.t("from")}"></or-mwc-input>
+                            <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(validity.start).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "dtstart-time")}" .label="${i18next.t("from")}"></or-mwc-input>
                         </div>
                         <div>
-                            <or-input .value="${moment(validity.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-input>
-                            <or-input .disabled=${this.isAllDay()} .value="${moment(validity.end).format("HH:mm")}" .type="${InputType.TIME}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-input>
+                            <or-mwc-input .value="${moment(validity.end).format("YYYY-MM-DD")}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "end")}" .label="${i18next.t("to")}"></or-mwc-input>
+                            <or-mwc-input .disabled=${this.isAllDay()} .value="${moment(validity.end).format("HH:mm")}" .type="${InputType.TIME}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until-time")}" .label="${i18next.t("to")}"></or-mwc-input>
                         </div>
                     </div>  
                     
                     <div class="layout horizontal">
-                        <or-input .value=${this.isAllDay()} @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-input>
+                        <or-mwc-input .value=${this.isAllDay()} @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "all-day")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("allDay")}"></or-mwc-input>
                     </div>
                 ` : ``}
              
                 ${validityType  === "validityRecurrence" ? html`
                     <label style="display: block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
                     <div class="layout horizontal">
-                        <or-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-input>
+                        <or-mwc-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-mwc-input>
                     </div>
                     
                     <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
                     <div class="layout horizontal">                        
-                        <or-input .value="${!this._rrule!.options.until}"  @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-input>
+                        <or-mwc-input .value="${!this._rrule!.options.until}"  @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "never-ends")}"  .type="${InputType.CHECKBOX}" .label="${i18next.t("never")}"></or-mwc-input>
                     </div>
                     <div class="layout horizontal">
-                        <or-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-input>
+                        <or-mwc-input ?disabled="${!this._rrule!.options.until}" .value="${this._rrule!.options.until ? moment(this._rrule!.options.until).format("YYYY-MM-DD") : moment().add(1, 'year').format('YYYY-MM-DD')}"  .type="${InputType.DATE}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "until")}" .label="${i18next.t("to")}"></or-mwc-input>
                     </div>
                 ` : ``}                
             </div>`;

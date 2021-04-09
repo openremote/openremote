@@ -11,7 +11,7 @@ import {
 } from "@openremote/model";
 import manager, {AssetModelUtil, Util} from "@openremote/core";
 import "@openremote/or-attribute-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
@@ -136,9 +136,9 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         }
 
         return html`
-            <or-input id="matchSelect" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}"></or-input>
+            <or-mwc-input id="matchSelect" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}"></or-mwc-input>
             ${attributes.length > 0 ? html`
-                <or-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${this.action.attributeName}"></or-input>
+                <or-mwc-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
                 ${attributeInput}
             ` : html`
                 <or-translate value="No attributes with write permission"></or-translate>

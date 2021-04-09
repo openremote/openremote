@@ -37,28 +37,22 @@ public class TestSetupTasks extends EmptySetupTasks {
     public static final String SETUP_CREATE_USERS = "SETUP_CREATE_USERS";
     public static final String SETUP_CREATE_ASSETS = "SETUP_CREATE_ASSETS";
     public static final String SETUP_CREATE_RULES = "SETUP_CREATE_RULES";
-    public static final String SETUP_IMPORT_DEMO_AGENT = "SETUP_CREATE_AGENT";
 
-    static boolean isImportDemoUsers(Container container) {
-        return isImportDemoAssets(container)
+    static boolean isImportUsers(Container container) {
+        return isImportAssets(container)
             || getBoolean(container.getConfig(), SETUP_CREATE_USERS, container.isDevMode());
     }
 
-    static boolean isImportDemoAssets(Container container) {
-        return isImportDemoAgent(container)
-            || isImportDemoRules(container)
+    static boolean isImportAssets(Container container) {
+        return isImportRules(container)
             || getBoolean(container.getConfig(), SETUP_CREATE_ASSETS, container.isDevMode());
     }
 
-    static boolean isImportDemoRules(Container container) {
+    static boolean isImportRules(Container container) {
         return getBoolean(container.getConfig(), SETUP_CREATE_RULES, container.isDevMode());
     }
 
-    // Defaults to always disabled as agents might require actual protocol-specific hardware
-    static boolean isImportDemoAgent(Container container) {
-        return getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT, false);
-    }
-    static boolean isImportDemoScenes(Container container) {
+    static boolean isImportScenes(Container container) {
         return getBoolean(container.getConfig(), SETUP_CREATE_SCENES, container.isDevMode());
     }
 
@@ -69,21 +63,19 @@ public class TestSetupTasks extends EmptySetupTasks {
         // Basic vs Keycloak identity provider
         if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
 
-            if (isImportDemoUsers(container)) {
+            if (isImportUsers(container)) {
                 addTask(new KeycloakTestSetup(container));
             }
 
-            if (isImportDemoAssets(container) || isImportDemoScenes(container)) {
-                addTask(new ManagerTestSetup(container, isImportDemoScenes(container)));
+            if (isImportAssets(container) || isImportScenes(container)) {
+                addTask(new ManagerTestSetup(container, isImportScenes(container)));
             }
 
-            if (isImportDemoRules(container)) {
+            if (isImportRules(container)) {
                 addTask(new RulesTestSetup(container));
             }
 
-            if (isImportDemoAgent(container)) {
-                addTask(new ManagerTestAgentSetup(container));
-            }
+            addTask(new ManagerTestAgentSetup(container));
         }
 
         return getTasks();

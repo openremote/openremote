@@ -10,9 +10,10 @@ import manager, {
     DefaultColor5,
     DefaultHeaderHeight
 } from "@openremote/core";
-import "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Tenant} from "@openremote/model";
 import {router} from "./index";
 
@@ -44,7 +45,7 @@ export const DEFAULT_LANGUAGES: Languages = {
     es: "spanish"
 };
 
-function getHeaderMenuItems(items: HeaderItem[]): MenuItem[] {
+function getHeaderMenuItems(items: HeaderItem[]): ListItem[] {
     return items.filter(hasRequiredRole).map((option) => {
         return {
             text: option.text,
@@ -449,7 +450,7 @@ class OrHeader extends LitElement {
                 return {
                     text: r.displayName!,
                     value: r.realm!
-                } as MenuItem;
+                } as ListItem;
             });
 
             return html`

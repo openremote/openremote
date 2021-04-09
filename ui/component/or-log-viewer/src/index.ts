@@ -13,14 +13,15 @@ import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import * as Model from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
 import moment from "moment";
-import "@openremote/or-mwc-components/dist/or-mwc-menu";
-import {getContentWithMenuTemplate, MenuItem} from "@openremote/or-mwc-components/dist/or-mwc-menu";
+import "@openremote/or-mwc-components/or-mwc-menu";
+import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
+import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import { GenericAxiosResponse } from "axios";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -292,30 +293,30 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <div id="log-controls">
                         ${hideCategories ? `` : getContentWithMenuTemplate(
-                            html`<or-input .type=${InputType.BUTTON} raised ?disabled="${disabled}" .label="${i18next.t("categories")}" icontrailing="chevron-down"></or-input>`,
+                            html`<or-mwc-input .type=${InputType.BUTTON} raised ?disabled="${disabled}" .label="${i18next.t("categories")}" icontrailing="chevron-down"></or-mwc-input>`,
                             this._getCategoryMenuItems(),
                             this.categories,
                             (v) => this._onCategoriesChanged(v as Model.SyslogCategory[]),
                             () => this._onCategoriesClosed(),
                             true
                         )}
-                        <or-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" .value="${this.filter}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-input>
-                        <or-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" ?disabled="${disabled}" .label="${i18next.t("level")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-input>
-                        <or-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${this.limit}" .options="${this._getLimitOptions()}"></or-input>
+                        <or-mwc-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" .value="${this.filter}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-mwc-input>
+                        <or-mwc-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" ?disabled="${disabled}" .label="${i18next.t("level")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-mwc-input>
+                        <or-mwc-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${this.limit}" .options="${this._getLimitOptions()}"></or-mwc-input>
                     </div>
                     <div id="page-controls" ?hidden="${isLive || !this._pageCount || !this._data || this._data.length === 0}">
-                        <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === 1}" icon="chevron-left" @click="${() => this._updatePage(false)}"></or-input>
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === 1}" icon="chevron-left" @click="${() => this._updatePage(false)}"></or-mwc-input>
                         <span>${this._currentPage}</span><or-translate value="of"></or-translate><span>${this._pageCount}</span>
-                        <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < (this.limit || 50))}" icon="chevron-right" @click="${() => this._updatePage(true)}"></or-input>
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < (this.limit || 50))}" icon="chevron-right" @click="${() => this._updatePage(true)}"></or-mwc-input>
                     </div>
                     <div id="time-controls">
-                        <or-input id="live-button" .type="${InputType.CHECKBOX}" ?disabled="${disabled}" .label="${i18next.t("live")}" @or-input-changed="${(evt: OrInputChangedEvent) => this._onLiveChanged(evt.detail.value)}" .value="${this.live}"></or-input>
-                        <or-input .type="${InputType.SELECT}" id="period-select" ?disabled="${disabled || isLive}" .label="${i18next.t("period")}" @or-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-input>
+                        <or-mwc-input id="live-button" .type="${InputType.CHECKBOX}" ?disabled="${disabled}" .label="${i18next.t("live")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLiveChanged(evt.detail.value)}" .value="${this.live}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.SELECT}" id="period-select" ?disabled="${disabled || isLive}" .label="${i18next.t("period")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-mwc-input>
                         <div id="ending-controls">
-                            <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-left" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}"></or-input>
-                            <or-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled || isLive}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-input-changed="${(evt: OrInputChangedEvent) => this.timestamp = this._calculateTimestamp(moment(evt.detail.value as string).toDate())}"></or-input>
-                            <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-right" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}"></or-input>
-                            <or-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-double-right" @click="${() => this.timestamp = this._calculateTimestamp(new Date())}"></or-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-left" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}"></or-mwc-input>
+                            <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled || isLive}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.timestamp = this._calculateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-right" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}"></or-mwc-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-double-right" @click="${() => this.timestamp = this._calculateTimestamp(new Date())}"></or-mwc-input>
                         </div>
                     </div>
                 </div>
@@ -336,13 +337,13 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         return Object.keys((Model as any)["SyslogLevel"]).map((key) => [key, i18next.t(key.toLocaleLowerCase())]);
     }
 
-    protected _getCategoryMenuItems(): MenuItem[] {
+    protected _getCategoryMenuItems(): ListItem[] {
         const categories = this.config && this.config.allowedCategories ? this.config.allowedCategories : Object.keys((Model as any)["SyslogCategory"]) as Model.SyslogCategory[];
         return categories.map((cat) => {
             return {
                 text: i18next.t("logCategory." + cat, {defaultValue: Util.capitaliseFirstLetter(cat.toLowerCase().replace(/_/g, " "))}),
                 value: cat
-            } as MenuItem;
+            } as ListItem;
         });
     }
 

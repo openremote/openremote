@@ -13,12 +13,12 @@ import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
 import "./or-rule-validity";
 import "./flow-viewer/components/flow-editor";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrInput} from "@openremote/or-input";
+import {InputType, OrInputChangedEvent, OrInput} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import { GenericAxiosResponse } from "@openremote/rest";
-import { showErrorDialog } from "@openremote/or-mwc-components/dist/or-mwc-dialog";
+import { showErrorDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 // language=CSS
 export const style = css`
@@ -179,16 +179,16 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         return html`
             <div id="main-wrapper" class="wrapper">            
                 <div id="rule-header">
-                    <or-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-input>
+                    <or-mwc-input id="rule-name" outlined .type="${InputType.TEXT}" .label="${i18next.t("ruleName")}" ?focused="${this._focusName}" .value="${this.ruleset ? this.ruleset.name : null}" ?disabled="${this._isReadonly()}" required minlength="3" maxlength="255" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._changeName(e.detail.value)}"></or-mwc-input>
                     <or-rule-validity id="rule-header-validity" .ruleset="${this.ruleset}"></or-rule-validity>
                     <div id="rule-header-controls">
                         
                         <span id="active-wrapper">
                             <or-translate value="enabled"></or-translate>
-                            <or-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-input-changed="${this._toggleEnabled}"></or-input>
+                            <or-mwc-input .type="${InputType.SWITCH}" .value="${this.ruleset && this.ruleset.enabled}" ?disabled="${!this.ruleset.id}" @or-mwc-input-changed="${this._toggleEnabled}"></or-mwc-input>
                         </span>
            
-                        <or-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @or-input-changed="${this._onSaveClicked}"></or-input>
+                        <or-mwc-input .type="${InputType.BUTTON}" id="save-btn" .label="${i18next.t("save")}" raised ?disabled="${this._cannotSave()}" @or-mwc-input-changed="${this._onSaveClicked}"></or-mwc-input>
                     </div>                        
                 </div>
 

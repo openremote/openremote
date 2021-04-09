@@ -25,7 +25,7 @@ export const EditorWorkspaceStyle = css`
     background: rgba(0,0,0,0.02);
 }
 
-or-input[type=button]
+or-mwc-input[type=button]
 {
     margin: 10px;
     color: inherit;

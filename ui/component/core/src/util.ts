@@ -22,6 +22,7 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
+    ValueDatapoint,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";

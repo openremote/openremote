@@ -1,9 +1,9 @@
 import {customElement, html, LitElement, css, property} from "lit-element";
-import "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import "@openremote/or-input";
-import {InputType, OrInputChangedEvent} from "@openremote/or-input";
+import "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {
     RuleActionNotification,
     EmailNotificationMessage
@@ -19,7 +19,7 @@ export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
 
     static get styles() {
         return css`
-            or-input {
+            or-mwc-input {
                 margin-bottom: 20px;
                 min-width: 420px;
                 width: 100%;
@@ -32,8 +32,8 @@ export class OrRuleFormEmailMessage extends translate(i18next)(LitElement) {
         
         return html`
             <form style="display:grid">
-                <or-input value="${message && message.subject ?  message.subject : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "subject")}" .label="${i18next.t("subject")}" type="${InputType.TEXT}" required placeholder=" "></or-input>
-                <or-input value="${message && message.html ? message.html : ""}" @or-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "html")}" .label="${i18next.t("message")}" type="${InputType.TEXTAREA}" required placeholder=" " ></or-input>
+                <or-mwc-input value="${message && message.subject ?  message.subject : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "subject")}" .label="${i18next.t("subject")}" type="${InputType.TEXT}" required placeholder=" "></or-mwc-input>
+                <or-mwc-input value="${message && message.html ? message.html : ""}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionNotificationName(e.detail.value, "html")}" .label="${i18next.t("message")}" type="${InputType.TEXTAREA}" required placeholder=" " ></or-mwc-input>
             </form>
         `
     }

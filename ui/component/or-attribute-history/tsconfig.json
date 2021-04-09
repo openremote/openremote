@@ -11,7 +11,7 @@
   "references": [
     { "path": "../core" },
     { "path": "../or-panel" },
-    { "path": "../or-input" },
+    { "path": "../or-mwc-components" },
     { "path": "../or-translate" }
 
   ]

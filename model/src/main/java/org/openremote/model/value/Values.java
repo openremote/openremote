@@ -45,6 +45,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 /**
  * Utilities for working with values and JSON
@@ -198,9 +199,31 @@ public class Values {
 
         if (coerce) {
             try {
+                if (value instanceof List && type.isArray()) {
+                    Class<?> innerType = type.getComponentType();
+                    List list = ((List) value);
+
+                    if (list.isEmpty()) {
+                        return Optional.of((T)Array.newInstance(type.getComponentType(), 0));
+                    }
+
+                    Object[] arr = (Object[])Array.newInstance(type.getComponentType(), list.size());
+                    IntStream.range(0, list.size()).forEach(i -> {
+                        Object o = list.get(i);
+                        if (o != null && !innerType.isAssignableFrom(o.getClass())) {
+                            o = getValue(o, innerType, true).orElse(null);
+                        }
+                        arr[i] = o;
+                    });
+                    return Optional.of((T)arr);
+                }
+
                 return Optional.of(JSON.convertValue(value, type));
             } catch (Exception e) {
                 if (value instanceof String) {
+
+                    if (!((String) value).startsWith("\"")) {}
+
                     // Try and parse the value
                     return parse((String)value, type);
                 }
