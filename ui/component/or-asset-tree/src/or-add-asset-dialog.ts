@@ -213,9 +213,9 @@ export class OrAddAssetDialog extends LitElement {
                 ? html ``
                 : html`
                     <p>${this.selectedChildAssetType}</p>
-                    <or-input type="${InputType.SELECT}" value="${this.selectedType}" .options="${this.getAssetMenuItems()}" 
-                              @or-input-changed="${(e: OrInputChangedEvent) => this.selectedChildAssetType = e.detail.value}" 
-                              style="display:block;text-transform: capitalize;"></or-input>
+                    <or-mwc-input type="${InputType.SELECT}" value="${this.selectedType}" .options="${this.getAssetMenuItems()}" 
+                              @or-input-changed="${(e: OrInputChangedEvent) => this.onChildAssetTypeChange(e.detail.value)}" 
+                              style="display:block;text-transform: capitalize;"></or-mwc-input>
                 `
             }
     
@@ -247,6 +247,10 @@ export class OrAddAssetDialog extends LitElement {
         return AssetModelUtil.getAssetDescriptors()
             .map(e => [e.name, Util.getAssetTypeLabel(e)])
             .sort(Util.sortByString(listItem => listItem[1]!));
+    }
+
+    protected onChildAssetTypeChange(childAssetTypeName: string) {
+        this.selectedChildAssetType = childAssetTypeName;
     }
 
     protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
