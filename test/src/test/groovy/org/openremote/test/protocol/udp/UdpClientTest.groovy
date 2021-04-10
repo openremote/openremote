@@ -105,7 +105,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the server sends a broadcast message"
-        echoServer.sendMessage("Hello world", SocketUtils.socketAddress("255.255.255.255", clientPort))
+        echoServer.sendMessage("Hello world", SocketUtils.socketAddress("127.255.255.255", clientPort))
 
         then: "we should receive the message"
         conditions.eventually {
