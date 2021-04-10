@@ -74,6 +74,10 @@ trait ContainerTrait {
 
     Container startContainer(Map<String, String> config, Iterable<ContainerService> services) {
 
+        // Reset and start clock in case any previous tests stopped/modified it (pseudo clock is static so shared between tests)
+        TimerService.Clock.PSEUDO.reset()
+        TimerService.Clock.PSEUDO.advanceTime(-1, TimeUnit.MILLISECONDS) // Put time back so attribute events with the same timestamp as provisioned assets don't get rejected
+
         if (container != null) {
             // Compare config and services
             def configsMatch = false
@@ -114,14 +118,6 @@ trait ContainerTrait {
                         def gatewayConnections = getGatewayConnections()
                         println("Purging ${gatewayConnections.size()} gateway connection(s)")
                         gatewayClientService.deleteConnections(gatewayConnections.stream().map { it.localRealm }.collect(Collectors.toList()))
-                    }
-
-                    // Reset and start clock in case previous test stopped it
-                    def timerService = container.getService(TimerService.class)
-                    if (timerService != null) {
-                        timerService.getClock().reset()
-                        timerService.getClock().advanceTime(-1, TimeUnit.MILLISECONDS) // Put time back so attribute events with the same timestamp don't get rejected
-                        timerService.getClock().start()
                     }
 
                     // Reset rulesets
@@ -187,19 +183,6 @@ trait ContainerTrait {
                             }
                             Thread.sleep(100)
                         }
-
-                        if (!TestFixture.assetRulesets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
-                            TestFixture.assetRulesets.forEach { rulesetStorageService.merge(it) }
-                        }
-                        if (!TestFixture.tenantRulesets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.tenantRulesets.size()} tenant ruleset(s)")
-                            TestFixture.tenantRulesets.forEach { rulesetStorageService.merge(it) }
-                        }
-                        if (!TestFixture.globalRulesets.isEmpty()) {
-                            println("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
-                            TestFixture.globalRulesets.forEach { rulesetStorageService.merge(it) }
-                        }
                     }
 
                     // Reset assets
@@ -234,6 +217,24 @@ trait ContainerTrait {
                             TestFixture.userAssets.forEach { ua ->
                                 assetStorageService.storeUserAsset(ua)
                             }
+                        }
+                    }
+
+                    // Re-insert rulesets (after assets have been re-inserted)
+                    if (container.hasService(RulesetStorageService.class) && container.hasService(RulesService.class)) {
+                        def rulesetStorageService = container.getService(RulesetStorageService.class)
+
+                        if (!TestFixture.assetRulesets.isEmpty()) {
+                            println("Re-inserting ${TestFixture.assetRulesets.size()} asset ruleset(s)")
+                            TestFixture.assetRulesets.forEach { rulesetStorageService.merge(it) }
+                        }
+                        if (!TestFixture.tenantRulesets.isEmpty()) {
+                            println("Re-inserting ${TestFixture.tenantRulesets.size()} tenant ruleset(s)")
+                            TestFixture.tenantRulesets.forEach { rulesetStorageService.merge(it) }
+                        }
+                        if (!TestFixture.globalRulesets.isEmpty()) {
+                            println("Re-inserting ${TestFixture.globalRulesets.size()} global ruleset(s)")
+                            TestFixture.globalRulesets.forEach { rulesetStorageService.merge(it) }
                         }
                     }
                 } catch (IllegalStateException e) {
@@ -320,6 +321,10 @@ trait ContainerTrait {
                 j++
             }
         }
+
+        // Reset and start clock in case any previous tests stopped/modified it (pseudo clock is static so shared between tests)
+        TimerService.Clock.PSEUDO.reset()
+        TimerService.Clock.PSEUDO.advanceTime(10, TimeUnit.MILLISECONDS) // Advance clock so attribute events from tests will succeed (even if actual clock hasn't moved more than a millisecond)
 
         return container
     }
