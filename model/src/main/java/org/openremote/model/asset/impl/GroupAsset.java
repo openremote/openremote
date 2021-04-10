@@ -22,7 +22,10 @@ package org.openremote.model.asset.impl;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
@@ -37,6 +40,11 @@ public class GroupAsset extends Asset<GroupAsset> {
 
     public static final AttributeDescriptor<String> CHILD_ASSET_TYPE = new AttributeDescriptor<>("childAssetType", ValueType.TEXT);
     public static final AssetDescriptor<GroupAsset> DESCRIPTOR = new AssetDescriptor<>("folder", "B3B3B3", GroupAsset.class);
+
+//    static {
+//        // How to get all asset types
+//        CHILD_ASSET_TYPE.withConstraints(new ValueConstraint.AllowedValues())
+//    }
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)

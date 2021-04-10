@@ -15,7 +15,7 @@
   "dependencies": {
     "@openremote/core": "^1.0.3",
     "@openremote/or-chart": "^1.0.4",
-    "@openremote/or-mwc-components/or-mwc-input": "^1.0.3",
+    "@openremote/or-mwc-components": "^1.0.3",
     "lit-element": "^2.4.0",
     "moment": "^2.24.0"
   },
