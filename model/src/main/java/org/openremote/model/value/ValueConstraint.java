@@ -41,7 +41,7 @@ import java.util.Optional;
     @JsonSubTypes.Type(ValueConstraint.FutureOrPresent.class),
     @JsonSubTypes.Type(ValueConstraint.NotEmpty.class),
     @JsonSubTypes.Type(ValueConstraint.NotBlank.class),
-    @JsonSubTypes.Type(ValueConstraint.NotNull.class),
+    @JsonSubTypes.Type(ValueConstraint.NotNull.class)
 })
 public abstract class ValueConstraint implements Serializable {
 

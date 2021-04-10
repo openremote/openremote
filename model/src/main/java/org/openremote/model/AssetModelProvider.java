@@ -87,4 +87,10 @@ public interface AssetModelProvider {
      * scanning.
      */
     Map<Class<? extends Asset<?>>, List<ValueDescriptor<?>>> getValueDescriptors();
+
+    /**
+     * Called when the full Asset model has been initialised which gives {@link AssetModelProvider}s the chance to do
+     * additional work (e.g. add constraints such as allowed values based on available asset types).
+     */
+    void onAssetModelFinished();
 }

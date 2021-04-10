@@ -8,6 +8,7 @@ import org.openremote.manager.asset.AssetModelService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetModelResource
 import org.openremote.model.asset.agent.AgentLink
+import org.openremote.model.asset.impl.GroupAsset
 import org.openremote.model.asset.impl.LightAsset
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
@@ -17,6 +18,7 @@ import org.openremote.model.asset.AssetTypeInfo
 import org.openremote.model.util.AssetModelUtil
 import org.openremote.model.value.MetaItemType
 import org.openremote.model.value.SubStringValueFilter
+import org.openremote.model.value.ValueConstraint
 import org.openremote.model.value.ValueFilter
 import org.openremote.model.value.ValueType
 import org.openremote.model.value.Values
@@ -59,6 +61,16 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) } != null
         !thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.optional
         thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.type == ValueType.GEO_JSON_POINT
+
+        when: "the asset type value descriptor is retrieved"
+        def assetValueType = AssetModelUtil.getValueDescriptor(ValueType.ASSET_TYPE.getName())
+
+        then: "it should contain an allowed values constraint with all asset types listed"
+        assetValueType.isPresent()
+        assetValueType.get().constraints != null
+        assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues != null
+        (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.length == AssetModelUtil.getAssetInfos().length
+        (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.any { (it == GroupAsset.class.getSimpleName()) }
 
         when: "All asset model infos are retrieved"
         def assetInfos = assetModelResource.getAssetInfos(null, null, null);

@@ -21,13 +21,13 @@ package org.openremote.model;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
@@ -42,7 +42,6 @@ import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 public class StandardModelProvider implements AssetModelProvider {
 
     protected static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, StandardModelProvider.class);
-    protected Set<Class<? extends Asset<?>>> assetClasses;
 
     @Override
     public AssetDescriptor<?>[] getAssetDescriptors() {
@@ -67,5 +66,13 @@ public class StandardModelProvider implements AssetModelProvider {
     @Override
     public Map<Class<? extends Asset<?>>, List<ValueDescriptor<?>>> getValueDescriptors() {
         return null;
+    }
+
+    @Override
+    public void onAssetModelFinished() {
+        // Inject allowed asset types into GroupAsset
+        List<ValueConstraint> constraints = ValueType.ASSET_TYPE.getConstraints() != null ? new ArrayList<>(Arrays.asList(ValueType.ASSET_TYPE.getConstraints())): new ArrayList<>();
+        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(AssetModelUtil.getAssetClasses(null)).map(Class::getSimpleName).toArray()));
+        ValueType.ASSET_TYPE.updateConstraints(constraints.toArray(new ValueConstraint[0]));
     }
 }

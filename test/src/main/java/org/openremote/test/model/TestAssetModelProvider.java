@@ -54,4 +54,9 @@ public class TestAssetModelProvider implements AssetModelProvider {
     public Map<Class<? extends Asset<?>>, List<ValueDescriptor<?>>> getValueDescriptors() {
         return null;
     }
+
+    @Override
+    public void onAssetModelFinished() {
+
+    }
 }

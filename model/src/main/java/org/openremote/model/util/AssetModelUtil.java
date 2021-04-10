@@ -446,6 +446,9 @@ public final class AssetModelUtil {
             String vds = nonSerializableValueDescriptors.stream().map(ValueDescriptor::toString).collect(Collectors.joining(",\n"));
             throw new IllegalStateException("One or more value types do not implement java.io.Serializable: " + vds);
         }
+
+        // Call on finished on each provider
+        assetModelProviders.forEach(AssetModelProvider::onAssetModelFinished);
     }
 
     /**

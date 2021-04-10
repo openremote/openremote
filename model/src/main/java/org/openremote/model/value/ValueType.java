@@ -135,6 +135,11 @@ public final class ValueType {
         new ValueConstraint.Pattern(Constants.ASSET_ID_REGEXP)
     );
 
+    /**
+     * Allowed values constraint is added at runtime based on {@link org.openremote.model.util.AssetModelUtil}
+     */
+    public static final ValueDescriptor<String> ASSET_TYPE = new ValueDescriptor<>("assetType", String.class);
+
     public static final ValueDescriptor<Integer> DIRECTION = new ValueDescriptor<>("direction", Integer.class,
         new ValueConstraint.Min(0),
         new ValueConstraint.Max(259)

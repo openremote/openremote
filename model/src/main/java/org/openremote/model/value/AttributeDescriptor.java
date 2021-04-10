@@ -117,6 +117,10 @@ public class AttributeDescriptor<T> extends AbstractNameValueDescriptorHolder<T>
         return newDescriptor;
     }
 
+    public void updateConstraints(ValueConstraint...valueConstraints) {
+        constraints = valueConstraints;
+    }
+
     @Override
     public String toString() {
         return AttributeDescriptor.class.getSimpleName() + "{" +
