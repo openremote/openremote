@@ -111,6 +111,6 @@ public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
     @Override
     protected void configureChannel() {
         super.configureChannel();
-        //bootstrap.option(ChannelOption.SO_BROADCAST, true);
+        bootstrap.option(ChannelOption.SO_BROADCAST, true);
     }
 }
