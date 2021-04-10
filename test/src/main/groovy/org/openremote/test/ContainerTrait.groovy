@@ -164,7 +164,8 @@ trait ContainerTrait {
                                 rulesetStorageService.delete(GlobalRuleset.class, it.id)
                                 def rulesStopped = false
                                 while (!rulesStopped) {
-                                    rulesStopped = rulesService.globalEngine == null || !rulesService.globalEngine.deployments.containsKey(it.id)
+                                    def engine = rulesService.globalEngine
+                                    rulesStopped = engine == null || !engine.deployments.containsKey(it.id)
                                     if (counter++ > 100) {
                                         throw new IllegalStateException("Failed to purge ruleset: " + it.name)
                                     }
@@ -177,7 +178,7 @@ trait ContainerTrait {
                         counter = 0
                         def enginesStopped = false
                         while (!enginesStopped) {
-                            enginesStopped = rulesService.globalEngine == null && rulesService.tenantEngines.isEmpty() && rulesService.assetEngines.isEmpty()
+                            enginesStopped = rulesService.tenantEngines == null && rulesService.tenantEngines.isEmpty() && rulesService.assetEngines.isEmpty()
                             if (counter++ > 100) {
                                 throw new IllegalStateException("Rule engines have failed to stop")
                             }
