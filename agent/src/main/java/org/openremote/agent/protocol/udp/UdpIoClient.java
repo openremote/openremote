@@ -90,7 +90,7 @@ public class UdpIoClient<T> extends AbstractNettyIoClient<T, InetSocketAddress> 
 
     @Override
     protected ChannelFuture startChannel() {
-        return bootstrap.bind(bindPort);
+        return bootstrap.bind("0.0.0.0", bindPort);
     }
 
     @Override
