@@ -333,7 +333,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     } else if (notEmptyConstraint && !pattern) {
         pattern = ".+";
     }
-    if (allowedValuesConstraint && allowedValuesConstraint.allowedValues) {
+    if ((!options.disabled && !options.readonly) && allowedValuesConstraint && allowedValuesConstraint.allowedValues) {
         const allowedLabels = allowedValuesConstraint.allowedValueNames && allowedValuesConstraint.allowedValueNames.length === allowedValuesConstraint.allowedValues.length ? allowedValuesConstraint.allowedValueNames : undefined;
         selectOptions = allowedValuesConstraint.allowedValues.map((v, i) => {
             const label = allowedLabels ? allowedLabels[i] : typeof v === "string" ? Util.getAllowedValueLabel(v) : "" + i;

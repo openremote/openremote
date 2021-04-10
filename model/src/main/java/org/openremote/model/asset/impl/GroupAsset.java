@@ -37,7 +37,7 @@ import java.util.Optional;
 @Entity
 public class GroupAsset extends Asset<GroupAsset> {
 
-    public static final AttributeDescriptor<String> CHILD_ASSET_TYPE = new AttributeDescriptor<>("childAssetType", ValueType.ASSET_TYPE);
+    public static final AttributeDescriptor<String> CHILD_ASSET_TYPE = new AttributeDescriptor<>("childAssetType", ValueType.ASSET_TYPE, new MetaItem<>(MetaItemType.READ_ONLY));
     public static final AssetDescriptor<GroupAsset> DESCRIPTOR = new AssetDescriptor<>("folder", "B3B3B3", GroupAsset.class);
 
     /**
