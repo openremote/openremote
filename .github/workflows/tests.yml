@@ -60,7 +60,7 @@ jobs:
         run: |
           mkdir -p ~/.docker/machine/cache
           curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.12/boot2docker.iso
-          brew install docker docker-machine
+          brew install docker docker-machine docker-compose
           docker-machine create --driver virtualbox default
           docker-machine env default
           docker-machine stop default
@@ -77,7 +77,7 @@ jobs:
       - name: start containers needed for testing and perform test
         run: |
           eval "$(docker-machine env default)"
-          docker compose -f profile/dev-testing.yml up --no-build -d
+          docker-compose -f profile/dev-testing.yml up --no-build -d
           docker ps -a
           ./gradlew clean test
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
@@ -86,7 +86,7 @@ jobs:
         if: failure()
         run: |
           eval "$(docker-machine env default)"
-          docker compose -f profile/dev-testing.yml logs
+          docker-compose -f profile/dev-testing.yml logs
       - name: Share tests artifacts
         if: failure()
         uses: actions/upload-artifact@v2
