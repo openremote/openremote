@@ -16,7 +16,7 @@
     "@openremote/core": "^1.0.3",
     "@openremote/model": "^1.0.3",
     "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-mwc-components/or-mwc-input": "^1.0.4",
+    "@openremote/or-mwc-components/or-mwc-input": "^1.0.3",
     "@openremote/or-mwc-components": "^1.0.3",
     "@openremote/or-translate": "^1.0.3",
     "@openremote/rest": "^1.0.3",
