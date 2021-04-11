@@ -144,7 +144,9 @@ Resources:
           docker-compose -f mvp-docker-compose.yml -p openremote up -d
           echo USER ${AccessKeys} > access.txt
           echo SECRET ${AccessKeys.SecretAccessKey} >> access.txt
-          echo PASSWORD $(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
+          echo EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
+          echo EMAIL_USER=$EMAIL_USER >> access.txt
+          echo EMAIL_HOST=$EMAIL_HOST >> access.txt
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
