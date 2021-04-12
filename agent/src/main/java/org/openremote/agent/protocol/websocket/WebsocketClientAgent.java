@@ -55,7 +55,7 @@ public class WebsocketClientAgent extends IoAgent<WebsocketClientAgent, Websocke
         }
     }
 
-    public static final ValueDescriptor<WebsocketSubscription> WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR = new ValueDescriptor<>("Websocket subscription", WebsocketSubscription.class);
+    public static final ValueDescriptor<WebsocketSubscription> WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR = new ValueDescriptor<>("websocketSubscription", WebsocketSubscription.class);
 
     /**
      * Websocket connect endpoint URI

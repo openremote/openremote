@@ -125,7 +125,7 @@ public class HttpClientAgent extends Agent<HttpClientAgent, HttpClientProtocol, 
         }
     }
 
-    public static final ValueDescriptor<HttpMethod> VALUE_HTTP_METHOD = new ValueDescriptor<>("HTTP method", HttpMethod.class);
+    public static final ValueDescriptor<HttpMethod> VALUE_HTTP_METHOD = new ValueDescriptor<>("HTTPMethod", HttpMethod.class);
 
     public static final AttributeDescriptor<String> BASE_URI = new AttributeDescriptor<>("baseURI", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> FOLLOW_REDIRECTS = new AttributeDescriptor<>("followRedirects", ValueType.BOOLEAN);

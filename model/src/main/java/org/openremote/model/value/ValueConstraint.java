@@ -20,10 +20,16 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.util.EnumValues;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Represents a constraint to apply to a value; these are based on JSR-380 validation.
@@ -154,8 +160,8 @@ public abstract class ValueConstraint implements Serializable {
             return allowedValueNames;
         }
 
-        public static AllowedValues fromEnum(Class<? extends Enum<?>> enumClass) {
-            Object[] allowedValues = Arrays.stream(enumClass.getEnumConstants()).map(Enum::toString).toArray(String[]::new);
+        public static AllowedValues fromEnum(Class<Enum<?>> enumClass) {
+            Object[] allowedValues = Arrays.stream(enumClass.getEnumConstants()).map(enm -> Values.getStringCoerced(enm).orElse(null)).toArray(String[]::new);
             return new AllowedValues(allowedValues);
         }
     }

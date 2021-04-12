@@ -184,7 +184,7 @@ public final class ValueType {
 
     public static final ValueDescriptor<ValueConstraint> VALUE_CONSTRAINT = new ValueDescriptor<>("valueConstraint", ValueConstraint.class);
 
-    public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("Agent link", AgentLink.class);
+    public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class);
 
     protected ValueType() {
     }

@@ -54,11 +54,11 @@ public class TimerAgent extends Agent<TimerAgent, TimerProtocol, TimerAgent.Time
         }
     }
 
-    public static final ValueDescriptor<CronExpressionParser> TIMER_CRON_EXPRESSION_DESCRIPTOR = new ValueDescriptor<>("Timer cron expression", CronExpressionParser.class);
+    public static final ValueDescriptor<CronExpressionParser> TIMER_CRON_EXPRESSION_DESCRIPTOR = new ValueDescriptor<>("cRONExpression", CronExpressionParser.class);
 
     public static final AttributeDescriptor<AttributeState> TIMER_ACTION = new AttributeDescriptor<>("timerAction", ValueType.ATTRIBUTE_STATE);
 
-    public static final AttributeDescriptor<CronExpressionParser> TIMER_CRON_EXPRESSION = new AttributeDescriptor<>("timerCronExpression", TIMER_CRON_EXPRESSION_DESCRIPTOR);
+    public static final AttributeDescriptor<CronExpressionParser> TIMER_CRON_EXPRESSION = new AttributeDescriptor<>("timerCRONExpression", TIMER_CRON_EXPRESSION_DESCRIPTOR);
 
     public static final AttributeDescriptor<Boolean> TIMER_ACTIVE = new AttributeDescriptor<>("timerActive", ValueType.BOOLEAN);
 

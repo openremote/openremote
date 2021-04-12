@@ -56,7 +56,7 @@ public class MacroAgent extends Agent<MacroAgent, MacroProtocol, MacroAgent.Macr
         }
     }
 
-    public static final ValueDescriptor<MacroAction> MACRO_ACTION_VALUE = new ValueDescriptor<>("Macro action", MacroAction.class);
+    public static final ValueDescriptor<MacroAction> MACRO_ACTION_VALUE = new ValueDescriptor<>("macroAction", MacroAction.class);
 
     public static final AttributeDescriptor<MacroAction[]> MACRO_ACTIONS = new AttributeDescriptor<>("macroActions", MACRO_ACTION_VALUE.asArray());
 

@@ -33,7 +33,7 @@ import java.util.Optional;
 @Entity
 public class ClientEventAgent extends Agent<ClientEventAgent, ClientEventProtocol, AgentLink.Default> {
 
-    public static final ValueDescriptor<ClientRole> VALUE_CLIENT_ROLE = new ValueDescriptor<>("Client role", ClientRole.class);
+    public static final ValueDescriptor<ClientRole> VALUE_CLIENT_ROLE = new ValueDescriptor<>("clientRole", ClientRole.class);
 
     public static final AttributeDescriptor<String> CLIENT_SECRET = new AttributeDescriptor<>("clientSecret", ValueType.TEXT);
     public static final AttributeDescriptor<ClientRole[]> CLIENT_ROLES = new AttributeDescriptor<>("clientRoles", VALUE_CLIENT_ROLE.asArray());

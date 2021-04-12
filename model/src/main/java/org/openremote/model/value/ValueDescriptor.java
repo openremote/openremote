@@ -151,7 +151,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
         this.name = name;
         this.type = type;
         if (type.isEnum() && (constraints == null || Arrays.stream(constraints).noneMatch(c -> c instanceof ValueConstraint.AllowedValues))) {
-            ValueConstraint.AllowedValues allowedValues = ValueConstraint.AllowedValues.fromEnum((Class<? extends Enum<?>>) type);
+            ValueConstraint.AllowedValues allowedValues = ValueConstraint.AllowedValues.fromEnum((Class<Enum<?>>) type);
             if (constraints != null) {
                 constraints = Arrays.copyOf(constraints, constraints.length+1);
                 constraints[constraints.length-1] = allowedValues;
