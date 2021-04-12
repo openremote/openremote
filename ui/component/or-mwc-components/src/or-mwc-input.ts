@@ -44,6 +44,7 @@ import {
     WellknownValueTypes
 } from "@openremote/model";
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
+import { i18next } from "@openremote/or-translate";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -253,7 +254,7 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
             case WellknownValueTypes.TIMESTAMPISO8601:
                 inputType = InputType.DATETIME;
                 break;
-            case WellknownValueTypes.TIMERCRONEXPRESSION:
+            case WellknownValueTypes.CRONEXPRESSION:
                 inputType = InputType.CRON;
                 break;
             case WellknownValueTypes.TIMEDURATIONISO8601:
@@ -460,6 +461,7 @@ const style = css`
         width: 32px;
         line-height: 32px;
         height: 32px;
+        cursor: pointer;
         background-color: var(--or-app-color2);
         font-size: 13px;
     }
@@ -899,7 +901,7 @@ export class OrInput extends LitElement {
                                     <span class="mdc-select__ripple"></span>
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     <span class="mdc-select__selected-text-container">
-                                      <span id="selected-text" class="mdc-select__selected-text">${this.getSelectedTextValue()}</span>
+                                      <span id="selected-text" class="mdc-select__selected-text">${this.getSelectedTextValue(opts)}</span>
                                     </span>
                                     <span class="mdc-select__dropdown-icon">
                                         <svg
@@ -1154,10 +1156,10 @@ export class OrInput extends LitElement {
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
                                 ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                                ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
+                                <span class="mdc-text-field__ripple"></span>
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
-                                ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
+                                <span class="mdc-line-ripple"></span>
                                 ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                             </label>
                             ${hasHelper ? html`
@@ -1261,6 +1263,7 @@ export class OrInput extends LitElement {
 
                         break;
                     case InputType.RADIO:
+                    case InputType.CHECKBOX_LIST:
                         break;
                     case InputType.BUTTON:
                     case InputType.BUTTON_MOMENTARY:
@@ -1436,17 +1439,17 @@ export class OrInput extends LitElement {
             if (Array.isArray(options[0])) {
                 resolved = options as [string, string][];
             } else {
-                resolved = (options as string[]).map((option) => [option, option]);
+                resolved = (options as string[]).map((option) => [option, i18next.t(option, {defaultValue: Util.camelCaseToSentenceCase(option)})]);
             }
         }
 
         return resolved;
     }
 
-    protected getSelectedTextValue(): string {
-        const opts = this.resolveOptions(this.options);
+    protected getSelectedTextValue(options?: [string, string][] | undefined): string {
+        const opts = options || this.resolveOptions(this.options);
         const value = this.value;
         const values = Array.isArray(value) ? value as string[] : value ? [value as string] : undefined;
-        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map(opt => opt && opt[1]).join(",");
+        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt && opt[1]).join(",");
     }
 }
