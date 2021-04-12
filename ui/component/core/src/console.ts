@@ -65,7 +65,7 @@ export class Console {
         if (requestedProviders.indexOf("storage") < 0) {
             requestedProviders.push("storage"); // Storage provider is essential to operation and should always be available
         }
-        this._pendingProviderEnables = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : [];
+        this._pendingProviderEnables = requestedProviders;
 
         // Look for existing console registration in local storage or just create a new one
         let consoleReg: ConsoleRegistration = Console._createConsoleRegistration();
