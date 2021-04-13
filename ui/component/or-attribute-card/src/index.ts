@@ -10,7 +10,8 @@ import {
     WellknownMetaItems
 } from "@openremote/model";
 import {AssetModelUtil, DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
-import Chart, {ChartTooltipCallback} from "chart.js";
+import {Chart, ChartDataset, ChartOptions, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
+import "chartjs-adapter-moment";
 import {OrChartConfig} from "@openremote/or-chart";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -21,6 +22,8 @@ import {OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 
 export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue";
+
+Chart.register(LineController, LineElement, PointElement, LinearScale, Title, TimeSeriesScale);
 
 // language=CSS
 const style = css`
@@ -223,7 +226,7 @@ export class OrAttributeCard extends LitElement {
 
     @query("#chart")
     private _chartElem!: HTMLCanvasElement;
-    private _chart?: Chart;
+    private _chart?: Chart<"line", ScatterDataPoint[]>;
 
     @query("#mdc-dialog")
     private _dialog!: OrMwcDialog;
@@ -267,13 +270,13 @@ export class OrAttributeCard extends LitElement {
         }
 
         if (!this._chart) {
-            this._chart = new Chart(this._chartElem, {
+            this._chart = new Chart(this._chartElem.getContext("2d")!, {
                 type: "line",
                 data: {
                     datasets: [
                         {
-                            data: this.data.filter(value => value.y != null),
-                            lineTension: 0.1,
+                            data: this.data.filter(value => value.y != null) as ScatterDataPoint[],
+                            tension: 0.1,
                             spanGaps: true,
                             backgroundColor: "transparent",
                             borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
@@ -284,37 +287,39 @@ export class OrAttributeCard extends LitElement {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    legend: {
-                        display: false
-                    },
-                    tooltips: {
-                        displayColors: false,
-                        callbacks: {
-                            title: (tooltipItems, data) => {
-                                return "";
-                            },
-                            label: (tooltipItem, data) => {
-                                return tooltipItem.yLabel; // Removes the colon before the label
-                            },
-                            footer: () => {
-                                return ""; // Hack the broken vertical alignment of body with footerFontSize: 0
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            displayColors: false,
+                            callbacks: {
+                                title: (context) => {
+                                    return "";
+                                },
+                                // label: (context) => {
+                                //     return context.parsed.y; // Removes the colon before the label
+                                // },
+                                footer: () => {
+                                    return ""; // Hack the broken vertical alignment of body with footerFontSize: 0
+                                }
                             }
-                        } as ChartTooltipCallback
+                        }
                     },
                     scales: {
-                        yAxes: [{
+                        y: {
                             display: false
-                        }],
-                        xAxes: [{
+                        },
+                        x: {
                             type: "time",
                             display: false,
-                        }]
+                        }
                     }
                 }
             });
         } else {
             if (changedProperties.has("data")) {
-                this._chart.data.datasets![0].data = this.data.filter(value => value.y != null);
+                this._chart.data.datasets![0].data = this.data.filter(value => value.y != null) as ScatterDataPoint[];
                 this._chart.update();
                 this.delta = this.getFormattedDelta(this.getFirstKnownMeasurement(this.data), this.getLastKnownMeasurement(this.data));
             }

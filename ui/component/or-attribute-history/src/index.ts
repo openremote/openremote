@@ -19,7 +19,9 @@ import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, De
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
-import Chart, {ChartTooltipCallback} from "chart.js";
+import "@openremote/or-chart";
+import {Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions} from "chart.js";
+import "chartjs-adapter-moment";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
@@ -256,11 +258,15 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     @query("#table")
     protected _tableElem!: HTMLDivElement;
     protected _table?: MDCDataTable;
-    protected _chart?: Chart;
+    protected _chart?: Chart<"line", ScatterDataPoint[]>;
     protected _type?: ValueDescriptor;
     protected _style!: CSSStyleDeclaration;
-
+    protected _startOfPeriod?: number;
+    protected _endOfPeriod?: number;
+    protected _timeUnits?: TimeUnit;
+    protected _stepSize?: number;
     protected _updateTimestampTimer: number | null = null;
+
     connectedCallback() {
         super.connectedCallback();
         this._style = window.getComputedStyle(this);
@@ -350,6 +356,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         const isChart = this._type && (this._type.jsonType === "number" || this._type.jsonType === "boolean");
 
         if (isChart) {
+            const data = this._data as ScatterDataPoint[];
+
             if (!this._chart) {
                 let bgColor = this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-color").trim();
                 const opacity = Number(this._style.getPropertyValue("--internal-or-attribute-history-graph-fill-opacity").trim());
@@ -361,12 +369,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                     }
                 }
 
-                this._chart = new Chart(this._chartElem, {
+                const options = {
                     type: "line",
                     data: {
                         datasets: [
                             {
-                                data: this._data.filter(value => value.y != null),
+                                data: data,
                                 backgroundColor: bgColor,
                                 borderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-line-color"),
                                 pointBorderColor: this._style.getPropertyValue("--internal-or-attribute-history-graph-point-border-color"),
@@ -383,29 +391,31 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         ]
                     },
                     options: {
-                        // maintainAspectRatio: false,
-                        // REMOVED AS DOESN'T SIZE CORRECTLY responsive: true,
+                        responsive: true,
+                        maintainAspectRatio: false,
                         onResize:() => this.dispatchEvent(new OrAttributeHistoryEvent('resize')),
-                        legend: {
-                            display: false
-                        },
-                        tooltips: {
-                            displayColors: false,
-                            xPadding: 10,
-                            yPadding: 10,
-                            titleMarginBottom: 10
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                displayColors: false,
+                                xPadding: 10,
+                                yPadding: 10,
+                                titleMarginBottom: 10
+                            }
                         },
                         scales: {
-                            yAxes: [{
-                                ticks: {
-                                    beginAtZero: true
-                                },
-                                gridLines: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
                                     color: "#cccccc"
                                 }
-                            }],
-                            xAxes: [{
+                            },
+                            x: {
                                 type: "time",
+                                min: this._startOfPeriod,
+                                max: this._endOfPeriod,
                                 time: {
                                     tooltipFormat: 'MMM D, YYYY, HH:mm:ss',
                                     displayFormats: {
@@ -414,26 +424,35 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                                         minute: "HH:mm",
                                         hour: "HH:mm",
                                         week: "w"
-                                    }
+                                    },
+                                    unit: this._timeUnits,
+                                    stepSize: this._stepSize
                                 },
                                 ticks: {
                                     autoSkip: true,
-                                    maxTicksLimit: 30,
-                                    fontColor: "#000",
-                                    fontFamily: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                                    fontSize: 9,
-                                    fontStyle: "normal"
+                                    color: "#000",
+                                    font: {
+                                        family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
+                                        size: 9,
+                                        style: "normal"
+                                    }
                                 },
                                 gridLines: {
                                     color: "#cccccc"
                                 }
-                            }]
+                            }
                         }
                     }
-                });
+                } as ChartConfiguration<"line", ScatterDataPoint[]>;
+
+                this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
             } else {
                 if (changedProperties.has("_data")) {
-                    this._chart.data.datasets![0].data = this._data.filter(value => value.y != null);
+                    this._chart.options.scales!.x!.min = this._startOfPeriod;
+                    this._chart.options!.scales!.x!.max = this._endOfPeriod;
+                    (this._chart.options!.scales!.x! as TimeScaleOptions).time!.unit = this._timeUnits!;
+                    (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
+                    this._chart.data.datasets![0].data = data;
                     this._chart.update();
                 }
             }
@@ -506,7 +525,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
             config.columns = [];
 
-            const dp = this._data!.find((dp) => dp.y !== undefined || dp.y !== null);
+            const dp = this._data!.find((dp) => dp.y !== undefined);
             if (dp) {
                 if (typeof(dp.y) === "object" && !Array.isArray(dp.y)) {
                     config.columns = Object.entries(dp.y as {}).map(([prop, value]) => {
@@ -626,30 +645,8 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         ];
     }
 
-    protected _getInterval() {
-        let interval: DatapointInterval = DatapointInterval.HOUR;
-        switch (this.period) {
-            case "hour":
-                interval = DatapointInterval.MINUTE;
-                break;
-            case "day":
-                interval = DatapointInterval.HOUR;
-                break;
-            case "week":
-                interval = DatapointInterval.HOUR;
-                break;
-            case "month":
-                interval = DatapointInterval.DAY;
-                break;
-            case "year":
-                interval = DatapointInterval.MONTH;
-                break;
-        }
-        return interval;
-    }
-
     protected async _loadData() {
-        if (this._loading || this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef)) {
+        if (this._loading || this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef) || !this.period || !this.fromTimestamp) {
             return;
         }
 
@@ -686,27 +683,53 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             return;
         }
 
-        if (!this.period || !this.fromTimestamp) {
-            this._loading = false;
-            return;
+
+        let interval: DatapointInterval = DatapointInterval.HOUR;
+        let stepSize = 1;
+
+        switch (this.period) {
+            case "hour":
+                interval = DatapointInterval.MINUTE;
+                stepSize = 5;
+                break;
+            case "day":
+                interval = DatapointInterval.HOUR;
+                stepSize = 1;
+                break;
+            case "week":
+                interval = DatapointInterval.HOUR;
+                stepSize = 6;
+                break;
+            case "month":
+                interval = DatapointInterval.DAY;
+                stepSize = 1;
+                break;
+            case "year":
+                interval = DatapointInterval.MONTH;
+                stepSize = 1;
+                break;
         }
-        const startOfPeriod = moment(this.fromTimestamp).subtract(1, this.period).toDate().getTime();
-        const endOfPeriod = moment(this.fromTimestamp).toDate().getTime();
+
+        const lowerCaseInterval = interval.toLowerCase();
+        this._startOfPeriod = moment(this.fromTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+        this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+        this._timeUnits =  lowerCaseInterval as TimeUnit;
+        this._stepSize = stepSize;
 
         const response = await manager.rest.api.AssetDatapointResource.getDatapoints(
             assetId,
             attributeName,
             {
-                interval: this._getInterval(),
-                fromTimestamp: startOfPeriod,
-                toTimestamp: endOfPeriod
+                interval: interval,
+                fromTimestamp: this._startOfPeriod,
+                toTimestamp: this._endOfPeriod
             }
         );
 
         this._loading = false;
 
         if (response.status === 200) {
-            this._data = response.data;
+            this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
         }
     }
     protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout=1500) {
