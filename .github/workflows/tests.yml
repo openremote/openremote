@@ -35,7 +35,7 @@ jobs:
       - name: tests with Gradle
         run: ./gradlew clean test
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
-        timeout-minutes: 30
+        timeout-minutes: 60
       - name: Share tests artifacts
         if: failure()
         uses: actions/upload-artifact@v2
