@@ -83,7 +83,7 @@ jobs:
           docker ps -a
           ./gradlew clean test
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
-        timeout-minutes: 30
+        timeout-minutes: 60
       - name: check containers when failure
         if: failure()
         run: |
