@@ -36,7 +36,8 @@ public class ClientEventAgent extends Agent<ClientEventAgent, ClientEventProtoco
     public static final ValueDescriptor<ClientRole> VALUE_CLIENT_ROLE = new ValueDescriptor<>("clientRole", ClientRole.class);
 
     public static final AttributeDescriptor<String> CLIENT_SECRET = new AttributeDescriptor<>("clientSecret", ValueType.TEXT);
-    public static final AttributeDescriptor<ClientRole[]> CLIENT_ROLES = new AttributeDescriptor<>("clientRoles", VALUE_CLIENT_ROLE.asArray());
+    public static final AttributeDescriptor<Boolean> WRITE = new AttributeDescriptor<>("write", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> READ = new AttributeDescriptor<>("read", ValueType.BOOLEAN);
 
     public static final AgentDescriptor<ClientEventAgent, ClientEventProtocol, AgentLink.Default> DESCRIPTOR =new AgentDescriptor<>(
         ClientEventAgent.class, ClientEventProtocol.class, AgentLink.Default.class
@@ -62,7 +63,26 @@ public class ClientEventAgent extends Agent<ClientEventAgent, ClientEventProtoco
         return getAttributes().getValue(CLIENT_SECRET);
     }
 
-    public Optional<ClientRole[]> getClientRoles() {
-        return getAttributes().getValue(CLIENT_ROLES);
+    public ClientEventAgent setClientSecret(String value) {
+        getAttributes().getOrCreate(CLIENT_SECRET).setValue(value);
+        return this;
+    }
+
+    public Optional<Boolean> isRead() {
+        return getAttributes().getValue(READ);
+    }
+
+    public ClientEventAgent setRead(Boolean value) {
+        getAttributes().getOrCreate(READ).setValue(value);
+        return this;
+    }
+
+    public Optional<Boolean> isWrite() {
+        return getAttributes().getValue(WRITE);
+    }
+
+    public ClientEventAgent setWrite(Boolean value) {
+        getAttributes().getOrCreate(WRITE).setValue(value);
+        return this;
     }
 }

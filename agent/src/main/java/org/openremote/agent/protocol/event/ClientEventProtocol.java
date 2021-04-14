@@ -32,6 +32,8 @@ import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -67,12 +69,19 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
         String clientId = CLIENT_ID_PREFIX + agent.getId().substring(12);
 
         String clientSecret = agent.getClientSecret().orElse(UUID.randomUUID().toString());
-        ClientRole[] roles = agent.getClientRoles().orElse(null);
+        List<ClientRole> roles = new ArrayList<>();
+
+        if (agent.isRead().orElse(false)) {
+            roles.add(ClientRole.READ_ASSETS);
+        }
+        if (agent.isWrite().orElse(false)) {
+            roles.add(ClientRole.READ_ASSETS);
+        }
 
         ProtocolClientEventService.ClientCredentials clientCredentials =
             new ProtocolClientEventService.ClientCredentials(
                 agent.getRealm(),
-                roles,
+                roles.toArray(new ClientRole[0]),
                 clientId,
                 clientSecret
             );
