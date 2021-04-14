@@ -137,7 +137,7 @@ const configURL = (CONFIG_URL_PREFIX || "") + "/manager_config.json";
 
 fetch(configURL).then(async (result) => {
     if (!result.ok) {
-        return undefined;
+        return DefaultAppConfig;
     }
 
     return await result.json() as ManagerAppConfig;
