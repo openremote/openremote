@@ -75,7 +75,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
             roles.add(ClientRole.READ_ASSETS);
         }
         if (agent.isWrite().orElse(false)) {
-            roles.add(ClientRole.READ_ASSETS);
+            roles.add(ClientRole.WRITE_ASSETS);
         }
 
         ProtocolClientEventService.ClientCredentials clientCredentials =
