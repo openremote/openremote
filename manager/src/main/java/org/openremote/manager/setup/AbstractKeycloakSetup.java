@@ -33,7 +33,7 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 public abstract class AbstractKeycloakSetup implements Setup {
 
     public static final String SETUP_EMAIL_FROM_KEYCLOAK = "SETUP_EMAIL_FROM_KEYCLOAK";
-    public static final String SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT = "no-reply@";
+    public static final String SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT = "no-reply@openremote.io";
     public static final ClientRole[] PUBLIC_USER_ROLES = new ClientRole[] {
         ClientRole.READ_ASSETS,
         ClientRole.READ_MAP

@@ -56,7 +56,7 @@ public interface Constants {
     String SETUP_EMAIL_TLS = "SETUP_EMAIL_TLS";
     boolean SETUP_EMAIL_TLS_DEFAULT = true;
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
-    String SETUP_EMAIL_FROM_DEFAULT = "no-reply@openremote.io";
+    String SETUP_EMAIL_FROM_DEFAULT = "support@openremote.io";
     String REQUEST_HEADER_REALM = "Auth-Realm";
     String ASSET_ID_REGEXP = "^[0-9A-Za-z]{22}$";
     String UUID_REGEXP = "[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}";
