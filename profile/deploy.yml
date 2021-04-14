@@ -122,7 +122,7 @@ services:
         #
         # docker exec -it openremote_manager_1 tail -f /deployment/openremote.log.0
         #
-        max-size: 1m
+        max-size: "1m"
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
