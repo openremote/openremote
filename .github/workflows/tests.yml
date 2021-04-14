@@ -29,7 +29,9 @@ jobs:
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
       - name: start containers needed for testing
-        run: docker-compose -f profile/dev-testing.yml up --no-build -d
+        run: |
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+          docker-compose -f profile/dev-testing.yml up --no-build -d
       - name: Check running containers
         run: docker ps -a
       - name: tests with Gradle
@@ -79,6 +81,7 @@ jobs:
         if: success()
         run: |
           eval "$(docker-machine env default)"
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
           docker-compose -f profile/dev-testing.yml up --no-build -d
           docker ps -a
           ./gradlew clean test
@@ -119,7 +122,9 @@ jobs:
 #      - name: grant execute permission for gradlew
 #        run: chmod +x gradlew
 #      - name: start containers needed for testing
-#        run: docker-compose -f profile/dev-testing.yml up --no-build -d
+#        run: |
+#          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+#          docker-compose -f profile/dev-testing.yml up --no-build -d
 #      - name: Check running containers
 #        run: docker ps -a
 #      - name: tests with Gradle
