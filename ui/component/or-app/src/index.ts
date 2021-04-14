@@ -18,7 +18,7 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult, OREvent} from "@openremote/core";
+import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult, OREvent, normaliseConfig, Manager} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
 import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -54,6 +54,10 @@ export function getRealmQueryParameter(): string | undefined {
     }
 }
 
+export function getDefaultManagerConfig() {
+    return normaliseConfig(DEFAULT_MANAGER_CONFIG);
+}
+
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     managerUrl: MANAGER_URL,
     keycloakUrl: KEYCLOAK_URL,
@@ -68,7 +72,9 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
 export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     @property({type: Object})
-    public appConfig!: AppConfig<S>;
+    public appConfig?: AppConfig<S>;
+
+    public appConfigProvider?: (manager: Manager) => AppConfig<S>;
 
     @property({type: Object})
     public managerConfig?: ManagerConfig;
@@ -175,31 +181,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
 
-        if (!this.appConfig) {
-            console.error("No AppConfig supplied");
-            return;
-        }
-
-        if (!this._store) {
-            console.error("No Redux store supplied");
-            return;
-        }
-
-        if (!this.appConfig.pages || Object.keys(this.appConfig.pages).length === 0) {
-            console.error("No page providers");
-            return;
-        }
-
-        const realm = getRealmQueryParameter();
-        const config = this._getConfig(realm);
-
-        if (!config) {
-            console.error("No default AppConfig or realm specific config for requested realm: " + realm);
-            return;
-        } else {
-            this._config = config;
-        }
-
         const managerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
         managerConfig.basicLoginProvider = (u, p) => this.doBasicLogin(u, p);
         manager.addListener(this._onManagerEvent);
@@ -208,7 +189,36 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
         manager.init(managerConfig).then((success) => {
             if (success) {
+                this.appConfig = this.appConfig || (this.appConfigProvider ? this.appConfigProvider(manager) : undefined);
+
+                if (!this.appConfig) {
+                    showErrorDialog("appError.noConfig", document.body);
+                    console.error("No AppConfig supplied");
+                    return;
+                }
+
+                if (!this._store) {
+                    showErrorDialog("appError.noReduxStore", document.body);
+                    console.error("No Redux store supplied");
+                    return;
+                }
+
+                if (!this.appConfig.pages || Object.keys(this.appConfig.pages).length === 0) {
+                    showErrorDialog("appError.noPages", document.body);
+                    console.error("No page providers");
+                    return;
+                }
+
                 this._initialised = true;
+                const realm = getRealmQueryParameter();
+                const config = this._getConfig(realm);
+
+                if (!config) {
+                    console.error("No default AppConfig or realm specific config for requested realm: " + realm);
+                    return;
+                } else {
+                    this._config = config;
+                }
 
                 this.appConfig.pages.forEach((pageProvider, index) => {
                     if (pageProvider.routes) {
@@ -224,7 +234,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 if (this.appConfig.pages.length > 0) {
                     router.on("*", (params, query) => {
-                        this._store.dispatch(updatePage(this.appConfig.pages[0].name));
+                        this._store.dispatch(updatePage(this.appConfig!.pages[0].name));
                     });
                 }
                
@@ -298,7 +308,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     this._mainElem.firstElementChild.remove();
                 }
                 if (this._page) {
-                    const pageProvider = this.appConfig.pages.find((page) => page.name === this._page);
+                    const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
                     if (pageProvider) {
                         const pageElem = pageProvider.pageCreator();
                         this._mainElem.appendChild(pageElem);
@@ -383,8 +393,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
     protected _getConfig(realm: string | undefined): RealmAppConfig {
         realm = realm || "default";
-        const defaultConfig = this.appConfig.realms ? this.appConfig.realms.default : {};
-        let realmConfig = this.appConfig.realms ? this.appConfig.realms![realm] : undefined;
+        const defaultConfig = this.appConfig!.realms ? this.appConfig!.realms.default : {};
+        let realmConfig = this.appConfig!.realms ? this.appConfig!.realms![realm] : undefined;
         realmConfig = Util.mergeObjects(defaultConfig, realmConfig, false);
 
         if (this.appConfig && this.appConfig.superUserHeader && manager.isSuperUser()) {

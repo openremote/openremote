@@ -60,7 +60,7 @@ declare global {
     }
 }
 
-export async function showErrorDialog(errorMessage: string) {
+export async function showErrorDialog(errorMessage: string, hostElement?: HTMLElement) {
     const deferred = new Util.Deferred<void>();
 
     showDialog({
@@ -83,7 +83,7 @@ export async function showErrorDialog(errorMessage: string) {
             default: true,
             action: (dialog) => deferred.resolve()
         }]
-    });
+    }, hostElement);
 
     await deferred.promise;
 }

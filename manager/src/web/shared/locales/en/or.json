@@ -233,6 +233,11 @@
     "EVENTS_CONNECTION_ERROR": "Event bus connection error (see console logs)",
     "TRANSLATION_ERROR": "Translations error (see console logs)"
   },
+  "appError": {
+    "noConfig": "No app config provided",
+    "noReduxStore": "No Redux store provided",
+    "noPages": "No pages provided"
+  },
   "couldNotRetrieveAttribute": "Could not retrieve attribute information",
   "pressEnterToSend": "Press Enter to send",
   "sending": "Sending",

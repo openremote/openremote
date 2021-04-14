@@ -137,91 +137,12 @@ const configURL = (CONFIG_URL_PREFIX || "") + "/manager_config.json";
 
 fetch(configURL).then(async (result) => {
     if (!result.ok) {
-        return [DefaultAppConfig, undefined];
+        return undefined;
     }
 
-    const appConfig = await result.json() as ManagerAppConfig;
+    return await result.json() as ManagerAppConfig;
 
-    if (!appConfig) {
-        return [DefaultAppConfig, undefined];
-    }
-
-    // Build pages
-    let pages: PageProvider<any>[] = [...DefaultPagesConfig];
-
-    if (appConfig.pages) {
-
-        // Replace any supplied page configs
-        if (appConfig.pages) {
-            pages = pages.map(pageProvider => {
-                const config = appConfig.pages[pageProvider.name];
-
-                switch (pageProvider.name) {
-                    case "map": {
-                        pageProvider = config ? pageMapProvider(store, config as PageMapConfig) : pageProvider;
-                        break;
-                    }
-                    case "assets": {
-                        pageProvider = config ? pageAssetsProvider(store, config as PageAssetsConfig) : pageProvider;
-                        break;
-                    }
-                    case "rules": {
-                        pageProvider = config ? pageRulesProvider(store, config as PageRulesConfig) : pageProvider;
-                        break;
-                    }
-                    case "insights": {
-                        pageProvider = config ? pageInsightsProvider(store, config as PageInsightsConfig) : pageProvider;
-                        break;
-                    }
-                    case "logs": {
-                        pageProvider = config ? pageLogsProvider(store, config as PageLogsConfig) : pageProvider;
-                        break;
-                    }
-                }
-
-                return pageProvider;
-            });
-        }
-    }
-
-    const orAppConfig: AppConfig<RootState> = {
-        pages: pages,
-        superUserHeader: DefaultHeaderConfig
-    };
-
-    // Configure realms
-    if (!appConfig.realms) {
-        orAppConfig.realms = {
-            default: {...DefaultRealmConfig, header: DefaultHeaderConfig}
-        };
-    } else {
-        orAppConfig.realms = {};
-        const defaultRealm = appConfig.realms.default ? {...DefaultRealmConfig,...appConfig.realms.default} : DefaultRealmConfig;
-        orAppConfig.realms.default = defaultRealm;
-
-        Object.entries(appConfig.realms).forEach(([name, realmConfig]) => {
-
-            const normalisedConfig = {...defaultRealm,...realmConfig};
-            let headers = DefaultHeaderConfig;
-
-            if (normalisedConfig.headers) {
-                headers = {
-                    mainMenu: [],
-                    secondaryMenu: []
-                };
-                normalisedConfig.headers.forEach((pageName) => {
-                    // Insert header
-                    if (DefaultHeaderMainMenu.hasOwnProperty(pageName)) {
-                        headers.mainMenu.push(DefaultHeaderMainMenu[pageName]);
-                    } else if (DefaultHeaderSecondaryMenu.hasOwnProperty(pageName)) {
-                        headers.secondaryMenu!.push(DefaultHeaderSecondaryMenu[pageName]);
-                    }
-                });
-            }
-
-            orAppConfig.realms[name] = {...defaultRealm, header: headers,...(realmConfig as RealmAppConfig)};
-        });
-    }
+}).then((appConfig: ManagerAppConfig) => {
 
     // Set locales and load path
     if (!appConfig.manager) {
@@ -236,25 +157,111 @@ fetch(configURL).then(async (result) => {
         }
     }
 
-    // Add config prefix if defined
+    // Add config prefix if defined (used in dev)
     if (CONFIG_URL_PREFIX) {
-        Object.values(orAppConfig.realms).forEach((realmConfig) => {
-            if (typeof (realmConfig.logo) === "string") {
-                realmConfig.logo = CONFIG_URL_PREFIX + realmConfig.logo;
-            }
-            if (typeof (realmConfig.logoMobile) === "string") {
-                realmConfig.logoMobile = CONFIG_URL_PREFIX + realmConfig.logoMobile;
-            }
-        });
         if (appConfig.manager.translationsLoadPath) {
             appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
         }
     }
 
-    return [orAppConfig, appConfig.manager];
+    orApp.managerConfig = appConfig.manager;
 
-}).then((orAppConfig: [AppConfig<RootState>, ManagerConfig | undefined]) => {
-    orApp.appConfig = orAppConfig[0]!;
-    orApp.managerConfig = orAppConfig[1];
+    orApp.appConfigProvider = (manager) => {
+
+        if (manager.isSuperUser()) {
+            return DefaultAppConfig;
+        }
+
+        // Build pages
+        let pages: PageProvider<any>[] = [...DefaultPagesConfig];
+
+        if (appConfig.pages) {
+
+            // Replace any supplied page configs
+            if (appConfig.pages) {
+                pages = pages.map(pageProvider => {
+                    const config = appConfig.pages[pageProvider.name];
+
+                    switch (pageProvider.name) {
+                        case "map": {
+                            pageProvider = config ? pageMapProvider(store, config as PageMapConfig) : pageProvider;
+                            break;
+                        }
+                        case "assets": {
+                            pageProvider = config ? pageAssetsProvider(store, config as PageAssetsConfig) : pageProvider;
+                            break;
+                        }
+                        case "rules": {
+                            pageProvider = config ? pageRulesProvider(store, config as PageRulesConfig) : pageProvider;
+                            break;
+                        }
+                        case "insights": {
+                            pageProvider = config ? pageInsightsProvider(store, config as PageInsightsConfig) : pageProvider;
+                            break;
+                        }
+                        case "logs": {
+                            pageProvider = config ? pageLogsProvider(store, config as PageLogsConfig) : pageProvider;
+                            break;
+                        }
+                    }
+
+                    return pageProvider;
+                });
+            }
+        }
+
+        const orAppConfig: AppConfig<RootState> = {
+            pages: pages,
+            superUserHeader: DefaultHeaderConfig
+        };
+
+        // Configure realms
+        if (!appConfig.realms) {
+            orAppConfig.realms = {
+                default: {...DefaultRealmConfig, header: DefaultHeaderConfig}
+            };
+        } else {
+            orAppConfig.realms = {};
+            const defaultRealm = appConfig.realms.default ? {...DefaultRealmConfig,...appConfig.realms.default} : DefaultRealmConfig;
+            orAppConfig.realms.default = defaultRealm;
+
+            Object.entries(appConfig.realms).forEach(([name, realmConfig]) => {
+
+                const normalisedConfig = {...defaultRealm,...realmConfig};
+                let headers = DefaultHeaderConfig;
+
+                if (normalisedConfig.headers) {
+                    headers = {
+                        mainMenu: [],
+                        secondaryMenu: []
+                    };
+                    normalisedConfig.headers.forEach((pageName) => {
+                        // Insert header
+                        if (DefaultHeaderMainMenu.hasOwnProperty(pageName)) {
+                            headers.mainMenu.push(DefaultHeaderMainMenu[pageName]);
+                        } else if (DefaultHeaderSecondaryMenu.hasOwnProperty(pageName)) {
+                            headers.secondaryMenu!.push(DefaultHeaderSecondaryMenu[pageName]);
+                        }
+                    });
+                }
+
+                orAppConfig.realms[name] = {...defaultRealm, header: headers,...(realmConfig as RealmAppConfig)};
+            });
+        }
+
+        // Add config prefix if defined (used in dev)
+        if (CONFIG_URL_PREFIX) {
+            Object.values(orAppConfig.realms).forEach((realmConfig) => {
+                if (typeof (realmConfig.logo) === "string") {
+                    realmConfig.logo = CONFIG_URL_PREFIX + realmConfig.logo;
+                }
+                if (typeof (realmConfig.logoMobile) === "string") {
+                    realmConfig.logoMobile = CONFIG_URL_PREFIX + realmConfig.logoMobile;
+                }
+            });
+        }
+
+    };
+
     document.body.appendChild(orApp);
 });
