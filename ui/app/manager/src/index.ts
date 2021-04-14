@@ -261,6 +261,7 @@ fetch(configURL).then(async (result) => {
             });
         }
 
+        return orAppConfig;
     };
 
     document.body.appendChild(orApp);

@@ -1,7 +1,7 @@
 {
-  "name": "@openremote/main",
+  "name": "@openremote/manager",
   "version": "1.0.4",
-  "description": "OpenRemote Main App",
+  "description": "OpenRemote Manager",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "private": true,
