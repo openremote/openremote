@@ -236,9 +236,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     public period: moment.unitOfTime.Base = "day";
 
     @property({type: Number})
-    public fromTimestamp?: Date;
-
-    @property({type: Number})
     public toTimestamp?: Date;
 
     @property({type: Object})
@@ -265,7 +262,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     protected _endOfPeriod?: number;
     protected _timeUnits?: TimeUnit;
     protected _stepSize?: number;
-    protected _updateTimestampTimer: number | null = null;
+    protected _updateTimestampTimer?: number;
 
     connectedCallback() {
         super.connectedCallback();
@@ -279,19 +276,12 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
 
     shouldUpdate(_changedProperties: PropertyValues): boolean {
 
-        let returnFalse = false;
-
-        if (!this.fromTimestamp) {
-            this.fromTimestamp = new Date();
-            returnFalse = true;
-        }
-
-        if (returnFalse) {
-            // Will update on next pass
+        if (!this.toTimestamp) {
+            this.toTimestamp = new Date();
             return false;
         }
 
-        let reloadData = _changedProperties.has("period") || _changedProperties.has("fromTimestamp");
+        let reloadData = _changedProperties.has("period") || _changedProperties.has("toTimestamp");
 
         if (_changedProperties.has("assetId") || _changedProperties.has("attributeRef") || _changedProperties.has("attribute")) {
             this._type = undefined;
@@ -321,9 +311,9 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 <div id="controls">
                     <or-mwc-input  .type="${InputType.SELECT}" ?disabled="${disabled}" .label="${i18next.t("timeframe")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.period = evt.detail.value}" .value="${this.period}" .options="${this._getPeriodOptions()}"></or-mwc-input>
                     <div id="ending-controls">
-                        <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.fromTimestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) =>  this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.fromTimestamp!, false, 0)}"></or-icon>
-                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.fromTimestamp!, true, 0)}"></or-icon>
+                        <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled}" label="${i18next.t("ending")}" .value="${this.toTimestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) =>  this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-left" @click="${() => this._updateTimestamp(this.toTimestamp!, false, 0)}"></or-icon>
+                        <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-right" @click="${() => this._updateTimestamp(this.toTimestamp!, true, 0)}"></or-icon>
                         <or-icon class="button button-icon" ?disabled="${disabled}" icon="chevron-double-right" @click="${() => this._updateTimestamp(new Date())}"></or-icon>
                     </div>
                 </div>
@@ -429,7 +419,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                                     stepSize: this._stepSize
                                 },
                                 ticks: {
-                                    autoSkip: true,
                                     color: "#000",
                                     font: {
                                         family: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
@@ -646,7 +635,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
     }
 
     protected async _loadData() {
-        if (this._loading || this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef) || !this.period || !this.fromTimestamp) {
+        if (this._loading || this._data || !this.assetType || !this.assetId || (!this.attribute && !this.attributeRef) || !this.period || !this.toTimestamp) {
             return;
         }
 
@@ -711,7 +700,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
         }
 
         const lowerCaseInterval = interval.toLowerCase();
-        this._startOfPeriod = moment(this.fromTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
+        this._startOfPeriod = moment(this.toTimestamp).subtract(1, this.period).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
         this._endOfPeriod = moment(this.toTimestamp).startOf(lowerCaseInterval as moment.unitOfTime.StartOf).add(1, lowerCaseInterval as moment.unitOfTime.Base).toDate().getTime();
         this._timeUnits =  lowerCaseInterval as TimeUnit;
         this._stepSize = stepSize;
@@ -732,11 +721,11 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
             this._data = response.data.filter(value => value.y !== null && value.y !== undefined) as ScatterDataPoint[];
         }
     }
-    protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout=1500) {
+    protected _updateTimestamp(timestamp: Date, forward?: boolean, timeout= 300) {
 
         if (this._updateTimestampTimer) {
             window.clearTimeout(this._updateTimestampTimer);
-            this._updateTimestampTimer = null;
+            this._updateTimestampTimer = undefined;
         }
         this._updateTimestampTimer = window.setTimeout(() => {
                 const newMoment = moment(timestamp);
@@ -744,7 +733,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 if (forward !== undefined) {
                     newMoment.add(forward ? 1 : -1, this.period);
                 }
-                    this.fromTimestamp = newMoment.toDate()
+                this.toTimestamp = newMoment.toDate()
         }, timeout);
     }
     
