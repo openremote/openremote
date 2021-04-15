@@ -22,6 +22,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - run: mkdir -p ~/image-cache
+      - id: image-cache
+        uses: actions/cache@v1
+        with:
+          path: ~/image-cache
+          key: image-cache-${{ runner.os }}
       - name: set up JDK
         uses: actions/setup-java@v1
         with:
@@ -29,8 +35,18 @@ jobs:
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
       - name: start containers needed for testing
+        if: steps.cache-images.outputs.cache-hit != 'true'
         run: |
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+          docker-compose -f profile/dev-testing.yml up --no-build -d
+          docker images --filter 'reference=openremote/*' --format "{{.Repository}}:{{.Tag}}"
+          docker save -o ~/image-cache/postgresql.tar openremote/postgresql:9.6.21.0
+          docker save -o ~/image-cache/keycloak.tar openremote/keycloak:12.0.1.0
+      - name: start containers needed for testing from cache
+        if: steps.cache-images.outputs.cache-hit == 'true'
+        run: |
+          docker load -i ~/image-cache/postgresql.tar
+          docker load -i ~/image-cache/keycloak.tar
           docker-compose -f profile/dev-testing.yml up --no-build -d
       - name: Check running containers
         run: docker ps -a
@@ -58,6 +74,15 @@ jobs:
     runs-on: ${{ matrix.os-version }}
 
     steps:
+      - uses: actions/checkout@v2
+      - run: mkdir -p ~/image-cache
+      - id: image-cache
+        uses: actions/cache@v1
+        with:
+          path: |
+            ~/image-cache
+            ~/.docker
+          key: image-cache-${{ runner.os }}
       - name: install docker
         run: |
           mkdir -p ~/.docker/machine/cache
@@ -70,7 +95,6 @@ jobs:
           vboxmanage modifyvm default --natpf1 "keycloak,tcp,,8081,,8081"
           docker-machine start default
         continue-on-error: true
-      - uses: actions/checkout@v2
       - name: set up JDK
         uses: actions/setup-java@v1
         with:
@@ -78,10 +102,25 @@ jobs:
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
       - name: start containers needed for testing and perform test
-        if: success()
+        if: success() &&
+            steps.cache-images.outputs.cache-hit != 'true'
         run: |
           eval "$(docker-machine env default)"
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+          docker-compose -f profile/dev-testing.yml up --no-build -d
+          docker ps -a
+          docker save -o ~/image-cache/postgresql.tar openremote/postgresql:9.6.21.0
+          docker save -o ~/image-cache/keycloak.tar openremote/keycloak:12.0.1.0
+          ./gradlew clean test
+        # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
+        timeout-minutes: 60
+      - name: start containers needed for testing and perform test from cache
+        if: success() &&
+            steps.cache-images.outputs.cache-hit == 'true'
+        run: |
+          eval "$(docker-machine env default)"
+          docker load -i ~/image-cache/postgresql.tar
+          docker load -i ~/image-cache/keycloak.tar
           docker-compose -f profile/dev-testing.yml up --no-build -d
           docker ps -a
           ./gradlew clean test
