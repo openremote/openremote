@@ -96,10 +96,12 @@ jobs:
           docker-machine start default
         continue-on-error: true
       - name: set up JDK
+        if: success()
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java-version }}
       - name: grant execute permission for gradlew
+        if: success()
         run: chmod +x gradlew
       - name: start containers needed for testing and perform test
         if: success() &&
@@ -139,6 +141,7 @@ jobs:
           name: tests-run-artifacts
           path: |
             test/build/reports/tests/test
+        continue-on-error: true
 
   tests-windows:
     strategy:
