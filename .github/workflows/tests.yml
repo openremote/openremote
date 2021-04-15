@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: mkdir -p ~/image-cache
-      - id: image-cache
+      - id: cache-images
         uses: actions/cache@v1
         with:
           path: ~/image-cache
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: mkdir -p ~/image-cache
-      - id: image-cache
+      - id: cache-images
         uses: actions/cache@v1
         with:
           path: |
