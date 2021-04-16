@@ -20,7 +20,7 @@ export type OrAddAssetDetail = {
 
 export class OrAddChangedEvent extends CustomEvent<OrAddAssetDetail> {
 
-        public static readonly NAME = "or-add-asset-changed";
+    public static readonly NAME = "or-add-asset-changed";
 
     constructor(addAssetDetail: OrAddAssetDetail) {
         super(OrAddChangedEvent.NAME, {
