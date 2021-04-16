@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
-import {AgentDescriptor, Asset, AssetDescriptor, WellknownAssets} from "@openremote/model";
+import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor} from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
 import {
@@ -54,6 +54,9 @@ export class OrAddAssetDialog extends LitElement {
 
     @property({attribute: false})
     public selectedType?: AgentDescriptor | AssetDescriptor;
+
+    @property({attribute: false})
+    public selectedAttributes: AttributeDescriptor[] = [];
 
     @property({attribute: false})
     protected showParentAssetSelector: boolean = false;
@@ -213,22 +216,31 @@ export class OrAddAssetDialog extends LitElement {
             ${!attributes
                 ? html``
                 : html`
-                    <div>
+                    <div style="margin-top: 0.5em">
                         <strong>${i18next.t("attribute_plural")}</strong>
-                            <ul style="margin-top: 0.5em">
-                                ${attributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
-                            </ul>
+                        <div style="display: grid">
+                            ${attributes.map(attribute => html`
+                                <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
+                                              .disabled="${true}" .value="${true}"></or-mwc-input>
+                            `)}
                         </div>
                     `}
 
             ${!optionalAttributes
                 ? html``
                 : html`
-                    <div>
+                    <div style="margin-top: 1.5em">
                         <strong>${i18next.t("optional_attributes")}</strong>
-                        <ul style="margin-top: 0.5em">
-                            ${optionalAttributes.map(item => html`<li>${Util.getAttributeLabel(undefined, item, undefined, true)}</li>`)}
-                        </ul>
+                        <div style="display: grid">
+                            ${optionalAttributes.map(attribute => html`
+                                <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}" 
+                                              .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
+                                              @or-mwc-input-changed="${(evt: OrInputChangedEvent) => {
+                                                  evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)
+                                                  console.log(this.selectedAttributes);
+                                              }}"></or-mwc-input>
+                            `)}
+                        </div>
                     </div>
                 `} 
         `;
