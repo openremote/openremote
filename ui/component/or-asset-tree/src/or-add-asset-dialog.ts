@@ -238,8 +238,7 @@ export class OrAddAssetDialog extends LitElement {
     }
 
     protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
-        const descriptor = listItem.data as AssetDescriptor | AgentDescriptor;
-        this.selectedType = descriptor;
+        this.selectedType = listItem.data as AssetDescriptor | AgentDescriptor;
 
         // Deselect other list selection
         const otherList = isAgent ? this.assetList : this.agentList;
