@@ -548,9 +548,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                             const addAssetDialog = dialog.shadowRoot!.getElementById("add-panel") as OrAddAssetDialog;
                             const descriptor = addAssetDialog.selectedType;
+                            const selectedOptionalAttributes = addAssetDialog.selectedAttributes;
                             const name = addAssetDialog.name.trim();
                             const parent = addAssetDialog.parent;
-
+                            
                             if (!descriptor) {
                                 return;
                             }
@@ -577,8 +578,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                             name: attributeDescriptor.name,
                                             type: attributeDescriptor.type,
                                             meta: attributeDescriptor.meta ? {...attributeDescriptor.meta} : undefined
-                                        } as Attribute<any>;
+                                        } as Attribute<any>; 
                                     });
+                            }
+
+                            if (selectedOptionalAttributes) {
+                                selectedOptionalAttributes?.forEach(attribute => {
+                                    asset.attributes![attribute.name!] = {
+                                        name: attribute.name,
+                                        type: attribute.type,
+                                        meta: attribute.meta ? {...attribute.meta} : undefined
+                                    }
+                                });
                             }
 
                             if (this.selectedIds) {
