@@ -235,10 +235,7 @@ export class OrAddAssetDialog extends LitElement {
                             ${optionalAttributes.map(attribute => html`
                                 <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}" 
                                               .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
-                                              @or-mwc-input-changed="${(evt: OrInputChangedEvent) => {
-                                                  evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)
-                                                  console.log(this.selectedAttributes);
-                                              }}"></or-mwc-input>
+                                              @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
                             `)}
                         </div>
                     </div>
