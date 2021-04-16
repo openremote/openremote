@@ -232,6 +232,11 @@ export class OrAddAssetDialog extends LitElement {
         `;
     }
 
+    protected onNameChanged(name: string) {
+        this.name = name;
+        this.onModified();
+    }
+
     protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
         const descriptor = listItem.data as AssetDescriptor | AgentDescriptor;
         this.selectedType = descriptor;
@@ -243,11 +248,6 @@ export class OrAddAssetDialog extends LitElement {
         }
         this.onModified();
     };
-
-    protected onNameChanged(name: string) {
-        this.name = name;
-        this.onModified();
-    }
 
     protected onModified() {
         this.dispatchEvent(new OrAddChangedEvent({
