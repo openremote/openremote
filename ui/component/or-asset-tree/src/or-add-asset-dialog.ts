@@ -101,7 +101,9 @@ export class OrAddAssetDialog extends LitElement {
                 display: flex;
                 height: 600px;
                 width: 800px;
-                border: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                border-style: solid;
+                border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                border-width: 1px 0;
             }
             #asset-type-option-container {
                 padding: 15px;
