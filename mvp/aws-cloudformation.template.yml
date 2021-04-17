@@ -147,6 +147,36 @@ Resources:
           echo EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
           echo EMAIL_USER=$EMAIL_USER >> access.txt
           echo EMAIL_HOST=$EMAIL_HOST >> access.txt
+          mkdir ${HostName}
+          cd ${HostName}
+          cat <<EOF >fetch_s3_deploy.sh
+          DEPLOYMENT=${1:?usage $0 DEPLOYMENT_NAME}
+          AWS_ECR_REPO=$(docker run --rm -v ~/.aws:/root/.aws -v /var/run/docker.sock:/var/run/docker.sock --entrypoint aws openremote/openremote-cli ecr describe-repositories --repository-names $DEPLOYMENT --query 'repositories[0].repositoryUri' --profile openremote-cli | xargs echo)
+          DOCKER_PASSWORD=$(docker run --rm -v ~/.aws:/root/.aws -v /var/run/docker.sock:/var/run/docker.sock --entrypoint aws openremote/openremote-cli ecr get-login-password --profile openremote-cli)
+          docker login --username AWS --password $DOCKER_PASSWORD $AWS_ECR_REPO
+          docker run --rm -v ~/.aws:/root/.aws -v $(pwd):/$DEPLOYMENT openremote/openremote-cli map -f $DEPLOYMENT
+          echo $AWS_ECR_REPO
+          ./deploy.sh down
+          docker images --filter "reference=$AWS_ECR_REPO" -q | xargs docker rmi
+          sudo rm -rf deployment
+          docker run --rm -v ~/.aws:/root/.aws -v $(pwd):/$DEPLOYMENT openremote/openremote-cli map -a download -f $DEPLOYMENT/mapdata.mbtiles -v -t
+          docker run --rm -v ~/.aws:/root/.aws -v $(pwd):/$DEPLOYMENT openremote/openremote-cli map -a download -f $DEPLOYMENT/deployment.tar.gz -v -t
+          sudo chown -R ubuntu:ubuntu .
+          sudo tar -xf deployment.tar.gz
+          sudo mv mapdata.mbtiles deployment/map/
+          ./deploy.sh up -d
+          docker images --filter "reference=openremote/openremote-cli" -q | xargs docker rmi
+          EOF
+          chmod +x fetch_s3_deploy.sh
+          cat <<EOF >deploy.sh
+          export EMAIL_USER=$EMAIL_USER
+          export EMAIL_PASSWORD=$EMAIL_PASSWORD
+          export EMAIL_HOST=email-smtp.eu-west-1.amazonaws.com
+          export EMAIL_PORT=587
+          PASSWORD=$PASSWORD DEPLOYMENT_NAME=${HostName} docker-compose $@
+          EOF
+          chmod +x deploy.sh
+
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
