@@ -150,8 +150,8 @@ Resources:
           echo PASSWORD=${OpenRemotePassword} >> access.txt
           mkdir ${HostName}
           cd ${HostName}
-          wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh
-          cat ../access.txt fetch_s3_deploy.sh > fetch_s3_deploy.sh
+          wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh -O fetch.txt
+          cat ../access.txt ./fetch.txt > fetch_s3_deploy.sh
           chmod +x fetch_s3_deploy.sh
 
   InstanceSecurityGroup:
