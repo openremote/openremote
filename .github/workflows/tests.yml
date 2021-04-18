@@ -84,6 +84,7 @@ jobs:
             ~/.docker
           key: image-cache-${{ runner.os }}
       - name: install docker
+        id: docker
         run: |
           mkdir -p ~/.docker/machine/cache
           curl -Lo ~/.docker/machine/cache/boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.12/boot2docker.iso
@@ -94,17 +95,18 @@ jobs:
           vboxmanage modifyvm default --natpf1 "postgresql,tcp,,5432,,5432"
           vboxmanage modifyvm default --natpf1 "keycloak,tcp,,8081,,8081"
           docker-machine start default
+          echo "::set-output name=success::1"
         continue-on-error: true
       - name: set up JDK
-        if: success()
+        if: steps.docker.outputs.success == 1
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java-version }}
       - name: grant execute permission for gradlew
-        if: success()
+        if: steps.docker.outputs.success == 1
         run: chmod +x gradlew
       - name: start containers needed for testing and perform test
-        if: success() &&
+        if: steps.docker.outputs.success == 1 &&
             steps.cache-images.outputs.cache-hit != 'true'
         run: |
           eval "$(docker-machine env default)"
@@ -117,7 +119,7 @@ jobs:
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
         timeout-minutes: 60
       - name: start containers needed for testing and perform test from cache
-        if: success() &&
+        if: steps.docker.outputs.success == 1 &&
             steps.cache-images.outputs.cache-hit == 'true'
         run: |
           eval "$(docker-machine env default)"
@@ -129,19 +131,18 @@ jobs:
         # Typically it takes 10 minutes to complete tests, default timeout is 6h, to be agile we need to pivot quicker :-)
         timeout-minutes: 60
       - name: check containers when failure
-        if: failure()
+        if: steps.docker.outputs.success == 1 && failure()
         run: |
           eval "$(docker-machine env default)"
           docker-compose -f profile/dev-testing.yml logs
         continue-on-error: true
       - name: Share tests artifacts
-        if: failure()
+        if: steps.docker.outputs.success == 1 && failure()
         uses: actions/upload-artifact@v2
         with:
           name: tests-run-artifacts
           path: |
             test/build/reports/tests/test
-        continue-on-error: true
 
   tests-windows:
     strategy:

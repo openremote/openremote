@@ -153,6 +153,7 @@ Resources:
           wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh -O fetch.txt
           cat ../access.txt ./fetch.txt > fetch_s3_deploy.sh
           chmod +x fetch_s3_deploy.sh
+          rm fetch.txt
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
