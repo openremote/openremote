@@ -52,6 +52,7 @@ cmd /C "set KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth && docker-compose -p 
 Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:
 
 - [Manager UI Guide](https://github.com/openremote/openremote/wiki/Demo-Smart-City)
+- [Custom Deployment](https://github.com/openremote/openremote/wiki/User-Guide%3A-Custom-deployment)
 - [Creating a HTTP Agent](https://github.com/openremote/openremote/wiki/User-Guide%3A-Connecting-to-a-HTTP-API)
 - [Setting up an IDE](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Setting-up-an-IDE)
 - [Working on the UI](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Working-on-the-UI)
