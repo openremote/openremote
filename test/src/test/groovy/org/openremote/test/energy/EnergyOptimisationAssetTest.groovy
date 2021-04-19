@@ -119,7 +119,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         when: "the optimisation runs"
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime)
 
-        then: "the setpoints of the storage asset for the next 24hrs should be correctly optimised [-20.0, 7.0, -20.0, 7.0, 0.0, 7.0, -14.0, 0.0]"
+        then: "the setpoints of the storage asset for the next 24hrs should be correctly optimised"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
             def setpoints = assetPredictedDatapointService.getValueDatapoints(
@@ -137,6 +137,62 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert setpoints[3].value == 0d
             assert setpoints[4].value == 7d
             assert setpoints[5].value == -14d
+            assert setpoints[6].value == 0d
+        }
+
+        when: "storage asset import and export tariffs are added to make storage un-viable and optimisation is run"
+        def batteryAsset = ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId))
+        batteryAsset.setTariffExport(10)
+        batteryAsset.setTariffImport(10)
+        batteryAsset = assetStorageService.merge(batteryAsset)
+        optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime)
+
+        then: "the battery should not be used in any interval"
+        conditions.eventually {
+            assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
+            def setpoints = assetPredictedDatapointService.getValueDatapoints(
+                    new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
+                    "minute",
+                    (long)(optimiser.intervalSize * 60) + " minute",
+                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
+            )
+
+            assert setpoints.size() == 7
+            assert setpoints[0].value == 0d
+            assert setpoints[1].value == 0d
+            assert setpoints[2].value == 0d
+            assert setpoints[3].value == 0d
+            assert setpoints[4].value == 0d
+            assert setpoints[5].value == 0d
+            assert setpoints[6].value == 0d
+        }
+
+        when: "storage asset import and export tariffs are modified to make storage viable in limited intervals and optimisation is run"
+        batteryAsset = ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId))
+        batteryAsset.setTariffExport(5)
+        batteryAsset.setTariffImport(5)
+        batteryAsset = assetStorageService.merge(batteryAsset)
+        optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime)
+
+        then: "the battery should only be used in the correct intervals"
+        conditions.eventually {
+            assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
+            def setpoints = assetPredictedDatapointService.getValueDatapoints(
+                    new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
+                    "minute",
+                    (long)(optimiser.intervalSize * 60) + " minute",
+                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
+                    LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
+            )
+
+            assert setpoints.size() == 7
+            assert setpoints[0].value == 0d
+            assert setpoints[1].value == -20d
+            assert setpoints[2].value == 0d
+            assert setpoints[3].value == 0d
+            assert setpoints[4].value == 0d
+            assert setpoints[5].value == 0d
             assert setpoints[6].value == 0d
         }
     }

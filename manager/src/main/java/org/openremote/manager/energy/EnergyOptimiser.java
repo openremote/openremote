@@ -671,7 +671,7 @@ public class EnergyOptimiser {
 
             if (powerNet + powerMax > 0d) {
                 // Can't make tariff flip (we're reducing import hence the -1d)
-                return new double[]{-1d * (tariffImport + assetExportCost), powerMax, 0d};
+                return new double[]{(-1d * tariffImport) + assetExportCost, powerMax, 0d};
             }
 
             // We can flip tariffs if we export enough power
@@ -679,7 +679,7 @@ public class EnergyOptimiser {
             double powerEnd = 0d - powerNet; // Inflection point where switch to export instead of import
 
             // If import was paying then reducing import is a loss in earnings
-            double cost = powerEnd * (tariffImport + assetExportCost);
+            double cost = powerEnd * (tariffImport - assetExportCost);
 
             // Is it beneficial to include remaining (-ve export power)
             if (tariffExport + assetExportCost < 0d || tariffExport <= (-1d * tariffImport)) {
@@ -729,7 +729,7 @@ public class EnergyOptimiser {
 
             if (powerNet + powerMax < 0d) {
                 // Can't make tariff flip (we're reducing import hence the -1d)
-                return new double[]{-1d * (tariffExport + assetImportCost), powerMin, powerMax};
+                return new double[]{(-1d * tariffExport) + assetImportCost, powerMin, powerMax};
             }
 
             // We can flip tariffs if we take enough power
@@ -737,7 +737,7 @@ public class EnergyOptimiser {
             double powerEnd = 0d - powerNet; // Inflection point where switch to import instead of export
 
             // If export was paying then reducing export is a loss in earnings i.e. a cost and vice versa hence the -1d
-            double cost = -1d * powerEnd * (tariffExport + assetImportCost);
+            double cost = -1d * powerEnd * (tariffExport - assetImportCost);
 
             if (powerMin > powerEnd) {
                 // We have to flip to meet power req
