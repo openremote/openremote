@@ -43,6 +43,7 @@ dependencies {
 
     compile "org.apache.camel:camel-core:$camelVersion"
     compile "org.apache.camel:camel-jackson:$camelVersion"
+    compile "org.apache.camel:camel-snmp:$camelVersion"
 
     compile("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
         exclude group: "log4j"
