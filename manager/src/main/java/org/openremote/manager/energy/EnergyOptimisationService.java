@@ -369,8 +369,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         // Optimise storage assets with priority on storage assets with an energy schedule (already sorted above)
-        double importPowerMax = Math.min(supplierAsset.getPowerImportMax().orElse(Double.MAX_VALUE), supplierAsset.getPowerImportMax().orElse(Double.MAX_VALUE));
-        double exportPowerMax = -1 * Math.min(supplierAsset.getPowerExportMax().orElse(Double.MAX_VALUE), supplierAsset.getPowerExportMax().orElse(Double.MAX_VALUE));
+        double importPowerMax = supplierAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
+        double exportPowerMax = -1 * supplierAsset.getPowerExportMax().orElse(Double.MAX_VALUE);
         double[] importPowerMaxes = new double[intervalCount];
         double[] exportPowerMaxes = new double[intervalCount];
         Arrays.fill(importPowerMaxes, importPowerMax);
@@ -511,9 +511,11 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
         }
 
+        boolean isConnected = !(storageAsset instanceof ElectricVehicleAsset) || ((ElectricVehicleAsset)storageAsset).getChargerConnected().orElse(false);
+
         // TODO: Make these a function of energy level
-        Function<Integer, Double> powerImportMaxCalculator = interval -> powerImportMax;
-        Function<Integer, Double> powerExportMaxCalculator = interval -> powerExportMax;
+        Function<Integer, Double> powerImportMaxCalculator = interval -> interval == 0 && !isConnected ? 0 : powerImportMax;
+        Function<Integer, Double> powerExportMaxCalculator = interval -> interval == 0 && !isConnected ? 0 : powerExportMax;
 
         if (hasEnergyMinRequirement) {
             LOG.finer(getLogPrefix(optimisationAssetId) + "Normalising min energy requirements for storage asset: " + storageAsset.getId());
