@@ -20,7 +20,7 @@
 package org.openremote.manager.asset;
 
 import org.openremote.manager.agent.AgentService;
-import org.openremote.manager.asset.AssetProcessingException.Reason;
+import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
@@ -138,7 +138,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
         LOG.finer("Processing attribute state for linked attribute");
 
         if (attributeLink == null) {
-            throw new AssetProcessingException(Reason.INVALID_ATTRIBUTE_LINK);
+            throw new AssetProcessingException(AttributeWriteFailure.INVALID_ATTRIBUTE_LINK);
         }
 
         // Convert the value as required
@@ -230,13 +230,13 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                 try {
                     Attribute<?> currentAttribute = getAttribute(em, assetStorageService, linkedAttributeRef).orElseThrow(
                         () -> new AssetProcessingException(
-                            Reason.ATTRIBUTE_NOT_FOUND,
+                            AttributeWriteFailure.ATTRIBUTE_NOT_FOUND,
                             "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
                         )
                     );
                     if (!Values.isBoolean(currentAttribute.getType().getType())) {
                         throw new AssetProcessingException(
-                            Reason.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                            AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
                             "cannot toggle value as attribute is not of type BOOLEAN: " + linkedAttributeRef
                         );
                     }
@@ -251,13 +251,13 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                 try {
                     Attribute<?> currentAttribute = getAttribute(em, assetStorageService, linkedAttributeRef).orElseThrow(
                         () -> new AssetProcessingException(
-                            Reason.ATTRIBUTE_NOT_FOUND,
+                            AttributeWriteFailure.ATTRIBUTE_NOT_FOUND,
                             "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
                         )
                     );
                     if (!Values.isNumber(currentAttribute.getType().getType())) {
                         throw new AssetProcessingException(
-                            Reason.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                            AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
                             "cannot increment/decrement value as attribute is not of type NUMBER: " + linkedAttributeRef
                         );
                     }
@@ -269,7 +269,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                 }
             default:
                 throw new AssetProcessingException(
-                    Reason.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                    AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
                     "converter is not supported: " + converter
                 );
         }

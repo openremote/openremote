@@ -15,6 +15,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
@@ -135,7 +136,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
             try {
                 pgJsonValue.setValue(Values.asJSON(attribute.getValue().orElse(null)).orElse("null"));
             } catch (SQLException e) {
-                throw new AssetProcessingException(AssetProcessingException.Reason.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attribute);
+                throw new AssetProcessingException(AttributeWriteFailure.STATE_STORAGE_FAILED, "Failed to insert or update asset data point for attribute: " + attribute);
             }
 
             em.unwrap(Session.class).doWork(connection -> {

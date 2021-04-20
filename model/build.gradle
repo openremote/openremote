@@ -27,6 +27,8 @@ dependencies {
     compile "org.mnode.ical4j:ical4j:$ical4jVersion"
     compile "org.reflections:reflections:$reflectionsVersion"
     compile "com.google.guava:guava:$guavaVersion"
+
+    compile "io.swagger:swagger-annotations:$swaggerVersion"
 }
 
 jar {

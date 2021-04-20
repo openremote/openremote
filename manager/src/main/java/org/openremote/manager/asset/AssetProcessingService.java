@@ -39,11 +39,8 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.agent.Protocol;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.*;
 import org.openremote.model.attribute.AttributeEvent.Source;
-import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
@@ -58,7 +55,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.manager.asset.AssetProcessingException.Reason.*;
+import static org.openremote.model.attribute.AttributeWriteFailure.*;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.attribute.AttributeEvent.Source.*;
@@ -81,7 +78,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
  * <p>
  * The {@link AttributeEvent}s are first validated depending on their source, and if validation fails
  * at any point then an {@link AssetProcessingException} will be logged as a warning with an
- * {@link AssetProcessingException.Reason}.
+ * {@link AttributeWriteFailure}.
  * <p>
  * Once successfully validated a chain of {@link AssetUpdateProcessor}s is handling the update message:
  * <ul>

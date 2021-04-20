@@ -19,8 +19,11 @@
  */
 package org.openremote.model.asset;
 
+import io.swagger.annotations.ApiOperation;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.AttributeWriteResult;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.TsIgnore;
@@ -29,6 +32,7 @@ import org.openremote.model.value.MetaItemType;
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -196,7 +200,13 @@ public interface AssetResource {
     @PUT
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
-    void writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, String valueStr);
+    @ApiOperation(value="Write to a single attribute", response = AttributeWriteResult.class)
+    Response writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
+
+    @PUT
+    @Consumes(APPLICATION_JSON)
+    @Path("attributes")
+    AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeState[] attributeStates);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a globally unique string value,

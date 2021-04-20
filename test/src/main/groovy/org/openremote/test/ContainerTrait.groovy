@@ -178,7 +178,7 @@ trait ContainerTrait {
                         counter = 0
                         def enginesStopped = false
                         while (!enginesStopped) {
-                            enginesStopped = rulesService.tenantEngines == null && rulesService.tenantEngines.isEmpty() && rulesService.assetEngines.isEmpty()
+                            enginesStopped = (rulesService.tenantEngines == null || rulesService.tenantEngines.isEmpty()) && (rulesService.assetEngines == null || rulesService.assetEngines.isEmpty())
                             if (counter++ > 100) {
                                 throw new IllegalStateException("Rule engines have failed to stop")
                             }

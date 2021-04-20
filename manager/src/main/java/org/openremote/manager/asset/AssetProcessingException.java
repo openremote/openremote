@@ -19,128 +19,29 @@
  */
 package org.openremote.manager.asset;
 
-import org.openremote.model.asset.agent.Agent;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.attribute.AttributeWriteFailure;
 
 /**
  * The reason why processing an {@link org.openremote.model.attribute.AttributeEvent} failed.
  */
 public class AssetProcessingException extends RuntimeException {
 
-    public enum Reason {
+    final protected AttributeWriteFailure reason;
 
-        /**
-         * Missing {@link org.openremote.model.attribute.AttributeEvent.Source}.
-         */
-        MISSING_SOURCE,
-
-        /**
-         * The source of the event does not match the expected source (e.g. expected client message
-         * but received sensor read).
-         */
-        ILLEGAL_SOURCE,
-
-        /**
-         * The asset does not exist.
-         */
-        ASSET_NOT_FOUND,
-
-        /**
-         * The attribute does not exist.
-         */
-        ATTRIBUTE_NOT_FOUND,
-
-        /**
-         * An actuator update must be for an attribute with a valid agent link.
-         */
-        INVALID_AGENT_LINK,
-
-        /**
-         * An attribute is linked to another attribute, but the link is invalid.
-         */
-        INVALID_ATTRIBUTE_LINK,
-
-        /**
-         * An attribute is linked to another attribute, but the linked attribute can't be written
-         * because conversion to the target attribute's value failed.
-         */
-        LINKED_ATTRIBUTE_CONVERSION_FAILURE,
-
-        /**
-         * Attributes of an {@link Agent} can not be individually updated.
-         */
-        ILLEGAL_AGENT_UPDATE,
-
-        /**
-         * Invalid {@link AttributeExecuteStatus} for {@link Attribute} of type {@link ValueType#EXECUTION_STATUS}.
-         */
-        INVALID_ATTRIBUTE_EXECUTE_STATUS,
-
-        /**
-         * No authentication/authorization context available.
-         */
-        NO_AUTH_CONTEXT,
-
-        /**
-         * Realm configuration or user privileges do not allow update (e.g. realm inactive, user is
-         * missing required role, attribute is read-only).
-         */
-        INSUFFICIENT_ACCESS,
-
-        /**
-         * The event timestamp is later than the processing time.
-         */
-        EVENT_IN_FUTURE,
-
-        /**
-         * The event timestamp is older than the last updated timestamp of the attribute.
-         */
-        EVENT_OUTDATED,
-
-        /**
-         * Applying the event violates constraints of the attribute.
-         */
-        ATTRIBUTE_VALIDATION_FAILURE,
-
-        /**
-         * Any other error, typically other runtime exceptions thrown by a processor.
-         */
-        PROCESSOR_FAILURE,
-
-        /**
-         * Writing the asset attribute state to database failed.
-         */
-        STATE_STORAGE_FAILED,
-
-        /**
-         * The event value is not the excepted value for the attribute
-         */
-        INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE,
-
-        /**
-         * The event is for a gateway descendant asset but the gateway is not connected
-         */
-        GATEWAY_DISCONNECTED
-    }
-
-    final protected Reason reason;
-
-    public AssetProcessingException(Reason reason) {
+    public AssetProcessingException(AttributeWriteFailure reason) {
         this(reason, null);
     }
 
-    public AssetProcessingException(Reason reason, String message) {
+    public AssetProcessingException(AttributeWriteFailure reason, String message) {
         this(reason, message, null);
     }
 
-    public AssetProcessingException(Reason reason, String message, Throwable cause) {
+    public AssetProcessingException(AttributeWriteFailure reason, String message, Throwable cause) {
         super(reason + (message != null ? " (" + message + ")": ""), cause);
         this.reason = reason;
     }
 
-    public Reason getReason() {
+    public AttributeWriteFailure getReason() {
         return reason;
     }
 }

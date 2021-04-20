@@ -180,7 +180,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, "Teststreet 123")
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "result should match"
         BuildingAsset asset
@@ -191,21 +191,19 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "an non-existent assets attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, "doesnotexist", BuildingAsset.STREET.name, "Teststreet 123")
+        def response = assetResource.writeAttributeValue(null, "doesnotexist", BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "the attribute should be not found"
-        ex = thrown()
-        ex.response.status == 404
+        response.status == 404
 
         when: "an non-existent attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, "doesnotexist", "Teststreet 123")
+        response = assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, "doesnotexist", '"Teststreet 123"')
 
         then: "the attribute should be not found"
-        ex = thrown()
-        ex.response.status == 404
+        response.status == 404
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, "Teststreet 456")
+        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 456"')
 
         then: "result should match"
         conditions.eventually {
@@ -367,7 +365,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, "Teststreet 123")
+        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "result should match"
         conditions.eventually {
@@ -376,11 +374,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, "Teststreet 456")
+        def response = assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 456"')
 
         then: "access should be forbidden"
-        ex = thrown()
-        ex.response.status == 403
+        response.status == 403
     }
 
     def "Access assets as testuser2"() {
@@ -512,18 +509,16 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, "Teststreet 123")
+        def response = assetResource.writeAttributeValue(null, managerTestSetup.smartBuildingId, BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "access should be forbidden"
-        ex = thrown()
-        ex.response.status == 403
+        response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, "Teststreet 456")
+        response = assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 456"')
 
         then: "access should be forbidden"
-        ex = thrown()
-        ex.response.status == 403
+        response.status == 403
     }
 
     def "Access assets as testuser3"() {
@@ -744,53 +739,46 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a private asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "lightSwitch", "false")
+        def response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "lightSwitch", false)
 
         then: "the attribute should be not found"
-        ex = thrown()
-        ex.response.status == 404
+        response.status == 404
 
         when: "a restricted read-only asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "currentTemperature", "22.123")
+        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "currentTemperature", 22.123)
 
         then: "the request should be forbidden"
-        ex = thrown()
-        ex.response.status == 403
+        response.status == 403
 
         when: "an attribute is written on a non-existent user asset"
-        assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", "false")
+        response = assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", false)
 
         then: "the attribute should be not found"
-        ex = thrown()
-        ex.response.status == 404
+        response.status == 404
 
         when: "an non-existent attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "doesnotexist", "foo")
+        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1LivingroomId, "doesnotexist", '"foo"')
 
         then: "the attribute should be not found"
-        ex = thrown()
-        ex.response.status == 404
+        response.status == 404
 
         when: "an asset attribute is written on a non-user asset"
-        assetResource.writeAttributeValue(null, managerTestSetup.apartment3LivingroomId, "lightSwitch", "false")
+        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment3LivingroomId, "lightSwitch", false)
 
         then: "access should be forbidden"
-        ex = thrown()
-        ex.response.status == 403
+        response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, "Teststreet 123")
+        response = assetResource.writeAttributeValue(null, managerTestSetup.smartOfficeId, BuildingAsset.STREET.name, '"Teststreet 123"')
 
         then: "access should be forbidden"
-        ex = thrown()
-        ex.response.status == 403
+        response.status == 403
 
         when: "a non-writable attribute value is written on a user asset"
-        assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "presenceDetected", "true")
+        response = assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "presenceDetected", true)
 
         then: "access should be forbidden"
-        ex = thrown()
-        ex.response.status == 403
+        response.status == 403
 
         when: "a non-writable attribute value is updated on a user asset"
         testAsset = assetResource.get(null, managerTestSetup.apartment1KitchenId)
@@ -820,7 +808,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert testAsset.getAttribute("myCustomAttribute").get().getValue().get() == 123
 
         when: "a writable attribute value is written on a user asset"
-        assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "myCustomAttribute", "456")
+        assetResource.writeAttributeValue(null, managerTestSetup.apartment1KitchenId, "myCustomAttribute", 456)
 
         then: "result should match"
         conditions.eventually {

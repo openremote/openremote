@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -30,7 +31,6 @@ import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
@@ -39,6 +39,8 @@ import javax.persistence.OptimisticLockException;
 import javax.validation.ConstraintViolationException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -46,7 +48,6 @@ import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
-import static org.openremote.model.query.AssetQuery.Select.selectExcludePathAndAttributes;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.value.MetaItemType.*;
 
@@ -341,55 +342,63 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String valueStr) {
-        try {
+    public Response writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, Object value) {
 
-            // JAX-RS converts a null to empty string so simple check here - means cannot actually send an empty string
-            // but not sure you would want to as really it conveys the same meaning as no value
-            if (TextUtil.isNullOrEmpty(valueStr)) {
-                valueStr = null;
-            }
+        Response.Status status = Response.Status.OK;
 
-            AttributeEvent event = new AttributeEvent(
-                new AttributeRef(assetId, attributeName), valueStr, timerService.getCurrentTimeMillis()
-            );
-
-            LOG.info("Write attribute value request: " + event);
-
-            // Process asynchronously but block for a little while waiting for the result
-            Map<String, Object> headers = new HashMap<>();
-            headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
-
-            if (isAuthenticated()) {
-                headers.put(Constants.AUTH_CONTEXT, getAuthContext());
-            }
-            Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
-                AssetProcessingService.ASSET_QUEUE, event, headers
-            );
-
-            if (result instanceof AssetProcessingException) {
-                AssetProcessingException processingException = (AssetProcessingException) result;
-                switch (processingException.getReason()) {
-                    case ILLEGAL_SOURCE:
-                    case NO_AUTH_CONTEXT:
-                    case INSUFFICIENT_ACCESS:
-                        throw new WebApplicationException(FORBIDDEN);
-                    case ASSET_NOT_FOUND:
-                    case ATTRIBUTE_NOT_FOUND:
-                        throw new WebApplicationException(NOT_FOUND);
-                    case INVALID_AGENT_LINK:
-                    case ILLEGAL_AGENT_UPDATE:
-                    case INVALID_ATTRIBUTE_EXECUTE_STATUS:
-                    case INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE:
-                        throw new IllegalStateException(processingException);
-                    default:
-                        throw processingException;
-                }
-            }
-
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+        if (value instanceof NullNode) {
+            value = null;
         }
+
+        // Process asynchronously but block for a little while waiting for the result
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
+
+        if (isAuthenticated()) {
+            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+        }
+
+        AttributeWriteResult result = doAttributeWrite(new AttributeRef(assetId, attributeName), value, headers);
+
+        if (result.getFailure() != null) {
+            switch (result.getFailure()) {
+                case ILLEGAL_SOURCE:
+                case NO_AUTH_CONTEXT:
+                case INSUFFICIENT_ACCESS:
+                    status = FORBIDDEN;
+                    break;
+                case ASSET_NOT_FOUND:
+                case ATTRIBUTE_NOT_FOUND:
+                    status = NOT_FOUND;
+                    break;
+                case INVALID_AGENT_LINK:
+                case ILLEGAL_AGENT_UPDATE:
+                case INVALID_ATTRIBUTE_EXECUTE_STATUS:
+                case INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE:
+                    status = NOT_ACCEPTABLE;
+                    break;
+                default:
+                    status = BAD_REQUEST;
+            }
+        }
+
+        return Response.status(status).entity(result).type(MediaType.APPLICATION_JSON_TYPE).build();
+    }
+
+    @Override
+    public AttributeWriteResult[] writeAttributeValues(RequestParams requestParams, AttributeState[] attributeStates) {
+
+        // Process asynchronously but block for a little while waiting for the result
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
+
+        if (isAuthenticated()) {
+            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+        }
+
+        return Arrays.stream(attributeStates).map(attributeState ->
+             doAttributeWrite(attributeState.getRef(), attributeState.getValue().orElse(null), headers)
+        ).toArray(AttributeWriteResult[]::new);
     }
 
     @Override
@@ -578,5 +587,32 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result;
+    }
+
+    protected AttributeWriteResult doAttributeWrite(AttributeRef ref, Object value, Map<String, Object> headers) {
+        AttributeWriteFailure failure = null;
+
+        try {
+            AttributeEvent event = new AttributeEvent(
+                ref, value, timerService.getCurrentTimeMillis()
+            );
+
+            LOG.info("Write attribute value request: " + event);
+
+            // Process synchronously
+            Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
+                AssetProcessingService.ASSET_QUEUE, event, headers
+            );
+
+            if (result instanceof AssetProcessingException) {
+                AssetProcessingException processingException = (AssetProcessingException) result;
+                failure = processingException.getReason();
+            }
+
+        } catch (IllegalStateException ex) {
+            failure = AttributeWriteFailure.UNKNOWN;
+        }
+
+        return new AttributeWriteResult(ref, failure);
     }
 }

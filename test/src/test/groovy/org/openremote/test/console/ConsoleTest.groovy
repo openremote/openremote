@@ -348,7 +348,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         messages.clear()
 
         and: "an authenticated user updates the location of a linked console"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console1.id, Asset.LOCATION.name, Values.asJSON(new GeoJSONPoint(0d, 0d, 0d)).orElse(null))
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console1.id, Asset.LOCATION.name, new GeoJSONPoint(0d, 0d, 0d))
 
         then: "the consoles location should have been updated"
         conditions.eventually {
@@ -369,7 +369,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //        ex.response.status == 403
 
         when: "a console's location is updated to be at the Smart Building"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, Values.asJSON(SMART_BUILDING_LOCATION).orElse(null))
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, SMART_BUILDING_LOCATION)
         long timestamp = Long.MAX_VALUE
 
         then: "a welcome home alert should be sent to the console"
@@ -384,7 +384,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "a console's location is updated to be at the Smart Building again"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, Values.asJSON(SMART_BUILDING_LOCATION).orElse(null))
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, SMART_BUILDING_LOCATION)
 
         then: "no more alerts should have been sent"
         conditions.eventually {
@@ -417,7 +417,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "a console's location is updated to be at the Smart Building again"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, Values.asJSON(SMART_BUILDING_LOCATION).orElse(null))
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, Asset.LOCATION.name, SMART_BUILDING_LOCATION)
 
         then: "another alert should have been sent"
         conditions.eventually {
