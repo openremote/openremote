@@ -282,14 +282,16 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             .recursive(true)
             .parents(optimisationAssetId)
             .types(ElectricityStorageAsset.class)
-            .attributes(new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER_SETPOINT.getName())));
-        query.attributes.groups = new ArrayList<>();
-        query.attributes.groups.add(
-            new LogicGroup<>(
-            LogicGroup.Operator.OR,
-            new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true)),
-            new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true)))
-        );
+            .attributes(
+                new LogicGroup<>(
+                    LogicGroup.Operator.AND,
+                    Collections.singletonList(new LogicGroup<>(
+                        LogicGroup.Operator.OR,
+                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true)),
+                        new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true))
+                    )),
+                    new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER_SETPOINT.getName())))
+                );
 
         List<ElectricityStorageAsset> optimisableStorageAssets = assetStorageService.findAll(query).stream()
             .map(asset -> (ElectricityStorageAsset)asset)
@@ -308,19 +310,19 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         // Get consumers and producers and sum power demand for the next 24hrs
         double[] powerNets = new double[intervalCount];
 
-        LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching child assets of type '" + ElectricityProducerAsset.class.getSimpleName() + "', '" + ElectricityConsumerAsset.class.getSimpleName() + "', '" + GroupAsset.class.getSimpleName() + "' (with child type of consumer or producer)");
+        LOG.finest(getLogPrefix(optimisationAssetId) + "Fetching plain consumer and producer child assets of type '" + ElectricityProducerAsset.class.getSimpleName() + "', '" + ElectricityConsumerAsset.class.getSimpleName() + "', '" + ElectricityStorageAsset.class.getSimpleName() + "'");
 
         AtomicInteger count = new AtomicInteger(0);
         assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludePath(true))
+                .select(new AssetQuery.Select().excludePath(true).excludeParentInfo(true))
                 .recursive(true)
                 .parents(optimisationAssetId)
-                .types(ElectricityConsumerAsset.class, ElectricityProducerAsset.class, GroupAsset.class)
+                .types(ElectricityConsumerAsset.class, ElectricityProducerAsset.class)
                 .attributes(new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())))
         )
-            .stream()
-            .filter(asset -> !(asset instanceof GroupAsset) || isElectricityGroupAsset(asset))
+            //.stream()
+            //.filter(asset -> !(asset instanceof GroupAsset) || isElectricityGroupAsset(asset))
             .forEach(asset -> {
                 @SuppressWarnings("OptionalGetWithoutIsPresent")
                 Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
@@ -328,9 +330,27 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
                 count.incrementAndGet();
             });
+        assetStorageService.findAll(
+            new AssetQuery()
+                .select(new AssetQuery.Select().excludePath(true).excludeParentInfo(true))
+                .recursive(true)
+                .parents(optimisationAssetId)
+                .types(ElectricityStorageAsset.class)
+                .attributes(
+                    new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())),
+                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(false)),
+                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(false))
+                )
+        ).forEach(asset -> {
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
+            Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
+            double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
+            IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
+            count.incrementAndGet();
+        });
 
         if (LOG.isLoggable(Level.FINEST)) {
-            LOG.finest(getLogPrefix(optimisationAssetId) + "Found child assets of type '" + ElectricityProducerAsset.class.getSimpleName() + "', '" + ElectricityConsumerAsset.class.getSimpleName() + "', '" + GroupAsset.class.getSimpleName() + "' (with child type of consumer or producer): count=" + count.get());
+            LOG.finest(getLogPrefix(optimisationAssetId) + "Found plain consumer and producer child assets count=" + count.get());
             LOG.finest("Calculated net power of consumers and producers: " + Arrays.toString(powerNets));
             LOG.finest("Getting supply costs for each interval");
         }
