@@ -147,7 +147,7 @@ Resources:
           echo EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
           echo EMAIL_USER=$EMAIL_USER >> access.txt
           echo EMAIL_HOST=$EMAIL_HOST >> access.txt
-          echo PASSWORD=${OpenRemotePassword} >> access.txt
+          echo export PASSWORD=${OpenRemotePassword} >> access.txt
           mkdir ${HostName}
           cd ${HostName}
           wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh -O fetch.txt
