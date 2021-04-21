@@ -168,46 +168,40 @@ fetch(configURL).then(async (result) => {
 
     orApp.appConfigProvider = (manager) => {
 
-        if (manager.isSuperUser()) {
-            return DefaultAppConfig;
-        }
-
         // Build pages
         let pages: PageProvider<any>[] = [...DefaultPagesConfig];
 
-        if (appConfig.pages) {
+        if (!manager.isSuperUser() && appConfig.pages) {
 
             // Replace any supplied page configs
-            if (appConfig.pages) {
-                pages = pages.map(pageProvider => {
-                    const config = appConfig.pages[pageProvider.name];
+            pages = pages.map(pageProvider => {
+                const config = appConfig.pages[pageProvider.name];
 
-                    switch (pageProvider.name) {
-                        case "map": {
-                            pageProvider = config ? pageMapProvider(store, config as PageMapConfig) : pageProvider;
-                            break;
-                        }
-                        case "assets": {
-                            pageProvider = config ? pageAssetsProvider(store, config as PageAssetsConfig) : pageProvider;
-                            break;
-                        }
-                        case "rules": {
-                            pageProvider = config ? pageRulesProvider(store, config as PageRulesConfig) : pageProvider;
-                            break;
-                        }
-                        case "insights": {
-                            pageProvider = config ? pageInsightsProvider(store, config as PageInsightsConfig) : pageProvider;
-                            break;
-                        }
-                        case "logs": {
-                            pageProvider = config ? pageLogsProvider(store, config as PageLogsConfig) : pageProvider;
-                            break;
-                        }
+                switch (pageProvider.name) {
+                    case "map": {
+                        pageProvider = config ? pageMapProvider(store, config as PageMapConfig) : pageProvider;
+                        break;
                     }
+                    case "assets": {
+                        pageProvider = config ? pageAssetsProvider(store, config as PageAssetsConfig) : pageProvider;
+                        break;
+                    }
+                    case "rules": {
+                        pageProvider = config ? pageRulesProvider(store, config as PageRulesConfig) : pageProvider;
+                        break;
+                    }
+                    case "insights": {
+                        pageProvider = config ? pageInsightsProvider(store, config as PageInsightsConfig) : pageProvider;
+                        break;
+                    }
+                    case "logs": {
+                        pageProvider = config ? pageLogsProvider(store, config as PageLogsConfig) : pageProvider;
+                        break;
+                    }
+                }
 
-                    return pageProvider;
-                });
-            }
+                return pageProvider;
+            });
         }
 
         const orAppConfig: AppConfig<RootState> = {
