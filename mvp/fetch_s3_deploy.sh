@@ -9,9 +9,7 @@ docker images --filter "reference=$AWS_ECR_REPO" -q | xargs docker rmi
 sudo rm -rf deployment
 docker run --rm -v ~/.aws:/root/.aws -v $(pwd):/$DEPLOYMENT_NAME openremote/openremote-cli map -a download -f $DEPLOYMENT_NAME -v -t
 sudo chown -R ubuntu:ubuntu .
-mv $DEPLOYMENT_NAME/* .
 sudo tar -xf deployment.tar.gz
-sudo mv mapdata.mbtiles deployment/map/
-docker-compose -p openremote up -d
-docker images --filter "reference=openremote/*" -q | xargs docker rmi
-rmdir $DEPLOYMENT_NAME
+sudo mv mapdata.mbtiles deployment/map/ || true
+docker-compose -p openremote up -d || exit 69
+docker images --filter "reference=openremote/*" -q | xargs docker rmi || true

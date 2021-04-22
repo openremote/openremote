@@ -144,9 +144,9 @@ Resources:
           docker-compose -f mvp-docker-compose.yml -p openremote up -d
           echo USER=${AccessKeys} > access.txt
           echo SECRET=${AccessKeys.SecretAccessKey} >> access.txt
-          echo EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
-          echo EMAIL_USER=$EMAIL_USER >> access.txt
-          echo EMAIL_HOST=$EMAIL_HOST >> access.txt
+          echo export EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
+          echo export EMAIL_USER=$EMAIL_USER >> access.txt
+          echo export EMAIL_HOST=$EMAIL_HOST >> access.txt
           echo export PASSWORD=${OpenRemotePassword} >> access.txt
           mkdir ${HostName}
           cd ${HostName}
