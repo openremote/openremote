@@ -27,6 +27,7 @@ import {
     Attribute,
     AttributeEvent,
     ClientRole,
+    FileInfo,
     SharedEvent,
     WellknownAssets,
     WellknownAttributes,
@@ -381,7 +382,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 const reader = new FileReader();
 
                 reader.addEventListener("load", function () {
-                    console.log('RESULT from eventlistener', reader.result); //todo: do something with this response
+                    manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, {name: 'name', contents: reader.result} as FileInfo) //todo: this doesn't work yet
+                        .then(response => console.log(response.data, response)); //todo: do something with this response
                 }, false);
 
                 if (file.files && file.files.length) {
