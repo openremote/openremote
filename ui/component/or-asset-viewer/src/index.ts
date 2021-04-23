@@ -21,6 +21,7 @@ import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {
+    AgentDescriptor,
     Asset,
     AssetEvent,
     Attribute,
@@ -357,11 +358,25 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     }
 
     if (panelConfig && panelConfig.type === "setup") {
-        const historyConfig = panelConfig as SetupPanelConfig;
+        const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
+        
+        let content: TemplateResult = html``;
+
+        if (descriptor.assetImport) {
+            content = html`<input type="file"
+               id="configFile" name="avatar"
+               accept=".json, .knxproj, .vlp">`;
+        }
+        else if (descriptor.assetDiscovery) {
+            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => console.log('click')}"></or-mwc-input>`;
+        } else {
+            showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
+        }
         
         return html`      
-            <pre>${JSON.stringify(historyConfig, undefined, 2)}</pre>
+            ${content}
         `;
+        
     }
 
     if (panelConfig && panelConfig.type === "survey") {
