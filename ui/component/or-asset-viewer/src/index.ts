@@ -359,6 +359,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     }
 
     if (panelConfig && panelConfig.type === "setup") {
+        if (asset.type !== WellknownAssets.KNXAGENT && asset.type !== WellknownAssets.ZWAGENT && asset.type !== WellknownAssets.VELBUSSERIALAGENT) {
+            return;
+        }
+        
         const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
         
         if (!descriptor || !asset.id) {
