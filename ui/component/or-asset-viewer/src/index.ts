@@ -374,13 +374,29 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(agentId)
                 .then(response => console.log(response.data, response)); //todo: do something with this response
         }
+
+        const fileToBase64 = () => {
+            const file = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
+            if (file) {
+                const reader = new FileReader();
+
+                reader.addEventListener("load", function () {
+                    console.log('RESULT from eventlistener', reader.result); //todo: do something with this response
+                }, false);
+
+                if (file.files && file.files.length) {
+                    reader.readAsDataURL(file.files[0]); //convert to base64
+                }
+            }
+        }
         
         let content: TemplateResult = html``;
 
         if (descriptor.assetImport) {
-            content = html`<input type="file"
-               id="configFile" name="avatar"
-               accept=".json, .knxproj, .vlp">`;
+            content = html`
+                <input type="file" id="fileuploadElem" name="configfile" accept=".json, .knxproj, .vlp" style="width: 100%;" />
+                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${html`upload`}" @or-mwc-input-changed="${() => fileToBase64()}"></or-mwc-input>
+            `;
         }
         else if (descriptor.assetDiscovery) {
             content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => discoverAssets(asset.id!)}"></or-mwc-input>`;
