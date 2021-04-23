@@ -370,8 +370,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             return;
         }
 
-        const discoverAssets = (agentId: string) => {
-            manager.rest.api.AgentResource.doProtocolAssetDiscovery(agentId)
+        const discoverAssets = () => {
+            manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => console.log(response.data, response)); //todo: do something with this response
         }
 
@@ -399,7 +399,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             `;
         }
         else if (descriptor.assetDiscovery) {
-            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => discoverAssets(asset.id!)}"></or-mwc-input>`;
+            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>`;
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
