@@ -39,14 +39,15 @@ public class PredictedFacade<T extends Ruleset> extends PredictedDatapoints {
         this.assetPredictedDatapointService = assetPredictedDatapointService;
     }
 
-    @Override
-    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, String truncate, String interval, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
-        return assetPredictedDatapointService.getValueDatapoints(attributeRef, truncate, interval, fromTimestamp, toTimestamp);
-    }
 
     @Override
     public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, DatapointInterval interval, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
-        return assetPredictedDatapointService.getValueDatapoints(attributeRef, interval, fromTimestamp, toTimestamp);
+        return assetPredictedDatapointService.getValueDatapoints(attributeRef, interval, null, fromTimestamp, toTimestamp);
+    }
+
+    @Override
+    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, DatapointInterval interval, int stepSize, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
+        return assetPredictedDatapointService.getValueDatapoints(attributeRef, interval, stepSize, fromTimestamp, toTimestamp);
     }
 
     @Override

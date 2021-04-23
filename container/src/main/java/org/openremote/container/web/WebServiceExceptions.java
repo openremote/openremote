@@ -222,6 +222,12 @@ public class WebServiceExceptions {
         if ("java.io.IOException: Connection reset by peer".equals(getRootCause(throwable).toString()))
             return;
 
+        if (throwable instanceof WebApplicationException && ((WebApplicationException) throwable).getResponse().getStatus() == 404) {
+                // Don't stack trace 404s just want request uri
+                LOG.log(Level.FINE, "Web service exception (404) in '" + origin + "' for '" + info + "'");
+                return;
+        }
+
         if (LOG.isLoggable(Level.FINE)) {
             LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'", throwable);
         } else {

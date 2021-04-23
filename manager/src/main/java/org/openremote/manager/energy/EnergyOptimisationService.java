@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.energy;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
@@ -36,6 +37,7 @@ import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
@@ -338,8 +340,8 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 .types(ElectricityStorageAsset.class)
                 .attributes(
                     new AttributePredicate().name(new StringPredicate(ElectricityAsset.POWER.getName())),
-                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(false)),
-                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(false))
+                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_IMPORT.getName(), new BooleanPredicate(true), true, null),
+                    new AttributePredicate(ElectricityStorageAsset.SUPPORTS_EXPORT.getName(), new BooleanPredicate(true), true, null)
                 )
         ).forEach(asset -> {
             @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -470,16 +472,44 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             LocalDateTime timestamp = LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault());
             ValueDatapoint<?>[] predictedData = assetPredictedDatapointService.getValueDatapoints(
                 ref,
-                "minute",
-                (long)(intervalSize * 60) + " minute",
+                DatapointInterval.MINUTE,
+                (int)(intervalSize * 60),
                 timestamp,
                 timestamp.plus(24, HOURS).minus((long)(intervalSize * 60), ChronoUnit.MINUTES)
             );
             if (predictedData.length != values.length) {
                 LOG.warning("Returned predicted data point count does not match interval count: Ref=" + ref + ", expected=" + values.length + ", actual=" + predictedData.length);
             } else {
-                IntStream.range(0, predictedData.length).forEach(i ->
-                    values[i] = predictedData[i].getValue() != null ? (double)(Object)predictedData[i].getValue() : 0d);
+
+                IntStream.range(0, predictedData.length).forEach(i -> {
+                    if (predictedData[i].getValue() != null) {
+                        values[i] = (double) (Object) predictedData[i].getValue();
+                    } else {
+                        // Average previous and next values to fill in gaps (goes up to 5 back and forward) - this fixes
+                        // issues with resolution differences between stored predicted data and optimisation interval
+                        Double previous = null;
+                        Double next = null;
+                        int j = i-1;
+                        while (previous == null && j >= 0) {
+                           previous = (Double) predictedData[j].getValue();
+                           j--;
+                        }
+                        j = i+1;
+                        while (next == null && j < predictedData.length) {
+                            next = (Double) predictedData[j].getValue();
+                            j++;
+                        }
+                        if (next == null) {
+                            next = previous;
+                        }
+                        if (previous == null) {
+                            previous = next;
+                        }
+                        if (next != null) {
+                            values[i] = (previous + next) / 2;
+                        }
+                    }
+                });
             }
         } else {
             LOG.finer("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
@@ -575,19 +605,28 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         }
 
         LOG.finer(getLogPrefix(optimisationAssetId) + "Applying earning opportunities for storage asset: " + storageAsset.getId());
+
         optimiser.applyEarningOpportunities(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator);
         if (LOG.isLoggable(Level.FINER)) {
-            LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity power set points = " + Arrays.toString(powerSetpoints));
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity power set points for storage asset: " + storageAsset.getId() + " = " + Arrays.toString(powerSetpoints));
+        }
 
-            double[][] finalImportCostAndPower = importCostAndPower;
-            double[][] finalExportCostAndPower = exportCostAndPower;
-            double totalCost = IntStream.range(0, powerSetpoints.length).mapToDouble(i -> {
-                double setpoint = powerSetpoints[i];
-                double cost = setpoint < 0d ? finalExportCostAndPower[i][0] : finalImportCostAndPower[i][0];
-                return cost * setpoint;
-            }).reduce(0, Double::sum);
+        if (LOG.isLoggable(Level.FINEST)) {
 
-            LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity cost = " + totalCost);
+            double previousCost = 0d;
+            double optimisedCost = 0d;
+
+            for (int i = 0; i < powerSetpoints.length; i++) {
+                double power = powerNets[i];
+                previousCost += Math.abs(power) * (power > 0 ? costImports[i] : costExports[i]) * optimiser.intervalSize;
+                power += powerSetpoints[i];
+                optimisedCost += Math.abs(power) * (power > 0 ? costImports[i] : costExports[i]) * optimiser.intervalSize;
+                optimisedCost += Math.abs(power) * (power > 0 ? storageAsset.getTariffImport().orElse(0d) : storageAsset.getTariffExport().orElse(0d)) * optimiser.intervalSize;
+            }
+
+            // TODO Include storage import/export tariff
+
+            LOG.finest(getLogPrefix(optimisationAssetId) + "Optimisation result for storage asset: " + storageAsset.getId() + " [Previous cost=" + previousCost + ", new cost=" + optimisedCost + "]");
         }
 
         return powerSetpoints;

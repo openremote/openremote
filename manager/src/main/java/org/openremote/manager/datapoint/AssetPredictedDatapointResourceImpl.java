@@ -24,11 +24,11 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.datapoint.AssetPredictedDatapointResource;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.datapoint.AssetPredictedDatapointResource;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
@@ -56,11 +56,12 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
 
     @Override
     public ValueDatapoint<?>[] getPredictedDatapoints(@BeanParam RequestParams requestParams,
-                                                   String assetId,
-                                                   String attributeName,
-                                                   DatapointInterval datapointInterval,
-                                                   long fromTimestamp,
-                                                   long toTimestamp) {
+                                                      String assetId,
+                                                      String attributeName,
+                                                      DatapointInterval interval,
+                                                      Integer stepSize,
+                                                      long fromTimestamp,
+                                                      long toTimestamp) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -78,9 +79,14 @@ public class AssetPredictedDatapointResourceImpl extends ManagerWebResource impl
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            return assetPredictedDatapointService.getValueDatapoints(
-                new AttributeRef(assetId, attributeName),
-                datapointInterval,
+            Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
+                new WebApplicationException(Response.Status.NOT_FOUND)
+            );
+
+            return assetPredictedDatapointService.getValueDatapoints(assetId,
+                attribute,
+                interval,
+                stepSize,
                 LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault()),
                 LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault()));
         } catch (IllegalStateException ex) {

@@ -44,6 +44,7 @@ public interface AssetDatapointResource {
                                    @PathParam("assetId") String assetId,
                                    @PathParam("attributeName") String attributeName,
                                    @QueryParam("interval") DatapointInterval datapointInterval,
+                                   @QueryParam("step") Integer stepSize,
                                    @QueryParam("fromTimestamp") long fromTimestamp,
                                    @QueryParam("toTimestamp") long toTimestamp);
 

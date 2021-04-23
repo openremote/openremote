@@ -30,7 +30,9 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.time.Instant;
@@ -56,11 +58,12 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
     @Override
     public ValueDatapoint<?>[] getDatapoints(@BeanParam RequestParams requestParams,
-                                                 String assetId,
-                                                 String attributeName,
-                                                 DatapointInterval interval,
-                                                 long fromTimestamp,
-                                                 long toTimestamp) {
+                                             String assetId,
+                                             String attributeName,
+                                             DatapointInterval interval,
+                                             Integer stepSize,
+                                             long fromTimestamp,
+                                             long toTimestamp) {
         try {
 
             if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
@@ -85,10 +88,13 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             return assetDatapointService.getValueDatapoints(assetId,
                 attribute,
                 interval,
+                stepSize,
                 LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault()),
                 LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault()));
         } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+            throw new BadRequestException(ex);
+        } catch (UnsupportedOperationException ex) {
+            throw new NotSupportedException(ex);
         }
     }
 

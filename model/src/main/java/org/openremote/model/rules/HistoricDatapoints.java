@@ -32,8 +32,14 @@ import java.time.LocalDateTime;
 @TsIgnore
 public abstract class HistoricDatapoints {
 
-    public abstract ValueDatapoint<?>[] getValueDataPoints(AttributeRef attributeRef,
-                                                        DatapointInterval interval,
-                                                        LocalDateTime fromTimestamp,
-                                                        LocalDateTime toTimestamp);
+    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
+                                                           DatapointInterval interval,
+                                                           LocalDateTime fromTimestamp,
+                                                           LocalDateTime toTimestamp);
+
+    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
+                                                           DatapointInterval interval,
+                                                           int stepSize,
+                                                           LocalDateTime fromTimestamp,
+                                                           LocalDateTime toTimestamp);
 }

@@ -15,6 +15,7 @@ import org.openremote.model.asset.impl.ElectricityStorageAsset
 import org.openremote.model.asset.impl.ElectricitySupplierAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.datapoint.DatapointInterval
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Specification
@@ -124,8 +125,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
             def setpoints = assetPredictedDatapointService.getValueDatapoints(
                     new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    "minute",
-                    (long)(optimiser.intervalSize * 60) + " minute",
+                    DatapointInterval.MINUTE,
+                    (int)(optimiser.intervalSize * 60),
                     LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                     LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
             )
@@ -152,8 +153,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
             def setpoints = assetPredictedDatapointService.getValueDatapoints(
                     new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    "minute",
-                    (long)(optimiser.intervalSize * 60) + " minute",
+                    DatapointInterval.MINUTE,
+                    (int)(optimiser.intervalSize * 60),
                     LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                     LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
             )
@@ -180,8 +181,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 0d
             def setpoints = assetPredictedDatapointService.getValueDatapoints(
                     new AttributeRef(managerTestSetup.electricityBatteryAssetId, ElectricityAsset.POWER_SETPOINT.name),
-                    "minute",
-                    (long)(optimiser.intervalSize * 60) + " minute",
+                    DatapointInterval.MINUTE,
+                    (int)(optimiser.intervalSize * 60),
                     LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES),
                     LocalDateTime.ofInstant(optimisationTime, ZoneId.systemDefault()).plus(1, ChronoUnit.DAYS).minus((long)(optimiser.intervalSize * 60), ChronoUnit.MINUTES)
             )
