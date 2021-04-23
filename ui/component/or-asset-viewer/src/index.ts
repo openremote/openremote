@@ -42,6 +42,7 @@ import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { ApiClient } from "@openremote/rest/src/restclient";
 
 export interface PanelConfig {
     type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results";
@@ -360,6 +361,16 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     if (panelConfig && panelConfig.type === "setup") {
         const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
         
+        if (!descriptor || !asset.id) {
+            showSnackbar(undefined, "Error finding agent information", i18next.t("dismiss"));
+            return;
+        }
+
+        const discoverAssets = (agentId: string) => {
+            manager.rest.api.AgentResource.doProtocolAssetDiscovery(agentId)
+                .then(response => console.log(response.data, response)); //todo: do something with this response
+        }
+        
         let content: TemplateResult = html``;
 
         if (descriptor.assetImport) {
@@ -368,7 +379,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                accept=".json, .knxproj, .vlp">`;
         }
         else if (descriptor.assetDiscovery) {
-            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => console.log('click')}"></or-mwc-input>`;
+            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => discoverAssets(asset.id!)}"></or-mwc-input>`;
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
