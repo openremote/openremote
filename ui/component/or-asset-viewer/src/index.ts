@@ -43,7 +43,7 @@ import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PanelConfig {
-    type?: "info" | "history" | "group" | "survey" | "survey-results";
+    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results";
     title?: string;
     hide?: boolean;
     hideOnMobile?: boolean;
@@ -80,6 +80,10 @@ export interface InfoPanelConfig extends PanelConfig {
     }
 }
 
+export interface SetupPanelConfig extends PanelConfig {
+    type: "setup"
+}
+
 export interface HistoryPanelConfig extends PanelConfig {
     type: "history",
     include?: string[];
@@ -96,7 +100,7 @@ export interface GroupPanelConfig extends PanelConfig {
     };
 }
 
-export type PanelConfigUnion = InfoPanelConfig | GroupPanelConfig | PanelConfig;
+export type PanelConfigUnion = InfoPanelConfig | SetupPanelConfig | GroupPanelConfig | PanelConfig;
 export type PanelViewProvider = (asset: Asset, attributes: { [index: string]: Attribute<any> }, panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
 export type PropertyViewProvider = (asset: Asset, property: string, value: any, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
 export type AttributeViewProvider = (asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
@@ -284,7 +288,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
     }
 
-    if (panelConfig.type === "info") {
+    if (panelConfig && panelConfig.type === "info") {
 
         // This type of panel shows attributes and/or properties of the asset
         const infoConfig = panelConfig as InfoPanelConfig;
@@ -350,6 +354,14 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     return getField(item.item.name!, item.itemConfig, getAttributeTemplate(asset, item.item, hostElement, viewerConfig, panelConfig, item.itemConfig));
                 }
         })}`;
+    }
+
+    if (panelConfig && panelConfig.type === "setup") {
+        const historyConfig = panelConfig as SetupPanelConfig;
+        
+        return html`      
+            <pre>${JSON.stringify(historyConfig, undefined, 2)}</pre>
+        `;
     }
 
     if (panelConfig && panelConfig.type === "survey") {
@@ -800,6 +812,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 attributes: {
                     include: ["notes", "manufacturer", "model"]
                 }
+            },
+            setup: {
+                type: "setup",
+                title: "setup",
+                hideOnMobile: false
             },
             location: {
                 type: "info",

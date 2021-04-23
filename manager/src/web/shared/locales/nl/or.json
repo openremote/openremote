@@ -152,6 +152,7 @@
   "matchedOfType": "Hetzelfde type: {{type}}",
   "unmatched": "Niet dezelfde",
   "wait": "Wacht",
+  "setup": "Instellingen",
   "underlyingAssets": "Onderliggende assets",
   "groupAssetName": "Asset naam",
   "history": "Geschiedenis",

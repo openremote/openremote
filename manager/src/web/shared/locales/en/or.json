@@ -152,6 +152,7 @@
   "matchedOfType": "Matched of type {{type}}",
   "unmatched": "Unmatched",
   "wait": "Wait",
+  "setup": "Setup",
   "underlyingAssets": "Underlying assets",
   "groupAssetName": "Asset name",
   "history": "History",
