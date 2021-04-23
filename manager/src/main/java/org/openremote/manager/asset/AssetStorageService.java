@@ -1708,7 +1708,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         StringBuilder attributeBuilder = new StringBuilder();
 
-        if (nameValuePredicate.negated) {
+        // Only append not on the outer filter if value predicate is not set otherwise it will match any attribute with different name and value
+        if (nameValuePredicate.negated && (nameValuePredicate.value == null || nameValuePredicate.name == null)) {
             attributeBuilder.append("NOT (");
         }
 
@@ -1729,6 +1730,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (nameValuePredicate.name != null) {
                 attributeBuilder.append(" and ");
+
+                if (nameValuePredicate.negated) {
+                    attributeBuilder.append(" NOT(");
+                }
             }
 
             // Inserts the SQL string and adds the parameters

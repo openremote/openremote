@@ -33,18 +33,16 @@ import java.time.LocalDateTime;
 @TsIgnore
 public abstract class PredictedDatapoints {
 
+    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
+                                                           DatapointInterval interval,
+                                                           LocalDateTime fromTimestamp,
+                                                           LocalDateTime toTimestamp);
 
     public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                                        String truncate,
-                                                        String interval,
-                                                        LocalDateTime fromTimestamp,
-                                                        LocalDateTime toTimestamp);
-
-
-    public abstract ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef,
-                                                        DatapointInterval interval,
-                                                        LocalDateTime fromTimestamp,
-                                                        LocalDateTime toTimestamp);
+                                                           DatapointInterval interval,
+                                                           int stepSize,
+                                                           LocalDateTime fromTimestamp,
+                                                           LocalDateTime toTimestamp);
 
     public abstract void updateValue(String assetId, String attributeName, Object value, LocalDateTime timestamp);
     public abstract void updateValue(AttributeRef attributeRef, Object value, LocalDateTime timestamp);

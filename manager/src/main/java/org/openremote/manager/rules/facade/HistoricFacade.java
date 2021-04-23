@@ -42,7 +42,12 @@ public class HistoricFacade<T extends Ruleset> extends HistoricDatapoints {
     }
 
     @Override
-    public ValueDatapoint<?>[] getValueDataPoints(AttributeRef attributeRef, DatapointInterval interval, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
-        return assetDatapointService.getValueDatapoints(attributeRef, interval, fromTimestamp, toTimestamp);
+    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, DatapointInterval interval, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
+        return assetDatapointService.getValueDatapoints(attributeRef, interval, null, fromTimestamp, toTimestamp);
+    }
+
+    @Override
+    public ValueDatapoint<?>[] getValueDatapoints(AttributeRef attributeRef, DatapointInterval interval, int stepSize, LocalDateTime fromTimestamp, LocalDateTime toTimestamp) {
+        return assetDatapointService.getValueDatapoints(attributeRef, interval, stepSize, fromTimestamp, toTimestamp);
     }
 }
