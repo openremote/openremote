@@ -380,15 +380,20 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             const file = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
             if (file) {
                 const reader = new FileReader();
-
-                reader.addEventListener("load", function () {
-                    manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, {name: 'name', contents: reader.result} as FileInfo) //todo: this doesn't work yet
-                        .then(response => console.log(response.data, response)); //todo: do something with this response
-                }, false);
-
                 if (file.files && file.files.length) {
                     reader.readAsDataURL(file.files[0]); //convert to base64
                 }
+                
+                reader.onload = () => {
+                    const fileInfo = {
+                        name: 'filename',
+                        contents: reader.result,
+                        binary: false
+                    } as FileInfo
+                    manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
+                        .then(response => console.log(response.data, response)); //todo: do something with this response
+                }
+
             }
         }
         
