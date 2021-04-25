@@ -378,12 +378,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
         const fileToBase64 = () => {
             const file = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
-            if (file) {
+            if (file && file.files && file.files.length) {
                 const reader = new FileReader();
-                if (file.files && file.files.length) {
-                    reader.readAsDataURL(file.files[0]); //convert to base64
-                }
-                
+                reader.readAsDataURL(file.files[0]); //convert to base64
+
                 reader.onload = () => {
                     const fileInfo = {
                         name: 'filename',
@@ -393,7 +391,6 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
                         .then(response => console.log(response.data, response)); //todo: do something with this response
                 }
-
             }
         }
         
