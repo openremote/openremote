@@ -26,7 +26,6 @@ import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.ConnectionConstants;

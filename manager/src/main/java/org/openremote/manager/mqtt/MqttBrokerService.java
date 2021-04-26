@@ -70,7 +70,6 @@ public class MqttBrokerService implements ContainerService {
     protected ORAuthorizatorPolicy mainAuthorizatorPolicy;
 
     protected Map<String, MqttConnection> mqttConnectionMap;
-    protected List<InterceptHandler> interceptHandlers;
 
     protected boolean active;
     protected String host;
@@ -89,7 +88,6 @@ public class MqttBrokerService implements ContainerService {
 
         mainAuthorizatorPolicy = new ORAuthorizatorPolicy();
         mqttConnectionMap = new HashMap<>();
-        interceptHandlers = new ArrayList<>();
 
         clientEventService = container.getService(ClientEventService.class);
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
@@ -141,7 +139,7 @@ public class MqttBrokerService implements ContainerService {
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(false));
-        interceptHandlers.add(new EventInterceptHandler(identityProvider, messageBrokerService, mqttConnectionMap));
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new EventInterceptHandler(identityProvider, messageBrokerService, mqttConnectionMap));
 
         AssetStorageService assetStorageService = container.getService(AssetStorageService.class);
         mainAuthorizatorPolicy.addAuthorizatorPolicy(new KeycloakAuthorizatorPolicy(identityProvider, assetStorageService, clientEventService, mqttConnectionMap));
@@ -185,7 +183,7 @@ public class MqttBrokerService implements ContainerService {
     }
 
     public MqttBrokerService addInterceptHandler(InterceptHandler interceptHandler) {
-        interceptHandlers.add(interceptHandler);
+        mqttBroker.addInterceptHandler(interceptHandler);
         return this;
     }
 
