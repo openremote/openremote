@@ -163,7 +163,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                  return true;
 
              // Regular user must have role
-             if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+             if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), auth.getClientId())) {
                  return false;
              }
 
@@ -381,7 +381,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
                         // Superuser can get all, User must have role
-                        if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                        if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), authContext.getClientId())) {
                             return;
                         }
 
@@ -423,7 +423,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
                         // Superuser can get all, User must have role
-                        if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                        if (!authContext.isSuperUser() && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), authContext.getClientId())) {
                             return;
                         }
 

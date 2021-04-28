@@ -82,7 +82,7 @@ public class SyslogService extends Handler implements ContainerService {
         if (clientEventService != null) {
             clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
                 // Only superuser can get logging events
-                return subscription.isEventType(SyslogEvent.class) && auth.hasResourceRole(Constants.READ_RULES_ROLE, Constants.KEYCLOAK_CLIENT_ID);
+                return subscription.isEventType(SyslogEvent.class) && auth.hasResourceRole(Constants.READ_RULES_ROLE, auth.getClientId());
             });
         }
 

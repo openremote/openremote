@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.event;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
@@ -30,12 +31,13 @@ import org.openremote.model.value.ValueType;
 import javax.persistence.Entity;
 import java.util.Optional;
 
+import static org.openremote.model.value.MetaItemType.READ_ONLY;
+
 @Entity
 public class ClientEventAgent extends Agent<ClientEventAgent, ClientEventProtocol, AgentLink.Default> {
 
-    public static final ValueDescriptor<ClientRole> VALUE_CLIENT_ROLE = new ValueDescriptor<>("clientRole", ClientRole.class);
-
-    public static final AttributeDescriptor<String> CLIENT_SECRET = new AttributeDescriptor<>("clientSecret", ValueType.TEXT);
+    public static final AttributeDescriptor<String> CLIENT_SECRET = new AttributeDescriptor<>("clientSecret", ValueType.UUID);
+    public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT, new MetaItem<>(READ_ONLY));
     public static final AttributeDescriptor<Boolean> WRITE = new AttributeDescriptor<>("write", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> READ = new AttributeDescriptor<>("read", ValueType.BOOLEAN);
 
@@ -65,6 +67,15 @@ public class ClientEventAgent extends Agent<ClientEventAgent, ClientEventProtoco
 
     public ClientEventAgent setClientSecret(String value) {
         getAttributes().getOrCreate(CLIENT_SECRET).setValue(value);
+        return this;
+    }
+
+    public Optional<String> getClientId() {
+        return getAttributes().getValue(CLIENT_ID);
+    }
+
+    public ClientEventAgent setClientId(String value) {
+        getAttributes().getOrCreate(CLIENT_ID).setValue(value);
         return this;
     }
 
