@@ -163,7 +163,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 }
 
                 // Regular user must have role
-                if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), auth.getClientId())) {
                     return false;
                 }
 

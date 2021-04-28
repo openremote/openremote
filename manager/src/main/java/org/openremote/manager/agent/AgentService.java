@@ -144,14 +144,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Collection<Agent<?, ?, ?>> agents = getAgents().values();
         LOG.fine("Found agent count = " + agents.size());
 
-        agents.stream().filter(agent -> {
-            boolean isDisabled = agent.isDisabled().orElse(false);
-            if (isDisabled) {
-                LOG.fine("Agent is disabled so not starting: " + agent);
-                sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
-            }
-            return !isDisabled;
-        }).forEach(this::startAgent);
+        agents.stream().forEach(this::doAgentInit);
     }
 
     @Override
@@ -262,16 +255,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         switch (persistenceEvent.getCause()) {
             case CREATE:
-
                 agent = addReplaceAgent(agent);
-
-                if (agent.isDisabled().orElse(false)) {
-                    LOG.info("Agent is disabled so not starting: " + agent);
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
-                } else {
-                    startAgent(agent);
-                }
-
+                doAgentInit(agent);
                 break;
             case UPDATE:
                 onAgentUpdated(agent);
@@ -300,13 +285,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return null;
         }
 
-        if (agent.isDisabled().orElse(false)) {
-            LOG.info("Agent is disabled so not starting: " + agent);
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
-        } else {
-            startAgent(agent);
-        }
-
+        doAgentInit(agent);
         return agent;
     }
 
@@ -399,6 +378,16 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
         if (ancestorAgentId != null) {
             notifyChildAssetChange(ancestorAgentId, persistenceEvent);
+        }
+    }
+
+    protected void doAgentInit(Agent<?,?,?> agent) {
+        boolean isDisabled = agent.isDisabled().orElse(false);
+        if (isDisabled) {
+            LOG.fine("Agent is disabled so not starting: " + agent);
+            sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.DISABLED));
+        } else {
+            this.startAgent(agent);
         }
     }
 
@@ -737,7 +726,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Protocol<?> protocol = getProtocolInstance(agent.getId());
 
         if (protocol == null) {
-            throw new UnsupportedOperationException("Agent protocol is disabled or is being deleted");
+            throw new UnsupportedOperationException("Agent is either invalid, disabled or mis-configured: " + agent);
         }
 
         if (!(protocol instanceof ProtocolAssetDiscovery)) {

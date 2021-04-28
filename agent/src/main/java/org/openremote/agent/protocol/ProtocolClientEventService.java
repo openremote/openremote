@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol;
 
 import org.apache.camel.Exchange;
+import org.openremote.agent.protocol.event.ClientEventAgent;
 import org.openremote.model.ContainerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.ConnectionConstants;
@@ -39,6 +40,7 @@ import static org.apache.camel.builder.Builder.header;
  */
 public interface ProtocolClientEventService extends ContainerService {
 
+    String CLIENT_ID_PREFIX = "ClientEvent-";
     String HEADER_ACCESS_RESTRICTED = ProtocolClientEventService.class.getName() + ".HEADER_ACCESS_RESTRICTED";
     String HEADER_CONNECTION_TYPE = ProtocolClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE";
     String HEADER_CONNECTION_TYPE_WEBSOCKET = ProtocolClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_WEBSOCKET";
@@ -134,5 +136,9 @@ public interface ProtocolClientEventService extends ContainerService {
             return authContext.getClientId();
         }
         return null;
+    }
+
+    static String getClientId(String suffix) {
+        return CLIENT_ID_PREFIX + suffix;
     }
 }

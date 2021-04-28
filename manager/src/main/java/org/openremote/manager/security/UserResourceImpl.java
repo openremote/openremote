@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.security;
 
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
@@ -40,8 +41,9 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User[] getAll(RequestParams requestParams, String realm) {
-        boolean isAdmin = getAuthContext().hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
-        boolean isBasicRead = getAuthContext().hasResourceRole(ClientRole.READ_USERS.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+        AuthContext authContext = getAuthContext();
+        boolean isAdmin = authContext.hasResourceRole(ClientRole.READ_ADMIN.getValue(), authContext.getClientId());
+        boolean isBasicRead = authContext.hasResourceRole(ClientRole.READ_USERS.getValue(), authContext.getClientId());
 
         if (!isAdmin && !isBasicRead) {
              throw new ForbiddenException("Insufficient permissions to read users");

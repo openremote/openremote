@@ -29,7 +29,7 @@ import java.util.List;
 import static org.openremote.container.util.MapAccess.getBoolean;
 
 /**
- * Builtin setup tasks.
+ * Test setup tasks.
  */
 public class TestSetupTasks extends EmptySetupTasks {
 

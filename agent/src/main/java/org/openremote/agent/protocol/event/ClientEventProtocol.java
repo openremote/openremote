@@ -53,11 +53,14 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, AgentLink.Default> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Client Event";
-    public static final String CLIENT_ID_PREFIX = "ClientEventProtocol-";
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, ClientEventProtocol.class);
 
     public ClientEventProtocol(ClientEventAgent agent) {
         super(agent);
+    }
+
+    public static String getClientIdSuffix(ClientEventAgent agent) {
+        return agent.getId().substring(12);
     }
 
     @Override
@@ -65,9 +68,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
         LOG.info("Creating client credentials for: " + this);
 
         protocolClientEventService.addExchangeInterceptor(this::onMessageIntercept);
-
-        String clientId = CLIENT_ID_PREFIX + agent.getId().substring(12);
-
+        String clientId = getClientId(getClientIdSuffix(agent));
         String clientSecret = agent.getClientSecret().orElse(UUID.randomUUID().toString());
         List<ClientRole> roles = new ArrayList<>();
 
@@ -76,6 +77,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
         }
         if (agent.isWrite().orElse(false)) {
             roles.add(ClientRole.WRITE_ASSETS);
+            roles.add(ClientRole.WRITE_ATTRIBUTES);
         }
 
         ProtocolClientEventService.ClientCredentials clientCredentials =
@@ -88,6 +90,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
 
         protocolClientEventService.addClientCredentials(clientCredentials);
         setConnectionStatus(ConnectionStatus.CONNECTED);
+        updateAgentAttribute(new AttributeState(agent.getId(), ClientEventAgent.CLIENT_ID.getName(), clientId));
         updateAgentAttribute(new AttributeState(agent.getId(), ClientEventAgent.CLIENT_SECRET.getName(), clientSecret));
     }
 
@@ -95,7 +98,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
     protected void doStop(Container container) throws Exception {
         LOG.info("Removing client credentials for: " + this);
         protocolClientEventService.removeExchangeInterceptor(this::onMessageIntercept);
-        protocolClientEventService.removeClientCredentials(agent.getRealm(), CLIENT_ID_PREFIX + agent.getId());
+        protocolClientEventService.removeClientCredentials(agent.getRealm(), getClientId(getClientIdSuffix(agent)));
     }
 
     @Override
@@ -124,7 +127,7 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
     }
 
     protected void onMessageIntercept(Exchange exchange) {
-        String clientId = getClientId(exchange);
+        String clientId = ProtocolClientEventService.getClientId(exchange);
 
         if (!isThisClient(clientId)) {
             return;
@@ -161,6 +164,6 @@ public class ClientEventProtocol extends AbstractProtocol<ClientEventAgent, Agen
     }
 
     protected boolean isThisClient(String clientId) {
-        return Objects.equals(CLIENT_ID_PREFIX + agent.getId(), clientId);
+        return Objects.equals(getClientId(getClientIdSuffix(agent)), clientId);
     }
 }

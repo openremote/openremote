@@ -512,7 +512,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 });
             }
         } else {
-            LOG.finer("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
+            LOG.finest("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
         }
 
         values[0] = attribute.getValue().orElse(0d);
