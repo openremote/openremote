@@ -592,6 +592,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
+    public boolean isServiceAccountUser(String realm, String clientId, String userId) {
+        ClientRepresentation client = getClient(realm, clientId);
+        if (client == null) {
+            return false;
+        }
+        UserRepresentation user = getRealms().realm(realm).clients().get(client.getId()).getServiceAccountUser();
+        return user != null && user.getId().equals(userId);
+    }
+
+    @Override
     public boolean isUserInTenant(String userId, String realm) {
         return ManagerIdentityProvider.userInTenantFromDb(persistenceService, userId, realm);
     }

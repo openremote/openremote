@@ -201,6 +201,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
+    public boolean isServiceAccountUser(String realm, String clientId, String userId) {
+        return false;
+    }
+
+    @Override
     public boolean isUserInTenant(String userId, String realm) {
         return ManagerIdentityProvider.userInTenantFromDb(persistenceService, userId, realm);
     }

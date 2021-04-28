@@ -47,8 +47,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSET_ATTRIBUTE_VALUE_TOPIC;
-import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR;
+import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class EventInterceptHandler extends AbstractInterceptHandler {
@@ -126,8 +125,13 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 String assetId = topicParts[1];
                 AttributeRef attributeRef = null;
                 boolean isValueSubscription = false;
+                boolean isMultiLevel = false;
                 if (topicParts.length > 2) { //attribute specific
-                    attributeRef = new AttributeRef(assetId, topicParts[2]);
+                    if (topicParts[2].equals(MULTI_LEVEL_WILDCARD)) {
+                        isMultiLevel = true;
+                    } else {
+                        attributeRef = new AttributeRef(assetId, topicParts[2]);
+                    }
                 }
                 if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
                     isValueSubscription = true;
@@ -143,7 +147,14 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     }
                 }
 
-                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
+                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm);
+
+                if (isMultiLevel) {
+                    attributeAssetFilter.setParentIds(assetId);
+                } else {
+                    attributeAssetFilter.setAssetIds(assetId);
+                }
+
                 EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
                         AttributeEvent.class,
                         attributeAssetFilter,

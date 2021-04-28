@@ -71,6 +71,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     boolean isRestrictedUser(String userId);
 
+    boolean isServiceAccountUser(String realm, String clientId, String userId);
+
     boolean isUserInTenant(String userId, String realm);
 
     Tenant[] getTenants();

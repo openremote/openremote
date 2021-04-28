@@ -29,6 +29,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.*;
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -36,8 +37,13 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.gateway.GatewayConnectionStatusEvent;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
@@ -63,6 +69,7 @@ public class MqttBrokerService implements ContainerService {
     public static final String ASSETS_TOPIC = "assets";
     public static final String TOPIC_SEPARATOR = "/";
     public static final String ASSET_ATTRIBUTE_VALUE_TOPIC = "value";
+    public static final String MULTI_LEVEL_WILDCARD = "#";
 
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
@@ -119,7 +126,9 @@ public class MqttBrokerService implements ContainerService {
                                     .forEach(event -> {
                                         MqttConnection mqttConnection = mqttConnectionMap.get(sessionKey);
                                         if (mqttConnection != null) {
-                                            if (mqttConnection.assetSubscriptions.containsKey(event.getAssetId()) || mqttConnection.assetAttributeSubscriptions.containsKey(event.getAttributeRef())) {
+                                            if (mqttConnection.assetSubscriptions.containsKey(event.getAssetId()) ||
+                                                    mqttConnection.assetSubscriptions.containsKey(event.getParentId()) ||
+                                                    mqttConnection.assetAttributeSubscriptions.containsKey(event.getAttributeRef())) {
                                                 sendAttributeEvent(sessionKey, event);
                                             }
                                             if (mqttConnection.assetAttributeValueSubscriptions.containsKey(event.getAttributeRef())) {
@@ -131,6 +140,19 @@ public class MqttBrokerService implements ContainerService {
                         .end();
             }
         });
+
+//        clientEventService.addSubscriptionAuthorizer((authContext, eventSubscription) -> {
+//            if (!eventSubscription.isEventType(AttributeEvent.class) && !eventSubscription.isEventType(AssetEvent.class)) {
+//                return false;
+//            }
+//
+//            // Regular user must have role
+//            if (!authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), authContext.getClientId())) {
+//                return false;
+//            }
+//
+//            return true;
+//        });
     }
 
     @Override
@@ -157,10 +179,16 @@ public class MqttBrokerService implements ContainerService {
     protected void sendAttributeEvent(String clientId, AttributeEvent attributeEvent) {
         try {
             ByteBuf payload = Unpooled.copiedBuffer(Values.JSON.writeValueAsString(attributeEvent), Charset.defaultCharset());
+            String topic;
+            if(attributeEvent.getParentId() != null) {
+                topic = ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getParentId() + TOPIC_SEPARATOR + MULTI_LEVEL_WILDCARD;
+            } else {
+                topic = ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getAssetId();
+            }
 
             MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                     .qos(MqttQoS.AT_MOST_ONCE)
-                    .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getAssetId())
+                    .topicName(topic)
                     .payload(payload)
                     .build();
 

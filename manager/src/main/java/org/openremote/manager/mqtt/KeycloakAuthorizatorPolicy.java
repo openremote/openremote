@@ -14,9 +14,11 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.security.ClientRole;
 
@@ -26,8 +28,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSETS_TOPIC;
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSET_ATTRIBUTE_VALUE_TOPIC;
+import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
@@ -86,16 +87,22 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
         }
 
         Token token = topic.getTokens().get(1);
-        Asset<?> asset = assetStorageService.find(token.toString());
-        if(asset == null) {
-            LOG.log(Level.INFO, "Asset not found");
-            return false;
+        Asset<?> asset = null;
+        if(!token.toString().equals(AssetEvent.Cause.CREATE.name())) {
+            asset = assetStorageService.find(token.toString());
+            if (asset == null) {
+                LOG.log(Level.INFO, "Asset not found");
+                return false;
+            }
         }
+
         if(topic.getTokens().size() > 2) {
             token = topic.getTokens().get(2);
-            if (!asset.getAttribute(token.toString()).isPresent()) {
-                LOG.log(Level.INFO, "Attribute not found on asset");
-                return false;
+            if (!token.toString().equals(MULTI_LEVEL_WILDCARD)) {
+                if (asset == null || !asset.getAttribute(token.toString()).isPresent()) {
+                    LOG.log(Level.INFO, "Attribute not found on asset");
+                    return false;
+                }
             }
         }
 
@@ -118,16 +125,35 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
         } else { // read
             String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);
-            String assetId = topicParts[1];
-            AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
-            if (topicParts.length >= 3) { //attribute specific
-                attributeAssetFilter.setAttributeNames(topicParts[2]);
+            if(topicParts[1].equals(AssetEvent.Cause.CREATE.name())) {
+                AssetFilter<AssetEvent> assetFilter = new AssetFilter<>();
+                assetFilter.setRealm(connection.realm);
+                EventSubscription<AssetEvent> subscription = new EventSubscription<>(
+                        AssetEvent.class,
+                        assetFilter
+                );
+                return clientEventService.authorizeEventSubscription(authContext, subscription);
+
+            } else {
+                String assetId = topicParts[1];
+
+                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm);
+                if (topicParts.length >= 3) { //attribute specific
+                    if (!topicParts[2].equals(MULTI_LEVEL_WILDCARD)) {
+                        attributeAssetFilter.setAssetIds(assetId);
+                        attributeAssetFilter.setAttributeNames(topicParts[2]);
+                    } else {
+                        attributeAssetFilter.setParentIds(assetId);
+                    }
+                } else {
+                    attributeAssetFilter.setAssetIds(assetId);
+                }
+                EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
+                        AttributeEvent.class,
+                        attributeAssetFilter
+                );
+                return clientEventService.authorizeEventSubscription(authContext, subscription);
             }
-            EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
-                    AttributeEvent.class,
-                    attributeAssetFilter
-            );
-            return clientEventService.authorizeEventSubscription(authContext, subscription);
         }
     }
 }
