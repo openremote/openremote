@@ -26,6 +26,7 @@ import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { ORError } from "@openremote/core";
 
 const DefaultLogo = require("../images/logo.png");
 const DefaultMobileLogo = require("../images/logo-mobile.png");
@@ -178,22 +179,50 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
     };
 
+    protected doAppConfigInit() {
+        this.appConfig = this.appConfig || (this.appConfigProvider ? this.appConfigProvider(manager) : undefined);
+
+        if (!this.appConfig) {
+            return;
+        }
+
+        if (!this._config) {
+            const realm = getRealmQueryParameter();
+            this._config = this._getConfig(realm);
+        }
+    }
+
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
 
-        const managerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
+        const managerConfig: ManagerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
+        managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
         managerConfig.basicLoginProvider = (u, p) => this.doBasicLogin(u, p);
         manager.addListener(this._onManagerEvent);
 
         console.info("Initialising the manager");
 
-        manager.init(managerConfig).then((success) => {
+        manager.init(managerConfig).then(async (success) => {
+            if (!success && manager.error === ORError.AUTH_FAILED && (!managerConfig.auth || managerConfig.auth === Auth.KEYCLOAK)) {
+                this.doAppConfigInit();
+
+                // Fallback to basic auth now styling is loaded
+                managerConfig.auth = Auth.BASIC;
+                success = await manager.init(managerConfig);
+            }
+
             if (success) {
-                this.appConfig = this.appConfig || (this.appConfigProvider ? this.appConfigProvider(manager) : undefined);
+                this.doAppConfigInit();
 
                 if (!this.appConfig) {
                     showErrorDialog("appError.noConfig", document.body);
                     console.error("No AppConfig supplied");
+                    return;
+                }
+
+                if (!this._config) {
+                    showErrorDialog("appError.noConfig", document.body);
+                    console.error("No default AppConfig or realm specific config provided so cannot render");
                     return;
                 }
 
@@ -210,15 +239,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 }
 
                 this._initialised = true;
-                const realm = getRealmQueryParameter();
-                const config = this._getConfig(realm);
-
-                if (!config) {
-                    console.error("No default AppConfig or realm specific config for requested realm: " + realm);
-                    return;
-                } else {
-                    this._config = config;
-                }
 
                 this.appConfig.pages.forEach((pageProvider, index) => {
                     if (pageProvider.routes) {
