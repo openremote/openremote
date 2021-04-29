@@ -127,6 +127,7 @@ export interface ManagerConfig {
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: InitOptions) => void;
+    skipFallbackToBasicAuth?: boolean;
     basicLoginProvider?: (username: string | undefined, password: string | undefined) => PromiseLike<BasicLoginResult>;
 }
 
@@ -636,9 +637,24 @@ export class Manager implements EventProviderFactory {
             console.log("Already initialised");
         }
 
+        let success = false;
         this._config = normaliseConfig(config);
 
-        let success = await this.doAuthInit();
+        if (this._config.auth === Auth.BASIC) {
+            // BASIC auth will likely require UI so let's init translation at least
+            success = await this.doTranslateInit() && success;
+            success = await this.doAuthInit();
+        } else {
+            success = await this.doAuthInit();
+
+            // If failed then we can assume keycloak auth requested but unavailable
+            if (!success && !this._config.skipFallbackToBasicAuth) {
+                // Try fallback to BASIC
+                console.log("Falling back to basic auth");
+                this._config.auth = Auth.BASIC;
+                success = await this.doAuthInit();
+            }
+        }
 
         if (success) {
             success = await this.doInit();
@@ -649,7 +665,6 @@ export class Manager implements EventProviderFactory {
         }
 
         success = await this.doConsoleInit() && success;
-
         success = await this.doTranslateInit() && success;
 
         if (success) {
@@ -668,6 +683,7 @@ export class Manager implements EventProviderFactory {
             this._ready = true;
             this._emitEvent(OREvent.READY);
         } else {
+            (this._config as any) = undefined;
             console.warn("Failed to initialise the manager");
         }
 
@@ -710,6 +726,9 @@ export class Manager implements EventProviderFactory {
     }
 
     protected async doTranslateInit(): Promise<boolean> {
+        if (i18next.isInitialized) {
+            return true;
+        }
 
         i18next.on("initialized", (options) => {
             this._emitEvent(OREvent.TRANSLATE_INIT);
@@ -795,13 +814,6 @@ export class Manager implements EventProviderFactory {
                 break;
             case Auth.KEYCLOAK:
                 success = await this.loadAndInitialiseKeycloak();
-
-                if (!success) {
-                    // Try fallback to BASIC
-                    console.log("Falling back to basic auth");
-                    this._config.auth = Auth.BASIC;
-                    return this.doAuthInit();
-                }
                 break;
             case Auth.NONE:
                 // Nothing for us to do here
