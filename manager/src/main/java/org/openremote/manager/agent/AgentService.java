@@ -769,7 +769,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Protocol<?> protocol = getProtocolInstance(agent.getId());
 
         if (protocol == null) {
-            throw new UnsupportedOperationException("Agent protocol is disabled or is being deleted");
+            throw new UnsupportedOperationException("Agent is either invalid, disabled or mis-configured: " + agent);
         }
 
         if (!(protocol instanceof ProtocolAssetImport)) {
