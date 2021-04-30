@@ -383,7 +383,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         const discoverAssets = () => {
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => console.log(response.data, response)); //todo: do something with this response
-        }
+        } 
 
         const fileToBase64 = () => {
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
@@ -418,7 +418,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         if (descriptor.assetImport) {
             content = html`
                 <div id="fileupload"> 
-                    <or-mwc-input outlined .label="${i18next.t("upload")}" .type="${InputType.BUTTON}" @click="${() => hostElement.shadowRoot!.getElementById('fileuploadElem')!.click()}">
+                    <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @click="${() => hostElement.shadowRoot!.getElementById('fileuploadElem')!.click()}">
                         <input id="fileuploadElem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
                     </or-mwc-input>
                     <or-mwc-input id="filenameElem" .type="${InputType.TEXT}" disabled></or-mwc-input>
