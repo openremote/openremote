@@ -360,14 +360,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     }
 
     if (panelConfig && panelConfig.type === "setup") {
-        if (asset.type !== WellknownAssets.KNXAGENT && asset.type !== WellknownAssets.ZWAGENT && asset.type !== WellknownAssets.VELBUSSERIALAGENT) {
-            return;
-        }
-        
+
         const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
         
-        if (!descriptor || !asset.id) {
-            showSnackbar(undefined, "Error finding agent information", i18next.t("dismiss"));
+        if (!descriptor || !asset.id || descriptor.descriptorType !== "agent" || !descriptor.assetDiscovery && !descriptor.assetImport) {
             return;
         }
 
@@ -383,13 +379,21 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 reader.readAsDataURL(file.files[0]); //convert to base64
 
                 reader.onload = () => {
-                    const fileInfo = {
-                        name: 'filename',
-                        contents: reader.result,
-                        binary: false
-                    } as FileInfo
-                    manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
-                        .then(response => console.log(response.data, response)); //todo: do something with this response
+                    if (!reader.result) {
+                        // TODO: DO SOMETHING HERE
+                    } else {
+                        let encoded = reader.result.toString().replace(/^data:(.*,)?/, '');
+                        if ((encoded.length % 4) > 0) {
+                            encoded += '='.repeat(4 - (encoded.length % 4));
+                        }
+                        const fileInfo = {
+                            name: 'filename',
+                            contents: encoded,
+                            binary: true
+                        } as FileInfo
+                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
+                            .then(response => console.log(response.data, response)); //todo: do something with this response
+                    }
                 }
             }
         }

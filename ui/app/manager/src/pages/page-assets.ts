@@ -61,7 +61,6 @@ export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
                         WellknownAssets.TRADFRILIGHTASSET,
                         WellknownAssets.TRADFRIAGENT,
                         WellknownAssets.TRADFRIPLUGASSET,
-                        WellknownAssets.VELBUSTCPAGENT,
                         WellknownAssets.ARTNETLIGHTASSET,
                         WellknownAssets.TIMERAGENT,
                         WellknownAssets.CONSOLEASSET
