@@ -37,7 +37,7 @@ import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
-import GenericAxiosResponse from "axios";
+import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
