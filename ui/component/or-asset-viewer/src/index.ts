@@ -406,8 +406,17 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                             contents: encoded,
                             binary: true
                         } as FileInfo
+
                         manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
-                            .then(response => console.log(response.data, response)); //todo: do something with this response
+                            .then(response => {
+                                if (response.status !== 200) {
+                                    showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                                } else {
+                                    console.info(response.data, response) //todo: do something with this response
+                                }
+                            })
+                            .catch(() => showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss")));
+                  
                     }
                 }
             }
