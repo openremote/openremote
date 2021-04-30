@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.energy;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
