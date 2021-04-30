@@ -367,17 +367,32 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             return;
         }
 
+        const updateFileName = () => {
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement,
+                fileNameElem = hostElement.shadowRoot!.getElementById('filenameElem') as HTMLInputElement,
+                str = fileInputElem.value;
+            let i;
+            if (str.lastIndexOf('\\')) {
+                i = str.lastIndexOf('\\') + 1;
+            } else if (str.lastIndexOf('/')) {
+                i = str.lastIndexOf('/') + 1;
+            }
+            fileNameElem.value = str.slice(i, str.length);
+        }
+
         const discoverAssets = () => {
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => console.log(response.data, response)); //todo: do something with this response
         }
 
         const fileToBase64 = () => {
-            const file = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
-            if (file && file.files && file.files.length) {
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
+            if (fileInputElem) {
                 const reader = new FileReader();
-                reader.readAsDataURL(file.files[0]); //convert to base64
-
+                if (fileInputElem.files && fileInputElem.files.length) {
+                    reader.readAsDataURL(fileInputElem.files[0]); //convert to base64
+                }
+                
                 reader.onload = () => {
                     if (!reader.result) {
                         // TODO: DO SOMETHING HERE
@@ -402,12 +417,17 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
         if (descriptor.assetImport) {
             content = html`
-                <input type="file" id="fileuploadElem" name="configfile" accept=".json, .knxproj, .vlp" style="width: 100%;" />
-                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${html`upload`}" @or-mwc-input-changed="${() => fileToBase64()}"></or-mwc-input>
+                <div id="fileupload"> 
+                    <or-mwc-input outlined .label="${i18next.t("upload")}" .type="${InputType.BUTTON}" @click="${() => hostElement.shadowRoot!.getElementById('fileuploadElem')!.click()}">
+                        <input id="fileuploadElem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
+                    </or-mwc-input>
+                    <or-mwc-input id="filenameElem" .type="${InputType.TEXT}" disabled></or-mwc-input>
+                    <or-mwc-input icon="upload" .type="${InputType.BUTTON}" @click="${() => fileToBase64()}"></or-mwc-input>
+                </div>
             `;
         }
         else if (descriptor.assetDiscovery) {
-            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @or-mwc-input-changed="${() => discoverAssets()}"></or-mwc-input>`;
+            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @click="${() => discoverAssets()}"></or-mwc-input>`;
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
