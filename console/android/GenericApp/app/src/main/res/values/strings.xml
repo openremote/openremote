@@ -16,7 +16,7 @@
     <string name="error_downloading">Error downloading file</string>
     <string name="download_completed">Download completed</string>
     <string name="background_location_alert_title">Background location needed</string>
-    <string name="background_location_alert_body">Background location is needed in order to signal the server whether the device has entered or exited a certain location, the app needs to get the device\'s location when the app is running in the background.\nNo location history is stored, only the latest location is saved.\nDo you want to enabled it in the settings?</string>
+    <string name="background_location_alert_body">In order to receive these notifications when the app is running in the background, background location access is needed.\nNo location history is stored, only the latest location is saved.\nDo you want to enabled it in the settings?</string>
     <string name="location_background_disabled_title">Background location disabled</string>
     <string name="background_location_decline">No</string>
     <string name="background_location_accept">Yes</string>

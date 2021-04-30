@@ -217,8 +217,8 @@ class GeofenceProvider(val context: Context) {
             .remove(geofenceDisabledKey)
             .apply()
 
-        val hasPermission = when (android.os.Build.VERSION.SDK_INT) {
-            android.os.Build.VERSION_CODES.Q -> {
+        val hasPermission = when {
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q -> {
                 context.checkSelfPermission(
                     ACCESS_BACKGROUND_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
