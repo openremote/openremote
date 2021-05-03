@@ -81,14 +81,14 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if(topic.getTokens().size() == 4 && topic.getTokens().stream().noneMatch(token -> token.toString().equals(ASSET_ATTRIBUTE_VALUE_TOPIC))) {
+        if (topic.getTokens().size() == 4 && topic.getTokens().stream().noneMatch(token -> token.toString().equals(ASSET_ATTRIBUTE_VALUE_TOPIC))) {
             LOG.info("Topic for raw values should end with '" + ASSET_ATTRIBUTE_VALUE_TOPIC + "'");
             return false;
         }
 
         Token token = topic.getTokens().get(1);
         Asset<?> asset = null;
-        if(!token.toString().equals(AssetEvent.Cause.CREATE.name())) {
+        if (!token.toString().equals(AssetEvent.Cause.CREATE.name())) {
             asset = assetStorageService.find(token.toString());
             if (asset == null) {
                 LOG.log(Level.INFO, "Asset not found");
@@ -96,9 +96,9 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             }
         }
 
-        if(topic.getTokens().size() > 2) {
+        if (topic.getTokens().size() > 2) {
             token = topic.getTokens().get(2);
-            if (!token.toString().equals(MULTI_LEVEL_WILDCARD)) {
+            if (!token.toString().equals(MULTI_LEVEL_WILDCARD) && !token.toString().equals(AssetEvent.Cause.CREATE.name())) {
                 if (asset == null || !asset.getAttribute(token.toString()).isPresent()) {
                     LOG.log(Level.INFO, "Attribute not found on asset");
                     return false;
@@ -125,9 +125,13 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
         } else { // read
             String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);
-            if(topicParts[1].equals(AssetEvent.Cause.CREATE.name())) {
-                AssetFilter<AssetEvent> assetFilter = new AssetFilter<>();
-                assetFilter.setRealm(connection.realm);
+            if (Arrays.asList(topicParts).contains(AssetEvent.Cause.CREATE.name())) {
+                AssetFilter<AssetEvent> assetFilter = new AssetFilter<AssetEvent>().setRealm(connection.realm);
+
+                if (topicParts.length > 2) {
+                    assetFilter.setParentIds(topicParts[1]);
+                }
+
                 EventSubscription<AssetEvent> subscription = new EventSubscription<>(
                         AssetEvent.class,
                         assetFilter

@@ -32,6 +32,7 @@ import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -42,6 +43,7 @@ import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -59,8 +61,8 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
     protected final Map<String, MqttConnection> mqttConnectionMap;
 
     public EventInterceptHandler(ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
-                          MessageBrokerService messageBrokerService,
-                          Map<String, MqttConnection> mqttConnectionMap) {
+                                 MessageBrokerService messageBrokerService,
+                                 Map<String, MqttConnection> mqttConnectionMap) {
 
         this.identityProvider = managerKeycloakIdentityProvider;
         this.messageBrokerService = messageBrokerService;
@@ -122,6 +124,27 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         if (connection != null) {
             String[] topicParts = interceptSubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             if (topicParts.length > 1) {
+                if (Arrays.asList(topicParts).contains(AssetEvent.Cause.CREATE.name())) {
+                    AssetFilter<AssetEvent> assetFilter = new AssetFilter<AssetEvent>().setRealm(connection.realm);
+
+                    if (topicParts.length > 2) {
+                        assetFilter.setParentIds(topicParts[1]);
+                    }
+
+                    String subscriptionId = connection.assetSubscriptions.remove(interceptSubscribeMessage.getTopicFilter());
+                    EventSubscription<AssetEvent> subscription = new EventSubscription<>(
+                            AssetEvent.class,
+                            assetFilter,
+                            TextUtil.isNullOrEmpty(subscriptionId) ? String.valueOf(connection.getNextSubscriptionId()) : subscriptionId
+                    );
+
+                    connection.assetSubscriptions.put(interceptSubscribeMessage.getTopicFilter(), subscription.getSubscriptionId());
+
+                    Map<String, Object> headers = prepareHeaders(connection);
+                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
+                    return;
+                }
+
                 String assetId = topicParts[1];
                 AttributeRef attributeRef = null;
                 boolean isValueSubscription = false;
@@ -137,14 +160,10 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     isValueSubscription = true;
                 }
                 String subscriptionId;
-                if (attributeRef == null) {
-                    subscriptionId = connection.assetSubscriptions.remove(assetId);
+                if (isValueSubscription) {
+                    subscriptionId = connection.attributeValueSubscriptions.remove(interceptSubscribeMessage.getTopicFilter());
                 } else {
-                    if (isValueSubscription) {
-                        subscriptionId = connection.assetAttributeValueSubscriptions.remove(attributeRef);
-                    } else {
-                        subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
-                    }
+                    subscriptionId = connection.assetSubscriptions.remove(interceptSubscribeMessage.getTopicFilter());
                 }
 
                 AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm);
@@ -154,26 +173,25 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 } else {
                     attributeAssetFilter.setAssetIds(assetId);
                 }
+                if (attributeRef != null) {
+                    attributeAssetFilter.setAttributeNames(attributeRef.getName());
+                }
 
                 EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
                         AttributeEvent.class,
                         attributeAssetFilter,
-                        TextUtil.isNullOrEmpty(subscriptionId) ? String.valueOf(connection.getNextSubscriptionId()) : subscriptionId);
+                        TextUtil.isNullOrEmpty(subscriptionId) ? String.valueOf(connection.getNextSubscriptionId()) : subscriptionId
+                );
 
-                if (attributeRef == null) { //attribute specific
-                    connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
+                if (isValueSubscription) {
+                    connection.attributeValueSubscriptions.put(interceptSubscribeMessage.getTopicFilter(), subscription.getSubscriptionId());
                 } else {
-                    attributeAssetFilter.setAttributeNames(attributeRef.getName());
-                    if (isValueSubscription) {
-                        connection.assetAttributeValueSubscriptions.put(attributeRef, subscription.getSubscriptionId());
-                    } else {
-                        connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
-                    }
+                    connection.assetSubscriptions.put(interceptSubscribeMessage.getTopicFilter(), subscription.getSubscriptionId());
                 }
 
                 Map<String, Object> headers = prepareHeaders(connection);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
-            } else  {
+            } else {
                 LOG.info("Couldn't process message for topic: " + interceptSubscribeMessage.getTopicFilter());
             }
         } else {
@@ -187,24 +205,25 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         if (connection != null) {
             String[] topicParts = interceptUnsubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             if (topicParts.length > 1) {
-                String assetId = topicParts[1];
                 String subscriptionId;
 
-                if (topicParts.length > 2) { //attribute specific
-                    if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
-                        subscriptionId = connection.assetAttributeValueSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
-                    } else {
-                        subscriptionId = connection.assetAttributeSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
-                    }
+                boolean isValueSubscription = topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC);
+                if (isValueSubscription) {
+                    subscriptionId = connection.attributeValueSubscriptions.remove(interceptUnsubscribeMessage.getTopicFilter());
                 } else {
-                    subscriptionId = connection.assetSubscriptions.remove(assetId);
+                    subscriptionId = connection.assetSubscriptions.remove(interceptUnsubscribeMessage.getTopicFilter());
                 }
                 if (subscriptionId != null) {
                     Map<String, Object> headers = prepareHeaders(connection);
-                    CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(AttributeEvent.class, subscriptionId);
+                    CancelEventSubscription cancelEventSubscription;
+                    if (Arrays.asList(topicParts).contains(AssetEvent.Cause.CREATE.name())) {
+                        cancelEventSubscription = new CancelEventSubscription(AssetEvent.class, subscriptionId);
+                    } else {
+                        cancelEventSubscription = new CancelEventSubscription(AttributeEvent.class, subscriptionId);
+                    }
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
                 }
-            } else  {
+            } else {
                 LOG.info("Couldn't process message for topic: " + interceptUnsubscribeMessage.getTopicFilter());
             }
         } else {

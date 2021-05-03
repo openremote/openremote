@@ -358,7 +358,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the subscription should be established"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetAttributeValueSubscriptions.containsKey(new AttributeRef(managerTestSetup.apartment1HallwayId, "motionSensor"))
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).attributeValueSubscriptions.containsKey(new AttributeRef(managerTestSetup.apartment1HallwayId, "motionSensor"))
         }
 
         when: "that attribute changed"
@@ -397,7 +397,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetAttributeValueSubscriptions.size() == 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).attributeValueSubscriptions.size() == 0
         }
     }
 }
