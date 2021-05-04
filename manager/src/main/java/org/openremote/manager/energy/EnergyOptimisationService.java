@@ -222,6 +222,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         assetEnergyOptimiserMap.put(optimisationAssetId, new Pair<>(optimiser, runScheduler));
 
         // Execute first optimisation at the period that started previous to now
+        LOG.finer(getLogPrefix(optimisationAssetId) + "Running first optimisation for time '" + formatter.format(optimisationStartTime));
         runOptimisation(optimisationAssetId, optimisationStartTime);
         return runScheduler;
     }
