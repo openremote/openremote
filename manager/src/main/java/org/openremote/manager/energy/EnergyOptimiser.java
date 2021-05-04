@@ -442,7 +442,7 @@ public class EnergyOptimiser {
 
         }
 
-        if (energySpace > 0 && energySpace < energySpaceMax && exportCostAndPower != null) {
+        if (energySpace < energySpaceMax && exportCostAndPower != null) {
             // Can't maximise on opportunity without exporting earlier on so can this be done
             // in a cost effective way
             int i = interval - 1;
@@ -572,7 +572,7 @@ public class EnergyOptimiser {
 
         }
 
-        if (energySurplus > 0 && energySurplus < energySurplusMax && importCostAndPower != null) {
+        if (energySurplus < energySurplusMax && importCostAndPower != null) {
             // Can't maximise on opportunity without importing earlier on so can this be done
             // in a cost effective way
             int i = interval - 1;
@@ -612,7 +612,7 @@ public class EnergyOptimiser {
 
                 // We have spare energy capacity and power check if we don't violate energy max for any future imports
                 k = pastInterval;
-                while (k < powerSetpoints.length && energySurplus > 0 && energySpace >= energySpaceMin) {
+                while (k < powerSetpoints.length && energySpace > 0 && energySpace >= energySpaceMin) {
 
                     double futureEnergySpace = energyLevelMaxs[k] - energyLevelCalculator.apply(k);
                     energySpace = Math.min(energySpace, futureEnergySpace);
@@ -624,7 +624,7 @@ public class EnergyOptimiser {
 
                 if (impPowerCapacity > 0 && impPowerCapacity > pastCostAndPower[1]) {
                     // We can import in the optimum range
-                    energySurplus += energySurplus;
+                    energySurplus += energySpace;
                     pastAndFutureIntervalPowerDeltas.add(new Pair<>(pastInterval, impPowerCapacity));
                 }
 
