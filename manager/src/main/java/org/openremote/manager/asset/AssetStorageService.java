@@ -1623,7 +1623,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
                 isFirst = false;
 
-                selectInserter.accept(groupIndex > 0 ? ", jsonb_each(A.attributes) as AX" + groupIndex : "jsonb_each(A.attributes) as AX" + groupIndex);
+                selectInserter.accept((groupIndex > 0 ? ", " : "") + "jsonb_each(A.attributes) as AX" + groupIndex);
                 containsCalendarPredicate = !containsCalendarPredicate && addNameValuePredicates(group, sb, binders, "AX" + groupIndex, selectInserter, operator == LogicGroup.Operator.OR, timeProvider);
                 groupIndex++;
             }
@@ -1666,7 +1666,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 if (attributePredicate.meta != null && attributePredicate.meta.length > 0) {
                     String metaJsonObjName = jsonObjName + "_AM" + metaIndex++;
-                    selectInserter.accept(", jsonb_each(" + jsonObjName + ".VALUE #> '{meta}') as " + metaJsonObjName);
+                    selectInserter.accept(" LEFT JOIN jsonb_each(" + jsonObjName + ".VALUE #> '{meta}') as " + metaJsonObjName + " ON true");
                     sb.append(" and (");
                     addNameValuePredicates(Arrays.asList(attributePredicate.meta.clone()), sb, binders, metaJsonObjName, selectInserter, true, timeProvider);
                     sb.append(")");
@@ -1929,6 +1929,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (nameValuePredicate.negated) {
             attributeBuilder.append(")");
+
+            if (nameValuePredicate.value == null) {
+                // We have to include `is null` in where clause also as technically name not equals X is satisfied by null - mostly useful for meta items
+                attributeBuilder.append(" or ").append(jsonObjName).append(".key IS NULL");
+            }
         }
 
         return attributeBuilder.toString();

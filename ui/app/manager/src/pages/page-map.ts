@@ -181,33 +181,24 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                             name: {
                                 predicateType: "string",
                                 value: WellknownAttributes.LOCATION
-                            }
-                        }
-                    ],
-                    groups: [
-                        {
-                            operator: LogicGroupOperator.OR,
-                            items: [
+                            },
+                            meta: [
                                 {
-                                    meta: [
-                                        {
-                                            name: {
-                                                predicateType: "string",
-                                                value: WellknownMetaItems.SHOWONDASHBOARD
-                                            },
-                                            negated: true
-                                        },
-                                        {
-                                            name: {
-                                                predicateType: "string",
-                                                value: WellknownMetaItems.SHOWONDASHBOARD
-                                            },
-                                            value: {
-                                                predicateType: "boolean",
-                                                value: true
-                                            }
-                                        }
-                                    ]
+                                    name: {
+                                        predicateType: "string",
+                                        value: WellknownMetaItems.SHOWONDASHBOARD
+                                    },
+                                    negated: true
+                                },
+                                {
+                                    name: {
+                                        predicateType: "string",
+                                        value: WellknownMetaItems.SHOWONDASHBOARD
+                                    },
+                                    value: {
+                                        predicateType: "boolean",
+                                        value: true
+                                    }
                                 }
                             ]
                         }
