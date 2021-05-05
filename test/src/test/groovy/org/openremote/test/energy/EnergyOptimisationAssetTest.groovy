@@ -16,6 +16,7 @@ import org.openremote.model.asset.impl.ElectricitySupplierAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
+import org.openremote.model.util.Pair
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Specification
@@ -55,7 +56,9 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         def spyOptimisationService = Spy(EnergyOptimisationService) {
             scheduleOptimisation(_ as String, _ as EnergyOptimiser) >> {
                 // Don't use the scheduler as we will manually trigger the optimisation for testing
-                optimisationAssetId, optimiser -> return null
+                optimisationAssetId, optimiser ->
+                    it.assetEnergyOptimiserMap.put(optimisationAssetId, new Pair<>(optimiser, null))
+                    return null
             }
         }
 

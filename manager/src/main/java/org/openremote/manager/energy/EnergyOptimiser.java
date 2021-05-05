@@ -434,10 +434,10 @@ public class EnergyOptimiser {
         List<Pair<Integer, Double>> pastIntervalPowerDeltas = new ArrayList<>();
 
         int k = interval;
-        while (k < powerSetpoints.length && energySpace < 0 && energySpace <= energySpaceMin) {
+        while (k < powerSetpoints.length && energySpace > 0 && energySpace >= energySpaceMin) {
 
-            double futureEnergySpace = energyLevelCalculator.apply(k) - energyLevelMins[k];
-            energySpace = Math.max(energySpace, -futureEnergySpace);
+            double futureEnergySpace = energyLevelMaxs[k] - energyLevelCalculator.apply(k);
+            energySpace = Math.min(energySpace, futureEnergySpace);
             k++;
 
         }
@@ -495,7 +495,7 @@ public class EnergyOptimiser {
 
                 if (expPowerCapacity < 0 && expPowerCapacity < pastCostAndPower[2]) {
                     // We can export in the optimum range
-                    energySpace += -1d * energySurplus;
+                    energySpace += (-1d * expPowerCapacity * intervalSize);
                     pastIntervalPowerDeltas.add(new Pair<>(pastInterval, expPowerCapacity));
                 }
 
@@ -624,7 +624,7 @@ public class EnergyOptimiser {
 
                 if (impPowerCapacity > 0 && impPowerCapacity > pastCostAndPower[1]) {
                     // We can import in the optimum range
-                    energySurplus += energySpace;
+                    energySurplus += (impPowerCapacity * intervalSize);
                     pastAndFutureIntervalPowerDeltas.add(new Pair<>(pastInterval, impPowerCapacity));
                 }
 
