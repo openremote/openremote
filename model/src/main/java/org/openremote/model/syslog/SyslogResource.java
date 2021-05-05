@@ -19,6 +19,7 @@
  */
 package org.openremote.model.syslog;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import javax.annotation.security.RolesAllowed;
@@ -29,6 +30,7 @@ import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "Syslog")
 @Path("syslog")
 public interface SyslogResource {
 

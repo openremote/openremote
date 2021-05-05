@@ -19,6 +19,7 @@
  */
 package org.openremote.model.apps;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 
@@ -27,6 +28,7 @@ import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "Console App")
 @Path("app")
 public interface ConsoleAppResource {
 

@@ -19,6 +19,7 @@
  */
 package org.openremote.model.rules;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
@@ -31,6 +32,7 @@ import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "Rule")
 @Path("rules")
 public interface RulesResource {
 

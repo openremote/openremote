@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
@@ -31,6 +32,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * Resource for handling model requests and also providing server side validation of {@link Asset}s
  */
 // TODO: Implement generic Asset<?> validation for assets and agents
+@Tag(name = "Asset Model")
 @Path("model")
 public interface AssetModelResource {
 

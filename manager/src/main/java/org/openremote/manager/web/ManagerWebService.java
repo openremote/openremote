@@ -19,6 +19,21 @@
  */
 package org.openremote.manager.web;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.core.util.Json;
+import io.swagger.v3.jaxrs2.integration.JaxrsOpenApiContextBuilder;
+import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
+import io.swagger.v3.oas.integration.OpenApiConfigurationException;
+import io.swagger.v3.oas.integration.SwaggerConfiguration;
+import io.swagger.v3.oas.integration.api.ObjectMapperProcessor;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.*;
+import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.servers.ServerVariable;
+import io.swagger.v3.oas.models.servers.ServerVariables;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
@@ -32,25 +47,37 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
+import org.openremote.model.security.ClientRole;
 
+import javax.servlet.ServletException;
 import javax.ws.rs.WebApplicationException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.undertow.util.RedirectBuilder.redirect;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
+import static org.openremote.model.value.Values.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
+
+    protected interface ServerVariableMixin {
+        @JsonProperty
+         String getDefault();
+    }
 
     public static final int PRIORITY = LOW_PRIORITY + 100;
     public static final String APP_DOCROOT = "APP_DOCROOT";
@@ -61,6 +88,7 @@ public class ManagerWebService extends WebService {
     public static final String ROOT_REDIRECT_PATH_DEFAULT = "/manager";
     public static final String API_PATH = "/api";
     public static final String MANAGER_APP_PATH = "/manager";
+    public static final String SWAGGER_APP_PATH = "/swagger";
     public static final String CONSOLE_LOADER_APP_PATH = "/console_loader";
     public static final String SHARED_PATH = "/shared";
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
@@ -84,6 +112,39 @@ public class ManagerWebService extends WebService {
 
         IdentityService identityService = container.getService(IdentityService.class);
         String rootRedirectPath = getString(container.getConfig(), ROOT_REDIRECT_PATH, ROOT_REDIRECT_PATH_DEFAULT);
+
+        // Modify swagger object mapper to match ours
+        configureObjectMapper(Json.mapper());
+        Json.mapper().addMixIn(ServerVariable.class, ServerVariableMixin.class);
+
+        // Add swagger resource
+        OpenAPI oas = new OpenAPI()
+            .servers(Collections.singletonList(new Server().url("/api/{realm}/").variables(new ServerVariables().addServerVariable("realm", new ServerVariable()._default("master")))))
+            .schemaRequirement("openid", new SecurityScheme().type(SecurityScheme.Type.OAUTH2).flows(
+                new OAuthFlows().authorizationCode(
+                    new OAuthFlow()
+                        .authorizationUrl("/auth/realms/master/protocol/openid-connect/auth")
+                        .refreshUrl("/auth/realms/master/protocol/openid-connect/token")
+                        .tokenUrl("/auth/realms/master/protocol/openid-connect/token"))))
+            .security(Collections.singletonList(new SecurityRequirement().addList("openid")));
+
+        Info info = new Info()
+            .title("OpenRemote Manager REST API")
+            .description("This is the documentation for the OpenRemote Manager HTTP REST API.  Please see the [wiki](https://github.com/openremote/openremote/wiki) for more info.")
+            .contact(new Contact()
+                .email("info@openremote.io"))
+            .license(new License()
+                .name("AGPL 3.0")
+                .url("https://www.gnu.org/licenses/agpl-3.0.en.html"));
+
+        oas.info(info);
+        SwaggerConfiguration oasConfig = new SwaggerConfiguration()
+            .resourcePackages(Stream.of("org.openremote.model.*").collect(Collectors.toSet()))
+            .openAPI(oas);
+
+        OpenApiResource openApiResource = new OpenApiResource();
+        openApiResource.openApiConfiguration(oasConfig);
+        getApiSingletons().add(openApiResource);
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), getApiSingletons(), true);
 
@@ -158,6 +219,7 @@ public class ManagerWebService extends WebService {
             };
 
             deploymentHandler.addPrefixPath(MANAGER_APP_PATH, appFileHandler);
+            deploymentHandler.addPrefixPath(SWAGGER_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(CONSOLE_LOADER_APP_PATH, appFileHandler);
             deploymentHandler.addPrefixPath(SHARED_PATH, appFileHandler);
         }
@@ -208,6 +270,10 @@ public class ManagerWebService extends WebService {
         return builtInAppDocRoot;
     }
 
+    public Path getCustomAppDocRoot() {
+        return customAppDocRoot;
+    }
+
     protected HttpHandler createApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
         if (resteasyDeployment == null)
             return null;
@@ -244,6 +310,7 @@ public class ManagerWebService extends WebService {
     public String toString() {
         return getClass().getSimpleName() + "{" +
                 "appDocRoot=" + builtInAppDocRoot +
+                "customAppDocRoot=" + customAppDocRoot +
                 '}';
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.openremote.model.security;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import javax.annotation.security.RolesAllowed;
@@ -31,6 +32,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * Manage users in realms and get info of current user.
  */
 // TODO Relax permissions to allow regular users to maintain their own realm
+@Tag(name = "User")
 @Path("user")
 public interface UserResource {
 
