@@ -40,24 +40,24 @@ public class SNMPClientProtocol extends AbstractProtocol<SNMPClientAgent, SNMPCl
 
     @Override
     public String getProtocolInstanceUri() {
-        return String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%d",
-                agent.getHost().orElse(""),
-                agent.getPort().orElse(162),
-                agent.getSNMPVersion().orElse(SNMPClientAgent.SNMPVersion.V2c).getVersion());
+        return String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%s",
+                agent.getBindHost().orElse(""),
+                agent.getBindPort().orElse(162),
+                agent.getSNMPVersion().orElse(SNMPClientAgent.SNMPVersion.V2c).getValue());
     }
 
     @Override
     protected void doStart(Container container) throws Exception {
 
-        String snmpHost = agent.getHost().orElseThrow(() -> {
-            String msg = "No SNMP host provided for protocol: " + this;
+        String snmpBindHost = agent.getBindHost().orElseThrow(() -> {
+            String msg = "No SNMP bind host provided for protocol: " + this;
             LOG.info(msg);
             return new IllegalArgumentException(msg);
         });
 
-        Integer snmpPort = agent.getPort().orElse(162);
+        Integer snmpBindPort = agent.getBindPort().orElse(162);
         SNMPClientAgent.SNMPVersion snmpVersion = agent.getSNMPVersion().orElse(SNMPClientAgent.SNMPVersion.V2c);
-        String snmpUri = String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%d", snmpHost, snmpPort, snmpVersion.getVersion());
+        String snmpUri = String.format("snmp:%s:%d?protocol=udp&type=TRAP&snmpVersion=%d", snmpBindHost, snmpBindPort, snmpVersion.getVersion());
 
         messageBrokerContext.addRoutes(new RouteBuilder() {
             @Override
@@ -65,8 +65,7 @@ public class SNMPClientProtocol extends AbstractProtocol<SNMPClientAgent, SNMPCl
                 from(snmpUri)
                         .routeId(getProtocolName() + getAgent().getId())
                         .process(exchange -> {
-                            // Since we are using Snmp, we get SnmpMessage object, we need to typecast from Message
-                            SnmpMessage msg = (SnmpMessage) exchange.getIn();
+                            SnmpMessage msg = exchange.getIn(SnmpMessage.class);
                             PDU pdu = msg.getSnmpMessage();
                             pdu.getVariableBindings().forEach(variableBinding -> {
                                 AttributeRef attributeRef = oidMap.get(variableBinding.getOid().format());
