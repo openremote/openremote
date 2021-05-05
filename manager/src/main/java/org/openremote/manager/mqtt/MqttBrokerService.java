@@ -62,9 +62,11 @@ public class MqttBrokerService implements ContainerService {
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
 
-    public static final String ASSETS_TOPIC = "assets";
+    public static final String ASSET_TOPIC = "asset";
+    public static final String ATTRIBUTE_TOPIC = "attribute";
     public static final String TOPIC_SEPARATOR = "/";
-    public static final String ASSET_ATTRIBUTE_VALUE_TOPIC = "value";
+    public static final String ATTRIBUTE_VALUE_TOPIC = "value";
+    public static final String SINGLE_LEVEL_WILDCARD = "+";
     public static final String MULTI_LEVEL_WILDCARD = "#";
 
     protected ManagerKeycloakIdentityProvider identityProvider;

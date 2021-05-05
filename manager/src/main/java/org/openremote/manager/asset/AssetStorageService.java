@@ -162,15 +162,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
              if (auth.isSuperUser())
                  return true;
 
-             if(identityService.getIdentityProvider().isServiceAccountUser(auth.getAuthenticatedRealm(), auth.getClientId(), auth.getUserId())) {
-                 if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), auth.getClientId())) {
-                     return false;
-                 }
-             } else {
-                 // Regular user must have role
-                 if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                     return false;
-                 }
+             // Regular user must have role
+             if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), auth.getClientId())) {
+                 return false;
              }
 
              boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
