@@ -712,17 +712,20 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             client.setWebOrigins(Collections.singletonList("*"));
             client.setRedirectUris(Collections.singletonList("*"));
         } else {
-            List<String> redirectUris = new ArrayList<>();
-            try {
-                for (String consoleName : consoleAppService.getInstalled()) {
-                    addClientRedirectUris(consoleName, redirectUris, devMode);
-                }
-            } catch (Exception exception) {
-                LOG.log(Level.WARNING, exception.getMessage(), exception);
-                addClientRedirectUris(realm, redirectUris, devMode);
-            }
-
-            client.setRedirectUris(redirectUris);
+            // TODO: Decide how clients should be handled
+            client.setWebOrigins(Collections.singletonList("+"));
+            client.setRedirectUris(Collections.singletonList("/*"));
+//            List<String> redirectUris = new ArrayList<>();
+//            try {
+//                for (String consoleName : consoleAppService.getInstalled()) {
+//                    addClientRedirectUris(consoleName, redirectUris, devMode);
+//                }
+//            } catch (Exception exception) {
+//                LOG.log(Level.WARNING, exception.getMessage(), exception);
+//                addClientRedirectUris(realm, redirectUris, devMode);
+//            }
+//
+//            client.setRedirectUris(redirectUris);
         }
 
         return client;
