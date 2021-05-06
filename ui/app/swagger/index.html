@@ -39,7 +39,7 @@
       // Begin Swagger UI call region
       const ui = SwaggerUIBundle({
         url: "/api/master/openapi.json",
-        oauth2RedirectUrl: "/swagger/oauth2-redirect.html",
+        oauth2RedirectUrl: window.location.protocol + "//" + window.location.host + "/swagger/oauth2-redirect.html",
         dom_id: '#swagger-ui',
         deepLinking: true,
         presets: [
