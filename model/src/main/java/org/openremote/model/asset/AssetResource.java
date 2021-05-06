@@ -206,6 +206,7 @@ public interface AssetResource {
     @PUT
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @Operation(description = "Write to a single attribute", responses = {
         @ApiResponse(
             content = @Content(mediaType = "application/json",
@@ -214,6 +215,7 @@ public interface AssetResource {
 
     @PUT
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @Path("attributes")
     AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeState[] attributeStates);
 

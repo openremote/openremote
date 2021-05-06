@@ -34,6 +34,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -282,6 +283,12 @@ public class ManagerTestSetup extends ManagerSetup {
         // The "Apartment 1" is the demo apartment with complex scenes
         BuildingAsset apartment1 = createDemoApartment(smartBuilding, "Apartment 1", new GeoJSONPoint(5.454233, 51.446800));
         apartment1.setParent(smartBuilding);
+        apartment1.setAccessPublicRead(true);
+        apartment1.getAttribute(Asset.LOCATION).ifPresent(locationAttr ->
+            locationAttr.getMeta().addOrReplace(
+                new MetaItem<>(ACCESS_PUBLIC_READ),
+                new MetaItem<>(ACCESS_PUBLIC_WRITE)
+            ));
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -433,13 +440,16 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment2Id = apartment2.getId();
 
         RoomAsset apartment2Livingroom = new RoomAsset("Living Room 2");
+        apartment2Livingroom.setAccessPublicRead(true);
         apartment2Livingroom.setParent(apartment2);
 
         ObjectNode objectMap = Values.createJsonObject();
         objectMap.put("cactus", 0.8);
 
         apartment2Livingroom.getAttributes().addOrReplace(
-                new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454109, 51.446631)),
+                new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454109, 51.446631)).addMeta(
+                    new MetaItem<>(ACCESS_PUBLIC_READ)
+                ),
                 new Attribute<>("motionSensor", BOOLEAN, false)
                     .addMeta(
                             new MetaItem<>(LABEL, "Motion Sensor"),
