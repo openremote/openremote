@@ -138,7 +138,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
                         if (topicParts.length > 2) { //attribute/assetId/attributeName
                             if (singleLevelIndex == -1) { //attribute/assetId/attributeName
                                 attributeAssetFilter.setAttributeNames(topicParts[2]);
-                            } else if (singleLevelIndex == 2 && topicParts.length > 3) { // else attribute/assetId/+/attributeName
+                            } else if (singleLevelIndex == 2 && topicParts.length > 3 && !topicParts[3].equals(SINGLE_LEVEL_WILDCARD)) { // else attribute/assetId/+/attributeName
                                 attributeAssetFilter.setAttributeNames(topicParts[3]);
                             } // else attribute/assetId/+ which should return all attributes
                         } else {
