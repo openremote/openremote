@@ -24,7 +24,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 
-export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue";
+export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, TimeSeriesScale);
 
@@ -374,6 +374,10 @@ export class OrAttributeCard extends LitElement {
                 {
                     text: i18next.t("editCurrentValue"),
                     value: "editCurrentValue"
+                },
+                {
+                    text: i18next.t("delete"),
+                    value: "delete"
                 }
             ],
             undefined,
@@ -853,7 +857,13 @@ export class OrAttributeCard extends LitElement {
     }
 
     protected handleMenuSelect(value: ContextMenuOptions) {
-        this._openDialog(value);
+        if (value === "delete") {
+            this.assets = [];
+            this.assetAttributes = [];
+            this.saveSettings();
+        } else {
+            this._openDialog(value);
+        }
     }
 
     protected setMainValueSize(value: string) {
