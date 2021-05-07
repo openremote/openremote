@@ -411,6 +411,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                                 if (response.status !== 200) {
                                     showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
                                 } else {
+                                    showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", i18next.t("dismiss"));
                                     console.info(response.data, response) //todo: do something with this response
                                 }
                             })
