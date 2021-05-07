@@ -17,7 +17,7 @@ import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role, User } from "@openremote/model";
 import { i18next } from "@openremote/or-translate";
 import { OrIcon } from "@openremote/or-icon";
-import { InputType, OrInput, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrMwcInput, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -268,8 +268,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
   }
 
   private checkPassword(index) {
-    const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-"+index) as OrInput;
-    const passwordComponent = this.shadowRoot.getElementById("password-"+index) as OrInput;
+    const repeatPasswordComponent = this.shadowRoot.getElementById("repeatPassword-"+index) as OrMwcInput;
+    const passwordComponent = this.shadowRoot.getElementById("password-"+index) as OrMwcInput;
 
     if (repeatPasswordComponent.value !== passwordComponent.value) {
         const error = i18next.t("passwordMismatch");

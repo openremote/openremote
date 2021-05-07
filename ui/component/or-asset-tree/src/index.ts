@@ -18,7 +18,7 @@ import {
 import "@openremote/or-translate";
 import {style} from "./style";
 import manager, {AssetModelUtil, EventCallback, OREvent, subscribe, Util} from "@openremote/core";
-import {InputType, OrInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -526,7 +526,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const onAddChanged = (ev: OrAddChangedEvent) => {
             const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
-            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrInput;
+            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput;
             addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
 

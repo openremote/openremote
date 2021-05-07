@@ -23,7 +23,7 @@ import {
 } from "@openremote/model";
 import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-map";
 import { geoJsonPointInputTemplateProvider } from "@openremote/or-map";
 
@@ -355,7 +355,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     protected _writeTimeoutHandler?: number;
 
     @query("#send-btn")
-    protected _sendButton!: OrInput;
+    protected _sendButton!: OrMwcInput;
     @query("#scrim")
     protected _scrimElem!: HTMLDivElement;
 
