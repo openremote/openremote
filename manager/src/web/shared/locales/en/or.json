@@ -382,5 +382,8 @@
   "logCategory": {},
   "readPermissions": "Read permissions",
   "writePermissions": "Write permissions",
-  "valueType": "Value type"
+  "valueType": "Value type",
+  "dataExport": "Data export",
+  "dataSelection": "Data selection",
+  "assetAttributeSelection": "Asset attribute selection"
 }

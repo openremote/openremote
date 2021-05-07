@@ -375,5 +375,8 @@
   "createAssetFailed": "Asset aanmaken is niet gelukt",
   "readPermissions": "Leesrechten",
   "writePermissions": "Schrijfrechten",
-  "valueType": "Value type"
+  "valueType": "Value type",
+  "dataExport": "Data export",
+  "dataSelection": "Data selectie",
+  "assetAttributeSelection": "Asset attribuut selectie"
 }
