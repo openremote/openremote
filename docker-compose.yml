@@ -35,6 +35,7 @@ services:
         condition: service_healthy
     environment:
       KEYCLOAK_FRONTEND_URL: ${KEYCLOAK_FRONTEND_URL:-https://localhost/auth}
+      KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
   manager:
     restart: always
@@ -44,3 +45,4 @@ services:
         condition: service_healthy
     environment:
       DEV_MODE: ${DEV_MODE:-false}
+      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}

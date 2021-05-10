@@ -20,6 +20,8 @@
 package org.openremote.test.setup;
 
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.openremote.agent.protocol.ProtocolClientEventService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.mqtt.MqttBrokerService;
@@ -31,9 +33,11 @@ import org.openremote.model.security.User;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static org.openremote.agent.protocol.ProtocolClientEventService.getClientId;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -63,6 +67,8 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public Tenant tenantBuilding;
     public Tenant energyTenant;
     public Tenant tenantCity;
+    public static final String clientEventClientId = getClientId("test");
+    public static final String clientEventClientSecret = UniqueIdentifierGenerator.generateId(getClientId("test"));
 
     public KeycloakTestSetup(Container container) {
         super(container);
@@ -106,21 +112,17 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         keycloakProvider.updateUserRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
 
         /*
-         * MQTT Client
+         * Client event keycloak client
          */
-        ClientRepresentation mqttClient = new ClientRepresentation();
-        String buildingMqttClientId = MqttBrokerService.MQTT_CLIENT_ID_PREFIX + UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm());
-        mqttClient.setClientId(buildingMqttClientId);
-        mqttClient.setName("MQTT");
-        mqttClient.setStandardFlowEnabled(false);
-        mqttClient.setImplicitFlowEnabled(false);
-        mqttClient.setDirectAccessGrantsEnabled(false);
-        mqttClient.setServiceAccountsEnabled(true);
-        mqttClient.setSecret(UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm()));
-        mqttClient = keycloakProvider.createClient(tenantBuilding.getRealm(), mqttClient);
+        ProtocolClientEventService.ClientCredentials clientCredentials =
+            new ProtocolClientEventService.ClientCredentials(
+                tenantBuilding.getRealm(),
+                new ClientRole[] {ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES},
+                clientEventClientId,
+                clientEventClientSecret
+            );
 
-        // Add asset RW roles to service user
-        User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
-        keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), serviceUser.getId(), buildingMqttClientId, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
+        ClientEventService clientEventService = container.getService(ClientEventService.class);
+        clientEventService.addClientCredentials(clientCredentials);
     }
 }

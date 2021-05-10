@@ -164,7 +164,7 @@ public final class ValueType {
 
     public static final ValueDescriptor<AttributeState> ATTRIBUTE_STATE = new ValueDescriptor<>("attributeState", AttributeState.class);
 
-    public static final ValueDescriptor<GeoJSONPoint> GEO_JSON_POINT = new ValueDescriptor<>("geoJSONPoint", GeoJSONPoint.class);
+    public static final ValueDescriptor<GeoJSONPoint> GEO_JSON_POINT = new ValueDescriptor<>("GEO_JSONPoint", GeoJSONPoint.class);
 
     public static final ValueDescriptor<CalendarEvent> CALENDAR_EVENT = new ValueDescriptor<>("calendarEvent", CalendarEvent.class);
 
@@ -176,7 +176,7 @@ public final class ValueType {
 
     public static final ValueDescriptor<ColourRGB> COLOUR_RGB = new ValueDescriptor<>("colourRGB", ColourRGB.class);
 
-    public static final ValueDescriptor<OAuthGrant> OAUTH_GRANT = new ValueDescriptor<>("OAuthGrant", OAuthGrant.class);
+    public static final ValueDescriptor<OAuthGrant> OAUTH_GRANT = new ValueDescriptor<>("oAuthGrant", OAuthGrant.class);
 
     public static final ValueDescriptor<UsernamePassword> USERNAME_AND_PASSWORD = new ValueDescriptor<>("usernameAndPassword", UsernamePassword.class);
 

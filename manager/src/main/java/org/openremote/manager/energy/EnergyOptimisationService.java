@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.energy;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
@@ -147,7 +146,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     }
 
     protected void processAssetChange(PersistenceEvent<EnergyOptimisationAsset> persistenceEvent) {
+        LOG.info("Processing optimisation asset change: " + persistenceEvent);
+        stopOptimisation(persistenceEvent.getEntity().getId());
 
+        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
+            if (!persistenceEvent.getEntity().isOptimisationDisabled().orElse(false)) {
+                startOptimisation(persistenceEvent.getEntity());
+            }
+        }
     }
 
     protected void onAssetAttributeEvent(AttributeEvent attributeEvent) {
@@ -162,8 +168,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         try {
             EnergyOptimiser optimiser = new EnergyOptimiser(intervalSize, ((double) financialWeighting) / 100);
-            ScheduledFuture<?> runScheduler = scheduleOptimisation(optimisationAsset.getId(), optimiser);
-            assetEnergyOptimiserMap.put(optimisationAsset.getId(), new Pair<>(optimiser, runScheduler));
+            scheduleOptimisation(optimisationAsset.getId(), optimiser);
         } catch (IllegalArgumentException e) {
             LOG.log(Level.SEVERE, "Failed to start energy optimiser for asset: " + optimisationAsset, e);
         }
@@ -204,18 +209,22 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         long currentMillis = timerService.getCurrentTimeMillis();
         Instant optimisationStartTime = getOptimisationStartTime(currentMillis, periodSeconds);
 
-        // Execute first optimisation at this period to initialise the system
-        runOptimisation(optimisationAssetId, optimisationStartTime);
-
         // Schedule subsequent runs
-        long offsetSeconds = (long) (Math.random() * 30);
+        long offsetSeconds = (long) (Math.random() * 30) + periodSeconds;
         Duration startDuration = Duration.between(Instant.ofEpochMilli(currentMillis), optimisationStartTime.plus(offsetSeconds, ChronoUnit.SECONDS));
 
-        return executorService.scheduleAtFixedRate(() ->
+        ScheduledFuture<?> runScheduler = executorService.scheduleAtFixedRate(() ->
             runOptimisation(optimisationAssetId, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.MINUTES)),
             startDuration.getSeconds(),
             periodSeconds,
             TimeUnit.SECONDS);
+
+        assetEnergyOptimiserMap.put(optimisationAssetId, new Pair<>(optimiser, runScheduler));
+
+        // Execute first optimisation at the period that started previous to now
+        LOG.finer(getLogPrefix(optimisationAssetId) + "Running first optimisation for time '" + formatter.format(optimisationStartTime));
+        runOptimisation(optimisationAssetId, optimisationStartTime);
+        return runScheduler;
     }
 
     /**
@@ -351,10 +360,10 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             count.incrementAndGet();
         });
 
-        if (LOG.isLoggable(Level.FINEST)) {
-            LOG.finest(getLogPrefix(optimisationAssetId) + "Found plain consumer and producer child assets count=" + count.get());
-            LOG.finest("Calculated net power of consumers and producers: " + Arrays.toString(powerNets));
-            LOG.finest("Getting supply costs for each interval");
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Found plain consumer and producer child assets count=" + count.get());
+            LOG.finer("Calculated net power of consumers and producers: " + Arrays.toString(powerNets));
+            LOG.finer("Getting supply costs for each interval");
         }
 
         // Get supplier costs for each interval
@@ -385,7 +394,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             }
         }
 
-        if (LOG.isLoggable(Level.FINEST)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(getLogPrefix(optimisationAssetId) + "Import costs: " + Arrays.toString(costsImport));
             LOG.finer(getLogPrefix(optimisationAssetId) + "Export costs: " + Arrays.toString(costsExport));
         }
@@ -512,7 +521,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 });
             }
         } else {
-            LOG.finer("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
+            LOG.finest("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
         }
 
         values[0] = attribute.getValue().orElse(0d);

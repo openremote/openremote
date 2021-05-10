@@ -15,17 +15,19 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {
+    AgentDescriptor,
     Asset,
     AssetEvent,
     Attribute,
     AttributeEvent,
     ClientRole,
+    FileInfo,
     SharedEvent,
     WellknownAssets,
     WellknownAttributes,
@@ -35,7 +37,7 @@ import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
 import {styleMap} from "lit-html/directives/style-map";
 import {classMap} from "lit-html/directives/class-map";
-import {GenericAxiosResponse} from "axios";
+import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
@@ -43,7 +45,7 @@ import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PanelConfig {
-    type?: "info" | "history" | "group" | "survey" | "survey-results";
+    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results";
     title?: string;
     hide?: boolean;
     hideOnMobile?: boolean;
@@ -80,6 +82,10 @@ export interface InfoPanelConfig extends PanelConfig {
     }
 }
 
+export interface SetupPanelConfig extends PanelConfig {
+    type: "setup"
+}
+
 export interface HistoryPanelConfig extends PanelConfig {
     type: "history",
     include?: string[];
@@ -96,7 +102,7 @@ export interface GroupPanelConfig extends PanelConfig {
     };
 }
 
-export type PanelConfigUnion = InfoPanelConfig | GroupPanelConfig | PanelConfig;
+export type PanelConfigUnion = InfoPanelConfig | SetupPanelConfig | GroupPanelConfig | PanelConfig;
 export type PanelViewProvider = (asset: Asset, attributes: { [index: string]: Attribute<any> }, panelName: string, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
 export type PropertyViewProvider = (asset: Asset, property: string, value: any, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
 export type AttributeViewProvider = (asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfigUnion) => TemplateResult | undefined;
@@ -284,7 +290,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
     }
 
-    if (panelConfig.type === "info") {
+    if (panelConfig && panelConfig.type === "info") {
 
         // This type of panel shows attributes and/or properties of the asset
         const infoConfig = panelConfig as InfoPanelConfig;
@@ -350,6 +356,95 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     return getField(item.item.name!, item.itemConfig, getAttributeTemplate(asset, item.item, hostElement, viewerConfig, panelConfig, item.itemConfig));
                 }
         })}`;
+    }
+
+    if (panelConfig && panelConfig.type === "setup") {
+
+        const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
+        
+        if (!descriptor || !asset.id || descriptor.descriptorType !== "agent" || !descriptor.assetDiscovery && !descriptor.assetImport) {
+            return;
+        }
+
+        const updateFileName = () => {
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement,
+                fileNameElem = hostElement.shadowRoot!.getElementById('filenameElem') as HTMLInputElement,
+                str = fileInputElem.value;
+            let i;
+            if (str.lastIndexOf('\\')) {
+                i = str.lastIndexOf('\\') + 1;
+            } else if (str.lastIndexOf('/')) {
+                i = str.lastIndexOf('/') + 1;
+            }
+            fileNameElem.value = str.slice(i, str.length);
+        }
+
+        const discoverAssets = () => {
+            manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
+                .then(response => console.log(response.data, response)); //todo: do something with this response
+        } 
+
+        const fileToBase64 = () => {
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
+            if (fileInputElem) {
+                const reader = new FileReader();
+                if (fileInputElem.files && fileInputElem.files.length) {
+                    reader.readAsDataURL(fileInputElem.files[0]); //convert to base64
+                }
+                
+                reader.onload = () => {
+                    if (!reader.result) {
+                        // TODO: DO SOMETHING HERE
+                    } else {
+                        let encoded = reader.result.toString().replace(/^data:(.*,)?/, '');
+                        if ((encoded.length % 4) > 0) {
+                            encoded += '='.repeat(4 - (encoded.length % 4));
+                        }
+                        const fileInfo = {
+                            name: 'filename',
+                            contents: encoded,
+                            binary: true
+                        } as FileInfo
+
+                        manager.rest.api.AgentResource.doProtocolAssetImport(asset.id!, fileInfo) //todo: this doesn't work yet
+                            .then(response => {
+                                if (response.status !== 200) {
+                                    showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                                } else {
+                                    showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", i18next.t("dismiss"));
+                                    console.info(response.data, response) //todo: do something with this response
+                                }
+                            })
+                            .catch(() => showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss")));
+                  
+                    }
+                }
+            }
+        }
+        
+        let content: TemplateResult = html``;
+
+        if (descriptor.assetImport) {
+            content = html`
+                <div id="fileupload"> 
+                    <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @click="${() => hostElement.shadowRoot!.getElementById('fileuploadElem')!.click()}">
+                        <input id="fileuploadElem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
+                    </or-mwc-input>
+                    <or-mwc-input id="filenameElem" .type="${InputType.TEXT}" disabled></or-mwc-input>
+                    <or-mwc-input icon="upload" .type="${InputType.BUTTON}" @click="${() => fileToBase64()}"></or-mwc-input>
+                </div>
+            `;
+        }
+        else if (descriptor.assetDiscovery) {
+            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @click="${() => discoverAssets()}"></or-mwc-input>`;
+        } else {
+            showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
+        }
+        
+        return html`      
+            ${content}
+        `;
+        
     }
 
     if (panelConfig && panelConfig.type === "survey") {
@@ -663,7 +758,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
                 getAssetNames(ancestors).then(
                     (names) => {
                         if (hostElement && hostElement.shadowRoot) {
-                            const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrInput;
+                            const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
                             if (pathField) {
                                 pathField.value = names.reverse().join(" > ");
                             }
@@ -801,6 +896,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     include: ["notes", "manufacturer", "model"]
                 }
             },
+            setup: {
+                type: "setup",
+                title: "setup",
+                hideOnMobile: false
+            },
             location: {
                 type: "info",
                 properties: {
@@ -866,10 +966,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected wrapperElem!: HTMLDivElement;
 
     @query("#save-btn")
-    protected saveBtnElem!: OrInput;
+    protected saveBtnElem!: OrMwcInput;
 
     @query("#edit-btn")
-    protected editBtnElem!: OrInput;
+    protected editBtnElem!: OrMwcInput;
 
     constructor() {
         super();

@@ -546,8 +546,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         String requestRealm = getRequestRealm();
 
-        if (query == null || TextUtil.isNullOrEmpty(requestRealm)) {
+        if (TextUtil.isNullOrEmpty(requestRealm)) {
             return EMPTY_ASSETS;
+        }
+
+        if (query == null) {
+            query = new AssetQuery();
         }
 
         // Force realm to be request realm
@@ -578,7 +582,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public Asset<?>[] getPublicAssets(RequestParams requestParams, String q) {
-        AssetQuery assetQuery = Values.parse(q, AssetQuery.class)
+        AssetQuery assetQuery = TextUtil.isNullOrEmpty(q) ? null : Values.parse(q, AssetQuery.class)
             .orElseThrow(() -> new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST));
 
         Asset<?>[] result = queryPublicAssets(requestParams, assetQuery);
@@ -609,6 +613,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 failure = processingException.getReason();
             }
 
+        } catch (AssetProcessingException e) {
+            failure = e.getReason();
         } catch (IllegalStateException ex) {
             failure = AttributeWriteFailure.UNKNOWN;
         }

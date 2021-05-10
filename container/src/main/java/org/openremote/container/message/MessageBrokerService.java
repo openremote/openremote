@@ -21,6 +21,7 @@ package org.openremote.container.message;
 
 import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.component.snmp.SnmpComponent;
 import org.apache.camel.impl.DefaultStreamCachingStrategy;
 import org.apache.camel.spi.*;
 import org.apache.camel.util.StringHelper;
@@ -139,6 +140,7 @@ public class MessageBrokerService implements ContainerService {
         );
 
         context.addComponent(WebsocketComponent.NAME, websocketComponent);
+        context.addComponent("snmp", new SnmpComponent());
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset.agent;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
@@ -36,6 +37,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * This resource is for Agent specific tasks like import and discovery; normal asset/attribute CRUD operations should
  * still use {@link AssetResource}.
  */
+@Tag(name = "Agent")
 @Path("agent")
 public interface AgentResource {
 

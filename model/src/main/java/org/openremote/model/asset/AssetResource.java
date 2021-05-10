@@ -19,7 +19,12 @@
  */
 package org.openremote.model.asset;
 
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 import org.openremote.model.Constants;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
@@ -63,6 +68,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * <li>{@link #writeAttributeValue}</li>
  * </ul>
  */
+@Tag(name = "Asset")
 @Path("asset")
 public interface AssetResource {
 
@@ -200,11 +206,16 @@ public interface AssetResource {
     @PUT
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
-    @ApiOperation(value="Write to a single attribute", response = AttributeWriteResult.class)
+    @Produces(APPLICATION_JSON)
+    @Operation(description = "Write to a single attribute", responses = {
+        @ApiResponse(
+            content = @Content(mediaType = "application/json",
+                schema = @Schema(implementation = AttributeWriteResult.class)))})
     Response writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, Object value);
 
     @PUT
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @Path("attributes")
     AttributeWriteResult[] writeAttributeValues(@BeanParam RequestParams requestParams, AttributeState[] attributeStates);
 

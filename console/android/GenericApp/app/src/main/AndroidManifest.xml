@@ -19,7 +19,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/OpenRemoteTheme">
-        <activity android:name=".ui.PrivacyPolicyActivity"></activity>
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
@@ -50,6 +49,7 @@
             android:exported="true"
             android:label="@string/title_activity_project" />
         <activity android:name=".ui.MainActivity" />
+        <activity android:name=".ui.PrivacyPolicyActivity" />
 
         <service android:name=".service.ORFirebaseMessagingService">
             <intent-filter>

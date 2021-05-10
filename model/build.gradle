@@ -28,7 +28,7 @@ dependencies {
     compile "org.reflections:reflections:$reflectionsVersion"
     compile "com.google.guava:guava:$guavaVersion"
 
-    compile "io.swagger:swagger-annotations:$swaggerVersion"
+    compile "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 }
 
 jar {

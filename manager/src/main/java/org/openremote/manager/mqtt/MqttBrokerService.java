@@ -57,8 +57,6 @@ public class MqttBrokerService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(MqttBrokerService.class.getName());
 
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
-
-    public static final String MQTT_CLIENT_ID_PREFIX = "mqtt-";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
 

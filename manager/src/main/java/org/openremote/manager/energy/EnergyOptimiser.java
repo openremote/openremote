@@ -385,18 +385,20 @@ public class EnergyOptimiser {
         for (Pair<Integer, double[]> earningOpportunity : earningOpportunities) {
             int interval = earningOpportunity.key;
             double[] costAndPower = earningOpportunity.value;
+            assert importCostAndPower != null;
+            assert exportCostAndPower != null;
 
             if (isImportOpportunity(costAndPower, powerSetpoints[interval], interval, powerImportMaxCalculator)) {
 
                 // import opportunity and interval still available to import power
-                //noinspection ConstantConditions
+                LOG.finest("Applying import earning opportunity: interval=" + interval);
                 applyImportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval);
                 LOG.finest("Applied import earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
 
             } else if (isExportOpportunity(costAndPower, powerSetpoints[interval], interval, powerExportMaxCalculator)) {
 
                 // export opportunity and interval still available to export power
-                //noinspection ConstantConditions
+                LOG.finest("Applying export earning opportunity: interval=" + interval);
                 applyExportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval);
                 LOG.finest("Applied export earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
             }
@@ -424,7 +426,7 @@ public class EnergyOptimiser {
         double powerCapacity = impPowerMax - powerSetpoints[interval];
 
         if (impPowerMin > powerCapacity) {
-            // Can't attain min power level to make use of this opportunity
+            LOG.finest("Can't attain min power level to make use of this opportunity");
             return;
         }
 
@@ -434,17 +436,18 @@ public class EnergyOptimiser {
         List<Pair<Integer, Double>> pastIntervalPowerDeltas = new ArrayList<>();
 
         int k = interval;
-        while (k < powerSetpoints.length && energySpace < 0 && energySpace <= energySpaceMin) {
+        while (k < powerSetpoints.length && energySpace > 0 && energySpace >= energySpaceMin) {
 
-            double futureEnergySpace = energyLevelCalculator.apply(k) - energyLevelMins[k];
-            energySpace = Math.max(energySpace, -futureEnergySpace);
+            double futureEnergySpace = energyLevelMaxs[k] - energyLevelCalculator.apply(k);
+            energySpace = Math.min(energySpace, futureEnergySpace);
             k++;
 
         }
 
-        if (energySpace > 0 && energySpace < energySpaceMax && exportCostAndPower != null) {
+        if (energySpace < energySpaceMax && exportCostAndPower != null) {
             // Can't maximise on opportunity without exporting earlier on so can this be done
             // in a cost effective way
+            LOG.finest("Looking for earlier export opportunities to maximise on this import opportunity: space=" + energySpace + ", max=" + energySpaceMax);
             int i = interval - 1;
             List<Pair<Integer, Double>> pastOpportunities = new ArrayList<>();
 
@@ -472,7 +475,7 @@ public class EnergyOptimiser {
                 double expPowerCapacity = expPowerMax - powerSetpoints[pastInterval];
 
                 if (expPowerCapacity >= 0 || expPowerCapacity > pastCostAndPower[2]) {
-                    // Power capacity is outside optimum power band so cannot use this opportunity
+                    LOG.finest("Power capacity is outside optimum power band so cannot use this opportunity");
                     j++;
                     continue;
                 }
@@ -495,8 +498,9 @@ public class EnergyOptimiser {
 
                 if (expPowerCapacity < 0 && expPowerCapacity < pastCostAndPower[2]) {
                     // We can export in the optimum range
-                    energySpace += -1d * energySurplus;
+                    energySpace += (-1d * expPowerCapacity * intervalSize);
                     pastIntervalPowerDeltas.add(new Pair<>(pastInterval, expPowerCapacity));
+                    LOG.finest("Earlier export opportunity identified: interval=" + pastInterval + ", power=" + expPowerCapacity);
                 }
 
                 j++;
@@ -512,6 +516,8 @@ public class EnergyOptimiser {
             energySpaceMax = Math.min(energySpaceMax, energySpace);
             powerCapacity = Math.min(impPowerMax - powerSetpoints[interval], (energySpaceMax / intervalSize));
             powerSetpoints[interval] = powerSetpoints[interval] + powerCapacity;
+        } else {
+            LOG.finest("Unable to utilise import opportunity: min=" + energySpaceMin + ", available=" + energySpace);
         }
     }
 
@@ -528,7 +534,7 @@ public class EnergyOptimiser {
         double powerCapacity = expPowerMax - powerSetpoints[interval];
 
         if (expPowerMin < powerCapacity) {
-            // Can't attain min power level to make use of this opportunity
+            LOG.finest("Can't attain min power level to make use of this opportunity");
             return;
         }
 
@@ -572,9 +578,10 @@ public class EnergyOptimiser {
 
         }
 
-        if (energySurplus > 0 && energySurplus < energySurplusMax && importCostAndPower != null) {
+        if (energySurplus < energySurplusMax && importCostAndPower != null) {
             // Can't maximise on opportunity without importing earlier on so can this be done
             // in a cost effective way
+            LOG.finest("Looking for earlier export opportunities to maximise on this import opportunity: surplus=" + energySurplus + ", max=" + energySurplusMax);
             int i = interval - 1;
             List<Pair<Integer, Double>> pastOpportunities = new ArrayList<>();
 
@@ -601,7 +608,7 @@ public class EnergyOptimiser {
                 double impPowerCapacity = impPowerMax - powerSetpoints[pastInterval];
 
                 if (impPowerCapacity <= 0 || impPowerCapacity < pastCostAndPower[1]) {
-                    // Power capacity is outside optimum power band so cannot use this opportunity
+                    LOG.finest("Power capacity is outside optimum power band so cannot use this opportunity");
                     j++;
                     continue;
                 }
@@ -612,7 +619,7 @@ public class EnergyOptimiser {
 
                 // We have spare energy capacity and power check if we don't violate energy max for any future imports
                 k = pastInterval;
-                while (k < powerSetpoints.length && energySurplus > 0 && energySpace >= energySpaceMin) {
+                while (k < powerSetpoints.length && energySpace > 0 && energySpace >= energySpaceMin) {
 
                     double futureEnergySpace = energyLevelMaxs[k] - energyLevelCalculator.apply(k);
                     energySpace = Math.min(energySpace, futureEnergySpace);
@@ -624,8 +631,9 @@ public class EnergyOptimiser {
 
                 if (impPowerCapacity > 0 && impPowerCapacity > pastCostAndPower[1]) {
                     // We can import in the optimum range
-                    energySurplus += energySurplus;
+                    energySurplus += (impPowerCapacity * intervalSize);
                     pastAndFutureIntervalPowerDeltas.add(new Pair<>(pastInterval, impPowerCapacity));
+                    LOG.finest("Earlier import opportunity identified: interval=" + pastInterval + ", power=" + impPowerCapacity);
                 }
 
                 j++;
@@ -641,6 +649,8 @@ public class EnergyOptimiser {
             energySurplusMax = Math.min(energySurplusMax, energySurplus);
             powerCapacity = Math.max(expPowerMax - powerSetpoints[interval], -1d * (energySurplusMax / intervalSize));
             powerSetpoints[interval] = powerSetpoints[interval] + powerCapacity;
+        } else {
+            LOG.finest("Unable to utilise export opportunity: min=" + energySurplusMin + ", available=" + energySurplus);
         }
     }
 

@@ -18,6 +18,7 @@ dependencies {
     compile "org.geotools:gt-main:$geotoolsVersion"
     compile "com.google.firebase:firebase-admin:$firebaseAdminVersion"
     compile "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
+    compile "io.swagger.core.v3:swagger-jaxrs2:$swaggerVersion"
 
     compile ("io.netty:netty-codec-http:$nettyVersion") {
         force = true

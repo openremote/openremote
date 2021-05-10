@@ -1,6 +1,9 @@
 package org.openremote.test.assets
 
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.attribute.AttributeState
+import org.openremote.model.attribute.AttributeWriteFailure
+import org.openremote.model.value.Values
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
@@ -824,5 +827,52 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the result should match"
         assert testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().getValue().get() == "My label update"
+    }
+
+    def "Access assets as anonymous user"() {
+        given: "the server container is started"
+        def container = startContainer(defaultConfig(), defaultServices())
+        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
+
+        and: "the asset resource"
+        def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(AssetResource.class)
+
+        when: "the public assets are retrieved using the query parameter endpoint"
+        def assets = assetResource.getPublicAssets(null, Values.asJSON(
+                new AssetQuery().tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
+        ).get())
+
+        then: "the public assets should be retrieved"
+        assert assets.size() == 2
+        assert assets.find {it.id == managerTestSetup.apartment1Id} != null
+        assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
+
+        when: "the public assets are retrieved using the query parameter endpoint without a query"
+        assets = assetResource.getPublicAssets(null, null)
+
+        then: "the public assets should be retrieved"
+        assert assets.size() == 2
+        assert assets.find {it.id == managerTestSetup.apartment1Id} != null
+        assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
+
+        when: "the public assets are retrieved using the post endpoint"
+        assets = assetResource.queryPublicAssets(null, new AssetQuery().tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm)))
+
+        then: "the public assets should be retrieved"
+        assert assets.size() == 2
+        assert assets.find {it.id == managerTestSetup.apartment1Id} != null
+        assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
+
+        when: "an attribute with public write is written to and another with only public read"
+        def writeResults = assetResource.writeAttributeValues(null, [
+            new AttributeState(managerTestSetup.apartment1Id, Asset.LOCATION.name, null),
+            new AttributeState(managerTestSetup.apartment2LivingroomId, Asset.LOCATION.name, null)
+        ] as AttributeState[])
+
+        then: "the request should have succeeded but only the apartment1 location event should have been successful"
+        assert writeResults.size() == 2
+        assert writeResults.find {it.ref.id == managerTestSetup.apartment1Id && it.ref.name == Asset.LOCATION.name}.failure == null
+        assert writeResults.find {it.ref.id == managerTestSetup.apartment2LivingroomId && it.ref.name == Asset.LOCATION.name}.failure == AttributeWriteFailure.INSUFFICIENT_ACCESS
     }
 }

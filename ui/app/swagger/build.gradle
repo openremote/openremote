@@ -1,0 +1,6 @@
+task installDist(type: Copy) {
+    mustRunAfter(resolveTask(":manager:installDist"))
+    from projectDir
+    into "${resolveProject(':manager').buildDir}/install/manager/web/${projectDir.name}"
+    exclude "build.gradle"
+}

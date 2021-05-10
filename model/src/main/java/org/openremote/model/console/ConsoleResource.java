@@ -19,6 +19,7 @@
  */
 package org.openremote.model.console;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.http.RequestParams;
@@ -29,6 +30,7 @@ import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "Console")
 @Path("console")
 public interface ConsoleResource {
 

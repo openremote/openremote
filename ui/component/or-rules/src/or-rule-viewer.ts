@@ -15,7 +15,7 @@ import "./or-rule-validity";
 import "./flow-viewer/components/flow-editor";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import { GenericAxiosResponse } from "@openremote/rest";
 import { showErrorDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -122,7 +122,7 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     protected wrapperElem!: HTMLDivElement;
 
     @query("#save-btn")
-    protected saveBtnElem!: OrInput;
+    protected saveBtnElem!: OrMwcInput;
 
     protected _focusName = false;
 

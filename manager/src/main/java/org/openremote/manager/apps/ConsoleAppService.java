@@ -28,7 +28,9 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.apps.ConsoleAppConfig;
 
 import java.nio.file.Files;
+import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public class ConsoleAppService implements ContainerService {
 
@@ -66,7 +68,9 @@ public class ConsoleAppService implements ContainerService {
     }
 
     public String[] getInstalled() throws Exception {
-        return Files.list(managerWebService.getBuiltInAppDocRoot())
+        return Stream.concat(
+                Files.list(managerWebService.getBuiltInAppDocRoot()),
+                Files.list(managerWebService.getCustomAppDocRoot()))
             .filter(Files::isDirectory)
             .map(dir -> dir.getFileName().toString())
             .toArray(String[]::new);

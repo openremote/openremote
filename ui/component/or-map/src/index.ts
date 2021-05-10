@@ -6,7 +6,7 @@ import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
-import { OrInput, InputType, ValueInputProviderGenerator, ValueInputTemplateFunction } from "@openremote/or-mwc-components/or-mwc-input";
+import { OrMwcInput, InputType, ValueInputProviderGenerator, ValueInputTemplateFunction } from "@openremote/or-mwc-components/or-mwc-input";
 import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./markers/or-map-marker-asset";
 import { i18next } from "@openremote/or-translate";
@@ -104,7 +104,7 @@ const CoordinatesRegexPattern = "^[ ]*(?:Lat: )?(-?\\d+\\.?\\d*)[, ]+(?:Lng: )?(
 function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | undefined) => void) {
     return (e: KeyboardEvent) => {
         if (e.code === "Enter" || e.code === "NumpadEnter") {
-            const valStr = (e.target as OrInput).value as string;
+            const valStr = (e.target as OrMwcInput).value as string;
             let value: LngLat | undefined;
 
             if (valStr) {
@@ -125,7 +125,7 @@ export class CoordinatesControl {
 
     protected map?: MapGL;
     protected elem?: HTMLElement;
-    protected input!: OrInput;
+    protected input!: OrMwcInput;
     protected _readonly = false;
     protected _value: any;
     protected _valueChangedHandler: (value: LngLat | undefined) => void;
@@ -141,7 +141,7 @@ export class CoordinatesControl {
         control.classList.add("mapboxgl-ctrl");
         control.classList.add("mapboxgl-ctrl-group");
 
-        const input = new OrInput();
+        const input = new OrMwcInput();
         input.type = InputType.TEXT;
         input.outlined = true;
         input.compact = true;

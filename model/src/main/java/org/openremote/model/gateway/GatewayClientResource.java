@@ -19,6 +19,7 @@
  */
 package org.openremote.model.gateway;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.http.RequestParams;
@@ -33,6 +34,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 /**
  * Resource for managing the connection to a central manager
  */
+@Tag(name = "Gateway")
 @Path("gateway")
 public interface GatewayClientResource {
 

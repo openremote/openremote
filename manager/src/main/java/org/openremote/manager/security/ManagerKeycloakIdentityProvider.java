@@ -107,18 +107,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     protected void addClientRedirectUris(String client, List<String> redirectUrls, boolean devMode) {
-        if (devMode) {
-            // Allow any redirect URIs in dev mode
-            redirectUrls.add("*");
-        } else {
-            // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
-            String realmManagerCallbackUrl = UriBuilder.fromUri("/").path(client).path("*").build().toString();
-            redirectUrls.add(realmManagerCallbackUrl);
-
-            // Callback URL used by Console web client authentication, any relative path to "ourselves" is fine
-            String consoleCallbackUrl = UriBuilder.fromUri("/console/").path(client).path("*").build().toString();
-            redirectUrls.add(consoleCallbackUrl);
-        }
+        // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
+        String realmManagerCallbackUrl = UriBuilder.fromUri("/").path(client).path("*").build().toString();
+        redirectUrls.add(realmManagerCallbackUrl);
     }
 
     @Override
@@ -721,17 +712,20 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             client.setWebOrigins(Collections.singletonList("*"));
             client.setRedirectUris(Collections.singletonList("*"));
         } else {
-            List<String> redirectUris = new ArrayList<>();
-            try {
-                for (String consoleName : consoleAppService.getInstalled()) {
-                    addClientRedirectUris(consoleName, redirectUris, devMode);
-                }
-            } catch (Exception exception) {
-                LOG.log(Level.WARNING, exception.getMessage(), exception);
-                addClientRedirectUris(realm, redirectUris, devMode);
-            }
-
-            client.setRedirectUris(redirectUris);
+            // TODO: Decide how clients should be handled
+            client.setWebOrigins(Collections.singletonList("+"));
+            client.setRedirectUris(Collections.singletonList("/*"));
+//            List<String> redirectUris = new ArrayList<>();
+//            try {
+//                for (String consoleName : consoleAppService.getInstalled()) {
+//                    addClientRedirectUris(consoleName, redirectUris, devMode);
+//                }
+//            } catch (Exception exception) {
+//                LOG.log(Level.WARNING, exception.getMessage(), exception);
+//                addClientRedirectUris(realm, redirectUris, devMode);
+//            }
+//
+//            client.setRedirectUris(redirectUris);
         }
 
         return client;

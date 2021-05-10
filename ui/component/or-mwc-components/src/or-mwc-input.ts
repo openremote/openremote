@@ -553,7 +553,7 @@ const style = css`
 `;
 
 @customElement("or-mwc-input")
-export class OrInput extends LitElement {
+export class OrMwcInput extends LitElement {
 
     static get styles() {
         return [

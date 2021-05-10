@@ -58,7 +58,11 @@ public class Values {
     public static final ObjectMapper JSON;
 
     static {
-        JSON = new ObjectMapper()
+        JSON = configureObjectMapper(new ObjectMapper());
+    }
+
+    public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
+        objectMapper
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false) // see https://github.com/FasterXML/jackson-databind/issues/1547
             .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
@@ -73,12 +77,14 @@ public class Values {
             .registerModule(new JavaTimeModule())
             .registerModule(new ParameterNamesModule(JsonCreator.Mode.PROPERTIES));
 
-        JSON.configOverride(Map.class)
+        objectMapper.configOverride(Map.class)
             .setInclude(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
 
         SimpleFilterProvider filters = new SimpleFilterProvider();
         filters.setFailOnUnknownId(false);
-        JSON.setFilterProvider(filters);
+
+        objectMapper.setFilterProvider(filters);
+        return objectMapper;
     }
 
     public static final String NULL_LITERAL = "null";

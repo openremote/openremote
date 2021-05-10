@@ -19,6 +19,7 @@
  */
 package org.openremote.model.security;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 
@@ -35,6 +36,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * <p>
  * TODO Relax permissions to allow regular users to maintain their own realm
  */
+@Tag(name = "Tenant")
 @Path("tenant")
 public interface TenantResource {
 
