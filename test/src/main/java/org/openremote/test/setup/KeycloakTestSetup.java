@@ -121,6 +121,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
 
         // Add asset RW roles to service user
         User serviceUser = keycloakProvider.getClientServiceUser(tenantBuilding.getRealm(), mqttClient.getClientId());
-        keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), serviceUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
+        keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), serviceUser.getId(), buildingMqttClientId, ClientRole.READ_ASSETS.getValue(), ClientRole.WRITE_ASSETS.getValue(), ClientRole.WRITE_ATTRIBUTES.getValue());
     }
 }

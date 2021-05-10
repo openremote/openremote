@@ -609,7 +609,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         // User must have role
         if (requiredRoles != null) {
             for (ClientRole requiredRole : requiredRoles) {
-                if (!auth.hasResourceRole(requiredRole.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                if (!auth.hasResourceRole(requiredRole.getValue(), auth.getClientId())) {
                     return false;
                 }
             }

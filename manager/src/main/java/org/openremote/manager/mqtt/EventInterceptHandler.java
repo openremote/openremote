@@ -170,7 +170,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                                 } // else attribute/assetId/+ which should return all attributes
                             }
                         } else if (multiLevelIndex == 2) { //attribute/assetId/#
-                            attributeAssetFilter.setAssetIds(assetId).setParentIds(assetId);
+                            attributeAssetFilter.setParentIds(assetId);
                         }
                     } else {
                         if (singleLevelIndex == 1) { //attribute/+
