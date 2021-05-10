@@ -467,8 +467,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def mqttBrokerService = container.getService(MqttBrokerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def mqttClientId = managerTestSetup.realmBuildingTenant + MQTT_CLIENT_ID_SEPARATOR + UniqueIdentifierGenerator.generateId()
-        def clientId = MqttBrokerService.MQTT_CLIENT_ID_PREFIX + UniqueIdentifierGenerator.generateId(managerTestSetup.realmBuildingTenant)
-        def clientSecret = UniqueIdentifierGenerator.generateId(managerTestSetup.realmBuildingTenant)
+        def clientId = KeycloakTestSetup.clientEventClientId
+        def clientSecret = KeycloakTestSetup.clientEventClientSecret
 
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST);
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT);
