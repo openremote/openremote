@@ -17,6 +17,7 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.RawClient
+import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -29,25 +30,29 @@ import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR
 import static org.openremote.model.value.ValueType.TEXT
 
 class MqttBrokerTest extends Specification implements ManagerContainerTrait {
-    def "Mqtt broker attribute event test"() {
 
+    def "Mqtt broker event test"() {
         given: "the container environment is started"
+        def mqttBrokerServiceAssetEventCalls = 0
         def mqttBrokerServiceAttributeEventCalls = 0
         def mqttBrokerServiceAttributeValueCalls = 0
+
         def spyMqttBrokerService = Spy(MqttBrokerService) {
+            sendAssetEvent(_ as String, _ as String, _ as AssetEvent) >> {
+                clientId, topic, assetEvent ->
+                    mqttBrokerServiceAssetEventCalls++
+            }
             sendAttributeEvent(_ as String, _ as String, _ as AttributeEvent) >> {
                 clientId, topic, attributeEvent ->
                     mqttBrokerServiceAttributeEventCalls++
-                    callRealMethod()
             }
             sendAttributeValue(_ as String, _ as String, _ as AttributeEvent) >> {
                 clientId, topic, attributeEvent ->
                     mqttBrokerServiceAttributeValueCalls++
-                    callRealMethod()
             }
         }
 
-        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def services = Lists.newArrayList(defaultServices())
         services.replaceAll { it instanceof MqttBrokerService ? spyMqttBrokerService : it }
         def container = startContainer(defaultConfig(), services)
@@ -194,7 +199,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() > 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 1
         }
 
         when: "An asset attribute changed the client is subscribed on"
@@ -362,7 +367,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() > 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 1
         }
 
         when: "An child asset attribute changed the client is subscribed on"
@@ -445,38 +450,11 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert mqttBrokerService.mqttConnectionMap.size() == 0
         }
-    }
 
-    def "Mqtt broker asset event test"() {
-
-        given: "the container environment is started"
-        def mqttBrokerServiceAssetEventCalls = 0
-        def spyMqttBrokerService = Spy(MqttBrokerService) {
-            sendAssetEvent(_ as String, _ as String, _ as AssetEvent) >> {
-                clientId, topic, attributeEvent ->
-                    mqttBrokerServiceAssetEventCalls++
-                    callRealMethod()
-            }
-        }
-
-        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
-        def services = Lists.newArrayList(defaultServices())
-        services.replaceAll { it instanceof MqttBrokerService ? spyMqttBrokerService : it }
-        def container = startContainer(defaultConfig(), services)
-        def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
-        def mqttBrokerService = container.getService(MqttBrokerService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def mqttClientId = managerTestSetup.realmBuildingTenant + MQTT_CLIENT_ID_SEPARATOR + UniqueIdentifierGenerator.generateId()
-        def clientId = KeycloakTestSetup.clientEventClientId
-        def clientSecret = KeycloakTestSetup.clientEventClientSecret
-
-        def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST);
-        def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT);
-
-        when: "a mqtt client connects"
-        def payloadLength = mqttClientId.size() + clientId.size() + clientSecret.size()
-        def remainingLength = 16 + payloadLength
-        def client = RawClient.connect(mqttHost, mqttPort).isConnected()
+        when: "a mqtt client reconnects"
+        payloadLength = mqttClientId.size() + clientId.size() + clientSecret.size()
+        remainingLength = 16 + payloadLength
+        client = RawClient.connect(mqttHost, mqttPort).isConnected()
         // CONNECT
                 .write(0x10) // MQTT Control Packet type(1)
                 .write(remainingLength.byteValue()) // Remaining Length
@@ -510,7 +488,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
-        def topic = "asset/" + managerTestSetup.thingId
+        topic = "asset/" + managerTestSetup.thingId
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -569,7 +547,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() > 0
+            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 1
         }
 
         when: "An asset is updated with a new attribute"
