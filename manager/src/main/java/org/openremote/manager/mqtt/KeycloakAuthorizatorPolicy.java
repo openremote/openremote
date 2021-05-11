@@ -8,12 +8,12 @@ import org.keycloak.adapters.rotation.AdapterTokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
@@ -22,12 +22,12 @@ import org.openremote.model.security.ClientRole;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSETS_TOPIC;
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSET_ATTRIBUTE_VALUE_TOPIC;
+import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
@@ -61,41 +61,44 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
     protected boolean verifyRights(Topic topic, String username, String clientId, ClientRole... roles) {
         MqttConnection connection = mqttConnectionMap.get(clientId);
         if (connection == null) {
-            LOG.info("No connection found for clientId: " + clientId);
+            LOG.warning("No connection found for clientId: " + clientId);
             return false;
         }
 
         if (!connection.username.equals(username)) {
-            LOG.info("Username mismatch");
+            LOG.warning("Username mismatch");
             return false;
         }
 
         if (topic.isEmpty() || topic.getTokens().size() < 2) {
-            LOG.info("Topic may not be empty and should have the following format: assets/{assetId}(optional: /{attributeName})");
+            LOG.warning("Topic may not be empty and should have the following format: asset/... or attribute/...");
             return false;
         }
 
-        if (!topic.headToken().toString().equals(ASSETS_TOPIC)) {
-            LOG.info("Topic should have the following format: assets/{assetId}(optional: /{attributeName})");
-            return false;
-        }
+        boolean isAttributeTopic = topic.headToken().toString().equals(ATTRIBUTE_TOPIC);
 
-        if(topic.getTokens().size() == 4 && topic.getTokens().stream().noneMatch(token -> token.toString().equals(ASSET_ATTRIBUTE_VALUE_TOPIC))) {
-            LOG.info("Topic for raw values should end with '" + ASSET_ATTRIBUTE_VALUE_TOPIC + "'");
+        if (!topic.headToken().toString().equals(ASSET_TOPIC) && !isAttributeTopic) {
+            LOG.warning("Topic should start with 'asset' or 'attribute'");
             return false;
         }
 
         Token token = topic.getTokens().get(1);
-        Asset<?> asset = assetStorageService.find(token.toString());
-        if(asset == null) {
-            LOG.log(Level.INFO, "Asset not found");
-            return false;
-        }
-        if(topic.getTokens().size() > 2) {
-            token = topic.getTokens().get(2);
-            if (!asset.getAttribute(token.toString()).isPresent()) {
-                LOG.log(Level.INFO, "Attribute not found on asset");
+        Asset<?> asset = null;
+        if (!token.toString().equals(SINGLE_LEVEL_WILDCARD) && !token.toString().equals(MULTI_LEVEL_WILDCARD)) {
+            asset = assetStorageService.find(token.toString());
+            if (asset == null) {
+                LOG.warning("Asset not found");
                 return false;
+            }
+        }
+
+        if (isAttributeTopic && topic.getTokens().size() > 2) {
+            token = topic.getTokens().get(2);
+            if (!token.toString().equals(SINGLE_LEVEL_WILDCARD) && !token.toString().equals(MULTI_LEVEL_WILDCARD)) {
+                if (asset == null || !asset.getAttribute(token.toString()).isPresent()) {
+                    LOG.warning("Attribute not found on asset");
+                    return false;
+                }
             }
         }
 
@@ -108,7 +111,7 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             try {
                 accessToken = AdapterTokenVerifier.verifyToken(connection.accessToken, identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
             } catch (VerificationException verificationException) {
-                LOG.log(Level.INFO, "Couldn't verify token", verificationException);
+                LOG.log(Level.WARNING, "Couldn't verify token", verificationException);
                 return false;
             }
         }
@@ -118,16 +121,74 @@ public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
             return identityProvider.canSubscribeWith(authContext, new TenantFilter(connection.realm), roles);
         } else { // read
             String[] topicParts = topic.getTokens().stream().map(Token::toString).toArray(String[]::new);
-            String assetId = topicParts[1];
-            AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
-            if (topicParts.length >= 3) { //attribute specific
-                attributeAssetFilter.setAttributeNames(topicParts[2]);
+
+            if (isAttributeTopic) {
+                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm);
+
+                int singleLevelIndex = Arrays.asList(topicParts).indexOf(SINGLE_LEVEL_WILDCARD);
+
+                if (asset != null) {
+                    int multiLevelIndex = Arrays.asList(topicParts).indexOf(MULTI_LEVEL_WILDCARD);
+                    if (multiLevelIndex == -1) {
+                        if (singleLevelIndex == -1) { //attribute/assetId/
+                            attributeAssetFilter.setAssetIds(asset.getId());
+                        } else {
+                            attributeAssetFilter.setParentIds(asset.getId());
+                        }
+                        if (topicParts.length > 2) { //attribute/assetId/attributeName
+                            if (singleLevelIndex == -1) { //attribute/assetId/attributeName
+                                attributeAssetFilter.setAttributeNames(topicParts[2]);
+                            } else if (singleLevelIndex == 2 && topicParts.length > 3 && !topicParts[3].equals(SINGLE_LEVEL_WILDCARD)) { // else attribute/assetId/+/attributeName
+                                attributeAssetFilter.setAttributeNames(topicParts[3]);
+                            } // else attribute/assetId/+ which should return all attributes
+                        }
+                    } else if (multiLevelIndex == 2) { //attribute/assetId/#
+                        attributeAssetFilter.setParentIds(asset.getParentId());
+                    }
+                } else {
+                    if (singleLevelIndex == 1) { //attribute/+
+                        if (topicParts.length > 2) { //attribute/+/attributeName
+                            attributeAssetFilter.setAttributeNames(topicParts[2]);
+                        } else {
+                            LOG.warning("Using single level must be followed with attribute name when not using assetId");
+                            return false;
+                        }
+                    }
+                }
+
+                EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
+                        AttributeEvent.class,
+                        attributeAssetFilter
+                );
+                return clientEventService.authorizeEventSubscription(authContext, subscription);
+            } else {
+                AssetFilter<AssetEvent> assetFilter = new AssetFilter<AssetEvent>().setRealm(connection.realm);
+                if (asset != null) {
+                    int multiLevelIndex = Arrays.asList(topicParts).indexOf(MULTI_LEVEL_WILDCARD);
+                    int singleLevelIndex = Arrays.asList(topicParts).indexOf(SINGLE_LEVEL_WILDCARD);
+
+                    if (multiLevelIndex == -1) {
+                        assetFilter.setAssetIds(asset.getId());
+                        if (singleLevelIndex == 2) { //asset/assetId/+
+                            assetFilter.setParentIds(asset.getId());
+                        } else if (singleLevelIndex == -1) { //asset/assetId
+                            assetFilter.setAssetIds(asset.getId());
+                        } else {
+                            LOG.warning("Using single level can be only used after assetId for asset events");
+                            return false;
+                        }
+                    } else if (multiLevelIndex == 2) { //asset/assetId/#
+                        assetFilter.setParentIds(asset.getParentId());
+                    }
+                }
+
+                EventSubscription<AssetEvent> subscription = new EventSubscription<>(
+                        AssetEvent.class,
+                        assetFilter
+                );
+                return clientEventService.authorizeEventSubscription(authContext, subscription);
             }
-            EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
-                    AttributeEvent.class,
-                    attributeAssetFilter
-            );
-            return clientEventService.authorizeEventSubscription(authContext, subscription);
         }
     }
 }
+

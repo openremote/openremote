@@ -36,7 +36,9 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.Event;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.value.Values;
 
@@ -58,9 +60,12 @@ public class MqttBrokerService implements ContainerService {
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
     public static final String MQTT_SERVER_LISTEN_PORT = "MQTT_SERVER_LISTEN_PORT";
 
-    public static final String ASSETS_TOPIC = "assets";
+    public static final String ASSET_TOPIC = "asset";
+    public static final String ATTRIBUTE_TOPIC = "attribute";
     public static final String TOPIC_SEPARATOR = "/";
-    public static final String ASSET_ATTRIBUTE_VALUE_TOPIC = "value";
+    public static final String ATTRIBUTE_VALUE_TOPIC = "value";
+    public static final String SINGLE_LEVEL_WILDCARD = "+";
+    public static final String MULTI_LEVEL_WILDCARD = "#";
 
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected ClientEventService clientEventService;
@@ -112,16 +117,40 @@ public class MqttBrokerService implements ContainerService {
                         .process(exchange -> {
                             String sessionKey = getSessionKey(exchange);
                             @SuppressWarnings("unchecked")
-                            TriggeredEventSubscription<AttributeEvent> triggeredEventSubscription = (TriggeredEventSubscription<AttributeEvent>) exchange.getIn().getBody(TriggeredEventSubscription.class);
+                            TriggeredEventSubscription<?> triggeredEventSubscription = exchange.getIn().getBody(TriggeredEventSubscription.class);
                             triggeredEventSubscription.getEvents()
                                     .forEach(event -> {
-                                        MqttConnection mqttConnection = mqttConnectionMap.get(sessionKey);
-                                        if (mqttConnection != null) {
-                                            if (mqttConnection.assetSubscriptions.containsKey(event.getAssetId()) || mqttConnection.assetAttributeSubscriptions.containsKey(event.getAttributeRef())) {
-                                                sendAttributeEvent(sessionKey, event);
+                                        if (event.getEventType().equals(Event.getEventType(AssetEvent.class))) {
+                                            AssetEvent assetEvent = (AssetEvent) event;
+                                            MqttConnection mqttConnection = mqttConnectionMap.get(sessionKey);
+                                            if (mqttConnection != null) {
+                                                Optional<String> topic = mqttConnection.assetSubscriptions.entrySet()
+                                                        .stream()
+                                                        .filter(entry -> triggeredEventSubscription.getSubscriptionId().equals(entry.getValue()))
+                                                        .map(Map.Entry::getKey)
+                                                        .findFirst();
+
+                                                topic.ifPresent(topicValue -> sendAssetEvent(sessionKey, topicValue, assetEvent));
                                             }
-                                            if (mqttConnection.assetAttributeValueSubscriptions.containsKey(event.getAttributeRef())) {
-                                                sendAttributeValue(sessionKey, event);
+                                        } else {
+                                            AttributeEvent attributeEvent = (AttributeEvent) event;
+                                            MqttConnection mqttConnection = mqttConnectionMap.get(sessionKey);
+                                            if (mqttConnection != null) {
+                                                Optional<String> topic = mqttConnection.assetSubscriptions.entrySet()
+                                                        .stream()
+                                                        .filter(entry -> triggeredEventSubscription.getSubscriptionId().equals(entry.getValue()))
+                                                        .map(Map.Entry::getKey)
+                                                        .findFirst();
+
+                                                topic.ifPresent(topicValue -> sendAttributeEvent(sessionKey, topicValue, attributeEvent));
+
+                                                topic = mqttConnection.attributeValueSubscriptions.entrySet()
+                                                        .stream()
+                                                        .filter(entry -> triggeredEventSubscription.getSubscriptionId().equals(entry.getValue()))
+                                                        .map(Map.Entry::getKey)
+                                                        .findFirst();
+
+                                                topic.ifPresent(topicValue -> sendAttributeValue(sessionKey, topicValue, attributeEvent));
                                             }
                                         }
                                     });
@@ -152,13 +181,13 @@ public class MqttBrokerService implements ContainerService {
         LOG.fine("Stopped MQTT broker");
     }
 
-    protected void sendAttributeEvent(String clientId, AttributeEvent attributeEvent) {
+    protected void sendAssetEvent(String clientId, String topic, AssetEvent assetEvent) {
         try {
-            ByteBuf payload = Unpooled.copiedBuffer(Values.JSON.writeValueAsString(attributeEvent), Charset.defaultCharset());
+            ByteBuf payload = Unpooled.copiedBuffer(Values.JSON.writeValueAsString(assetEvent), Charset.defaultCharset());
 
             MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                     .qos(MqttQoS.AT_MOST_ONCE)
-                    .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getAssetId())
+                    .topicName(topic)
                     .payload(payload)
                     .build();
 
@@ -168,12 +197,27 @@ public class MqttBrokerService implements ContainerService {
         }
     }
 
-    public void sendAttributeValue(String clientId, AttributeEvent attributeEvent) {
+    protected void sendAttributeEvent(String clientId, String topic, AttributeEvent attributeEvent) {
+        try {
+            ByteBuf payload = Unpooled.copiedBuffer(Values.JSON.writeValueAsString(attributeEvent), Charset.defaultCharset());
+            MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
+                    .qos(MqttQoS.AT_MOST_ONCE)
+                    .topicName(topic)
+                    .payload(payload)
+                    .build();
+
+            mqttBroker.internalPublish(publishMessage, clientId);
+        } catch (JsonProcessingException e) {
+            LOG.log(Level.WARNING, "Couldn't send AttributeEvent to MQTT client", e);
+        }
+    }
+
+    public void sendAttributeValue(String clientId, String topic, AttributeEvent attributeEvent) {
         ByteBuf payload = Unpooled.copiedBuffer(Values.asJSON(attributeEvent.getValue()).orElse(""), Charset.defaultCharset());
 
         MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)
-                .topicName(ASSETS_TOPIC + TOPIC_SEPARATOR + attributeEvent.getAssetId() + TOPIC_SEPARATOR + attributeEvent.getAttributeName())
+                .topicName(topic)
                 .payload(payload)
                 .build();
 
