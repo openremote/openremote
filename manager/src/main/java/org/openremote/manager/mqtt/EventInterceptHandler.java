@@ -20,7 +20,6 @@
 package org.openremote.manager.mqtt;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.moquette.broker.subscriptions.Token;
 import io.moquette.interception.AbstractInterceptHandler;
 import io.moquette.interception.messages.*;
 import org.keycloak.adapters.rotation.AdapterTokenVerifier;
@@ -33,14 +32,13 @@ import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
 
@@ -54,10 +52,11 @@ import java.util.logging.Logger;
 
 import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class EventInterceptHandler extends AbstractInterceptHandler {
 
-    private static final Logger LOG = Logger.getLogger(EventInterceptHandler.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(API, EventInterceptHandler.class);
 
     protected final ManagerKeycloakIdentityProvider identityProvider;
     protected final MessageBrokerService messageBrokerService;
@@ -219,7 +218,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                 Map<String, Object> headers = prepareHeaders(connection);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
             } else {
-                LOG.info("Couldn't process message for topic: " + interceptSubscribeMessage.getTopicFilter());
+                LOG.warning("Couldn't process message for topic: " + interceptSubscribeMessage.getTopicFilter());
             }
         } else {
             LOG.info("No connection found for clientId: " + interceptSubscribeMessage.getClientID());
@@ -251,7 +250,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
                 }
             } else {
-                LOG.info("Couldn't process message for topic: " + interceptUnsubscribeMessage.getTopicFilter());
+                LOG.warning("Couldn't process message for topic: " + interceptUnsubscribeMessage.getTopicFilter());
             }
         } else {
             LOG.info("No connection found for clientId: " + interceptUnsubscribeMessage.getClientID());
@@ -301,7 +300,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
                 }
             } else {
-                LOG.info("Couldn't process message for topic: " + msg.getTopicName());
+                LOG.warning("Couldn't process message for topic: " + msg.getTopicName());
             }
         } else {
             LOG.info("No connection found for clientId: " + msg.getClientID());

@@ -19,20 +19,21 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class KeycloakAuthorizatorPolicy implements IAuthorizatorPolicy {
 
-    private static final Logger LOG = Logger.getLogger(KeycloakAuthorizatorPolicy.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(API, KeycloakAuthorizatorPolicy.class);
 
     protected final ManagerKeycloakIdentityProvider identityProvider;
     protected final AssetStorageService assetStorageService;

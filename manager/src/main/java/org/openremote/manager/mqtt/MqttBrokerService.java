@@ -40,6 +40,7 @@ import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
 import org.openremote.model.event.TriggeredEventSubscription;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
@@ -50,11 +51,12 @@ import java.util.logging.Logger;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
+import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class MqttBrokerService implements ContainerService {
 
     public static final int PRIORITY = MED_PRIORITY;
-    private static final Logger LOG = Logger.getLogger(MqttBrokerService.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(API, MqttBrokerService.class);
 
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
     public static final String MQTT_SERVER_LISTEN_HOST = "MQTT_SERVER_LISTEN_HOST";
