@@ -50,4 +50,11 @@ public interface AssetDatapointResource {
                                    @QueryParam("fromTimestamp") long fromTimestamp,
                                    @QueryParam("toTimestamp") long toTimestamp);
 
+    @GET
+    @Path("periods")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    DatapointPeriod getDatapointPeriod(@BeanParam RequestParams requestParams,
+                                          @QueryParam("assetId") String assetId,
+                                          @QueryParam("attributeName") String attributeName);
 }
