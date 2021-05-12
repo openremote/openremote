@@ -41,7 +41,7 @@ export interface EventProvider {
     /**
      * Subscribe to {@link AssetEvent}s for the specified {@link Asset}s for all {@link Asset}s
      */
-    subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string>;
+    subscribeAssetEvents(ids: string[] | AttributeRef[] | undefined, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string>;
 
     /**
      * Subscribe to {@link AttributeEvent}s for the specified {@link Asset}s and if {@link AttributeRef}s are provided
@@ -267,38 +267,30 @@ abstract class EventProviderImpl implements EventProvider {
         return this._doSendWithReply(event);
     }
 
-    public async subscribeAssetEvents(ids: string[] | AttributeRef[] | null, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string> {
+    public async subscribeAssetEvents(ids: string[] | AttributeRef[] | undefined, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string> {
 
         const isAttributeRef = ids && typeof ids[0] !== "string";
-        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((ref) => ref.id!) : ids as string[] | null;
+        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((ref) => ref.id!) : ids as string[] | undefined;
         const subscriptionId = "AssetEvent" + EventProviderImpl._subscriptionCounter++;
 
         // If not already done then create a single global subscription for asset events and filter for each callback
         if (!this._assetEventPromise) {
 
             const subscription: EventSubscription<AssetEvent> = {
-                eventType: "asset"
+                eventType: "asset",
             };
+            if (assetIds) {
+                subscription.filter = {
+                    filterType: "asset",
+                    assetIds: assetIds
+                };
+            }
             this._assetEventPromise = this.subscribe(subscription, (event) => {
                 this._assetEventCallbackMap.forEach((callback) => callback(event));
             });
         }
 
-        // Build a filter to only respond to the callback for the requested assets
-        const eventFilter = (e: AssetEvent) => {
-            if (!assetIds) {
-                callback(e);
-                return;
-            }
-            if (!e.asset) {
-                return;
-            }
-            if (assetIds.find((id) => id === e.asset!.id)) {
-                callback(e);
-            }
-        };
-
-        this._assetEventCallbackMap.set(subscriptionId, eventFilter);
+        this._assetEventCallbackMap.set(subscriptionId, callback);
 
         return this._assetEventPromise.then(() => {
 
@@ -328,7 +320,7 @@ abstract class EventProviderImpl implements EventProvider {
                                     asset: asset,
                                     cause: AssetEventCause.READ
                                 };
-                                eventFilter(assetEvent);
+                                callback(assetEvent);
                             });
                         });
                 }
@@ -344,14 +336,10 @@ abstract class EventProviderImpl implements EventProvider {
         });
     }
 
-    public async subscribeAttributeEvents(ids: string[] | AttributeRef[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string> {
+    public async subscribeAttributeEvents(ids: string[] | AttributeRef[] | undefined, requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string> {
 
-        if (!ids || ids.length === 0) {
-            throw new Error("At least one ID must be provided");
-        }
-
-        const isAttributeRef = typeof ids[0] !== "string";
-        const assetIds = isAttributeRef ? [...new Set((ids as AttributeRef[]).map((ref) => ref.id!))] : [...new Set(ids as string[])];
+        const isAttributeRef = ids && typeof ids[0] !== "string";
+        const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((ref) => ref.id!) : ids as string[] | undefined;
         const attributes = isAttributeRef ? ids as AttributeRef[] : undefined;
         const subscriptionId = "AttributeEvent" + EventProviderImpl._subscriptionCounter++;
 
@@ -368,18 +356,16 @@ abstract class EventProviderImpl implements EventProvider {
 
         // Build a filter to only respond to the callback for the requested attributes
         const eventFilter = (e: AttributeEvent) => {
-            ids.forEach((idOrRef: string | AttributeRef) => {
-                if (typeof (idOrRef) === "string") {
-                    if (e.attributeState!.ref!.id === idOrRef) {
-                        callback(e);
-                    }
-                } else {
+            if (isAttributeRef) {
+                (ids as AttributeRef[]).forEach((ref: AttributeRef) => {
                     const eventRef = e.attributeState!.ref!;
-                    if (eventRef.id === idOrRef.id && eventRef.name === idOrRef.name) {
+                    if (eventRef.id === ref.id && eventRef.name === ref.name) {
                         callback(e);
                     }
-                }
-            });
+                });
+            } else {
+                callback(e);
+            }
         };
 
         this._attributeEventCallbackMap.set(subscriptionId, eventFilter);
@@ -388,7 +374,7 @@ abstract class EventProviderImpl implements EventProvider {
 
             try {
                 // Get the current state of the attributes if requested
-                if (requestCurrentValues) {
+                if (requestCurrentValues && assetIds) {
                     // Just request the whole asset(s) and let the event filter do the work
                     const readRequest: EventRequestResponseWrapper<ReadAssetsEvent> = {
                         messageId: "read-assets:" + assetIds.join(",") + ":" + subscriptionId,

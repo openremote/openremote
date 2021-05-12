@@ -46,17 +46,6 @@ public class EventSubscriptions {
     final protected Map<String, SessionSubscriptions> sessionSubscriptionIdMap = new HashMap<>();
 
     class SessionSubscriptions extends HashSet<SessionSubscription> {
-        public void removeExpired() {
-            removeIf(sessionSubscription -> {
-                    boolean expired = sessionSubscription.isExpired();
-                    if (expired) {
-                        LOG.fine("Removing expired; " + sessionSubscription.subscription);
-                    }
-                    return expired;
-                }
-            );
-        }
-
         public void createOrUpdate(boolean restrictedUser, EventSubscription<?> eventSubscription) {
 
             if (TextUtil.isNullOrEmpty(eventSubscription.getSubscriptionId())) {
@@ -102,14 +91,6 @@ public class EventSubscriptions {
 
         public boolean matches(boolean accessibleForRestrictedUsers, SharedEvent event) {
             return (!restrictedUser || accessibleForRestrictedUsers) && subscription.getEventType().equals(event.getEventType());
-        }
-
-        /**
-         * Subscriptions with internal consumer never expire
-         */
-        public boolean isExpired() {
-            return subscription.getInternalConsumer() == null
-                && timestamp + (EventSubscription.RENEWAL_PERIOD_SECONDS * 1000) < timerService.getCurrentTimeMillis();
         }
     }
 

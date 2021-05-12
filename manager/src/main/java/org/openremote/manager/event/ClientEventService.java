@@ -65,12 +65,7 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
  * <dd><p>
  * The payload is a serialized representation of {@link EventSubscription} with an optional
  * {@link org.openremote.model.event.shared.EventFilter}. Clients can subscribe to receive {@link SharedEvent}s
- * when they are published on the server. Subscriptions are handled by {@link SharedEvent#getEventType}, there
- * can only be one active subscription for a particular event type and any new subscription for the same event
- * type will replace any currently active subscription. The <code>SUBSCRIBE</code> message must be send
- * repeatedly to renew the subscription,or the server will expire the subscription. The default expiration
- * time is {@link EventSubscription#RENEWAL_PERIOD_SECONDS}; it is recommended clients renew the subscription
- * in shorter periods to allow for processing time of the renewal.
+ * when they are published on the server. Subscriptions are handled by {@link SharedEvent#getEventType}.
  * </p></dd>
  * <dt><code>UNSUBSCRIBE:{...}</code></dt>
  * <dd><p>

@@ -30,9 +30,6 @@ import java.util.function.Consumer;
  * type of event it wants to receive as well as filter criteria to restrict the
  * events to an interesting subset.
  * <p>
- * Subscriptions must be refreshed by the client every {@link #RENEWAL_PERIOD_SECONDS}
- * or the server will expire and remove the subscription.
- * <p>
  * A subscription can optionally contain a {@link #subscriptionId} which allows a client
  * to have multiple subscriptions for the same event type.
  */
@@ -40,7 +37,6 @@ public class EventSubscription<E extends SharedEvent> {
 
     public static final String SUBSCRIBE_MESSAGE_PREFIX = "SUBSCRIBE:";
     public static final String SUBSCRIBED_MESSAGE_PREFIX = "SUBSCRIBED:";
-    public static final int RENEWAL_PERIOD_SECONDS = 300;
 
     protected String eventType;
     protected EventFilter<E> filter;

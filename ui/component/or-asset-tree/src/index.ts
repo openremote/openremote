@@ -784,7 +784,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public async _addEventSubscriptions(): Promise<void> {
         if (!this.disableSubscribe) {
             // Subscribe to asset events for all assets in the realm
-            this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(null, false, undefined, (event) => this._onEvent(event))];
+            this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(undefined, false, undefined, (event) => this._onEvent(event))];
         }
     }
 

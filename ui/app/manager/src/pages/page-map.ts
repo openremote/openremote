@@ -35,14 +35,18 @@ const pageMapSlice = createSlice({
     initialState: INITIAL_STATE,
     reducers: {
         assetEventReceived(state: MapState, action: PayloadAction<AssetEvent>) {
-            let assets = state.assets.filter((asst) => asst.id !== action.payload.asset.id);
-            if (action.payload.cause !== AssetEventCause.DELETE) {
-                assets.push(action.payload.asset);
+
+            if (action.payload.cause === AssetEventCause.CREATE) {
+                // Update and delete handled by attribute handler
+
+                const asset = action.payload.asset;
+                const locationAttr = asset.attributes && asset.attributes.hasOwnProperty(WellknownAttributes.LOCATION) ? asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint> : undefined;
+                if (locationAttr && (!locationAttr.meta || locationAttr.meta && (!locationAttr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!locationAttr.meta[WellknownMetaItems.SHOWONDASHBOARD]))) {
+                    state.assets.push(action.payload.asset);
+                }
             }
-            return {
-                ...state,
-                assets: assets
-            };
+
+            return state;
         },
         attributeEventReceived(state: MapState, action: PayloadAction<AttributeEvent>) {
             let assets = state.assets;
@@ -54,16 +58,12 @@ const pageMapSlice = createSlice({
                 return state;
             }
 
-            asset = Util.updateAsset(asset, action.payload);
-
-            return {
-                ...state,
-                assets: [
-                    ...assets.slice(0, index),
-                    asset,
-                    ...assets.slice(index + 1)
-                ]
-            };
+            if (action.payload.attributeState.deleted) {
+                assets.splice(index, 1);
+            } else {
+                assets[index] = Util.updateAsset({...asset}, action.payload);
+            }
+            return state;
         },
         setAssets(state, action: PayloadAction<Asset[]>) {
             return {
@@ -220,11 +220,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
                 dispatch(setAssets(assets));
 
-                const ids = result.data.map(
-                    asset => asset.id
-                );
-
-                const assetSubscriptionId = await manager.events.subscribeAssetEvents(ids, false, undefined, (event) => {
+                const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, undefined, (event) => {
                     dispatch(assetEventReceived(event));
                 });
 
@@ -235,7 +231,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
                 this.assetSubscriptionId = assetSubscriptionId;
 
-                const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(ids, false, (event) => {
+                const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
                     dispatch(attributeEventReceived(event));
                 });
 
