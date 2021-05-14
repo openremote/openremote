@@ -2,11 +2,12 @@ import {css, customElement, html, LitElement, property, query, TemplateResult, u
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType} from "./or-mwc-input";
+import {InputType, OrInputChangedEvent} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { Util } from "@openremote/core";
-import { Asset, AssetEvent, Attribute, WellknownMetaItems } from "@openremote/model";
+import { Asset, AssetEvent, AttributeDescriptor } from "@openremote/model";
 import manager from "@openremote/core";
+import { AssetModelUtil } from "@openremote/core";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
@@ -328,16 +329,18 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
 
     @property({type: Object})
     public asset?: Asset;
-    
-    @property({type: Object})
-    private assetAttributes: Attribute<any>[] = [];
 
     @property({type: Object})
     public assets: Asset[] = [];
 
+    @property({attribute: false})
+    public selectedAttributes: AttributeDescriptor[] = [];
+
+    @property({type: Object})
+    private assetAttributes: AttributeDescriptor[] = [];
+
     constructor() {
         super();
-        this.addEventListener("or-asset-tree-request-selection", this._onAssetSelectionChanged);
         
         this.dialogTitle = 'Add attributes';
         
@@ -347,43 +350,59 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     
     protected setDialogContent(): void {
         this.dialogContent = html`
-            <div class="row">
-                <div class="col">
-                    <or-asset-tree id="chart-asset-tree" style="display:grid;" readonly
-                                   .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
+            <div class="row" style="display: flex;height: 600px;width: 800px;">
+                <div class="col" style="width: 260px;overflow: auto;">
+                    <or-asset-tree id="chart-asset-tree" readonly
+                                    @or-asset-tree-request-selection="${(event: CustomEvent) => this._onAssetSelectionChanged(event)}"
+                                    @or-asset-tree-request-delete="${() => this._onAssetSelectionDeleted()}"></or-asset-tree>
                 </div>
-                <div class="col">
+                <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
+
                 ${this.asset && this.asset.attributes ? html`
-                    <pre>${JSON.stringify(this.asset, undefined, 2)}</pre>
+                    <div style="display: grid">
+                        ${this.assetAttributes.map(attribute => html`
+                            <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
+                                          .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
+                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
+                        `)}
+                    </div>
                 ` : ``}
                 </div>
         `;
     }
 
-    protected _getAttributeOptions(): [string, string][] | undefined {
-        if(!this.asset || !this.asset.attributes) {
+    protected _getAttributeOptions(): AttributeDescriptor[] | undefined {
+        if(!this.asset || !this.asset.type) {
+            this.setDialogContent();
             return;
         }
+        
+        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(this.asset.type);
+        this.assetAttributes = assetTypeInfo?.attributeDescriptors || [];
 
-        const attributes = Object.values(this.asset.attributes);
-        if (attributes && attributes.length > 0) {
-            this.assetAttributes = attributes
-                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
-                // .filter((attr) => (this.assetAttributes && !this.assetAttributes.some((assetAttr: Attribute<any>) => (assetAttr.name === attr.name) && this.assets[index].id === this.asset!.id)))
-
-            this.setDialogContent();
-        }
+        this.setDialogContent();
     }
 
-    protected async _onAssetSelectionChanged(event: any) {
+    protected async _onAssetSelectionChanged(event: CustomEvent) {
+        if (!event.detail.detail.newNodes.length) {
+            this._onAssetSelectionDeleted();
+        } else {
+            const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
+                event: {
+                    eventType: "read-asset",
+                    assetId: event.detail.detail.newNodes[0].asset.id
+                }
+            });
+            this.asset = assetEvent.asset;
+        }
 
-        const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
-            event: {
-                eventType: "read-asset",
-                assetId: event.detail.detail.newNodes[0].asset!.id
-            }
-        });
-        this.asset = assetEvent.asset;
         this._getAttributeOptions();
     }
+    
+    protected _onAssetSelectionDeleted() {
+        this.asset = undefined;
+        this.assetAttributes = [];
+        this._getAttributeOptions();
+    }
+
 }
