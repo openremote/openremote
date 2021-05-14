@@ -13,7 +13,7 @@ version: '2.4'
 services:
 
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.1}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.2}
     restart: always
     depends_on:
       manager:

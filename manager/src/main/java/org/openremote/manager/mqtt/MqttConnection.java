@@ -14,8 +14,7 @@ public class MqttConnection {
     protected final String username;
     protected final byte[] password;
     protected final Map<String, String> assetSubscriptions;
-    protected final Map<AttributeRef, String> assetAttributeSubscriptions;
-    protected final Map<AttributeRef, String> assetAttributeValueSubscriptions;
+    protected final Map<String, String> attributeValueSubscriptions;
     protected String accessToken;
     protected int subscriptionId;
 
@@ -30,8 +29,7 @@ public class MqttConnection {
         this.username = username;
         this.password = password;
         this.assetSubscriptions = new HashMap<>();
-        this.assetAttributeSubscriptions = new HashMap<>();
-        assetAttributeValueSubscriptions = new HashMap<>();
+        attributeValueSubscriptions = new HashMap<>();
         this.subscriptionId = 0;
     }
 
@@ -60,18 +58,13 @@ public class MqttConnection {
     }
 
 
-    public Map<String,String> getAssetSubscriptions() {
+    public Map<String, String> getAssetSubscriptions() {
         return this.assetSubscriptions;
     }
 
 
-    public Map<AttributeRef,String> getAssetAttributeSubscriptions() {
-        return this.assetAttributeSubscriptions;
-    }
-
-
-    public Map<AttributeRef,String> getAssetAttributeValueSubscriptions() {
-        return this.assetAttributeValueSubscriptions;
+    public Map<String, String> getAttributeValueSubscriptions() {
+        return this.attributeValueSubscriptions;
     }
 
 
@@ -79,7 +72,8 @@ public class MqttConnection {
         return this.accessToken;
     }
 
+
     public int getSubscriptionId() {
         return this.subscriptionId;
-    }        
+    }
 }

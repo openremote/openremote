@@ -18,7 +18,7 @@ import {
 import "@openremote/or-translate";
 import {style} from "./style";
 import manager, {AssetModelUtil, EventCallback, OREvent, subscribe, Util} from "@openremote/core";
-import {InputType, OrInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -526,7 +526,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const onAddChanged = (ev: OrAddChangedEvent) => {
             const nameValid = !!ev.detail.name && ev.detail.name.trim().length > 0 && ev.detail.name.trim().length < 1024;
-            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrInput;
+            const addBtn = dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput;
             addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
 
@@ -784,7 +784,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public async _addEventSubscriptions(): Promise<void> {
         if (!this.disableSubscribe) {
             // Subscribe to asset events for all assets in the realm
-            this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(null, false, undefined, (event) => this._onEvent(event))];
+            this._subscriptionIds = [await manager.getEventProvider()!.subscribeAssetEvents(undefined, false, undefined, (event) => this._onEvent(event))];
         }
     }
 

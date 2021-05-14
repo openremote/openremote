@@ -15,7 +15,7 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import {OrTable} from "@openremote/or-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
@@ -758,7 +758,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
                 getAssetNames(ancestors).then(
                     (names) => {
                         if (hostElement && hostElement.shadowRoot) {
-                            const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrInput;
+                            const pathField = hostElement.shadowRoot.getElementById("property-parentId") as OrMwcInput;
                             if (pathField) {
                                 pathField.value = names.reverse().join(" > ");
                             }
@@ -966,10 +966,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected wrapperElem!: HTMLDivElement;
 
     @query("#save-btn")
-    protected saveBtnElem!: OrInput;
+    protected saveBtnElem!: OrMwcInput;
 
     @query("#edit-btn")
-    protected editBtnElem!: OrInput;
+    protected editBtnElem!: OrMwcInput;
 
     constructor() {
         super();

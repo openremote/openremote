@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, TemplateResult, unsafeCSS} from "lit-element";
-import {InputType, OrInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder} from "@openremote/model";
 import {AssetModelUtil, DefaultColor5, DefaultColor3, Util} from "@openremote/core";
@@ -324,7 +324,7 @@ export class OrEditAssetPanel extends LitElement {
 
         const onAttributeChanged = (attribute: Attribute<any>) => {
             const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
-            const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrInput;
+            const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrMwcInput;
             addBtn!.disabled = addDisabled;
             attr = attribute;
         };

@@ -2,55 +2,39 @@ package org.openremote.manager.datapoint;
 
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.AssetUpdateProcessor;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeWriteFailure;
-import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
+import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.filter.AttributePredicate;
-import org.openremote.model.query.filter.NameValuePredicate;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.Values;
 import org.postgresql.util.PGInterval;
 import org.postgresql.util.PGobject;
 
-import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import java.sql.*;
-import java.time.Duration;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 /**
  * Base class for all classes that store and retrieve {@link org.openremote.model.datapoint.Datapoint}.
@@ -86,42 +70,42 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
     public void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException {
         persistenceService.doTransaction(em ->
-            em.unwrap(Session.class).doWork(connection -> {
-                PreparedStatement st;
+                em.unwrap(Session.class).doWork(connection -> {
+                    PreparedStatement st;
 
-                try {
-                    st = getUpsertPreparedStatement(connection);
-                    setUpsertValues(st, assetId, attributeName, value, timestamp);
-                    st.executeUpdate();
-                } catch (Exception e) {
-                    String msg = "Failed to insert/update data point: ";
-                    getLogger().log(Level.WARNING, msg, e);
-                    throw new IllegalStateException(msg, e);
-                }
-            }));
+                    try {
+                        st = getUpsertPreparedStatement(connection);
+                        setUpsertValues(st, assetId, attributeName, value, timestamp);
+                        st.executeUpdate();
+                    } catch (Exception e) {
+                        String msg = "Failed to insert/update data point: ";
+                        getLogger().log(Level.WARNING, msg, e);
+                        throw new IllegalStateException(msg, e);
+                    }
+                }));
     }
 
     public void upsertValues(String assetId, String attributeName, List<Pair<?, LocalDateTime>> valuesAndTimestamps) throws IllegalStateException {
         persistenceService.doTransaction(em ->
-            em.unwrap(Session.class).doWork(connection -> {
+                em.unwrap(Session.class).doWork(connection -> {
 
-                getLogger().finest("Storing datapoints for: id=" + assetId + ", name=" + attributeName + ", count=" + valuesAndTimestamps.size());
-                PreparedStatement st;
+                    getLogger().finest("Storing datapoints for: id=" + assetId + ", name=" + attributeName + ", count=" + valuesAndTimestamps.size());
+                    PreparedStatement st;
 
-                try {
-                    st = getUpsertPreparedStatement(connection);
+                    try {
+                        st = getUpsertPreparedStatement(connection);
 
-                    for (Pair<?, LocalDateTime> valueAndTimestamp : valuesAndTimestamps) {
-                        setUpsertValues(st, assetId, attributeName, valueAndTimestamp.key, valueAndTimestamp.value);
-                        st.addBatch();
+                        for (Pair<?, LocalDateTime> valueAndTimestamp : valuesAndTimestamps) {
+                            setUpsertValues(st, assetId, attributeName, valueAndTimestamp.key, valueAndTimestamp.value);
+                            st.addBatch();
+                        }
+                        st.executeBatch();
+                    } catch (Exception e) {
+                        String msg = "Failed to insert/update data points: " + assetId + ", name=" + attributeName + ", count=" + valuesAndTimestamps.size();
+                        getLogger().log(Level.WARNING, msg, e);
+                        throw new IllegalStateException(msg, e);
                     }
-                    st.executeBatch();
-                } catch (Exception e) {
-                    String msg = "Failed to insert/update data points: " + assetId + ", name=" + attributeName + ", count=" + valuesAndTimestamps.size();
-                    getLogger().log(Level.WARNING, msg, e);
-                    throw new IllegalStateException(msg, e);
-                }
-            }));
+                }));
     }
 
     public List<T> getDatapoints(AttributeRef attributeRef) {
@@ -154,8 +138,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
             if (attributeRef != null) {
                 query
-                    .setParameter("assetId", attributeRef.getId())
-                    .setParameter("attributeName", attributeRef.getName());
+                        .setParameter("assetId", attributeRef.getId())
+                        .setParameter("attributeName", attributeRef.getName());
             }
 
             return query.getSingleResult();
@@ -174,7 +158,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         }
 
         Attribute<?> assetAttribute = asset.getAttribute(attributeRef.getName())
-            .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getName()));
+                .orElseThrow(() -> new IllegalStateException("Attribute not found: " + attributeRef.getName()));
 
         return getValueDatapoints(asset.getId(), assetAttribute, datapointInterval, stepSize, fromTimestamp, toTimestamp);
     }
@@ -260,8 +244,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
                             // TODO: Change this to use something like this max min decimation algorithm https://knowledge.ni.com/KnowledgeArticleDetails?id=kA00Z0000019YLKSA2&l=en-GB)
                             query.append("select PERIOD as X, AVG_VALUE as Y " +
-                                "from generate_series(date_trunc(?, ?) + " + partQuery + " / ? * ?, date_trunc(?, ?) + " + partQuery + " / ? * ?, ?) PERIOD left join ( " +
-                                "select (date_trunc(?, TIMESTAMP) + " + partQuery2 + " / ? * ?)::timestamp as TS, ");
+                                    "from generate_series(date_trunc(?, ?) + " + partQuery + " / ? * ?, date_trunc(?, ?) + " + partQuery + " / ? * ?, ?) PERIOD left join ( " +
+                                    "select (date_trunc(?, TIMESTAMP) + " + partQuery2 + " / ? * ?)::timestamp as TS, ");
 
                             if (isNumber) {
                                 query.append(" AVG(VALUE::text::numeric) as AVG_VALUE ");
@@ -270,16 +254,16 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                             }
 
                             query.append("from " + getDatapointTableName() +
-                                         " where TIMESTAMP >= date_trunc(?, ?) and TIMESTAMP < (date_trunc(?, ?) + ?) and ENTITY_ID = ? and ATTRIBUTE_NAME = ? group by TS) DP on DP.TS = PERIOD order by PERIOD asc");
+                                    " where TIMESTAMP >= date_trunc(?, ?) and TIMESTAMP < (date_trunc(?, ?) + ?) and ENTITY_ID = ? and ATTRIBUTE_NAME = ? group by TS) DP on DP.TS = PERIOD order by PERIOD asc");
 
                         } else {
                             query.append("select distinct TIMESTAMP AS X, value AS Y from " + getDatapointTableName() +
-                                " where " +
-                                "TIMESTAMP >= ?" +
-                                "and " +
-                                "TIMESTAMP <= ? " +
-                                "and " +
-                                "ENTITY_ID = ? and ATTRIBUTE_NAME = ?"
+                                    " where " +
+                                    "TIMESTAMP >= ?" +
+                                    "and " +
+                                    "TIMESTAMP <= ? " +
+                                    "and " +
+                                    "ENTITY_ID = ? and ATTRIBUTE_NAME = ?"
                             );
                         }
 
@@ -340,11 +324,40 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         );
     }
 
+    public DatapointPeriod getDatapointPeriod(String assetId, String attributeName) {
+        return persistenceService.doReturningTransaction(em ->
+                em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<DatapointPeriod>() {
+                    @Override
+                    public DatapointPeriod execute(Connection connection) throws SQLException {
+                        String tableName = getDatapointTableName();
+                        String query = "SELECT DISTINCT periods.* FROM " +
+                                "(SELECT entity_id, attribute_name, " +
+                                "MIN(timestamp) AS oldestTimestamp, MAX(timestamp) AS latestTimestamp " +
+                                "FROM " + tableName + " GROUP BY entity_id, attribute_name) AS periods " +
+                                "INNER JOIN " + tableName + " ON " + tableName + ".entity_id = periods.entity_id AND " +
+                                tableName + ".attribute_name = periods.attribute_name " +
+                                "WHERE " + tableName + ".entity_id = ? " +
+                                "AND " + tableName + ".attribute_name = ? ";
+                        try (PreparedStatement st = connection.prepareStatement(query)) {
+                            st.setString(1, assetId);
+                            st.setString(2, attributeName);
+                            try (ResultSet rs = st.executeQuery()) {
+                                if (rs.next()) {
+                                    return new DatapointPeriod(rs.getString(1), rs.getString(2), rs.getTimestamp(3).getTime(), rs.getTimestamp(4).getTime());
+                                }
+                                return null;
+                            }
+                        }
+                    }
+                })
+        );
+    }
+
     protected PreparedStatement getUpsertPreparedStatement(Connection connection) throws SQLException {
         return connection.prepareStatement("INSERT INTO " + getDatapointTableName() + " (entity_id, attribute_name, value, timestamp) " +
-            "VALUES (?, ?, ?, ?) " +
-            "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE " +
-            "SET value = excluded.value");
+                "VALUES (?, ?, ?, ?) " +
+                "ON CONFLICT (entity_id, attribute_name, timestamp) DO UPDATE " +
+                "SET value = excluded.value");
     }
 
     protected void setUpsertValues(PreparedStatement st, String assetId, String attributeName, Object value, LocalDateTime timestamp) throws Exception {
@@ -364,9 +377,9 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     protected abstract Logger getLogger();
 
     protected void doPurge(String whereClause, LocalDateTime dateTime) {
-            persistenceService.doTransaction(em -> em.createQuery(
+        persistenceService.doTransaction(em -> em.createQuery(
                 "delete from " + getDatapointClass().getSimpleName() + " dp " + whereClause
-            ).setParameter("dt", dateTime).executeUpdate());
+        ).setParameter("dt", dateTime).executeUpdate());
     }
 
     protected long getFirstPurgeMillis(Instant currentTime) {

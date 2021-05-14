@@ -32,36 +32,39 @@ import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.ASSET_ATTRIBUTE_VALUE_TOPIC;
-import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR;
+import static org.openremote.manager.mqtt.MqttBrokerService.*;
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
+import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class EventInterceptHandler extends AbstractInterceptHandler {
 
-    private static final Logger LOG = Logger.getLogger(EventInterceptHandler.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(API, EventInterceptHandler.class);
 
     protected final ManagerKeycloakIdentityProvider identityProvider;
     protected final MessageBrokerService messageBrokerService;
     protected final Map<String, MqttConnection> mqttConnectionMap;
 
     public EventInterceptHandler(ManagerKeycloakIdentityProvider managerKeycloakIdentityProvider,
-                          MessageBrokerService messageBrokerService,
-                          Map<String, MqttConnection> mqttConnectionMap) {
+                                 MessageBrokerService messageBrokerService,
+                                 Map<String, MqttConnection> mqttConnectionMap) {
 
         this.identityProvider = managerKeycloakIdentityProvider;
         this.messageBrokerService = messageBrokerService;
@@ -123,47 +126,99 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         if (connection != null) {
             String[] topicParts = interceptSubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             if (topicParts.length > 1) {
-                String assetId = topicParts[1];
-                AttributeRef attributeRef = null;
+                boolean isAttributeTopic = topicParts[0].equals(ATTRIBUTE_TOPIC);
                 boolean isValueSubscription = false;
-                if (topicParts.length > 2) { //attribute specific
-                    attributeRef = new AttributeRef(assetId, topicParts[2]);
+
+                String secondTopicLevel = topicParts[1];
+                String assetId = null;
+                if (!secondTopicLevel.equals(SINGLE_LEVEL_WILDCARD) && !secondTopicLevel.equals(MULTI_LEVEL_WILDCARD)) {
+                    assetId = secondTopicLevel;
                 }
-                if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
+
+                if (topicParts[topicParts.length - 1].equals(ATTRIBUTE_VALUE_TOPIC)) {
                     isValueSubscription = true;
                 }
                 String subscriptionId;
-                if (attributeRef == null) {
-                    subscriptionId = connection.assetSubscriptions.remove(assetId);
+                if (isValueSubscription) {
+                    subscriptionId = connection.attributeValueSubscriptions.remove(interceptSubscribeMessage.getTopicFilter());
                 } else {
-                    if (isValueSubscription) {
-                        subscriptionId = connection.assetAttributeValueSubscriptions.remove(attributeRef);
-                    } else {
-                        subscriptionId = connection.assetAttributeSubscriptions.remove(attributeRef);
-                    }
+                    subscriptionId = connection.assetSubscriptions.remove(interceptSubscribeMessage.getTopicFilter());
+                }
+                if (TextUtil.isNullOrEmpty(subscriptionId)) {
+                    subscriptionId = String.valueOf(connection.getNextSubscriptionId());
                 }
 
-                AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm).setAssetIds(assetId);
-                EventSubscription<AttributeEvent> subscription = new EventSubscription<>(
-                        AttributeEvent.class,
-                        attributeAssetFilter,
-                        TextUtil.isNullOrEmpty(subscriptionId) ? String.valueOf(connection.getNextSubscriptionId()) : subscriptionId);
+                EventSubscription<?> subscription;
+                if (isAttributeTopic) {
+                    AssetFilter<AttributeEvent> attributeAssetFilter = new AssetFilter<AttributeEvent>().setRealm(connection.realm);
+                    int singleLevelIndex = Arrays.asList(topicParts).indexOf(SINGLE_LEVEL_WILDCARD);
 
-                if (attributeRef == null) { //attribute specific
-                    connection.assetSubscriptions.put(assetId, subscription.getSubscriptionId());
-                } else {
-                    attributeAssetFilter.setAttributeNames(attributeRef.getName());
-                    if (isValueSubscription) {
-                        connection.assetAttributeValueSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                    if (assetId != null) {
+                        int multiLevelIndex = Arrays.asList(topicParts).indexOf(MULTI_LEVEL_WILDCARD);
+                        if (multiLevelIndex == -1) {
+                            if (singleLevelIndex == -1) { //attribute/assetId/
+                                attributeAssetFilter.setAssetIds(assetId);
+                            } else {
+                                attributeAssetFilter.setParentIds(assetId);
+                            }
+                            if (topicParts.length > 2) { //attribute/assetId/attributeName
+                                if (singleLevelIndex == -1) { //attribute/assetId/attributeName
+                                    attributeAssetFilter.setAttributeNames(topicParts[2]);
+                                } else if (singleLevelIndex == 2 && topicParts.length > 3 && !topicParts[3].equals(SINGLE_LEVEL_WILDCARD)) { // else attribute/assetId/+/attributeName
+                                    attributeAssetFilter.setAttributeNames(topicParts[3]);
+                                } // else attribute/assetId/+ which should return all attributes
+                            }
+                        } else if (multiLevelIndex == 2) { //attribute/assetId/#
+                            attributeAssetFilter.setParentIds(assetId);
+                        }
                     } else {
-                        connection.assetAttributeSubscriptions.put(attributeRef, subscription.getSubscriptionId());
+                        if (singleLevelIndex == 1) { //attribute/+
+                            if (topicParts.length > 2) { //attribute/+/attributeName
+                                attributeAssetFilter.setAttributeNames(topicParts[2]);
+                            }
+                        }
                     }
+
+                    subscription = new EventSubscription<>(
+                            AttributeEvent.class,
+                            attributeAssetFilter,
+                            subscriptionId
+                    );
+                } else {
+                    AssetFilter<AssetEvent> assetFilter = new AssetFilter<AssetEvent>().setRealm(connection.realm);
+                    if (assetId != null) {
+                        int multiLevelIndex = Arrays.asList(topicParts).indexOf(MULTI_LEVEL_WILDCARD);
+                        int singleLevelIndex = Arrays.asList(topicParts).indexOf(SINGLE_LEVEL_WILDCARD);
+
+                        if (multiLevelIndex == -1) {
+                            assetFilter.setAssetIds(assetId);
+                            if (singleLevelIndex == 2) { //asset/assetId/+
+                                assetFilter.setParentIds(assetId);
+                            } else if (singleLevelIndex == -1) { //asset/assetId
+                                assetFilter.setAssetIds(assetId);
+                            }
+                        } else if (multiLevelIndex == 2) { //asset/assetId/#
+                            assetFilter.setParentIds(assetId);
+                        }
+                    }
+
+                    subscription = new EventSubscription<>(
+                            AssetEvent.class,
+                            assetFilter,
+                            subscriptionId
+                    );
+                }
+
+                if (isValueSubscription) {
+                    connection.attributeValueSubscriptions.put(interceptSubscribeMessage.getTopicFilter(), subscription.getSubscriptionId());
+                } else {
+                    connection.assetSubscriptions.put(interceptSubscribeMessage.getTopicFilter(), subscription.getSubscriptionId());
                 }
 
                 Map<String, Object> headers = prepareHeaders(connection);
                 messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
-            } else  {
-                LOG.info("Couldn't process message for topic: " + interceptSubscribeMessage.getTopicFilter());
+            } else {
+                LOG.warning("Couldn't process message for topic: " + interceptSubscribeMessage.getTopicFilter());
             }
         } else {
             LOG.info("No connection found for clientId: " + interceptSubscribeMessage.getClientID());
@@ -176,25 +231,26 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
         if (connection != null) {
             String[] topicParts = interceptUnsubscribeMessage.getTopicFilter().split(TOPIC_SEPARATOR);
             if (topicParts.length > 1) {
-                String assetId = topicParts[1];
                 String subscriptionId;
 
-                if (topicParts.length > 2) { //attribute specific
-                    if (topicParts.length == 4 && topicParts[3].equals(ASSET_ATTRIBUTE_VALUE_TOPIC)) {
-                        subscriptionId = connection.assetAttributeValueSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
-                    } else {
-                        subscriptionId = connection.assetAttributeSubscriptions.remove(new AttributeRef(assetId, topicParts[2]));
-                    }
+                boolean isValueSubscription = topicParts[topicParts.length - 1].equals(ATTRIBUTE_VALUE_TOPIC);
+                if (isValueSubscription) {
+                    subscriptionId = connection.attributeValueSubscriptions.remove(interceptUnsubscribeMessage.getTopicFilter());
                 } else {
-                    subscriptionId = connection.assetSubscriptions.remove(assetId);
+                    subscriptionId = connection.assetSubscriptions.remove(interceptUnsubscribeMessage.getTopicFilter());
                 }
                 if (subscriptionId != null) {
                     Map<String, Object> headers = prepareHeaders(connection);
-                    CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(AttributeEvent.class, subscriptionId);
+                    CancelEventSubscription cancelEventSubscription;
+                    if (topicParts[0].equals(ATTRIBUTE_TOPIC)) {
+                        cancelEventSubscription = new CancelEventSubscription(AttributeEvent.class, subscriptionId);
+                    } else {
+                        cancelEventSubscription = new CancelEventSubscription(AssetEvent.class, subscriptionId);
+                    }
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
                 }
-            } else  {
-                LOG.info("Couldn't process message for topic: " + interceptUnsubscribeMessage.getTopicFilter());
+            } else {
+                LOG.warning("Couldn't process message for topic: " + interceptUnsubscribeMessage.getTopicFilter());
             }
         } else {
             LOG.info("No connection found for clientId: " + interceptUnsubscribeMessage.getClientID());
@@ -244,7 +300,7 @@ public class EventInterceptHandler extends AbstractInterceptHandler {
                     messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
                 }
             } else {
-                LOG.info("Couldn't process message for topic: " + msg.getTopicName());
+                LOG.warning("Couldn't process message for topic: " + msg.getTopicName());
             }
         } else {
             LOG.info("No connection found for clientId: " + msg.getClientID());

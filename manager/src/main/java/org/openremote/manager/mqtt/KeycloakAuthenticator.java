@@ -23,13 +23,16 @@ import io.moquette.broker.security.IAuthenticator;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.syslog.SyslogCategory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
+import static org.openremote.model.syslog.SyslogCategory.API;
+
 public class KeycloakAuthenticator implements IAuthenticator {
 
-    private static final Logger LOG = Logger.getLogger(KeycloakAuthenticator.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(API, KeycloakAuthenticator.class);
 
     public static final String MQTT_CLIENT_ID_SEPARATOR = "_";
 
@@ -48,14 +51,14 @@ public class KeycloakAuthenticator implements IAuthenticator {
 
         Tenant tenant = identityProvider.getTenant(realm);
         if (tenant == null) {
-            LOG.info("Realm not found");
+            LOG.warning("Realm not found");
             return false;
         }
 
         ClientRepresentation client = identityProvider.getClient(realm, clientId);
 
         if (client == null) {
-            LOG.info("Client not found");
+            LOG.warning("Client not found");
             return false;
         }
 

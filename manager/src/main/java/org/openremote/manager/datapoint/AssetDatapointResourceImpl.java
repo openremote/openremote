@@ -27,6 +27,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointInterval;
+import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
 
@@ -82,15 +83,45 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             }
 
             Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
-                new WebApplicationException(Response.Status.NOT_FOUND)
+                    new WebApplicationException(Response.Status.NOT_FOUND)
             );
 
             return assetDatapointService.getValueDatapoints(assetId,
-                attribute,
-                interval,
-                stepSize,
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault()),
-                LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault()));
+                    attribute,
+                    interval,
+                    stepSize,
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault()),
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault()));
+        } catch (IllegalStateException ex) {
+            throw new BadRequestException(ex);
+        } catch (UnsupportedOperationException ex) {
+            throw new NotSupportedException(ex);
+        }
+    }
+
+    @Override
+    public DatapointPeriod getDatapointPeriod(RequestParams requestParams, String assetId, String attributeName) {
+        try {
+            if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            Asset<?> asset = assetStorageService.find(assetId, true);
+
+            if (asset == null) {
+                throw new WebApplicationException(Response.Status.NOT_FOUND);
+            }
+
+            if (!isTenantActiveAndAccessible(asset.getRealm())) {
+                LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            Attribute<?> attribute = asset.getAttribute(attributeName).orElseThrow(() ->
+                    new WebApplicationException(Response.Status.NOT_FOUND)
+            );
+
+            return assetDatapointService.getDatapointPeriod(assetId, attributeName);
         } catch (IllegalStateException ex) {
             throw new BadRequestException(ex);
         } catch (UnsupportedOperationException ex) {

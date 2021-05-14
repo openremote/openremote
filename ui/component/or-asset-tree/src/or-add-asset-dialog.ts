@@ -11,7 +11,7 @@ import {
 } from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
 import {AssetModelUtil, DefaultColor2, DefaultColor5, Util} from "@openremote/core";
-import {InputType, OrInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -67,7 +67,7 @@ export class OrAddAssetDialog extends LitElement {
     public name: string = "New Asset";
 
     @query("#name-input")
-    protected nameInput!: OrInput;
+    protected nameInput!: OrMwcInput;
 
     @query("#agent-list")
     protected agentList?: OrMwcList;
