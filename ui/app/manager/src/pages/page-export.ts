@@ -6,7 +6,7 @@ import {AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
 import { DefaultColor3 } from "@openremote/core";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import { OrMwcDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcAttributeSelector, OrMwcDialog, OrMwcDialogOpenedEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
@@ -225,38 +225,15 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     }
     
     protected _openDialog() {
-        if (this._dialog) {
+        const hostElement = document.body;
 
-            this._dialog.dialogTitle = i18next.t("addAttribute");
-
-            this._dialog.dialogActions = [
-                {
-                    actionName: "cancel",
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
-                    action: () => {
-                        // Nothing to do here
-                    }
-                },
-                {
-                    actionName: "yes",
-                    default: true,
-                    content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes" data-mdc-dialog-button-default></or-mwc-input>`,
-                    action: () => {
-                        const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-                        if (dialog.shadowRoot && dialog.shadowRoot.getElementById("attribute-picker")) {
-                            const elm = dialog.shadowRoot.getElementById("attribute-picker") as HTMLInputElement;
-                            // this.dispatchEvent(new OrAttributeCardAddAttributeEvent(elm.value));
-                        }
-                    }
-                }
-            ];
-
-            this._dialog.dialogContent = null;
-
-            this._dialog.dismissAction = null;
-            
-            this._dialog.open();
-        }
+        const dialog = new OrMwcAttributeSelector();
+        dialog.isOpen = true;
+        dialog.addEventListener(OrMwcDialogOpenedEvent.NAME, (ev) => {
+            ev.stopPropagation();
+        });
+        hostElement.append(dialog);
+        return dialog;
     }
 
     public stateChanged(state: S) {

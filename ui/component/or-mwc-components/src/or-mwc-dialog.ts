@@ -5,6 +5,8 @@ import "./or-mwc-input";
 import {InputType} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { Util } from "@openremote/core";
+import { Asset, AssetEvent, Attribute, WellknownMetaItems } from "@openremote/model";
+import manager from "@openremote/core";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
@@ -317,5 +319,71 @@ export class OrMwcDialog extends LitElement {
             this._mdcComponent = undefined;
         }
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
+    }
+}
+
+
+@customElement("or-mwc-attribute-selector")
+export class OrMwcAttributeSelector extends OrMwcDialog {
+
+    @property({type: Object})
+    public asset?: Asset;
+    
+    @property({type: Object})
+    private assetAttributes: Attribute<any>[] = [];
+
+    @property({type: Object})
+    public assets: Asset[] = [];
+
+    constructor() {
+        super();
+        this.addEventListener("or-asset-tree-request-selection", this._onAssetSelectionChanged);
+        
+        this.dialogTitle = 'Add attributes';
+        
+        this.setDialogContent();
+        
+    }
+    
+    protected setDialogContent(): void {
+        this.dialogContent = html`
+            <div class="row">
+                <div class="col">
+                    <or-asset-tree id="chart-asset-tree" style="display:grid;" readonly
+                                   .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
+                </div>
+                <div class="col">
+                ${this.asset && this.asset.attributes ? html`
+                    <pre>${JSON.stringify(this.asset, undefined, 2)}</pre>
+                ` : ``}
+                </div>
+        `;
+    }
+
+    protected _getAttributeOptions(): [string, string][] | undefined {
+        if(!this.asset || !this.asset.attributes) {
+            return;
+        }
+
+        const attributes = Object.values(this.asset.attributes);
+        if (attributes && attributes.length > 0) {
+            this.assetAttributes = attributes
+                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
+                // .filter((attr) => (this.assetAttributes && !this.assetAttributes.some((assetAttr: Attribute<any>) => (assetAttr.name === attr.name) && this.assets[index].id === this.asset!.id)))
+
+            this.setDialogContent();
+        }
+    }
+
+    protected async _onAssetSelectionChanged(event: any) {
+
+        const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
+            event: {
+                eventType: "read-asset",
+                assetId: event.detail.detail.newNodes[0].asset!.id
+            }
+        });
+        this.asset = assetEvent.asset;
+        this._getAttributeOptions();
     }
 }
