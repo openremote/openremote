@@ -208,7 +208,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         return html`
             <div id="wrapper">
                 <div id="title">
-                    <or-icon icon="database-plus"></or-icon>
+                    <or-icon icon="database-export"></or-icon> 
                     ${i18next.t("dataExport")}
                 </div>
                 <div class="panel">

@@ -118,7 +118,7 @@ export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(o
 
 export function headerItemExport<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
     return {
-        icon: "database-plus",
+        icon: "database-export",
         value: "export",
         href: "data-export",
         text: "dataExport"
