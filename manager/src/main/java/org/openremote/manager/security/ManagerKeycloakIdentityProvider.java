@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.security;
 
+import io.undertow.util.Headers;
 import org.apache.camel.ExchangePattern;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
@@ -28,15 +29,14 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.PasswordAuthForm;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
+import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.TenantPredicate;
@@ -44,7 +44,7 @@ import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
+import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -81,8 +81,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected String keycloakAdminPassword;
     protected Container container;
 
-    public ManagerKeycloakIdentityProvider() {
-        super(KEYCLOAK_CLIENT_ID);
+    public ManagerKeycloakIdentityProvider(OAuthGrant grant) {
+        super(grant);
     }
 
     @Override
@@ -138,186 +138,277 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateUser(String realm, User user) {
-        // User only has a subset of user representation so overlay on actual user representation
-        UserResource userResource = getRealms().realm(realm).users().get(user.getId());
-        UserRepresentation userRepresentation = userResource.toRepresentation();
-        userRepresentation.setUsername(user.getUsername());
-        userRepresentation.setFirstName(user.getFirstName());
-        userRepresentation.setLastName(user.getLastName());
-        userRepresentation.setEmail(user.getEmail());
-        userRepresentation.setEnabled(user.getEnabled());
-        userResource.update(userRepresentation);
-    }
+    public User createUpdateUser(String realm, final User user, String passwordSecret) throws WebApplicationException {
+        return getRealms(realmsResource -> {
 
-    @Override
-    public User createUser(String realm, User user, String password) {
-        RealmResource realmResource = getRealms().realm(realm);
-        Response response = realmResource.users().create(
-                convert(user, UserRepresentation.class)
-            );
-        response.close();
-        if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
-            throw new WebApplicationException(
-                Response.status(response.getStatus())
-                    .entity(response.getEntity())
-                    .build()
-            );
-        } else {
-            user = getUserByUsername(realm, user.getUsername().toLowerCase());//Username is stored in lowercase in Keycloak
-            if (user != null && !TextUtil.isNullOrEmpty(password)) {
-                CredentialRepresentation credentials = new CredentialRepresentation();
-                credentials.setType("password");
-                credentials.setValue(password);
-                credentials.setTemporary(false);
-                realmResource.users().get(user.getId()).resetPassword(credentials);
-                LOG.info("Created user '" + user.getUsername() + "' with password '" + password + "'");
+            if (user.getUsername() == null) {
+                throw new BadRequestException("Attempt to create/update user but no username provided: User=" + user);
             }
-        }
 
-        return user;
+            boolean isUpdate = false;
+            User existingUser = user.getId() != null ? getUser(realm, user.getId()) : getUserByUsername(realm, user.getUsername());
+            ClientRepresentation clientRepresentation = null;
+            UserRepresentation userRepresentation = null;
+
+            if (existingUser == null && user.isServiceAccount()) {
+                // Could be a service user
+                clientRepresentation = realmsResource.realm(realm)
+                    .clients()
+                    .findByClientId(user.getUsername()).stream().findFirst().orElse(null);
+
+                userRepresentation = clientRepresentation != null ? realmsResource.realm(realm)
+                    .clients()
+                    .get(user.getUsername()).getServiceAccountUser() : null;
+
+                if (userRepresentation != null) {
+                    existingUser = convert(userRepresentation, User.class);
+                    existingUser.setServiceAccount(true);
+                } else if (clientRepresentation != null) {
+                    String msg = "Attempt to update/creat service user but a regular client with same client ID as this username already exists: User=" + user;
+                    LOG.info(msg);
+                    throw new NotAllowedException(msg);
+                }
+            }
+
+            if (existingUser != null && user.getId() != null && !existingUser.getId().equals(user.getId())) {
+                String msg = "Attempt to update user but retrieved user ID doesn't match supplied so ignoring: User=" + user;
+                LOG.info(msg);
+                throw new BadRequestException(msg);
+            }
+
+            if (existingUser != null) {
+                isUpdate = true;
+
+                if (existingUser.isServiceAccount() != user.isServiceAccount()) {
+                    String msg = "Attempt to update user service account flag not allowed: User=" + user;
+                    LOG.info(msg);
+                    throw new NotAllowedException(msg);
+                }
+
+                if (existingUser.isServiceAccount() && !existingUser.getUsername().equals(user.getUsername())) {
+                    String msg = "Attempt to update username of service user not allowed: User=" + user;
+                    LOG.info(msg);
+                    throw new NotAllowedException(msg);
+                }
+            }
+
+            // For service users we don't actually create the user - keycloak does that when the client is created
+            if (isUpdate) {
+
+                if (user.isServiceAccount()) {
+
+                    if (passwordSecret != null) {
+                        if (clientRepresentation == null) {
+                            clientRepresentation = realmsResource.realm(realm)
+                                .clients()
+                                .get(user.getUsername()).toRepresentation();
+                        }
+
+                        if (clientRepresentation == null) {
+                            String msg = "Attempt to update service user secret failed to find client: User=" + user;
+                            LOG.info(msg);
+                            throw new BadRequestException(msg);
+                        }
+                        clientRepresentation.setSecret(passwordSecret);
+                        createUpdateClient(realm, clientRepresentation);
+                    } else {
+                        String msg = "Attempt to update service user but only secret can be udpated and no new value provided: User=" + user;
+                        LOG.info(msg);
+                        throw new BadRequestException(msg);
+                    }
+
+                } else {
+
+                    // User only has a subset of user representation so overlay on actual user representation
+                    UserResource userResource = realmsResource.realm(realm).users().get(user.getId());
+                    userRepresentation = userResource.toRepresentation();
+                    userRepresentation.setUsername(user.getUsername());
+                    userRepresentation.setFirstName(user.getFirstName());
+                    userRepresentation.setLastName(user.getLastName());
+                    userRepresentation.setEmail(user.getEmail());
+                    userRepresentation.setEnabled(user.getEnabled());
+                    userResource.update(userRepresentation);
+
+                }
+            } else {
+
+                if (user.isServiceAccount()) {
+
+                    // Just create client with service account and user will be generated
+                    clientRepresentation = new ClientRepresentation();
+                    clientRepresentation.setStandardFlowEnabled(false);
+                    clientRepresentation.setImplicitFlowEnabled(false);
+                    clientRepresentation.setDirectAccessGrantsEnabled(false);
+                    clientRepresentation.setServiceAccountsEnabled(true);
+                    clientRepresentation.setClientAuthenticatorType("client-secret");
+                    clientRepresentation.setClientId(user.getUsername());
+                    clientRepresentation.setSecret(passwordSecret);
+                    clientRepresentation = createUpdateClient(realm, clientRepresentation);
+                    userRepresentation = realmsResource.realm(realm)
+                        .clients()
+                        .get(clientRepresentation.getId()).getServiceAccountUser();
+                } else {
+
+                    userRepresentation = convert(user, UserRepresentation.class);
+                    RealmResource realmResource = realmsResource.realm(realm);
+                    Response response = realmResource.users().create(userRepresentation);
+                    String location = response.getHeaderString(Headers.LOCATION_STRING);
+                    response.close();
+                    if (!response.getStatusInfo().equals(Response.Status.CREATED) || TextUtil.isNullOrEmpty(location)) {
+                        throw new BadRequestException("Failed to create user: User=" + user);
+                    }
+                    String[] locationArr = location.split("/");
+                    String userId = locationArr.length > 0 ? locationArr[locationArr.length-1] : null;
+                    userRepresentation = realmResource.users().get(userId).toRepresentation();
+
+                    if (passwordSecret != null) {
+                        CredentialRepresentation credentials = new CredentialRepresentation();
+                        credentials.setType("password");
+                        credentials.setValue(passwordSecret);
+                        credentials.setTemporary(false);
+                        realmResource.users().get(userRepresentation.getId()).resetPassword(credentials);
+                    }
+
+                }
+            }
+
+            User updatedUser = convert(userRepresentation, User.class);
+            if (updatedUser != null) {
+                user.setServiceAccount(userRepresentation.getUsername().startsWith(User.SERVICE_ACCOUNT_PREFIX));
+                updatedUser.setRealm(realm);
+            }
+            return updatedUser;
+        });
     }
 
     @Override
     public void deleteUser(String realm, String userId) {
-        Response response = getRealms()
-            .realm(realm).users().delete(userId);
-        if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
-            throw new WebApplicationException(
-                Response.status(response.getStatus())
-                    .entity(response.getEntity())
-                    .build()
-            );
-        } else {
+        getRealms(realmsResource -> {
+            Response response = realmsResource.realm(realm).users().delete(userId);
             response.close();
-        }
+            if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
+                throw new IllegalStateException("Failed to delete user: " + userId);
+            }
+            return null;
+        });
     }
 
     @Override
     public void resetPassword(String realm, String userId, Credential credential) {
-        getRealms()
-            .realm(realm).users().get(userId).resetPassword(
-            convert(credential, CredentialRepresentation.class)
-        );
+        getRealms(realmsResource -> {
+            realmsResource.realm(realm).users().get(userId).resetPassword(
+                convert(credential, CredentialRepresentation.class)
+            );
+            return null;
+        });
     }
 
     @Override
     public Role[] getRoles(String realm, String client) {
-
-        RealmResource realmResource = getRealms().realm(realm);
-        ClientsResource clientsResource = realmResource.clients();
-        String clientId;
-
-        if (TextUtil.isNullOrEmpty(client)) {
-            clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
-        } else {
+        return getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            ClientsResource clientsResource = realmResource.clients();
             ClientRepresentation clientRepresentation = getClient(realm, client);
             if (clientRepresentation == null) {
-                throw new NotFoundException("Cannot find specified client: " + client);
+                throw new IllegalStateException("Cannot find specified client: " + client);
             }
-            clientId = clientsResource.findByClientId(clientRepresentation.getClientId()).get(0).getId();
-        }
+            ClientResource clientResource = clientsResource.get(clientRepresentation.getId());
+            List<RoleRepresentation> clientRoles = clientResource.roles().list();
+            List<Role> roles = new ArrayList<>();
 
-        ClientResource clientResource = realmResource.clients().get(clientId);
-        List<RoleRepresentation> clientRoles = clientResource.roles().list();
-        List<Role> roles = new ArrayList<>();
+            for (RoleRepresentation clientRole : clientRoles) {
+                String[] composites = clientRole.isComposite() ? realmResource.rolesById().getClientRoleComposites(clientRole.getId(), clientRepresentation.getId()).stream().map(RoleRepresentation::getId).toArray(String[]::new) : null;
+                roles.add(new Role(clientRole.getId(), clientRole.getName(), clientRole.isComposite(), null, composites).setDescription(clientRole.getDescription()));
+            }
 
-        for (RoleRepresentation clientRole : clientRoles) {
-            String[] composites = clientRole.isComposite() ? realmResource.rolesById().getClientRoleComposites(clientRole.getId(), clientId).stream().map(RoleRepresentation::getId).toArray(String[]::new) : null;
-            roles.add(new Role(clientRole.getId(), clientRole.getName(), clientRole.isComposite(), null, composites).setDescription(clientRole.getDescription()));
-        }
-
-        return roles.toArray(new Role[0]);
+            return roles.toArray(new Role[0]);
+        });
     }
 
     @Override
-    public void updateRoles(String realm, String client, Role[] roles) {
+    public void updateClientRoles(String realm, String clientId, Role[] roles) {
 
-        RealmResource realmResource = getRealms().realm(realm);
-        ClientsResource clientsResource = realmResource.clients();
-        String clientId;
-
-        if (TextUtil.isNullOrEmpty(client)) {
-            clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
-        } else {
-            ClientRepresentation clientRepresentation = getClient(realm, client);
+        getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            ClientsResource clientsResource = realmResource.clients();
+            ClientRepresentation clientRepresentation = getClient(realm, clientId);
             if (clientRepresentation == null) {
-                throw new NotFoundException("Cannot find specified client: " + client);
+                throw new IllegalStateException("Cannot find specified client: " + clientId);
             }
-            clientId = clientsResource.findByClientId(clientRepresentation.getClientId()).get(0).getId();
-        }
+            ClientResource clientResource = clientsResource.get(clientRepresentation.getId());
+            List<RoleRepresentation> existingRoles = new ArrayList<>(clientResource.roles().list());
 
-        ClientResource clientResource = realmResource.clients().get(clientId);
-        List<RoleRepresentation> existingRoles = new ArrayList<>(clientResource.roles().list());
+            List<RoleRepresentation> removedRoles = existingRoles.stream()
+                .filter(existingRole -> Arrays.stream(roles).noneMatch(r -> existingRole.getId().equals(r.getId())))
+                .collect(Collectors.toList());
 
-        List<RoleRepresentation> removedRoles = existingRoles.stream()
-            .filter(existingRole -> Arrays.stream(roles).noneMatch(r -> existingRole.getId().equals(r.getId())))
-            .collect(Collectors.toList());
+            removedRoles.forEach(removedRole -> {
+                realmResource.rolesById().deleteRole(removedRole.getId());
+                existingRoles.remove(removedRole);
+            });
 
-        removedRoles.forEach(removedRole -> {
-            realmResource.rolesById().deleteRole(removedRole.getId());
-            existingRoles.remove(removedRole);
-        });
+            Arrays.stream(roles).forEach(role -> {
 
-        Arrays.stream(roles).forEach(role -> {
+                RoleRepresentation existingRole;
+                boolean compositesModified = false;
+                Set<RoleRepresentation> existingComposites = new HashSet<>();
+                Set<RoleRepresentation> requestedComposites = new HashSet<>();
 
-            RoleRepresentation existingRole;
-            boolean compositesModified = false;
-            Set<RoleRepresentation> existingComposites = new HashSet<>();
-            Set<RoleRepresentation> requestedComposites = new HashSet<>();
+                if (role.getId() == null) {
+                    existingRole = saveClientRole(realmResource, clientResource, role, null);
+                    existingRoles.add(existingRole);
+                    compositesModified = role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
+                    if (compositesModified) {
+                        requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
+                            .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet()));
+                    }
+                } else {
+                    existingRole = existingRoles.stream().filter(r -> r.getId().equals(role.getId())).findFirst().orElseThrow(() -> new IllegalStateException("One or more supplied roles have an ID that doesn't exist"));
 
-            if (role.getId() == null) {
-                existingRole = saveRole(realmResource, clientResource, role, null);
-                existingRoles.add(existingRole);
-                compositesModified = role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
-                if (compositesModified) {
-                    requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
-                        .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet()));
-                }
-            } else {
-                existingRole = existingRoles.stream().filter(r -> r.getId().equals(role.getId())).findFirst().orElseThrow(() -> new BadRequestException("One or more supplied roles have an ID that doesn't exist"));
+                    boolean isComposite = role.isComposite() && role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
 
-                boolean isComposite = role.isComposite() && role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
+                    boolean rolePropertiesModified = !Objects.equals(existingRole.getName(), role.getName())
+                        || !Objects.equals(existingRole.getDescription(), role.getDescription());
 
-                boolean rolePropertiesModified = !Objects.equals(existingRole.getName(), role.getName())
-                    || !Objects.equals(existingRole.getDescription(), role.getDescription());
+                    if (isComposite || existingRole.isComposite()) {
+                        existingComposites.addAll(Optional.ofNullable(realmResource.rolesById().getClientRoleComposites(existingRole.getId(), clientRepresentation.getId())).orElse(new HashSet<>()));
+                        requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
+                            .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet()));
 
-                if (isComposite || existingRole.isComposite()) {
-                    existingComposites.addAll(Optional.ofNullable(realmResource.rolesById().getClientRoleComposites(existingRole.getId(), clientId)).orElse(new HashSet<>()));
-                    requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
-                        .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet()));
+                        if (requestedComposites.size() != role.getCompositeRoleIds().length) {
+                            throw new IllegalStateException("One or more composite roles contain an invalid role ID");
+                        }
 
-                    if (requestedComposites.size() != role.getCompositeRoleIds().length) {
-                        throw new BadRequestException("One or more composite roles contain an invalid role ID");
+                        compositesModified = !Objects.equals(existingComposites, requestedComposites);
                     }
 
-                    compositesModified = !Objects.equals(existingComposites, requestedComposites);
+                    if (rolePropertiesModified) {
+                        // Merge the role property changes
+                        saveClientRole(realmResource, clientResource, role, existingRole);
+                    }
                 }
 
-                if (rolePropertiesModified) {
-                    // Merge the role property changes
-                    saveRole(realmResource, clientResource, role, existingRole);
+                if (compositesModified) {
+                    List<RoleRepresentation> removed = existingComposites.stream().filter(existing -> !requestedComposites.contains(existing)).collect(Collectors.toList());
+                    List<RoleRepresentation> added = requestedComposites.stream().filter(existing -> !existingComposites.contains(existing)).collect(Collectors.toList());
+                    if (!removed.isEmpty()) {
+                        realmResource.rolesById().deleteComposites(existingRole.getId(), removed);
+                    }
+                    if (!added.isEmpty()) {
+                        realmResource.rolesById().addComposites(existingRole.getId(), added);
+                    }
                 }
-            }
+            });
 
-            if (compositesModified) {
-                List<RoleRepresentation> removed = existingComposites.stream().filter(existing -> !requestedComposites.contains(existing)).collect(Collectors.toList());
-                List<RoleRepresentation> added = requestedComposites.stream().filter(existing -> !existingComposites.contains(existing)).collect(Collectors.toList());
-                if (!removed.isEmpty()) {
-                    realmResource.rolesById().deleteComposites(existingRole.getId(), removed);
-                }
-                if (!added.isEmpty()) {
-                    realmResource.rolesById().addComposites(existingRole.getId(), added);
-                }
-            }
+            return null;
         });
     }
 
-    protected RoleRepresentation saveRole(RealmResource realmResource, ClientResource clientResource, Role role, RoleRepresentation representation) {
+    protected RoleRepresentation saveClientRole(RealmResource realmResource, ClientResource clientResource, Role role, RoleRepresentation representation) {
         if (representation == null) {
             representation = new RoleRepresentation();
         }
@@ -334,80 +425,86 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Role[] getUserRoles(String realm, String userId) {
-        RealmResource realmResource = getRealms().realm(realm);
-        RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
-        ClientsResource clientsResource = realmResource.clients();
+    public Role[] getUserRoles(String realm, String userId, String client) {
+        return getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
+            ClientsResource clientsResource = realmResource.clients();
+            String clientId = clientsResource.findByClientId(client).get(0).getId();
+            RolesResource rolesResource = clientsResource.get(clientId).roles();
 
-        String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
-        RolesResource rolesResource = clientsResource.get(clientId).roles();
+            List<RoleRepresentation> allRoles = rolesResource.list();
+            List<RoleRepresentation> effectiveRoles = roleMappingResource.clientLevel(clientId).listEffective();
 
-        List<RoleRepresentation> allRoles = rolesResource.list();
-        List<RoleRepresentation> effectiveRoles = roleMappingResource.clientLevel(clientId).listEffective();
+            List<Role> roles = new ArrayList<>();
+            for (RoleRepresentation roleRepresentation : allRoles) {
+                boolean isAssigned = false;
 
-        List<Role> roles = new ArrayList<>();
-        for (RoleRepresentation roleRepresentation : allRoles) {
-            boolean isAssigned = false;
+                for (RoleRepresentation effectiveRole : effectiveRoles) {
+                    if (effectiveRole.getId().equals(roleRepresentation.getId()))
+                        isAssigned = true;
+                }
 
-            for (RoleRepresentation effectiveRole : effectiveRoles) {
-                if (effectiveRole.getId().equals(roleRepresentation.getId()))
-                    isAssigned = true;
+                roles.add(new Role(
+                    roleRepresentation.getId(),
+                    roleRepresentation.getName(),
+                    roleRepresentation.isComposite(),
+                    isAssigned,
+                    null)
+                    .setDescription(roleRepresentation.getDescription()));
             }
 
-            roles.add(new Role(
-                roleRepresentation.getId(),
-                roleRepresentation.getName(),
-                roleRepresentation.isComposite(),
-                isAssigned,
-                null)
-                .setDescription(roleRepresentation.getDescription()));
-        }
-
-        return roles.toArray(new Role[0]);
+            return roles.toArray(new Role[0]);
+        });
     }
 
     @Override
-    public void updateUserRoles(String realm, String userId, String client, String... roles) {
-        RealmResource realmResource = getRealms().realm(realm);
-        UserRepresentation user = realmResource.users().get(userId).toRepresentation();
+    public void updateUserRoles(String realm, String userId, String client, String...roles) {
+        getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            UserRepresentation user = realmResource.users().get(userId).toRepresentation();
 
-        if (user == null) {
-            throw new IllegalStateException("Multiple users with the same username found");
-        }
+            if (user == null) {
+                throw new IllegalStateException("Multiple users with the same username found");
+            }
 
-        RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
-        ClientRepresentation clientRepresentation = getClient(realm, client);
+            RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
+            ClientRepresentation clientRepresentation = getClient(realm, client);
 
-        // Get all role mappings for user on this client and remove any no longer in the roles
-        List<RoleRepresentation> clientMappedRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAll();
-        List<RoleRepresentation> availableRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAvailable();
+            // Get all role mappings for user on this client and remove any no longer in the roles
+            List<RoleRepresentation> clientMappedRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAll();
+            List<RoleRepresentation> availableRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAvailable();
 
-        // Get newly defined roles
-        List<RoleRepresentation> addRoles = roles == null ? Collections.emptyList() : Arrays.stream(roles)
-            .filter(cr -> clientMappedRoles.stream().noneMatch(r -> r.getName().equals(cr)))
-            .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr)).findFirst().orElse(null))
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            // Get newly defined roles
+            List<RoleRepresentation> addRoles = roles == null ? Collections.emptyList() : Arrays.stream(roles)
+                .filter(cr -> clientMappedRoles.stream().noneMatch(r -> r.getName().equals(cr)))
+                .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr)).findFirst().orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-        // Remove obsolete roles
-        List<RoleRepresentation> removeRoles = roles == null ? clientMappedRoles : clientMappedRoles.stream()
-            .filter(r -> Arrays.stream(roles).noneMatch(cr -> cr.equals(r.getName())))
-            .collect(Collectors.toList());
+            // Remove obsolete roles
+            List<RoleRepresentation> removeRoles = roles == null ? clientMappedRoles : clientMappedRoles.stream()
+                .filter(r -> Arrays.stream(roles).noneMatch(cr -> cr.equals(r.getName())))
+                .collect(Collectors.toList());
 
-        if (!removeRoles.isEmpty()) {
-            roleMappingResource.clientLevel(clientRepresentation.getId()).remove(removeRoles);
-        }
-        if (!addRoles.isEmpty()) {
-            roleMappingResource.clientLevel(clientRepresentation.getId()).add(addRoles);
-        }
+            if (!removeRoles.isEmpty()) {
+                roleMappingResource.clientLevel(clientRepresentation.getId()).remove(removeRoles);
+            }
+            if (!addRoles.isEmpty()) {
+                roleMappingResource.clientLevel(clientRepresentation.getId()).add(addRoles);
+            }
+
+            return null;
+        });
     }
 
     @Override
     public boolean isMasterRealmAdmin(String userId) {
-        List<UserRepresentation> adminUsers = getRealms()
-            .realm(MASTER_REALM)
-            .users()
-            .search(MASTER_REALM_ADMIN_USER, null, null);
+        List<UserRepresentation> adminUsers = getRealms(realmsResource ->
+            realmsResource.realm(MASTER_REALM)
+                .users()
+                .search(MASTER_REALM_ADMIN_USER, null, null));
+
 
         if (adminUsers.size() == 0) {
             throw new IllegalStateException("Can't load master realm admin user");
@@ -425,7 +522,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public Tenant getTenant(String realm) {
         try {
-            RealmRepresentation realmRepresentation = getRealms().realm(realm).toRepresentation();
+            RealmRepresentation realmRepresentation = getRealms(realmsResource ->
+                realmsResource.realm(realm).toRepresentation());
             return convert(realmRepresentation, Tenant.class);
         } catch (Exception ex) {
             LOG.log(Level.INFO, "Failed to get tenant for realm: " + realm, ex);
@@ -436,49 +534,54 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public void updateTenant(Tenant tenant) {
         LOG.fine("Update tenant: " + tenant);
-        RealmsResource realmsResource = getRealms();
+        getRealms(realmsResource -> {
+            // Find existing realm by ID as realm name could have been changed
+            RealmRepresentation existing = realmsResource.findAll().stream().filter(r -> r.getId().equals(tenant.getId())).findFirst().orElse(null);
+            if (existing == null) {
+                throw new IllegalStateException("Tenant must already exist, ID does not match an existing tenant");
+            }
 
-        // Find existing realm by ID as realm name could have been changed
-        RealmRepresentation existing = realmsResource.findAll().stream().filter(r -> r.getId().equals(tenant.getId())).findFirst().orElse(null);
-        if (existing == null) {
-            throw new IllegalStateException("Tenant must already exist, ID does not match an existing tenant");
-        }
+            String realm = existing.getRealm();
 
-        String realm = existing.getRealm();
+            // Tenant only has a subset of realm representation so overlay on actual realm representation
+            existing.setRealm(tenant.getRealm());
+            existing.setDisplayName(tenant.getDisplayName());
+            existing.setAccountTheme(tenant.getAccountTheme());
+            existing.setAdminTheme(tenant.getAdminTheme());
+            existing.setEmailTheme(tenant.getEmailTheme());
+            existing.setLoginTheme(tenant.getLoginTheme());
+            existing.setRememberMe(tenant.getRememberMe());
+            existing.setEnabled(tenant.getEnabled());
+            existing.setDuplicateEmailsAllowed(tenant.getDuplicateEmailsAllowed());
+            existing.setResetPasswordAllowed(tenant.getResetPasswordAllowed());
+            existing.setNotBefore(tenant.getNotBefore() != null ? tenant.getNotBefore().intValue() : null);
+            configureRealm(existing);
 
-        // Tenant only has a subset of realm representation so overlay on actual realm representation
-        existing.setRealm(tenant.getRealm());
-        existing.setDisplayName(tenant.getDisplayName());
-        existing.setAccountTheme(tenant.getAccountTheme());
-        existing.setAdminTheme(tenant.getAdminTheme());
-        existing.setEmailTheme(tenant.getEmailTheme());
-        existing.setLoginTheme(tenant.getLoginTheme());
-        existing.setRememberMe(tenant.getRememberMe());
-        existing.setEnabled(tenant.getEnabled());
-        existing.setDuplicateEmailsAllowed(tenant.getDuplicateEmailsAllowed());
-        existing.setResetPasswordAllowed(tenant.getResetPasswordAllowed());
-        existing.setNotBefore(tenant.getNotBefore() != null ? tenant.getNotBefore().intValue() : null);
-        configureRealm(existing);
-
-        realmsResource.realm(realm).update(existing);
-        publishModification(PersistenceEvent.Cause.UPDATE, tenant);
+            realmsResource.realm(realm).update(existing);
+            publishModification(PersistenceEvent.Cause.UPDATE, tenant);
+            return null;
+        });
     }
 
     @Override
     public Tenant createTenant(Tenant tenant) {
         LOG.fine("Create tenant: " + tenant);
-        RealmsResource realmsResource = getRealms();
-        RealmRepresentation realmRepresentation = convert(tenant, RealmRepresentation.class);
-        realmsResource.create(realmRepresentation);
-        RealmResource realmResource = realmsResource.realm(tenant.getRealm());
+        return getRealms(realmsResource -> {
+            RealmRepresentation realmRepresentation = convert(tenant, RealmRepresentation.class);
+            realmsResource.create(realmRepresentation);
+            RealmResource realmResource = realmsResource.realm(tenant.getRealm());
 
-        realmRepresentation = realmResource.toRepresentation();
-        // Need a committed realmRepresentation to update the security
-        configureRealm(realmRepresentation);
-        realmResource.update(realmRepresentation);
-        createOpenRemoteClientApplication(realmRepresentation.getRealm());
-        publishModification(PersistenceEvent.Cause.CREATE, tenant);
-        return convert(realmRepresentation, Tenant.class);
+            realmRepresentation = realmResource.toRepresentation();
+            // Need a committed realmRepresentation to update the security
+            configureRealm(realmRepresentation);
+            realmResource.update(realmRepresentation);
+
+            // Auto create the standard openremote client
+            ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
+            createUpdateClient(tenant.getRealm(), clientRepresentation);
+            publishModification(PersistenceEvent.Cause.CREATE, tenant);
+            return convert(realmRepresentation, Tenant.class);
+        });
     }
 
     @Override
@@ -487,69 +590,135 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         if (tenant != null) {
             LOG.fine("Delete tenant: " + realm);
-            getRealms().realm(realm).remove();
+            getRealms(realmsResource -> {
+                realmsResource.realm(realm).remove();
+                return null;
+            });
             publishModification(PersistenceEvent.Cause.DELETE, tenant);
         }
     }
 
-    // TODO: Provide an implementation agnostic client
-    public ClientRepresentation getClient(String realm, String clientId) {
-        ClientsResource clientsResource = getRealms().realm(realm).clients();
-        List<ClientRepresentation> clients = clientsResource.findByClientId(clientId);
-        if (clients.isEmpty()) {
-            return null;
+    public ClientRepresentation generateOpenRemoteClientRepresentation() {
+        ClientRepresentation client = new ClientRepresentation();
+        client.setClientId(KEYCLOAK_CLIENT_ID);
+        client.setName("OpenRemote");
+        client.setPublicClient(true);
+
+        if (container.isDevMode()) {
+            // We need direct access for integration tests
+            LOG.info("### Allowing direct access grants for client id '" + client.getClientId() + "', this must NOT be used in production! ###");
+            client.setDirectAccessGrantsEnabled(true);
+
+            // Allow any web origin (this will add CORS headers to token requests etc.)
+            client.setWebOrigins(Collections.singletonList("*"));
+            client.setRedirectUris(Collections.singletonList("*"));
+        } else {
+            // TODO: Decide how clients should be handled
+            client.setWebOrigins(Collections.singletonList("+"));
+            client.setRedirectUris(Collections.singletonList("/*"));
+//            List<String> redirectUris = new ArrayList<>();
+//            try {
+//                for (String consoleName : consoleAppService.getInstalled()) {
+//                    addClientRedirectUris(consoleName, redirectUris, devMode);
+//                }
+//            } catch (Exception exception) {
+//                LOG.log(Level.WARNING, exception.getMessage(), exception);
+//                addClientRedirectUris(realm, redirectUris, devMode);
+//            }
+//
+//            client.setRedirectUris(redirectUris);
         }
 
-        // Need to get secret separately for some reason
-        ClientRepresentation client = clients.get(0);
-        CredentialRepresentation credentialRepresentation = clientsResource.get(client.getId()).getSecret();
-        if (credentialRepresentation != null) {
-            client.setSecret(credentialRepresentation.getValue());
-        }
         return client;
+    }
+
+    // TODO: Provide an implementation agnostic client
+    public ClientRepresentation getClient(String realm, String clientId) {
+        return getRealms(realmsResource -> {
+            ClientsResource clientsResource = realmsResource.realm(realm).clients();
+            List<ClientRepresentation> clients = clientsResource.findByClientId(clientId);
+
+            if (clients.isEmpty()) {
+                return null;
+            }
+
+            ClientRepresentation client = clients.get(0);
+            if ("client-secret".equals(client.getClientAuthenticatorType())) {
+                // Need to get secret separately for some reason
+                CredentialRepresentation credentialRepresentation = clientsResource.get(client.getId()).getSecret();
+                if (credentialRepresentation != null) {
+                    client.setSecret(credentialRepresentation.getValue());
+                }
+            }
+            return client;
+        });
     }
 
     // TODO: Provide an implementation agnostic client
     public ClientRepresentation[] getClients(String realm) {
-        return getRealms().realm(realm).clients().findAll().toArray(new ClientRepresentation[0]);
+        return getRealms(realmsResource -> realmsResource.realm(realm).clients().findAll().toArray(new ClientRepresentation[0]));
     }
 
     // TODO: Provide an implementation agnostic client
-    public ClientRepresentation createClient(String realm, ClientRepresentation client) {
-        ClientsResource clientsResource = getRealms().realm(realm).clients();
-        Response response = clientsResource.create(client);
-        response.close();
-        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-            return null;
+    public ClientRepresentation createUpdateClient(String realm, ClientRepresentation client) {
+
+        if (client == null || client.getClientId() == null) {
+            throw new IllegalArgumentException("Client is null or clientId is missing");
         }
 
-        client = clientsResource.findByClientId(client.getClientId()).get(0);
-        ClientResource clientResource = clientsResource.get(client.getId());
-        addDefaultRoles(clientResource.roles());
-        return client;
-    }
+        boolean isUpdate = !TextUtil.isNullOrEmpty(client.getId());
 
-    // TODO: Provide an implementation agnostic client
-    public void updateClient(String realm, ClientRepresentation client) {
-        getRealms().realm(realm).clients().get(client.getId()).update(client);
+        if (!isUpdate) {
+            // Check if client exists
+            ClientRepresentation clientRepresentation = getClient(realm, client.getClientId());
+            if (clientRepresentation != null) {
+                client.setId(clientRepresentation.getId());
+                isUpdate = true;
+            }
+        }
+
+        boolean finalIsUpdate = isUpdate;
+
+        return getRealms(realmsResource -> {
+            ClientsResource clientsResource = realmsResource.realm(realm).clients();
+            if (finalIsUpdate) {
+                clientsResource.get(client.getId()).update(client);
+            } else {
+                Response response = clientsResource.create(client);
+                response.close();
+                if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                    return null;
+                }
+
+                ClientRepresentation newClient = clientsResource.findByClientId(client.getClientId()).get(0);
+                ClientResource clientResource = clientsResource.get(newClient.getId());
+                addDefaultRoles(clientResource.roles());
+                return newClient;
+            }
+            return null;
+        });
     }
 
     public void deleteClient(String realm, String clientId) {
-        getRealms().realm(realm).clients().findByClientId(clientId).forEach(client ->
-            deleteClient(realm, client));
-    }
 
-    public void deleteClient(String realm, ClientRepresentation client) {
-        getRealms().realm(realm).clients().get(client.getId()).remove();
-    }
-
-    public User getClientServiceUser(String realm, String clientId) {
-        ClientRepresentation client = getClient(realm, clientId);
-        if (client == null) {
-            return null;
+        if (TextUtil.isNullOrEmpty(realm)
+            || TextUtil.isNullOrEmpty(clientId)) {
+            throw new IllegalArgumentException("Invalid client credentials realm and client ID must be specified");
         }
-        UserRepresentation user = getRealms().realm(realm).clients().get(client.getId()).getServiceAccountUser();
-        return user != null ? convert(user, User.class) : null;
+
+        getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+
+            if (realmResource == null) {
+                LOG.info("Invalid realm provided for deleteClient call: " + realm);
+                return null;
+            }
+
+            LOG.info("Deleting client: realm=" + realm + ", client ID=" + clientId);
+            ClientsResource clients = realmResource.clients();
+            clients.findByClientId(clientId).forEach(client -> clients.get(client.getId()).remove());
+            return null;
+        });
     }
 
     /**
@@ -588,7 +757,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public boolean canSubscribeWith(AuthContext auth, TenantFilter filter, ClientRole... requiredRoles) {
+    public boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles) {
         // Superuser can always subscribe
         if (auth.isSuperUser())
             return true;
@@ -682,55 +851,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
     }
 
-    public void createOpenRemoteClientApplication(String realm) {
-        createClient(realm, createDefaultClientRepresentation(realm, KEYCLOAK_CLIENT_ID, "OpenRemote", container.isDevMode()));
-    }
-
-    /**
-     * Keycloak only allows realm CRUD using the {realm}-realm client or the admin-cli client so we need to ensure we
-     * have a token for one of these realms; if we are creating a realm then that means using the admin-cli
-     */
-    protected String getAdminAccessToken() {
-        return getKeycloak().getAccessToken(
-            MASTER_REALM, new PasswordAuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
-        ).getToken();
-    }
-
-    protected ClientRepresentation createDefaultClientRepresentation(String realm, String clientId, String appName, boolean devMode) {
-        ClientRepresentation client = new ClientRepresentation();
-
-        client.setClientId(clientId);
-        client.setName(appName);
-        client.setPublicClient(true);
-
-        if (devMode) {
-            // We need direct access for integration tests
-            LOG.info("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
-            client.setDirectAccessGrantsEnabled(true);
-
-            // Allow any web origin (this will add CORS headers to token requests etc.)
-            client.setWebOrigins(Collections.singletonList("*"));
-            client.setRedirectUris(Collections.singletonList("*"));
-        } else {
-            // TODO: Decide how clients should be handled
-            client.setWebOrigins(Collections.singletonList("+"));
-            client.setRedirectUris(Collections.singletonList("/*"));
-//            List<String> redirectUris = new ArrayList<>();
-//            try {
-//                for (String consoleName : consoleAppService.getInstalled()) {
-//                    addClientRedirectUris(consoleName, redirectUris, devMode);
-//                }
-//            } catch (Exception exception) {
-//                LOG.log(Level.WARNING, exception.getMessage(), exception);
-//                addClientRedirectUris(realm, redirectUris, devMode);
-//            }
-//
-//            client.setRedirectUris(redirectUris);
-        }
-
-        return client;
-    }
-
     protected void addDefaultRoles(RolesResource rolesResource) {
 
         for (ClientRole clientRole : ClientRole.values()) {
@@ -746,12 +866,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
             rolesResource.get(clientRole.getValue()).addComposites(composites);
         }
-    }
-
-    public static User convertUser(String realm, UserRepresentation userRepresentation) {
-        User user = convert(userRepresentation, User.class);
-        user.setRealm(realm);
-        return user;
     }
 
     protected void publishModification(PersistenceEvent.Cause cause, Tenant tenant) {
@@ -770,62 +884,42 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     public String addLDAPConfiguration(String realm, ComponentRepresentation componentRepresentation) {
-        ClientRequestInfo clientRequestInfo = new ClientRequestInfo(null, getAdminAccessToken());
 
-        RealmResource realmResource = getRealms()
-            .realm(realm);
-        Response response = realmResource.components().add(componentRepresentation);
-
-        if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
-            throw new WebApplicationException(
-                Response.status(response.getStatus())
-                    .entity(response.getEntity())
-                    .build()
-            );
-        } else {
+        return getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            Response response = realmResource.components().add(componentRepresentation);
             response.close();
 
-            componentRepresentation = realmResource.components()
-                .query(componentRepresentation.getParentId(),
-                    componentRepresentation.getProviderType(),
-                    componentRepresentation.getName()).get(0);
-            response = syncUsers(clientRequestInfo, componentRepresentation.getId(), realm, "triggerFullSync");
-
-            if (!response.getStatusInfo().equals(Response.Status.OK)) {
-                throw new WebApplicationException(
-                    Response.status(response.getStatus())
-                        .entity(response.getEntity())
-                        .build()
-                );
+            if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
+                throw new IllegalStateException("Failed to add LDAP configuration");
             } else {
-                response.close();
+                ComponentRepresentation newComponentRepresentation = realmResource.components()
+                    .query(componentRepresentation.getParentId(),
+                        componentRepresentation.getProviderType(),
+                        componentRepresentation.getName()).get(0);
+                syncUsers(newComponentRepresentation.getId(), realm, "triggerFullSync");
+                return newComponentRepresentation.getId();
             }
-        }
-        return componentRepresentation.getId();
+        });
     }
 
     public String addLDAPMapper(String realm, ComponentRepresentation componentRepresentation) {
-        ClientRequestInfo clientRequestInfo = new ClientRequestInfo(null, getAdminAccessToken());
-        RealmResource realmResource = getRealms()
-            .realm(realm);
-        Response response = realmResource.components().add(componentRepresentation);
-
-        if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
-            throw new WebApplicationException(
-                Response.status(response.getStatus())
-                    .entity(response.getEntity())
-                    .build()
-            );
-        } else {
+        return getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            Response response = realmResource.components().add(componentRepresentation);
             response.close();
 
-            componentRepresentation = realmResource.components()
-                .query(componentRepresentation.getParentId(),
-                    componentRepresentation.getProviderType(),
-                    componentRepresentation.getName()).get(0);
-            realmResource.userStorage().syncMapperData(componentRepresentation.getParentId(), componentRepresentation.getId(), "fedToKeycloak");
-        }
-        return componentRepresentation.getId();
+            if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
+                throw new IllegalStateException("Failed to add LDAP mapper");
+            } else {
+                ComponentRepresentation newComponentRepresentation = realmResource.components()
+                    .query(componentRepresentation.getParentId(),
+                        componentRepresentation.getProviderType(),
+                        componentRepresentation.getName()).get(0);
+                realmResource.userStorage().syncMapperData(newComponentRepresentation.getParentId(), newComponentRepresentation.getId(), "fedToKeycloak");
+                return newComponentRepresentation.getId();
+            }
+        });
     }
 
     @Override

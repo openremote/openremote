@@ -51,9 +51,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     User getUserByUsername(String realm, String username);
 
-    void updateUser(String realm, User user);
-
-    User createUser(String realm, User user, String password);
+    User createUpdateUser(String realm, User user, String password);
 
     void deleteUser(String realm, String userId);
 
@@ -61,11 +59,11 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     Role[] getRoles(String realm, String client);
 
-    void updateRoles(String realm, String client, Role[] roles);
+    void updateClientRoles(String realm, String client, Role[] roles);
 
-    Role[] getUserRoles(String realm, String userId);
+    Role[] getUserRoles(String realm, String userId, String client);
 
-    void updateUserRoles(String realm, String username, String client, String...roles);
+    void updateUserRoles(String realm, String userId, String client, String...roles);
 
     boolean isMasterRealmAdmin(String userId);
 
@@ -95,7 +93,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
      *
      * @return <code>true</code> if the authenticated party can subscribe to events with the given filter.
      */
-    boolean canSubscribeWith(AuthContext auth, TenantFilter filter, ClientRole... requiredRoles);
+    boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles);
 
 
     /*

@@ -19,9 +19,9 @@
  */
 package org.openremote.manager.setup;
 
-import org.openremote.model.Container;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
@@ -76,14 +76,6 @@ public abstract class AbstractKeycloakSetup implements Setup {
         return tenant;
     }
 
-    protected Tenant createTenant(String realm, String displayName) {
-        return  createTenant(realm, displayName, false);
-    }
-
-    protected Tenant createTenant(Tenant tenant) {
-        return keycloakProvider.createTenant(tenant);
-    }
-
     protected User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {
         User user = new User();
         user.setUsername(username);
@@ -91,7 +83,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
         user.setLastName(lastName);
         user.setEmail(email);
         user.setEnabled(enabled);
-        user = keycloakProvider.createUser(realm, user, password);
+        user = keycloakProvider.createUpdateUser(realm, user, password);
         if (user == null) {
             return null;
         }

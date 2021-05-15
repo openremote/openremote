@@ -99,9 +99,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            identityService.getIdentityProvider().createTenant(
-                tenant
-            );
+            identityService.getIdentityProvider().createTenant(tenant);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

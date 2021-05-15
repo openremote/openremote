@@ -60,7 +60,7 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
         Arrays.stream(keycloakProvider.getClients(MASTER_REALM)).forEach(client -> {
             if (!DEFAULT_CLIENTS.contains(client.getClientId())) {
                 LOG.info("Deleting client: " + client.getClientId());
-                keycloakProvider.deleteClient(MASTER_REALM, client);
+                keycloakProvider.deleteClient(MASTER_REALM, client.getClientId());
             }
         });
     }

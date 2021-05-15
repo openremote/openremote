@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
-import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
+import static org.openremote.manager.event.ClientEventService.getSessionKey;
 
 /**
  * Connects the client/UI to the {@link SimulatorProtocol}.

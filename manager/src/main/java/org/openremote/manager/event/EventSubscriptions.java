@@ -33,8 +33,6 @@ import org.openremote.model.util.TextUtil;
 import java.util.*;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.event.ClientEventService.HEADER_ACCESS_RESTRICTED;
-
 /**
  * Manages subscriptions to events for WebSocket sessions.
  */
@@ -68,7 +66,7 @@ public class EventSubscriptions {
         }
 
         public void cancelByType(String eventType) {
-            removeIf(sessionSubscription -> sessionSubscription.subscription.getEventType().equals(eventType));
+            removeIf(sessionSubscription -> sessionSubscription.subscriptionId == null && sessionSubscription.subscription.getEventType().equals(eventType));
         }
 
         public void cancelById(String subscriptionId) {
@@ -153,7 +151,7 @@ public class EventSubscriptions {
         if (event == null)
             return messageList;
 
-        boolean accessibleForRestrictedUsers = exchange.getIn().getHeader(HEADER_ACCESS_RESTRICTED, false, Boolean.class);
+        boolean accessibleForRestrictedUsers = exchange.getIn().getHeader(ClientEventService.HEADER_ACCESS_RESTRICTED, false, Boolean.class);
 
         Set<Map.Entry<String, SessionSubscriptions>> sessionSubscriptionsSet;
         synchronized (this.sessionSubscriptionIdMap) {

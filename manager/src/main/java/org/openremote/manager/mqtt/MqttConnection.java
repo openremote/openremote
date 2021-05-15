@@ -1,79 +1,89 @@
 package org.openremote.manager.mqtt;
 
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.util.TextUtil;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
 
-import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR;
-
+/**
+ * Handles access token generation and tracks all subscriptions for the connection
+ */
 public class MqttConnection {
 
+    protected static final Logger LOG = Logger.getLogger(MqttConnection.class.getSimpleName());
     protected final String realm;
-    protected final String clientId;
-    protected final String username;
-    protected final byte[] password;
-    protected final Map<String, String> assetSubscriptions;
-    protected final Map<String, String> attributeValueSubscriptions;
-    protected String accessToken;
-    protected int subscriptionId;
+    protected final String username; // This is OAuth clientId
+    protected final String password;
+    protected final Map<String, Consumer<SharedEvent>> subscriptionHandlerMap = new HashMap<>();
+    protected final String sessionId;
+    protected Supplier<String> tokenSupplier;
 
-    public MqttConnection(String clientId, String username, byte[] password) {
-        int indexSplit = clientId.indexOf(MQTT_CLIENT_ID_SEPARATOR);
-        if (indexSplit > 0) {
-            realm = clientId.substring(0, indexSplit);
-        } else {
-            realm = clientId;
-        }
-        this.clientId = clientId;
+    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String sessionId, String realm, String username, String password) {
+        this.realm = realm;
         this.username = username;
         this.password = password;
-        this.assetSubscriptions = new HashMap<>();
-        attributeValueSubscriptions = new HashMap<>();
-        this.subscriptionId = 0;
-    }
+        this.sessionId = sessionId;
+        String tokenEndpointUri = identityProvider.getTokenUri(realm).toString();
 
-    public int getNextSubscriptionId() {
-        return ++subscriptionId;
-    }
+        if (!TextUtil.isNullOrEmpty(realm)
+            && !TextUtil.isNullOrEmpty(username)
+            && !TextUtil.isNullOrEmpty(password)) {
 
+            OAuthGrant grant = new OAuthClientCredentialsGrant(tokenEndpointUri, username, password, null);
+            tokenSupplier = identityProvider.getAccessTokenSupplier(grant);
+        } else {
+            LOG.info("Invalid credentials provided, MQTT connection is not valid: " + this);
+        }
+    }
 
     public String getRealm() {
         return this.realm;
     }
 
-
-    public String getClientId() {
-        return this.clientId;
-    }
-
-
     public String getUsername() {
         return this.username;
     }
 
-
-    public byte[] getPassword() {
+    public String getPassword() {
         return this.password;
     }
 
-
-    public Map<String, String> getAssetSubscriptions() {
-        return this.assetSubscriptions;
+    public Map<String, Consumer<SharedEvent>> getSubscriptionHandlerMap() {
+        return this.subscriptionHandlerMap;
     }
 
-
-    public Map<String, String> getAttributeValueSubscriptions() {
-        return this.attributeValueSubscriptions;
+    /**
+     * Doesn't mean that credentials are valid just that correct info is set
+     */
+    public boolean isValid() {
+        return tokenSupplier != null;
     }
-
 
     public String getAccessToken() {
-        return this.accessToken;
+        if (!isValid()) {
+            return null;
+        }
+
+        return tokenSupplier.get();
     }
 
+    public String getSessionId() {
+        return sessionId;
+    }
 
-    public int getSubscriptionId() {
-        return this.subscriptionId;
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + "{" +
+            "realm='" + realm + '\'' +
+            ", username='" + username + '\'' +
+            ", sessionId='" + sessionId + '\'' +
+            '}';
     }
 }

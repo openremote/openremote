@@ -15,6 +15,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.util.ReferenceCountUtil
+import org.openremote.model.asset.agent.ConnectionStatus
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Semaphore
@@ -80,9 +81,13 @@ class RawClient {
 
             // Start the client.
             m_channel = b.connect(host, port).sync().channel()
+
+            m_channel.closeFuture().addListener({
+                this.connected = false
+            })
+
             this.connected = true
         } catch (Exception ex) {
-            LOG.error("Error received in client setup", ex)
             workerGroup.shutdownGracefully()
         }
     }
@@ -91,11 +96,8 @@ class RawClient {
         return new RawClient(host, port)
     }
 
-    RawClient isConnected() {
-        if (!this.connected) {
-            throw new IllegalStateException("Can't connect the client")
-        }
-        return this
+    boolean isConnected() {
+        return this.connected
     }
 
     RawClient write(int... bytes) {

@@ -24,8 +24,10 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -34,37 +36,48 @@ public class KeycloakAuthenticator implements IAuthenticator {
 
     private static final Logger LOG = SyslogCategory.getLogger(API, KeycloakAuthenticator.class);
 
-    public static final String MQTT_CLIENT_ID_SEPARATOR = "_";
+    protected final ManagerKeycloakIdentityProvider identityProvider;
+    protected final Map<String, MqttConnection> sessionIdConnectionMap;
 
-    final ManagerKeycloakIdentityProvider identityProvider;
-
-    public KeycloakAuthenticator(ManagerKeycloakIdentityProvider managerIdentityProvider) {
+    public KeycloakAuthenticator(ManagerKeycloakIdentityProvider managerIdentityProvider, Map<String, MqttConnection> sessionIdConnectionMap) {
         identityProvider = managerIdentityProvider;
+        this.sessionIdConnectionMap = sessionIdConnectionMap;
     }
 
     @Override
-    public boolean checkValid(String realm, String clientId, byte[] password) {
-        int indexSplit = realm.indexOf(MQTT_CLIENT_ID_SEPARATOR);
-        if (indexSplit > 0) {
-            realm = realm.substring(0, indexSplit);
+    public boolean checkValid(String clientId, String username, byte[] password) {
+        String[] realmAndClientId = username.split(":");
+        String realm = realmAndClientId[0];
+        username = realmAndClientId[1]; // This is OAuth clientId
+        String suppliedClientSecret = new String(password, StandardCharsets.UTF_8);
+
+        if (TextUtil.isNullOrEmpty(realm)
+            || TextUtil.isNullOrEmpty(username)
+            || TextUtil.isNullOrEmpty(suppliedClientSecret)) {
+            LOG.warning("Realm, client ID and/or client secret missing");
+            return false;
+        }
+
+        if (sessionIdConnectionMap.containsKey(clientId)) {
+            LOG.warning("Client already connected");
+            return false;
         }
 
         Tenant tenant = identityProvider.getTenant(realm);
-        if (tenant == null) {
-            LOG.warning("Realm not found");
+
+        if (tenant == null || !tenant.getEnabled()) {
+            LOG.warning("Realm not found or is inactive: " + realm);
             return false;
         }
 
-        ClientRepresentation client = identityProvider.getClient(realm, clientId);
+        ClientRepresentation clientRepresentation = identityProvider.getClient(realm, username);
 
-        if (client == null) {
-            LOG.warning("Client not found");
+        if (clientRepresentation == null || TextUtil.isNullOrEmpty(clientRepresentation.getSecret())) {
+            LOG.warning("Client not found or doesn't support client credentials grant type");
             return false;
         }
 
-        String suppliedClientSecret = new String(password, StandardCharsets.UTF_8);
-        String clientSecret = client.getSecret();
-
+        String clientSecret = clientRepresentation.getSecret();
         return suppliedClientSecret.equals(clientSecret);
     }
 }

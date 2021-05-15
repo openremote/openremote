@@ -76,7 +76,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
             User adminUser = new User();
             adminUser.setUsername(MASTER_REALM_ADMIN_USER);
-            createUser(MASTER_REALM, adminUser, adminPassword);
+            createUpdateUser(MASTER_REALM, adminUser, adminPassword);
         }
     }
 
@@ -111,13 +111,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void updateUser(String realm, User user) {
-        LOG.info("Updating user: " + user);
-        persistenceService.doTransaction(em -> em.merge(user));
-    }
-
-    @Override
-    public User createUser(String realm, User user, String password) {
+    public User createUpdateUser(String realm, User user, String password) {
         if (!realm.equals(MASTER_REALM)) {
             throw new UnsupportedOperationException("This provider does not support realms other than master");
         }
@@ -129,7 +123,9 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
         LOG.info("Creating user: " + user);
         user.setId(UUID.randomUUID().toString());
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
-            String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)" +
+                "ON CONFLICT (ID) DO UPDATE " +
+                "SET username = excluded.username, password = excluded.pasword, first_name = excluded.first_name, last_name = excluded.last_name, email = excluded.email, enabled = excluded.enabled";
             try (PreparedStatement st = connection.prepareStatement(sql)) {
                 st.setString(1, UUID.randomUUID().toString());
                 st.setString(2, MASTER_REALM); // For master REALM NAME and ID are the same
@@ -174,19 +170,19 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void updateRoles(String realm, String client, Role[] roles) {
+    public void updateClientRoles(String realm, String client, Role[] roles) {
         throw new UnsupportedOperationException("This provider does not support updating roles");
     }
 
     @Override
-    public Role[] getUserRoles(String realm, String userId) {
+    public Role[] getUserRoles(String realm, String userId, String client) {
         return ClientRole.ALL_ROLES.stream()
             .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
             .toArray(Role[]::new);
     }
 
     @Override
-    public void updateUserRoles(String realm, String username, String client, String... roles) {
+    public void updateUserRoles(String realm, String userId, String client, String... roles) {
         throw new UnsupportedOperationException("This provider does not support updating user roles");
     }
 
@@ -246,7 +242,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public boolean canSubscribeWith(AuthContext auth, TenantFilter filter, ClientRole... requiredRoles) {
+    public boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles) {
         // TODO Doesn't really respect the description of the interface
         return auth.isSuperUser();
     }

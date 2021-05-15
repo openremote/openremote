@@ -82,6 +82,11 @@ public abstract class OAuthGrant implements Serializable {
         return tokenEndpointUri;
     }
 
+    public OAuthGrant setTokenEndpointUri(String tokenEndpointUri) {
+        this.tokenEndpointUri = tokenEndpointUri;
+        return this;
+    }
+
     public String getGrantType() {
         return grantType;
     }

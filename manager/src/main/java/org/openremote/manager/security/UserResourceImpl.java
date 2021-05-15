@@ -22,7 +22,6 @@ package org.openremote.manager.security;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.*;
 
@@ -104,9 +103,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         throwIfIllegalMasterAdminUserMutation(requestParams, realm, user);
 
         try {
-            identityService.getIdentityProvider().updateUser(
-                realm, user
-            );
+            identityService.getIdentityProvider().createUpdateUser(realm, user, null);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -117,7 +114,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     @Override
     public User create(RequestParams requestParams, String realm, User user) {
         try {
-            return identityService.getIdentityProvider().createUser(
+            return identityService.getIdentityProvider().createUpdateUser(
                 realm, user,
                 null);
         } catch (ClientErrorException ex) {
@@ -175,7 +172,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         try {
             return identityService.getIdentityProvider().getUserRoles(
-                realm, userId
+                realm, userId, KEYCLOAK_CLIENT_ID
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -208,7 +205,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         try {
             return identityService.getIdentityProvider().getRoles(
                 realm,
-                null);
+                KEYCLOAK_CLIENT_ID);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -219,7 +216,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     @Override
     public void updateRoles(RequestParams requestParams, String realm, Role[] roles) {
         try {
-            identityService.getIdentityProvider().updateRoles(
+            identityService.getIdentityProvider().updateClientRoles(
                 realm,
                 KEYCLOAK_CLIENT_ID,
                 roles);
@@ -227,7 +224,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
-            throw new WebApplicationException(ex);
+            throw new NotFoundException(ex);
         }
     }
 

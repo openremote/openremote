@@ -22,7 +22,6 @@ package org.openremote.manager.gateway;
 import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent.protocol.ProtocolClientEventService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.web.ConnectionConstants;
@@ -48,6 +47,7 @@ import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
@@ -66,8 +66,6 @@ import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
-import static org.openremote.manager.event.ClientEventService.ClientCredentials;
-import static org.openremote.manager.event.ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID;
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
@@ -262,7 +260,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     }
 
     protected void onMessageIntercept(Exchange exchange) {
-        String clientId = ProtocolClientEventService.getClientId(exchange);
+        String clientId = ClientEventService.getClientId(exchange);
 
         if (!isGatewayClientId(clientId)) {
             return;
@@ -270,7 +268,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         if (header(ConnectionConstants.SESSION_OPEN).matches(exchange)) {
             Session session = exchange.getIn().getHeader(ConnectionConstants.SESSION, Session.class);
-            String sessionKey = ProtocolClientEventService.getSessionKey(exchange);
+            String sessionKey = ClientEventService.getSessionKey(exchange);
             processGatewayConnected(clientId, sessionKey, session);
             return;
         }
@@ -281,10 +279,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
 
         // Inbound shared events
-        if (and(ProtocolClientEventService::isInbound, body().isInstanceOf(SharedEvent.class)).matches(exchange)) {
-            ProtocolClientEventService.stopMessage(exchange);
+        if (and(ClientEventService::isInbound, body().isInstanceOf(SharedEvent.class)).matches(exchange)) {
+            ClientEventService.stopMessage(exchange);
             String gatewayId = getGatewayIdFromClientId(clientId);
-            onGatewayClientEventReceived(gatewayId, exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class), exchange.getIn().getBody(SharedEvent.class));
+            onGatewayClientEventReceived(gatewayId, exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class), exchange.getIn().getBody(SharedEvent.class));
         }
     }
 
@@ -592,7 +590,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
 
         try {
-            clientEventService.addClientCredentials(new ClientCredentials(gateway.getRealm(), null, clientId, secret));
+            identityProvider.createUpdateUser(gateway.getRealm(), new User().setServiceAccount(true).setUsername(clientId), secret);
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
                 gateway.setClientId(clientId);
@@ -616,12 +614,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             LOG.warning("Cannot find gateway keycloak client ID so cannot remove keycloak client for gateway: " + gateway.getId());
             return;
         }
-
-        try {
-            clientEventService.removeClientCredentials(gateway.getRealm(), id);
-        } catch (Exception e) {
-            LOG.warning("Failed to delete client for gateway '" + gateway.getId());
-        }
+        identityProvider.deleteClient(gateway.getRealm(), id);
     }
 
     protected Consumer<Object> createConnectorMessageConsumer(String sessionId) {

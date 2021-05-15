@@ -19,19 +19,37 @@
  */
 package org.openremote.manager.security;
 
-import org.openremote.model.Container;
+import org.apache.commons.io.IOUtils;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
+import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.OAuthPasswordGrant;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.logging.Logger;
+
+import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD;
+import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT;
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.ADMIN_CLI_CLIENT_ID;
+import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 public class ManagerIdentityService extends IdentityService {
 
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
+    public static final String KEYCLOAK_GRANT_FILE = "KEYCLOAK_GRANT_FILE";
+    public static final String KEYCLOAK_GRANT_FILE_DEFAULT = "/deployment/manager/keycloak.json";
 
     protected ManagerIdentityProvider identityProvider;
     protected PersistenceService persistenceService;
@@ -59,7 +77,39 @@ public class ManagerIdentityService extends IdentityService {
             switch (identityProviderType.toLowerCase(Locale.ROOT)) {
                 case "keycloak":
                     LOG.info("Enabling Keycloak identity provider");
-                    this.identityProvider = new ManagerKeycloakIdentityProvider();
+
+                    // Try and load grant from file
+                    String grantFile = getString(container.getConfig(), KEYCLOAK_GRANT_FILE, KEYCLOAK_GRANT_FILE_DEFAULT);
+                    Path grantPath = TextUtil.isNullOrEmpty(grantFile) ? null : Paths.get(grantFile);
+                    OAuthGrant grant = null;
+
+                    if (grantPath != null && Files.isReadable(grantPath)) {
+                        LOG.info("Loading KEYCLOAK_GRANT_FILE: " + grantFile);
+
+                        try (InputStream is = Files.newInputStream(grantPath)) {
+                            String grantJson = IOUtils.toString(is, StandardCharsets.UTF_8);
+                            grant = Values.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
+                                LOG.info("Failed to load KEYCLOAK_GRANT_FILE: " + grantFile);
+                                return null;
+                            });
+                        } catch (Exception ex) {
+                            throw new ExceptionInInitializerError(ex);
+                        }
+                    }
+
+                    if (grant == null) {
+                        // Fallback to using admin-cli client
+                        grant = new OAuthPasswordGrant(
+                            "dummy", // This will be replaced with the correct endpoint URI
+                            ADMIN_CLI_CLIENT_ID,
+                            null,
+                            "openid",
+                            MASTER_REALM_ADMIN_USER,
+                            container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
+                        );
+                    }
+
+                    this.identityProvider = new ManagerKeycloakIdentityProvider(grant);
                     break;
                 case "basic":
                     LOG.info("Enabling basic identity provider");

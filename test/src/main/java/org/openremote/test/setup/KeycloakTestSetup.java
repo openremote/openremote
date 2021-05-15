@@ -19,27 +19,18 @@
  */
 package org.openremote.test.setup;
 
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.agent.protocol.ProtocolClientEventService;
-import org.openremote.manager.event.ClientEventService;
-import org.openremote.model.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
-import org.openremote.manager.mqtt.MqttBrokerService;
 import org.openremote.manager.setup.AbstractKeycloakSetup;
 import org.openremote.model.Constants;
+import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.openremote.agent.protocol.ProtocolClientEventService.getClientId;
-import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.MASTER_REALM;
 
 /**
@@ -67,8 +58,9 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public Tenant tenantBuilding;
     public Tenant energyTenant;
     public Tenant tenantCity;
-    public static final String clientEventClientId = getClientId("test");
-    public static final String clientEventClientSecret = UniqueIdentifierGenerator.generateId(getClientId("test"));
+    public User serviceUser;
+    public static final String serviceUserId = "test";
+    public static final String serviceUserSecret = UniqueIdentifierGenerator.generateId("test");
 
     public KeycloakTestSetup(Container container) {
         super(container);
@@ -80,9 +72,9 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
 
         // Tenants
         masterTenant = identityService.getIdentityProvider().getTenant(Constants.MASTER_REALM);
-        tenantBuilding = createTenant("building", "Building");
-        tenantCity = createTenant("smartcity", "Smart City");
-        energyTenant = createTenant("energy", "Energy Test");
+        tenantBuilding = createTenant("building", "Building", true);
+        tenantCity = createTenant("smartcity", "Smart City", true);
+        energyTenant = createTenant("energy", "Energy Test", true);
 
         // Don't allow demo users to write assets
         ClientRole[] demoUserRoles = Arrays.stream(REGULAR_USER_ROLES)
@@ -114,15 +106,15 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         /*
          * Client event keycloak client
          */
-        ProtocolClientEventService.ClientCredentials clientCredentials =
-            new ProtocolClientEventService.ClientCredentials(
-                tenantBuilding.getRealm(),
-                new ClientRole[] {ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES},
-                clientEventClientId,
-                clientEventClientSecret
-            );
-
-        ClientEventService clientEventService = container.getService(ClientEventService.class);
-        clientEventService.addClientCredentials(clientCredentials);
+        serviceUser = new User()
+            .setServiceAccount(true)
+            .setUsername(serviceUserId);
+        serviceUser = keycloakProvider.createUpdateUser(tenantBuilding.getRealm(), serviceUser, serviceUserSecret);
+        keycloakProvider.updateUserRoles(
+            tenantBuilding.getRealm(),
+            serviceUser.getId(),
+            serviceUserId,
+            Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
+        );
     }
 }

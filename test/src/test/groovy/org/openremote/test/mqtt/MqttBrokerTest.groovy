@@ -7,26 +7,23 @@ import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.mqtt.MqttBrokerService
+import org.openremote.manager.mqtt.MqttConnection
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.RawClient
-import spock.lang.Shared
+import org.openremote.test.setup.KeycloakTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.container.util.MapAccess.*
-import static org.openremote.manager.mqtt.KeycloakAuthenticator.MQTT_CLIENT_ID_SEPARATOR
-import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_HOST
-import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_PORT
-import static org.openremote.manager.mqtt.MqttBrokerService.MULTI_LEVEL_WILDCARD
-import static org.openremote.manager.mqtt.MqttBrokerService.TOPIC_SEPARATOR
+import static org.openremote.container.util.MapAccess.getInteger
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.mqtt.MqttBrokerService.*
 import static org.openremote.model.value.ValueType.TEXT
 
 class MqttBrokerTest extends Specification implements ManagerContainerTrait {
@@ -38,17 +35,21 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def mqttBrokerServiceAttributeValueCalls = 0
 
         def spyMqttBrokerService = Spy(MqttBrokerService) {
-            sendAssetEvent(_ as String, _ as String, _ as AssetEvent) >> {
-                clientId, topic, assetEvent ->
-                    mqttBrokerServiceAssetEventCalls++
-            }
-            sendAttributeEvent(_ as String, _ as String, _ as AttributeEvent) >> {
-                clientId, topic, attributeEvent ->
-                    mqttBrokerServiceAttributeEventCalls++
-            }
-            sendAttributeValue(_ as String, _ as String, _ as AttributeEvent) >> {
-                clientId, topic, attributeEvent ->
-                    mqttBrokerServiceAttributeValueCalls++
+            getEventConsumer(_ as MqttConnection, _ as String, _ as Boolean) >> {
+                connection, topic, isValueSubscription ->
+                    return {
+                        if (isValueSubscription) {
+                            if (it instanceof AttributeEvent) {
+                                mqttBrokerServiceAttributeValueCalls++
+                            }
+                        } else {
+                            if (it instanceof AttributeEvent) {
+                                mqttBrokerServiceAttributeEventCalls++
+                            } else if (it instanceof AssetEvent) {
+                                mqttBrokerServiceAssetEventCalls++
+                            }
+                        }
+                    }
             }
         }
 
@@ -57,56 +58,22 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         services.replaceAll { it instanceof MqttBrokerService ? spyMqttBrokerService : it }
         def container = startContainer(defaultConfig(), services)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def mqttBrokerService = container.getService(MqttBrokerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
-        def mqttClientId = managerTestSetup.realmBuildingTenant + MQTT_CLIENT_ID_SEPARATOR + UniqueIdentifierGenerator.generateId()
-        def clientId = KeycloakTestSetup.clientEventClientId
-        def clientSecret = KeycloakTestSetup.clientEventClientSecret
+        def mqttClientId = UniqueIdentifierGenerator.generateId()
+        def username = keycloakTestSetup.tenantBuilding.realm + ":" + KeycloakTestSetup.serviceUserId // realm and OAuth client id
+        def password = KeycloakTestSetup.serviceUserSecret
 
-        def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST);
-        def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT);
+        def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST)
+        def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT)
 
-        when: "a mqtt client connects with wrong credentials"
-        def payloadLength = "client1".size() + clientId.size() + clientSecret.size()
+        when: "a mqtt client connects with wrong realm credentials"
+        def wrongUsername = "master:" + KeycloakTestSetup.serviceUserId
+        def payloadLength = mqttClientId.size() + wrongUsername.size() + password.size()
         def remainingLength = 16 + payloadLength
-        def client = RawClient.connect(mqttHost, mqttPort).isConnected()
-        // CONNECT
-                .write(0x10) // MQTT Control Packet type(1)
-                .write(remainingLength.byteValue()) // Remaining Length
-                .write(0x00, 0x04) // Protocol Name Length
-                .write("MQTT") // Protocol Name
-                .write(0x04) // The value of the Protocol Level field for the version 3.1.1 of the protocol is 4 (0x04)
-
-        // Connect Flags
-        // User Name Flag(1)
-        // Password Flag(1)
-        // Will Retain(0)
-        // Will QoS(00)
-        // Will Flag(0)
-        // Clean Session(1)
-        // Reserved(0)
-                .write(0xC2)
-                .write(0x00, 0x00) // Keep Alive
-
-        // Payload
-                .write(0x00, managerTestSetup.realmBuildingTenant.size().byteValue()) // Client Identifier Length
-                .write(managerTestSetup.realmBuildingTenant) // Client Identifier
-                .write(0x00, clientId.size().byteValue())
-                .write(clientId)
-                .write(0x00, clientSecret.size().byteValue())
-                .write(clientSecret)
-                .flush()
-
-        then: "no connection should be made"
-        conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.size() == 0
-        }
-
-        when: "a mqtt client connects"
-        payloadLength = mqttClientId.size() + clientId.size() + clientSecret.size()
-        remainingLength = 16 + payloadLength
-        client = RawClient.connect(mqttHost, mqttPort).isConnected()
+        def client = RawClient.connect(mqttHost, mqttPort)
         // CONNECT
                 .write(0x10) // MQTT Control Packet type(1)
                 .write(remainingLength.byteValue()) // Remaining Length
@@ -128,15 +95,52 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         // Payload
                 .write(0x00, mqttClientId.size().byteValue()) // Client Identifier Length
                 .write(mqttClientId) // Client Identifier
-                .write(0x00, clientId.size().byteValue())
-                .write(clientId)
-                .write(0x00, clientSecret.size().byteValue())
-                .write(clientSecret)
+                .write(0x00, wrongUsername.size().byteValue())
+                .write(wrongUsername)
+                .write(0x00, password.size().byteValue())
+                .write(password)
+                .flush()
+
+        then: "no connection should be made"
+        conditions.eventually {
+            assert !client.isConnected()
+            assert mqttBrokerService.sessionIdConnectionMap.size() == 0
+        }
+
+        when: "a mqtt client connects"
+        payloadLength = mqttClientId.size() + username.size() + password.size()
+        remainingLength = 16 + payloadLength
+        client = RawClient.connect(mqttHost, mqttPort)
+        // CONNECT
+                .write(0x10) // MQTT Control Packet type(1)
+                .write(remainingLength.byteValue()) // Remaining Length
+                .write(0x00, 0x04) // Protocol Name Length
+                .write("MQTT") // Protocol Name
+                .write(0x04) // The value of the Protocol Level field for the version 3.1.1 of the protocol is 4 (0x04)
+
+        // Connect Flags
+        // User Name Flag(1)
+        // Password Flag(1)
+        // Will Retain(0)
+        // Will QoS(00)
+        // Will Flag(0)
+        // Clean Session(1)
+        // Reserved(0)
+                .write(0xC2)
+                .write(0x00, 0x00) // Keep Alive
+
+        // Payload
+                .write(0x00, mqttClientId.size().byteValue()) // Client Identifier Length
+                .write(mqttClientId) // Client Identifier
+                .write(0x00, username.size().byteValue())
+                .write(username)
+                .write(0x00, password.size().byteValue())
+                .write(password)
                 .flush()
 
         then: "mqtt connection should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId) != null
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId) != null
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
@@ -157,7 +161,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
         }
 
         when: "a mqtt client subscribes to an non existing asset"
@@ -178,7 +182,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
         }
 
         when: "a mqtt client subscribes to an asset"
@@ -199,7 +203,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 1
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
         }
 
         when: "An asset attribute changed the client is subscribed on"
@@ -277,7 +281,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
         }
 
         when: "Another asset attribute changed without any subscriptions"
@@ -307,7 +311,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the subscription should be created"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.containsKey(topic)
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.containsKey(topic)
         }
 
         when: "that attribute changed"
@@ -346,11 +350,11 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
         }
 
         when: "a mqtt client subscribes with multilevel on asset"
-        topic = "attribute/" + managerTestSetup.apartment1Id + TOPIC_SEPARATOR + MULTI_LEVEL_WILDCARD
+        topic = "attribute/" + managerTestSetup.apartment1Id + "/" + MULTI_LEVEL_WILDCARD
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -367,7 +371,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 1
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
         }
 
         when: "An child asset attribute changed the client is subscribed on"
@@ -397,7 +401,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "the subscription should be created"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).attributeValueSubscriptions.containsKey(topic)
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 2
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.containsKey(topic)
         }
 
         when: "that attribute changed"
@@ -436,7 +441,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).attributeValueSubscriptions.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
         }
 
         when: " a client disconnects"
@@ -448,13 +453,13 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "no connection should be left"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.size() == 0
         }
 
         when: "a mqtt client reconnects"
-        payloadLength = mqttClientId.size() + clientId.size() + clientSecret.size()
+        payloadLength = mqttClientId.size() + username.size() + password.size()
         remainingLength = 16 + payloadLength
-        client = RawClient.connect(mqttHost, mqttPort).isConnected()
+        client = RawClient.connect(mqttHost, mqttPort)
         // CONNECT
                 .write(0x10) // MQTT Control Packet type(1)
                 .write(remainingLength.byteValue()) // Remaining Length
@@ -476,15 +481,15 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         // Payload
                 .write(0x00, mqttClientId.size().byteValue()) // Client Identifier Length
                 .write(mqttClientId) // Client Identifier
-                .write(0x00, clientId.size().byteValue())
-                .write(clientId)
-                .write(0x00, clientSecret.size().byteValue())
-                .write(clientSecret)
+                .write(0x00, username.size().byteValue())
+                .write(username)
+                .write(0x00, password.size().byteValue())
+                .write(password)
                 .flush()
 
         then: "mqtt connection should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId) != null
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId) != null
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
@@ -505,7 +510,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
         }
 
         when: "a mqtt client subscribes to an non existing asset"
@@ -526,7 +531,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "No subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
         }
 
         when: "a mqtt client subscribes to an asset"
@@ -547,7 +552,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 1
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
         }
 
         when: "An asset is updated with a new attribute"
@@ -561,7 +566,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes for child assets of an asset"
-        topic = "asset/" + managerTestSetup.apartment1Id +  TOPIC_SEPARATOR + MULTI_LEVEL_WILDCARD
+        topic = "asset/" + managerTestSetup.apartment1Id +  "/" + MULTI_LEVEL_WILDCARD
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -578,7 +583,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         and: "a second subscription is in place"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 2
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 2
         }
 
         and: "a asset is added as child to the subcribed asset"
@@ -610,7 +615,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "Only one subscription should be left"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.get(mqttClientId).assetSubscriptions.size() == 1
+            assert mqttBrokerService.sessionIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
         }
 
         when: "MQTT client disconnects"
@@ -622,7 +627,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "no connection should be left"
         conditions.eventually {
-            assert mqttBrokerService.mqttConnectionMap.size() == 0
+            assert mqttBrokerService.sessionIdConnectionMap.size() == 0
         }
     }
 }

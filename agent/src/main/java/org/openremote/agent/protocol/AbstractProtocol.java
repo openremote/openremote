@@ -83,7 +83,6 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
     protected ScheduledExecutorService executorService;
     protected ProtocolAssetService assetService;
     protected ProtocolPredictedAssetService predictedAssetService;
-    protected ProtocolClientEventService protocolClientEventService;
     protected T agent;
 
     public AbstractProtocol(T agent) {
@@ -96,7 +95,6 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
         executorService = container.getExecutorService();
         assetService = container.getService(ProtocolAssetService.class);
         predictedAssetService = container.getService(ProtocolPredictedAssetService.class);
-        protocolClientEventService = container.getService(ProtocolClientEventService.class);
         messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
 
         withLock(getProtocolName() + "::start", () -> {

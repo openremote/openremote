@@ -46,16 +46,18 @@ public class UserConfiguration {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public UserConfiguration setUserId(String userId) {
         this.userId = userId;
+        return this;
     }
 
     public boolean isRestricted() {
         return restricted;
     }
 
-    public void setRestricted(boolean restricted) {
+    public UserConfiguration setRestricted(boolean restricted) {
         this.restricted = restricted;
+        return this;
     }
 
     @Override

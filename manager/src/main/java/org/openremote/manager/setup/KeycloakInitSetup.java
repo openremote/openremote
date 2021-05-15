@@ -47,16 +47,18 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         masterRealm.setDisplayName("Master");
         keycloakProvider.updateTenant(masterRealm);
 
-        // Create our client application with its default roles
-        keycloakProvider.createOpenRemoteClientApplication(masterRealm.getRealm());
+        // Create our client application with its default roles in the master realm
+        keycloakProvider.createUpdateClient(masterRealm.getRealm(), keycloakProvider.generateOpenRemoteClientRepresentation());
 
         // Update master user name
         User adminUser = keycloakProvider.getUserByUsername(MASTER_REALM, MASTER_REALM_ADMIN_USER);
         adminUser.setFirstName("System");
         adminUser.setLastName("Administrator");
-        keycloakProvider.updateUser(MASTER_REALM, adminUser);
+        keycloakProvider.createUpdateUser(MASTER_REALM, adminUser, null);
 
         // Give admin all roles on application client level
         keycloakProvider.updateUserRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
+
+
     }
 }

@@ -36,22 +36,25 @@ import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.representations.adapters.config.AdapterConfig;
-import org.openremote.container.security.ClientCredentialsAuthForm;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.container.web.ClientRequestInfo;
+import org.openremote.container.web.OAuthFilter;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
-import org.openremote.model.auth.OAuthPasswordGrant;
+import org.openremote.model.auth.OAuthGrant;
 
-import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,7 +64,7 @@ import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
@@ -97,10 +100,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String IDENTITY_NETWORK_HOST_DEFAULT = "localhost";
     public static final String IDENTITY_NETWORK_WEBSERVER_PORT = "IDENTITY_NETWORK_WEBSERVER_PORT";
     public static final int IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
+
     public static final String KEYCLOAK_AUTH_PATH = "auth";
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
-    // Each realm in Keycloak has a client application with this identifier
-    final protected String clientId;
     // The externally visible address of this installation
     protected UriBuilder externalServerUri;
     // The (internal) URI where Keycloak can be found
@@ -114,15 +116,22 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     // The client we use to access Keycloak
     protected ResteasyClient httpClient;
     protected ResteasyWebTarget keycloakTarget;
+    protected ConcurrentLinkedQueue<RealmsResource> realmsResourcePool = new ConcurrentLinkedQueue<>();
     // Cache Keycloak deployment per realm/client so we don't have to access Keycloak for every token validation
     protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> keycloakDeploymentCache;
-    // The configuration for the Keycloak servlet extension, looks up the client application per realm
+    // The configuration for the Keycloak servlet extension, looks up the openremote client application per realm
     protected KeycloakConfigResolver keycloakConfigResolver;
     // Optional reverse proxy that listens to KEYCLOAK_AUTH_PATH and forwards requests to Keycloak (used in dev mode to allow same url to be used for manager and keycloak) - handled by proxy in production
     protected HttpHandler authProxyHandler;
+    protected OAuthGrant oAuthGrant;
 
-    protected KeycloakIdentityProvider(String clientId) {
-        this.clientId = clientId;
+    /**
+     * The supplied {@link OAuthGrant} will be used to authenticate with keycloak so we can programmatically make changes.
+     * It must be credentials for the master realm for a user with `admin` role so that they can perform CRUD on realms,
+     * clients and users.
+     */
+    protected KeycloakIdentityProvider(OAuthGrant oAuthGrant) {
+        this.oAuthGrant = oAuthGrant;
     }
 
     @Override
@@ -179,16 +188,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 );
         httpClient = WebClient.registerDefaults(clientBuilder).build();
 
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
-        targetBuilder.setOAuthAuthentication(new OAuthPasswordGrant(
-            keycloakServiceUri.clone().path("/realms/master/protocol/openid-connect/token").build().toString(),
-            ADMIN_CLI_CLIENT_ID,
-            null,
-            "openid",
-            MASTER_REALM_ADMIN_USER,
-            container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
-        ));
-        keycloakTarget = targetBuilder.build();
+        // Generate the keycloak proxy for
+        updateCredentials(oAuthGrant);
 
         keycloakDeploymentCache = createKeycloakDeploymentCache();
 
@@ -199,7 +200,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 LOG.finer("No realm in request, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
             }
-            KeycloakDeployment keycloakDeployment = getKeycloakDeployment(realm, clientId);
+            KeycloakDeployment keycloakDeployment = getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID);
             if (keycloakDeployment == null) {
                 LOG.fine("No Keycloak deployment available for realm, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
@@ -231,6 +232,19 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             httpClient.close();
     }
 
+    /**
+     * Update the credentials used to interact with keycloak; the token endpoint will be overwritten with this instances
+     * keycloak server URI and for the master realm.
+     */
+    public void updateCredentials(OAuthGrant grant) {
+        this.oAuthGrant = grant;
+        // Force token endpoint to master realm as this is the realm we need to be in to do keycloak CRUD
+        oAuthGrant.setTokenEndpointUri(getTokenUri("master").toString());
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build());
+        targetBuilder.setOAuthAuthentication(grant);
+        keycloakTarget = targetBuilder.build();
+    }
+
     @Override
     public void secureDeployment(DeploymentInfo deploymentInfo) {
         LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
@@ -242,40 +256,25 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         return keycloakTarget.proxy(KeycloakResource.class);
     }
 
-    public String getAccessToken(String realm, String username, String secret) {
-        return getTarget(httpClient, keycloakServiceUri.build(), null, null, null)
-            .proxy(KeycloakResource.class)
-            .getAccessToken(realm, new ClientCredentialsAuthForm(username, secret))
-            .getToken();
-    }
-
     //There is a bug in {@link org.keycloak.admin.client.resource.UserStorageProviderResource#syncUsers} which misses the componentId as parameter
-    protected Response syncUsers(ClientRequestInfo clientRequestInfo, String componentId, String realm, String action) {
-        return getTarget(httpClient,
-            keycloakServiceUri.build(),
-            clientRequestInfo.getAccessToken(),
-            clientRequestInfo.getRemoteAddress(),
-            clientRequestInfo.getRemoteAddress() != null ? externalServerUri.build() : null)
-            .path("admin")
-            .path("realms")
-            .path(realm)
-            .path("user-storage")
-            .path(componentId)
-            .path("sync")
-            .queryParam("action", action)
-            .request()
-            .build(HttpMethod.POST)
-            .invoke();
+    protected void syncUsers(String componentId, String realm, String action) {
+        getRealms(realmsResource -> {
+            realmsResource.realm(realm).userStorage().syncUsers(componentId, action);
+            return null;
+        });
     }
 
-    /**
-     * Must be the client source address if this is effectively a forwarded request and the access token was obtained by
-     * the client (can be null e.g. for Admin CLI calls during setup or tests where the access token was obtained
-     * directly). This should not be overloaded because we want to know who is calling this method with "null", as this
-     * can lead to subtle runtime problems.
-     */
-    final protected RealmsResource getRealms() {
-        return keycloakTarget.proxy(RealmsResource.class);
+    final protected <T> T getRealms(Function<RealmsResource, T> consumer) {
+        RealmsResource realmsResource;
+
+        if ((realmsResource = realmsResourcePool.poll()) == null) {
+            realmsResource = keycloakTarget.proxy(RealmsResource.class);
+        }
+        try {
+            return consumer.apply(realmsResource);
+        } finally {
+            realmsResourcePool.offer(realmsResource);
+        }
     }
 
     protected void waitForKeycloak() {
@@ -330,16 +329,39 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         }
     }
 
+    public URI getTokenUri(String realm) {
+        return keycloakServiceUri.clone().path("realms").path(realm).path("protocol/openid-connect/token").build();
+    }
+
+    /**
+     * Convenience method for generating access tokens from a given OAuth compliant server
+     */
+    public Supplier<String> getAccessTokenSupplier(OAuthGrant grant) {
+        WebTarget authTarget = httpClient.target(grant.getTokenEndpointUri());
+        OAuthFilter oAuthFilter = new OAuthFilter(authTarget, grant);
+        return () -> {
+            try {
+                return oAuthFilter.getAccessToken();
+            } catch (Exception e) {
+                LOG.log(Level.INFO, "Failed to get OAuth access token using grant: " + grant, e);
+            }
+            return null;
+        };
+    }
+
     protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> createKeycloakDeploymentCache() {
         CacheLoader<KeycloakRealmClient, KeycloakDeployment> loader =
             new CacheLoader<KeycloakRealmClient, KeycloakDeployment>() {
                 public KeycloakDeployment load(KeycloakRealmClient keycloakRealmClient) {
                     LOG.fine("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
 
+                    // Using authenticated client here doesn't seem to work
+                    //KeycloakResource keycloak = getKeycloak();
                     KeycloakResource keycloak = getTarget(httpClient, keycloakServiceUri.build(), null, null, null).proxy(KeycloakResource.class);
 
+                    // Can't get adapter for client in another realm
                     AdapterConfig adapterConfig = keycloak.getAdapterConfig(
-                        keycloakRealmClient.realm, keycloakRealmClient.clientId
+                        keycloakRealmClient.realm, KEYCLOAK_CLIENT_ID//keycloakRealmClient.clientId
                     );
 
                     // The auth-server-url in the adapter config must be reachable by this manager it will be the frontend URL by default

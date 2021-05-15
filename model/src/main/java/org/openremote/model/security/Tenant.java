@@ -103,8 +103,9 @@ public class Tenant {
         return realm;
     }
 
-    public void setRealm(String realm) {
+    public Tenant setRealm(String realm) {
         this.realm = realm;
+        return this;
     }
 
     @NotNull(message = "{Tenant.displayName.NotNull}")
@@ -113,48 +114,54 @@ public class Tenant {
         return displayName;
     }
 
-    public void setDisplayName(String displayName) {
+    public Tenant setDisplayName(String displayName) {
         this.displayName = displayName;
+        return this;
     }
 
     public Boolean getEnabled() {
         return enabled;
     }
 
-    public void setEnabled(Boolean enabled) {
+    public Tenant setEnabled(Boolean enabled) {
         this.enabled = enabled;
+        return this;
     }
 
     public Double getNotBefore() {
         return notBefore;
     }
 
-    public void setNotBefore(Double notBefore) {
+    public Tenant setNotBefore(Double notBefore) {
         this.notBefore = notBefore;
+        return this;
     }
 
     public Boolean getResetPasswordAllowed() {
         return resetPasswordAllowed;
     }
 
-    public void setResetPasswordAllowed(Boolean resetPasswordAllowed) {
+    public Tenant setResetPasswordAllowed(Boolean resetPasswordAllowed) {
         this.resetPasswordAllowed = resetPasswordAllowed;
+        return this;
     }
 
     public Boolean getDuplicateEmailsAllowed() {
         return duplicateEmailsAllowed;
     }
 
-    public void setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
+    public Tenant setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
         this.duplicateEmailsAllowed = duplicateEmailsAllowed;
+        return this;
     }
 
     public Boolean getRememberMe() {
         return rememberMe;
     }
 
-    public void setRememberMe(Boolean rememberMe) {
+    public Tenant setRememberMe(Boolean rememberMe) {
         this.rememberMe = rememberMe;
+        return this;
     }
 
     public boolean isActive(double currentTimeMillis) {
@@ -166,32 +173,36 @@ public class Tenant {
         return loginTheme;
     }
 
-    public void setLoginTheme(String loginTheme) {
+    public Tenant setLoginTheme(String loginTheme) {
         this.loginTheme = loginTheme;
+        return this;
     }
 
     public String getAccountTheme() {
         return accountTheme;
     }
 
-    public void setAccountTheme(String accountTheme) {
+    public Tenant setAccountTheme(String accountTheme) {
         this.accountTheme = accountTheme;
+        return this;
     }
 
     public String getAdminTheme() {
         return adminTheme;
     }
 
-    public void setAdminTheme(String adminTheme) {
+    public Tenant setAdminTheme(String adminTheme) {
         this.adminTheme = adminTheme;
+        return this;
     }
 
     public String getEmailTheme() {
         return emailTheme;
     }
 
-    public void setEmailTheme(String emailTheme) {
+    public Tenant setEmailTheme(String emailTheme) {
         this.emailTheme = emailTheme;
+        return this;
     }
 
     @Override
