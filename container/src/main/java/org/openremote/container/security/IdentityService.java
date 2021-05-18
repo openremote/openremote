@@ -58,7 +58,6 @@ public abstract class IdentityService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         devMode = container.isDevMode();
-
         String identityProviderType = getString(container.getConfig(), IDENTITY_PROVIDER, IDENTITY_PROVIDER_DEFAULT);
         identityProvider = createIdentityProvider(container, identityProviderType);
         identityProvider.init(container);

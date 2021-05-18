@@ -33,6 +33,12 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.openremote.model.Constants.MASTER_REALM;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
@@ -41,6 +47,7 @@ import javax.validation.constraints.Size;
 @Subselect("select * from PUBLIC.USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
 public class User {
     public static final String SERVICE_ACCOUNT_PREFIX = "service-account-";
+    public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
 
     @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
     protected String realm;
@@ -69,6 +76,10 @@ public class User {
 
     @Transient
     protected String secret; // For service users
+
+    @Transient
+    @JsonIgnore
+    protected Map<String, List<String>> attributes;
 
     public User() {
     }
@@ -128,12 +139,35 @@ public class User {
         return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
     }
 
-    public User setServiceAccount(boolean serviceAccount) {
+    public Map<String, List<String>> getAttributes() {
+        return attributes;
+    }
 
+    public User setServiceAccount(boolean serviceAccount) {
         if (username != null) {
             username = serviceAccount ? SERVICE_ACCOUNT_PREFIX + username.replace(SERVICE_ACCOUNT_PREFIX, "") : username.replace(SERVICE_ACCOUNT_PREFIX, "");
         } else {
             username = serviceAccount ? SERVICE_ACCOUNT_PREFIX : null;
+        }
+        return this;
+    }
+
+    /**
+     * Will hide this user from HTTP API
+     */
+    public User setSystemAccount(boolean systemAccount) {
+
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+
+        if (systemAccount) {
+            attributes.put(User.SYSTEM_ACCOUNT_ATTRIBUTE, Collections.singletonList("true"));
+        } else {
+            attributes.remove(User.SYSTEM_ACCOUNT_ATTRIBUTE);
+            if (attributes.isEmpty()) {
+                attributes = null;
+            }
         }
         return this;
     }

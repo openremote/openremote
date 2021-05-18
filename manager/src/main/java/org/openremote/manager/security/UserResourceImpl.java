@@ -147,7 +147,7 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     @Override
     public String resetSecret(RequestParams requestParams, String realm, String userId) {
         try {
-            return identityService.getIdentityProvider().resetSecret(realm, userId);
+            return identityService.getIdentityProvider().resetSecret(realm, userId, null);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

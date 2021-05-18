@@ -32,6 +32,7 @@ import org.openremote.model.util.TextUtil;
 import javax.persistence.TypedQuery;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.openremote.manager.asset.AssetStorageService.buildMatchFilter;
@@ -62,7 +63,9 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void resetPassword(String realm, String userId, Credential credential);
 
-    String resetSecret(String realm, String userId);
+    String resetSecret(String realm, String userId, String secret);
+
+    void updateUserAttributes(String realm, String userId, Map<String, List<String>> attributes);
 
     Role[] getRoles(String realm, String client);
 

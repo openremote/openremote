@@ -40,6 +40,17 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
     public void onStart() throws Exception {
         super.onStart();
 
+        // Try clean with stored credentials first
+        try {
+            doClean();
+        } catch (Exception e) {
+            // Clear out keycloak auth
+            keycloakProvider.setActiveCredentials(keycloakProvider.getDefaultKeycloakGrant(container));
+            doClean();
+        }
+    }
+
+    protected void doClean() throws Exception {
         // Delete all realms that are not the master realm
         LOG.info("Deleting all non-master realms");
         Arrays.stream(keycloakProvider.getTenants()).forEach(tenant -> {

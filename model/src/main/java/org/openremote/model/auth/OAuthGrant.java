@@ -19,6 +19,7 @@
  */
 package org.openremote.model.auth;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -28,6 +29,7 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.Objects;
 
 import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
@@ -44,6 +46,7 @@ public abstract class OAuthGrant implements Serializable {
     public static final String VALUE_KEY_CLIENT_SECRET = "client_secret";
     public static final String VALUE_KEY_SCOPE = "scope";
     protected String tokenEndpointUri;
+    @JsonIgnore
     protected boolean basicAuthHeader;
     @JsonProperty(VALUE_KEY_GRANT_TYPE)
     protected String grantType;
@@ -110,5 +113,30 @@ public abstract class OAuthGrant implements Serializable {
     public OAuthGrant setBasicAuthHeader(boolean basicAuthHeader) {
         this.basicAuthHeader = basicAuthHeader;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        OAuthGrant grant = (OAuthGrant) o;
+        return basicAuthHeader == grant.basicAuthHeader && Objects.equals(tokenEndpointUri, grant.tokenEndpointUri) && Objects.equals(grantType, grant.grantType) && Objects.equals(clientId, grant.clientId) && Objects.equals(clientSecret, grant.clientSecret) && Objects.equals(scope, grant.scope);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(tokenEndpointUri, basicAuthHeader, grantType, clientId, clientSecret, scope);
+    }
+
+    @Override
+    public String toString() {
+        return OAuthGrant.class.getSimpleName() + "{" +
+            "tokenEndpointUri='" + tokenEndpointUri + '\'' +
+            ", basicAuthHeader=" + basicAuthHeader +
+            ", grantType='" + grantType + '\'' +
+            ", clientId='" + clientId + '\'' +
+            ", clientSecret='" + clientSecret + '\'' +
+            ", scope='" + scope + '\'' +
+            '}';
     }
 }

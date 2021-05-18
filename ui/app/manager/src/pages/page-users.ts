@@ -530,7 +530,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     <div class="meta-item-container">
                         <div class="row">
                             <div class="column">
-                                <or-mwc-input ?readonly="${readonly}"
+                                <or-mwc-input ?readonly="${!!user.id || readonly}"
                                               .label="${i18next.t("username")}"
                                               .type="${InputType.TEXT}" min="1" required
                                               .value="${user.username}"
@@ -556,13 +556,13 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 <or-mwc-input ?readonly="${readonly}"
                                               ?disabled="${isSameUser}"
                                               .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
-                                              .type="${InputType.SELECT}"
-                                              .options="${roleOptions}"
+                                              .type="${InputType.SELECT}" multiple
+                                              .options="${roleOptions}" 
                                               .label="${i18next.t("role")}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  const roleName = e.detail.value;
-                                                  const role = this._compositeRoles.find(cr => cr.name === roleName);
-                                                  user.roles = role ? [role] : undefined;
+                                                  const roleNames = e.detail.value as string[];
+                                                  const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
+                                                  user.roles = roles;
                                               }}"></or-mwc-input>
                                 ${user.serviceAccount ? html`
                                     <or-mwc-input id="password-${suffix}" readonly

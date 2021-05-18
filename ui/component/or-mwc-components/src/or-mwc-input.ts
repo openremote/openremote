@@ -1250,7 +1250,9 @@ export class OrMwcInput extends LitElement {
                             mdcSelect.selectedIndex = -1; // Without this first option will be shown as selected
                         }
 
-                        (this._mdcComponent as any).foundation.adapter.floatLabel(this.value && (!Array.isArray(this.value) || this.value.length > 0));
+                        const selectedText = this.getSelectedTextValue();
+                        (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
+                        (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
@@ -1447,9 +1449,12 @@ export class OrMwcInput extends LitElement {
     }
 
     protected getSelectedTextValue(options?: [string, string][] | undefined): string {
-        const opts = options || this.resolveOptions(this.options);
         const value = this.value;
         const values = Array.isArray(value) ? value as string[] : value ? [value as string] : undefined;
-        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt && opt[1]).join(",");
+        if (!values) {
+            return "";
+        }
+        const opts = options || this.resolveOptions(this.options);
+        return !opts || !values ? "" : values.map(v => opts.find(([optValue, optDisplay], index) => v === optValue)).map((opt) => opt ? opt[1] : "").join(",");
     }
 }

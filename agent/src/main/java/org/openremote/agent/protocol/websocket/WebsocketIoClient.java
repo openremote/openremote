@@ -270,8 +270,7 @@ public class WebsocketIoClient<T> extends AbstractNettyIoClient<T, InetSocketAdd
             ResteasyClient client = createClient(executorService, 1, CONNECTION_TIMEOUT_MILLISECONDS, null);
 
             try {
-                WebTarget authTarget = client.target(oAuthGrant.getTokenEndpointUri());
-                OAuthFilter oAuthFilter = new OAuthFilter(authTarget, oAuthGrant);
+                OAuthFilter oAuthFilter = new OAuthFilter(client, oAuthGrant);
                 authHeaderValue = oAuthFilter.getAuthHeader();
                 if (TextUtil.isNullOrEmpty(authHeaderValue)) {
                     throw new RuntimeException("Returned access token is null");

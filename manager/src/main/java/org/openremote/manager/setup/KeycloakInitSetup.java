@@ -19,13 +19,17 @@
  */
 package org.openremote.manager.setup;
 
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.Container;
+import org.openremote.model.auth.OAuthClientCredentialsGrant;
+import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
 import java.util.logging.Logger;
 
+import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.MANAGER_CLIENT_ID;
 import static org.openremote.model.Constants.*;
 
 public class KeycloakInitSetup extends AbstractKeycloakSetup {
@@ -59,6 +63,24 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         // Give admin all roles on application client level
         keycloakProvider.updateUserRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
 
+        // Create a service client for this manager to communicate with keycloak so it doesn't use the admin user credentials
+        User keycloakProxyUser = new User().setUsername(MANAGER_CLIENT_ID).setServiceAccount(true).setSystemAccount(true);
+        String secret = UniqueIdentifierGenerator.generateId();
 
+        // Use credentials from file system if they are available
+        OAuthGrant storedGrant = keycloakProvider.loadCredentials();
+        if (storedGrant != null) {
+            keycloakProxyUser.setUsername(storedGrant.getClientId());
+            secret = storedGrant.getClientSecret() != null ? storedGrant.getClientSecret() : secret;
+        }
+
+        keycloakProxyUser = keycloakProvider.createUpdateUser(MASTER_REALM, keycloakProxyUser, secret);
+
+        // Give this user admin realm role (so they can do realm CRUD)
+        keycloakProvider.updateUserRoles(MASTER_REALM, keycloakProxyUser.getId(), null, "admin");
+
+        OAuthClientCredentialsGrant grant = new OAuthClientCredentialsGrant(keycloakProvider.getTokenUri(MASTER_REALM).toString(), keycloakProxyUser.getUsername(), secret, null);
+        keycloakProvider.setActiveCredentials(grant);
+        keycloakProvider.saveCredentials(grant);
     }
 }

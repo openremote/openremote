@@ -31,10 +31,7 @@ import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
 import java.sql.PreparedStatement;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.MASTER_REALM;
@@ -165,7 +162,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public String resetSecret(String realm, String userId) {
+    public String resetSecret(String realm, String userId, String secret) {
         throw new UnsupportedOperationException("This provider does not support secret reset");
     }
 
@@ -177,6 +174,10 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
         return ClientRole.ALL_ROLES.stream()
             .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))
             .toArray(Role[]::new);
+    }
+
+    public void updateUserAttributes(String realm, String userId, Map<String, List<String>> attributes) {
+        throw new UnsupportedOperationException("This provider does not support updating attributes");
     }
 
     @Override
