@@ -38,13 +38,16 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAllowedException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -118,12 +121,44 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
+    public User[] getServiceUsers(String realm) {
+        User[] users = ManagerIdentityProvider.getUsersFromDb(persistenceService, new UserQuery().usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX)).tenant(new TenantPredicate(realm)));
+        return getRealms(realmsResource -> {
+            // Need to load secrets from client resource
+            return Arrays.stream(users).filter(user -> {
+                user.setServiceAccount(true);
+                ClientsResource clientsResource = realmsResource.realm(realm).clients();
+                List<ClientRepresentation> clients = clientsResource.findByClientId(user.getUsername());
+
+                if (clients != null && !clients.isEmpty()) {
+                    ClientRepresentation client = clients.get(0);
+                    CredentialRepresentation credentialRepresentation = realmsResource.realm(realm).clients()
+                        .get(client.getId()).getSecret();
+                    if (credentialRepresentation != null) {
+                        user.setSecret(credentialRepresentation.getValue());
+                        return true;
+                    }
+                }
+                return false;
+            }).toArray(User[]::new);
+        });
+    }
+
+    @Override
     public User[] getUsers(List<String> userIds) {
         return getUsers(new UserQuery().ids(userIds.toArray(new String[0])));
     }
 
     @Override
     public User[] getUsers(UserQuery userQuery) {
+        if (userQuery.usernames == null) {
+            userQuery.usernames = new StringPredicate[1];
+            userQuery.usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(true));
+        } else {
+            userQuery.usernames = Arrays.copyOf(userQuery.usernames, userQuery.usernames.length+1);
+            userQuery.usernames[userQuery.usernames.length-1] = new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(true);
+        }
+
         return ManagerIdentityProvider.getUsersFromDb(persistenceService, userQuery);
     }
 
@@ -147,8 +182,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             boolean isUpdate = false;
             User existingUser = user.getId() != null ? getUser(realm, user.getId()) : getUserByUsername(realm, user.getUsername());
-            ClientRepresentation clientRepresentation = null;
-            UserRepresentation userRepresentation = null;
+            ClientRepresentation clientRepresentation;
+            UserRepresentation userRepresentation;
 
             if (existingUser == null && user.isServiceAccount()) {
                 // Could be a service user
@@ -158,7 +193,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 userRepresentation = clientRepresentation != null ? realmsResource.realm(realm)
                     .clients()
-                    .get(user.getUsername()).getServiceAccountUser() : null;
+                    .get(clientRepresentation.getId()).getServiceAccountUser() : null;
 
                 if (userRepresentation != null) {
                     existingUser = convert(userRepresentation, User.class);
@@ -195,41 +230,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             // For service users we don't actually create the user - keycloak does that when the client is created
             if (isUpdate) {
 
-                if (user.isServiceAccount()) {
+                // User only has a subset of user representation so overlay on actual user representation
+                UserResource userResource = realmsResource.realm(realm).users().get(existingUser.getId());
+                userRepresentation = userResource.toRepresentation();
+                userRepresentation.setFirstName(user.getFirstName());
+                userRepresentation.setLastName(user.getLastName());
+                userRepresentation.setEmail(user.getEmail());
+                userRepresentation.setEnabled(user.getEnabled());
+                userResource.update(userRepresentation);
 
-                    if (passwordSecret != null) {
-                        if (clientRepresentation == null) {
-                            clientRepresentation = realmsResource.realm(realm)
-                                .clients()
-                                .get(user.getUsername()).toRepresentation();
-                        }
-
-                        if (clientRepresentation == null) {
-                            String msg = "Attempt to update service user secret failed to find client: User=" + user;
-                            LOG.info(msg);
-                            throw new BadRequestException(msg);
-                        }
-                        clientRepresentation.setSecret(passwordSecret);
-                        createUpdateClient(realm, clientRepresentation);
-                    } else {
-                        String msg = "Attempt to update service user but only secret can be udpated and no new value provided: User=" + user;
-                        LOG.info(msg);
-                        throw new BadRequestException(msg);
-                    }
-
-                } else {
-
-                    // User only has a subset of user representation so overlay on actual user representation
-                    UserResource userResource = realmsResource.realm(realm).users().get(user.getId());
-                    userRepresentation = userResource.toRepresentation();
-                    userRepresentation.setUsername(user.getUsername());
-                    userRepresentation.setFirstName(user.getFirstName());
-                    userRepresentation.setLastName(user.getLastName());
-                    userRepresentation.setEmail(user.getEmail());
-                    userRepresentation.setEnabled(user.getEnabled());
-                    userResource.update(userRepresentation);
-
-                }
             } else {
 
                 if (user.isServiceAccount()) {
@@ -260,15 +269,15 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     String[] locationArr = location.split("/");
                     String userId = locationArr.length > 0 ? locationArr[locationArr.length-1] : null;
                     userRepresentation = realmResource.users().get(userId).toRepresentation();
+                }
+            }
 
-                    if (passwordSecret != null) {
-                        CredentialRepresentation credentials = new CredentialRepresentation();
-                        credentials.setType("password");
-                        credentials.setValue(passwordSecret);
-                        credentials.setTemporary(false);
-                        realmResource.users().get(userRepresentation.getId()).resetPassword(credentials);
-                    }
-
+            if (passwordSecret != null) {
+                if (user.isServiceAccount()) {
+                    resetSecret(realm, userRepresentation.getId());
+                } else {
+                    Credential credential = new Credential(passwordSecret, false);
+                    resetPassword(realm, userRepresentation.getId(), credential);
                 }
             }
 
@@ -283,11 +292,24 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public void deleteUser(String realm, String userId) {
+
+        User user = getUser(realm, userId);
+
+        if (user == null) {
+            return;
+        }
+
         getRealms(realmsResource -> {
-            Response response = realmsResource.realm(realm).users().delete(userId);
-            response.close();
-            if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
-                throw new IllegalStateException("Failed to delete user: " + userId);
+
+            if (user.isServiceAccount()) {
+                // Delete the client
+                deleteClient(realm, user.getUsername());
+            } else {
+                Response response = realmsResource.realm(realm).users().delete(userId);
+                response.close();
+                if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
+                    throw new IllegalStateException("Failed to delete user: " + userId);
+                }
             }
             return null;
         });
@@ -299,6 +321,33 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             realmsResource.realm(realm).users().get(userId).resetPassword(
                 convert(credential, CredentialRepresentation.class)
             );
+            return null;
+        });
+    }
+
+    @Override
+    public String resetSecret(String realm, String userId) {
+        return getRealms(realmsResource -> {
+            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
+            if (userRepresentation == null) {
+                return null;
+            }
+
+            ClientsResource clientsResource = realmsResource.realm(realm).clients();
+            List<ClientRepresentation> clients = clientsResource.findByClientId(userRepresentation.getUsername().substring(User.SERVICE_ACCOUNT_PREFIX.length()));
+
+            if (!clients.isEmpty()) {
+                ClientRepresentation client = clients.get(0);
+
+                CredentialRepresentation credentialRepresentation = realmsResource.realm(realm).clients()
+                    .get(client.getId())
+                    .generateNewSecret();
+
+                if (credentialRepresentation != null) {
+                    return credentialRepresentation.getValue();
+                }
+            }
+
             return null;
         });
     }
@@ -430,9 +479,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             RealmResource realmResource = realmsResource.realm(realm);
             RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
             ClientsResource clientsResource = realmResource.clients();
-            String clientId = clientsResource.findByClientId(client).get(0).getId();
-            RolesResource rolesResource = clientsResource.get(clientId).roles();
+            List<ClientRepresentation> clientRepresentations = clientsResource.findByClientId(client);
 
+            if (clientRepresentations == null || clientRepresentations.isEmpty()) {
+                return null;
+            }
+
+            String clientId = clientRepresentations.get(0).getId();
+            RolesResource rolesResource = clientsResource.get(clientId).roles();
             List<RoleRepresentation> allRoles = rolesResource.list();
             List<RoleRepresentation> effectiveRoles = roleMappingResource.clientLevel(clientId).listEffective();
 
@@ -470,6 +524,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
             ClientRepresentation clientRepresentation = getClient(realm, client);
+
+            if (clientRepresentation == null) {
+                throw new IllegalStateException("Invalid client: " + client);
+            }
 
             // Get all role mappings for user on this client and remove any no longer in the roles
             List<RoleRepresentation> clientMappedRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAll();
@@ -642,15 +700,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 return null;
             }
 
-            ClientRepresentation client = clients.get(0);
-            if ("client-secret".equals(client.getClientAuthenticatorType())) {
-                // Need to get secret separately for some reason
-                CredentialRepresentation credentialRepresentation = clientsResource.get(client.getId()).getSecret();
-                if (credentialRepresentation != null) {
-                    client.setSecret(credentialRepresentation.getValue());
-                }
-            }
-            return client;
+            return clients.get(0);
         });
     }
 
@@ -715,8 +765,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             LOG.info("Deleting client: realm=" + realm + ", client ID=" + clientId);
-            ClientsResource clients = realmResource.clients();
-            clients.findByClientId(clientId).forEach(client -> clients.get(client.getId()).remove());
+            ClientsResource clientsResource = realmResource.clients();
+            List<ClientRepresentation> clientRepresentations = clientsResource.findByClientId(clientId);
+
+            if (clientRepresentations.isEmpty()) {
+                throw new NotFoundException("Delete client failed as client not found: " + clientId);
+            }
+            if (clientRepresentations.size() > 1) {
+                throw new BadRequestException("Delete client failed as more than one client found matching the specified client ID: " + clientId);
+            }
+
+            clientsResource.get(clientRepresentations.get(0).getId()).remove();
             return null;
         });
     }

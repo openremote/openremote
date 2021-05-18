@@ -22,8 +22,10 @@ package org.openremote.manager.security;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityProvider;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static org.openremote.manager.asset.AssetStorageService.buildMatchFilter;
 import static org.openremote.model.Constants.MASTER_REALM;
 
 // TODO: Normalise interface for Basic and Keycloak providers and add client CRUD
@@ -42,6 +45,8 @@ import static org.openremote.model.Constants.MASTER_REALM;
 public interface ManagerIdentityProvider extends IdentityProvider {
 
     User[] getUsers(String realm);
+
+    User[] getServiceUsers(String realm);
 
     User[] getUsers(List<String> userIds);
 
@@ -56,6 +61,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     void deleteUser(String realm, String userId);
 
     void resetPassword(String realm, String userId, Credential credential);
+
+    String resetSecret(String realm, String userId);
 
     Role[] getRoles(String realm, String client);
 
@@ -138,12 +145,18 @@ public interface ManagerIdentityProvider extends IdentityProvider {
             sb.append(")");
         }
         if (userQuery.usernames != null && userQuery.usernames.length > 0) {
-            sb.append(" AND u.username IN (?").append(parameters.size() + 1);
-            parameters.add(userQuery.usernames[0]);
+            sb.append(" and (");
+            boolean isFirst = true;
 
-            for (int i = 1; i < userQuery.usernames.length; i++) {
-                sb.append(",?").append(parameters.size() + 1);
-                parameters.add(userQuery.usernames[i]);
+            for (StringPredicate pred : userQuery.usernames) {
+                if (!isFirst) {
+                    sb.append(" or ");
+                }
+                isFirst = false;
+                final int pos = parameters.size() + 1;
+                sb.append(pred.caseSensitive ? "u.username " : "upper(u.username)");
+                sb.append(buildMatchFilter(pred, pos));
+                parameters.add(pred.prepareValue());
             }
             sb.append(")");
         }

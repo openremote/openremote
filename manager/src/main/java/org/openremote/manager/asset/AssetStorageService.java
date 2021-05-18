@@ -111,7 +111,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object[]>> {
+    public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object[]>> {
 
         @Override
         default void accept(EntityManager em, org.hibernate.query.Query<Object[]> st) {
@@ -1974,7 +1974,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         throw new IllegalArgumentException("Unsupported operator: " + operator);
     }
 
-    protected static String buildMatchFilter(StringPredicate predicate, int pos) {
+    public static String buildMatchFilter(StringPredicate predicate, int pos) {
         switch (predicate.match) {
             case BEGIN:
             case END:

@@ -2,6 +2,7 @@ package org.openremote.model.query;
 
 
 import org.openremote.model.query.filter.PathPredicate;
+import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 
@@ -14,7 +15,7 @@ public class UserQuery {
     public UserAssetPredicate assetPredicate;
     public PathPredicate pathPredicate;
     public String[] ids;
-    public String[] usernames;
+    public StringPredicate[] usernames;
     public int limit;
 
     public UserQuery() {
@@ -40,7 +41,7 @@ public class UserQuery {
         return this;
     }
 
-    public UserQuery usernames(String...usernames) {
+    public UserQuery usernames(StringPredicate...usernames) {
         this.usernames = usernames;
         return this;
     }

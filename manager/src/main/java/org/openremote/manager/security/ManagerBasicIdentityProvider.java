@@ -91,6 +91,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
+    public User[] getServiceUsers(String realm) {
+        return new User[0];
+    }
+
+    @Override
     public User[] getUsers(List<String> userIds) {
         return getUsers(new UserQuery().ids(userIds.toArray(new String[0])));
     }
@@ -157,6 +162,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     @Override
     public void resetPassword(String realm, String userId, Credential credential) {
         throw new UnsupportedOperationException("This provider does not support password reset");
+    }
+
+    @Override
+    public String resetSecret(String realm, String userId) {
+        throw new UnsupportedOperationException("This provider does not support secret reset");
     }
 
     @Override

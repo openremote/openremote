@@ -68,7 +68,7 @@ public class User {
     protected Boolean enabled;
 
     @Transient
-    protected boolean serviceAccount;
+    protected String secret; // For service users
 
     public User() {
     }
@@ -105,31 +105,35 @@ public class User {
     @Pattern(regexp = "[a-zA-Z0-9-_]+", message = "{User.username.Pattern}")
     @JsonProperty
     public String getUsername() {
-        return serviceAccount ? username.replace(SERVICE_ACCOUNT_PREFIX, "") : username;
+        return username.replace(SERVICE_ACCOUNT_PREFIX, "");
     }
 
     @JsonSetter("username")
     public User setUsername(String username) {
-        if (this.serviceAccount && !username.startsWith(SERVICE_ACCOUNT_PREFIX)) {
+
+        boolean isService = isServiceAccount() || username.startsWith(SERVICE_ACCOUNT_PREFIX);
+
+        username = username.replace(SERVICE_ACCOUNT_PREFIX, "");
+
+        if (isService) {
             username = SERVICE_ACCOUNT_PREFIX + username;
         }
+
         this.username = username;
         return this;
     }
 
+    @JsonProperty
     public boolean isServiceAccount() {
-        return serviceAccount;
+        return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
     }
 
     public User setServiceAccount(boolean serviceAccount) {
-        if (serviceAccount == this.serviceAccount) {
-            return this;
-        }
-
-        this.serviceAccount = serviceAccount;
 
         if (username != null) {
             username = serviceAccount ? SERVICE_ACCOUNT_PREFIX + username.replace(SERVICE_ACCOUNT_PREFIX, "") : username.replace(SERVICE_ACCOUNT_PREFIX, "");
+        } else {
+            username = serviceAccount ? SERVICE_ACCOUNT_PREFIX : null;
         }
         return this;
     }
@@ -177,6 +181,15 @@ public class User {
         return getUsername() + " (" + getFirstName() + " " + getLastName() + ")";
     }
 
+    public User setSecret(String secret) {
+        this.secret = secret;
+        return this;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+
     @Override
     public String toString() {
         return getClass().getName() + "{" +
@@ -186,6 +199,7 @@ public class User {
             ", firstName='" + firstName + '\'' +
             ", lastName='" + lastName + '\'' +
             ", email='" + email + '\'' +
+            ", secret='" + secret + '\'' +
             ", enabled=" + enabled +
             '}';
     }

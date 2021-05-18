@@ -104,7 +104,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         keycloakProvider.updateUserRoles(tenantCity.getRealm(), smartCityUserId, "account"); // Remove all roles for account client
 
         /*
-         * Client event keycloak client
+         * Service user client
          */
         serviceUser = new User()
             .setServiceAccount(true)
