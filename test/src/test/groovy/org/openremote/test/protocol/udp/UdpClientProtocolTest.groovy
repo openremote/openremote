@@ -52,7 +52,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
     def "Check UDP client protocol and linked attribute deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
