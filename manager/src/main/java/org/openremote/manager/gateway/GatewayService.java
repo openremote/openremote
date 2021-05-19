@@ -590,7 +590,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
 
         try {
-            identityProvider.createUpdateUser(gateway.getRealm(), new User().setServiceAccount(true).setUsername(clientId), secret);
+            identityProvider.createUpdateUser(gateway.getRealm(), new User().setServiceAccount(true).setUsername(clientId).setEnabled(true), secret);
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
                 gateway.setClientId(clientId);

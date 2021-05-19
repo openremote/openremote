@@ -79,7 +79,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         ADMIN_CLI_CLIENT_ID,
         "broker",
         "master-realm",
-        MANAGER_CLIENT_ID,
         "security-admin-console");
 
     public static final String KEYCLOAK_HOST = "KEYCLOAK_HOST";
@@ -135,7 +134,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected KeycloakIdentityProvider() {
     }
 
-    public OAuthGrant getDefaultKeycloakGrant(Container container) {
+    public OAuthPasswordGrant getDefaultKeycloakGrant(Container container) {
         return new OAuthPasswordGrant(
             getTokenUri(MASTER_REALM).toString(),
             ADMIN_CLI_CLIENT_ID,

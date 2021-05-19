@@ -560,7 +560,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         expect: "the demo users to be created"
         conditions.eventually {
             def users = identityService.getIdentityProvider().getUsers(keycloakTestSetup.tenantBuilding.realm)
-            assert users.size() == 4
+            assert users.size() == 3
             assert users.count { !TextUtil.isNullOrEmpty(it.email)} == 3
         }
 

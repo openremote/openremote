@@ -67,6 +67,16 @@ public class OAuthPasswordGrant extends OAuthClientCredentialsGrant {
         return password;
     }
 
+    public OAuthPasswordGrant setUsername(String username) {
+        this.username = username;
+        return this;
+    }
+
+    public OAuthPasswordGrant setPassword(String password) {
+        this.password = password;
+        return this;
+    }
+
     public OAuthPasswordGrant setBasicAuthHeader(boolean basicAuthHeader) {
         return (OAuthPasswordGrant)super.setBasicAuthHeader(basicAuthHeader);
     }

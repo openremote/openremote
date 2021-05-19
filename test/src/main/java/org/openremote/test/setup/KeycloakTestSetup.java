@@ -108,6 +108,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
          */
         serviceUser = new User()
             .setServiceAccount(true)
+            .setEnabled(true)
             .setUsername(serviceUserId);
         serviceUser = keycloakProvider.createUpdateUser(tenantBuilding.getRealm(), serviceUser, serviceUserSecret);
         keycloakProvider.updateUserRoles(

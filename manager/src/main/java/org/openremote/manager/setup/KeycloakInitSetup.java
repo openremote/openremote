@@ -23,10 +23,13 @@ import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.auth.OAuthGrant;
+import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.security.Role;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.MANAGER_CLIENT_ID;
@@ -63,23 +66,20 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         // Give admin all roles on application client level
         keycloakProvider.updateUserRoles(MASTER_REALM, adminUser.getId(), KEYCLOAK_CLIENT_ID, ClientRole.READ.getValue(), ClientRole.WRITE.getValue());
 
-        // Create a service client for this manager to communicate with keycloak so it doesn't use the admin user credentials
-        User keycloakProxyUser = new User().setUsername(MANAGER_CLIENT_ID).setServiceAccount(true).setSystemAccount(true);
-        String secret = UniqueIdentifierGenerator.generateId();
+        // Create a new super user for the keycloak proxy so admin user can be modified if desired
+        User keycloakProxyUser = new User()
+            .setUsername(MANAGER_CLIENT_ID)
+            .setEnabled(true)
+            .setSystemAccount(true);
+        String password = UniqueIdentifierGenerator.generateId();
+        keycloakProxyUser = keycloakProvider.createUpdateUser(MASTER_REALM, keycloakProxyUser, password);
 
-        // Use credentials from file system if they are available
-        OAuthGrant storedGrant = keycloakProvider.loadCredentials();
-        if (storedGrant != null) {
-            keycloakProxyUser.setUsername(storedGrant.getClientId());
-            secret = storedGrant.getClientSecret() != null ? storedGrant.getClientSecret() : secret;
-        }
-
-        keycloakProxyUser = keycloakProvider.createUpdateUser(MASTER_REALM, keycloakProxyUser, secret);
-
-        // Give this user admin realm role (so they can do realm CRUD)
+        // Make this proxy user a super user by giving them admin realm role
         keycloakProvider.updateUserRoles(MASTER_REALM, keycloakProxyUser.getId(), null, "admin");
 
-        OAuthClientCredentialsGrant grant = new OAuthClientCredentialsGrant(keycloakProvider.getTokenUri(MASTER_REALM).toString(), keycloakProxyUser.getUsername(), secret, null);
+        // Update the grant to match the proxy user and make this grant active
+        OAuthPasswordGrant grant = keycloakProvider.getDefaultKeycloakGrant(container);
+        grant.setUsername(keycloakProxyUser.getUsername()).setPassword(password);
         keycloakProvider.setActiveCredentials(grant);
         keycloakProvider.saveCredentials(grant);
     }
