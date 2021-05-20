@@ -41,7 +41,6 @@ jobs:
         run: |
           docker load < ~/image-cache/postgresql.tar.gz
           docker load < ~/image-cache/keycloak.tar.gz
-          docker load < ~/image-cache/gradle.tar.gz
       - name: Save docker images to cache
         if: steps.cache-images.outputs.cache-hit != 'true'
         run: |
@@ -52,7 +51,6 @@ jobs:
           keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
           docker save $postgres | gzip > ~/image-cache/postgresql.tar.gz
           docker save $keycloak | gzip > ~/image-cache/keycloak.tar.gz
-          docker save gradle:6.9.0-jdk8-hotspot | gzip > ~/image-cache/gradle.tar.gz
       - name: Start keycloak and postgresql for tests
         run: docker-compose -f profile/dev-testing.yml up -d --no-build
       - name: Check running containers
