@@ -1,29 +1,24 @@
-# TODO: Switch to adoptopenjdk 8u232-b9 once it also supports armhf
-FROM debian:stretch-slim
+FROM adoptopenjdk/openjdk8:ubi-minimal-jre
 
+### S6 installation
 ENV S6_OVERLAY_VERSION=v2.2.0.3
 
-# JRE package expects man dir to exist but doesn't in slim
-RUN mkdir -p /usr/share/man/man1
-
-RUN apt-get update && apt-get install -y curl && \
-### S6 installation
-    apkArch="$(uname -m)"; \
-	case "$apkArch" in \
-        x86_64) s6Arch='amd64' ;; \
-        armv7) s6Arch='arm' ;; \
-        armv7l) s6Arch='arm' ;; \
-        armhf) s6Arch='armhf' ;; \
-        aarch64) s6Arch='aarch64' ;; \
-        ppc64le) s6Arch='ppc64le' ;; \
-        *) echo >&2 "Error: unsupported architecture ($apkArch)"; exit 1 ;; \
+RUN apkArch="$(uname -m)"; \
+	case "${apkArch}" in \
+        x86_64) s6Arch='amd64'; ;; \
+        armv7) s6Arch='arm'; ;; \
+        armv7l) s6Arch='arm'; ;; \
+        armhf) s6Arch='armhf'; ;; \
+        aarch64) s6Arch='aarch64'; ;; \
+        ppc64le) s6Arch='ppc64le'; ;; \
+        *) echo >&2 "Error: unsupported architecture ${apkArch}"; exit 1 ;; \
 	esac; \
-    curl -sSL https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${s6Arch}.tar.gz | tar xfz - -C /
+  curl -LfsSo /tmp/s6-overlay.tar.gz https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${s6Arch}.tar.gz;
+
+RUN tar xzf /tmp/s6-overlay.tar.gz -C / --exclude="./bin" && \
+    tar xzf /tmp/s6-overlay.tar.gz -C /usr ./bin
 ### End S6 installation
 
-RUN apt-get update && apt-get install -y openjdk-8-jre-headless --no-install-recommends && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME /etc/alternatives/java
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
@@ -89,10 +84,9 @@ EXPOSE 8080
 HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
 
 RUN mkdir -p /opt/app
+RUN mkdir -p /deployment/manager/extensions
 
 WORKDIR /opt/app
-
-RUN mkdir -p /deployment/manager/extensions
 
 ADD lib /opt/app/lib
 ADD web /opt/web
