@@ -24,7 +24,7 @@ jobs:
             ~/image-cache
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-test-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', profile/**) }}
+          key: ${{ runner.os }}-test-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'profile/*') }}
           restore-keys: |
             ${{ runner.os }}-test-
       - name: set up JDK
