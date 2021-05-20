@@ -23,6 +23,7 @@ import io.moquette.broker.security.IAuthenticator;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
@@ -70,14 +71,12 @@ public class KeycloakAuthenticator implements IAuthenticator {
             return false;
         }
 
-        ClientRepresentation clientRepresentation = identityProvider.getClient(realm, username);
-
-        if (clientRepresentation == null || TextUtil.isNullOrEmpty(clientRepresentation.getSecret())) {
-            LOG.warning("Client not found or doesn't support client credentials grant type");
+        User user = identityProvider.getUserByUsername(realm, User.SERVICE_ACCOUNT_PREFIX + username);
+        if (user == null || user.getEnabled() == null || !user.getEnabled() || TextUtil.isNullOrEmpty(user.getSecret())) {
+            LOG.warning("User not found, disabled or doesn't support client credentials grant type");
             return false;
         }
 
-        String clientSecret = clientRepresentation.getSecret();
-        return suppliedClientSecret.equals(clientSecret);
+        return suppliedClientSecret.equals(user.getSecret());
     }
 }

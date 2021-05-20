@@ -241,7 +241,16 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User getUserByUsername(String realm, String username) {
-        return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
+        User user = ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
+        if (user != null && user.isServiceAccount()) {
+            getRealms(realmsResource -> {
+                withClientResource(realm, user.getUsername(), realmsResource, (clientRep, clientResource) ->
+                    user.setSecret(getClientSecret(clientResource)), null);
+                return null;
+            });
+        }
+
+        return user;
     }
 
     @Override

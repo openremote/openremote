@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,14 +54,17 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     private static final Logger LOG = Logger.getLogger(AgentResourceImpl.class.getName());
     protected final AgentService agentService;
     protected final AssetStorageService assetStorageService;
+    protected final ScheduledExecutorService executorService;
 
     public AgentResourceImpl(TimerService timerService,
                              ManagerIdentityService identityService,
                              AssetStorageService assetStorageService,
-                             AgentService agentService) {
+                             AgentService agentService,
+                             ScheduledExecutorService executorService) {
         super(timerService, identityService);
         this.agentService = agentService;
         this.assetStorageService = assetStorageService;
+        this.executorService = executorService;
     }
 
     @Override
@@ -118,11 +123,24 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
 
         List<AssetTreeNode> foundAssets = new ArrayList<>();
-        agentService.doProtocolAssetDiscovery(agent, assets -> {
+        String finalRealm = realm;
+
+        Future<Void> result = agentService.doProtocolAssetDiscovery(agent, assets -> {
             if (assets != null) {
+                // Persist the assets in a separate thread
+                executorService.submit(() -> persistAssets(assets, agent, finalRealm));
                 foundAssets.addAll(Arrays.asList(assets));
             }
         });
+
+        try {
+            result.get(10000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            LOG.fine("Protocol discovery stopped as timeout reached");
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Protocol discovery threw an exception: " + agent, e);
+            throw new BadRequestException("Protocol discovery threw an exception: " + agent, e);
+        }
 
         return foundAssets.toArray(new AssetTreeNode[0]);
     }

@@ -292,8 +292,11 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
 
         try {
-            AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.getAccessToken(), identityProvider.getKeycloakDeployment(connection.realm, connection.getUsername()));
-            headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
+            String token = connection.getAccessToken();
+            if (token != null) {
+                AccessToken accessToken = AdapterTokenVerifier.verifyToken(token, identityProvider.getKeycloakDeployment(connection.realm, connection.getUsername()));
+                headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
+            }
         } catch (VerificationException e) {
             LOG.log(Level.WARNING, "Couldn't verify token", e);
         }

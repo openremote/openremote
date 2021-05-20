@@ -158,7 +158,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
                 }
             } else {
                 // Must be of form //attribute/assetId/attributeName or //attribute/assetId/attributeName/value
-                if (topicTokens.size() == 3 || (topicTokens.size() == 4 && ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(3)))) {
+                if (!(topicTokens.size() == 3 || (topicTokens.size() == 4 && ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(3))))) {
                     LOG.info("Write request to attribute topic should contain asset ID and attribute name only: " + connection);
                     return false;
                 }
