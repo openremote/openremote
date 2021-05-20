@@ -244,7 +244,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client publishes to an asset attribute"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId
+        topic = "attribute/" + managerTestSetup.apartment1HallwayId + "/lights"
         payload = Values.asJSON(Values.createJsonObject().put("lights", false)).orElse(null)
         remainingLength = 2 + topic.size() + payload.length()
 
