@@ -342,6 +342,19 @@ export class OrAssetTreeRequestAddEvent extends CustomEvent<Util.RequestEventDet
         });
     }
 }
+export class OrAssetTreeAddEvent extends CustomEvent<AddEventDetail> {
+
+    public static readonly NAME = "or-asset-tree-add";
+
+    constructor(detail: AddEventDetail) {
+        console.log('ev', detail);
+        super(OrAssetTreeAddEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: detail
+        });
+    }
+}
 
 @customElement("or-mwc-attribute-selector")
 export class OrMwcAttributeSelector extends OrMwcDialog {
@@ -370,15 +383,38 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     }
     
     protected setDialogActions(): void {
-        this.dialogActions = this.dialogActions = [
+        this.dialogActions = [
             {
                 actionName: "cancel",
                 content: i18next.t("cancel")
             },
             {
                 actionName: "add",
-                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length}"></or-mwc-input>`,
+                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length || !this.asset}"></or-mwc-input>`,
                 action: () => {
+
+                    if (!this.asset || !this.selectedAttributes.length) {
+                        return;
+                    }
+                    
+                    this.asset.attributes = {};
+                    this.selectedAttributes?.forEach(attribute => {
+                        this.asset!.attributes![attribute.name!] = {
+                            name: attribute.name,
+                            type: attribute.type,
+                            meta: attribute.meta ? {...attribute.meta} : undefined
+                        }
+                    });
+
+                    const detail: AddEventDetail = {
+                        asset: this.asset
+                    };
+                    Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(detail))
+                        .then((detail) => {
+                            if (detail.allow) {
+                                this.dispatchEvent(new OrAssetTreeAddEvent(detail.detail));
+                            }
+                        });
                 }
             }
         ];
