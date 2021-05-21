@@ -1,5 +1,6 @@
 package org.openremote.agent.protocol.snmp;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.snmp.SnmpMessage;
 import org.openremote.agent.protocol.AbstractProtocol;
@@ -10,6 +11,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.Values;
 import org.snmp4j.PDU;
 
 import java.util.HashMap;
@@ -66,7 +68,19 @@ public class SNMPClientProtocol extends AbstractProtocol<SNMPClientAgent, SNMPCl
                         .routeId(getProtocolName() + getAgent().getId())
                         .process(exchange -> {
                             SnmpMessage msg = exchange.getIn(SnmpMessage.class);
+                            LOG.fine(String.format("Message received: %s", msg));
+
                             PDU pdu = msg.getSnmpMessage();
+
+                            AttributeRef wildCardAttributeRef;
+                            if ((wildCardAttributeRef = oidMap.get("*")) != null) {
+                                ObjectNode wildCardValue = Values.createJsonObject();
+                                pdu.getVariableBindings().forEach(variableBinding -> {
+                                    wildCardValue.put(variableBinding.getOid().format(), variableBinding.toValueString());
+                                });
+                                updateLinkedAttribute(new AttributeState(wildCardAttributeRef, wildCardValue));
+                            }
+
                             pdu.getVariableBindings().forEach(variableBinding -> {
                                 AttributeRef attributeRef = oidMap.get(variableBinding.getOid().format());
                                 if (attributeRef != null) {
@@ -92,6 +106,12 @@ public class SNMPClientProtocol extends AbstractProtocol<SNMPClientAgent, SNMPCl
             LOG.info(msg);
             return new IllegalArgumentException(msg);
         });
+
+        if (oid.equals("*") && oidMap.get("*") != null) {
+            String msg = "Attribute with wildcard OID already provided for protocol: " + this;
+            LOG.info(msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         oidMap.put(oid, new AttributeRef(assetId, attribute.getName()));
     }

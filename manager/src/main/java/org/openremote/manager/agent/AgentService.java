@@ -129,7 +129,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),
                 assetStorageService,
-                this)
+                this,
+                container.getExecutorService())
         );
 
         initDone = true;

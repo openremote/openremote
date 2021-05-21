@@ -19,7 +19,6 @@
  */
 package org.openremote.model.rules;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,7 +26,10 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaMap;
-import org.openremote.model.value.*;
+import org.openremote.model.value.MetaHolder;
+import org.openremote.model.value.NameValueHolder;
+import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.Values;
 
 import java.util.Date;
 import java.util.Objects;

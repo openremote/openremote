@@ -19,16 +19,26 @@
  */
 package org.openremote.model.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.openremote.model.Constants.MASTER_REALM;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
@@ -36,6 +46,8 @@ import javax.validation.constraints.Size;
 @Entity
 @Subselect("select * from PUBLIC.USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
 public class User {
+    public static final String SERVICE_ACCOUNT_PREFIX = "service-account-";
+    public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
 
     @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
     protected String realm;
@@ -46,6 +58,7 @@ public class User {
     @Id
     protected String id;
 
+    @JsonIgnore
     @Column(name = "USERNAME")
     protected String username;
 
@@ -60,6 +73,13 @@ public class User {
 
     @Column(name = "ENABLED")
     protected Boolean enabled;
+
+    @Transient
+    protected String secret; // For service users
+
+    @Transient
+    @JsonIgnore
+    protected Map<String, List<String>> attributes;
 
     public User() {
     }
@@ -94,12 +114,61 @@ public class User {
     @NotNull(message = "{User.username.NotNull}")
     @Size(min = 3, max = 255, message = "{User.username.Size}")
     @Pattern(regexp = "[a-zA-Z0-9-_]+", message = "{User.username.Pattern}")
+    @JsonProperty
     public String getUsername() {
-        return username;
+        return username.replace(SERVICE_ACCOUNT_PREFIX, "");
     }
 
+    @JsonSetter("username")
     public User setUsername(String username) {
+
+        boolean isService = isServiceAccount() || username.startsWith(SERVICE_ACCOUNT_PREFIX);
+
+        username = username.replace(SERVICE_ACCOUNT_PREFIX, "");
+
+        if (isService) {
+            username = SERVICE_ACCOUNT_PREFIX + username;
+        }
+
         this.username = username;
+        return this;
+    }
+
+    @JsonProperty
+    public boolean isServiceAccount() {
+        return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
+    }
+
+    public Map<String, List<String>> getAttributes() {
+        return attributes;
+    }
+
+    public User setServiceAccount(boolean serviceAccount) {
+        if (username != null) {
+            username = serviceAccount ? SERVICE_ACCOUNT_PREFIX + username.replace(SERVICE_ACCOUNT_PREFIX, "") : username.replace(SERVICE_ACCOUNT_PREFIX, "");
+        } else {
+            username = serviceAccount ? SERVICE_ACCOUNT_PREFIX : null;
+        }
+        return this;
+    }
+
+    /**
+     * Will hide this user from HTTP API
+     */
+    public User setSystemAccount(boolean systemAccount) {
+
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+
+        if (systemAccount) {
+            attributes.put(User.SYSTEM_ACCOUNT_ATTRIBUTE, Collections.singletonList("true"));
+        } else {
+            attributes.remove(User.SYSTEM_ACCOUNT_ATTRIBUTE);
+            if (attributes.isEmpty()) {
+                attributes = null;
+            }
+        }
         return this;
     }
 
@@ -146,6 +215,15 @@ public class User {
         return getUsername() + " (" + getFirstName() + " " + getLastName() + ")";
     }
 
+    public User setSecret(String secret) {
+        this.secret = secret;
+        return this;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+
     @Override
     public String toString() {
         return getClass().getName() + "{" +
@@ -155,6 +233,7 @@ public class User {
             ", firstName='" + firstName + '\'' +
             ", lastName='" + lastName + '\'' +
             ", email='" + email + '\'' +
+            ", secret='" + secret + '\'' +
             ", enabled=" + enabled +
             '}';
     }

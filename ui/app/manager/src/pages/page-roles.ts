@@ -297,7 +297,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
   }
   
   private doDelete(role) {
-    this._compositeRoles = [...this._compositeRoles.filter(u => u.id != role.id)]
+    this._compositeRoles = [...this._compositeRoles.filter(u => u.id !== role.id)]
     this._updateRoles()
 
   }
@@ -382,7 +382,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                                  
                                   <div class="row">
                                     <div class="column">
-                                      <or-mwc-input .label="${i18next.t("user_role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-mwc-input>
+                                      <or-mwc-input .label="${i18next.t("role")}" .type="${InputType.TEXT}" min="1" required .value="${role.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.name = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
                                       <or-mwc-input .label="${i18next.t("description")}" .type="${InputType.TEXT}" min="1" required .value="${role.description}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => role.description = e.detail.value}"></or-mwc-input>            

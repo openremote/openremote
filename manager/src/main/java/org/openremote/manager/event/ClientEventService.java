@@ -21,9 +21,6 @@ package org.openremote.manager.event;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.agent.protocol.ProtocolClientEventService;
-import org.openremote.model.Container;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
@@ -31,14 +28,12 @@ import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.mqtt.MqttBrokerService;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.openremote.model.event.shared.*;
-import org.openremote.model.security.ClientRole;
-import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.util.TextUtil;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Session;
@@ -48,10 +43,9 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.apache.camel.builder.Builder.header;
 import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.web.ConnectionConstants.SESSION;
-import static org.openremote.agent.protocol.ProtocolClientEventService.getSessionKey;
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.
@@ -95,7 +89,7 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
  * </p></dd>
  * </dl>
  */
-public class ClientEventService implements ProtocolClientEventService {
+public class ClientEventService implements ContainerService {
 
     protected static class SessionInfo {
         String connectionType;
@@ -108,6 +102,11 @@ public class ClientEventService implements ProtocolClientEventService {
     }
 
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
+    public static final String HEADER_ACCESS_RESTRICTED = ClientEventService.class.getName() + ".HEADER_ACCESS_RESTRICTED";
+    public static final String HEADER_CONNECTION_TYPE = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE";
+    public static final String HEADER_CONNECTION_TYPE_WEBSOCKET = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_WEBSOCKET";
+    public static final String HEADER_CONNECTION_TYPE_MQTT = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_MQTT";
+    public static final String HEADER_REQUEST_RESPONSE_MESSAGE_ID = ClientEventService.class.getName() + ".HEADER_REQUEST_RESPONSE_MESSAGE_ID";
     private static final Logger LOG = Logger.getLogger(ClientEventService.class.getName());
     public static final String WEBSOCKET_EVENTS = "events";
     protected static final String INTERNAL_SESSION_KEY = "ClientEventServiceInternal";
@@ -127,6 +126,29 @@ public class ClientEventService implements ProtocolClientEventService {
     protected GatewayService gatewayService;
     protected Set<EventSubscription<?>> pendingInternalSubscriptions;
     protected boolean stopped;
+
+    /**
+     * Method to stop further processing of the exchange
+     */
+    public static void stopMessage(Exchange exchange) {
+        exchange.setProperty(Exchange.ROUTE_STOP, Boolean.TRUE);
+    }
+
+    public static boolean isInbound(Exchange exchange) {
+        return header(HEADER_CONNECTION_TYPE).isNotNull().matches(exchange);
+    }
+
+    public static String getSessionKey(Exchange exchange) {
+        return exchange.getIn().getHeader(ConnectionConstants.SESSION_KEY, String.class);
+    }
+
+    public static String getClientId(Exchange exchange) {
+        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+        if(authContext != null) {
+            return authContext.getClientId();
+        }
+        return null;
+    }
 
     @Override
     public int getPriority() {
@@ -304,72 +326,12 @@ public class ClientEventService implements ProtocolClientEventService {
         stopped = true;
     }
 
-    @Override
     public void addExchangeInterceptor(Consumer<Exchange> exchangeInterceptor) throws RuntimeException {
         exchangeInterceptors.add(exchangeInterceptor);
     }
 
-    @Override
     public void removeExchangeInterceptor(Consumer<Exchange> exchangeInterceptor) {
         exchangeInterceptors.remove(exchangeInterceptor);
-    }
-
-    @Override
-    public void addClientCredentials(ClientCredentials clientCredentials) throws RuntimeException {
-        if (!(identityService.getIdentityProvider() instanceof ManagerKeycloakIdentityProvider)) {
-            throw new IllegalStateException("Cannot add client credentials if not using Keycloak identity provider");
-        }
-
-        if (TextUtil.isNullOrEmpty(clientCredentials.getRealm())
-            || TextUtil.isNullOrEmpty(clientCredentials.getClientId())
-            || TextUtil.isNullOrEmpty(clientCredentials.getSecret())) {
-            throw new IllegalArgumentException("Invalid client credentials realm, client ID and secret must be specified");
-        }
-
-        ManagerKeycloakIdentityProvider keycloakIdentityProvider = (ManagerKeycloakIdentityProvider)identityService.getIdentityProvider();
-
-        // Check if exists already
-        ClientRepresentation clientRepresentation = keycloakIdentityProvider.getClient(clientCredentials.getRealm(), clientCredentials.getClientId());
-        boolean isNew = clientRepresentation == null;
-
-        if (clientRepresentation == null) {
-            clientRepresentation = new ClientRepresentation();
-            clientRepresentation.setStandardFlowEnabled(false);
-            clientRepresentation.setImplicitFlowEnabled(false);
-            clientRepresentation.setDirectAccessGrantsEnabled(false);
-            clientRepresentation.setServiceAccountsEnabled(true);
-            clientRepresentation.setClientAuthenticatorType("client-secret");
-            clientRepresentation.setClientId(clientCredentials.getClientId());
-        }
-
-        clientRepresentation.setSecret(clientCredentials.getSecret());
-        LOG.info("Creating/updating client event service client credentials: " + clientCredentials);
-        if (isNew) {
-            keycloakIdentityProvider.createClient(clientCredentials.getRealm(), clientRepresentation);
-        } else {
-            keycloakIdentityProvider.updateClient(clientCredentials.getRealm(), clientRepresentation);
-        }
-
-        User serviceUser = keycloakIdentityProvider.getClientServiceUser(clientCredentials.getRealm(), clientCredentials.getClientId());
-        if (clientCredentials.getRoles() != null && clientCredentials.getRoles().length > 0) {
-            keycloakIdentityProvider.updateUserRoles(clientCredentials.getRealm(), serviceUser.getId(), clientCredentials.getClientId(), Arrays.stream(clientCredentials.getRoles()).filter(Objects::nonNull).map(ClientRole::getValue).toArray(String[]::new));
-        }
-    }
-
-    @Override
-    public void removeClientCredentials(String realm, String clientId) throws RuntimeException {
-        if (!(identityService.getIdentityProvider() instanceof ManagerKeycloakIdentityProvider)) {
-            throw new IllegalStateException("Cannot remove client credentials if not using Keycloak identity provider");
-        }
-
-        if (TextUtil.isNullOrEmpty(realm)
-            || TextUtil.isNullOrEmpty(clientId)) {
-            throw new IllegalArgumentException("Invalid client credentials realm and client ID must be specified");
-        }
-
-        ManagerKeycloakIdentityProvider keycloakIdentityProvider = (ManagerKeycloakIdentityProvider)identityService.getIdentityProvider();
-        LOG.info("Deleting client event service client: realm=" + realm + ", client ID=" + clientId);
-        keycloakIdentityProvider.deleteClient(realm, clientId);
     }
 
     public void addSubscriptionAuthorizer(EventSubscriptionAuthorizer authorizer) {

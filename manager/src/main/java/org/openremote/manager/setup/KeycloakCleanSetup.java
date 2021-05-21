@@ -40,6 +40,12 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
     public void onStart() throws Exception {
         super.onStart();
 
+        // Switch keycloak proxy back to admin cli
+        keycloakProvider.setActiveCredentials(keycloakProvider.getDefaultKeycloakGrant(container));
+        doClean();
+    }
+
+    protected void doClean() throws Exception {
         // Delete all realms that are not the master realm
         LOG.info("Deleting all non-master realms");
         Arrays.stream(keycloakProvider.getTenants()).forEach(tenant -> {
@@ -49,6 +55,7 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
             }
         });
 
+        LOG.info("Deleting all non-master admin users");
         Arrays.stream(keycloakProvider.getUsers(MASTER_REALM)).forEach(user -> {
             if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER)) {
                 LOG.info("Deleting user: " + user);
@@ -57,10 +64,11 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
         });
 
         // Delete all non built in clients
+        LOG.info("Deleting all non default clients");
         Arrays.stream(keycloakProvider.getClients(MASTER_REALM)).forEach(client -> {
             if (!DEFAULT_CLIENTS.contains(client.getClientId())) {
                 LOG.info("Deleting client: " + client.getClientId());
-                keycloakProvider.deleteClient(MASTER_REALM, client);
+                keycloakProvider.deleteClient(MASTER_REALM, client.getClientId());
             }
         });
     }

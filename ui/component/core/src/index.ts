@@ -1029,7 +1029,7 @@ export class Manager implements EventProviderFactory {
                 const rolesResponse = await rest.api.UserResource.getCurrentUserRoles();
                 this._basicIdentity!.roles = rolesResponse.data;
             } else {
-                console.log("Unkown response so aborting");
+                console.log("Unknown response so aborting");
                 this._basicIdentity = undefined;
                 break;
             }

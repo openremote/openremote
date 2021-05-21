@@ -23,7 +23,6 @@ import com.vladmihalcea.hibernate.type.array.StringArrayType;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
-import org.openremote.agent.protocol.ProtocolClientEventService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
@@ -84,7 +83,6 @@ import static org.apache.camel.builder.PredicateBuilder.or;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
-import static org.openremote.manager.event.ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID;
 import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttributes;
 import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.query.AssetQuery.Access.PRIVATE;
@@ -113,7 +111,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object[]>> {
+    public interface ParameterBinder extends BiConsumer<EntityManager, org.hibernate.query.Query<Object[]>> {
 
         @Override
         default void accept(EntityManager em, org.hibernate.query.Query<Object[]> st) {
@@ -377,7 +375,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         }
 
                         boolean isAttributeRead = !TextUtil.isNullOrEmpty(attributeName);
-                        String sessionKey = ProtocolClientEventService.getSessionKey(exchange);
+                        String sessionKey = ClientEventService.getSessionKey(exchange);
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
                         // Superuser can get all, User must have role
@@ -394,7 +392,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                                 .access(access));
 
                         if (asset != null) {
-                            String messageId = exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+                            String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
                             Object response = null;
 
                             if (isAttributeRead) {
@@ -419,7 +417,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         ReadAssetsEvent readAssets = exchange.getIn().getBody(ReadAssetsEvent.class);
                         AssetQuery query = readAssets.getAssetQuery();
 
-                        String sessionKey = ProtocolClientEventService.getSessionKey(exchange);
+                        String sessionKey = ClientEventService.getSessionKey(exchange);
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
 
                         // Superuser can get all, User must have role
@@ -439,7 +437,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                         List<Asset<?>> assets = findAll(query);
 
-                        String messageId = exchange.getIn().getHeader(HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
+                        String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
 
                         if (isNullOrEmpty(messageId)) {
                             clientEventService.sendToSession(sessionKey, new AssetsEvent(assets));
@@ -1976,7 +1974,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         throw new IllegalArgumentException("Unsupported operator: " + operator);
     }
 
-    protected static String buildMatchFilter(StringPredicate predicate, int pos) {
+    public static String buildMatchFilter(StringPredicate predicate, int pos) {
         switch (predicate.match) {
             case BEGIN:
             case END:

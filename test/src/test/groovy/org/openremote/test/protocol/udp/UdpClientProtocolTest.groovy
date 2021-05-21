@@ -52,7 +52,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
     def "Check UDP client protocol and linked attribute deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         and: "the container starts"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -250,8 +250,11 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         }
 
         when: "the echo world attribute is also updated to work with hex server"
-        asset.getAttribute("echoWorld").flatMap({it.getMetaValue(AGENT_LINK)}).ifPresent{it.setWriteValue("123456")}
+        asset.getAttribute("echoWorld").get().getMetaValue(AGENT_LINK).get().setWriteValue("123456")
         asset = assetStorageService.merge(asset)
+
+        then: "the attribute should be updated"
+        asset.getAttribute("echoWorld").get().getMetaValue(AGENT_LINK).get().getWriteValue().get() == "123456"
 
         then: "the attributes should be relinked"
         conditions.eventually {

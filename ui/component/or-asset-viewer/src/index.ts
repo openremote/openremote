@@ -380,11 +380,39 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
 
         const discoverAssets = () => {
+            const loadingMsg: LitElement = hostElement.shadowRoot!.getElementById("loading") as LitElement;
+            
+            if (!loadingMsg) {
+                return false;
+            }
+            
+            loadingMsg.hidden = false;
+            
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
-                .then(response => console.log(response.data, response)); //todo: do something with this response
+                .then(response => {
+                    if (response.status !== 200) {
+                        showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                    } else {
+                        showSnackbar(undefined, "Import successful! Added "+response.data.length+" assets!", i18next.t("dismiss"));
+                        console.info(response.data, response) //todo: do something with this response
+                    }
+                })
+                .catch((err) => {
+                    showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                    console.error(err);
+                })
+                .finally(() => loadingMsg.hidden = true);
         } 
 
         const fileToBase64 = () => {
+            const loadingMsg: LitElement = hostElement.shadowRoot!.getElementById("loading") as LitElement;
+
+            if (!loadingMsg) {
+                return false;
+            }
+            
+            loadingMsg.hidden = false;
+            
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
             if (fileInputElem) {
                 const reader = new FileReader();
@@ -415,7 +443,11 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                                     console.info(response.data, response) //todo: do something with this response
                                 }
                             })
-                            .catch(() => showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss")));
+                            .catch((err) => {
+                                showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                                console.error(err);
+                            })
+                            .finally(() => loadingMsg.hidden = true);
                   
                     }
                 }
@@ -441,8 +473,26 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
         
-        return html`      
+        return html`
+            <style>
+                #loading {
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    display: flex;
+                    align-items: center;
+                    background: white;
+                    font-size: 14px;
+                    text-align: center;
+                }
+                #loading[hidden] {
+                    display: none;
+                }
+            </style>
             ${content}
+            <div id="loading" hidden><span style="width:100%;">${i18next.t('loading')}</span></div>
         `;
         
     }

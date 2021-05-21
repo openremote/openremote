@@ -21,23 +21,30 @@ package org.openremote.test.protocol;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.Container;
+import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.protocol.ProtocolAssetDiscovery;
+import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 /**
- * A mock protocol for testing purposes that records the various method calls
+ * A mock protocol for testing purposes that records the various method calls and supports protocol discovery
  */
-public class MockProtocol extends AbstractProtocol<MockAgent, MockAgent.MockAgentLink> {
+public class MockProtocol extends AbstractProtocol<MockAgent, MockAgent.MockAgentLink> implements ProtocolAssetDiscovery {
 
     public static final String PROTOCOl_NAME = "Mock protocol";
     public List<AttributeEvent> protocolWriteAttributeEvents = new ArrayList<>();
     public List<String> protocolMethodCalls = new ArrayList<>();
     public boolean updateSensor = true;
+    protected Container container;
 
     public MockProtocol(MockAgent agent) {
         super(agent);
@@ -45,6 +52,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgent.MockAgen
 
     @Override
     protected void doStart(Container container) throws Exception {
+        this.container = container;
         protocolMethodCalls.add("START");
 
         if (!agent.getRequired().isPresent()) {
@@ -102,5 +110,51 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgent.MockAgen
 
     protected void updateAttribute(AttributeState state) {
         sendAttributeEvent(state);
+    }
+
+    @Override
+    public Future<Void> startAssetDiscovery(Consumer<AssetTreeNode[]> assetConsumer) {
+        return container.getExecutorService().submit(() -> {
+
+            // Simulate discovery init delay
+            Thread.sleep(2000);
+
+            // Discover a few assets
+            assetConsumer.accept(new AssetTreeNode[] {
+                new AssetTreeNode(
+                    new ThingAsset("MockAsset1").addAttributes(
+                        new Attribute<>("mock1", ValueType.TEXT, "dummy1"),
+                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
+                    )
+                ),
+                new AssetTreeNode(
+                    new ThingAsset("MockAsset2").addAttributes(
+                        new Attribute<>("mock1", ValueType.TEXT, "dummy2"),
+                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
+                    )
+                )
+            });
+
+            // Simulate a delay
+            Thread.sleep(1000);
+
+            // Discover a few assets
+            assetConsumer.accept(new AssetTreeNode[] {
+                new AssetTreeNode(
+                    new ThingAsset("MockAsset3").addAttributes(
+                        new Attribute<>("mock1", ValueType.TEXT, "dummy3"),
+                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
+                    )
+                ),
+                new AssetTreeNode(
+                    new ThingAsset("MockAsset3").addAttributes(
+                        new Attribute<>("mock1", ValueType.TEXT, "dummy3"),
+                        new Attribute<>("mock2", ValueType.POSITIVE_INTEGER, 1234)
+                    )
+                )
+            });
+
+           return null;
+        });
     }
 }

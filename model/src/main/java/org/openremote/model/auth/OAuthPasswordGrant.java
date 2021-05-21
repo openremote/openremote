@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.Collections;
+import java.util.Objects;
 
 @JsonTypeName(OAuthPasswordGrant.PASSWORD_GRANT_TYPE)
 public class OAuthPasswordGrant extends OAuthClientCredentialsGrant {
@@ -66,6 +67,16 @@ public class OAuthPasswordGrant extends OAuthClientCredentialsGrant {
         return password;
     }
 
+    public OAuthPasswordGrant setUsername(String username) {
+        this.username = username;
+        return this;
+    }
+
+    public OAuthPasswordGrant setPassword(String password) {
+        this.password = password;
+        return this;
+    }
+
     public OAuthPasswordGrant setBasicAuthHeader(boolean basicAuthHeader) {
         return (OAuthPasswordGrant)super.setBasicAuthHeader(basicAuthHeader);
     }
@@ -76,5 +87,33 @@ public class OAuthPasswordGrant extends OAuthClientCredentialsGrant {
         valueMap.put(VALUE_KEY_USERNAME, Collections.singletonList(username));
         valueMap.put(VALUE_KEY_PASSWORD, Collections.singletonList(password));
         return valueMap;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        OAuthPasswordGrant that = (OAuthPasswordGrant) o;
+        return Objects.equals(username, that.username) && Objects.equals(password, that.password);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), username, password);
+    }
+
+    @Override
+    public String toString() {
+        return OAuthPasswordGrant.class.getSimpleName() + "{" +
+            "tokenEndpointUri='" + tokenEndpointUri + '\'' +
+            ", basicAuthHeader=" + basicAuthHeader +
+            ", grantType='" + grantType + '\'' +
+            ", clientId='" + clientId + '\'' +
+            ", clientSecret='" + clientSecret + '\'' +
+            ", scope='" + scope + '\'' +
+            ", username='" + username + '\'' +
+            ", password='" + password + '\'' +
+            '}';
     }
 }

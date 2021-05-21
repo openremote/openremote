@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.security;
 
-import org.openremote.model.Container;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebService;
+import org.openremote.model.Container;
 
 import javax.persistence.EntityManager;
 import java.util.Locale;
@@ -95,7 +95,6 @@ public class ManagerIdentityService extends IdentityService {
         }
         return em.merge(userConfiguration);
     }
-
 
     @Override
     public String toString() {

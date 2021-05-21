@@ -19,6 +19,7 @@
  */
 package org.openremote.container.web;
 
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.util.BasicAuthHelper;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthRefreshTokenGrant;
@@ -46,13 +47,15 @@ public class OAuthFilter implements ClientRequestFilter {
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, OAuthFilter.class);
     public static final String BEARER_AUTH = "Bearer";
     protected OAuthServerResponse authServerResponse;
+    protected ResteasyClient client;
     protected WebTarget authTarget;
     protected OAuthGrant oAuthGrant;
 
-    public OAuthFilter(WebTarget authTarget, OAuthGrant oAuthGrant) {
-        Objects.requireNonNull(authTarget);
+    public OAuthFilter(ResteasyClient client, OAuthGrant oAuthGrant) {
+        Objects.requireNonNull(client);
         Objects.requireNonNull(oAuthGrant);
-        this.authTarget = authTarget;
+        this.client = client;
+        this.authTarget = client.target(oAuthGrant.getTokenEndpointUri());
         this.oAuthGrant = oAuthGrant;
     }
 
@@ -136,6 +139,12 @@ public class OAuthFilter implements ClientRequestFilter {
             builder.header(HttpHeaders.AUTHORIZATION, BasicAuthHelper.createHeader(oAuthGrant.getClientId(), oAuthGrant.getClientSecret()));
         }
         return builder.post(Entity.entity(new Form(oAuthGrant.asMultivaluedMap()), MediaType.APPLICATION_FORM_URLENCODED_TYPE));
+    }
+
+    public synchronized void updateGrant(OAuthGrant grant) {
+        this.authServerResponse = null;
+        this.oAuthGrant = grant;
+        this.authTarget = client.target(oAuthGrant.getTokenEndpointUri());
     }
 
     @Override
