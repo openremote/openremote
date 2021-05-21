@@ -323,6 +323,25 @@ export class OrMwcDialog extends LitElement {
     }
 }
 
+export type AddEventDetail = {
+    sourceAsset?: Asset;
+    asset: Asset;
+}
+export class OrAssetTreeRequestAddEvent extends CustomEvent<Util.RequestEventDetail<AddEventDetail>> {
+
+    public static readonly NAME = "or-asset-tree-request-add";
+
+    constructor(detail: AddEventDetail) {
+        super(OrAssetTreeRequestAddEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: detail
+            }
+        });
+    }
+}
 
 @customElement("or-mwc-attribute-selector")
 export class OrMwcAttributeSelector extends OrMwcDialog {
@@ -338,14 +357,31 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
 
     @property({type: Object})
     private assetAttributes: AttributeDescriptor[] = [];
-
+    
     constructor() {
         super();
         
         this.dialogTitle = 'Add attributes';
-        
+        this.dismissAction = null;
+
+        this.setDialogActions();
         this.setDialogContent();
         
+    }
+    
+    protected setDialogActions(): void {
+        this.dialogActions = this.dialogActions = [
+            {
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            },
+            {
+                actionName: "add",
+                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length}"></or-mwc-input>`,
+                action: () => {
+                }
+            }
+        ];
     }
     
     protected setDialogContent(): void {
@@ -363,27 +399,39 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                         ${this.assetAttributes.map(attribute => html`
                             <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
                                           .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
-                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
+                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, attribute)}"></or-mwc-input>
                         `)}
                     </div>
                 ` : ``}
                 </div>
         `;
     }
+    
+    protected reRenderDialog(): void {
+        this.setDialogContent();
+        this.setDialogActions();
+    }
+    
+    protected _addRemoveAttrs(event: OrInputChangedEvent, attribute: AttributeDescriptor) {
+        event.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)
+        this.reRenderDialog();
+    }
 
     protected _getAttributeOptions(): AttributeDescriptor[] | undefined {
         if(!this.asset || !this.asset.type) {
-            this.setDialogContent();
+            this.reRenderDialog();
             return;
         }
         
         const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(this.asset.type);
         this.assetAttributes = assetTypeInfo?.attributeDescriptors || [];
+        this.selectedAttributes = [];
 
-        this.setDialogContent();
+        this.reRenderDialog();
     }
 
     protected async _onAssetSelectionChanged(event: CustomEvent) {
+        this.selectedAttributes = [];
         if (!event.detail.detail.newNodes.length) {
             this._onAssetSelectionDeleted();
         } else {
@@ -397,12 +445,15 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         }
 
         this._getAttributeOptions();
+        this.reRenderDialog();
     }
     
     protected _onAssetSelectionDeleted() {
         this.asset = undefined;
         this.assetAttributes = [];
+        this.selectedAttributes = [];
         this._getAttributeOptions();
+        this.reRenderDialog();
     }
 
 }
