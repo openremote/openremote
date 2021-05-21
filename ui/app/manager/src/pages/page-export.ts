@@ -1,4 +1,4 @@
-import {css, customElement, html, unsafeCSS, query} from "lit-element";
+import {css, customElement, html, unsafeCSS, property} from "lit-element";
 import "@openremote/or-rules";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
@@ -6,7 +6,8 @@ import {AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
 import { DefaultColor3 } from "@openremote/core";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import {OrMwcAttributeSelector, OrMwcDialog, OrMwcDialogOpenedEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrAssetTreeAddEvent, OrMwcAttributeSelector, OrMwcDialog, OrMwcDialogOpenedEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { Asset } from "@openremote/model";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
@@ -188,6 +189,9 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         ];
     }
 
+    @property({attribute: false})
+    public assets: Asset[] = [];
+
     get name(): string {
         return "export";
     }
@@ -229,8 +233,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
         const dialog = new OrMwcAttributeSelector();
         dialog.isOpen = true;
-        dialog.addEventListener(OrMwcDialogOpenedEvent.NAME, (ev) => {
-            ev.stopPropagation();
+        dialog.addEventListener(OrAssetTreeAddEvent.NAME, (ev) => {
+            this.assets.push(ev.detail.asset);
+            console.log('asset added', ev.detail.asset, this.assets);
+            this.render(); //todo: doesn't work yet
         });
         hostElement.append(dialog);
         return dialog;

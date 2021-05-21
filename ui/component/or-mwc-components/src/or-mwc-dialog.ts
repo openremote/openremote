@@ -347,7 +347,6 @@ export class OrAssetTreeAddEvent extends CustomEvent<AddEventDetail> {
     public static readonly NAME = "or-asset-tree-add";
 
     constructor(detail: AddEventDetail) {
-        console.log('ev', detail);
         super(OrAssetTreeAddEvent.NAME, {
             bubbles: true,
             composed: true,
