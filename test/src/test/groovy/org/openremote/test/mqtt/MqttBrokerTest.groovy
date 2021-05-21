@@ -26,6 +26,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.mqtt.MqttBrokerService.*
 import static org.openremote.model.value.ValueType.TEXT
 
+// TODO: Change to use MQTT client once implemented
 class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
     def "Mqtt broker event test"() {
@@ -244,8 +245,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client publishes to an asset attribute"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId + "/lights"
-        payload = Values.asJSON(Values.createJsonObject().put("lights", false)).orElse(null)
+        topic = "attributevalue/" + managerTestSetup.apartment1HallwayId + "/lights"
+        payload = Values.asJSON(false).orElse(null)
         remainingLength = 2 + topic.size() + payload.length()
 
         //PUBLISH
@@ -384,7 +385,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset attribute value"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId + "/motionSensor/value"
+        topic = "attributevalue/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -424,7 +425,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client unsubscribes to an asset attribute value"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId + "/motionSensor/value"
+        topic = "attributevalue/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
         remainingLength = 4 + topic.size()
 
         client
