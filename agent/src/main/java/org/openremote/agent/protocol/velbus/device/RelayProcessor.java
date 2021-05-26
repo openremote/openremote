@@ -172,7 +172,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 })
                                 .orElse(null);
                             break;
-                        case "LOCKED":
+                        case "_LOCKED":
                             command = Values.getBoolean(value)
                                 .map(locked -> {
                                     params[0] = 0xFFFFFF;
@@ -180,7 +180,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 })
                                 .orElse(null);
                             break;
-                        case "INHIBITED":
+                        case "_INHIBITED":
                             command = Values.getBoolean(value)
                                 .map(inhibited -> {
                                     params[0] = 0xFFFFFF;
@@ -205,6 +205,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_LOCK":
+                        case "_FORCE_OFF":
                             command = Values.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[0] = duration;

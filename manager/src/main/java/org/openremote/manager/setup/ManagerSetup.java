@@ -673,7 +673,7 @@ public class ManagerSetup implements Setup {
 
         Log.info("Provisioning assets");
 
-        Files.list(Paths.get(provisionDocRoot.toString(), "assets")).filter(Files::isRegularFile)
+        Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted()
                 .forEach(file -> {
                     try {
                         Asset<?> asset =  Values.JSON.readValue(file.toFile(), Asset.class);
