@@ -522,7 +522,7 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         return {
                             type: "prop",
                             header: prop,
-                            path: "$." + prop,
+                            path: "$.['" + prop + "']",
                             stringify: typeof(value) === "object",
                             numeric: !isNaN(Number(value))
                         } as TableColumnConfig;
@@ -558,7 +558,10 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                         ${this._data!.map((dp) => {
                             return html`
                                 <tr class="mdc-data-table__row">
-                                    ${config.columns!.map((c) => html`<td style="${c.styles ? styleMap(c.styles) : ""}" class="mdc-data-table__cell ${c.numeric ? "mdc-data-table__cell--numeric" : ""}">${this._getCellValue(dp, c, config.timestampFormat)}</td>`)}
+                                    ${config.columns!.map((c) => {
+                                        const value = this._getCellValue(dp, c, config.timestampFormat);
+                                        return html`<td style="${c.styles ? styleMap(c.styles) : ""}" class="mdc-data-table__cell ${c.numeric ? "mdc-data-table__cell--numeric" : ""}" title="${value}">${value}</td>`;
+                                })}
                                 </tr>
                             `;            
                         })}

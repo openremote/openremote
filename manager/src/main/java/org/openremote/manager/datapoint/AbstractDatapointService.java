@@ -1,5 +1,6 @@
 package org.openremote.manager.datapoint;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.persistence.PersistenceService;
@@ -313,7 +314,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                             try (ResultSet rs = st.executeQuery()) {
                                 List<ValueDatapoint<?>> result = new ArrayList<>();
                                 while (rs.next()) {
-                                    Object value = rs.getObject(2) != null ? Values.getValueCoerced(rs.getObject(2), Double.class).orElse(null) : null;
+                                    Object value = rs.getObject(2) != null ? isNumber ? Values.getValueCoerced(rs.getObject(2), Double.class).orElse(null) : rs.getObject(2) instanceof PGobject ? Values.parse(((PGobject)rs.getObject(2)).getValue()).orElse(null) : Values.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null) : null;
                                     result.add(new ValueDatapoint<>(rs.getTimestamp(1).getTime(), value));
                                 }
                                 return result.toArray(new ValueDatapoint<?>[0]);
