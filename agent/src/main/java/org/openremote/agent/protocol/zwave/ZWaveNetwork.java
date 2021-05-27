@@ -53,16 +53,16 @@ import static java.util.stream.Collectors.toList;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 import static org.openremote.protocol.zwave.model.ZWNodeInitializerListener.NodeInitState.INITIALIZATION_FINISHED;
 
-public class ZWNetwork {
+public class ZWaveNetwork {
 
     protected Controller controller;
     private final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArrayList<>();
     private final Map<Consumer<Value>, ChannelConsumerLink> consumerLinkMap = new HashMap<>();
     protected String serialPort;
-    protected ZWSerialIoClient ioClient;
+    protected ZWaveSerialIoClient ioClient;
     protected ScheduledExecutorService executorService;
 
-    public ZWNetwork(String serialPort, ScheduledExecutorService executorService) {
+    public ZWaveNetwork(String serialPort, ScheduledExecutorService executorService) {
         this.serialPort = serialPort;
         this.executorService = executorService;
     }
@@ -77,7 +77,7 @@ public class ZWNetwork {
         configuration.setCommLayer(ZWavePortConfiguration.CommLayer.NETTY);
         configuration.setComPort(serialPort);
 
-        ioClient = new ZWSerialIoClient(serialPort);
+        ioClient = new ZWaveSerialIoClient(serialPort);
         ioClient.addConnectionStatusConsumer(this::onConnectionStatusChanged);
 
         controller = new Controller(NettyConnectionManager.create(configuration, ioClient));
@@ -100,7 +100,7 @@ public class ZWNetwork {
         try {
             controller.disconnect();
         } catch (ConnectionException e) {
-            ZWProtocol.LOG.log(Level.WARNING, "Exception thrown whilst disconnecting the controller", e);
+            ZWaveProtocol.LOG.log(Level.WARNING, "Exception thrown whilst disconnecting the controller", e);
         } finally {
             disposeClient();
             ioClient = null;
@@ -221,7 +221,7 @@ public class ZWNetwork {
         int endpoint = channel.getCommandClass() != null ? channel.getCommandClass().getContext().getDestEndPoint() : 0;
         String linkValue = channel.getLinkName();
 
-        ZWAgent.ZWAgentLink agentLink = new ZWAgent.ZWAgentLink(agentId, nodeId, endpoint, linkValue);
+        ZWaveAgent.ZWAgentLink agentLink = new ZWaveAgent.ZWAgentLink(agentId, nodeId, endpoint, linkValue);
 
         attribute.addOrReplaceMeta(
             new MetaItem<>(AGENT_LINK, agentLink),
@@ -242,7 +242,7 @@ public class ZWNetwork {
         return channel;
     }
 
-    public synchronized AssetTreeNode[] discoverDevices(ZWAgent agent) {
+    public synchronized AssetTreeNode[] discoverDevices(ZWaveAgent agent) {
         if (controller == null) {
             return new AssetTreeNode[0];
         }

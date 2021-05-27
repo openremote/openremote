@@ -40,7 +40,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
-public class ZWProtocol extends AbstractProtocol<ZWAgent, ZWAgent.ZWAgentLink> implements ProtocolAssetDiscovery {
+public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWAgentLink> implements ProtocolAssetDiscovery {
 
     // Constants ------------------------------------------------------------------------------------
 
@@ -48,14 +48,14 @@ public class ZWProtocol extends AbstractProtocol<ZWAgent, ZWAgent.ZWAgentLink> i
 
     // Class Members --------------------------------------------------------------------------------
 
-    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ZWProtocol.class.getName());
+    public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, ZWaveProtocol.class.getName());
 
     // Protected Instance Fields --------------------------------------------------------------------
 
-    protected ZWNetwork network;
+    protected ZWaveNetwork network;
     protected Map<AttributeRef, Consumer<Value>> sensorValueConsumerMap;
 
-    public ZWProtocol(ZWAgent agent) {
+    public ZWaveProtocol(ZWaveAgent agent) {
         super(agent);
     }
 
@@ -76,7 +76,7 @@ public class ZWProtocol extends AbstractProtocol<ZWAgent, ZWAgent.ZWAgentLink> i
     @Override
     protected void doStart(Container container) throws Exception {
         String serialPort = agent.getSerialPort().orElseThrow(() -> new IllegalStateException("Invalid serial port property"));
-        ZWNetwork network = new ZWNetwork(serialPort, executorService);
+        ZWaveNetwork network = new ZWaveNetwork(serialPort, executorService);
         network.addConnectionStatusConsumer(this::setConnectionStatus);
         network.connect();
     }
@@ -90,7 +90,7 @@ public class ZWProtocol extends AbstractProtocol<ZWAgent, ZWAgent.ZWAgentLink> i
     }
 
     @Override
-    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute, ZWAgent.ZWAgentLink agentLink) {
+    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWAgentLink agentLink) {
 
         int nodeId = agentLink.getDeviceNodeId().orElse(0);
         int endpoint = agentLink.getDeviceEndpoint().orElse(0);
@@ -106,14 +106,14 @@ public class ZWProtocol extends AbstractProtocol<ZWAgent, ZWAgent.ZWAgentLink> i
     }
 
     @Override
-    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute, ZWAgent.ZWAgentLink agentLink) {
+    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         Consumer<Value> sensorValueConsumer = sensorValueConsumerMap.remove(attributeRef);
         network.removeSensorValueConsumer(sensorValueConsumer);
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, ZWAgent.ZWAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, ZWaveAgent.ZWAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         int nodeId = getOrThrowAgentLinkProperty(agentLink.getDeviceNodeId(), "device node ID");
         int endpoint = getOrThrowAgentLinkProperty(agentLink.getDeviceEndpoint(), "device endpoint");

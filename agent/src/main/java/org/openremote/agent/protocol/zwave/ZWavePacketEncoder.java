@@ -21,23 +21,12 @@ package org.openremote.agent.protocol.zwave;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
-import java.util.List;
-
-public class ZWPacketDecoder extends ByteToMessageDecoder {
+public class ZWavePacketEncoder extends MessageToByteEncoder<byte[]> {
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> messages) throws Exception {
-        int size = buf.readableBytes();
-
-        if (size > 0) {
-            byte[] data = new byte[size];
-            for (int i = 0; i < size; i++) {
-                data[i] = buf.readByte();
-            }
-            buf.discardReadBytes();
-            messages.add(data);
-        }
+    protected void encode(ChannelHandlerContext ctx, byte[] message, ByteBuf buf) throws Exception {
+        buf.writeBytes(message);
     }
 }

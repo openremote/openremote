@@ -27,7 +27,7 @@ import javax.persistence.Entity;
 import java.util.Optional;
 
 @Entity
-public class ZWAgent extends Agent<ZWAgent, ZWProtocol, ZWAgent.ZWAgentLink> {
+public class ZWaveAgent extends Agent<ZWaveAgent, ZWaveProtocol, ZWaveAgent.ZWAgentLink> {
 
     public static class ZWAgentLink extends AgentLink<ZWAgentLink> {
 
@@ -58,22 +58,22 @@ public class ZWAgent extends Agent<ZWAgent, ZWProtocol, ZWAgent.ZWAgentLink> {
         }
     }
 
-    public static AgentDescriptor<ZWAgent, ZWProtocol, ZWAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        ZWAgent.class, ZWProtocol.class, ZWAgentLink.class, null
+    public static AgentDescriptor<ZWaveAgent, ZWaveProtocol, ZWAgentLink> DESCRIPTOR = new AgentDescriptor<>(
+        ZWaveAgent.class, ZWaveProtocol.class, ZWAgentLink.class, null
     );
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    protected ZWAgent() {
+    protected ZWaveAgent() {
     }
 
-    public ZWAgent(String name) {
+    public ZWaveAgent(String name) {
         super(name);
     }
 
     @Override
-    public ZWProtocol getProtocolInstance() {
-        return new ZWProtocol(this);
+    public ZWaveProtocol getProtocolInstance() {
+        return new ZWaveProtocol(this);
     }
 }

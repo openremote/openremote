@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 /**
  * Wrapper around {@link SerialIoClient} to allow compatibility with Z Wave library
  */
-public class ZWSerialIoClient extends SerialIoClient<byte[]> implements TransportLayer {
+public class ZWaveSerialIoClient extends SerialIoClient<byte[]> implements TransportLayer {
 
     // Constants ----------------------------------------------------------------------------------
 
@@ -56,13 +56,13 @@ public class ZWSerialIoClient extends SerialIoClient<byte[]> implements Transpor
 
     // Constructors -------------------------------------------------------------------------------
 
-    public ZWSerialIoClient(String port) {
+    public ZWaveSerialIoClient(String port) {
         super(port, 115200);
 
         setEncoderDecoderProvider(
             () -> new ChannelHandler[] {
-                new ZWPacketEncoder(),
-                new ZWPacketDecoder(),
+                new ZWavePacketEncoder(),
+                new ZWavePacketDecoder(),
                 new AbstractNettyIoClient.MessageToMessageDecoder<>(byte[].class, this)
             }
         );
