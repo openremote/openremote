@@ -67,13 +67,6 @@ public class ManagerTestSetup extends ManagerSetup {
     public static GeoJSONPoint AREA_2_LOCATION = new GeoJSONPoint(5.473829, 51.438744);
     public static GeoJSONPoint AREA_3_LOCATION = new GeoJSONPoint(5.487478, 51.446979);
     public static final String thingLightToggleAttributeName = "light1Toggle";
-    public static final Scene[] DEMO_APARTMENT_SCENES = new Scene[] {
-            new Scene("morningScene", "Morning scene", "MORNING", "0 0 7 ? *", false, 21d),
-            new Scene("dayScene", "Day scene", "DAY", "0 30 8 ? *", true, 15d),
-            new Scene("eveningScene", "Evening scene", "EVENING", "0 30 17 ? *", false, 22d),
-            new Scene("nightScene", "Night scene", "NIGHT", "0 0 22 ? *", true, 19d)
-    };
-    final protected boolean importDemoScenes;
     public String smartOfficeId;
     public String groundFloorId;
     public String lobbyId;
@@ -81,7 +74,6 @@ public class ManagerTestSetup extends ManagerSetup {
     public String thingId;
     public String smartBuildingId;
     public String apartment1Id;
-    public List<String> apartment1SceneAgentIds;
     public String apartment1ServiceAgentId;
     public String apartment1LivingroomId = UniqueIdentifierGenerator.generateId("apartment1LivingroomId");
     public String apartment1KitchenId;
@@ -106,9 +98,8 @@ public class ManagerTestSetup extends ManagerSetup {
     public String electricitySupplierAssetId;
     public String electricityBatteryAssetId;
 
-    public ManagerTestSetup(Container container, boolean importDemoScenes) {
+    public ManagerTestSetup(Container container) {
         super(container);
-        this.importDemoScenes = importDemoScenes;
     }
 
     @Override
@@ -418,12 +409,6 @@ public class ManagerTestSetup extends ManagerSetup {
 
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
-
-        if (importDemoScenes) {
-            List<Agent<?,?,?>> demoApartment1SceneAgents = createDemoApartmentScenes(
-                    assetStorageService, apartment1, DEMO_APARTMENT_SCENES, apartment1Livingroom, apartment1Kitchen, apartment1Hallway);
-            apartment1SceneAgentIds = demoApartment1SceneAgents.stream().map(Asset::getId).collect(Collectors.toList());
-        }
 
         BuildingAsset apartment2 = new BuildingAsset("Apartment 2");
         apartment2.setParent(smartBuilding);
