@@ -110,7 +110,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
     def "Check linked attribute import"() {
 
         given: "the server container is started"
-        def conditions = new PollingConditions(timeout: 90, delay: 0.5)
+        def conditions = new PollingConditions(timeout: 60, delay: 0.5)
         def container = startContainer(defaultConfig(), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
@@ -180,7 +180,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
 
         and: "all imported assets should be fully linked"
         conditions.eventually {
-            assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 1138
+            assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 1163
         }
 
         when: "agent and imported assets are removed"
