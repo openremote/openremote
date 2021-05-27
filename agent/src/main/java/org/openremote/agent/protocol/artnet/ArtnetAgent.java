@@ -22,9 +22,12 @@ package org.openremote.agent.protocol.artnet;
 import org.openremote.agent.protocol.io.IoAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.util.ModelIgnore;
 
 import javax.persistence.Entity;
 
+
+@ModelIgnore
 @Entity
 public class ArtnetAgent extends IoAgent<ArtnetAgent, ArtnetProtocol, AgentLink.Default> {
 

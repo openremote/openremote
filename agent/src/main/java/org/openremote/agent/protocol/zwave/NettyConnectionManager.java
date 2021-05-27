@@ -25,16 +25,16 @@ import org.openremote.protocol.zwave.port.ZWavePortConfiguration;
 
 public class NettyConnectionManager extends DefaultZWConnectionManager {
 
-    public static NettyConnectionManager create(ZWavePortConfiguration configuration, ZWSerialIoClient messageProcessor) {
+    public static NettyConnectionManager create(ZWavePortConfiguration configuration, ZWaveSerialIoClient messageProcessor) {
         NettyConnectionManager mgr = new NettyConnectionManager(configuration, messageProcessor);
         mgr.createControllerAPI();
         mgr.addShutdownHook();
         return mgr;
     }
 
-    private final ZWSerialIoClient ioClient;
+    private final ZWaveSerialIoClient ioClient;
 
-    protected NettyConnectionManager(ZWavePortConfiguration configuration, ZWSerialIoClient ioClient) {
+    protected NettyConnectionManager(ZWavePortConfiguration configuration, ZWaveSerialIoClient ioClient) {
         super(configuration);
         this.ioClient = ioClient;
     }
