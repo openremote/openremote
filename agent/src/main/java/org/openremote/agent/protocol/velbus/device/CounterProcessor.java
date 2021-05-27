@@ -20,7 +20,9 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
+import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -106,26 +108,37 @@ public class CounterProcessor extends FeatureProcessor {
 
     @Override
     public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
-        Integer counter = null;
 
-        if ("COUNTER1".equals(property)) {
-            counter = 1;
-        } else if ("COUNTER2".equals(property)) {
-            counter = 2;
-        } else if ("COUNTER3".equals(property)) {
-            counter = 3;
-        } else if ("COUNTER4".equals(property)) {
-            counter = 4;
+        if (!property.endsWith("_RESET")) {
+            return null;
         }
 
-        if (counter != null) {
-            // Reset the counter
-            return Collections.singletonList(
-                new VelbusPacket(device.getBaseAddress(), VelbusPacket.OutboundCommand.COUNTER_RESET.getCode(), (byte)(counter-1))
-            );
-        }
+        return Values.getValueCoerced(value, AttributeExecuteStatus.class).map(attributeExecuteStatus -> {
 
-        return null;
+            if (attributeExecuteStatus != AttributeExecuteStatus.REQUEST_START) {
+                return null;
+            }
+            Integer counter = null;
+
+            if ("COUNTER1_RESET".equals(property)) {
+                counter = 1;
+            } else if ("COUNTER2_RESET".equals(property)) {
+                counter = 2;
+            } else if ("COUNTER3_RESET".equals(property)) {
+                counter = 3;
+            } else if ("COUNTER4_RESET".equals(property)) {
+                counter = 4;
+            }
+
+            if (counter != null) {
+                // Reset the counter
+                return Collections.singletonList(
+                    new VelbusPacket(device.getBaseAddress(), VelbusPacket.OutboundCommand.COUNTER_RESET.getCode(), (byte) (counter - 1))
+                );
+            }
+
+            return null;
+        }).orElse(null);
     }
 
     @SuppressWarnings("unchecked")

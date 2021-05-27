@@ -28,6 +28,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.openremote.agent.protocol.velbus.VelbusPacket.OutboundCommand.*;
 
@@ -97,6 +99,11 @@ public class RelayProcessor extends OutputChannelProcessor {
         new PropertyDescriptor("ch3Locked", "CH3 Locked", "CH3_LOCKED", ValueType.BOOLEAN),
         new PropertyDescriptor("ch4Locked", "CH4 Locked", "CH4_LOCKED", ValueType.BOOLEAN),
         new PropertyDescriptor("ch5Locked", "CH5 Locked", "CH5_LOCKED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch1Forced", "CH1 Forced", "CH1_FORCED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch2Forced", "CH2 Forced", "CH2_FORCED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch3Forced", "CH3 Forced", "CH3_FORCED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch4Forced", "CH4 Forced", "CH4_FORCED", ValueType.BOOLEAN),
+        new PropertyDescriptor("ch5Forced", "CH5 Forced", "CH5_FORCED", ValueType.BOOLEAN),
         new PropertyDescriptor("ch1Inhibited", "CH1 Inhibited", "CH1_INHIBITED", ValueType.BOOLEAN),
         new PropertyDescriptor("ch2Inhibited", "CH2 Inhibited", "CH2_INHIBITED", ValueType.BOOLEAN),
         new PropertyDescriptor("ch3Inhibited", "CH3 Inhibited", "CH3_INHIBITED", ValueType.BOOLEAN),
@@ -146,6 +153,7 @@ public class RelayProcessor extends OutputChannelProcessor {
         return SUPPORTED_PROPERTIES;
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return getChannelNumberAndPropertySuffix(device, CHANNEL_REGEX, property)
@@ -172,6 +180,32 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 })
                                 .orElse(null);
                             break;
+                        case "_SETTING":
+                            Optional<ChannelSetting> setting = ChannelSetting.fromValue(value);
+                            if (!setting.isPresent()) {
+                                return null;
+                            }
+                            switch (setting.get()) {
+                                case NORMAL:
+                                    return Stream.of(
+                                        getPackets(device, channelNumber, INHIBIT_CANCEL, 0xFFFFFF),
+                                        getPackets(device, channelNumber, FORCE_ON_CANCEL, 0xFFFFFF),
+                                        getPackets(device, channelNumber, LOCK_CANCEL, 0xFFFFFF)
+                                    ).flatMap(List::stream).collect(Collectors.toList());
+                                case INHIBITED:
+                                    params[0] = 0xFFFFFF;
+                                    command = INHIBIT;
+                                    break;
+                                case FORCED:
+                                    params[0] = 0xFFFFFF;
+                                    command = FORCE_ON;
+                                    break;
+                                case LOCKED:
+                                    params[0] = 0xFFFFFF;
+                                    command = LOCK;
+                                    break;
+                            }
+                            break;
                         case "_LOCKED":
                             command = Values.getBoolean(value)
                                 .map(locked -> {
@@ -185,6 +219,14 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .map(inhibited -> {
                                     params[0] = 0xFFFFFF;
                                     return inhibited ? INHIBIT : INHIBIT_CANCEL;
+                                })
+                                .orElse(null);
+                            break;
+                        case "_FORCED":
+                            command = Values.getBoolean(value)
+                                .map(inhibited -> {
+                                    params[0] = 0xFFFFFF;
+                                    return inhibited ? FORCE_ON : FORCE_ON_CANCEL;
                                 })
                                 .orElse(null);
                             break;

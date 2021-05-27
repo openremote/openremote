@@ -29,6 +29,7 @@ import org.openremote.model.value.Values;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.openremote.agent.protocol.velbus.VelbusPacket.OutboundCommand.*;
 import static org.openremote.model.util.TextUtil.toProperCase;
@@ -91,6 +92,10 @@ public class BlindProcessor extends OutputChannelProcessor {
             }
 
             return NORMAL;
+        }
+
+        public static Optional<ChannelSetting> fromValue(Object value) {
+            return EnumUtil.enumFromValue(ChannelSetting.class, value);
         }
     }
 
@@ -155,6 +160,7 @@ public class BlindProcessor extends OutputChannelProcessor {
             .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         return getChannelNumberAndPropertySuffix(device, CHANNEL_REGEX, property)
@@ -181,7 +187,46 @@ public class BlindProcessor extends OutputChannelProcessor {
                                 })
                                 .orElse(null);
                             break;
-                        case "LOCKED":
+                        case "_SETTING":
+                            Optional<ChannelSetting> setting = ChannelSetting.fromValue(value);
+                            if (!setting.isPresent()) {
+                                return null;
+                            }
+                            switch (setting.get()) {
+                                case NORMAL:
+                                    return Stream.of(
+                                        getPackets(device, channelNumber, INHIBIT_CANCEL, 0xFFFFFF, 0),
+                                        getPackets(device, channelNumber, BLIND_FORCE_DOWN_CANCEL, 0xFFFFFF, 0),
+                                        getPackets(device, channelNumber, BLIND_FORCE_UP_CANCEL, 0xFFFFFF, 0),
+                                        getPackets(device, channelNumber, LOCK_CANCEL, 0xFFFFFF, 0)
+                                    ).flatMap(List::stream).collect(Collectors.toList());
+                                case INHIBITED:
+                                    params[0] = 0xFFFFFF;
+                                    command = INHIBIT;
+                                    break;
+                                case INHIBITED_DOWN:
+                                    params[0] = 0xFFFFFF;
+                                    command = BLIND_INHIBIT_DOWN;
+                                    break;
+                                case INHIBITED_UP:
+                                    params[0] = 0xFFFFFF;
+                                    command = BLIND_INHIBIT_UP;
+                                    break;
+                                case FORCED_DOWN:
+                                    params[0] = 0xFFFFFF;
+                                    command = BLIND_FORCE_DOWN;
+                                    break;
+                                case FORCED_UP:
+                                    params[0] = 0xFFFFFF;
+                                    command = BLIND_FORCE_UP;
+                                    break;
+                                case LOCKED:
+                                    params[0] = 0xFFFFFF;
+                                    command = LOCK;
+                                    break;
+                            }
+                            break;
+                        case "_LOCKED":
                             command = Values.getBoolean(value)
                                 .map(locked -> {
                                     params[0] = 0xFFFFFF;
@@ -189,11 +234,44 @@ public class BlindProcessor extends OutputChannelProcessor {
                                 })
                                 .orElse(null);
                             break;
-                        case "INHIBITED":
+                        case "_INHIBITED":
                             command = Values.getBoolean(value)
                                 .map(inhibited -> {
                                     params[0] = 0xFFFFFF;
                                     return inhibited ? INHIBIT : INHIBIT_CANCEL;
+                                })
+                                .orElse(null);
+                            break;
+                        case "_INHIBITED_UP":
+                            command = Values.getBoolean(value)
+                                .map(inhibited -> {
+                                    params[0] = 0xFFFFFF;
+                                    return inhibited ? BLIND_INHIBIT_UP : INHIBIT_CANCEL;
+                                })
+                                .orElse(null);
+                            break;
+
+                        case "_INHIBITED_DOWN":
+                            command = Values.getBoolean(value)
+                                .map(inhibited -> {
+                                    params[0] = 0xFFFFFF;
+                                    return inhibited ? BLIND_INHIBIT_DOWN : INHIBIT_CANCEL;
+                                })
+                                .orElse(null);
+                            break;
+                        case "_FORCED_DOWN":
+                            command = Values.getBoolean(value)
+                                .map(inhibited -> {
+                                    params[0] = 0xFFFFFF;
+                                    return inhibited ? BLIND_FORCE_DOWN : BLIND_FORCE_DOWN_CANCEL;
+                                })
+                                .orElse(null);
+                            break;
+                        case "_FORCED_UP":
+                            command = Values.getBoolean(value)
+                                .map(inhibited -> {
+                                    params[0] = 0xFFFFFF;
+                                    return inhibited ? BLIND_FORCE_UP : BLIND_FORCE_UP_CANCEL;
                                 })
                                 .orElse(null);
                             break;

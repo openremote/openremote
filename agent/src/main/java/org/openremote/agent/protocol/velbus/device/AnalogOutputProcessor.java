@@ -81,6 +81,8 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
         new Pair<>("_LOCKED", ValueType.BOOLEAN),
         // RW - True/False
         new Pair<>("_INHIBITED", ValueType.BOOLEAN),
+        // RW - True/False
+        new Pair<>("_FORCED", ValueType.BOOLEAN),
         // W - Dim level and speed (LEVEL:SPEED)
         new Pair<>("_LEVEL_AND_SPEED", ValueType.TEXT),
         // RW - Dim level 0-100% (-1 to stop current dimming)
@@ -164,7 +166,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 })
                                 .orElse(null);
                             break;
-                        case "LOCKED":
+                        case "_LOCKED":
                             command = Values.getBoolean(value)
                                 .map(locked -> {
                                     params[2] = 0xFFFFFF;
@@ -172,7 +174,15 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 })
                                 .orElse(null);
                             break;
-                        case "INHIBITED":
+                        case "_FORCED":
+                            command = Values.getBoolean(value)
+                                .map(locked -> {
+                                    params[2] = 0xFFFFFF;
+                                    return locked ? FORCE_ON : FORCE_ON_CANCEL;
+                                })
+                                .orElse(null);
+                            break;
+                        case "_INHIBITED":
                             command = Values.getBoolean(value)
                                 .map(inhibited -> {
                                     params[2] = 0xFFFFFF;
@@ -200,6 +210,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_LOCK":
+                        case "_FORCE_OFF":
                             command = Values.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[2] = duration;
