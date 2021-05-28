@@ -19,16 +19,16 @@
  */
 package org.openremote.agent.protocol.serial;
 
-import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
-import org.openremote.agent.protocol.io.IoAgent;
-import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
+import org.openremote.agent.protocol.io.IOAgent;
+import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.asset.agent.AgentLink;
 
 /**
  * This is an abstract TCP client protocol for communicating with TCP servers; concrete implementations must provide
- * an {@link IoClient<T> for handling over the wire communication}.
+ * an {@link IOClient <T> for handling over the wire communication}.
  */
-public abstract class AbstractSerialClientProtocol<T extends AbstractIoClientProtocol<T, U, W, X, V>, U extends IoAgent<U, T, V>, V extends AgentLink<?>, W, X extends SerialIoClient<W>> extends AbstractIoClientProtocol<T, U, W, X, V> {
+public abstract class AbstractSerialClientProtocol<T extends AbstractIOClientProtocol<T, U, W, X, V>, U extends IOAgent<U, T, V>, V extends AgentLink<?>, W, X extends SerialIOClient<W>> extends AbstractIOClientProtocol<T, U, W, X, V> {
 
     protected AbstractSerialClientProtocol(U agent) {
         super(agent);
@@ -41,6 +41,6 @@ public abstract class AbstractSerialClientProtocol<T extends AbstractIoClientPro
         String port = agent.getSerialPort().orElse(null);
         Integer baudrate = agent.getSerialBaudrate().orElse(null);
 
-        return (X) new SerialIoClient<W>(port, baudrate);
+        return (X) new SerialIOClient<W>(port, baudrate);
     }
 }

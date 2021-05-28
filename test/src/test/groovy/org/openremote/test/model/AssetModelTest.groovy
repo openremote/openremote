@@ -1,9 +1,9 @@
 package org.openremote.test.model
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.openremote.agent.protocol.http.HttpClientAgent
+import org.openremote.agent.protocol.http.HTTPAgent
 import org.openremote.agent.protocol.simulator.SimulatorAgent
-import org.openremote.agent.protocol.velbus.VelbusTcpAgent
+import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetModelResource
@@ -24,7 +24,7 @@ import org.openremote.model.value.ValueType
 import org.openremote.model.value.Values
 import org.openremote.model.value.impl.ColourRGB
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.protocol.http.HttpServerTestAgent
+import org.openremote.test.protocol.http.HTTPServerTestAgent
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -78,10 +78,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         then: "the asset model infos should be available"
         assetInfos.size() > 0
         assetInfos.size() == AssetModelUtil.assetTypeMap.size()
-        def velbusTcpAgent = assetInfos.find {it.assetDescriptor.type == VelbusTcpAgent.class}
+        def velbusTcpAgent = assetInfos.find {it.assetDescriptor.type == VelbusTCPAgent.class}
         velbusTcpAgent != null
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTcpAgent.VELBUS_HOST && !it.optional}
-        velbusTcpAgent.attributeDescriptors.any {it == VelbusTcpAgent.VELBUS_PORT && !it.optional}
+        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_HOST && !it.optional}
+        velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_PORT && !it.optional}
     }
 
     def "Retrieving a specific asset model info"() {
@@ -100,7 +100,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         AssetModelUtil.getAgentDescriptor(SimulatorAgent.class) != null
 
         and: "the test asset model provider should have registered test agents and assets"
-        AssetModelUtil.getAgentDescriptor(HttpServerTestAgent.DESCRIPTOR.name).isPresent()
+        AssetModelUtil.getAgentDescriptor(HTTPServerTestAgent.DESCRIPTOR.name).isPresent()
     }
 
     def "Serialize/Deserialize asset model"() {
@@ -112,7 +112,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
             .addAttributes(
                 new Attribute<>("testAttribute", BIG_NUMBER, 100.5, System.currentTimeMillis())
                     .addOrReplaceMeta(
-                        new MetaItem<>(MetaItemType.AGENT_LINK, new HttpClientAgent.HttpClientAgentLink("http_agent_id")
+                        new MetaItem<>(MetaItemType.AGENT_LINK, new HTTPAgent.HttpClientAgentLink("http_agent_id")
                             .setPath("test_path")
                             .setPagingMode(true))
                     )
@@ -147,7 +147,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).isObject()
         assetObjectNode.get("attributes").get("testAttribute").get("value").decimalValue() == 100.5
         assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).get("id").asText() == "http_agent_id"
-        assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == HttpClientAgent.HttpClientAgentLink.class.getSimpleName()
+        assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == HTTPAgent.HttpClientAgentLink.class.getSimpleName()
 
         when: "the asset is deserialized"
         def asset2 = Values.parse(assetStr, LightAsset.class).orElse(null)
@@ -159,9 +159,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         asset2.getColourRGB().map{it.getR()}.orElse(null) == asset.getColourRGB().map{it.getR()}.orElse(null)
         asset2.getColourRGB().map{it.getG()}.orElse(null) == asset.getColourRGB().map{it.getG()}.orElse(null)
         asset2.getColourRGB().map{it.getB()}.orElse(null) == asset.getColourRGB().map{it.getB()}.orElse(null)
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.orElse(null) instanceof HttpClientAgent.HttpClientAgentLink
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HttpClientAgent.HttpClientAgentLink)it}.flatMap{it.path}.orElse("") == "test_path"
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HttpClientAgent.HttpClientAgentLink)it}.flatMap{it.pagingMode}.orElse(false)
+        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.orElse(null) instanceof HTTPAgent.HttpClientAgentLink
+        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgent.HttpClientAgentLink)it}.flatMap{it.path}.orElse("") == "test_path"
+        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgent.HttpClientAgentLink)it}.flatMap{it.pagingMode}.orElse(false)
 
         when: "an attribute is cloned"
         def attribute = asset2.getAttribute(LightAsset.COLOUR_RGB).get()

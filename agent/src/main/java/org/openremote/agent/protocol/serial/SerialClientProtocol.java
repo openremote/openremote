@@ -40,11 +40,11 @@ import java.util.logging.Logger;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is a generic Serial client protocol for communicating with Serial ports; it uses the {@link SerialIoClient} to
+ * This is a generic Serial client protocol for communicating with Serial ports; it uses the {@link SerialIOClient} to
  * handle the communication and all messages are processed as strings; if you require custom message type handling
  * then please sub class the {@link AbstractSerialClientProtocol}).
  */
-public class SerialClientProtocol extends AbstractSerialClientProtocol<SerialClientProtocol, SerialAgent, AgentLink.Default, String, SerialIoClient<String>> {
+public class SerialClientProtocol extends AbstractSerialClientProtocol<SerialClientProtocol, SerialAgent, AgentLink.Default, String, SerialIOClient<String>> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SerialClientProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "Serial Client";

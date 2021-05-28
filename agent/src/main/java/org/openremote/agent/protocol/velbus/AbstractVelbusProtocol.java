@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.velbus.device.VelbusDeviceType;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
@@ -74,7 +74,7 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
 
         try {
 
-            IoClient<VelbusPacket> messageProcessor = createIoClient(agent);
+            IOClient<VelbusPacket> messageProcessor = createIoClient(agent);
             int timeInjectionSeconds = agent.getTimeInjectionInterval().orElse(DEFAULT_TIME_INJECTION_INTERVAL_SECONDS);
 
             LOG.fine("Creating new VELBUS network instance for protocol instance: " + agent);
@@ -144,9 +144,9 @@ public abstract class AbstractVelbusProtocol<S extends AbstractVelbusProtocol<S,
     }
 
     /**
-     * Should return an instance of {@link IoClient} for the supplied agent
+     * Should return an instance of {@link IOClient} for the supplied agent
      */
-    protected abstract IoClient<VelbusPacket> createIoClient(T agent) throws RuntimeException;
+    protected abstract IOClient<VelbusPacket> createIoClient(T agent) throws RuntimeException;
 
     /* ProtocolAssetImport */
 

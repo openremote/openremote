@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.velbus.device.VelbusDevice;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
@@ -33,7 +33,7 @@ public class VelbusNetwork {
 
     protected static int DELAY_BETWEEN_PACKET_WRITES_MILLISECONDS = 100; // Need to throttle bus writes
     protected final Integer timeInjectionIntervalSeconds;
-    protected IoClient<VelbusPacket> client;
+    protected IOClient<VelbusPacket> client;
     protected final Queue<VelbusPacket> messageQueue = new ArrayDeque<>();
     protected List<ScheduledFuture<?>> scheduledTasks = new ArrayList<>();
     protected ScheduledFuture<?> timeInjector;
@@ -43,7 +43,7 @@ public class VelbusNetwork {
     protected ScheduledExecutorService executorService;
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
 
-    public VelbusNetwork(IoClient<VelbusPacket> client, ScheduledExecutorService executorService, Integer timeInjectionIntervalSeconds) {
+    public VelbusNetwork(IOClient<VelbusPacket> client, ScheduledExecutorService executorService, Integer timeInjectionIntervalSeconds) {
         this.client = client;
         this.executorService = executorService;
         this.timeInjectionIntervalSeconds = timeInjectionIntervalSeconds;

@@ -1,9 +1,9 @@
 package org.openremote.agent.protocol.artnet;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.io.AbstractIoClientProtocol;
-import org.openremote.agent.protocol.io.AbstractNettyIoClient;
-import org.openremote.agent.protocol.udp.UdpIoClient;
+import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.udp.UDPIOClient;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
@@ -18,7 +18,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ArtnetProtocol extends AbstractIoClientProtocol<ArtnetProtocol, ArtnetAgent, ArtnetPacket, UdpIoClient<ArtnetPacket>, AgentLink.Default> implements ProtocolAssetImport {
+public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, ArtnetAgent, ArtnetPacket, UDPIOClient<ArtnetPacket>, AgentLink.Default> implements ProtocolAssetImport {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet";
     protected final Map<AttributeRef, Consumer<ArtnetPacket>> protocolMessageConsumers = new HashMap<>();
@@ -34,7 +34,7 @@ public class ArtnetProtocol extends AbstractIoClientProtocol<ArtnetProtocol, Art
     }
 
     @Override
-    protected UdpIoClient<ArtnetPacket> doCreateIoClient() throws Exception {
+    protected UDPIOClient<ArtnetPacket> doCreateIoClient() throws Exception {
         String host = agent.getHost().orElseThrow(() ->
             new IllegalArgumentException("Required host attribute is null or missing"));
 
@@ -43,14 +43,14 @@ public class ArtnetProtocol extends AbstractIoClientProtocol<ArtnetProtocol, Art
 
         Integer bindPort = agent.getBindPort().orElse(null);
 
-        return new UdpIoClient<>(host, port, bindPort);
+        return new UDPIOClient<>(host, port, bindPort);
     }
 
     @Override
     protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
         return () ->
             new ChannelHandler[] {
-                new AbstractNettyIoClient.MessageToByteEncoder<>(ArtnetPacket.class, client.ioClient, ArtnetPacket::toByteBuf)
+                new AbstractNettyIOClient.MessageToByteEncoder<>(ArtnetPacket.class, client.ioClient, ArtnetPacket::toByteBuf)
             };
     }
 

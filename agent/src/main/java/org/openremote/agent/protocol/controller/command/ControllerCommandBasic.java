@@ -1,7 +1,7 @@
 package org.openremote.agent.protocol.controller.command;
 
 import org.openremote.agent.protocol.controller.ControllerCommand;
-import org.openremote.agent.protocol.http.HttpClientProtocol;
+import org.openremote.agent.protocol.http.HTTPProtocol;
 import org.openremote.model.attribute.AttributeRef;
 
 import java.util.function.Consumer;
@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 /**
  * A ControllerCommandBasic represent a configuration to execute a Controller 2.5 command with just a command name
  * (command parameter is managed at launch depending on linked attribute value {@link
- * org.openremote.agent.protocol.controller.ControllerProtocol#executeAttributeWriteRequest(HttpClientProtocol.HttpClientRequest,
+ * org.openremote.agent.protocol.controller.ControllerProtocol#executeAttributeWriteRequest(HTTPProtocol.HttpClientRequest,
  * AttributeRef, Consumer)}).
  */
 public class ControllerCommandBasic extends ControllerCommand {

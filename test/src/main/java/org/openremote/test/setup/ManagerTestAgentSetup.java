@@ -20,7 +20,7 @@
 package org.openremote.test.setup;
 
 import org.openremote.agent.protocol.knx.KNXAgent;
-import org.openremote.agent.protocol.velbus.VelbusTcpAgent;
+import org.openremote.agent.protocol.velbus.VelbusTCPAgent;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Container;
 import org.openremote.model.security.Tenant;
@@ -84,7 +84,7 @@ public class ManagerTestAgentSetup extends ManagerSetup {
         if (velbus) {
             LOG.info("Enable Velbus demo agent, COM port: " + velbusPort);
 
-            VelbusTcpAgent agent = new VelbusTcpAgent("Demo VELBUS agent")
+            VelbusTCPAgent agent = new VelbusTCPAgent("Demo VELBUS agent")
                 .setRealm(masterRealm)
                 .setHost(velbusHost)
                 .setPort(velbusPort);

@@ -24,9 +24,9 @@ import io.netty.handler.codec.string.StringDecoder
 import io.netty.handler.codec.string.StringEncoder
 import io.netty.util.CharsetUtil
 import io.netty.util.internal.SocketUtils
-import org.openremote.agent.protocol.io.AbstractNettyIoClient
-import org.openremote.agent.protocol.udp.UdpIoClient
-import org.openremote.agent.protocol.udp.UdpStringServer
+import org.openremote.agent.protocol.io.AbstractNettyIOClient
+import org.openremote.agent.protocol.udp.UDPIOClient
+import org.openremote.agent.protocol.udp.UDPStringServer
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -35,7 +35,7 @@ import spock.util.concurrent.PollingConditions
 import java.util.function.Consumer
 
 /**
- * This tests the {@link UdpIoClient} by creating a simple echo server that the client communicates with
+ * This tests the {@link UDPIOClient} by creating a simple echo server that the client communicates with
  */
 class UdpClientTest extends Specification implements ManagerContainerTrait {
 
@@ -50,7 +50,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
 
         and: "a simple UDP echo server"
         def echoServerPort = findEphemeralPort()
-        def echoServer = new UdpStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
+        def echoServer = new UDPStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         echoServer.addMessageConsumer({
             message, channel, sender ->
                 echoServer.sendMessage(message, sender)
@@ -63,7 +63,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
         })
         
         and: "a simple UDP broadcast client"
-        UdpIoClient<String> client = new UdpIoClient<String>(
+        UDPIOClient<String> client = new UDPIOClient<String>(
                 "127.0.0.1",
                 echoServerPort,
                 clientPort)
@@ -71,7 +71,7 @@ class UdpClientTest extends Specification implements ManagerContainerTrait {
             [
                 new StringEncoder(CharsetUtil.UTF_8),
                 new StringDecoder(CharsetUtil.UTF_8),
-                new AbstractNettyIoClient.MessageToMessageDecoder<String>(String.class, client)
+                new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)
             ].toArray(new ChannelHandler[0])
         })
 

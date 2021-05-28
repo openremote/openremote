@@ -25,12 +25,12 @@ import io.netty.channel.socket.DatagramChannel
 import io.netty.handler.codec.FixedLengthFrameDecoder
 import io.netty.handler.codec.MessageToMessageEncoder
 import io.netty.handler.codec.bytes.ByteArrayDecoder
-import org.openremote.agent.protocol.udp.UdpClientAgent
+import org.openremote.agent.protocol.udp.UDPAgent
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.AgentLink
-import org.openremote.agent.protocol.udp.AbstractUdpServer
-import org.openremote.agent.protocol.udp.UdpClientProtocol
-import org.openremote.agent.protocol.udp.UdpStringServer
+import org.openremote.agent.protocol.udp.AbstractUDPServer
+import org.openremote.agent.protocol.udp.UDPProtocol
+import org.openremote.agent.protocol.udp.UDPStringServer
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -68,7 +68,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         when: "a simple UDP echo server is started"
         def echoServerPort = findEphemeralPort()
         def clientPort = findEphemeralPort()
-        AbstractUdpServer echoServer = new UdpStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
+        AbstractUDPServer echoServer = new UDPStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         def echoSkipCount = 0
         def clientActualPort = null
         def lastCommand = null
@@ -95,7 +95,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         }
 
         when: "a UDP client agent is created"
-        def agent = new UdpClientAgent("Test agent")
+        def agent = new UDPAgent("Test agent")
         agent.setRealm(Constants.MASTER_REALM)
             .setHost("127.0.0.1")
             .setPort(echoServerPort)
@@ -153,7 +153,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         then: "the attributes should be linked"
         conditions.eventually {
             assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 5
-            assert ((UdpClientProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
+            assert ((UDPProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
         }
 
         when: "a linked attribute value is updated"
@@ -192,13 +192,13 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         conditions.eventually {
             assert agentService.getProtocolInstance(agent.id) != null
             assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 5
-            assert ((UdpClientProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
+            assert ((UDPProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
         }
 
         when: "the echo server is changed to a byte based server"
         echoServer.stop()
         echoServer.removeAllMessageConsumers()
-        echoServer = new AbstractUdpServer<byte[]>(new InetSocketAddress(echoServerPort)) {
+        echoServer = new AbstractUDPServer<byte[]>(new InetSocketAddress(echoServerPort)) {
 
             @Override
             protected void addDecoders(DatagramChannel channel) {
@@ -237,10 +237,10 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         then: "the protocol should be relinked"
         conditions.eventually {
             assert agentService.agentMap.get(agent.id) != null
-            assert ((UdpClientAgent)agentService.agentMap.get(agent.id)).getMessageConvertHex().orElse(false)
+            assert ((UDPAgent)agentService.agentMap.get(agent.id)).getMessageConvertHex().orElse(false)
             assert agentService.getProtocolInstance(agent.id) != null
             assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 5
-            assert ((UdpClientProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
+            assert ((UDPProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
         }
 
         and: "the protocol should become CONNECTED"
@@ -260,7 +260,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         conditions.eventually {
             assert agentService.getProtocolInstance(agent.id) != null
             assert agentService.getProtocolInstance(agent.id).linkedAttributes.size() == 5
-            assert ((UdpClientProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
+            assert ((UDPProtocol)agentService.getProtocolInstance(agent.id)).protocolMessageConsumers.size() == 2
             assert agentService.getProtocolInstance(agent.id).linkedAttributes.get(new AttributeRef(asset.getId(), "echoWorld")).getMetaItem(AGENT_LINK).flatMap{it.value}.flatMap{it.writeValue}.orElse(null) == "123456"
         }
 

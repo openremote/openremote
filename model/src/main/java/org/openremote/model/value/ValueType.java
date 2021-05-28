@@ -32,6 +32,7 @@ import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.console.ConsoleProviders;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.util.CronExpressionParser;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.impl.*;
 
@@ -185,6 +186,8 @@ public final class ValueType {
     public static final ValueDescriptor<ValueConstraint> VALUE_CONSTRAINT = new ValueDescriptor<>("valueConstraint", ValueConstraint.class);
 
     public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class);
+
+    public static final ValueDescriptor<CronExpressionParser> CRON_EXPRESSION = new ValueDescriptor<>("cRONExpression", CronExpressionParser.class);
 
     protected ValueType() {
     }

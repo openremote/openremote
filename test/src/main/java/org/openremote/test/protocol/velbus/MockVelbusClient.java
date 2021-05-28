@@ -20,7 +20,7 @@
 package org.openremote.test.protocol.velbus;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class MockVelbusClient implements IoClient<VelbusPacket> {
+public class MockVelbusClient implements IOClient<VelbusPacket> {
     protected final List<Consumer<VelbusPacket>> messageConsumers = new ArrayList<>();
     protected final List<Consumer<ConnectionStatus>> statusConsumers = new ArrayList<>();
     protected List<String> sentMessages = new ArrayList<>();

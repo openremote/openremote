@@ -21,8 +21,8 @@ package org.openremote.test.protocol.websocket
 
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
-import org.openremote.agent.protocol.io.AbstractNettyIoClient
-import org.openremote.agent.protocol.websocket.WebsocketIoClient
+import org.openremote.agent.protocol.io.AbstractNettyIOClient
+import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -48,7 +48,7 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
 /**
- * This tests the {@link WebsocketIoClient} by connecting to the manager web socket API which means it also tests
+ * This tests the {@link WebsocketIOClient} by connecting to the manager web socket API which means it also tests
  * the API itself
  */
 class WebsocketClientTest extends Specification implements ManagerContainerTrait {
@@ -84,7 +84,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
 
         and: "a simple Websocket client"
-        def client = new WebsocketIoClient<String>(
+        def client = new WebsocketIOClient<String>(
                 new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=master").build(),
                 null,
                 new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
@@ -94,7 +94,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                     MASTER_REALM_ADMIN_USER,
                     getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)))
         client.setEncoderDecoderProvider({
-            [new AbstractNettyIoClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
+            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
         })
 
         and: "we add callback consumers to the client"

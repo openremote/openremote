@@ -59,7 +59,7 @@ public class ZWaveNetwork {
     private final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArrayList<>();
     private final Map<Consumer<Value>, ChannelConsumerLink> consumerLinkMap = new HashMap<>();
     protected String serialPort;
-    protected ZWaveSerialIoClient ioClient;
+    protected ZWaveSerialIOClient ioClient;
     protected ScheduledExecutorService executorService;
 
     public ZWaveNetwork(String serialPort, ScheduledExecutorService executorService) {
@@ -77,7 +77,7 @@ public class ZWaveNetwork {
         configuration.setCommLayer(ZWavePortConfiguration.CommLayer.NETTY);
         configuration.setComPort(serialPort);
 
-        ioClient = new ZWaveSerialIoClient(serialPort);
+        ioClient = new ZWaveSerialIOClient(serialPort);
         ioClient.addConnectionStatusConsumer(this::onConnectionStatusChanged);
 
         controller = new Controller(NettyConnectionManager.create(configuration, ioClient));

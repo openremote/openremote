@@ -23,16 +23,16 @@ import io.netty.channel.ChannelHandler
 import io.netty.handler.codec.string.StringDecoder
 import io.netty.handler.codec.string.StringEncoder
 import io.netty.util.CharsetUtil
-import org.openremote.agent.protocol.io.AbstractNettyIoClient
-import org.openremote.agent.protocol.tcp.TcpIoClient
-import org.openremote.agent.protocol.tcp.TcpStringServer
+import org.openremote.agent.protocol.io.AbstractNettyIOClient
+import org.openremote.agent.protocol.tcp.TCPIOClient
+import org.openremote.agent.protocol.tcp.TCPStringServer
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 /**
- * This tests the {@link TcpIoClient} by creating a simple echo server that the client communicates with
+ * This tests the {@link TCPIOClient} by creating a simple echo server that the client communicates with
  */
 class TcpClientTest extends Specification implements ManagerContainerTrait {
 
@@ -46,19 +46,19 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
 
         and: "a simple TCP echo server"
         def echoServerPort = findEphemeralPort()
-        def echoServer = new TcpStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
+        def echoServer = new TCPStringServer(new InetSocketAddress("127.0.0.1", echoServerPort), ";", Integer.MAX_VALUE, true)
         echoServer.addMessageConsumer({
             message, channel, sender -> echoServer.sendMessage(message)
         })
 
         and: "a simple TCP client"
-        TcpIoClient<String> client = new TcpIoClient<String>(
+        TCPIOClient<String> client = new TCPIOClient<String>(
                 "127.0.0.1",
                 echoServerPort)
         client.setEncoderDecoderProvider({
             [new StringEncoder(CharsetUtil.UTF_8),
             new StringDecoder(CharsetUtil.UTF_8),
-            new AbstractNettyIoClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
+            new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
         })
 
         and: "we add callback consumers to the client"
