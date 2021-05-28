@@ -11,5 +11,6 @@ docker run --rm -v ~/.aws:/root/.aws -v $(pwd):/$DEPLOYMENT_NAME openremote/open
 sudo tar -xf deployment.tar.gz
 sudo mv mapdata.mbtiles deployment/map/ || true
 sudo chown -R ubuntu:ubuntu .
+docker system prune -f
 docker-compose -p openremote up -d || exit 69
 docker images --filter "reference=openremote/*" -q | xargs docker rmi || true

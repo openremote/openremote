@@ -159,7 +159,7 @@ public class MapService implements ContainerService {
 
         mapSettingsPath = Paths.get(getString(container.getConfig(), MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
-            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', faling back to built in map settings");
+            LOG.warning("Map settings file not found '" + mapSettingsPath.toAbsolutePath() + "', falling back to built in map settings");
             mapSettingsPath = null;
         }
 

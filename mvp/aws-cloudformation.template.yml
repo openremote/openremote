@@ -107,6 +107,8 @@ Resources:
           sudo gpasswd -a ubuntu docker
           sudo apt install docker.io -y
           sudo apt install docker-compose -y
+          # SNMP tools
+          sudo apt install snmp snmpd snmptt snmptrapd -y
           # Install openremote-cli tool
           sudo apt install python3-pip -y
           sudo pip3 install -U openremote-cli
@@ -148,6 +150,8 @@ Resources:
           echo export EMAIL_USER=$EMAIL_USER >> access.txt
           echo export EMAIL_HOST=$EMAIL_HOST >> access.txt
           echo export PASSWORD=${OpenRemotePassword} >> access.txt
+          echo export DOMAINNAME=$DOMAINNAME >> access.txt
+          echo export IDENTITY_NETWORK_HOST=$IDENTITY_NETWORK_HOST >> access.txt
           mkdir ${HostName}
           cd ${HostName}
           wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh -O fetch.txt
@@ -164,19 +168,29 @@ Resources:
         FromPort: '22'
         ToPort: '22'
         CidrIp: 0.0.0.0/0
+        Description: SSH
       - IpProtocol: tcp
         FromPort: '80'
         ToPort: '80'
         CidrIp: 0.0.0.0/0
+        Description: HTTP
       - IpProtocol: tcp
         FromPort: '443'
         ToPort: '443'
         CidrIp: 0.0.0.0/0
+        Description: HTTPS
       - IpProtocol: tcp
         FromPort: '8883'
         ToPort: '8883'
         CidrIp: 0.0.0.0/0
+        Description: MQTT
+      - IpProtocol: udp
+        FromPort: '161'
+        ToPort: '162'
+        CidrIp: 0.0.0.0/0
+        Description: SNMP
       - IpProtocol: icmp
         FromPort: '8'
         ToPort: '-1'
         CidrIp: 0.0.0.0/0
+        Description: Ping

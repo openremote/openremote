@@ -25,6 +25,7 @@ import org.openremote.agent.protocol.velbus.device.*
 import org.openremote.container.Container
 import org.openremote.container.concurrent.ContainerScheduledExecutor
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.attribute.AttributeExecuteStatus
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -39,7 +40,7 @@ class VelbusBasicTest extends Specification {
     def static MockVelbusClient messageProcessor = new MockVelbusClient()
 
     @Shared
-    def static PollingConditions conditions = new PollingConditions(timeout: 20, delay: 0.2)
+    def static PollingConditions conditions = new PollingConditions(timeout: 5, delay: 0.2)
 
     static loadDevicePackets(MockVelbusClient messageProcessor) {
         messageProcessor.mockPackets = [
@@ -2032,7 +2033,7 @@ class VelbusBasicTest extends Specification {
         }
 
         when: "the counter is reset"
-        device.writeProperty("COUNTER1", 0d)
+        device.writeProperty("COUNTER1_RESET", AttributeExecuteStatus.REQUEST_START)
 
         then: "the counter should update to match"
         conditions.eventually {

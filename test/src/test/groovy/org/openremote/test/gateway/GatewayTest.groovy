@@ -3,10 +3,10 @@ package org.openremote.test.gateway
 import com.google.common.collect.Lists
 import io.netty.channel.ChannelHandler
 import org.apache.http.client.utils.URIBuilder
-import org.openremote.agent.protocol.http.HttpClientAgent
-import org.openremote.agent.protocol.io.AbstractNettyIoClient
+import org.openremote.agent.protocol.http.HTTPAgent
+import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.agent.protocol.websocket.WebsocketIoClient
+import org.openremote.agent.protocol.websocket.WebsocketIOClient
 import org.openremote.container.timer.TimerService
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
@@ -106,7 +106,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the Gateway client is created"
-        def gatewayClient = new WebsocketIoClient<String>(
+        def gatewayClient = new WebsocketIOClient<String>(
             new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=$managerTestSetup.realmBuildingTenant").build(),
             null,
             new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingTenant/protocol/openid-connect/token",
@@ -114,7 +114,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 gateway.getClientSecret().orElse(""),
                 null).setBasicAuthHeader(true))
         gatewayClient.setEncoderDecoderProvider({
-            [new AbstractNettyIoClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
+            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
         })
 
         and: "we add callback consumers to the client"
@@ -161,14 +161,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         and: "the gateway client assets are defined"
         List<String> agentAssetIds = []
-        List<HttpClientAgent> agentAssets = []
+        List<HTTPAgent> agentAssets = []
         List<String> assetIds = []
         List<Asset> assets = []
 
         IntStream.rangeClosed(1, 5).forEach {i ->
             agentAssetIds.add(UniqueIdentifierGenerator.generateId("Test Agent $i"))
             agentAssets.add(
-                new HttpClientAgent("Test Agent $i")
+                new HTTPAgent("Test Agent $i")
                     .setId(agentAssetIds[i-1])
                     .setBaseURI("https://google.co.uk")
                     .setRealm(MASTER_REALM)
@@ -195,12 +195,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                         new MetaItem<>(ACCESS_PUBLIC_READ)
                     ),
                     new Attribute<>("temp", NUMBER).addOrReplaceMeta(
-                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agentAssetIds[i-1])
+                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HttpClientAgentLink(agentAssetIds[i-1])
                             .setPath("")),
                         new MetaItem<>(UNITS, units(UNITS_CELSIUS))
                     ),
                     new Attribute<>("tempSetpoint", NUMBER).addMeta(
-                        new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agentAssetIds[i-1])
+                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HttpClientAgentLink(agentAssetIds[i-1])
                             .setPath("")),
                         new MetaItem<>(UNITS, units(UNITS_CELSIUS))
                     )
@@ -269,11 +269,11 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert syncedAssets.size() == sendAssets.size()
             assert syncedAssets.stream().filter{syncedAsset -> sendAssets.stream().anyMatch{mapAssetId(gateway.getId(), it.id, false) == syncedAsset.id}}.count() == sendAssets.size()
             assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[0]}.getName() == "Test Agent 1"
-            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[0]}.getType() == HttpClientAgent.DESCRIPTOR.name
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[0]}.getType() == HTTPAgent.DESCRIPTOR.name
             assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[0]}.getRealm() == managerTestSetup.realmBuildingTenant
             assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[0]}.getParentId() == gateway.getId()
             assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[4]}.getName() == "Test Agent 5"
-            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[4]}.getType() == HttpClientAgent.DESCRIPTOR.name
+            assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[4]}.getType() == HTTPAgent.DESCRIPTOR.name
             assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[4]}.getRealm() == managerTestSetup.realmBuildingTenant
             assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == agentAssetIds[4]}.getParentId() == gateway.getId()
             assert syncedAssets.find {mapAssetId(gateway.getId(), it.id, true) == assetIds[0]}.getName() == "Test Building 1"
@@ -386,12 +386,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 new MetaItem<>(ACCESS_PUBLIC_READ)
             ),
             new Attribute<>("temp", NUMBER).addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agentAssetIds[0])
+                new MetaItem<>(AGENT_LINK, new HTTPAgent.HttpClientAgentLink(agentAssetIds[0])
                     .setPath("")),
                 new MetaItem<>(UNITS, units(UNITS_CELSIUS))
             ),
             new Attribute<>("tempSetpoint", NUMBER).addMeta(
-                new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agentAssetIds[0])
+                new MetaItem<>(AGENT_LINK, new HTTPAgent.HttpClientAgentLink(agentAssetIds[0])
                     .setPath("")),
                 new MetaItem<>(UNITS, units(UNITS_CELSIUS))
             )
@@ -418,7 +418,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             new Attribute<>("co2Level", POSITIVE_INTEGER, 500)
                 .addMeta(
                     new MetaItem<>(UNITS, units(UNITS_PART_PER_MILLION)),
-                    new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agentAssetIds[0]).setPath(""))
+                    new MetaItem<>(AGENT_LINK, new HTTPAgent.HttpClientAgentLink(agentAssetIds[0]).setPath(""))
                 )
         )
         gatewayClient.sendMessage(SharedEvent.MESSAGE_PREFIX + Values.asJSON(new AssetEvent(AssetEvent.Cause.UPDATE, building1Room5Asset, (String[]) ["name", "attributes"].toArray(new String[0]))).get())
@@ -648,12 +648,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 new MetaItem<>(ACCESS_PUBLIC_READ)
             ),
             new Attribute<>("temp", NUMBER).addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agentAssetIds[1])
+                new MetaItem<>(AGENT_LINK, new HTTPAgent.HttpClientAgentLink(agentAssetIds[1])
                     .setPath("")),
                 new MetaItem<>(UNITS, units(UNITS_CELSIUS))
             ),
             new Attribute<>("tempSetpoint", NUMBER).addMeta(
-                new MetaItem<>(AGENT_LINK, new HttpClientAgent.HttpClientAgentLink(agentAssetIds[1])
+                new MetaItem<>(AGENT_LINK, new HTTPAgent.HttpClientAgentLink(agentAssetIds[1])
                     .setPath("")),
                 new MetaItem<>(UNITS, units(UNITS_CELSIUS))
             )

@@ -510,6 +510,7 @@ public final class AssetModelUtil {
 
         assetClasses = reflections.getSubTypesOf(Asset.class).stream()
             .map(assetClass -> (Class<? extends Asset<?>>)assetClass)
+            .filter(assetClass -> assetClass.getAnnotation(ModelIgnore.class) == null)
             .collect(Collectors.toSet());
 
         LOG.fine("Found asset class count = " + assetClasses.size());

@@ -70,7 +70,7 @@ public class MqttBrokerService implements ContainerService {
 
     public static final String ASSET_TOPIC = "asset";
     public static final String ATTRIBUTE_TOPIC = "attribute";
-    public static final String ATTRIBUTE_VALUE_TOPIC = "value";
+    public static final String ATTRIBUTE_VALUE_TOPIC = "attributevalue";
     public static final String SINGLE_LEVEL_WILDCARD = "+";
     public static final String MULTI_LEVEL_WILDCARD = "#";
 
@@ -182,7 +182,7 @@ public class MqttBrokerService implements ContainerService {
     }
 
     public static boolean isAttributeTopic(List<String> tokens) {
-        return tokens.get(0).equals(ATTRIBUTE_TOPIC);
+        return tokens.get(0).equals(ATTRIBUTE_TOPIC) || tokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC);
     }
 
     public static boolean isAssetTopic(List<String> tokens) {
@@ -195,56 +195,101 @@ public class MqttBrokerService implements ContainerService {
         }
 
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
+        boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
+
         String realm = connection.getRealm();
         List<String> assetIds = new ArrayList<>();
         List<String> parentIds = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
 
         String assetId = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(1)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(1)) ? null : topicTokens.get(1);
+        int multiLevelIndex = topicTokens.indexOf(MULTI_LEVEL_WILDCARD);
+        int singleLevelIndex = topicTokens.indexOf(SINGLE_LEVEL_WILDCARD);
 
-        if (isAttributeTopic) {
-            int singleLevelIndex = topicTokens.indexOf(SINGLE_LEVEL_WILDCARD);
+        if (!isAssetTopic && !isAttributeTopic) {
+            return null;
+        }
 
-            if (assetId != null) {
-                int multiLevelIndex = topicTokens.indexOf(MULTI_LEVEL_WILDCARD);
-                if (multiLevelIndex == -1) {
-                    if (singleLevelIndex == -1) { //attribute/assetId/
-                        assetIds.add(assetId);
-                    } else {
-                        parentIds.add(assetId);
-                    }
-                    if (topicTokens.size() > 2) { //attribute/assetId/attributeName
-                        if (singleLevelIndex == -1) { //attribute/assetId/attributeName
-                            attributeNames.add(topicTokens.get(2));
-                        } else if (singleLevelIndex == 2 && topicTokens.size() > 3 && !topicTokens.get(3).equals(SINGLE_LEVEL_WILDCARD)) { // else attribute/assetId/+/attributeName
-                            attributeNames.add(topicTokens.get(3));
-                        } // else attribute/assetId/+ which should return all attributes
-                    }
-                } else if (multiLevelIndex == 2) { //attribute/assetId/#
+        if (topicTokens.size() == 2) {
+            if (multiLevelIndex == 1) {
+                //.../#
+                // No asset filtering required
+            } else if (singleLevelIndex == 1) {
+                //.../+
+                parentIds.add(null);
+            } else {
+                //.../assetId
+                assetIds.add(assetId);
+            }
+        } else if (topicTokens.size() == 3) {
+            if (isAssetTopic) {
+                if (multiLevelIndex == 2) {
+                    //asset/assetId/#
+                    // TODO: Implement this once asset filter supports it
                     parentIds.add(assetId);
+                } else if (singleLevelIndex == 2) {
+                    //asset/assetId/+
+                    parentIds.add(assetId);
+                } else {
+                    return null;
                 }
             } else {
-                if (singleLevelIndex == 1) { //attribute/+
-                    if (topicTokens.size() > 2) { //attribute/+/attributeName
-                        attributeNames.add(topicTokens.get(2));
+                if (assetId != null) {
+                    if (multiLevelIndex == 2) {
+                        //attribute/assetId/#
+                        // TODO: Implement this once asset filter supports it
+                        parentIds.add(assetId);
+                    } else if (singleLevelIndex == 2) {
+                        //attribute/assetId/+
+                        parentIds.add(assetId);
+                    } else {
+                        String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)) ? null : topicTokens.get(2);
+                        if (attributeName != null) {
+                            //attribute/assetId/attributeName
+                            attributeNames.add(topicTokens.get(2));
+                        } else {
+                            return null;
+                        }
+                    }
+                } else {
+                    String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)) ? null : topicTokens.get(2);
+                    if (attributeName != null) {
+                        attributeNames.add(attributeName);
+                        if (multiLevelIndex == 2) {
+                            //attribute/#/attributeName
+                            // No asset filtering required
+                        } else if (singleLevelIndex == 2) {
+                            //attribute/+/attributeName
+                            parentIds.add(null);
+                        } else {
+                            return null;
+                        }
+                    } else {
+                        return null;
                     }
                 }
             }
-
-        } else if (assetId != null) {
-            int multiLevelIndex = topicTokens.indexOf(MULTI_LEVEL_WILDCARD);
-            int singleLevelIndex = topicTokens.indexOf(SINGLE_LEVEL_WILDCARD);
-
-            if (multiLevelIndex == -1) {
-                assetIds.add(assetId);
-                if (singleLevelIndex == 2) { //asset/assetId/+
-                    parentIds.add(assetId);
-                } else if (singleLevelIndex == -1) { //asset/assetId
-                    assetIds.add(assetId);
-                }
-            } else if (multiLevelIndex == 2) { //asset/assetId/#
-                parentIds.add(assetId);
+        } else if (topicTokens.size() == 4) {
+            if (isAssetTopic || assetId == null) {
+                return null;
             }
+            String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(3)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(3)) ? null : topicTokens.get(3);
+            if (attributeName != null) {
+                attributeNames.add(attributeName);
+                if (multiLevelIndex == 2) {
+                    //attribute/#/attributeName
+                    // No asset filtering required
+                } else if (singleLevelIndex == 2) {
+                    //attribute/+/attributeName
+                    parentIds.add(null);
+                } else {
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        } else {
+            return null;
         }
 
         AssetFilter<?> assetFilter = new AssetFilter<>().setRealm(realm);

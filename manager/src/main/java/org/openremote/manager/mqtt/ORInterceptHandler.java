@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.mqtt;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.api.client.util.Charsets;
 import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
@@ -37,7 +36,6 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -103,7 +101,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         Map<String, Object> headers = prepareHeaders(connection);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-        LOG.info("Connected: " + connection);
+        LOG.fine("Connected: " + connection);
 
         // No topic info here (not sure what willTopic is??) so just notify all custom handlers
         brokerService.customHandlers.forEach(customHandler -> customHandler.onConnect(connection, msg));
@@ -117,7 +115,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             Map<String, Object> headers = prepareHeaders(connection);
             headers.put(ConnectionConstants.SESSION_CLOSE, true);
             messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-            LOG.info("Connection closed: " + connection);
+            LOG.fine("Connection closed: " + connection);
 
             // No topic info here so just notify all custom handlers
             brokerService.customHandlers.forEach(customHandler -> customHandler.onDisconnect(connection, msg));
@@ -132,7 +130,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             Map<String, Object> headers = prepareHeaders(connection);
             headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
             messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
-            LOG.info("Connection lost: " + connection);
+            LOG.fine("Connection lost: " + connection);
 
             // No topic info here so just notify all custom handlers
             brokerService.customHandlers.forEach(customHandler -> customHandler.onConnectionLost(connection, msg));
@@ -164,14 +162,14 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
-        boolean isValueSubscription = isAttributeTopic && topic.toString().endsWith(ATTRIBUTE_VALUE_TOPIC);
+        boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(0));
         String subscriptionId = msg.getTopicFilter(); // Use topic as subscription ID
 
         AssetFilter filter = buildAssetFilter(connection, topicTokens);
         Class subscriptionClass = isAssetTopic ? AssetEvent.class : AttributeEvent.class;
 
         if (filter == null) {
-            LOG.info("Invalid event filter generated for topic '" + topic + "': " + connection);
+            LOG.fine("Invalid event filter generated for topic '" + topic + "': " + connection);
             return;
         }
 
@@ -197,7 +195,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
 
         if (connection == null) {
-            LOG.info("No connection found: realm=" + realm + ", username=" + username + ", clientID=" + msg.getClientID());
+            LOG.warning("No connection found: realm=" + realm + ", username=" + username + ", clientID=" + msg.getClientID());
             return;
         }
 
@@ -230,7 +228,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
 
         if (connection == null) {
-            LOG.info("No connection found: realm=" + realm + ", username=" + username + ", clientID=" + msg.getClientID());
+            LOG.warning("No connection found: realm=" + realm + ", username=" + username + ", clientID=" + msg.getClientID());
             return;
         }
 
@@ -243,47 +241,26 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         }
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
+        boolean isValueWrite = topicTokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC);
+        String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
+        AttributeEvent attributeEvent = null;
 
-        if (topicTokens.size() > 1) {
+        if (isValueWrite) {
             String assetId = topicTokens.get(1);
-            AttributeRef attributeRef = null;
-            if (topicTokens.size() > 2) { //attribute specific
-                attributeRef = new AttributeRef(assetId, topicTokens.get(2));
-            }
-            if (attributeRef == null) {
-                String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
-                Values.parse(payloadContent).flatMap(Values::asJSONObject).ifPresent(objectValue -> {
-                    Map<String, Object> headers = prepareHeaders(connection);
-                    Map.Entry<String, JsonNode> firstElem = objectValue.fields().next();
-                    AttributeEvent attributeEvent = new AttributeEvent(assetId, firstElem.getKey(), firstElem.getValue());
-                    messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
-                });
-            } else {
-                String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
-                Object value = null;
-                if (Character.isLetter(payloadContent.charAt(0))) {
-                    if (payloadContent.equals(Boolean.TRUE.toString())) {
-                        value = true;
-                    }
-                    if (payloadContent.equals(Boolean.FALSE.toString())) {
-                        value = false;
-                    }
-                    payloadContent = '"' + payloadContent + '"';
-                }
-                if (value == null) {
-                    value = Values.parse(payloadContent);
-                }
-                if (value == null) {
-                    value = payloadContent;
-                }
-
-                Map<String, Object> headers = prepareHeaders(connection);
-                AttributeEvent attributeEvent = new AttributeEvent(assetId, attributeRef.getName(), value);
-                messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
-            }
+            String attributeName = topicTokens.get(2);
+            Object value = Values.parse(payloadContent).orElse(null);
+            attributeEvent = new AttributeEvent(assetId, attributeName, value);
         } else {
-            LOG.warning("Couldn't process message for topic: " + topic);
+            attributeEvent = Values.parse(payloadContent, AttributeEvent.class).orElse(null);
         }
+
+        if (attributeEvent == null) {
+            LOG.fine("Failed to parse payload for publish topic '" + topic + "': " + connection);
+            return;
+        }
+
+        Map<String, Object> headers = prepareHeaders(connection);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, attributeEvent, headers);
     }
 
     protected Map<String, Object> prepareHeaders(MqttConnection connection) {
@@ -298,7 +275,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
                 headers.put(Constants.AUTH_CONTEXT, new AccessTokenAuthContext(connection.realm, accessToken));
             }
         } catch (VerificationException e) {
-            LOG.log(Level.WARNING, "Couldn't verify token", e);
+            LOG.log(Level.FINE, "Couldn't verify token", e);
         }
         return headers;
     }

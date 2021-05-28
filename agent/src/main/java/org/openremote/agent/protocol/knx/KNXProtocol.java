@@ -233,7 +233,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgent.KNXAgentLin
                 Transformer transformer = tfactory.newTransformer(new StreamSource(new StringReader(xsd)));
 
                 // Set the URIResolver
-                transformer.setURIResolver(new EtsFileUriResolver(fileData));
+                transformer.setURIResolver(new ETSFileURIResolver(fileData));
 
                 // Transform the source XML
                 String xml = IOUtils.toString(zin, StandardCharsets.UTF_8);

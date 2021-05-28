@@ -77,12 +77,12 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             AccessToken accessToken = AdapterTokenVerifier.verifyToken(connection.getAccessToken(), identityProvider.getKeycloakDeployment(connection.realm, KEYCLOAK_CLIENT_ID));
             authContext = accessToken != null ? new AccessTokenAuthContext(connection.realm, accessToken) : null;
         } catch (VerificationException e) {
-            LOG.log(Level.INFO, "Couldn't verify token: " + connection, e);
+            LOG.log(Level.FINE, "Couldn't verify token: " + connection, e);
             return false;
         }
 
         if (authContext == null) {
-            LOG.info("Failed to get auth context for connection: " + connection);
+            LOG.warning("Failed to get auth context for connection: " + connection);
             return false;
         }
 
@@ -94,7 +94,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
 
         if (topicTokens.size() < 2) {
-            LOG.info("Topic may not be empty and should have the following format: //asset/... or //attribute/...");
+            LOG.fine("Topic must contain at least two tokens '" + topic + "': " + connection);
             return false;
         }
 
@@ -102,7 +102,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
 
         if (!isAssetTopic && !isAttributeTopic) {
-            LOG.info("Topic should start with 'asset' or 'attribute': " + connection);
+            LOG.fine("Topic starts with invalid value '" + topic  + "': " + connection);
             return false;
         }
 
@@ -112,7 +112,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             Asset<?> asset = assetStorageService.find(assetId);
 
             if (asset == null) {
-                LOG.info("Asset not found for topic '" + topic + "': " + connection);
+                LOG.fine("Asset not found for topic '" + topic + "': " + connection);
                 return false;
             }
 
@@ -121,7 +121,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
                 String attributeName = topicTokens.get(2);
 
                 if (!asset.hasAttribute(attributeName)) {
-                    LOG.info("Asset attribute not found for topic '" + topic + "': " + connection);
+                    LOG.fine("Asset attribute not found for topic '" + topic + "': " + connection);
                     return false;
                 }
             }
@@ -130,41 +130,33 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
         if (isWrite) {
 
             if (topicTokens.contains(SINGLE_LEVEL_WILDCARD) || topicTokens.contains(MULTI_LEVEL_WILDCARD)) {
-                LOG.info("Write does not support wildcards in topic: " + connection);
+                LOG.fine("Write does not support wildcards '" + topic + "': " + connection);
+                return false;
+            }
+
+            if (isAssetTopic) {
+                LOG.fine("Cannot write assets '" + topic + "': " + connection);
+                return false;
+            }
+
+
+            if (topicTokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC) && topicTokens.size() != 3) {
+                LOG.info("Write request to attribute value topic should contain asset ID and attribute name only, topic '" + topic + "': " + connection);
+                return false;
+            }
+
+            if (topicTokens.get(0).equals(ATTRIBUTE_TOPIC) && topicTokens.size() != 1) {
+                LOG.info("Write request to attribute topic should not contain any other tokens, topic '" + topic + "': " + connection);
                 return false;
             }
 
             // Check we have the correct write role
-            if (isAssetTopic && !authContext.hasResourceRole(ClientRole.WRITE_ASSETS.getValue(), username)) {
-                LOG.info("Write request to asset topic but user doesn't have required role: " + connection);
-                return false;
-            } else if (isAttributeTopic && !authContext.hasResourceRole(ClientRole.WRITE_ATTRIBUTES.getValue(), username)) {
-                LOG.info("Write request to attribute topic but user doesn't have required role: " + connection);
+            if (!authContext.hasResourceRole(ClientRole.WRITE_ATTRIBUTES.getValue(), username)) {
+                LOG.info("Write request to attribute topic but user doesn't have required role, topic '" + topic + "': " + connection);
                 return false;
             }
 
-            // Check if this is a restricted user
-            boolean isRestrictedUser = identityProvider.isRestrictedUser(authContext.getUserId());
-
-            if (isAssetTopic) {
-                if (topicTokens.size() > 1) {
-                    LOG.info("Write request to asset topic shouldn't contain any topic parts: " + connection);
-                    return false;
-                }
-
-                if (isRestrictedUser) {
-                    LOG.info("Restricted users cannot write assets: " + connection);
-                    return false;
-                }
-            } else {
-                // Must be of form //attribute/assetId/attributeName or //attribute/assetId/attributeName/value
-                if (!(topicTokens.size() == 3 || (topicTokens.size() == 4 && ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(3))))) {
-                    LOG.info("Write request to attribute topic should contain asset ID and attribute name only: " + connection);
-                    return false;
-                }
-
-                // Security of attribute write will be handled by the asset processing service so don't need to do anything here
-            }
+            // Security of attribute write will be handled by the asset processing service so don't need to do anything here
         } else { // read
 
             // Build filter for the topic and verify that the filter is OK for given auth context

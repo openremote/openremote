@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.controller;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.agent.protocol.controller.command.ControllerCommandBasic;
 import org.openremote.agent.protocol.controller.command.ControllerCommandMapped;
-import org.openremote.agent.protocol.http.HttpClientProtocol;
+import org.openremote.agent.protocol.http.HTTPProtocol;
 import org.openremote.model.attribute.AttributeEvent;
 
 import javax.ws.rs.core.MediaType;
@@ -48,7 +48,7 @@ public class RequestBuilder {
         return headers;
     }
 
-    public static HttpClientProtocol.HttpClientRequest buildCommandRequest(ControllerCommand controllerCommand, AttributeEvent event, ResteasyWebTarget webTarget) {
+    public static HTTPProtocol.HttpClientRequest buildCommandRequest(ControllerCommand controllerCommand, AttributeEvent event, ResteasyWebTarget webTarget) {
         MultivaluedMap<String, String> queryParam = new MultivaluedHashMap<>();
 
         //This part could be put in a Wrapper
@@ -64,7 +64,7 @@ public class RequestBuilder {
             queryParam.add("name", correspondingCommandName);
         }
 
-        return new HttpClientProtocol.HttpClientRequest(
+        return new HTTPProtocol.HttpClientRequest(
                 webTarget,
                 "/rest/devices/" + controllerCommand.getDeviceName() + "/commands",
                 "POST",
@@ -75,12 +75,12 @@ public class RequestBuilder {
         );
     }
 
-    public static HttpClientProtocol.HttpClientRequest buildStatusPollingRequest(String deviceName, List<String> sensorsName, String deviceId, ResteasyWebTarget webTarget) {
+    public static HTTPProtocol.HttpClientRequest buildStatusPollingRequest(String deviceName, List<String> sensorsName, String deviceId, ResteasyWebTarget webTarget) {
         MultivaluedMap<String, String> queryParam = new MultivaluedHashMap<>();
 
         queryParam.addAll("name", sensorsName);
 
-        return new HttpClientProtocol.HttpClientRequest(
+        return new HTTPProtocol.HttpClientRequest(
                 webTarget,
                 "/rest/devices/" + deviceName + "/polling/" + deviceId,
                 "GET",
@@ -91,12 +91,12 @@ public class RequestBuilder {
         );
     }
 
-    public static HttpClientProtocol.HttpClientRequest buildStatusRequest(String deviceName, List<String> sensorsName, ResteasyWebTarget webTarget) {
+    public static HTTPProtocol.HttpClientRequest buildStatusRequest(String deviceName, List<String> sensorsName, ResteasyWebTarget webTarget) {
         MultivaluedMap<String, String> queryParam = new MultivaluedHashMap<>();
 
         queryParam.addAll("name", sensorsName);
 
-        return new HttpClientProtocol.HttpClientRequest(
+        return new HTTPProtocol.HttpClientRequest(
                 webTarget,
                 "/rest/devices/" + deviceName + "/status",
                 "GET",
@@ -107,8 +107,8 @@ public class RequestBuilder {
         );
     }
 
-    public static HttpClientProtocol.HttpClientRequest buildCheckRequest(ResteasyWebTarget webTarget) {
-        return new HttpClientProtocol.HttpClientRequest(
+    public static HTTPProtocol.HttpClientRequest buildCheckRequest(ResteasyWebTarget webTarget) {
+        return new HTTPProtocol.HttpClientRequest(
                 webTarget,
                 "",
                 "GET",

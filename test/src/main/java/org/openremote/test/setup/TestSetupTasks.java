@@ -33,7 +33,6 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  */
 public class TestSetupTasks extends EmptySetupTasks {
 
-    public static final String SETUP_CREATE_SCENES = "SETUP_CREATE_SCENES";
     public static final String SETUP_CREATE_USERS = "SETUP_CREATE_USERS";
     public static final String SETUP_CREATE_ASSETS = "SETUP_CREATE_ASSETS";
     public static final String SETUP_CREATE_RULES = "SETUP_CREATE_RULES";
@@ -52,10 +51,6 @@ public class TestSetupTasks extends EmptySetupTasks {
         return getBoolean(container.getConfig(), SETUP_CREATE_RULES, container.isDevMode());
     }
 
-    static boolean isImportScenes(Container container) {
-        return getBoolean(container.getConfig(), SETUP_CREATE_SCENES, container.isDevMode());
-    }
-
     @Override
     public List<Setup> createTasks(Container container) {
         super.createTasks(container);
@@ -67,8 +62,8 @@ public class TestSetupTasks extends EmptySetupTasks {
                 addTask(new KeycloakTestSetup(container));
             }
 
-            if (isImportAssets(container) || isImportScenes(container)) {
-                addTask(new ManagerTestSetup(container, isImportScenes(container)));
+            if (isImportAssets(container)) {
+                addTask(new ManagerTestSetup(container));
             }
 
             if (isImportRules(container)) {

@@ -24,7 +24,7 @@ import io.undertow.servlet.Servlets
 import io.undertow.servlet.api.DeploymentManager
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
-import org.openremote.agent.protocol.http.AbstractHttpServerProtocol
+import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.agent.AgentService
@@ -296,17 +296,17 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         and: "the test resource (to be deployed by the protocol)"
         def authenticatedTestResource = getClientTarget(
             serverUri(serverPort)
-                    .path(AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                    .path(AbstractHTTPServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
                     .path("test"),
             accessToken).proxy(TestResource.class)
         def testResource = getClientTarget(
                 serverUri(serverPort)
-                        .path(AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                        .path(AbstractHTTPServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
                         .path("test"),
                 null).proxy(TestResource.class)
 
         when: "a test HTTP server agent with a test deployment is created"
-        def agent = new HttpServerTestAgent("Test agent")
+        def agent = new HTTPServerTestAgent("Test agent")
             .setRealm(MASTER_REALM)
             .setDeploymentPath("test")
             .setRoleBasedSecurity(true)
@@ -317,7 +317,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         then: "the protocol should be deployed"
         conditions.eventually {
             assert agentService.getProtocolInstance(agent.id) != null
-            assert ((TestHttpServerProtocol)agentService.getProtocolInstance(agent.id)).deployment != null
+            assert ((TestHTTPServerProtocol)agentService.getProtocolInstance(agent.id)).deployment != null
         }
 
         when: "the authenticated test resource is used to post an asset"
@@ -331,7 +331,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
 
         then: "the asset should be stored in the test protocol"
         conditions.eventually {
-            def testServerProtocol = (TestHttpServerProtocol)agentService.getProtocolInstance(agent.id)
+            def testServerProtocol = (TestHTTPServerProtocol)agentService.getProtocolInstance(agent.id)
             assert testServerProtocol != null
             assert testServerProtocol.resource1.postedAssets.size() == 1
             assert testServerProtocol.resource1.postedAssets.get(0).name == "Test Asset"
@@ -356,7 +356,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         thrown ForbiddenException
 
         when: "an additional instance of the Test HTTP Server protocol is deployed without security enabled"
-        def agent2 = new HttpServerTestAgent("Test agent 2")
+        def agent2 = new HTTPServerTestAgent("Test agent 2")
                 .setRealm(MASTER_REALM)
                 .setDeploymentPath("test2")
                 .setRoleBasedSecurity(false)
@@ -366,7 +366,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         and: "an un-authenticated test resource proxy is created for the new deployment"
         def testResource2 = getClientTarget(
                 serverUri(serverPort)
-                        .path(AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                        .path(AbstractHTTPServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
                         .path("test2"),
                 null).proxy(TestResource.class)
 
@@ -386,7 +386,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
 
         then: "the asset should be stored in the test protocol"
         conditions.eventually {
-            def testServerProtocol = (TestHttpServerProtocol)agentService.getProtocolInstance(agent2.id)
+            def testServerProtocol = (TestHTTPServerProtocol)agentService.getProtocolInstance(agent2.id)
             assert testServerProtocol != null
             assert testServerProtocol.resource1.postedAssets.size() == 1
             assert testServerProtocol.resource1.postedAssets.get(0).name == "Test Asset 2"
@@ -406,7 +406,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         assert asset.getLocation().map{it.coordinates.y}.orElse(-1d) == testAsset.getLocation().map{it.coordinates.y}.orElse(0d)
 
         when: "an agent is deleted"
-        def protocolInstance = agentService.getProtocolInstance(agent.id) as TestHttpServerProtocol
+        def protocolInstance = agentService.getProtocolInstance(agent.id) as TestHTTPServerProtocol
         def deploymentManager = Servlets.defaultContainer().getDeployment(protocolInstance.deployment.deploymentInfo.getDeploymentName());
         assetStorageService.delete([agent.id])
 

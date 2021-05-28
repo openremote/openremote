@@ -367,9 +367,17 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
 
         const updateFileName = () => {
-            const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement,
-                fileNameElem = hostElement.shadowRoot!.getElementById('filenameElem') as HTMLInputElement,
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement,
+                fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement,
+                fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput,
                 str = fileInputElem.value;
+            
+            if (!str) {
+                return;
+            }
+            
+            fileUploadBtn.disabled = false;
+            
             let i;
             if (str.lastIndexOf('\\')) {
                 i = str.lastIndexOf('\\') + 1;
@@ -380,13 +388,16 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
 
         const discoverAssets = () => {
-            const loadingMsg: LitElement = hostElement.shadowRoot!.getElementById("loading") as LitElement;
+            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
+                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
             
-            if (!loadingMsg) {
+            if (!discoverBtn || !cancelBtn) {
                 return false;
             }
-            
-            loadingMsg.hidden = false;
+
+            cancelBtn.hidden = false;
+            discoverBtn.disabled = true;
+            discoverBtn.label = i18next.t("discovering") + '...';
             
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => {
@@ -401,19 +412,33 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
                     console.error(err);
                 })
-                .finally(() => loadingMsg.hidden = true);
-        } 
+                .finally(() => {
+                    discoverBtn.disabled = false;
+                    discoverBtn.label = i18next.t("discoverAssets");
+                });
+        }
+        
+        const cancelDiscovery = () => {
+            const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
+                cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
+            
+            discoverBtn.disabled = false;
+            discoverBtn.label = i18next.t("discoverAssets");
+            cancelBtn.hidden = true;
+            
+            // TODO: cancel the request to the manager
+        }
 
         const fileToBase64 = () => {
-            const loadingMsg: LitElement = hostElement.shadowRoot!.getElementById("loading") as LitElement;
+            const fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput;
 
-            if (!loadingMsg) {
+            if (!fileUploadBtn) {
                 return false;
             }
+
+            fileUploadBtn.disabled = true;
             
-            loadingMsg.hidden = false;
-            
-            const fileInputElem = hostElement.shadowRoot!.getElementById('fileuploadElem') as HTMLInputElement;
+            const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             if (fileInputElem) {
                 const reader = new FileReader();
                 if (fileInputElem.files && fileInputElem.files.length) {
@@ -422,7 +447,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 
                 reader.onload = () => {
                     if (!reader.result) {
-                        // TODO: DO SOMETHING HERE
+                        showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
+                        console.error(reader);
                     } else {
                         let encoded = reader.result.toString().replace(/^data:(.*,)?/, '');
                         if ((encoded.length % 4) > 0) {
@@ -447,7 +473,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                                 showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
                                 console.error(err);
                             })
-                            .finally(() => loadingMsg.hidden = true);
+                            .finally(() => {
+                                fileUploadBtn.disabled = false;
+                            });
                   
                     }
                 }
@@ -459,40 +487,30 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         if (descriptor.assetImport) {
             content = html`
                 <div id="fileupload"> 
-                    <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @click="${() => hostElement.shadowRoot!.getElementById('fileuploadElem')!.click()}">
-                        <input id="fileuploadElem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
+                    <or-mwc-input outlined .label="${i18next.t("selectFile")}" .type="${InputType.BUTTON}" @click="${() => hostElement.shadowRoot!.getElementById('fileupload-elem')!.click()}">
+                        <input id="fileupload-elem" name="configfile" type="file" accept=".json, .knxproj, .vlp" @change="${() => updateFileName()}"/>
                     </or-mwc-input>
-                    <or-mwc-input id="filenameElem" .type="${InputType.TEXT}" disabled></or-mwc-input>
-                    <or-mwc-input icon="upload" .type="${InputType.BUTTON}" @click="${() => fileToBase64()}"></or-mwc-input>
+                    <or-mwc-input id="filename-elem" .type="${InputType.TEXT}" disabled></or-mwc-input>
+                    <or-mwc-input id="fileupload-btn" icon="upload" .type="${InputType.BUTTON}" @click="${() => fileToBase64()}" disabled></or-mwc-input>
                 </div>
             `;
         }
         else if (descriptor.assetDiscovery) {
-            content = html`<or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @click="${() => discoverAssets()}"></or-mwc-input>`;
+            content = html`
+                <or-mwc-input outlined id="discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("discoverAssets")}" @click="${() => discoverAssets()}"></or-mwc-input>
+                <or-mwc-input id="cancel-discover-btn" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}" @click="${() => cancelDiscovery()}" hidden style="margin-left:20px"></or-mwc-input>
+            `;
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
         
         return html`
             <style>
-                #loading {
-                    position: absolute;
-                    top: 0;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    display: flex;
-                    align-items: center;
-                    background: white;
-                    font-size: 14px;
-                    text-align: center;
-                }
-                #loading[hidden] {
+                [hidden] {
                     display: none;
                 }
             </style>
             ${content}
-            <div id="loading" hidden><span style="width:100%;">${i18next.t('loading')}</span></div>
         `;
         
     }

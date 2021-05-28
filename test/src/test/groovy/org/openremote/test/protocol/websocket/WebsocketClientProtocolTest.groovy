@@ -20,9 +20,9 @@
 package org.openremote.test.protocol.websocket
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.agent.protocol.websocket.WebsocketClientAgent
-import org.openremote.agent.protocol.websocket.WebsocketClientProtocol
-import org.openremote.agent.protocol.websocket.WebsocketHttpSubscription
+import org.openremote.agent.protocol.websocket.WebsocketAgent
+import org.openremote.agent.protocol.websocket.WebsocketAgentProtocol
+import org.openremote.agent.protocol.websocket.WebsocketHTTPSubscription
 import org.openremote.agent.protocol.websocket.WebsocketSubscription
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -136,12 +136,12 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         def clientEventService = container.getService(ClientEventService.class)
 
         when: "the web target builder is configured to use the mock HTTP server (to test subscriptions)"
-        if (!WebsocketClientProtocol.resteasyClient.configuration.isRegistered(mockServer)) {
-            WebsocketClientProtocol.resteasyClient.register(mockServer, Integer.MAX_VALUE)
+        if (!WebsocketAgentProtocol.resteasyClient.configuration.isRegistered(mockServer)) {
+            WebsocketAgentProtocol.resteasyClient.register(mockServer, Integer.MAX_VALUE)
         }
 
         and: "a Websocket client agent is created to connect to this tests manager"
-        def agent = new WebsocketClientAgent("Test agent")
+        def agent = new WebsocketAgent("Test agent")
             .setRealm(Constants.MASTER_REALM)
             .setConnectUri("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=master")
             .setOAuthGrant(new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
@@ -157,9 +157,9 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
                         "1",
                         null)).orElse(null)),
-                new WebsocketHttpSubscription()
+                new WebsocketHTTPSubscription()
                     .contentType(MediaType.APPLICATION_JSON)
-                    .method(WebsocketHttpSubscription.Method.POST)
+                    .method(WebsocketHTTPSubscription.Method.POST)
                     .headers(new HashMap<String, List<String>>([
                         "header1" : ["header1Value1"],
                         "header2" : ["header2Value1", "header2Value2"]
@@ -192,7 +192,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 // write attribute value
                 new Attribute<>("readWriteTargetTemp", NUMBER)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new WebsocketClientAgent.WebsocketClientAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new WebsocketAgent.WebsocketAgentLink(agent.id)
                             .setWriteValue(SharedEvent.MESSAGE_PREFIX +
                                 Values.asJSON(new AttributeEvent(
                                     managerTestSetup.apartment1LivingroomId,
@@ -221,16 +221,16 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                 new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Values.asJSON(
                                     new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature")
                                 ).orElse(null)),
-                                new WebsocketHttpSubscription()
+                                new WebsocketHTTPSubscription()
                                     .contentType(MediaType.APPLICATION_JSON)
-                                    .method(WebsocketHttpSubscription.Method.GET)
+                                    .method(WebsocketHTTPSubscription.Method.GET)
                                     .uri("https://mockapi/targetTemperature")
                             ] as WebsocketSubscription[]
                         ))
                     ),
                 new Attribute<>("readCo2Level", NUMBER)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new WebsocketClientAgent.WebsocketClientAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new WebsocketAgent.WebsocketAgentLink(agent.id)
                             .setMessageMatchFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),
@@ -251,9 +251,9 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                                     new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Values.asJSON(
                                         new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level")
                                     ).orElse(null)),
-                                    new WebsocketHttpSubscription()
+                                    new WebsocketHTTPSubscription()
                                         .contentType(MediaType.APPLICATION_JSON)
-                                        .method(WebsocketHttpSubscription.Method.GET)
+                                        .method(WebsocketHTTPSubscription.Method.GET)
                                         .uri("https://mockapi/co2Level")
                                 ] as WebsocketSubscription[]
                             ))

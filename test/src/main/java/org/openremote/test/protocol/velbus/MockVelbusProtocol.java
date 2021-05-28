@@ -19,7 +19,7 @@
  */
 package org.openremote.test.protocol.velbus;
 
-import org.openremote.agent.protocol.io.IoClient;
+import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 
@@ -37,7 +37,7 @@ public class MockVelbusProtocol extends AbstractVelbusProtocol<MockVelbusProtoco
     }
 
     @Override
-    protected IoClient<VelbusPacket> createIoClient(MockVelbusAgent agent) throws RuntimeException {
+    protected IOClient<VelbusPacket> createIoClient(MockVelbusAgent agent) throws RuntimeException {
         messageProcessor = new MockVelbusClient();
         return messageProcessor;
     }

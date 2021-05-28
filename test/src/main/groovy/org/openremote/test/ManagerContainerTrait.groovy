@@ -33,7 +33,6 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (IDENTITY_NETWORK_WEBSERVER_PORT): "8081",
                 (SETUP_CREATE_ASSETS)            : "true",
                 (SETUP_CREATE_USERS)             : "true",
-                (SETUP_CREATE_SCENES)            : "false",
                 (SETUP_CREATE_RULES)             : "false",
                 (MQTT_SERVER_LISTEN_HOST)        : "127.0.0.1", // Works best for cross platform test running
                 (TIMER_CLOCK_TYPE)               : PSEUDO.name()
@@ -51,12 +50,6 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {
         defaultServices(Arrays.asList(additionalServices))
-    }
-
-    Container startContainerWithDemoScenesAndRules(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_CREATE_SCENES): "true"]
-        config << [(SETUP_CREATE_RULES): "true"]
-        startContainer(config, services)
     }
 
     /**

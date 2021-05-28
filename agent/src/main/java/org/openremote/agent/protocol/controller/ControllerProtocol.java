@@ -28,10 +28,9 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.controller.command.ControllerCommandBasic;
 import org.openremote.agent.protocol.controller.command.ControllerCommandMapped;
-import org.openremote.agent.protocol.http.HttpClientProtocol;
+import org.openremote.agent.protocol.http.HTTPProtocol;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
-import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -233,7 +232,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
 
         AttributeRef attributeRef = event.getAttributeRef();
         ControllerCommand controllerCommand = controller.getCommand(attributeRef);
-        HttpClientProtocol.HttpClientRequest request = RequestBuilder.buildCommandRequest(controllerCommand, event, controllerWebTarget);
+        HTTPProtocol.HttpClientRequest request = RequestBuilder.buildCommandRequest(controllerCommand, event, controllerWebTarget);
 
         String body = null;
 
@@ -269,7 +268,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
         withLock(getProtocolName() + "::executeInitialStatus::" + attributeRef, () -> {
             LOG.info("### Initial status check for " + attributeRef.getName() + " [" + deviceName + "," + sensorName + "] ...");
 
-            HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildStatusRequest(deviceName, Arrays.asList(sensorName), controllerWebTarget);
+            HTTPProtocol.HttpClientRequest checkRequest = RequestBuilder.buildStatusRequest(deviceName, Arrays.asList(sensorName), controllerWebTarget);
 
             Response response = null;
 
@@ -340,7 +339,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
     private void executePollingRequest(String deviceName, List<String> sensorList, Consumer<Response> responseConsumer) {
         LOG.info("### Polling Request for device [device=" + deviceName + ", sensors=" + this.formatSensors(sensorList) + "]");
 
-        HttpClientProtocol.HttpClientRequest httpClientRequest = RequestBuilder
+        HTTPProtocol.HttpClientRequest httpClientRequest = RequestBuilder
             .buildStatusPollingRequest(deviceName, sensorList, controller.getDeviceId(), controllerWebTarget);
 
         Response response = null;
@@ -419,7 +418,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
         this.updateLinkedAttribute(new AttributeState(attributeRef, valueObj));
     }
 
-    private void executeAttributeWriteRequest(HttpClientProtocol.HttpClientRequest request, String body, Consumer<Response> responseConsumer) {
+    private void executeAttributeWriteRequest(HTTPProtocol.HttpClientRequest request, String body, Consumer<Response> responseConsumer) {
         Response response = null;
 
         try {
@@ -479,7 +478,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
         withLock(getProtocolName() + "::executeHeartbeat", () -> {
             LOG.info("Doing heartbeat check for controller: " + controllerWebTarget.getUriBuilder().build());
 
-            HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildCheckRequest(controllerWebTarget);
+            HTTPProtocol.HttpClientRequest checkRequest = RequestBuilder.buildCheckRequest(controllerWebTarget);
 
             Response response = null;
 

@@ -24,8 +24,8 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
-import org.openremote.agent.protocol.io.AbstractNettyIoClient;
-import org.openremote.agent.protocol.websocket.WebsocketIoClient;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
@@ -77,7 +77,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected ScheduledExecutorService executorService;
     protected ManagerIdentityService identityService;
     protected final Map<String, GatewayConnection> connectionRealmMap = new HashMap<>();
-    protected final Map<String, WebsocketIoClient<String>> clientRealmMap = new HashMap<>();
+    protected final Map<String, WebsocketIOClient<String>> clientRealmMap = new HashMap<>();
 
     @Override
     public int getPriority() {
@@ -166,7 +166,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             switch (cause) {
 
                 case UPDATE:
-                    WebsocketIoClient<String> client = clientRealmMap.remove(connection.getLocalRealm());
+                    WebsocketIOClient<String> client = clientRealmMap.remove(connection.getLocalRealm());
                     if (client != null) {
                         destroyGatewayClient(connection, client);
                     }
@@ -187,7 +187,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         }
     }
 
-    protected WebsocketIoClient<String> createGatewayClient(GatewayConnection connection) {
+    protected WebsocketIOClient<String> createGatewayClient(GatewayConnection connection) {
 
         if (connection.isDisabled()) {
             LOG.info("Disabled gateway client connection so ignoring: " + connection);
@@ -197,7 +197,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         LOG.info("Creating gateway IO client: " + connection);
 
         try {
-            WebsocketIoClient<String> client = new WebsocketIoClient<>(
+            WebsocketIOClient<String> client = new WebsocketIOClient<>(
                 new URIBuilder()
                     .setScheme(connection.isSecured() ? "wss" : "ws")
                     .setHost(connection.getHost())
@@ -218,7 +218,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             );
 
             client.setEncoderDecoderProvider(() ->
-                new ChannelHandler[] {new AbstractNettyIoClient.MessageToMessageDecoder<>(String.class, client)}
+                new ChannelHandler[] {new AbstractNettyIOClient.MessageToMessageDecoder<>(String.class, client)}
             );
 
             client.addConnectionStatusConsumer(
@@ -254,7 +254,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         return null;
     }
 
-    protected void destroyGatewayClient(GatewayConnection connection, WebsocketIoClient<String> client) {
+    protected void destroyGatewayClient(GatewayConnection connection, WebsocketIOClient<String> client) {
         if (client == null) {
             return;
         }
@@ -355,7 +355,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     }
 
     protected void sendCentralManagerMessage(String realm, String message) {
-        WebsocketIoClient<String> client;
+        WebsocketIOClient<String> client;
 
         synchronized (clientRealmMap) {
             client = clientRealmMap.get(realm);
@@ -425,7 +425,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
             return ConnectionStatus.DISABLED;
         }
 
-        WebsocketIoClient<String> client = clientRealmMap.get(realm);
+        WebsocketIOClient<String> client = clientRealmMap.get(realm);
         return client != null ? client.getConnectionStatus() : null;
     }
 }

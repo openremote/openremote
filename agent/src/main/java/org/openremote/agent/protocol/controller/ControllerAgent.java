@@ -22,6 +22,7 @@ package org.openremote.agent.protocol.controller;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.util.ModelIgnore;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@ModelIgnore
 @Entity
 public class ControllerAgent extends Agent<ControllerAgent, ControllerProtocol, ControllerAgent.ControllerAgentLink> {
 

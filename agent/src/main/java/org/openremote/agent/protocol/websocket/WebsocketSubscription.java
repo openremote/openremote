@@ -26,7 +26,7 @@ import java.io.Serializable;
 
 @JsonSubTypes({
     @JsonSubTypes.Type(value = WebsocketSubscription.class, name = WebsocketSubscription.TYPE),
-    @JsonSubTypes.Type(value = WebsocketHttpSubscription.class, name = WebsocketHttpSubscription.TYPE)
+    @JsonSubTypes.Type(value = WebsocketHTTPSubscription.class, name = WebsocketHTTPSubscription.TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

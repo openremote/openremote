@@ -27,6 +27,10 @@ dependencies {
     compile ("io.moquette:moquette-broker:$moquetteVersion") {
         exclude module: "slf4j-log4j12" // Don't want log4J
     }
+
+    compile("org.quartz-scheduler:quartz:$quartzVersion") {
+        exclude group: "c3p0"
+    }
 }
 
 // Load version properties file and use same version as source code

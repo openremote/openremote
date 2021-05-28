@@ -20,9 +20,9 @@
 package org.openremote.agent.protocol.velbus;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.agent.protocol.io.AbstractNettyIoClient;
-import org.openremote.agent.protocol.io.IoClient;
-import org.openremote.agent.protocol.serial.SerialIoClient;
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.agent.protocol.serial.SerialIOClient;
 import org.openremote.model.util.TextUtil;
 
 public class VelbusSerialProtocol extends AbstractVelbusProtocol<VelbusSerialProtocol, VelbusSerialAgent> {
@@ -40,20 +40,20 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol<VelbusSerialPro
     }
 
     @Override
-    protected IoClient<VelbusPacket> createIoClient(VelbusSerialAgent agent) throws RuntimeException {
+    protected IOClient<VelbusPacket> createIoClient(VelbusSerialAgent agent) throws RuntimeException {
 
         // Extract port and baud rate
         String port = agent.getSerialPort().orElse(null);
         int baudRate = agent.getSerialBaudrate().orElse(DEFAULT_BAUDRATE);
 
         TextUtil.requireNonNullAndNonEmpty(port, "Port cannot be null or empty");
-        SerialIoClient<VelbusPacket> client = new SerialIoClient<>(port, baudRate);
+        SerialIOClient<VelbusPacket> client = new SerialIOClient<>(port, baudRate);
 
         client.setEncoderDecoderProvider(
             () -> new ChannelHandler[]{
                 new VelbusPacketEncoder(),
                 new VelbusPacketDecoder(),
-                new AbstractNettyIoClient.MessageToMessageDecoder<>(VelbusPacket.class, client)
+                new AbstractNettyIOClient.MessageToMessageDecoder<>(VelbusPacket.class, client)
             }
         );
         return client;
