@@ -55,14 +55,9 @@ export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
             typesParent: {
                 default: {
                     exclude: [
-                        WellknownAssets.ARTNETAGENT,
-                        WellknownAssets.MACROAGENT,
-                        WellknownAssets.CONTROLLERAGENT,
                         WellknownAssets.TRADFRILIGHTASSET,
-                        WellknownAssets.TRADFRIAGENT,
                         WellknownAssets.TRADFRIPLUGASSET,
                         WellknownAssets.ARTNETLIGHTASSET,
-                        WellknownAssets.TIMERAGENT,
                         WellknownAssets.CONSOLEASSET
                     ]
                 }
