@@ -5,7 +5,7 @@ import "./or-mwc-input";
 import {InputType, OrInputChangedEvent} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor5, Util } from "@openremote/core";
-import { Asset, AssetEvent, AttributeDescriptor } from "@openremote/model";
+import { Asset, AssetEvent, Attribute, AttributeDescriptor, AttributeRef } from "@openremote/model";
 import manager from "@openremote/core";
 import { AssetModelUtil } from "@openremote/core";
 
@@ -324,15 +324,14 @@ export class OrMwcDialog extends LitElement {
 }
 
 export type AddEventDetail = {
-    sourceAsset?: Asset;
-    asset: Asset;
+    selectedAttributes?: AttributeRef[];
 }
-export class OrAssetTreeRequestAddEvent extends CustomEvent<Util.RequestEventDetail<AddEventDetail>> {
+export class OrAttributesAddRequestEvent extends CustomEvent<Util.RequestEventDetail<AddEventDetail>> {
 
-    public static readonly NAME = "or-asset-tree-request-add";
+    public static readonly NAME = "or-attributes-request-add";
 
     constructor(detail: AddEventDetail) {
-        super(OrAssetTreeRequestAddEvent.NAME, {
+        super(OrAttributesAddRequestEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: {
@@ -342,12 +341,12 @@ export class OrAssetTreeRequestAddEvent extends CustomEvent<Util.RequestEventDet
         });
     }
 }
-export class OrAssetTreeAddEvent extends CustomEvent<AddEventDetail> {
+export class OrAddAttributesEvent extends CustomEvent<AddEventDetail> {
 
-    public static readonly NAME = "or-asset-tree-add";
+    public static readonly NAME = "or-attributes-add";
 
     constructor(detail: AddEventDetail) {
-        super(OrAssetTreeAddEvent.NAME, {
+        super(OrAddAttributesEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: detail
@@ -358,10 +357,10 @@ export class OrAssetTreeAddEvent extends CustomEvent<AddEventDetail> {
 @customElement("or-mwc-attribute-selector")
 export class OrMwcAttributeSelector extends OrMwcDialog {
 
-    public asset?: Asset;
-    public selectedAttributes: AttributeDescriptor[] = [];
+    public selectedAsset?: Asset;
+    public selectedAttributes: AttributeRef[] = [];
 
-    private assetAttributes: AttributeDescriptor[] = [];
+    private assetAttributes: AttributeRef[] = []; // to display attributes that belong to selected asset
     
     constructor() {
         super();
@@ -370,17 +369,17 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         this.dismissAction = null;
 
         this.styles = `
-                .attributes-header {
-                    line-height: 48px;
-                    padding: 0 15px;
-                    background-color: ${unsafeCSS(DefaultColor2)};
-                    font-weight: bold;
-                    border-bottom: 1px solid ${unsafeCSS(DefaultColor2)};
-                }
-                .mdc-dialog__actions {
-                    border-top: 1px solid ${unsafeCSS(DefaultColor5)};
-                }
-            `
+            .attributes-header {
+                line-height: 48px;
+                padding: 0 15px;
+                background-color: ${unsafeCSS(DefaultColor2)};
+                font-weight: bold;
+                border-bottom: 1px solid ${unsafeCSS(DefaultColor2)};
+            }
+            footer.mdc-dialog__actions {
+                border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+            }
+        `;
 
         this.setDialogActions();
         this.setDialogContent();
@@ -395,29 +394,21 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             },
             {
                 actionName: "add",
-                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length || !this.asset}"></or-mwc-input>`,
+                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length || !this.selectedAsset}"></or-mwc-input>`,
                 action: () => {
 
-                    if (!this.asset || !this.selectedAttributes.length) {
+                    if (!this.selectedAttributes.length) {
                         return;
                     }
                     
-                    this.asset.attributes = {};
-                    this.selectedAttributes?.forEach(attribute => {
-                        this.asset!.attributes![attribute.name!] = {
-                            name: attribute.name,
-                            type: attribute.type,
-                            meta: attribute.meta ? {...attribute.meta} : undefined
-                        }
-                    });
-
+                    
                     const detail: AddEventDetail = {
-                        asset: this.asset
+                        selectedAttributes: this.selectedAttributes
                     };
-                    Util.dispatchCancellableEvent(this, new OrAssetTreeRequestAddEvent(detail))
+                    Util.dispatchCancellableEvent(this, new OrAttributesAddRequestEvent(detail))
                         .then((detail) => {
                             if (detail.allow) {
-                                this.dispatchEvent(new OrAssetTreeAddEvent(detail.detail));
+                                this.dispatchEvent(new OrAddAttributesEvent(detail.detail));
                             }
                         });
                 }
@@ -435,16 +426,17 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
 
-                ${this.asset && this.asset.attributes ? html`
+                ${this.selectedAsset && this.selectedAsset.attributes ? html`
                     <div class="attributes-header">
                         <or-translate value="attribute_plural"></or-translate>
                     </div>
                     <div style="display: grid">
                         ${this.assetAttributes.map(attribute => html`
-                            <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
-                                          .value="${!!this.selectedAttributes.find((selected) => selected === attribute)}"
-                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, attribute)}"></or-mwc-input>
-                        `)}
+                            <or-mwc-input .type="${InputType.CHECKBOX}"
+                                          .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
+                                          .value="${!!this.selectedAttributes.find((selected) => selected.id === this.selectedAsset!.id && selected.name === attribute.name)}"
+                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, attribute)}"></or-mwc-input>`
+                        )}
                     </div>
                 ` : ``}
                 </div>
@@ -457,25 +449,27 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     }
     
     protected _addRemoveAttrs(event: OrInputChangedEvent, attribute: AttributeDescriptor) {
-        event.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)
+        const newAttrRef: AttributeRef = {
+            id: this.selectedAsset!.id,
+            name: attribute.name
+        }
+        event.detail.value ? this.selectedAttributes.push(newAttrRef) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === newAttrRef), 1);
         this.reRenderDialog();
     }
 
     protected _getAttributeOptions(): AttributeDescriptor[] | undefined {
-        if(!this.asset || !this.asset.type) {
+        if(!this.selectedAsset || !this.selectedAsset.type) {
             this.reRenderDialog();
             return;
         }
         
-        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(this.asset.type);
+        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(this.selectedAsset.type);
         this.assetAttributes = assetTypeInfo?.attributeDescriptors || [];
-        this.selectedAttributes = [];
 
         this.reRenderDialog();
     }
 
     protected async _onAssetSelectionChanged(event: CustomEvent) {
-        this.selectedAttributes = [];
         if (!event.detail.detail.newNodes.length) {
             this._onAssetSelectionDeleted();
         } else {
@@ -485,7 +479,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                     assetId: event.detail.detail.newNodes[0].asset.id
                 }
             });
-            this.asset = assetEvent.asset;
+            this.selectedAsset = assetEvent.asset;
         }
 
         this._getAttributeOptions();
@@ -493,9 +487,8 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     }
     
     protected _onAssetSelectionDeleted() {
-        this.asset = undefined;
+        this.selectedAsset = undefined;
         this.assetAttributes = [];
-        this.selectedAttributes = [];
         this._getAttributeOptions();
         this.reRenderDialog();
     }
