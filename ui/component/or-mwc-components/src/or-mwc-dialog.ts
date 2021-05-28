@@ -433,7 +433,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                     <div style="display: grid">
                         ${this.assetAttributes.map(attribute => html`
                             <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
-                                          .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
+                                          .value="${!!this.selectedAttributes.find((selected) => selected === attribute)}"
                                           @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, attribute)}"></or-mwc-input>
                         `)}
                     </div>
