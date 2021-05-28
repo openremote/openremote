@@ -4,7 +4,7 @@ import "@openremote/or-translate";
 import "./or-mwc-input";
 import {InputType, OrInputChangedEvent} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
-import { Util } from "@openremote/core";
+import {DefaultColor2, DefaultColor5, Util } from "@openremote/core";
 import { Asset, AssetEvent, AttributeDescriptor } from "@openremote/model";
 import manager from "@openremote/core";
 import { AssetModelUtil } from "@openremote/core";
@@ -358,16 +358,9 @@ export class OrAssetTreeAddEvent extends CustomEvent<AddEventDetail> {
 @customElement("or-mwc-attribute-selector")
 export class OrMwcAttributeSelector extends OrMwcDialog {
 
-    @property({type: Object})
     public asset?: Asset;
-
-    @property({type: Object})
-    public assets: Asset[] = [];
-
-    @property({attribute: false})
     public selectedAttributes: AttributeDescriptor[] = [];
 
-    @property({type: Object})
     private assetAttributes: AttributeDescriptor[] = [];
     
     constructor() {
@@ -375,6 +368,19 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         
         this.dialogTitle = 'Add attributes';
         this.dismissAction = null;
+
+        this.styles = `
+                .attributes-header {
+                    line-height: 48px;
+                    padding: 0 15px;
+                    background-color: ${unsafeCSS(DefaultColor2)};
+                    font-weight: bold;
+                    border-bottom: 1px solid ${unsafeCSS(DefaultColor2)};
+                }
+                .mdc-dialog__actions {
+                    border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+                }
+            `
 
         this.setDialogActions();
         this.setDialogContent();
@@ -430,6 +436,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                 <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
 
                 ${this.asset && this.asset.attributes ? html`
+                    <div class="attributes-header">
+                        <or-translate value="attribute_plural"></or-translate>
+                    </div>
                     <div style="display: grid">
                         ${this.assetAttributes.map(attribute => html`
                             <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
