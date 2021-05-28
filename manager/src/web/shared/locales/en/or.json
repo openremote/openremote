@@ -155,6 +155,7 @@
   "setup": "Setup",
   "selectFile": "Select file",
   "discoverAssets": "Discover assets",
+  "discovering": "Discovering",
   "underlyingAssets": "Underlying assets",
   "groupAssetName": "Asset name",
   "history": "History",

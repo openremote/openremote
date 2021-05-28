@@ -155,6 +155,7 @@
   "setup": "Instellingen",
   "selectFile": "Kies bestand",
   "discoverAssets": "Haal assets op",
+  "discovering": "Assets ophalen",
   "underlyingAssets": "Onderliggende assets",
   "groupAssetName": "Asset naam",
   "history": "Geschiedenis",
