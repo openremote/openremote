@@ -203,7 +203,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     protected render() {
 
         const hidden = false,
-            headers = ['header 1', 'header 2', 'header 3', 'header 4', 'header 5'],
+            headers = [i18next.t('assetName'), i18next.t('attributeName'), i18next.t('valueType'), i18next.t('oldestDatapoint'), i18next.t('latestDatapoint')],
             rows = [['cell 1', 'cell 2', 'cell 3', 'cell 4', 'cell 5'],['cell 1', 'cell 2', 'cell 3', 'cell 4', 'cell 5'],['cell 1', 'cell 2', 'cell 3', 'cell 4', 'cell 5']],
             options = {
                 stickyFirstColumn: false
