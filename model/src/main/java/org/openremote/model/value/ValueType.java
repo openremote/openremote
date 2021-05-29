@@ -187,7 +187,11 @@ public final class ValueType {
 
     public static final ValueDescriptor<AgentLink> VALUE_AGENT_LINK = new ValueDescriptor<>("agentLink", AgentLink.class);
 
-    public static final ValueDescriptor<CronExpressionParser> CRON_EXPRESSION = new ValueDescriptor<>("cRONExpression", CronExpressionParser.class);
+    public static final ValueDescriptor<CronExpressionParser> CRON_EXPRESSION = new ValueDescriptor<>("CRONExpression", CronExpressionParser.class);
+
+    public static final ValueDescriptor<String> HTTP_URI = new ValueDescriptor<>("HTTP_URI", String.class,
+        new ValueConstraint.Pattern(Constants.HTTP_URI_REGEXP)
+    );
 
     protected ValueType() {
     }
