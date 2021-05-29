@@ -26,10 +26,10 @@ import org.openremote.model.asset.agent.AgentLink;
 import javax.persistence.Entity;
 
 @Entity
-public class SerialAgent extends IOAgent<SerialAgent, SerialClientProtocol, AgentLink.Default> {
+public class SerialAgent extends IOAgent<SerialAgent, SerialProtocol, AgentLink.Default> {
 
-    public static final AgentDescriptor<SerialAgent, SerialClientProtocol, AgentLink.Default> DESCRIPTOR = new AgentDescriptor<>(
-        SerialAgent.class, SerialClientProtocol.class, AgentLink.Default.class
+    public static final AgentDescriptor<SerialAgent, SerialProtocol, AgentLink.Default> DESCRIPTOR = new AgentDescriptor<>(
+        SerialAgent.class, SerialProtocol.class, AgentLink.Default.class
     );
 
     /**
@@ -43,7 +43,7 @@ public class SerialAgent extends IOAgent<SerialAgent, SerialClientProtocol, Agen
     }
 
     @Override
-    public SerialClientProtocol getProtocolInstance() {
-        return new SerialClientProtocol(this);
+    public SerialProtocol getProtocolInstance() {
+        return new SerialProtocol(this);
     }
 }

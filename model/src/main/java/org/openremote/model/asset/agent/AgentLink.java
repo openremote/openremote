@@ -19,7 +19,9 @@
  */
 package org.openremote.model.asset.agent;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
@@ -42,7 +44,7 @@ import java.util.Optional;
  */
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.CUSTOM, defaultImpl = AgentLink.Default.class)
 @JsonTypeIdResolver(AgentLink.AgentLinkTypeIdResolver.class)
-public abstract class  AgentLink<T extends AgentLink<?>> implements Serializable {
+public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {
 
     /**
      * Resolves agent link type as agent type strings using {@link org.openremote.model.util.AssetModelUtil}

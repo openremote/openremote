@@ -44,14 +44,14 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * handle the communication and all messages are processed as strings; if you require custom message type handling
  * then please sub class the {@link AbstractSerialClientProtocol}).
  */
-public class SerialClientProtocol extends AbstractSerialClientProtocol<SerialClientProtocol, SerialAgent, AgentLink.Default, String, SerialIOClient<String>> {
+public class SerialProtocol extends AbstractSerialClientProtocol<SerialProtocol, SerialAgent, AgentLink.Default, String, SerialIOClient<String>> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SerialClientProtocol.class);
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SerialProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "Serial Client";
 
     protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
 
-    public SerialClientProtocol(SerialAgent agent) {
+    public SerialProtocol(SerialAgent agent) {
         super(agent);
     }
 
