@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.Optional;
 
 @Entity
-public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgentLink> {
+public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HTTPAgentLink> {
 
-    public static class HttpAgentLink extends AgentLink<HttpAgentLink> {
+    public static class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
 
         protected Map<String, List<String>> headers;
         protected Map<String, List<String>> queryParameters;
@@ -46,9 +46,9 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
         protected String pollingAttribute;
 
         // For Hydrators
-        protected HttpAgentLink() {}
+        protected HTTPAgentLink() {}
 
-        public HttpAgentLink(String id) {
+        public HTTPAgentLink(String id) {
             super(id);
         }
 
@@ -56,7 +56,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(headers);
         }
 
-        public HttpAgentLink setHeaders(ValueType.MultivaluedStringMap headers) {
+        public HTTPAgentLink setHeaders(ValueType.MultivaluedStringMap headers) {
             this.headers = headers;
             return this;
         }
@@ -65,7 +65,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(queryParameters);
         }
 
-        public HttpAgentLink setQueryParameters(ValueType.MultivaluedStringMap queryParameters) {
+        public HTTPAgentLink setQueryParameters(ValueType.MultivaluedStringMap queryParameters) {
             this.queryParameters = queryParameters;
             return this;
         }
@@ -74,7 +74,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(pollingMillis);
         }
 
-        public HttpAgentLink setPollingMillis(Integer pollingMillis) {
+        public HTTPAgentLink setPollingMillis(Integer pollingMillis) {
             this.pollingMillis = pollingMillis;
             return this;
         }
@@ -83,7 +83,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(pagingMode);
         }
 
-        public HttpAgentLink setPagingMode(Boolean pagingMode) {
+        public HTTPAgentLink setPagingMode(Boolean pagingMode) {
             this.pagingMode = pagingMode;
             return this;            
         }
@@ -92,7 +92,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(path);
         }
 
-        public HttpAgentLink setPath(String path) {
+        public HTTPAgentLink setPath(String path) {
             this.path = path;
             return this;
         }
@@ -101,7 +101,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(method);
         }
 
-        public HttpAgentLink setMethod(HTTPMethod method) {
+        public HTTPAgentLink setMethod(HTTPMethod method) {
             this.method = method;
             return this;
         }
@@ -110,7 +110,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(contentType);
         }
 
-        public HttpAgentLink setContentType(String contentType) {
+        public HTTPAgentLink setContentType(String contentType) {
             this.contentType = contentType;
             return this;
         }
@@ -119,7 +119,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
             return Optional.ofNullable(pollingAttribute);
         }
 
-        public HttpAgentLink setPollingAttribute(String pollingAttribute) {
+        public HTTPAgentLink setPollingAttribute(String pollingAttribute) {
             this.pollingAttribute = pollingAttribute;
             return this;
         }
@@ -133,8 +133,8 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpAgen
     public static final AttributeDescriptor<ValueType.MultivaluedStringMap> REQUEST_QUERY_PARAMETERS = new AttributeDescriptor<>("requestQueryParameters", ValueType.MULTIVALUED_TEXT_MAP);
     public static final AttributeDescriptor<Integer> REQUEST_TIMEOUT_MILLIS = new AttributeDescriptor<>("requestTimeoutMillis", ValueType.POSITIVE_INTEGER);
 
-    public static final AgentDescriptor<HTTPAgent, HTTPProtocol, HttpAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        HTTPAgent.class, HTTPProtocol.class, HttpAgentLink.class
+    public static final AgentDescriptor<HTTPAgent, HTTPProtocol, HTTPAgentLink> DESCRIPTOR = new AgentDescriptor<>(
+        HTTPAgent.class, HTTPProtocol.class, HTTPAgentLink.class
     );
 
     /**
