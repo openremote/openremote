@@ -24,6 +24,7 @@ import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
+import org.openremote.model.value.AttributeDescriptor;
 
 import javax.persistence.Entity;
 import java.util.Optional;
@@ -53,6 +54,8 @@ public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, Sim
             return this;
         }
     }
+
+    public static final AttributeDescriptor<String> SERIAL_SERIAL_PORT = SERIAL_PORT.withOptional(false);
 
     public static final AgentDescriptor<SimulatorAgent, SimulatorProtocol, SimulatorAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         SimulatorAgent.class, SimulatorProtocol.class, SimulatorAgentLink.class
