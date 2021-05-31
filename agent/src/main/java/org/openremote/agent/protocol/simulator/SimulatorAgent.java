@@ -35,7 +35,7 @@ public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, Sim
 
         @JsonPropertyDescription("Used to store 24h dataset of values that should be replayed (i.e. written to the" +
             " linked attribute) in a continuous loop.")
-        protected SimulatorReplayDatapoint[] simulatorReplayData;
+        protected SimulatorReplayDatapoint[] replayData;
 
         // For Hydrators
         protected SimulatorAgentLink() {}
@@ -44,12 +44,12 @@ public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, Sim
             super(id);
         }
 
-        public Optional<SimulatorReplayDatapoint[]> getSimulatorReplayData() {
-            return Optional.ofNullable(simulatorReplayData);
+        public Optional<SimulatorReplayDatapoint[]> getReplayData() {
+            return Optional.ofNullable(replayData);
         }
 
-        public SimulatorAgentLink setSimulatorReplayData(SimulatorReplayDatapoint[] simulatorReplayData) {
-            this.simulatorReplayData = simulatorReplayData;
+        public SimulatorAgentLink setReplayData(SimulatorReplayDatapoint[] replayData) {
+            this.replayData = replayData;
             return this;
         }
     }
