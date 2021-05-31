@@ -42,12 +42,12 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 /**
  * This is a generic Serial client protocol for communicating with Serial ports; it uses the {@link SerialIOClient} to
  * handle the communication and all messages are processed as strings; if you require custom message type handling
- * then please sub class the {@link AbstractSerialClientProtocol}).
+ * then please sub class the {@link AbstractSerialProtocol}).
  */
-public class SerialProtocol extends AbstractSerialClientProtocol<SerialProtocol, SerialAgent, AgentLink.Default, String, SerialIOClient<String>> {
+public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, SerialAgent, AgentLink.Default, String, SerialIOClient<String>> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SerialProtocol.class);
-    public static final String PROTOCOL_DISPLAY_NAME = "Serial Client";
+    public static final String PROTOCOL_DISPLAY_NAME = "Serial";
 
     protected final List<Pair<AttributeRef, Consumer<String>>> protocolMessageConsumers = new ArrayList<>();
 
