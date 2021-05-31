@@ -193,6 +193,10 @@ public final class ValueType {
         new ValueConstraint.Pattern(Constants.HTTP_URL_REGEXP)
     );
 
+    public static final ValueDescriptor<String> WS_URL = new ValueDescriptor<>("WS_URL", String.class,
+        new ValueConstraint.Pattern(Constants.WS_URL_REGEXP)
+    );
+
     protected ValueType() {
     }
 }

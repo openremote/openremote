@@ -60,7 +60,7 @@ public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtoc
     /**
      * Websocket connect endpoint URI
      */
-    public static final AttributeDescriptor<String> CONNECT_URL = new AttributeDescriptor<>("connectURL", ValueType.TEXT);
+    public static final AttributeDescriptor<String> CONNECT_URL = new AttributeDescriptor<>("connectURL", ValueType.WS_URL);
 
     /**
      * Headers for websocket connect call
