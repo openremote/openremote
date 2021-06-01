@@ -56,6 +56,7 @@ Try creating assets, agents, rules, users, realms, etc. using the Manager UI, pl
 - [Custom Deployment](https://github.com/openremote/openremote/wiki/User-Guide%3A-Custom-deployment)
 - [Setting up an IDE](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Setting-up-an-IDE)
 - [Working on the UI](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-UI-apps-and-components)
+- [Creating a custom project](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Creating-a-custom-project)
 
 ## Where's the data stored?
 Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_postgresql-data` docker volume which is durably stored independently of the running containers (see all with `docker volume ls`).
