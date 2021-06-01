@@ -21,6 +21,7 @@ import org.postgresql.util.PGInterval;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.TypedQuery;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,11 +30,13 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -320,7 +323,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                             value = Values.getValueCoerced(rs.getObject(2), Double.class).orElse(null);
                                         } else {
                                             if (rs.getObject(2) instanceof PGobject) {
-                                                value = Values.parse(((PGobject)rs.getObject(2)).getValue()).orElse(null);
+                                                value = Values.parse(((PGobject) rs.getObject(2)).getValue()).orElse(null);
                                             } else {
                                                 value = Values.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
                                             }
@@ -363,6 +366,26 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                     }
                 })
         );
+    }
+
+    public File exportDatapoints(AttributeRef[] attributeRefs,
+                                 long fromTimestamp,
+                                 long toTimestamp) {
+
+        int count = attributeRefs.length;
+        Instant fromInstant = Instant.ofEpochSecond(fromTimestamp);
+        Instant toInstant = Instant.ofEpochSecond(toTimestamp);
+        String fileName = String.format("%s_%s_%d_%s.csv", fromInstant, toInstant, count, getDatapointTableName());
+
+        StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp, toTimestamp));
+
+        sb.append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")));
+
+        sb.append(String.format(")) to '/var/lib/postgresql/data/%s' delimiter ',' CSV HEADER;", fileName));
+
+        persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+
+        return new File(String.format("/postgresql/%s", fileName));
     }
 
     protected PreparedStatement getUpsertPreparedStatement(Connection connection) throws SQLException {

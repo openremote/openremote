@@ -19,12 +19,15 @@
  */
 package org.openremote.manager.datapoint;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.io.IOUtils;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.DatapointPeriod;
@@ -35,11 +38,15 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.io.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.logging.Logger;
+
+import static org.openremote.model.value.Values.JSON;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 
@@ -129,4 +136,50 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
         }
     }
 
+    @Override
+    public void getDatapointExport(RequestParams requestParams, String attributeRefsString, long fromTimestamp, long toTimestamp) {
+        try {
+            AttributeRef[] attributeRefs = JSON.readValue(attributeRefsString, AttributeRef[].class);
+
+            for (AttributeRef attributeRef : attributeRefs
+            ) {
+                if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), attributeRef.getId())) {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                }
+
+                Asset<?> asset = assetStorageService.find(attributeRef.getId(), true);
+
+                if (asset == null) {
+                    throw new WebApplicationException(Response.Status.NOT_FOUND);
+                }
+
+                if (!isTenantActiveAndAccessible(asset.getRealm())) {
+                    LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                }
+
+                Attribute<?> attribute = asset.getAttribute(attributeRef.getName()).orElseThrow(() ->
+                        new WebApplicationException(Response.Status.NOT_FOUND)
+                );
+            }
+
+            File file = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
+
+            response.setContentType("text/csv");
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName());
+
+            OutputStream out = response.getOutputStream();
+            FileInputStream in = new FileInputStream(file);
+            IOUtils.copy(in, out);
+
+            out.close();
+            in.close();
+            file.delete();
+
+        } catch (JsonProcessingException ex) {
+            throw new BadRequestException(ex);
+        } catch (IOException ex) {
+            throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
