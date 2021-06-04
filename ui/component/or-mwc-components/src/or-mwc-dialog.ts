@@ -5,7 +5,7 @@ import "./or-mwc-input";
 import {InputType, OrInputChangedEvent} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor5, Util } from "@openremote/core";
-import { Asset, AssetEvent, Attribute, AttributeDescriptor, AttributeRef } from "@openremote/model";
+import { Asset, AssetEvent, AttributeDescriptor, AttributeRef } from "@openremote/model";
 import manager from "@openremote/core";
 import { AssetModelUtil } from "@openremote/core";
 
@@ -323,15 +323,15 @@ export class OrMwcDialog extends LitElement {
     }
 }
 
-export type AddEventDetail = {
+export type AddAttrRefsEventDetail = {
     selectedAttributes?: AttributeRef[];
 }
-export class OrAttributesAddRequestEvent extends CustomEvent<Util.RequestEventDetail<AddEventDetail>> {
+export class OrAttributeRefsAddRequestEvent extends CustomEvent<Util.RequestEventDetail<AddAttrRefsEventDetail>> {
 
-    public static readonly NAME = "or-attributes-request-add";
+    public static readonly NAME = "or-attribute-refs-request-add";
 
-    constructor(detail: AddEventDetail) {
-        super(OrAttributesAddRequestEvent.NAME, {
+    constructor(detail: AddAttrRefsEventDetail) {
+        super(OrAttributeRefsAddRequestEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: {
@@ -341,12 +341,12 @@ export class OrAttributesAddRequestEvent extends CustomEvent<Util.RequestEventDe
         });
     }
 }
-export class OrAddAttributesEvent extends CustomEvent<AddEventDetail> {
+export class OrAddAttributeRefsEvent extends CustomEvent<AddAttrRefsEventDetail> {
 
-    public static readonly NAME = "or-attributes-add";
+    public static readonly NAME = "or-attribute-refs-add";
 
-    constructor(detail: AddEventDetail) {
-        super(OrAddAttributesEvent.NAME, {
+    constructor(detail: AddAttrRefsEventDetail) {
+        super(OrAddAttributeRefsEvent.NAME, {
             bubbles: true,
             composed: true,
             detail: detail
@@ -402,13 +402,13 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                     }
                     
                     
-                    const detail: AddEventDetail = {
+                    const detail: AddAttrRefsEventDetail = {
                         selectedAttributes: this.selectedAttributes
                     };
-                    Util.dispatchCancellableEvent(this, new OrAttributesAddRequestEvent(detail))
+                    Util.dispatchCancellableEvent(this, new OrAttributeRefsAddRequestEvent(detail))
                         .then((detail) => {
                             if (detail.allow) {
-                                this.dispatchEvent(new OrAddAttributesEvent(detail.detail));
+                                this.dispatchEvent(new OrAddAttributeRefsEvent(detail.detail));
                             }
                         });
                 }

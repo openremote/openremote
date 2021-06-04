@@ -4,10 +4,10 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
-import { DefaultColor3 } from "@openremote/core";
+import manager, { DefaultColor3 } from "@openremote/core";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import {OrAddAttributesEvent, OrAttributesAddRequestEvent, OrMwcAttributeSelector } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { Asset, AttributeRef } from "@openremote/model";
+import {OrAddAttributeRefsEvent, OrMwcAttributeSelector } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { AttributeRef } from "@openremote/model";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
@@ -190,7 +190,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     }
 
     @property()
-    private selectedAttributes: AttributeRef[] = [];
+    private tableRows: any[] = []; //todo type this so it can be put in table
 
     get name(): string {
         return "export";
@@ -203,8 +203,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     protected render() {
 
         const hidden = false,
-            headers = [i18next.t('assetName'), i18next.t('attributeName'), i18next.t('valueType'), i18next.t('oldestDatapoint'), i18next.t('latestDatapoint')],
-            rows = [['cell 1', 'cell 2', 'cell 3', 'cell 4', 'cell 5'],['cell 1', 'cell 2', 'cell 3', 'cell 4', 'cell 5'],['cell 1', 'cell 2', 'cell 3', 'cell 4', 'cell 5']],
+            headers = [
+                i18next.t('assetName'), 
+                i18next.t('attributeName'), 
+                // i18next.t('valueType'), 
+                i18next.t('oldestDatapoint'), 
+                i18next.t('latestDatapoint')
+            ],
             options = {
                 stickyFirstColumn: false
             };
@@ -218,7 +223,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 <div class="panel">
                     <p class="panel-title">${i18next.t("dataSelection")}</p>
                     <h5 class="text-muted">${i18next.t("assetAttributeSelection")}</h5>
-                    <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${rows}" .options="${options}"></or-table>
+                    <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${this.tableRows}" .options="${options}"></or-table>
                     <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
                     <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
                 </div>
@@ -233,12 +238,43 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
         const dialog = new OrMwcAttributeSelector();
         dialog.isOpen = true;
-        dialog.addEventListener(OrAddAttributesEvent.NAME, (ev: OrAddAttributesEvent) => {
-            this.selectedAttributes = ev.detail.selectedAttributes;
-            this.render(); //todo: doesn't work yet
+        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
+            const dataPointInfoPromises = ev.detail.selectedAttributes.map((attrRef: AttributeRef) => {
+                return manager.rest.api.AssetDatapointResource.getDatapointPeriod({
+                    assetId: attrRef.id,
+                    attributeName: attrRef.name,
+                });
+            });
+            
+            Promise.all(dataPointInfoPromises).then(dataInfos => {
+                
+                const assetInfoPromises = dataInfos.map(result => {
+                    return manager.rest.api.AssetResource.get(result.data.assetId);
+                });
+                
+                Promise.all(assetInfoPromises).then(assetInfos => {
+                    const allAssets = assetInfos.map(attr => attr.data),
+                        allDatapoints = dataInfos.map(datapoints => datapoints.data);
+
+                    this.tableRows = allDatapoints.map(dataInfo => {
+                        const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
+                        return [
+                            relevantAssetInfo.name,
+                            dataInfo.attributeName,
+                            dataInfo.oldestTimestamp,
+                            dataInfo.latestTimestamp,
+                        ];
+                    });
+                })
+                
+            });
         });
         hostElement.append(dialog);
         return dialog;
+    }
+    
+    protected _processSelectedAttributes = () => {
+        
     }
 
     public stateChanged(state: S) {
