@@ -46,3 +46,6 @@ services:
     environment:
       DEV_MODE: ${DEV_MODE:-false}
       SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+#   devices:
+#     - /dev/ttyACM0:/dev/ttyS0
+
