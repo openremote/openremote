@@ -265,6 +265,20 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                             dataInfo.latestTimestamp,
                         ];
                     });
+                    
+                    const attrRefs = allDatapoints.map(dataInfo => {
+                        const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
+                        return {
+                            id: relevantAssetInfo.id,
+                            name: dataInfo.attributeName
+                        }
+                    }),
+                        jsonAttrRefs = JSON.stringify(attrRefs);
+                    manager.rest.api.AssetDatapointResource.getDatapointExport({
+                        attributeRefs: jsonAttrRefs,
+                        fromTimestamp: allDatapoints[0].oldestTimestamp,
+                        toTimestamp: allDatapoints[0].latestTimestamp
+                    });
                 })
                 
             });
