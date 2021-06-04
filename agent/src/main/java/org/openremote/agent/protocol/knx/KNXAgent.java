@@ -39,10 +39,10 @@ public class KNXAgent extends Agent<KNXAgent, KNXProtocol, KNXAgent.KNXAgentLink
         @NotNull
         @Pattern(regexp = "^\\d{1,3}\\.\\d{1,3}$")
         protected String dpt;
-        @NotNull
+
         @Pattern(regexp = "^\\d{1,3}/\\d{1,3}/\\d{1,3}$")
         protected String actionGroupAddress;
-        @NotNull
+
         @Pattern(regexp = "^\\d{1,3}/\\d{1,3}/\\d{1,3}$")
         protected String statusGroupAddress;
 

@@ -115,7 +115,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * </pre></blockquote>
  * Actual body used for the request = "{myObject: {prop1: true, prop2: "test", prop3: {prop4: 1234.4223}}}"
  */
-public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HttpClientAgentLink> {
+public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
 
     public static class HttpClientRequest {
 
@@ -355,7 +355,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HttpClientAgentLin
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, HttpClientAgentLink agentLink) {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, HTTPAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
         String method = agentLink.getMethod().map(Enum::name).orElse(DEFAULT_HTTP_METHOD);
@@ -397,7 +397,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HttpClientAgentLin
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, HttpClientAgentLink agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, HTTPAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         requestMap.remove(attributeRef);
         cancelPolling(attributeRef);
@@ -411,7 +411,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HttpClientAgentLin
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, HttpClientAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, HTTPAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         HttpClientRequest request = requestMap.get(event.getAttributeRef());
 

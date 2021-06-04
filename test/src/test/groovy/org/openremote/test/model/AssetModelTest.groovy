@@ -112,7 +112,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
             .addAttributes(
                 new Attribute<>("testAttribute", BIG_NUMBER, 100.5, System.currentTimeMillis())
                     .addOrReplaceMeta(
-                        new MetaItem<>(MetaItemType.AGENT_LINK, new HTTPAgent.HttpClientAgentLink("http_agent_id")
+                        new MetaItem<>(MetaItemType.AGENT_LINK, new HTTPAgent.HTTPAgentLink("http_agent_id")
                             .setPath("test_path")
                             .setPagingMode(true))
                     )
@@ -147,7 +147,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).isObject()
         assetObjectNode.get("attributes").get("testAttribute").get("value").decimalValue() == 100.5
         assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).get("id").asText() == "http_agent_id"
-        assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == HTTPAgent.HttpClientAgentLink.class.getSimpleName()
+        assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == HTTPAgent.HTTPAgentLink.class.getSimpleName()
 
         when: "the asset is deserialized"
         def asset2 = Values.parse(assetStr, LightAsset.class).orElse(null)
@@ -159,9 +159,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         asset2.getColourRGB().map{it.getR()}.orElse(null) == asset.getColourRGB().map{it.getR()}.orElse(null)
         asset2.getColourRGB().map{it.getG()}.orElse(null) == asset.getColourRGB().map{it.getG()}.orElse(null)
         asset2.getColourRGB().map{it.getB()}.orElse(null) == asset.getColourRGB().map{it.getB()}.orElse(null)
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.orElse(null) instanceof HTTPAgent.HttpClientAgentLink
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgent.HttpClientAgentLink)it}.flatMap{it.path}.orElse("") == "test_path"
-        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgent.HttpClientAgentLink)it}.flatMap{it.pagingMode}.orElse(false)
+        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.orElse(null) instanceof HTTPAgent.HTTPAgentLink
+        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgent.HTTPAgentLink)it}.flatMap{it.path}.orElse("") == "test_path"
+        asset2.getAttribute("testAttribute", BIG_NUMBER.type).flatMap{it.getMetaValue(MetaItemType.AGENT_LINK)}.map{(HTTPAgent.HTTPAgentLink)it}.flatMap{it.pagingMode}.orElse(false)
 
         when: "an attribute is cloned"
         def attribute = asset2.getAttribute(LightAsset.COLOUR_RGB).get()

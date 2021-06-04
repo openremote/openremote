@@ -57,4 +57,13 @@ public interface AssetDatapointResource {
     DatapointPeriod getDatapointPeriod(@BeanParam RequestParams requestParams,
                                           @QueryParam("assetId") String assetId,
                                           @QueryParam("attributeName") String attributeName);
+
+    @GET
+    @Path("export")
+    @Produces("text/csv")
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    void getDatapointExport(@BeanParam RequestParams requestParams,
+                                @QueryParam("attributeRefs") String attributeRefsString,
+                                @QueryParam("fromTimestamp") long fromTimestamp,
+                                @QueryParam("toTimestamp") long toTimestamp);
 }

@@ -24,6 +24,7 @@ import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
+import org.openremote.model.value.AttributeDescriptor;
 
 import javax.persistence.Entity;
 import java.util.Optional;
@@ -35,7 +36,7 @@ public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, Sim
 
         @JsonPropertyDescription("Used to store 24h dataset of values that should be replayed (i.e. written to the" +
             " linked attribute) in a continuous loop.")
-        protected SimulatorReplayDatapoint[] simulatorReplayData;
+        protected SimulatorReplayDatapoint[] replayData;
 
         // For Hydrators
         protected SimulatorAgentLink() {}
@@ -44,15 +45,17 @@ public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, Sim
             super(id);
         }
 
-        public Optional<SimulatorReplayDatapoint[]> getSimulatorReplayData() {
-            return Optional.ofNullable(simulatorReplayData);
+        public Optional<SimulatorReplayDatapoint[]> getReplayData() {
+            return Optional.ofNullable(replayData);
         }
 
-        public SimulatorAgentLink setSimulatorReplayData(SimulatorReplayDatapoint[] simulatorReplayData) {
-            this.simulatorReplayData = simulatorReplayData;
+        public SimulatorAgentLink setReplayData(SimulatorReplayDatapoint[] replayData) {
+            this.replayData = replayData;
             return this;
         }
     }
+
+    public static final AttributeDescriptor<String> SERIAL_SERIAL_PORT = SERIAL_PORT.withOptional(false);
 
     public static final AgentDescriptor<SimulatorAgent, SimulatorProtocol, SimulatorAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         SimulatorAgent.class, SimulatorProtocol.class, SimulatorAgentLink.class

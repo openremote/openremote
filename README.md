@@ -52,10 +52,11 @@ cmd /C "set KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth && docker-compose -p 
 Try creating assets, agents, rules, users, realms, etc. using the Manager UI, please refer to the [wiki](https://github.com/openremote/openremote/wiki) for more information, some things to try:
 
 - [Manager UI Guide](https://github.com/openremote/openremote/wiki/User-Guide:-Manager-UI)
-- [Creating an HTTP Agent](https://github.com/openremote/openremote/wiki/User-Guide%3A-HTTP-Agent)
+- [Creating an HTTP Agent](https://github.com/openremote/openremote/wiki/Tutorial%3A-Open-Weather-API-using-HTTP-Agent)
 - [Custom Deployment](https://github.com/openremote/openremote/wiki/User-Guide%3A-Custom-deployment)
 - [Setting up an IDE](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Setting-up-an-IDE)
 - [Working on the UI](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-UI-apps-and-components)
+- [Creating a custom project](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Creating-a-custom-project)
 
 ## Where's the data stored?
 Persistent data is stored in a PostgreSQL DB which is stored in the `openremote_postgresql-data` docker volume which is durably stored independently of the running containers (see all with `docker volume ls`).

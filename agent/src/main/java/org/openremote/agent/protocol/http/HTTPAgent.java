@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.Optional;
 
 @Entity
-public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClientAgentLink> {
+public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HTTPAgentLink> {
 
-    public static class HttpClientAgentLink extends AgentLink<HttpClientAgentLink> {
+    public static class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
 
         protected Map<String, List<String>> headers;
         protected Map<String, List<String>> queryParameters;
@@ -46,9 +46,9 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
         protected String pollingAttribute;
 
         // For Hydrators
-        protected HttpClientAgentLink() {}
+        protected HTTPAgentLink() {}
 
-        public HttpClientAgentLink(String id) {
+        public HTTPAgentLink(String id) {
             super(id);
         }
 
@@ -56,7 +56,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(headers);
         }
 
-        public HttpClientAgentLink setHeaders(ValueType.MultivaluedStringMap headers) {
+        public HTTPAgentLink setHeaders(ValueType.MultivaluedStringMap headers) {
             this.headers = headers;
             return this;
         }
@@ -65,7 +65,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(queryParameters);
         }
 
-        public HttpClientAgentLink setQueryParameters(ValueType.MultivaluedStringMap queryParameters) {
+        public HTTPAgentLink setQueryParameters(ValueType.MultivaluedStringMap queryParameters) {
             this.queryParameters = queryParameters;
             return this;
         }
@@ -74,7 +74,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(pollingMillis);
         }
 
-        public HttpClientAgentLink setPollingMillis(Integer pollingMillis) {
+        public HTTPAgentLink setPollingMillis(Integer pollingMillis) {
             this.pollingMillis = pollingMillis;
             return this;
         }
@@ -83,7 +83,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(pagingMode);
         }
 
-        public HttpClientAgentLink setPagingMode(Boolean pagingMode) {
+        public HTTPAgentLink setPagingMode(Boolean pagingMode) {
             this.pagingMode = pagingMode;
             return this;            
         }
@@ -92,7 +92,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(path);
         }
 
-        public HttpClientAgentLink setPath(String path) {
+        public HTTPAgentLink setPath(String path) {
             this.path = path;
             return this;
         }
@@ -101,7 +101,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(method);
         }
 
-        public HttpClientAgentLink setMethod(HTTPMethod method) {
+        public HTTPAgentLink setMethod(HTTPMethod method) {
             this.method = method;
             return this;
         }
@@ -110,7 +110,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(contentType);
         }
 
-        public HttpClientAgentLink setContentType(String contentType) {
+        public HTTPAgentLink setContentType(String contentType) {
             this.contentType = contentType;
             return this;
         }
@@ -119,7 +119,7 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
             return Optional.ofNullable(pollingAttribute);
         }
 
-        public HttpClientAgentLink setPollingAttribute(String pollingAttribute) {
+        public HTTPAgentLink setPollingAttribute(String pollingAttribute) {
             this.pollingAttribute = pollingAttribute;
             return this;
         }
@@ -127,14 +127,14 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HttpClie
 
     public static final ValueDescriptor<HTTPMethod> VALUE_HTTP_METHOD = new ValueDescriptor<>("HTTPMethod", HTTPMethod.class);
 
-    public static final AttributeDescriptor<String> BASE_URI = new AttributeDescriptor<>("baseURI", ValueType.TEXT);
+    public static final AttributeDescriptor<String> BASE_URI = new AttributeDescriptor<>("baseURL", ValueType.HTTP_URL);
     public static final AttributeDescriptor<Boolean> FOLLOW_REDIRECTS = new AttributeDescriptor<>("followRedirects", ValueType.BOOLEAN);
     public static final AttributeDescriptor<ValueType.MultivaluedStringMap> REQUEST_HEADERS = new AttributeDescriptor<>("requestHeaders", ValueType.MULTIVALUED_TEXT_MAP);
     public static final AttributeDescriptor<ValueType.MultivaluedStringMap> REQUEST_QUERY_PARAMETERS = new AttributeDescriptor<>("requestQueryParameters", ValueType.MULTIVALUED_TEXT_MAP);
     public static final AttributeDescriptor<Integer> REQUEST_TIMEOUT_MILLIS = new AttributeDescriptor<>("requestTimeoutMillis", ValueType.POSITIVE_INTEGER);
 
-    public static final AgentDescriptor<HTTPAgent, HTTPProtocol, HttpClientAgentLink> DESCRIPTOR = new AgentDescriptor<>(
-        HTTPAgent.class, HTTPProtocol.class, HttpClientAgentLink.class
+    public static final AgentDescriptor<HTTPAgent, HTTPProtocol, HTTPAgentLink> DESCRIPTOR = new AgentDescriptor<>(
+        HTTPAgent.class, HTTPProtocol.class, HTTPAgentLink.class
     );
 
     /**

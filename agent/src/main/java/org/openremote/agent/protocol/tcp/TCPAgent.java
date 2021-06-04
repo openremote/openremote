@@ -22,11 +22,15 @@ package org.openremote.agent.protocol.tcp;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.value.AttributeDescriptor;
 
 import javax.persistence.Entity;
 
 @Entity
 public class TCPAgent extends IOAgent<TCPAgent, TCPProtocol, AgentLink.Default> {
+
+    public static final AttributeDescriptor<String> TCP_HOST = HOST.withOptional(false);
+    public static final AttributeDescriptor<Integer> TCP_PORT = PORT.withOptional(false);
 
     public static final AgentDescriptor<TCPAgent, TCPProtocol, AgentLink.Default> DESCRIPTOR = new AgentDescriptor<>(
         TCPAgent.class, TCPProtocol.class, AgentLink.Default.class

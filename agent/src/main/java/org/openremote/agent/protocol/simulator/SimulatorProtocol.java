@@ -74,7 +74,7 @@ public class SimulatorProtocol extends AbstractProtocol<SimulatorAgent, Simulato
     protected void doLinkAttribute(String assetId, Attribute<?> attribute, SimulatorAgent.SimulatorAgentLink agentLink) {
 
         // Look for replay data
-        agentLink.getSimulatorReplayData()
+        agentLink.getReplayData()
             .ifPresent(simulatorReplayDatapoints -> {
                 LOG.info("Simulator replay data found for linked attribute: " + attribute);
                 AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());

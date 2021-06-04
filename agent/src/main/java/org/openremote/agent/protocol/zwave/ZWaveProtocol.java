@@ -40,7 +40,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
-public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWAgentLink> implements ProtocolAssetDiscovery {
+public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWaveAgentLink> implements ProtocolAssetDiscovery {
 
     // Constants ------------------------------------------------------------------------------------
 
@@ -90,7 +90,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWAge
     }
 
     @Override
-    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWAgentLink agentLink) {
+    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWaveAgentLink agentLink) {
 
         int nodeId = agentLink.getDeviceNodeId().orElse(0);
         int endpoint = agentLink.getDeviceEndpoint().orElse(0);
@@ -106,14 +106,14 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWAge
     }
 
     @Override
-    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWAgentLink agentLink) {
+    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWaveAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         Consumer<Value> sensorValueConsumer = sensorValueConsumerMap.remove(attributeRef);
         network.removeSensorValueConsumer(sensorValueConsumer);
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, ZWaveAgent.ZWAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, ZWaveAgent.ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         int nodeId = getOrThrowAgentLinkProperty(agentLink.getDeviceNodeId(), "device node ID");
         int endpoint = getOrThrowAgentLinkProperty(agentLink.getDeviceEndpoint(), "device endpoint");

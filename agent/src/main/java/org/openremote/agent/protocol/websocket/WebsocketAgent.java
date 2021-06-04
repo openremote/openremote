@@ -60,7 +60,7 @@ public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtoc
     /**
      * Websocket connect endpoint URI
      */
-    public static final AttributeDescriptor<String> CONNECT_URI = new AttributeDescriptor<>("connectUri", ValueType.TEXT);
+    public static final AttributeDescriptor<String> CONNECT_URL = new AttributeDescriptor<>("connectURL", ValueType.WS_URL);
 
     /**
      * Headers for websocket connect call
@@ -88,11 +88,11 @@ public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtoc
     }
 
     public Optional<String> getConnectUri() {
-        return getAttributes().getValue(CONNECT_URI);
+        return getAttributes().getValue(CONNECT_URL);
     }
 
     public WebsocketAgent setConnectUri(String value) {
-        getAttributes().getOrCreate(CONNECT_URI).setValue(value);
+        getAttributes().getOrCreate(CONNECT_URL).setValue(value);
         return this;
     }
 
