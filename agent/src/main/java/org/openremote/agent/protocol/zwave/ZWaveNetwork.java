@@ -28,6 +28,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.Values;
+import org.openremote.model.value.impl.ColourRGB;
 import org.openremote.protocol.zwave.ConnectionException;
 import org.openremote.protocol.zwave.model.Controller;
 import org.openremote.protocol.zwave.model.ZWEndPoint;
@@ -81,7 +82,7 @@ public class ZWaveNetwork {
         ioClient.addConnectionStatusConsumer(this::onConnectionStatusChanged);
 
         controller = new Controller(NettyConnectionManager.create(configuration, ioClient));
-        
+
         try {
             controller.connect();
         } catch (ConfigurationException | ConnectionException e) {
@@ -96,7 +97,7 @@ public class ZWaveNetwork {
         if (controller == null) {
             return;
         }
-        
+
         try {
             controller.disconnect();
         } catch (ConnectionException e) {
@@ -178,7 +179,15 @@ public class ZWaveNetwork {
                 zwValue = Values.getBoolean(value).map(BooleanValue::new).orElse(null);
                 break;
             case ARRAY:
-
+                if (value instanceof ColourRGB) {
+                    ArrayValue zwArray = new ArrayValue();
+                    zwArray.add(new NumberValue(((ColourRGB)value).getR()));
+                    zwArray.add(new NumberValue(((ColourRGB)value).getG()));
+                    zwArray.add(new NumberValue(((ColourRGB)value).getB()));
+                    zwValue = zwArray;
+                }
+                break;
+                /*
                 zwValue = Values.getValue(value, Object[].class).map(arrValue -> {
 
                     ArrayValue zwArray = new ArrayValue();
@@ -211,6 +220,7 @@ public class ZWaveNetwork {
                     );
                     return zwArray;
                 }).orElse(null);
+                 */
         }
 
         return zwValue;
@@ -233,7 +243,7 @@ public class ZWaveNetwork {
         }
     }
 
-    
+
     private Channel findChannel(int nodeId, int endpointNumber, String channelName) {
         Channel channel = null;
         if (controller != null) {
@@ -396,7 +406,7 @@ public class ZWaveNetwork {
 
         return new AssetTreeNode(device);
     }
-    
+
     private static List<Attribute<?>> createNodeInfoAttributes(String agentId, ZWaveNode node) {
         List<Attribute<?>> attributes = new ArrayList<>();
 
