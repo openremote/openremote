@@ -81,9 +81,19 @@ Resources:
       HostedZoneName: !Join [ "", [ !Ref DomainName, "." ] ]
       Name: !Join [ ".", [!Ref HostName, !Ref DomainName ] ]
       ResourceRecords:
-      - !GetAtt EC2Instance.PublicIp
+        - !GetAtt EC2Instance.PublicIp
       TTL: '60'
       Type: A
+#  DNSRecord6:
+#    Condition: DnsRecordCreate
+#    Type: AWS::Route53::RecordSet
+#    Properties:
+#      HostedZoneName: !Join [ "", [ !Ref DomainName, "." ] ]
+#      Name: !Join [ ".", [!Ref HostName, !Ref DomainName ] ]
+#      ResourceRecords:
+#        - !GetAtt EC2Instance.PublicIp
+#      TTL: '60'
+#      Type: AAAA
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -95,6 +105,7 @@ Resources:
         Ref: InstanceAMI
       SecurityGroups:
         - Ref: InstanceSecurityGroup
+      Ipv6AddressCount: 1
       Tags:
         - Key: "Name"
           Value: !Join [ ".", [ !Ref HostName, !Ref DomainName ] ]
@@ -193,4 +204,34 @@ Resources:
         FromPort: '8'
         ToPort: '-1'
         CidrIp: 0.0.0.0/0
+        Description: Ping
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIpv6: ::/0
+        Description: SSH
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIpv6: ::/0
+        Description: HTTP
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIpv6: ::/0
+        Description: HTTPS
+      - IpProtocol: tcp
+        FromPort: '8883'
+        ToPort: '8883'
+        CidrIpv6: ::/0
+        Description: MQTT
+      - IpProtocol: udp
+        FromPort: '161'
+        ToPort: '162'
+        CidrIpv6: ::/0
+        Description: SNMP
+      - IpProtocol: icmpv6
+        FromPort: '8'
+        ToPort: '-1'
+        CidrIpv6: ::/0
         Description: Ping
