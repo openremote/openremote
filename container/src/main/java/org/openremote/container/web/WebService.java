@@ -295,7 +295,8 @@ public abstract class WebService implements ContainerService {
 
         if (corsFilter != null) {
             CORSFilter finalCorsFilter = corsFilter;
-            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter));
+            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter))
+            .setAsyncSupported(true);
         }
     }
 }
