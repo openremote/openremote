@@ -385,5 +385,6 @@
   "logCategory": {},
   "readPermissions": "Read permissions",
   "writePermissions": "Write permissions",
-  "valueType": "Value type"
+  "valueType": "Value type",
+  "arrayDimensions": "Array dimensions"
 }
