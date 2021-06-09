@@ -192,6 +192,11 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     @property()
     private tableRows: any[] = []; //todo type this so it can be put in table
 
+    private isExportBtnDisabled: boolean = true;
+    private oldestTimestamp: number;
+    private latestTimestamp: number;
+    private attrRefs: any[];
+
     get name(): string {
         return "export";
     }
@@ -225,6 +230,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     <h5 class="text-muted">${i18next.t("assetAttributeSelection")}</h5>
                     <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${this.tableRows}" .options="${options}"></or-table>
                     <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
+                    <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
                     <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
                 </div>
             </div>
@@ -266,19 +272,18 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                         ];
                     });
                     
-                    const attrRefs = allDatapoints.map(dataInfo => {
-                        const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
-                        return {
-                            id: relevantAssetInfo.id,
-                            name: dataInfo.attributeName
-                        }
-                    }),
-                        jsonAttrRefs = JSON.stringify(attrRefs);
-                    manager.rest.api.AssetDatapointResource.getDatapointExport({
-                        attributeRefs: jsonAttrRefs,
-                        fromTimestamp: allDatapoints[0].oldestTimestamp,
-                        toTimestamp: allDatapoints[0].latestTimestamp
-                    });
+                    if (allDatapoints.length > 0) {
+                        this.attrRefs = allDatapoints.map(dataInfo => {
+                            const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
+                            return {
+                                id: relevantAssetInfo.id,
+                                name: dataInfo.attributeName
+                            }
+                        });
+                        this.oldestTimestamp = allDatapoints[0].oldestTimestamp;
+                        this.latestTimestamp = allDatapoints[0].oldestTimestamp;
+                        this.isExportBtnDisabled = false;
+                    }
                 })
                 
             });
@@ -287,8 +292,12 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         return dialog;
     }
     
-    protected _processSelectedAttributes = () => {
-        
+    protected export = () => {
+        manager.rest.api.AssetDatapointResource.getDatapointExport({
+            attributeRefs: JSON.stringify(this.attrRefs),
+            fromTimestamp: this.oldestTimestamp,
+            toTimestamp: this.latestTimestamp
+        });   
     }
 
     public stateChanged(state: S) {
