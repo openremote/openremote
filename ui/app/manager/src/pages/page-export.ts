@@ -185,6 +185,15 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                         width: 50%
                     }
                 }
+                
+                .export-btn-wrapper {
+                    display: flex;
+                    justify-content: flex-end;
+                }
+
+                .export-btn-wrapper .button {
+                    padding: 0;
+                }
             `,
         ];
     }
@@ -192,6 +201,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     @property()
     private tableRows: any[] = []; //todo type this so it can be put in table
 
+    private isCancelExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
     private oldestTimestamp: number;
     private latestTimestamp: number;
@@ -230,7 +240,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     <h5 class="text-muted">${i18next.t("assetAttributeSelection")}</h5>
                     <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${this.tableRows}" .options="${options}"></or-table>
                     <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
-                    <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
+                    <div class="export-btn-wrapper" style="display: flex; align-items: end">
+                        <or-mwc-input .disabled="${this.isCancelExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("cancel")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
+                    </div>
                     <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
                 </div>
             </div>
@@ -282,7 +295,11 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                         });
                         this.oldestTimestamp = allDatapoints[0].oldestTimestamp;
                         this.latestTimestamp = allDatapoints[0].oldestTimestamp;
+                        this.isCancelExportBtnDisabled = false;
                         this.isExportBtnDisabled = false;
+                    } else {
+                        this.isCancelExportBtnDisabled = true;
+                        this.isExportBtnDisabled = true;
                     }
                 })
                 
@@ -298,6 +315,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             fromTimestamp: this.oldestTimestamp,
             toTimestamp: this.latestTimestamp
         });   
+    }
+    
+    protected cancelSelection = () => {
+        this.tableRows = [];
+        this.attrRefs = [];
+        this.isCancelExportBtnDisabled = true;
+        this.isExportBtnDisabled = true;
     }
 
     public stateChanged(state: S) {
