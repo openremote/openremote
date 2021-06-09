@@ -107,6 +107,7 @@ services:
     #   /deployment/map/mapsettings.json - map styling
     #volumes:
     #  - deployment-data:/deployment
+    #  - postgresql-data:/postgres
     # Expose any devices required by agents
     #devices:
     #  - /dev/ttyACM0

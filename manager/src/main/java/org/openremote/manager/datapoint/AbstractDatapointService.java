@@ -28,12 +28,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -52,6 +54,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     protected ScheduledExecutorService executorService;
     protected ScheduledFuture<?> dataPointsPurgeScheduledFuture;
 
+    private String managerFilePath;
+
     @Override
     public int getPriority() {
         return PRIORITY;
@@ -63,6 +67,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
         executorService = container.getExecutorService();
+
+        managerFilePath = container.isDevMode() ? "./postgresql" : "/postgresql";
     }
 
     @Override
@@ -368,24 +374,25 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         );
     }
 
-    public File exportDatapoints(AttributeRef[] attributeRefs,
-                                 long fromTimestamp,
-                                 long toTimestamp) {
+    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
+                                                  long fromTimestamp,
+                                                  long toTimestamp) {
+        return executorService.schedule(() -> {
+            int count = attributeRefs.length;
+            LocalDateTime fromInstant = LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault());
+            LocalDateTime toInstant = LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault());
+            String fileName = String.format("%s_%s_%d_%s.csv", fromInstant, toInstant, count, getDatapointTableName());
 
-        int count = attributeRefs.length;
-        Instant fromInstant = Instant.ofEpochSecond(fromTimestamp);
-        Instant toInstant = Instant.ofEpochSecond(toTimestamp);
-        String fileName = String.format("%s_%s_%d_%s.csv", fromInstant, toInstant, count, getDatapointTableName());
+            StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000));
 
-        StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp, toTimestamp));
+            sb.append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")));
 
-        sb.append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")));
+            sb.append(String.format(")) to '/var/lib/postgresql/%s' delimiter ',' CSV HEADER;", fileName));
 
-        sb.append(String.format(")) to '/var/lib/postgresql/data/%s' delimiter ',' CSV HEADER;", fileName));
+            persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
 
-        persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-
-        return new File(String.format("/postgresql/%s", fileName));
+            return new File(String.format("%s/%s", managerFilePath, fileName));
+        }, 0, TimeUnit.MILLISECONDS);
     }
 
     protected PreparedStatement getUpsertPreparedStatement(Connection connection) throws SQLException {

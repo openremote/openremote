@@ -38,6 +38,7 @@ import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
+import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.Values;
 import org.quartz.CronExpression;
 
@@ -263,7 +264,19 @@ public class JsonRulesBuilder extends RulesBuilder {
             // Remove previous matches where the asset state no longer matches
             previouslyMatchedAssetStates.removeIf(previousAssetState -> {
 
-                boolean noLongerMatches = !matchedAssetStates.contains(previousAssetState);
+                Optional<AssetState<?>> matched = matchedAssetStates.stream()
+                    .filter(matchedAssetState -> Objects.equals(previousAssetState, matchedAssetState))
+                    .findFirst();
+
+                boolean noLongerMatches = !matched.isPresent();
+
+                if (!noLongerMatches) {
+                    noLongerMatches = matched.map(matchedAssetState -> {
+                        // If reset immediate meta item is set then remove previous state if timestamp is greater
+                        boolean resetImmediately = matchedAssetState.getMeta().getValue(MetaItemType.RULE_RESET_IMMEDIATE).orElse(false);
+                        return resetImmediately && matchedAssetState.getTimestamp() > previousAssetState.getTimestamp();
+                    }).orElse(false);
+                }
 
                 if (noLongerMatches) {
                     log(Level.FINER, "Rule trigger previously matched asset state no longer matches so resetting: " + previousAssetState);
@@ -432,7 +445,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 thenMatchedAssetIds.addAll(ruleConditionGroup.getItems().stream()
                     .map(ruleCondition -> conditionStateMap.get(ruleCondition.tag))
                     .filter(ruleConditionState -> ruleConditionState.lastEvaluationResult != null && ruleConditionState.lastEvaluationResult.matches)
-                    .map(RuleConditionState::getMatchedAssetIds)//Get all unmatched assetIds
+                    .map(RuleConditionState::getMatchedAssetIds)//Get all matched assetIds
                     .flatMap(Collection::stream)
                     .collect(Collectors.toSet()));
 

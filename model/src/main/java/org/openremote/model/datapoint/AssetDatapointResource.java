@@ -24,6 +24,8 @@ import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -62,8 +64,8 @@ public interface AssetDatapointResource {
     @Path("export")
     @Produces("text/csv")
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    void getDatapointExport(@BeanParam RequestParams requestParams,
-                                @QueryParam("attributeRefs") String attributeRefsString,
-                                @QueryParam("fromTimestamp") long fromTimestamp,
-                                @QueryParam("toTimestamp") long toTimestamp);
+    void getDatapointExport(@Suspended AsyncResponse asyncResponse,
+                            @QueryParam("attributeRefs") String attributeRefsString,
+                            @QueryParam("fromTimestamp") long fromTimestamp,
+                            @QueryParam("toTimestamp") long toTimestamp);
 }

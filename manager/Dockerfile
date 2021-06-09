@@ -85,6 +85,7 @@ HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=120 CMD curl
 
 RUN mkdir -p /opt/app
 RUN mkdir -p /deployment/manager/extensions
+RUN mkdir -p /zwave
 
 WORKDIR /opt/app
 

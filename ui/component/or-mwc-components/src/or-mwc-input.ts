@@ -1315,6 +1315,9 @@ export class OrMwcInput extends LitElement {
         } else {
             // some components need to be kept in sync with the DOM
             if (this.type === InputType.SELECT && this._mdcComponent) {
+                if (_changedProperties.has("options")) {
+                    (this._mdcComponent as MDCSelect).layoutOptions();
+                }
                 const selectedText = this.getSelectedTextValue();
                 (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
                 (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);

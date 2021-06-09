@@ -30,6 +30,8 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
+    volumes:
+      - ./postgresql:/var/lib/postgresql
     # Access directly if needed on localhost
     ports:
       - "5432:5432"

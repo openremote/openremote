@@ -138,7 +138,11 @@ public final class MetaItemType {
      */
     public static final MetaItemDescriptor<Boolean> RULE_STATE = new MetaItemDescriptor<>("ruleState", ValueType.BOOLEAN);
 
-
+    /**
+     * Used by when-then rules to indicate that the rule should be allowed to re-trigger immediately; this can be useful for attributes
+     * that contain event based data rather than state data.
+     */
+    public static final MetaItemDescriptor<Boolean> RULE_RESET_IMMEDIATE = new MetaItemDescriptor<>("ruleResetImmediate", ValueType.BOOLEAN);
 
     /* FORMATTING / DISPLAY META */
 

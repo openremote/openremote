@@ -103,7 +103,8 @@ public class ManagerFileServlet extends FileServlet {
         servletInfo.addMapping("/*");
 
         Filter gzipFilter = new GzipResponseFilter(MIME_TYPES_TO_ZIP);
-        FilterInfo gzipFilterInfo = Servlets.filter("Gzip Filter", GzipResponseFilter.class, () -> new ImmediateInstanceHandle<>(gzipFilter));
+        FilterInfo gzipFilterInfo = Servlets.filter("Gzip Filter", GzipResponseFilter.class, () -> new ImmediateInstanceHandle<>(gzipFilter))
+                .setAsyncSupported(true);
 
         return new DeploymentInfo()
             .setDeploymentName(contextPath + " File Servlet Deployment")
