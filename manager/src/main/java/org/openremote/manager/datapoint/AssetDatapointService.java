@@ -81,7 +81,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         }
     }
 
-    protected static boolean attributeIsStoreDatapoint(Attribute<?> attribute) {
+    public static boolean attributeIsStoreDatapoint(Attribute<?> attribute) {
         return attribute.getMetaValue(STORE_DATA_POINTS).orElse(attribute.hasMeta(MetaItemType.AGENT_LINK));
     }
 

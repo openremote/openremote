@@ -8,20 +8,16 @@ import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.energy.EnergyOptimisationService
 import org.openremote.manager.energy.EnergyOptimiser
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.impl.ElectricityAsset
-import org.openremote.model.asset.impl.ElectricityConsumerAsset
-import org.openremote.model.asset.impl.ElectricityProducerSolarAsset
-import org.openremote.model.asset.impl.ElectricityStorageAsset
-import org.openremote.model.asset.impl.ElectricitySupplierAsset
+import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
-import org.openremote.model.util.Pair
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -54,10 +50,9 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def services = Lists.newArrayList(defaultServices())
         def spyOptimisationService = Spy(EnergyOptimisationService) {
-            scheduleOptimisation(_ as String, _ as EnergyOptimiser) >> {
+            scheduleOptimisation(_ as String, _ as EnergyOptimiser, _ as Duration, _ as Long) >> {
                 // Don't use the scheduler as we will manually trigger the optimisation for testing
-                optimisationAssetId, optimiser ->
-                    it.assetEnergyOptimiserMap.put(optimisationAssetId, new Pair<>(optimiser, null))
+                optimisationAssetId, optimiser, startDuration, periodSeconds ->
                     return null
             }
         }
@@ -73,8 +68,8 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
 
         expect: "an optimisation instance should exist"
         conditions.eventually {
-            assert !optimisationService.assetEnergyOptimiserMap.isEmpty()
-            assert optimisationService.assetEnergyOptimiserMap.get(managerTestSetup.electricityOptimisationAssetId) != null
+            assert !optimisationService.assetOptimisationInstanceMap.isEmpty()
+            assert optimisationService.assetOptimisationInstanceMap.get(managerTestSetup.electricityOptimisationAssetId) != null
         }
 
         when: "the pseudo clock is stopped and the system time is set to midnight of next day"
@@ -84,7 +79,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         advancePseudoClock(now.toEpochMilli()-timerService.getCurrentTimeMillis(), TimeUnit.MILLISECONDS, container)
 
         then: "the optimisation start time should be correctly calculated"
-        def optimiser = optimisationService.assetEnergyOptimiserMap.get(managerTestSetup.electricityOptimisationAssetId).key
+        def optimiser = optimisationService.assetOptimisationInstanceMap.get(managerTestSetup.electricityOptimisationAssetId).energyOptimiser
         def optimisationTime = optimisationService.getOptimisationStartTime(now.toEpochMilli(), (long)optimiser.intervalSize * 60 * 60)
         assert optimisationTime.isBefore(now)
         assert optimisationTime.plus((long)optimiser.intervalSize*60, ChronoUnit.MINUTES).equals(now)
