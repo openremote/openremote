@@ -240,10 +240,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     <h5 class="text-muted">${i18next.t("assetAttributeSelection")}</h5>
                     <div style="max-height: 500px; overflow-y: auto">
                         <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${this.tableRows}" .options="${options}"></or-table>
-                        <div style="border-color: rgba(0, 0, 0, 0.12);border-width: 0 1px 1px 1px;margin-bottom: 2em;border-style: solid;">
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}" style="margin: 0;padding: 10px;"></or-mwc-input>
-                        </div>
                     </div>
+                    <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}" style="margin: 0;padding: 10px;"></or-mwc-input>
                     <div class="export-btn-wrapper" style="display: flex; align-items: end">
                         <or-mwc-input .disabled="${this.isCancelExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("cancel")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
