@@ -188,7 +188,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 
                 .export-btn-wrapper {
                     display: flex;
-                    justify-content: flex-end;
+                    justify-content: space-between;
                 }
 
                 .export-btn-wrapper .button {
@@ -203,7 +203,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     @property({type: Object, attribute: false})
     public tableRowsHtml?: TemplateResult;
 
-    private isCancelExportBtnDisabled: boolean = true;
+    private isClearExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
     private oldestTimestamp: number;
     private latestTimestamp: number;
@@ -256,8 +256,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                             </tbody>
                         </table>
                     </div>
-                    <div class="export-btn-wrapper" style="display: flex; align-items: end">
-                        <or-mwc-input .disabled="${this.isCancelExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("cancel")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
+                    <div class="export-btn-wrapper">
+                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("clearTable")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
                     </div>
                     <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
@@ -334,10 +334,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                         });
                         this.oldestTimestamp = allDatapoints[0].oldestTimestamp;
                         this.latestTimestamp = allDatapoints[0].oldestTimestamp;
-                        this.isCancelExportBtnDisabled = false;
+                        this.isClearExportBtnDisabled = false;
                         this.isExportBtnDisabled = false;
                     } else {
-                        this.isCancelExportBtnDisabled = true;
+                        this.isClearExportBtnDisabled = true;
                         this.isExportBtnDisabled = true;
                     }
                 })
@@ -358,8 +358,9 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     protected cancelSelection = () => {
         this.tableRows = [];
+        this.renderTableRows();
         this.attrRefs = [];
-        this.isCancelExportBtnDisabled = true;
+        this.isClearExportBtnDisabled = true;
         this.isExportBtnDisabled = true;
     }
 
