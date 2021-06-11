@@ -1,4 +1,4 @@
-import {css, customElement, html, unsafeCSS, property} from "lit-element";
+import {css, customElement, html, unsafeCSS, TemplateResult, property} from "lit-element";
 import "@openremote/or-rules";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
@@ -198,8 +198,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         ];
     }
 
-    @property()
     private tableRows: any[] = []; //todo type this so it can be put in table
+    
+    @property({type: Object, attribute: false})
+    public tableRowsHtml?: TemplateResult;
 
     private isCancelExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
@@ -213,6 +215,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
     constructor(store: EnhancedStore<S>) {
         super(store);
+        this.renderTableRows();
     }
 
     protected render() {
@@ -248,22 +251,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                                 <th></th>
                             </tr>
                             </thead>
-                            <tbody class="mdc-data-table__content">
-                            ${this.tableRows.map((row, index) => html`
-                                <tr class="mdc-data-table__row">
-                                ${row.map(cell => html`
-                                    <td class="padded-cell mdc-data-table__cell">${cell}</td>
-                                `)}
-                                    <td>
-                                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteAttr(index)}" style="margin-bottom:0;margin-right:0"></or-mwc-input>
-                                    </td>
-                                </tr>
-                            `)}
-                                <tr class="mdc-data-table__row">
-                                    <td colspan="100%">
-                                        <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}" style="margin: 0;padding: 10px;"></or-mwc-input>
-                                    </td>
-                                </tr>
+                            <tbody id="table-body" class="mdc-data-table__content">
+                            ${this.tableRowsHtml}
                             </tbody>
                         </table>
                     </div>
@@ -279,8 +268,25 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
     }
     
-    protected _onDeleteAttr(index) {
-        console.log(index);
+    protected renderTableRows() {
+
+        this.tableRowsHtml = html`
+            ${this.tableRows.map((row, index) => html`
+                <tr class="mdc-data-table__row">
+                    ${row.map(cell => html`
+                        <td class="padded-cell mdc-data-table__cell">${cell}</td>
+                    `)}
+                    <td>
+                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${() => {this.tableRows.splice(index, 1);this.renderTableRows();}}" style="margin-bottom:0;margin-right:0"></or-mwc-input>
+                    </td>
+                </tr>
+            `)}
+            <tr class="mdc-data-table__row">
+                <td colspan="100%">
+                    <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}" style="margin: 0;padding: 10px;"></or-mwc-input>
+                </td>
+            </tr>
+        `;
     }
     
     protected _openDialog() {
@@ -316,6 +322,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                             dataInfo.latestTimestamp,
                         ];
                     });
+                    this.renderTableRows();
                     
                     if (allDatapoints.length > 0) {
                         this.attrRefs = allDatapoints.map(dataInfo => {

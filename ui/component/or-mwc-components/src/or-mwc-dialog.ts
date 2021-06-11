@@ -384,9 +384,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             }
         `;
 
-        this.setDialogActions();
-        this.setDialogContent();
-        
+        this.reRenderDialog();
     }
     
     protected setDialogActions(): void {
