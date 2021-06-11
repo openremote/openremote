@@ -238,7 +238,9 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 <div class="panel">
                     <p class="panel-title">${i18next.t("dataSelection")}</p>
                     <h5 class="text-muted">${i18next.t("assetAttributeSelection")}</h5>
-                    <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${this.tableRows}" .options="${options}"></or-table>
+                    <div style="max-height: 500px; overflow-y: auto">
+                        <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${this.tableRows}" .options="${options}"></or-table>
+                    </div>
                     <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
                     <div class="export-btn-wrapper" style="display: flex; align-items: end">
                         <or-mwc-input .disabled="${this.isCancelExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("cancel")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
