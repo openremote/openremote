@@ -257,6 +257,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
         const dialog = new OrMwcAttributeSelector();
         dialog.isOpen = true;
+        dialog.showOnlyDatapointAttrs = true;
         dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
             const dataPointInfoPromises = ev.detail.selectedAttributes.map((attrRef: AttributeRef) => {
                 return manager.rest.api.AssetDatapointResource.getDatapointPeriod({

@@ -5,7 +5,7 @@ import "./or-mwc-input";
 import {InputType, OrInputChangedEvent} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor5, Util } from "@openremote/core";
-import { Asset, AssetEvent, AttributeDescriptor, AttributeRef } from "@openremote/model";
+import { Asset, AssetEvent, Attribute, AttributeDescriptor, AttributeRef } from "@openremote/model";
 import manager from "@openremote/core";
 import { AssetModelUtil } from "@openremote/core";
 
@@ -360,7 +360,10 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     public selectedAsset?: Asset;
     public selectedAttributes: AttributeRef[] = [];
 
-    private assetAttributes: AttributeRef[] = []; // to display attributes that belong to selected asset
+    private assetAttributes: Attribute<any>[] = []; // to display attributes that belong to selected asset
+    
+    @property({type: Boolean})
+    public showOnlyDatapointAttrs: boolean = false;
     
     constructor() {
         super();
@@ -457,16 +460,21 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         this.reRenderDialog();
     }
 
-    protected _getAttributeOptions(): AttributeDescriptor[] | undefined {
-        if(!this.selectedAsset || !this.selectedAsset.type) {
+    protected _getAttributeOptions() {
+        if (!this.selectedAsset || !this.selectedAsset.type) {
             this.reRenderDialog();
             return;
         }
-        
-        const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(this.selectedAsset.type);
-        this.assetAttributes = assetTypeInfo?.attributeDescriptors || [];
 
-        this.reRenderDialog();
+        manager.rest.api.AssetResource.get(this.selectedAsset.id!)
+            .then(result => {
+                this.assetAttributes = Object.values(result.data.attributes!) as Attribute<any>[];
+                if (this.showOnlyDatapointAttrs) {
+                    this.assetAttributes = this.assetAttributes.filter(e => e.meta && e.meta.storeDataPoints);
+                }
+                this.reRenderDialog();
+            });
+
     }
 
     protected async _onAssetSelectionChanged(event: CustomEvent) {
