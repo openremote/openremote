@@ -208,6 +208,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     private oldestTimestamp: number;
     private latestTimestamp: number;
     private attrRefs: any[];
+    
+    private selectedAttributes: AttributeRef[] = [
+        {
+            id: "5Q8OC1y8yWwdJjKvBQPP8J",
+            name: "efficiencyImport"
+        }
+    ]; 
 
     get name(): string {
         return "export";
@@ -295,7 +302,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         const dialog = new OrMwcAttributeSelector();
         dialog.isOpen = true;
         dialog.showOnlyDatapointAttrs = true;
+        dialog.selectedAttributes = this.selectedAttributes;
         dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
+            // this.selectedAttributes = ev.detail.selectedAttributes;
+            
             const dataPointInfoPromises = ev.detail.selectedAttributes.map((attrRef: AttributeRef) => {
                 return manager.rest.api.AssetDatapointResource.getDatapointPeriod({
                     assetId: attrRef.id,

@@ -132,6 +132,7 @@
   "processors": "Processors",
   "output": "Output",
   "selectAsset": "Selecteer asset",
+  "selectAssetOnTheLeft": "Selecteer een asset aan de linkerkant",
   "noRuleStateAttributes": "Geen rule state attributes",
   "copy": "Kopiëren",
   "paste": "Plakken",

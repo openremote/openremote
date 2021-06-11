@@ -358,12 +358,14 @@ export class OrAddAttributeRefsEvent extends CustomEvent<AddAttrRefsEventDetail>
 export class OrMwcAttributeSelector extends OrMwcDialog {
 
     public selectedAsset?: Asset;
-    public selectedAttributes: AttributeRef[] = [];
 
     private assetAttributes: Attribute<any>[] = []; // to display attributes that belong to selected asset
     
     @property({type: Boolean})
     public showOnlyDatapointAttrs: boolean = false;
+
+    @property({type: Array, attribute: false})
+    public selectedAttributes: AttributeRef[] = [];
     
     constructor() {
         super();
@@ -383,8 +385,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                 border-top: 1px solid ${unsafeCSS(DefaultColor5)};
             }
         `;
-
+        
         this.reRenderDialog();
+
     }
     
     protected setDialogActions(): void {
@@ -418,6 +421,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     }
     
     protected setDialogContent(): void {
+
         this.dialogContent = html`
             <div class="row" style="display: flex;height: 600px;width: 800px;">
                 <div class="col" style="width: 260px;overflow: auto;">
@@ -426,7 +430,6 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                                     @or-asset-tree-request-delete="${() => this._onAssetSelectionDeleted()}"></or-asset-tree>
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
-
                 ${this.selectedAsset && this.selectedAsset.attributes ? html`
                     <div class="attributes-header">
                         <or-translate value="attribute_plural"></or-translate>
@@ -439,7 +442,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                                           @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, attribute)}"></or-mwc-input>`
                         )}
                     </div>
-                ` : ``}
+                ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
                 </div>
         `;
     }

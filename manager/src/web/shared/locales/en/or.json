@@ -132,6 +132,7 @@
   "processors": "Processors",
   "output": "Output",
   "selectAsset": "Select asset",
+  "selectAssetOnTheLeft": "Select an asset on the left",
   "noRuleStateAttributes": "No rule state attributes",
   "copy": "Copy",
   "paste": "Paste",
