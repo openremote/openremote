@@ -405,7 +405,6 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                         return;
                     }
                     
-                    
                     const detail: AddAttrRefsEventDetail = {
                         selectedAttributes: this.selectedAttributes
                     };
@@ -438,8 +437,8 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                         ${this.assetAttributes.map(attribute => html`
                             <or-mwc-input .type="${InputType.CHECKBOX}"
                                           .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
-                                          .value="${!!this.selectedAttributes.find((selected) => selected.id === this.selectedAsset!.id && selected.name === attribute.name)}"
-                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, attribute)}"></or-mwc-input>`
+                                          .value="${this.selectedAttributes.some(s => s.id === this.selectedAsset!.id && s.name === attribute.name)}"
+                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, {id: this.selectedAsset!.id!, name: attribute.name})}"></or-mwc-input>`
                         )}
                     </div>
                 ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
@@ -452,12 +451,14 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         this.setDialogActions();
     }
     
-    protected _addRemoveAttrs(event: OrInputChangedEvent, attribute: AttributeDescriptor) {
-        const newAttrRef: AttributeRef = {
-            id: this.selectedAsset!.id,
-            name: attribute.name
+    protected _addRemoveAttrs(event: OrInputChangedEvent, attrRef: AttributeRef) {
+        const exists = this.selectedAttributes.some(s => s.id === attrRef.id && s.name === attrRef.name);
+        if (exists) {
+            this.selectedAttributes.splice(this.selectedAttributes.findIndex(s => s.id === attrRef.id && s.name === attrRef.name), 1)
+        } else {
+            this.selectedAttributes.push(attrRef)
         }
-        event.detail.value ? this.selectedAttributes.push(newAttrRef) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === newAttrRef), 1);
+        
         this.reRenderDialog();
     }
 
