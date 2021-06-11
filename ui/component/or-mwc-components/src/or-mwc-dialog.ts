@@ -452,12 +452,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     }
     
     protected _addRemoveAttrs(event: OrInputChangedEvent, attrRef: AttributeRef) {
-        const exists = this.selectedAttributes.some(s => s.id === attrRef.id && s.name === attrRef.name);
-        if (exists) {
-            this.selectedAttributes.splice(this.selectedAttributes.findIndex(s => s.id === attrRef.id && s.name === attrRef.name), 1)
-        } else {
-            this.selectedAttributes.push(attrRef)
-        }
+        event.detail.value ? this.selectedAttributes.push(attrRef) : this.selectedAttributes.splice(this.selectedAttributes.findIndex(s => s.id === attrRef.id && s.name === attrRef.name), 1)
         
         this.reRenderDialog();
     }
