@@ -198,8 +198,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         ];
     }
 
-    private tableRows: any[] = []; //todo type this so it can be put in table
-    
     @property({type: Object, attribute: false})
     public tableRowsHtml?: TemplateResult;
 
@@ -209,12 +207,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     private latestTimestamp: number;
     private attrRefs: any[];
     
-    private selectedAttributes: AttributeRef[] = [
-        {
-            id: "5Q8OC1y8yWwdJjKvBQPP8J",
-            name: "efficiencyImport"
-        }
-    ]; 
+    private tableRows: any[] = []; //todo type this so it can be put in table
+    private selectedAttributes: AttributeRef[] = [];
 
     get name(): string {
         return "export";
@@ -278,13 +272,14 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     protected renderTableRows() {
 
         this.tableRowsHtml = html`
-            ${this.tableRows.map((row, index) => html`
+            ${this.tableRows.map(attr => html`
                 <tr class="mdc-data-table__row">
-                    ${row.map(cell => html`
-                        <td class="padded-cell mdc-data-table__cell">${cell}</td>
-                    `)}
+                    <td class="padded-cell mdc-data-table__cell">${attr.assetName}</td>
+                    <td class="padded-cell mdc-data-table__cell">${attr.attributeName}</td>
+                    <td class="padded-cell mdc-data-table__cell">${attr.oldestTimestamp}</td>
+                    <td class="padded-cell mdc-data-table__cell">${attr.latestTimestamp}</td>
                     <td>
-                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${() => {this.tableRows.splice(index, 1);this.renderTableRows();}}" style="margin-bottom:0;margin-right:0"></or-mwc-input>
+                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${() => this._deleteAttribute(attr.assetId, attr.attributeName)}" style="margin-bottom:0;margin-right:0"></or-mwc-input>
                     </td>
                 </tr>
             `)}
@@ -294,6 +289,16 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 </td>
             </tr>
         `;
+    }
+    
+    protected _deleteAttribute(assetId, attributeName) {
+        const indexTablerows = this.tableRows.findIndex(e => e.assetId === assetId && e.attributeName === attributeName);
+        const indexSelectedAttrs = this.selectedAttributes.findIndex(e => e.id === assetId && e.name === attributeName);
+
+        this.tableRows.splice(indexTablerows, 1);
+        this.selectedAttributes.splice(indexSelectedAttrs, 1);
+        
+        this.renderTableRows();
     }
     
     protected _openDialog() {
@@ -325,12 +330,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
                     this.tableRows = allDatapoints.map(dataInfo => {
                         const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
-                        return [
-                            relevantAssetInfo.name,
-                            dataInfo.attributeName,
-                            dataInfo.oldestTimestamp,
-                            dataInfo.latestTimestamp,
-                        ];
+                        return {
+                            assetName: relevantAssetInfo.name,
+                            assetId: relevantAssetInfo.id,
+                            attributeName: dataInfo.attributeName,
+                            oldestTimestamp: dataInfo.oldestTimestamp,
+                            latestTimestamp: dataInfo.latestTimestamp
+                        };
                     });
                     this.renderTableRows();
                     
@@ -367,6 +373,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     }
     
     protected cancelSelection = () => {
+        this.selectedAttributes = [];
         this.tableRows = [];
         this.renderTableRows();
         this.attrRefs = [];
