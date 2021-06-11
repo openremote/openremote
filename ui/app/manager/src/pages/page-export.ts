@@ -238,10 +238,35 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 <div class="panel">
                     <p class="panel-title">${i18next.t("dataSelection")}</p>
                     <h5 class="text-muted">${i18next.t("assetAttributeSelection")}</h5>
-                    <div style="max-height: 500px; overflow-y: auto">
-                        <or-table id="attribute-table" .hidden="${hidden}" .headers="${headers}" .rows="${this.tableRows}" .options="${options}"></or-table>
+                    <div class="mdc-data-table" style="width: 100%; max-height: 500px; overflow-y: auto;margin-bottom: 2em">
+                        <table class="mdc-data-table__table" aria-label="attribute list" >
+                            <thead>
+                            <tr class="mdc-data-table__header-row">
+                            ${headers.map(header => html`
+                                <th class="mdc-data-table__header-cell" role="columnheader" scope="col">${header}</th>
+                            `)}
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody class="mdc-data-table__content">
+                            ${this.tableRows.map((row, index) => html`
+                                <tr class="mdc-data-table__row">
+                                ${row.map(cell => html`
+                                    <td class="padded-cell mdc-data-table__cell">${cell}</td>
+                                `)}
+                                    <td>
+                                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteAttr(index)}" style="margin-bottom:0;margin-right:0"></or-mwc-input>
+                                    </td>
+                                </tr>
+                            `)}
+                                <tr class="mdc-data-table__row">
+                                    <td colspan="100%">
+                                        <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}" style="margin: 0;padding: 10px;"></or-mwc-input>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}" style="margin: 0;padding: 10px;"></or-mwc-input>
                     <div class="export-btn-wrapper" style="display: flex; align-items: end">
                         <or-mwc-input .disabled="${this.isCancelExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("cancel")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
@@ -252,6 +277,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
         `;
 
+    }
+    
+    protected _onDeleteAttr(index) {
+        console.log(index);
     }
     
     protected _openDialog() {
