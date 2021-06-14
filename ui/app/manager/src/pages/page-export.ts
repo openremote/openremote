@@ -366,7 +366,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     protected export = () => {
         manager.rest.api.AssetDatapointResource.getDatapointExport({
-            attributeRefs: JSON.stringify(this.attrRefs),
+            attributeRefsString: JSON.stringify(this.attrRefs),
             fromTimestamp: this.oldestTimestamp,
             toTimestamp: this.latestTimestamp
         });   
