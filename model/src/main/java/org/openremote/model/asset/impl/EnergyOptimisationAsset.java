@@ -28,7 +28,7 @@ import javax.persistence.Entity;
 
 import java.util.Optional;
 
-import static org.openremote.model.Constants.UNITS_PERCENTAGE;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.READ_ONLY;
 import static org.openremote.model.value.ValueType.*;
 
@@ -39,8 +39,8 @@ public class EnergyOptimisationAsset extends Asset<EnergyOptimisationAsset> {
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Double> INTERVAL_SIZE = new AttributeDescriptor<>("intervalSize", POSITIVE_NUMBER);
     public static final AttributeDescriptor<Boolean> OPTIMISATION_DISABLED = new AttributeDescriptor<>("optimisationDisabled", BOOLEAN, new MetaItem<>(READ_ONLY));
-    public static final AttributeDescriptor<Double> FINANCIAL_SAVING = new AttributeDescriptor<>("financialSaving", NUMBER);
-    public static final AttributeDescriptor<Double> CARBON_SAVING = new AttributeDescriptor<>("carbonSaving", NUMBER);
+    public static final AttributeDescriptor<Double> FINANCIAL_SAVING = new AttributeDescriptor<>("financialSaving", NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Double> CARBON_SAVING = new AttributeDescriptor<>("carbonSaving", NUMBER).withUnits(UNITS_KILO, UNITS_GRAM);;
 
     public static final AssetDescriptor<EnergyOptimisationAsset> DESCRIPTOR = new AssetDescriptor<>("flash", "C4DB0D", EnergyOptimisationAsset.class);
 
