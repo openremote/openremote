@@ -29,7 +29,7 @@ services:
 
   keycloak:
     restart: always
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-12.0.1.1}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.0}
     depends_on:
       postgresql:
         condition: service_healthy

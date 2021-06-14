@@ -394,5 +394,6 @@
   "assetName": "Asset name",
   "attributeName": "Attribute name",
   "oldestDatapoint": "Oldest datapoint",
-  "latestDatapoint": "Latest datapoint"
+  "latestDatapoint": "Latest datapoint",
+  "arrayDimensions": "Array dimensions"
 }

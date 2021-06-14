@@ -243,14 +243,24 @@ public final class AssetModelUtil {
         if (assetTypeMap == null) {
             initialise();
         }
-        boolean isArray = name.endsWith("[]");
 
-        if (isArray) {
+        int arrayDimensions = 0;
+
+        while(name.endsWith("[]")) {
             name = name.substring(0, name.length() - 2);
+            arrayDimensions++;
         }
 
         String finalName = name;
-        return valueDescriptors.stream().filter(vd -> vd.getName().equals(finalName)).findFirst().map(vd -> isArray ? vd.asArray() : vd);
+        int finalArrayDimensions = arrayDimensions;
+        return valueDescriptors.stream().filter(vd -> vd.getName().equals(finalName)).findFirst().map(vd -> {
+            int dims = finalArrayDimensions;
+            while(dims > 0) {
+                vd = vd.asArray();
+                dims--;
+            }
+            return vd;
+        });
     }
 
     public static ValueDescriptor<?> getValueDescriptorForValue(Object value) {
