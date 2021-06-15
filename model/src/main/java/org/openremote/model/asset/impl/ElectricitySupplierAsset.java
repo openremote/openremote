@@ -33,15 +33,9 @@ import static org.openremote.model.Constants.*;
 @Entity
 public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySupplierAsset> {
 
-    public static final AttributeDescriptor<Double> ENERGY_IMPORT_COST = new AttributeDescriptor<>("energyImportCost", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits("EUR");
-    public static final AttributeDescriptor<Double> ENERGY_EXPORT_COST = new AttributeDescriptor<>("energyExportCost", ValueType.NUMBER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits("EUR");
-    public static final AttributeDescriptor<Double> FINANCIAL_WALLET = new AttributeDescriptor<>("financialWallet", ValueType.NUMBER).withUnits("EUR");
-    public static final AttributeDescriptor<Integer> CARBON_WALLET = new AttributeDescriptor<>("carbonWallet", ValueType.INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY)
+    public static final AttributeDescriptor<Double> FINANCIAL_COST = new AttributeDescriptor<>("financialCost", ValueType.NUMBER).withUnits("EUR");
+    public static final AttributeDescriptor<Double> CARBON_COST = new AttributeDescriptor<>("carbonCost", ValueType.NUMBER,
+            new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_GRAM);
 
     public static final AttributeDescriptor<Double> POWER_SETPOINT = ElectricityAsset.POWER_SETPOINT.withOptional(true);
@@ -55,15 +49,9 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
 
     public static final AssetDescriptor<ElectricitySupplierAsset> DESCRIPTOR = new AssetDescriptor<>("upload-network", "9257A9", ElectricitySupplierAsset.class);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = new AttributeDescriptor<>("carbonImport", ValueType.NUMBER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
+            .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
     public static final AttributeDescriptor<Double> CARBON_EXPORT = new AttributeDescriptor<>("carbonExport", ValueType.NUMBER)
-        .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(true);
-    public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = new AttributeDescriptor<>("carbonImportTotal", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
-    public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = new AttributeDescriptor<>("carbonExportTotal", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.READ_ONLY, true)
-    ).withUnits(UNITS_KILO, UNITS_GRAM);
+            .withUnits(UNITS_KILO, UNITS_GRAM, UNITS_PER, UNITS_KILO, UNITS_WATT, UNITS_HOUR).withOptional(false);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
@@ -75,39 +63,21 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
         super(name);
     }
 
-    public Optional<Double> getEnergyImportCost() {
-        return getAttributes().getValue(ENERGY_IMPORT_COST);
+    public Optional<Double> getFinancialCost() {
+        return getAttributes().getValue(FINANCIAL_COST);
     }
 
-    public ElectricitySupplierAsset setEnergyImportCost(Double value) {
-        getAttributes().getOrCreate(ENERGY_IMPORT_COST).setValue(value);
+    public ElectricitySupplierAsset setFinancialCost(Double value) {
+        getAttributes().getOrCreate(FINANCIAL_COST).setValue(value);
         return this;
     }
 
-    public Optional<Double> getEnergyExportCost() {
-        return getAttributes().getValue(ENERGY_EXPORT_COST);
+    public Optional<Double> getCarbonCost() {
+        return getAttributes().getValue(CARBON_COST);
     }
 
-    public ElectricitySupplierAsset setEnergyExportCost(Double value) {
-        getAttributes().getOrCreate(ENERGY_EXPORT_COST).setValue(value);
-        return this;
-    }
-
-    public Optional<Double> getFinancialWallet() {
-        return getAttributes().getValue(FINANCIAL_WALLET);
-    }
-
-    public ElectricitySupplierAsset setFinancialWallet(Double value) {
-        getAttributes().getOrCreate(FINANCIAL_WALLET).setValue(value);
-        return this;
-    }
-
-    public Optional<Integer> getCarbonWallet() {
-        return getAttributes().getValue(CARBON_WALLET);
-    }
-
-    public ElectricitySupplierAsset setCarbonWallet(Integer value) {
-        getAttributes().getOrCreate(CARBON_WALLET).setValue(value);
+    public ElectricitySupplierAsset setCarbonCost(Double value) {
+        getAttributes().getOrCreate(CARBON_COST).setValue(value);
         return this;
     }
 
@@ -126,24 +96,6 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
 
     public ElectricitySupplierAsset setCarbonExport(Double value) {
         getAttributes().getOrCreate(CARBON_EXPORT).setValue(value);
-        return this;
-    }
-
-    public Optional<Integer> getCarbonImportTotal() {
-        return getAttributes().getValue(CARBON_IMPORT_TOTAL);
-    }
-
-    public ElectricitySupplierAsset setCarbonImportTotal(Integer value) {
-        getAttributes().getOrCreate(CARBON_IMPORT_TOTAL).setValue(value);
-        return this;
-    }
-
-    public Optional<Integer> getCarbonExportTotal() {
-        return getAttributes().getValue(CARBON_EXPORT_TOTAL);
-    }
-
-    public ElectricitySupplierAsset setCarbonExportTotal(Integer value) {
-        getAttributes().getOrCreate(CARBON_EXPORT_TOTAL).setValue(value);
         return this;
     }
 }
