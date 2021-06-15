@@ -476,6 +476,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                 optimiser.applyEnergySchedule(energyLevelMins, energyLevelMaxs, energyCapacity, energySchedule, LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault()));
             }
 
+            double maxEnergyLevelMin = Arrays.stream(energyLevelMins).max().orElse(0);
             boolean isConnected = !(storageAsset instanceof ElectricVehicleAsset) || ((ElectricVehicleAsset)storageAsset).getChargerConnected().orElse(false);
 
             // TODO: Make these a function of energy level
@@ -520,7 +521,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
             // Update unoptimised power for this asset
             obsoleteUnoptimisedAssetIds.remove(storageAsset.getId());
-            double maxEnergyLevelMin = Arrays.stream(energyLevelMins).max().orElse(0);
             double assetUnoptimisedPower = getStorageUnoptimisedImportPower(optimisationInstance, optimisationAssetId, storageAsset, maxEnergyLevelMin, Math.max(0, powerImportMax - unoptimisedPower));
             unoptimisedPower += assetUnoptimisedPower;
             unoptimisedFinancialCost += storageAsset.getTariffImport().orElse(0d) * assetUnoptimisedPower * intervalSize;
@@ -533,7 +533,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         carbonCost = (powerNets[0] >= 0 ? supplierAsset.getCarbonImport().orElse(0d) : supplierAsset.getCarbonExport().orElse(0d)) * powerNets[0] * intervalSize;
         financialCost += (powerNets[0] >= 0 ? supplierAsset.getTariffImport().orElse(0d) : supplierAsset.getTariffExport().orElse(0d)) * powerNets[0] * intervalSize;
         unoptimisedCarbonCost = (unoptimisedPower >= 0 ? supplierAsset.getCarbonImport().orElse(0d) : supplierAsset.getCarbonExport().orElse(0d)) * unoptimisedPower * intervalSize;
-        unoptimisedFinancialCost += (unoptimisedPower >= 0 ? supplierAsset.getTariffImport().orElse(0d) : supplierAsset.getTariffExport().orElse(0d)) * unoptimisedPower * intervalSize;
+        unoptimisedFinancialCost += (unoptimisedPower >= 0 ? supplierAsset.getTariffImport().orElse(0d) : -1 * supplierAsset.getTariffExport().orElse(0d)) * unoptimisedPower * intervalSize;
 
         double financialSaving = unoptimisedFinancialCost - financialCost;
         double carbonSaving = unoptimisedCarbonCost - carbonCost;
@@ -703,24 +703,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         optimiser.applyEarningOpportunities(importCostAndPower, exportCostAndPower, normalisedEnergyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator);
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity power set points for storage asset: " + storageAsset.getId() + " = " + Arrays.toString(powerSetpoints));
-        }
-
-        if (LOG.isLoggable(Level.FINEST)) {
-
-            double previousCost = 0d;
-            double optimisedCost = 0d;
-
-            for (int i = 0; i < powerSetpoints.length; i++) {
-                double power = powerNets[i];
-                previousCost += Math.abs(power) * (power > 0 ? costImports[i] : costExports[i]) * optimiser.intervalSize;
-                power += powerSetpoints[i];
-                optimisedCost += Math.abs(power) * (power > 0 ? costImports[i] : costExports[i]) * optimiser.intervalSize;
-                optimisedCost += Math.abs(power) * (power > 0 ? storageAsset.getTariffImport().orElse(0d) : storageAsset.getTariffExport().orElse(0d)) * optimiser.intervalSize;
-            }
-
-            // TODO Include storage import/export tariff
-
-            LOG.finest(getLogPrefix(optimisationAssetId) + "Optimisation result for storage asset: " + storageAsset.getId() + " [Previous cost=" + previousCost + ", new cost=" + optimisedCost + "]");
         }
 
         return powerSetpoints;
