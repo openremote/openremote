@@ -21,6 +21,7 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
@@ -29,6 +30,7 @@ import javax.persistence.Entity;
 import java.util.Optional;
 
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.ValueType.NUMBER;
 
 @Entity
 public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySupplierAsset> {
@@ -37,6 +39,18 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
     public static final AttributeDescriptor<Double> CARBON_COST = new AttributeDescriptor<>("carbonCost", ValueType.NUMBER,
             new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_GRAM);
+    public static final AttributeDescriptor<Double> ENERGY_LOCAL = new AttributeDescriptor<>("energyLocal", NUMBER,
+            new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_KILO, UNITS_WATT, UNITS_HOUR);
+    public static final AttributeDescriptor<Double> ENERGY_RENEWABLE_SHARE = new AttributeDescriptor<>("energyRenewableShare", NUMBER,
+            new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_PERCENTAGE);
+    public static final AttributeDescriptor<Double> ENERGY_SELF_CONSUMPTION = new AttributeDescriptor<>("energySelfConsumption", NUMBER,
+            new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_PERCENTAGE);
+    public static final AttributeDescriptor<Double> ENERGY_AUTARKY = new AttributeDescriptor<>("energyAutarky", NUMBER,
+            new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withUnits(UNITS_PERCENTAGE);
 
     public static final AttributeDescriptor<Double> POWER_SETPOINT = ElectricityAsset.POWER_SETPOINT.withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
@@ -96,6 +110,42 @@ public class ElectricitySupplierAsset extends ElectricityAsset<ElectricitySuppli
 
     public ElectricitySupplierAsset setCarbonExport(Double value) {
         getAttributes().getOrCreate(CARBON_EXPORT).setValue(value);
+        return this;
+    }
+
+    public Optional<Double> getEnergyLocal() {
+        return getAttribute(ENERGY_LOCAL).flatMap(AbstractNameValueHolder::getValue);
+    }
+
+    public ElectricitySupplierAsset setEnergyLocal(Double value) {
+        getAttributes().getOrCreate(ENERGY_LOCAL).setValue(value);
+        return this;
+    }
+
+    public Optional<Double> getEnergyRenewableShare() {
+        return getAttribute(ENERGY_RENEWABLE_SHARE).flatMap(AbstractNameValueHolder::getValue);
+    }
+
+    public ElectricitySupplierAsset setEnergyRenewableShare(Double value) {
+        getAttributes().getOrCreate(ENERGY_RENEWABLE_SHARE).setValue(value);
+        return this;
+    }
+
+    public Optional<Double> getEnergySelfConsumption() {
+        return getAttribute(ENERGY_SELF_CONSUMPTION).flatMap(AbstractNameValueHolder::getValue);
+    }
+
+    public ElectricitySupplierAsset setEnergySelfConsumption(Double value) {
+        getAttributes().getOrCreate(ENERGY_SELF_CONSUMPTION).setValue(value);
+        return this;
+    }
+
+    public Optional<Double> getEnergyAutarky() {
+        return getAttribute(ENERGY_AUTARKY).flatMap(AbstractNameValueHolder::getValue);
+    }
+
+    public ElectricitySupplierAsset setEnergyAutarky(Double value) {
+        getAttributes().getOrCreate(ENERGY_AUTARKY).setValue(value);
         return this;
     }
 }
