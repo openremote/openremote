@@ -5,6 +5,7 @@ import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -22,6 +23,7 @@ import org.postgresql.util.PGobject;
 
 import javax.persistence.TypedQuery;
 import java.io.File;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -54,8 +56,6 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     protected ScheduledExecutorService executorService;
     protected ScheduledFuture<?> dataPointsPurgeScheduledFuture;
 
-    private String managerFilePath;
-
     @Override
     public int getPriority() {
         return PRIORITY;
@@ -67,8 +67,6 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
         assetStorageService = container.getService(AssetStorageService.class);
         timerService = container.getService(TimerService.class);
         executorService = container.getExecutorService();
-
-        managerFilePath = container.isDevMode() ? "./postgresql" : "/postgresql";
     }
 
     @Override
@@ -366,33 +364,12 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                 if (rs.next()) {
                                     return new DatapointPeriod(rs.getString(1), rs.getString(2), rs.getTimestamp(3).getTime(), rs.getTimestamp(4).getTime());
                                 }
-                                return null;
+                                return new DatapointPeriod(assetId, attributeName, null, null);
                             }
                         }
                     }
                 })
         );
-    }
-
-    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
-                                                  long fromTimestamp,
-                                                  long toTimestamp) {
-        return executorService.schedule(() -> {
-            int count = attributeRefs.length;
-            LocalDateTime fromInstant = LocalDateTime.ofInstant(Instant.ofEpochMilli(fromTimestamp), ZoneId.systemDefault());
-            LocalDateTime toInstant = LocalDateTime.ofInstant(Instant.ofEpochMilli(toTimestamp), ZoneId.systemDefault());
-            String fileName = String.format("%s_%s_%d_%s.csv", fromInstant, toInstant, count, getDatapointTableName());
-
-            StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000));
-
-            sb.append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")));
-
-            sb.append(String.format(")) to '/var/lib/postgresql/%s' delimiter ',' CSV HEADER;", fileName));
-
-            persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
-
-            return new File(String.format("%s/%s", managerFilePath, fileName));
-        }, 0, TimeUnit.MILLISECONDS);
     }
 
     protected PreparedStatement getUpsertPreparedStatement(Connection connection) throws SQLException {

@@ -12,6 +12,7 @@
 version: '2.4'
 
 volumes:
+  temp-data:
   postgresql-data:
 
 services:
@@ -30,6 +31,7 @@ services:
       service: postgresql
     volumes:
       - postgresql-data:/var/lib/postgresql/data
+      - temp-data:/tmp
 
   manager:
     extends:
@@ -38,5 +40,7 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    volumes:
+      - temp-data:/tmp
     environment:
       IDENTITY_PROVIDER: basic

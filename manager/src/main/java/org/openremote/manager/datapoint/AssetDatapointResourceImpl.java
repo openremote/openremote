@@ -41,6 +41,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.ConnectionCallback;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
 import java.time.Instant;
@@ -161,7 +162,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }
 
-                Attribute<?> attribute = asset.getAttribute(attributeRef.getName()).orElseThrow(() ->
+                asset.getAttribute(attributeRef.getName()).orElseThrow(() ->
                         new WebApplicationException(Response.Status.NOT_FOUND)
                 );
             }
@@ -170,25 +171,37 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             asyncResponse.register((ConnectionCallback) disconnected -> {
                 exportFuture.cancel(true);
             });
+
+            File exportFile = null;
+
             try {
-                File file = exportFuture.get();
-                response.setContentType("text/csv");
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName());
+                exportFile = exportFuture.get();
+                response.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + exportFile.getName());
 
                 OutputStream out = response.getOutputStream();
-
-                FileInputStream in = new FileInputStream(file);
+                FileInputStream in = new FileInputStream(exportFile);
                 IOUtils.copy(in, out);
-
                 out.close();
                 in.close();
-                file.delete();
 
-                asyncResponse.resume(response);
+                asyncResponse.resume(
+                    Response.ok(exportFile)
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.csv\"" )
+                        .build()
+                );
             } catch (Exception ex) {
                 exportFuture.cancel(true);
                 asyncResponse.resume(new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR));
                 LOG.log(Level.WARNING, "Exception in ScheduledFuture: ", ex);
+            } finally {
+                if (exportFile != null && exportFile.exists()) {
+                    try {
+                        exportFile.delete();
+                    } catch (Exception e) {
+                        LOG.log(Level.WARNING, "Failed to delete temporary export file: " + exportFile.getPath(), e);
+                    }
+                }
             }
         } catch (JsonProcessingException ex) {
             asyncResponse.resume(new BadRequestException(ex));
