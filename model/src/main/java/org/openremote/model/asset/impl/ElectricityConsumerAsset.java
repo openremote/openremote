@@ -40,8 +40,6 @@ public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsum
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricitySupplierAsset.TARIFF_IMPORT.withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = ElectricitySupplierAsset.TARIFF_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricitySupplierAsset.CARBON_IMPORT.withOptional(true);
-    public static final AttributeDescriptor<Integer> CARBON_IMPORT_TOTAL = ElectricitySupplierAsset.CARBON_IMPORT_TOTAL.withOptional(true);
-    public static final AttributeDescriptor<Integer> CARBON_EXPORT_TOTAL = ElectricitySupplierAsset.CARBON_EXPORT_TOTAL.withOptional(true);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
