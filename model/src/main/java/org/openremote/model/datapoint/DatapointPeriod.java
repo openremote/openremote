@@ -9,9 +9,9 @@ public class DatapointPeriod {
 
     protected String attributeName;
 
-    protected long oldest;
+    protected Long oldest;
 
-    protected long latest;
+    protected Long latest;
 
     protected DatapointPeriod() {
     }
@@ -19,8 +19,8 @@ public class DatapointPeriod {
     @JsonCreator
     public DatapointPeriod(@JsonProperty("assetId") String assetId,
                            @JsonProperty("attributeName") String attributeName,
-                           @JsonProperty("oldestTimestamp") long oldest,
-                           @JsonProperty("latestTimestamp") long latest) {
+                           @JsonProperty("oldestTimestamp") Long oldest,
+                           @JsonProperty("latestTimestamp") Long latest) {
         this.assetId = assetId;
         this.attributeName = attributeName;
         this.oldest = oldest;
@@ -38,12 +38,12 @@ public class DatapointPeriod {
     }
 
     @JsonProperty("oldestTimestamp")
-    public long getOldest() {
+    public Long getOldest() {
         return oldest;
     }
 
     @JsonProperty("latestTimestamp")
-    public long getLatest() {
+    public Long getLatest() {
         return latest;
     }
 }

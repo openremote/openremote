@@ -23,9 +23,9 @@
 #
 version: '2.4'
 
-# If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
-  postgresql-data:
+  postgresql-data: # Needed if you want to persist postgres data outside of container
+  temp-data: # Needed to share temp export data between postgres and manager containers
 
 services:
 
@@ -105,7 +105,8 @@ services:
     #   /deployment/manager/provisioning - contains JSON files for provisioning the system
     #   /deployment/map/mapdata.mbtiles - map tile data
     #   /deployment/map/mapsettings.json - map styling
-    #volumes:
+    volumes:
+      - temp-data:/tmp
     #  - deployment-data:/deployment
     #  - postgresql-data:/postgres
     # Expose any devices required by agents
@@ -307,7 +308,8 @@ services:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
-    #volumes:
+    volumes:
+      - temp-data:/tmp
     #  - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server

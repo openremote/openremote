@@ -10,6 +10,9 @@
 #
 version: '2.4'
 
+volumes:
+  temp-data:
+
 services:
 
   proxy:
@@ -26,6 +29,8 @@ services:
   postgresql:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}
+    volumes:
+      - temp-data:/tmp
 
   keycloak:
     restart: always
@@ -46,6 +51,8 @@ services:
     environment:
       DEV_MODE: ${DEV_MODE:-false}
       SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+    volumes:
+      - temp-data:/tmp
 #   devices:
 #     - /dev/ttyACM0:/dev/ttyS0
 

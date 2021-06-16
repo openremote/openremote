@@ -1,6 +1,7 @@
 package org.openremote.manager.datapoint;
 
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
@@ -10,6 +11,7 @@ import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeWriteFailure;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.query.AssetQuery;
@@ -19,13 +21,18 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaItemType;
 
 import javax.persistence.EntityManager;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,6 +42,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 
 /**
@@ -47,8 +55,11 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
     public static final String DATA_POINTS_MAX_AGE_DAYS = "DATA_POINTS_MAX_AGE_DAYS";
     public static final int DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
+    public static final String DATA_POINTS_EXPORT_DIR = "DATA_POINTS_EXPORT_DIR";
+    public static final String DATA_POINTS_EXPORT_DIR_DEFAULT = "profile/tmp";
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     protected int maxDatapointAgeDays;
+    protected Path exportPath;
 
     @Override
     public void init(Container container) throws Exception {
@@ -68,6 +79,8 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
         if (maxDatapointAgeDays <= 0) {
             LOG.warning(DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
         }
+
+        exportPath = Paths.get(getString(container.getConfig(), DATA_POINTS_EXPORT_DIR, DATA_POINTS_EXPORT_DIR_DEFAULT));
     }
 
     @Override
@@ -186,4 +199,22 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
 
         return " and (dp.assetId, dp.attributeName) " + (negate ? "not " : "") + "in (" + whereStr + ")";
     }
+
+    public ScheduledFuture<File> exportDatapoints(AttributeRef[] attributeRefs,
+                                                  long fromTimestamp,
+                                                  long toTimestamp) {
+        return executorService.schedule(() -> {
+            String fileName = UniqueIdentifierGenerator.generateId() + ".csv";
+            StringBuilder sb = new StringBuilder(String.format("copy (select ad.timestamp, a.name, ad.attribute_name, value from asset_datapoint ad, asset a where ad.entity_id = a.id and ad.timestamp >= to_timestamp(%d) and ad.timestamp <= to_timestamp(%d) and (", fromTimestamp / 1000, toTimestamp / 1000));
+
+            sb.append(Arrays.stream(attributeRefs).map(attributeRef -> String.format("(ad.entity_id = '%s' and ad.attribute_name = '%s')", attributeRef.getId(), attributeRef.getName())).collect(Collectors.joining(" or ")));
+
+            sb.append(String.format(")) to '/tmp/%s' delimiter ',' CSV HEADER;", fileName));
+
+            persistenceService.doTransaction(em -> em.createNativeQuery(sb.toString()).executeUpdate());
+
+            return exportPath.resolve(fileName).toFile();
+        }, 0, TimeUnit.MILLISECONDS);
+    }
+
 }
