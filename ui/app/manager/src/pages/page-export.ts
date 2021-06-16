@@ -318,15 +318,15 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 });
             });
             
-            Promise.all(dataPointInfoPromises).then(dataInfos => {
+            Promise.all(dataPointInfoPromises).then(datapointPeriod => {
                 
-                const assetInfoPromises = dataInfos.map(result => {
+                const assetInfoPromises = datapointPeriod.map(result => {
                     return manager.rest.api.AssetResource.get(result.data.assetId);
                 });
                 
                 Promise.all(assetInfoPromises).then(assetInfos => {
                     const allAssets = assetInfos.map(attr => attr.data),
-                        allDatapoints = dataInfos.map(datapoints => datapoints.data);
+                        allDatapoints = datapointPeriod.map(datapoints => datapoints.data);
 
                     this.tableRows = allDatapoints.map(dataInfo => {
                         const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
@@ -366,10 +366,18 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     protected export = () => {
         manager.rest.api.AssetDatapointResource.getDatapointExport({
-            attributeRefsString: JSON.stringify(this.attrRefs),
+            attributeRefs: JSON.stringify(this.attrRefs),
             fromTimestamp: this.oldestTimestamp,
             toTimestamp: this.latestTimestamp
-        });   
+        }).then(response => {
+            // This is the best we can do with xhr - would need to return a link to the file for proper streamed download support
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute("download", "dataexport.csv");
+            document.body.appendChild(link);
+            link.click();
+        });
     }
     
     protected cancelSelection = () => {
