@@ -105,7 +105,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         idOptions.push(...this._assets!.map((asset) => [asset.id!, asset.name!] as [string, string]));
 
         const asset = idValue && idValue !== "*" ? this._assets.find(a => a.id === idValue) : undefined;
-        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, this.action.attributeName);
+        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(assetType, this.action.attributeName, asset && asset.attributes && this.action.attributeName ? asset.attributes[this.action.attributeName] : undefined);
 
         // Only RW attributes can be used in actions
         let attributes: [string, string][] = [];
