@@ -249,7 +249,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
 
         and: "consumer and producer prediction values are set for the next 24hrs"
         def consumerPower = [0, 0, 0, 0, 10, 10, 10, 10]
-        def producerPower = [-10, -10, -10, -10, 0, 0, 0, 0]
+        def producerPower = [-50, -50, -50, -50, 0, 0, 0, 0]
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricityConsumerAssetId, ElectricityAsset.POWER.name, consumerPower.get(0)))
         assetProcessingService.sendAttributeEvent(new AttributeEvent(managerTestSetup.electricitySolarAssetId, ElectricityAsset.POWER.name, producerPower.get(0)))
 

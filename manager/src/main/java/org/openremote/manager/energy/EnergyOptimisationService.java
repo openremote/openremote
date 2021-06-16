@@ -530,9 +530,9 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         optimisationInstance.unoptimisedStorageAssetEnergyLevels.keySet().removeAll(obsoleteUnoptimisedAssetIds);
 
         // Calculate and store savings data
-        carbonCost = (powerNets[0] >= 0 ? supplierAsset.getCarbonImport().orElse(0d) : supplierAsset.getCarbonExport().orElse(0d)) * powerNets[0] * intervalSize;
-        financialCost += (powerNets[0] >= 0 ? supplierAsset.getTariffImport().orElse(0d) : supplierAsset.getTariffExport().orElse(0d)) * powerNets[0] * intervalSize;
-        unoptimisedCarbonCost = (unoptimisedPower >= 0 ? supplierAsset.getCarbonImport().orElse(0d) : supplierAsset.getCarbonExport().orElse(0d)) * unoptimisedPower * intervalSize;
+        carbonCost = (powerNets[0] >= 0 ? supplierAsset.getCarbonImport().orElse(0d) : -1 * supplierAsset.getCarbonExport().orElse(0d)) * powerNets[0] * intervalSize;
+        financialCost += (powerNets[0] >= 0 ? supplierAsset.getTariffImport().orElse(0d) : -1 * supplierAsset.getTariffExport().orElse(0d)) * powerNets[0] * intervalSize;
+        unoptimisedCarbonCost = (unoptimisedPower >= 0 ? supplierAsset.getCarbonImport().orElse(0d) : -1 * supplierAsset.getCarbonExport().orElse(0d)) * unoptimisedPower * intervalSize;
         unoptimisedFinancialCost += (unoptimisedPower >= 0 ? supplierAsset.getTariffImport().orElse(0d) : -1 * supplierAsset.getTariffExport().orElse(0d)) * unoptimisedPower * intervalSize;
 
         double financialSaving = unoptimisedFinancialCost - financialCost;
