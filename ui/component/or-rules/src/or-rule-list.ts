@@ -263,7 +263,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
             } else {
-                addTemplate = html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked(this.language!)}"></or-mwc-input>`;
+                addTemplate = html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked(this.language!)}" title="Create rule"></or-mwc-input>`;
             }
         }
         return html`
@@ -286,13 +286,13 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     </div>
         
                     <div id="header-btns">
-                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-mwc-input>
-                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-mwc-input>
+                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}" title="Copy rule"></or-mwc-input>
+                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}" title="Delete rule"></or-mwc-input>
                         ${addTemplate}
-                        <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
+                        <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}" title="Search"></or-mwc-input>
                         
                         ${getContentWithMenuTemplate(
-            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant"></or-mwc-input>`,
+            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant" title="Sort"></or-mwc-input>`,
             sortOptions.map((sort) => { return { value: sort, text: i18next.t(sort) } as ListItem; }),
             this.sortBy,
             (v) => this._onSortClicked(v as string))}
@@ -558,7 +558,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"))
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();

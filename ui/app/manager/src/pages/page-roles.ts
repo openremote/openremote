@@ -65,7 +65,6 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
         .panel {
           width: calc(100% - 90px);
-          padding: 0 20px;
           max-width: 1310px;
           background-color: white;
           border: 1px solid #e5e5e5;
@@ -86,7 +85,6 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
             letter-spacing: 0.025em;
         }
 
-
         #table-roles,
         #table-roles table{
           width: 100%;
@@ -94,6 +92,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         }
 
         .mdc-data-table__row {
+          cursor: pointer;
           border-top-color: #D3D3D3;
         }
         
@@ -288,7 +287,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
   }
 
   private _deleteRole(role) {
-    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"))
+    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"), i18next.t("delete"))
     .then((ok) => {
         if (ok) {
           this.doDelete(role);

@@ -69,7 +69,7 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     if (buttonIcon) {
         content = html`
                 ${content}
-                <or-mwc-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                <or-mwc-input id="send-btn" icon="${buttonIcon}" title="Send input" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
             e.stopPropagation();
             if (sendValue) {
                 sendValue();
@@ -129,7 +129,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             }
             
             #wrapper.right-padding {
-                padding-right: 48px;
+                padding-right: 52px;
             }
             
             #wrapper-helper {
@@ -177,6 +177,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
 
             #send-btn { 
                 flex: 0;
+                margin-left: 4px;
+                margin-top: 4px;
             }
             
             /*  https://codepen.io/finnhvman/pen/bmNdNr  */
@@ -346,6 +348,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     public compact: boolean = false;
 
     @property({type: Boolean})
+    public comfortable: boolean = false;
+
+    @property({type: Boolean})
+    public resizeVertical: boolean = false;
+
+    @property({type: Boolean})
     public fullWidth?: boolean;
 
     @property()
@@ -497,6 +505,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             disabled: this.disabled,
             compact: this.compact,
             label: this.getLabel(),
+            comfortable: this.comfortable,
+            resizeVertical: this.resizeVertical,
             inputType: this.inputType
         };
 

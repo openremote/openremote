@@ -225,6 +225,30 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
         this._dialog = showDialog({
             title: i18next.t("scheduleRuleActivity"),
+            styles: html`
+                <style>
+                    .mdc-dialog__surface {
+                        overflow-x: visible !important;
+                        overflow-y: visible !important;
+                    }
+
+                    #dialog-content {
+                        overflow: visible;
+                    }
+
+                    @media only screen and (max-width: 1279px) {
+                        .mdc-dialog__surface {
+                            overflow-x: auto !important;
+                            overflow-y: auto !important;
+                        }
+
+                        #dialog-content {
+                            min-height: 230px;
+                            overflow: auto;
+                        }
+                    }
+                </style>`
+            ,
             actions: [
                 {
                     actionName: "cancel",
@@ -274,7 +298,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
         const validity = this._validity;
 
         return html`
-            <div style="min-height: 200px; min-width: 635px; display:grid; flex-direction: row;">
+            <div style="min-width: 635px; display:grid; flex-direction: row;">
                 <div class="layout horizontal">
                     <or-mwc-input .value="${validityType}" .type="${InputType.SELECT}" .options="${validityTypes}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setValidityType(e.detail.value)}" ></or-mwc-input>
                 </div>

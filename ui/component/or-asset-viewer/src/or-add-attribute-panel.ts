@@ -49,20 +49,18 @@ export class OrAddAttributePanel extends LitElement {
 
     protected attributeTypes?: [string, string][];
     protected attributeValueTypes?: [string, string][];
+    protected arrayRegex: RegExp = /\[\]/g;
 
     public static get styles() {
         return css`                        
-            #attribute-creator > * {
-                padding: 20px;                        
-            }
-
             or-mwc-input {
                 width: 300px;
                 display: block;
+                padding: 10px 20px;
             }
 
             .hidden {
-                visibility: hidden;
+                display: none;
             }`;
     }
 
@@ -105,12 +103,10 @@ export class OrAddAttributePanel extends LitElement {
 
         return html`
             <div id="attribute-creator">
-                <div>
-                    <or-mwc-input .type="${InputType.SELECT}" .options="${this.attributeTypes}" .label="${i18next.t("type")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-mwc-input>
-                </div>
+                <or-mwc-input .type="${InputType.SELECT}" .options="${this.attributeTypes}" .label="${i18next.t("type")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onTypeChanged(ev.detail.value)}"></or-mwc-input>
                 <div id="wrapper" class="hidden">
                     <or-mwc-input id="name-input" .type="${InputType.TEXT}" .label="${i18next.t("name")}" pattern="\\w+" required @keyup="${(ev: KeyboardEvent) => this.onNameChanged((ev.target as OrMwcInput).currentValue)}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onNameChanged(ev.detail.value)}"></or-mwc-input>
-                    <or-mwc-input id="type-input" .type="${InputType.SELECT}" .value="${this.attribute && this.attribute.type ? this.attribute.type.replace("[]", "") : undefined}" .options="${this.attributeValueTypes}" .label="${i18next.t("valueType")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onValueTypeChanged(ev.detail.value)}"></or-mwc-input>
+                    <or-mwc-input id="type-input" .type="${InputType.SELECT}" .value="${this.attribute && this.attribute.type ? this.attribute.type.replace(this.arrayRegex, "") : undefined}" .options="${this.attributeValueTypes}" .label="${i18next.t("valueType")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onValueTypeChanged(ev.detail.value)}"></or-mwc-input>
                     <or-mwc-input id="array-checkbox" .type="${InputType.CHECKBOX}" .value="${this.isArray}" .label="${i18next.t("array")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onArrayChanged(ev.detail.value, 1)}"></or-mwc-input>
                     <or-mwc-input id="array-input" .type="${InputType.NUMBER}" ?disabled="${!this.isArray}" .value="${this.arrayDimensions}" min="1" max="2" .label="${i18next.t("arrayDimensions")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this.onArrayChanged(true, ev.detail.value)}"></or-mwc-input>
                 </div>
@@ -161,7 +157,7 @@ export class OrAddAttributePanel extends LitElement {
             return;
         }
 
-        let type = this.attribute.type.replace("[]", "");
+        let type = this.attribute.type.replace(this.arrayRegex, "");
         if (this.isArray) {
             for (let i=1; i<=this.arrayDimensions; i++) {
                 type += "[]";
