@@ -154,24 +154,21 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public User[] getServiceUsers(String realm) {
         User[] users = ManagerIdentityProvider.getUsersFromDb(persistenceService, new UserQuery().usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX)).tenant(new TenantPredicate(realm)));
 
-        return getRealms(realmsResource -> {
-            // Need to load secrets from client resource
-            return Arrays.stream(users).filter(user -> {
-                RealmResource realmResource = realmsResource.realm(realm);
+        return getRealms(realmsResource -> Arrays.stream(users).filter(user -> {
+            RealmResource realmResource = realmsResource.realm(realm);
 
-                // Filter out users with service account attribute
-                UserRepresentation userRepresentation = realmResource.users().get(user.getId()).toRepresentation();
-                if (userRepresentation.getAttributes() != null && userRepresentation.getAttributes().containsKey(User.SYSTEM_ACCOUNT_ATTRIBUTE)) {
-                    return false;
-                }
+            // Filter out users with system account attribute
+            UserRepresentation userRepresentation = realmResource.users().get(user.getId()).toRepresentation();
+            if (userRepresentation.getAttributes() != null && userRepresentation.getAttributes().containsKey(User.SYSTEM_ACCOUNT_ATTRIBUTE)) {
+                return false;
+            }
 
-                withClientResource(realm, user.getUsername(), realmsResource, (clientRep, clientResource) ->
-                        user.setSecret(getClientSecret(clientResource)),
-                null);
+            withClientResource(realm, user.getUsername(), realmsResource, (clientRep, clientResource) ->
+                    user.setSecret(getClientSecret(clientResource)),
+            null);
 
-                return user.getSecret() != null;
-            }).toArray(User[]::new);
-        });
+            return true;
+        }).toArray(User[]::new));
     }
 
     protected String getClientSecret(ClientResource clientResource) {
@@ -353,7 +350,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 }
             }
 
-            if (passwordSecret != null) {
+            if (passwordSecret != null || (!isUpdate && user.isServiceAccount())) {
                 if (user.isServiceAccount()) {
                     resetSecret(realm, userRepresentation.getId(), passwordSecret);
                 } else {
