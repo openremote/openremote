@@ -1040,6 +1040,7 @@ export class OrMwcInput extends LitElement {
                                     </svg>
                                     <div class="mdc-checkbox__mixedmark"></div>
                                 </div>
+                                <div class="mdc-checkbox__ripple"></div>
                             </div>
                             <label class="mdc-checkbox-circle" for="elem">${this.label}</label>
                         </div>
@@ -1331,6 +1332,7 @@ export class OrMwcInput extends LitElement {
                 swtch.checked = this.value;
             } else if (this.type === InputType.CHECKBOX && this._mdcComponent) {
                 const checkbox = this._mdcComponent as MDCCheckbox;
+                checkbox.checked = !!this.value;
                 checkbox.disabled = this.disabled || this.readonly;
             }
         }

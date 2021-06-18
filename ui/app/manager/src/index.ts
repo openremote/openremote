@@ -23,7 +23,8 @@ import {
     headerItemUsers,
     headerItemRoles,
     headerItemRealms,
-    headerItemInsights} from "./headers";
+    headerItemInsights,
+    headerItemExport} from "./headers";
 import "./pages/page-map";
 import {pageMapReducer, pageMapProvider, PageMapConfig} from "./pages/page-map";
 import "./pages/page-assets";
@@ -44,6 +45,8 @@ import "./pages/page-roles";
 import {pageRolesProvider} from "./pages/page-roles";
 import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
+import "./pages/page-realms";
+import {pageExportProvider} from "./pages/page-export";
 import { ManagerConfig } from "@openremote/core";
 
 const rootReducer = combineReducers({
@@ -53,7 +56,7 @@ const rootReducer = combineReducers({
 
 type RootState = ReturnType<typeof rootReducer>;
 
-type HeaderName = "map" | "assets" | "rules" | "insights" | "gateway" | "logs" | "account" | "users" | "roles" | "realms" | "logout" | "language";
+type HeaderName = "map" | "assets" | "rules" | "insights" | "gateway" | "logs" | "account" | "users" | "roles" | "realms" | "logout" | "language" | "export";
 
 export interface ManagerRealmConfig {
     appTitle?: string;
@@ -93,7 +96,8 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageAccountProvider(store),
     pageRolesProvider(store),
     pageUsersProvider(store),
-    pageRealmsProvider(store)
+    pageRealmsProvider(store),
+    pageExportProvider(store)
 ];
 
 export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
@@ -111,6 +115,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     users: headerItemUsers(orApp),
     roles: headerItemRoles(orApp),
     realms: headerItemRealms(orApp),
+    export: headerItemExport(orApp),
     logout: headerItemLogout(orApp)
 };
 
