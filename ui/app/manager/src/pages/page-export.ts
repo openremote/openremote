@@ -9,6 +9,7 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import {OrAddAttributeRefsEvent, OrMwcAttributeSelector } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { AttributeRef } from "@openremote/model";
 import moment from "moment";
+import { buttonStyle } from "@openremote/or-rules/dist/style";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
@@ -34,7 +35,9 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         // language=CSS
         return [
             unsafeCSS(tableStyle),
+            unsafeCSS(buttonStyle),
             css`
+
                 #wrapper {
                     height: 100%;
                     width: 100%;
@@ -101,24 +104,11 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     padding-left: 16px;
                 }
 
-                or-mwc-input {
-                    margin-bottom: 20px;
-                    margin-right: 16px;
-                }
-
-                or-icon {
-                    vertical-align: middle;
-                    --or-icon-width: 20px;
-                    --or-icon-height: 20px;
-                    margin-right: 2px;
-                    margin-left: -5px;
-                }
-
                 .mdc-data-table__header-cell {
                     font-weight: bold;
                     color: ${unsafeCSS(DefaultColor3)};
                 }
-
+                
                 .button {
                     cursor: pointer;
                     display: flex;
@@ -130,10 +120,20 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     text-transform: uppercase;
                     color: var(--or-app-color4);
                 }
-
                 .button or-icon {
                     --or-icon-fill: var(--or-app-color4);
                     margin-right: 5px;
+                }
+
+                .remove-button {
+                    right: 20px;
+                    top: 13px;
+                    transform: translate(50%, -50%);
+                    position: relative;
+                }
+
+                tr:hover .remove-button {
+                    visibility: visible;
                 }
 
                 @media screen and (max-width: 768px) {
@@ -156,6 +156,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     td, th {
                         width: 50%
                     }
+                }
+                
+                .timerange-wrapper {
+                    margin-bottom: 2em
                 }
                 
                 .export-btn-wrapper {
@@ -230,7 +234,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                             </tbody>
                         </table>
                     </div>
-                    <div>
+                    <div class="timerange-wrapper">
                         <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
                         <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
                     </div>
@@ -309,7 +313,9 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     <td class="padded-cell mdc-data-table__cell">${moment(attr.oldestTimestamp).format('llll')}</td>
                     <td class="padded-cell mdc-data-table__cell">${moment(attr.latestTimestamp).format('llll')}</td>
                     <td>
-                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${() => this._deleteAttribute(attr.assetId, attr.attributeName)}" style="margin-bottom:0;margin-right:0"></or-mwc-input>
+                        <button class="remove-button button-clear" @click="${() => this._deleteAttribute(attr.assetId, attr.attributeName)}">
+                            <or-icon icon="close-circle"></or-icon>
+                        </button>
                     </td>
                 </tr>
             `)}
