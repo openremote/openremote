@@ -109,37 +109,9 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     margin-left: -5px;
                 }
 
-                .row {
-                    display: flex;
-                    flex-direction: row;
-                    margin: 10px 0;
-                    flex: 1 1 0;
-                }
-
-                .column {
-                    display: flex;
-                    flex-direction: column;
-                    margin: 0px;
-                    flex: 1 1 0;
-
-                }
-
                 .mdc-data-table__header-cell {
                     font-weight: bold;
                     color: ${unsafeCSS(DefaultColor3)};
-                }
-
-                .mdc-data-table__header-cell:first-child {
-                    padding-left: 36px;
-                }
-
-                .attribute-meta-row td {
-                    padding: 0;
-                }
-
-                .attribute-meta-row.expanded .meta-item-container {
-                    max-height: 1000px;
-                    transition: max-height 1s ease-in;
                 }
 
                 .button {
@@ -167,11 +139,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
                     .hide-mobile {
                         display: none;
-                    }
-
-                    .row {
-                        display: block;
-                        flex-direction: column;
                     }
 
                     .panel {
