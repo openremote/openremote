@@ -198,7 +198,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             headers = [
                 i18next.t('assetName'), 
                 i18next.t('attributeName'), 
-                // i18next.t('valueType'), 
                 i18next.t('oldestDatapoint'), 
                 i18next.t('latestDatapoint')
             ],
@@ -251,7 +250,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             ${this.tableRows.map(attr => html`
                 <tr class="mdc-data-table__row">
                     <td class="padded-cell mdc-data-table__cell">${attr.assetName}</td>
-                    <td class="padded-cell mdc-data-table__cell">${attr.attributeName}</td>
+                    <td class="padded-cell mdc-data-table__cell">${Util.camelCaseToSentenceCase(attr.attributeName)}</td>
                     <td class="padded-cell mdc-data-table__cell">${moment(attr.oldestTimestamp).format('llll')}</td>
                     <td class="padded-cell mdc-data-table__cell">${moment(attr.latestTimestamp).format('llll')}</td>
                     <td>
