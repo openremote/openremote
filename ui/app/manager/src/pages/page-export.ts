@@ -161,6 +161,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
                 .export-btn-wrapper .button {
                     padding: 0;
+                    margin-right: 0;
+                    margin-bottom: 0;
                 }
             `,
         ];
@@ -259,7 +261,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             `)}
             <tr class="mdc-data-table__row">
                 <td colspan="100%">
-                    <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAssetAttribute")}" icon="plus" @click="${() => this._openDialog()}" style="margin: 0;padding: 10px;"></or-mwc-input>
+                    <a class="button" @click="${() => this._openDialog()}"><or-icon icon="plus"></or-icon>${i18next.t("addAssetAttribute")}</a>
                 </td>
             </tr>
         `;
@@ -365,4 +367,5 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
     public stateChanged(state: S) {
     }
+    
 }
