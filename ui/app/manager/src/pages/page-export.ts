@@ -4,10 +4,11 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
-import manager, { DefaultColor3 } from "@openremote/core";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import manager, { DefaultColor3, Util } from "@openremote/core";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrAddAttributeRefsEvent, OrMwcAttributeSelector } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { AttributeRef } from "@openremote/model";
+import moment from "moment";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
@@ -168,10 +169,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     @property({type: Object, attribute: false})
     public tableRowsHtml?: TemplateResult;
 
+    @property({type: Number})
+    private oldestTimestamp: number = moment().subtract(1, 'months').valueOf();
+    @property({type: Number})
+    private latestTimestamp: number = moment().valueOf();
+
     private isClearExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
-    private oldestTimestamp: number;
-    private latestTimestamp: number;
     private attrRefs: any[];
     
     private tableRows: any[] = []; //todo type this so it can be put in table
@@ -223,6 +227,10 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                             </tbody>
                         </table>
                     </div>
+                    <div>
+                        <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("exportFrom"))}" .value="${moment(this.oldestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.oldestTimestamp = evt.detail.value}"></or-mwc-input>
+                        <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
+                    </div>
                     <div class="export-btn-wrapper">
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("clearTable")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
@@ -242,8 +250,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 <tr class="mdc-data-table__row">
                     <td class="padded-cell mdc-data-table__cell">${attr.assetName}</td>
                     <td class="padded-cell mdc-data-table__cell">${attr.attributeName}</td>
-                    <td class="padded-cell mdc-data-table__cell">${attr.oldestTimestamp}</td>
-                    <td class="padded-cell mdc-data-table__cell">${attr.latestTimestamp}</td>
+                    <td class="padded-cell mdc-data-table__cell">${moment(attr.oldestTimestamp).format('llll')}</td>
+                    <td class="padded-cell mdc-data-table__cell">${moment(attr.latestTimestamp).format('llll')}</td>
                     <td>
                         <or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${() => this._deleteAttribute(attr.assetId, attr.attributeName)}" style="margin-bottom:0;margin-right:0"></or-mwc-input>
                     </td>
