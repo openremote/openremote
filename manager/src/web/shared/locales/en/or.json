@@ -391,6 +391,7 @@
   "valueType": "Value type",
   "dataExport": "Data export",
   "dataSelection": "Data selection",
+  "exportFrom": "Export from",
   "assetName": "Asset name",
   "attributeName": "Attribute name",
   "oldestDatapoint": "Oldest datapoint",

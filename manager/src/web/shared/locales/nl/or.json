@@ -381,7 +381,7 @@
   "valueType": "Value type",
   "dataExport": "Data export",
   "dataSelection": "Data selectie",
-  "assetAttributeSelection": "Asset attribuut selectie",
+  "exportFrom": "Exporteer vanaf",
   "assetName": "Asset naam",
   "attributeName": "Attribuut naam",
   "oldestDatapoint": "Oudste datapunt",
