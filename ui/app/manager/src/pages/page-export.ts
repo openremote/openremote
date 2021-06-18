@@ -76,7 +76,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     letter-spacing: 0.025em;
                 }
 
-                h5 {
+                th {
                     color: ${unsafeCSS(DefaultColor3)};
                 }
                 
@@ -208,7 +208,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 </div>
                 <div class="panel">
                     <p class="panel-title">${i18next.t("dataSelection")}</p>
-                    <h5 class="text-muted">${i18next.t("assetAttributeSelection")}</h5>
                     <div class="mdc-data-table" style="width: 100%; max-height: 500px; overflow-y: auto;margin-bottom: 2em">
                         <table class="mdc-data-table__table" aria-label="attribute list" >
                             <thead>
