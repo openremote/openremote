@@ -23,6 +23,10 @@ export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore
     };
 }
 
+export interface OrExportConfig {
+    selectedAttributes: AttributeRef[];
+}
+
 @customElement("page-export")
 class PageExport<S extends AppStateKeyed> extends Page<S> {
 
@@ -176,12 +180,14 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     @property({type: Number})
     private latestTimestamp: number = moment().valueOf();
 
+    private config: OrExportConfig = {
+        selectedAttributes: []
+    };
     private isClearExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
     private attrRefs: any[];
     
     private tableRows: any[] = []; //todo type this so it can be put in table
-    private selectedAttributes: AttributeRef[] = [];
 
     get name(): string {
         return "export";
@@ -189,22 +195,18 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
     constructor(store: EnhancedStore<S>) {
         super(store);
-        this.renderTableRows();
+        this.loadConfig();
     }
-
+    
     protected render() {
 
-        const hidden = false,
-            headers = [
-                i18next.t('assetName'), 
-                i18next.t('attributeName'), 
-                i18next.t('oldestDatapoint'), 
-                i18next.t('latestDatapoint')
-            ],
-            options = {
-                stickyFirstColumn: false
-            };
-        
+        const headers = [
+            i18next.t('assetName'), 
+            i18next.t('attributeName'), 
+            i18next.t('oldestDatapoint'), 
+            i18next.t('latestDatapoint')
+        ];
+
         return html`
             <div id="wrapper">
                 <div id="title">
@@ -233,7 +235,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                         <or-mwc-input .type="${InputType.DATETIME}" label="${Util.capitaliseFirstLetter(i18next.t("to"))}" .value="${moment(this.latestTimestamp).toDate()}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.latestTimestamp = evt.detail.value}"></or-mwc-input>
                     </div>
                     <div class="export-btn-wrapper">
-                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("clearTable")}" @click="${() => this.cancelSelection()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("clearTable")}" @click="${() => this.clearSelection()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
                     </div>
                     <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
@@ -242,6 +244,59 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
         `;
 
+    }
+    
+    protected async renderTable(attributeRefs: AttributeRef[]) {
+        
+        const dataPointInfoPromises = attributeRefs.map((attrRef: AttributeRef) => {
+            return manager.rest.api.AssetDatapointResource.getDatapointPeriod({
+                assetId: attrRef.id,
+                attributeName: attrRef.name,
+            });
+        });
+
+        Promise.all(dataPointInfoPromises).then(datapointPeriod => {
+
+            const assetInfoPromises = datapointPeriod.map(result => {
+                return manager.rest.api.AssetResource.get(result.data.assetId);
+            });
+
+            Promise.all(assetInfoPromises).then(assetInfos => {
+                const allAssets = assetInfos.map(attr => attr.data),
+                    allDatapoints = datapointPeriod.map(datapoints => datapoints.data);
+
+                this.tableRows = allDatapoints.map(dataInfo => {
+                    const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
+                    return {
+                        assetName: relevantAssetInfo.name,
+                        assetId: relevantAssetInfo.id,
+                        attributeName: dataInfo.attributeName,
+                        oldestTimestamp: dataInfo.oldestTimestamp,
+                        latestTimestamp: dataInfo.latestTimestamp
+                    };
+                });
+                this.renderTableRows();
+
+                if (allDatapoints.length > 0) {
+                    this.attrRefs = allDatapoints.map(dataInfo => {
+                        const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
+                        return {
+                            id: relevantAssetInfo.id,
+                            name: dataInfo.attributeName
+                        }
+                    });
+                    this.oldestTimestamp = allDatapoints[0].oldestTimestamp;
+                    this.latestTimestamp = allDatapoints[0].oldestTimestamp;
+                    this.isClearExportBtnDisabled = false;
+                    this.isExportBtnDisabled = false;
+                } else {
+                    this.isClearExportBtnDisabled = true;
+                    this.isExportBtnDisabled = true;
+                }
+            })
+
+        });
+        
     }
     
     protected renderTableRows() {
@@ -268,10 +323,11 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     protected _deleteAttribute(assetId, attributeName) {
         const indexTablerows = this.tableRows.findIndex(e => e.assetId === assetId && e.attributeName === attributeName);
-        const indexSelectedAttrs = this.selectedAttributes.findIndex(e => e.id === assetId && e.name === attributeName);
+        const indexSelectedAttrs = this.config.selectedAttributes.findIndex(e => e.id === assetId && e.name === attributeName);
 
         this.tableRows.splice(indexTablerows, 1);
-        this.selectedAttributes.splice(indexSelectedAttrs, 1);
+        this.config.selectedAttributes.splice(indexSelectedAttrs, 1);
+        this.saveConfig();
         
         this.renderTableRows();
     }
@@ -282,58 +338,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         const dialog = new OrMwcAttributeSelector();
         dialog.isOpen = true;
         dialog.showOnlyDatapointAttrs = true;
-        dialog.selectedAttributes = this.selectedAttributes;
+        dialog.selectedAttributes = this.config.selectedAttributes;
         dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
-            // this.selectedAttributes = ev.detail.selectedAttributes;
-            
-            const dataPointInfoPromises = ev.detail.selectedAttributes.map((attrRef: AttributeRef) => {
-                return manager.rest.api.AssetDatapointResource.getDatapointPeriod({
-                    assetId: attrRef.id,
-                    attributeName: attrRef.name,
-                });
-            });
-            
-            Promise.all(dataPointInfoPromises).then(datapointPeriod => {
-                
-                const assetInfoPromises = datapointPeriod.map(result => {
-                    return manager.rest.api.AssetResource.get(result.data.assetId);
-                });
-                
-                Promise.all(assetInfoPromises).then(assetInfos => {
-                    const allAssets = assetInfos.map(attr => attr.data),
-                        allDatapoints = datapointPeriod.map(datapoints => datapoints.data);
-
-                    this.tableRows = allDatapoints.map(dataInfo => {
-                        const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
-                        return {
-                            assetName: relevantAssetInfo.name,
-                            assetId: relevantAssetInfo.id,
-                            attributeName: dataInfo.attributeName,
-                            oldestTimestamp: dataInfo.oldestTimestamp,
-                            latestTimestamp: dataInfo.latestTimestamp
-                        };
-                    });
-                    this.renderTableRows();
-                    
-                    if (allDatapoints.length > 0) {
-                        this.attrRefs = allDatapoints.map(dataInfo => {
-                            const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
-                            return {
-                                id: relevantAssetInfo.id,
-                                name: dataInfo.attributeName
-                            }
-                        });
-                        this.oldestTimestamp = allDatapoints[0].oldestTimestamp;
-                        this.latestTimestamp = allDatapoints[0].oldestTimestamp;
-                        this.isClearExportBtnDisabled = false;
-                        this.isExportBtnDisabled = false;
-                    } else {
-                        this.isClearExportBtnDisabled = true;
-                        this.isExportBtnDisabled = true;
-                    }
-                })
-                
-            });
+            await this.renderTable(ev.detail.selectedAttributes);
+            this.config = {
+                selectedAttributes: ev.detail.selectedAttributes
+            }
+            this.saveConfig();
         });
         hostElement.append(dialog);
         return dialog;
@@ -355,8 +366,32 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         });
     }
     
-    protected cancelSelection = () => {
-        this.selectedAttributes = [];
+    protected async loadConfig() {
+
+        const configStr = await manager.console.retrieveData("OrExportConfig");
+        let config: OrExportConfig;
+        
+        try {
+            config = JSON.parse(configStr) as OrExportConfig;
+        } catch (e) {
+            console.error("Failed to load export config", e);
+            manager.console.storeData("OrExportConfig", null);
+            return;
+        }
+        
+        this.config = config;
+        
+        this.renderTable(this.config.selectedAttributes);
+
+    }
+    
+    protected saveConfig() {
+        manager.console.storeData("OrExportConfig", JSON.stringify(this.config));
+    }
+    
+    protected clearSelection = () => {
+        this.config.selectedAttributes = [];
+        this.saveConfig();
         this.tableRows = [];
         this.renderTableRows();
         this.attrRefs = [];
