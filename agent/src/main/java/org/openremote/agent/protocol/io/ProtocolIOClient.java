@@ -51,14 +51,14 @@ public class ProtocolIOClient<W, X extends IOClient<W>> {
         ioClient.connect();
     }
 
-    protected void disconnect() {
+    public void disconnect() {
         ioClient.removeAllMessageConsumers();
         ioClient.removeAllConnectionStatusConsumers();
         AbstractIOClientProtocol.LOG.info("Disconnecting IO client");
         ioClient.disconnect();
     }
 
-    protected synchronized void send(W message) {
+    public synchronized void send(W message) {
         AbstractIOClientProtocol.LOG.fine("Sending message to IO client: " + ioClient.getClientUri());
         ioClient.sendMessage(message);
     }
