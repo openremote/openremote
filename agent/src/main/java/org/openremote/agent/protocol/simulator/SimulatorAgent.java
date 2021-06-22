@@ -55,8 +55,6 @@ public class SimulatorAgent extends Agent<SimulatorAgent, SimulatorProtocol, Sim
         }
     }
 
-    public static final AttributeDescriptor<String> SERIAL_SERIAL_PORT = SERIAL_PORT.withOptional(false);
-
     public static final AgentDescriptor<SimulatorAgent, SimulatorProtocol, SimulatorAgentLink> DESCRIPTOR = new AgentDescriptor<>(
         SimulatorAgent.class, SimulatorProtocol.class, SimulatorAgentLink.class
     );

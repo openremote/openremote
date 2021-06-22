@@ -585,7 +585,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                                         <span>${this.assets[assetIndex].name}</span>
                                         <span style="font-size:14px; color:grey;">${label}</span>
                                     </div>
-                                    <button class="button-clear" @click="${() => this._deleteAttribute(assetIndex)}"><or-icon icon="close-circle"></or-icon></button>
+                                    <button class="button-clear" @click="${() => this._deleteAttribute(index)}"><or-icon icon="close-circle"></or-icon></button>
                                 </div>
                             `
                         })}
