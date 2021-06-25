@@ -413,6 +413,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     console.error(err);
                 })
                 .finally(() => {
+                    cancelBtn.hidden = true;
                     discoverBtn.disabled = false;
                     discoverBtn.label = i18next.t("discoverAssets");
                 });
