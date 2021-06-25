@@ -231,6 +231,11 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                             </thead>
                             <tbody id="table-body" class="mdc-data-table__content">
                             ${this.tableRowsHtml}
+                            <tr class="mdc-data-table__row">
+                                <td colspan="100%">
+                                    <a class="button" @click="${() => this._openDialog()}"><or-icon icon="plus"></or-icon>${i18next.t("addAssetAttribute")}</a>
+                                </td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
@@ -319,11 +324,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                     </td>
                 </tr>
             `)}
-            <tr class="mdc-data-table__row">
-                <td colspan="100%">
-                    <a class="button" @click="${() => this._openDialog()}"><or-icon icon="plus"></or-icon>${i18next.t("addAssetAttribute")}</a>
-                </td>
-            </tr>
         `;
     }
     
@@ -374,18 +374,15 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     protected async loadConfig() {
 
-        const configStr = await manager.console.retrieveData("OrExportConfig");
-        let config: OrExportConfig;
-        
+        const configStr = await manager.console.retrieveData("OrExportConfig") || JSON.stringify({"selectedAttributes":[]});
+        manager.console.storeData("OrExportConfig", configStr);
+
         try {
-            config = JSON.parse(configStr) as OrExportConfig;
+            this.config = JSON.parse(configStr) as OrExportConfig;
         } catch (e) {
             console.error("Failed to load export config", e);
-            manager.console.storeData("OrExportConfig", null);
             return;
         }
-        
-        this.config = config;
         
         this.renderTable(this.config.selectedAttributes);
 
