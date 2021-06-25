@@ -22,8 +22,8 @@ services:
       manager:
         condition: service_healthy
     ports:
-      - "8000:80"
-      - "8443:443"
+      - "80:80"
+      - "443:443"
       - "8883:8883"
 
   postgresql:
