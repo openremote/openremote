@@ -183,12 +183,8 @@ spec:
     spec:
       containers:
       - env:
-        - name: IDENTITY_NETWORK_HOST
-          value: localhost
-        - name: IDENTITY_NETWORK_SECURE
-          value: "true"
-        - name: IDENTITY_NETWORK_WEBSERVER_PORT
-          value: "443"
+        - name: EXTERNAL_URL
+          value: https://localhost
         - name: JAVA_OPTS
           value: -Xms400m -Xmx400m -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
             -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m -XX:MaxDirectMemorySize=25m

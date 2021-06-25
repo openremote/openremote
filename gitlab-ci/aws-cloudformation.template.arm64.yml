@@ -108,18 +108,18 @@ Resources:
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             echo export DOMAINNAME=${HostName}.${DomainName} >> deploy.sh
-            echo 'export IDENTITY_NETWORK_HOST=$DOMAINNAME' >> deploy.sh
+            echo 'export EXTERNAL_URL=https://$DOMAINNAME' >> deploy.sh
           elif [ ${DomainName} ]
           then
             echo export DOMAINNAME=${DomainName} >> deploy.sh
-            echo 'export IDENTITY_NETWORK_HOST=$DOMAINNAME' >> deploy.sh
+            echo 'export EXTERNAL_URL=https://$DOMAINNAME' >> deploy.sh
           elif [ ${HostName} ]
           then
             echo export DOMAINNAME=${HostName} >> deploy.sh
-            echo export 'IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)' >> deploy.sh
+            echo export 'EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)' >> deploy.sh
           else
             echo export DOMAINNAME=localhost >> deploy.sh
-            echo export 'IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)' >> deploy.sh
+            echo export 'EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)' >> deploy.sh
           fi
           echo export SETUP_ADMIN_PASSWORD=${OpenRemotePassword} >> deploy.sh
           echo export LE_EMAIL=me@privacy.net >> deploy.sh

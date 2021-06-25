@@ -16,14 +16,14 @@ volumes:
 services:
 
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.2}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.3}
     restart: always
     depends_on:
       manager:
         condition: service_healthy
     ports:
-      - "80:80"
-      - "443:443"
+      - "8000:80"
+      - "8443:443"
       - "8883:8883"
 
   postgresql:
@@ -39,7 +39,7 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      KEYCLOAK_FRONTEND_URL: ${KEYCLOAK_FRONTEND_URL:-https://localhost/auth}
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
   manager:

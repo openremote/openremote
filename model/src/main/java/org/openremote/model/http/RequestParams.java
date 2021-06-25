@@ -36,9 +36,6 @@ public class RequestParams {
     @HeaderParam("X-Forwarded-Host")
     public String forwardedHostHeader;
 
-    @HeaderParam("X-Forwarded-Port")
-    public Integer forwardedPortHeader;
-
     @Context
     public UriInfo uriInfo;
 
@@ -51,11 +48,22 @@ public class RequestParams {
     /**
      * Handles reverse proxying and returns the request base URI
      */
-    public UriBuilder getRequestBaseUri() {
+    public UriBuilder getExternalRequestBaseUri() {
         URI uri = this.uriInfo.getRequestUri();
         String scheme = TextUtil.isNullOrEmpty(this.forwardedProtoHeader) ? uri.getScheme() : this.forwardedProtoHeader;
-        int port = this.forwardedPortHeader == null ? uri.getPort() : this.forwardedPortHeader;
-        String host = TextUtil.isNullOrEmpty(this.forwardedHostHeader) ? uri.getHost() : this.forwardedHostHeader;
+        int port = uri.getPort();
+        String host = uri.getHost();
+
+        if (this.forwardedHostHeader != null) {
+            String[] hostAndPort = this.forwardedHostHeader.split(":");
+            if (hostAndPort.length == 1) {
+                host = hostAndPort[0];
+            } else if (hostAndPort.length == 2) {
+                host = hostAndPort[0];
+                port = Integer.parseInt(hostAndPort[1]);
+            }
+        }
+
         return this.uriInfo.getBaseUriBuilder().scheme(scheme).host(host).port(port);
     }
 }

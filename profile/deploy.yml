@@ -11,7 +11,8 @@
 # Here's a list of commonly customised environment variables:
 #
 # SETUP_ADMIN_PASSWORD
-# IDENTITY_NETWORK_HOST
+# DOMAINNAME
+# EXTERNAL_URL
 # ADMIN_EMAIL
 # SETUP_EMAIL_HOST
 # SETUP_EMAIL_USER
@@ -33,7 +34,7 @@ services:
   # map a Docker volume or host directory to access/store proxy configuration files
   # and SSL certificates.
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.2}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.3}
     restart: always
     # Override the haproxy.cfg with custom file
     #volumes:
@@ -53,8 +54,8 @@ services:
 
       # The public host name of this OpenRemote installation. Set this to request/manage an SSL
       # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
-      # rely on a baked-in self-signed certificate. If you change this, adjust manager#IDENTITY_NETWORK_HOST.
-      DOMAINNAME: ${IDENTITY_NETWORK_HOST:-localhost}
+      # rely on a baked-in self-signed certificate.
+      DOMAINNAME: ${DOMAINNAME:-localhost}
 
       # Provide your own email address for your SSL certificates with Let's Encrypt.
       LE_EMAIL: ${ADMIN_EMAIL:-}
@@ -135,16 +136,10 @@ services:
       # the keycloak identity provider).
       SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
-      # The public host name of this installation. This name is used in bearer tokens
-      # and must be the name you access the web services under. If you change proxy#DOMAINNAME, also
-      # change this to match.
-      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
-
-      # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
-      IDENTITY_NETWORK_SECURE: ${IDENTITY_NETWORK_SECURE:-true}
-
-      # The public port of this OpenRemote installation.
-      IDENTITY_NETWORK_WEBSERVER_PORT: ${IDENTITY_NETWORK_WEBSERVER_PORT:-443}
+      # The public URL of the proxy in front of this manager; must match the proxy#DOMAINNAME (unfortunately
+      # docker compose doesn't support chaining environment variables at time of writing, hence the need for
+      # two environment variables)
+      EXTERNAL_URL: ${EXTERNAL_URL:-https://localhost}
 
       # Configure SMTP server, to send password reset emails etc.
       SETUP_EMAIL_HOST:
@@ -291,7 +286,7 @@ services:
       KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
       PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING:-true}
-      KEYCLOAK_FRONTEND_URL: ${KEYCLOAK_FRONTEND_URL:-https://localhost/auth}
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:--XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m
