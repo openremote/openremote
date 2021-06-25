@@ -2,12 +2,12 @@ import {css, customElement, html, LitElement, property, query, TemplateResult, u
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType, OrInputChangedEvent} from "./or-mwc-input";
+import {InputType} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor5, Util } from "@openremote/core";
-import { Asset, AssetEvent, Attribute, AttributeDescriptor, AttributeRef } from "@openremote/model";
+import { Asset, AssetEvent, Attribute, AttributeRef } from "@openremote/model";
 import manager from "@openremote/core";
-import { AssetModelUtil } from "@openremote/core";
+import {ListItem, ListType, OrMwcListChangedEvent} from "./or-mwc-list";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
@@ -420,7 +420,14 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     }
     
     protected setDialogContent(): void {
-
+    
+        const listItems: ListItem[] = this.assetAttributes.map((attribute: Attribute<any>) => {
+            return {
+                text: Util.getAttributeLabel(undefined, attribute, undefined, true),
+                value: attribute.name
+            } as ListItem
+        });
+        
         this.dialogContent = html`
             <div class="row" style="display: flex;height: 600px;width: 800px;">
                 <div class="col" style="width: 260px;overflow: auto;">
@@ -429,17 +436,15 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                                     @or-asset-tree-request-delete="${() => this._onAssetSelectionDeleted()}"></or-asset-tree>
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
-                ${this.selectedAsset && this.selectedAsset.attributes ? html`
+                ${this.selectedAsset && listItems.length > 0 ? html`
                     <div class="attributes-header">
                         <or-translate value="attribute_plural"></or-translate>
                     </div>
                     <div style="display: grid">
-                        ${this.assetAttributes.map(attribute => html`
-                            <or-mwc-input .type="${InputType.CHECKBOX}"
-                                          .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
-                                          .value="${this.selectedAttributes.some(s => s.id === this.selectedAsset!.id && s.name === attribute.name)}"
-                                          @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._addRemoveAttrs(evt, {id: this.selectedAsset!.id!, name: attribute.name})}"></or-mwc-input>`
-                        )}
+                        <or-mwc-list 
+                                id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}"
+                                .values="${this.selectedAttributes.map(e => e.name!)}"
+                                @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._addRemoveAttrs(ev)}"></or-mwc-list>
                     </div>
                 ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
                 </div>
@@ -451,8 +456,10 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         this.setDialogActions();
     }
     
-    protected _addRemoveAttrs(event: OrInputChangedEvent, attrRef: AttributeRef) {
-        event.detail.value ? this.selectedAttributes.push(attrRef) : this.selectedAttributes.splice(this.selectedAttributes.findIndex(s => s.id === attrRef.id && s.name === attrRef.name), 1)
+    protected _addRemoveAttrs(event: OrMwcListChangedEvent) {
+        this.selectedAttributes = this.selectedAttributes
+            .filter(e => e.id !== this.selectedAsset!.id)
+            .concat(event.detail.map(e => ({id: this.selectedAsset!.id, name: e.value}) as AttributeRef))
         
         this.reRenderDialog();
     }
