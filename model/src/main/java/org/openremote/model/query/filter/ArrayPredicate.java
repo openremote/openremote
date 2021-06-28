@@ -40,7 +40,7 @@ import java.util.function.Supplier;
  * There is an implicit 'and' between each specified condition; the negation is applied once all the criteria are
  * evaluated.
  */
-public class ArrayPredicate implements ValuePredicate {
+public class ArrayPredicate extends ValuePredicate {
 
     public static final String name = "array";
     public boolean negated;

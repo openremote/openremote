@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class ValueEmptyPredicate implements ValuePredicate {
+public class ValueEmptyPredicate extends ValuePredicate {
 
     public static final String name = "value-empty";
 

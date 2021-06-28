@@ -29,7 +29,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class StringPredicate implements ValuePredicate {
+public class StringPredicate extends ValuePredicate {
 
     public static final String name = "string";
     public AssetQuery.Match match = AssetQuery.Match.EXACT;

@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * Can be applied to {@link org.openremote.model.attribute.Attribute}s of type
  * {@link ValueType#CALENDAR_EVENT}.
  */
-public class CalendarEventPredicate implements ValuePredicate {
+public class CalendarEventPredicate extends ValuePredicate {
 
     public static final String name = "calendar-event";
     public Date timestamp;
