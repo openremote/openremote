@@ -361,6 +361,9 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             attributeRefs: JSON.stringify(this.attrRefs),
             fromTimestamp: this.oldestTimestamp,
             toTimestamp: this.latestTimestamp
+        }, {
+            responseType: "blob",
+            
         }).then(response => {
             // This is the best we can do with xhr - would need to return a link to the file for proper streamed download support
             const url = window.URL.createObjectURL(new Blob([response.data]));
