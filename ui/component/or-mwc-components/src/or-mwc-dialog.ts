@@ -4,7 +4,10 @@ import "@openremote/or-translate";
 import "./or-mwc-input";
 import {InputType} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
-import { Util } from "@openremote/core";
+import {DefaultColor2, DefaultColor5, Util } from "@openremote/core";
+import { Asset, AssetEvent, Attribute, AttributeRef } from "@openremote/model";
+import manager from "@openremote/core";
+import {ListItem, ListType, OrMwcListChangedEvent} from "./or-mwc-list";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
@@ -318,4 +321,188 @@ export class OrMwcDialog extends LitElement {
         }
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
     }
+}
+
+export type AddAttrRefsEventDetail = {
+    selectedAttributes?: AttributeRef[];
+}
+export class OrAttributeRefsAddRequestEvent extends CustomEvent<Util.RequestEventDetail<AddAttrRefsEventDetail>> {
+
+    public static readonly NAME = "or-attribute-refs-request-add";
+
+    constructor(detail: AddAttrRefsEventDetail) {
+        super(OrAttributeRefsAddRequestEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                allow: true,
+                detail: detail
+            }
+        });
+    }
+}
+export class OrAddAttributeRefsEvent extends CustomEvent<AddAttrRefsEventDetail> {
+
+    public static readonly NAME = "or-attribute-refs-add";
+
+    constructor(detail: AddAttrRefsEventDetail) {
+        super(OrAddAttributeRefsEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: detail
+        });
+    }
+}
+
+@customElement("or-mwc-attribute-selector")
+export class OrMwcAttributeSelector extends OrMwcDialog {
+
+    public selectedAsset?: Asset;
+
+    private assetAttributes: Attribute<any>[] = []; // to display attributes that belong to selected asset
+    
+    @property({type: Boolean})
+    public showOnlyDatapointAttrs: boolean = false;
+
+    @property({type: Array, attribute: false})
+    public selectedAttributes: AttributeRef[] = [];
+    
+    constructor() {
+        super();
+        
+        this.dialogTitle = 'Add attributes';
+        this.dismissAction = null;
+
+        this.styles = `
+            .attributes-header {
+                line-height: 48px;
+                padding: 0 15px;
+                background-color: ${unsafeCSS(DefaultColor2)};
+                font-weight: bold;
+                border-bottom: 1px solid ${unsafeCSS(DefaultColor2)};
+            }
+            footer.mdc-dialog__actions {
+                border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+            }
+        `;
+        
+        this.reRenderDialog();
+
+    }
+    
+    protected setDialogActions(): void {
+        this.dialogActions = [
+            {
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            },
+            {
+                actionName: "add",
+                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length || !this.selectedAsset}"></or-mwc-input>`,
+                action: () => {
+
+                    if (!this.selectedAttributes.length) {
+                        return;
+                    }
+                    
+                    const detail: AddAttrRefsEventDetail = {
+                        selectedAttributes: this.selectedAttributes
+                    };
+                    Util.dispatchCancellableEvent(this, new OrAttributeRefsAddRequestEvent(detail))
+                        .then((detail) => {
+                            if (detail.allow) {
+                                this.dispatchEvent(new OrAddAttributeRefsEvent(detail.detail));
+                            }
+                        });
+                }
+            }
+        ];
+    }
+    
+    protected setDialogContent(): void {
+    
+        const listItems: ListItem[] = this.assetAttributes.map((attribute: Attribute<any>) => {
+            return {
+                text: Util.getAttributeLabel(undefined, attribute, undefined, true),
+                value: attribute.name
+            } as ListItem
+        });
+        
+        this.dialogContent = html`
+            <div class="row" style="display: flex;height: 600px;width: 800px;">
+                <div class="col" style="width: 260px;overflow: auto;">
+                    <or-asset-tree id="chart-asset-tree" readonly
+                                    @or-asset-tree-request-selection="${(event: CustomEvent) => this._onAssetSelectionChanged(event)}"
+                                    @or-asset-tree-request-delete="${() => this._onAssetSelectionDeleted()}"></or-asset-tree>
+                </div>
+                <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
+                ${this.selectedAsset && listItems.length > 0 ? html`
+                    <div class="attributes-header">
+                        <or-translate value="attribute_plural"></or-translate>
+                    </div>
+                    <div style="display: grid">
+                        <or-mwc-list 
+                                id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}"
+                                .values="${this.selectedAttributes.map(e => e.name!)}"
+                                @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._addRemoveAttrs(ev)}"></or-mwc-list>
+                    </div>
+                ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
+                </div>
+        `;
+    }
+    
+    protected reRenderDialog(): void {
+        this.setDialogContent();
+        this.setDialogActions();
+    }
+    
+    protected _addRemoveAttrs(event: OrMwcListChangedEvent) {
+        this.selectedAttributes = this.selectedAttributes
+            .filter(e => e.id !== this.selectedAsset!.id)
+            .concat(event.detail.map(e => ({id: this.selectedAsset!.id, name: e.value}) as AttributeRef))
+        
+        this.reRenderDialog();
+    }
+
+    protected _getAttributeOptions() {
+        if (!this.selectedAsset || !this.selectedAsset.type) {
+            this.reRenderDialog();
+            return;
+        }
+
+        manager.rest.api.AssetResource.get(this.selectedAsset.id!)
+            .then(result => {
+                this.assetAttributes = Object.values(result.data.attributes!) as Attribute<any>[];
+                if (this.showOnlyDatapointAttrs) {
+                    this.assetAttributes = this.assetAttributes.filter(e => e.meta && e.meta.storeDataPoints);
+                }
+                this.reRenderDialog();
+            });
+
+    }
+
+    protected async _onAssetSelectionChanged(event: CustomEvent) {
+        if (!event.detail.detail.newNodes.length) {
+            this._onAssetSelectionDeleted();
+        } else {
+            const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
+                event: {
+                    eventType: "read-asset",
+                    assetId: event.detail.detail.newNodes[0].asset.id
+                }
+            });
+            this.selectedAsset = assetEvent.asset;
+        }
+
+        this._getAttributeOptions();
+        this.reRenderDialog();
+    }
+    
+    protected _onAssetSelectionDeleted() {
+        this.selectedAsset = undefined;
+        this.assetAttributes = [];
+        this._getAttributeOptions();
+        this.reRenderDialog();
+    }
+
 }

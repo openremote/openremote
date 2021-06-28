@@ -7,8 +7,6 @@
 #
 # - Run the manager in an IDE with the following required environment variables:
 #       WEBSERVER_LISTEN_HOST=0.0.0.0
-#       IDENTITY_NETWORK_WEBSERVER_PORT=443
-#       IDENTITY_NETWORK_SECURE=true
 #
 # Please see deploy.yml for configuration details for each service.
 #
@@ -27,3 +25,35 @@ services:
       MANAGER_HOST: 'host.docker.internal'
       KEYCLOAK_HOST: 'host.docker.internal'
       KEYCLOAK_PORT: 8081
+    ports:
+      - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
+      - "443:443" # HTTPS /auth directs to keycloak and other paths direct to manager
+      - "8883:8883" # MQTTS
+
+  keycloak:
+    extends:
+      file: deploy.yml
+      service: keycloak
+    volumes:
+      # Map custom themes
+      #- ../deployment/keycloak/themes:/deployment/keycloak/themes
+      - ./disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
+    # Access directly if needed on localhost
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost:8443}/auth
+
+  postgresql:
+    extends:
+      file: deploy.yml
+      service: postgresql
+    volumes:
+      - ./tmp:/tmp
+    # Access directly if needed on localhost
+    ports:
+      - "5432:5432"

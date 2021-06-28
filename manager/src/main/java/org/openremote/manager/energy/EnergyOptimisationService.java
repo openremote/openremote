@@ -32,6 +32,8 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.AssetEvent;
+import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -139,6 +141,11 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         LOG.fine("Found enabled optimisation asset count = " + energyOptimisationAssets.size());
 
         energyOptimisationAssets.forEach(this::startOptimisation);
+
+        clientEventService.addInternalSubscription(
+            AttributeEvent.class,
+            new AssetFilter<>(energyOptimisationAssets.stream().map(Asset::getId).toArray(String[]::new)),
+            this::processAttributeChange);
     }
 
     @SuppressWarnings("unchecked")
@@ -165,6 +172,31 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             if (!persistenceEvent.getEntity().isOptimisationDisabled().orElse(false)) {
                 startOptimisation(persistenceEvent.getEntity());
             }
+        }
+    }
+
+    protected void processAttributeChange(AttributeEvent attributeEvent) {
+
+        OptimisationInstance optimisationInstance = assetOptimisationInstanceMap.get(attributeEvent.getAssetId());
+
+        if (optimisationInstance == null) {
+            return;
+        }
+
+        if (EnergyOptimisationAsset.FINANCIAL_SAVING.getName().equals(attributeEvent.getAttributeName())
+            || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getAttributeName())) {
+            // These are updated by this service
+            return;
+        }
+
+        LOG.info("Processing optimisation asset attribute event: " + attributeEvent);
+        stopOptimisation(attributeEvent.getAssetId());
+
+        // Get latest asset from storage
+        EnergyOptimisationAsset asset = (EnergyOptimisationAsset)assetStorageService.find(attributeEvent.getAssetId());
+
+        if (asset != null && !asset.isOptimisationDisabled().orElse(false)) {
+            startOptimisation(asset);
         }
     }
 

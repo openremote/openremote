@@ -28,7 +28,7 @@ volumes:
 
 services:
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.2}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.3}
     networks:
       - public
       - private
@@ -84,7 +84,7 @@ services:
         delay: 10s
     environment:
       SETUP_ADMIN_PASSWORD: ${PASSWORD:-secret}
-      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
+      EXTERNAL_URL: ${EXTERNAL_URL:-https://localhost}
       SETUP_EMAIL_HOST: ${EMAIL_HOST:-email-smtp.eu-west-1.amazonaws.com}
       SETUP_EMAIL_USER: ${EMAIL_USER}
       SETUP_EMAIL_PASSWORD: ${EMAIL_PASSWORD}
@@ -115,7 +115,7 @@ services:
       - deployment-data:/deployment
     environment:
       KEYCLOAK_PASSWORD: ${PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: "https://${IDENTITY_NETWORK_HOST:-localhost}/auth"
+      KEYCLOAK_FRONTEND_URL: "${EXTERNAL_URL:-https://localhost}/auth"
 
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}

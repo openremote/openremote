@@ -36,7 +36,6 @@ import {
 } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAddAssetDialog, OrAddChangedEvent} from "./or-add-asset-dialog";
 import "./or-add-asset-dialog";
-import { AgentDescriptor } from "@openremote/model";
 
 export interface AssetTreeTypeConfig {
     include?: string[];

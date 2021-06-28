@@ -12,8 +12,6 @@ import spock.util.concurrent.PollingConditions
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
-import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.IDENTITY_NETWORK_HOST
-import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.IDENTITY_NETWORK_WEBSERVER_PORT
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.Clock.REAL
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
@@ -29,8 +27,6 @@ trait ManagerContainerTrait extends ContainerTrait {
         }
         [
                 (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
-                (IDENTITY_NETWORK_HOST)          : "127.0.0.1",
-                (IDENTITY_NETWORK_WEBSERVER_PORT): "8081",
                 (SETUP_CREATE_ASSETS)            : "true",
                 (SETUP_CREATE_USERS)             : "true",
                 (SETUP_CREATE_RULES)             : "false",

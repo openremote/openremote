@@ -21,38 +21,55 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
 import java.util.Optional;
 
 @Entity
-public class DoorSensorAsset extends Asset<DoorSensorAsset> {
+public class DoorAsset extends Asset<DoorAsset> {
 
-    public static final AttributeDescriptor<Boolean> OPEN = new AttributeDescriptor<>("open", ValueType.BOOLEAN,
-        new MetaItem<>(MetaItemType.READ_ONLY));
-    public static final AttributeDescriptor<Boolean> LOCKED = new AttributeDescriptor<>("locked", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> POSITION = new AttributeDescriptor<>("position", ValueType.BOOLEAN,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withFormat(ValueFormat.BOOLEAN_AS_OPEN_CLOSED());
 
-    public static final AssetDescriptor<DoorSensorAsset> DESCRIPTOR = new AssetDescriptor<>("door", "ae2eb6", DoorSensorAsset.class);
+    public static final AttributeDescriptor<Boolean> LOCKED = new AttributeDescriptor<>("locked", ValueType.BOOLEAN,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withOptional(true);
+
+    public static final AttributeDescriptor<String> LAST_ACCESS = new AttributeDescriptor<>("lastAccess", ValueType.TEXT,
+        new MetaItem<>(MetaItemType.READ_ONLY)
+    ).withOptional(true);
+
+    public static final AttributeDescriptor<AttributeExecuteStatus> UNLOCK = new AttributeDescriptor<>("unlock", ValueType.EXECUTION_STATUS)
+        .withOptional(true);
+
+    public static final AssetDescriptor<DoorAsset> DESCRIPTOR = new AssetDescriptor<>("door", "ae2eb6", DoorAsset.class);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
      */
-    protected DoorSensorAsset() {
+    protected DoorAsset() {
     }
 
-    public DoorSensorAsset(String name) {
+    public DoorAsset(String name) {
         super(name);
     }
 
-    public Optional<Boolean> getOpen() {
-        return getAttributes().getValue(OPEN);
+    public Optional<Boolean> getPosition() {
+        return getAttributes().getValue(POSITION);
     }
 
     public Optional<Boolean> getLocked() {
         return getAttributes().getValue(LOCKED);
+    }
+
+    public Optional<String> getLastAccess() {
+        return getAttributes().getValue(LAST_ACCESS);
     }
 }

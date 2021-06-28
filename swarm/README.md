@@ -107,7 +107,7 @@ though.
 ```scp swarm/aws-swarm-docker-compose.yml <Manager-Public-IP>:```
 - deploy docker stack:
 
-```ssh docker@<Manager-Public-IP> IDENTITY_NETWORK_HOST=DNS-enrty docker stack deploy --compose-file aws-swarm-docker-compose.yml aws_demo```
+```ssh docker@<Manager-Public-IP> EXTERNAL_URL=DNS-enrty docker stack deploy --compose-file aws-swarm-docker-compose.yml aws_demo```
 
 you should see something like this:
 ```

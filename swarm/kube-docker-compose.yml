@@ -102,16 +102,10 @@ services:
       #SETUP_EMAIL_FROM_KEYCLOAK: 'no-reply@openremote.io'
       #SETUP_EMAIL_FROM_DEFAULT: 'no-reply@openremote.io'
 
-      # The public host name of this OpenRemote installation. This name is used in bearer tokens
-      # and must be the name you access the web services under. If you change proxy#DOMAINNAME, also
-      # change this to match.
-      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-localhost}
-
-      # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
-      IDENTITY_NETWORK_SECURE: 'true'
-
-      # The public port of this OpenRemote installation.
-      IDENTITY_NETWORK_WEBSERVER_PORT: 443
+      # The public URL of the proxy in front of this manager; must match the proxy#DOMAINNAME (unfortunately
+      # docker compose doesn't support chaining environment variables at time of writing, hence the need for
+      # two environment variables)
+      EXTERNAL_URL: ${EXTERNAL_URL:-https://localhost}
 
       # The service-internal host name and port of the identity provider.
       KEYCLOAK_HOST: keycloak
@@ -154,7 +148,7 @@ services:
       DB_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       KEYCLOAK_USER: admin
       PROXY_ADDRESS_FORWARDING: 'true'
-      KEYCLOAK_FRONTEND_URL: 'https://${IDENTITY_NETWORK_HOST:-localhost}/auth'
+      KEYCLOAK_FRONTEND_URL: '${EXTERNAL_URL:-https://localhost}/auth'
 
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}

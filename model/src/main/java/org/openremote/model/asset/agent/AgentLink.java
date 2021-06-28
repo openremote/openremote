@@ -112,7 +112,7 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         return id;
     }
 
-    @JsonPropertyDescription("Defines {@link ValueFilter}s to apply to an incoming value before it is written to a" +
+    @JsonPropertyDescription("Defines ValueFilters to apply to an incoming value before it is written to a" +
         " protocol linked attribute; this is particularly useful for generic protocols. The message should pass through" +
         " the filters in array order")
     public Optional<ValueFilter[]> getValueFilters() {

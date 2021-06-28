@@ -132,22 +132,22 @@ Resources:
           if [ ${HostName} ] && [ ${DomainName} ]
           then
             export DOMAINNAME=${HostName}.${DomainName}
-            export IDENTITY_NETWORK_HOST=$DOMAINNAME
-            echo a $DOMAINNAME $IDENTITY_NETWORK_HOST
+            export EXTERNAL_URL=https://$DOMAINNAME
+            echo a $DOMAINNAME $EXTERNAL_URL
           elif [ ${DomainName} ]
           then
             export DOMAINNAME=${DomainName}
-            export IDENTITY_NETWORK_HOST=$DOMAINNAME
-            echo b $DOMAINNAME $IDENTITY_NETWORK_HOST
+            export EXTERNAL_URL=https://$DOMAINNAME
+            echo b $DOMAINNAME $EXTERNAL_URL
           elif [ ${HostName} ]
           then
             export DOMAINNAME=${HostName}
-            export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-            echo c $DOMAINNAME $IDENTITY_NETWORK_HOST
+            export EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+            echo c $DOMAINNAME $EXTERNAL_URL
           else
             export DOMAINNAME=localhost
-            export IDENTITY_NETWORK_HOST=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-            echo d $DOMAINNAME $IDENTITY_NETWORK_HOST
+            export EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+            echo d $DOMAINNAME $EXTERNAL_URL
           fi
           openremote-cli -V -t
           export PASSWORD=${OpenRemotePassword}
@@ -162,7 +162,7 @@ Resources:
           echo export EMAIL_HOST=$EMAIL_HOST >> access.txt
           echo export PASSWORD=${OpenRemotePassword} >> access.txt
           echo export DOMAINNAME=$DOMAINNAME >> access.txt
-          echo export IDENTITY_NETWORK_HOST=$IDENTITY_NETWORK_HOST >> access.txt
+          echo export EXTERNAL_URL=$EXTERNAL_URL >> access.txt
           mkdir ${HostName}
           cd ${HostName}
           wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh -O fetch.txt

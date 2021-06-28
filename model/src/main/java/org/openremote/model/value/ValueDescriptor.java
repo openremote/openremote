@@ -135,6 +135,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 //    }
 
     public static final ValueDescriptor<Object> UNKNOWN = new ValueDescriptor<>("Unknown", Object.class);
+
     protected String name;
     @JsonSerialize(converter = ValueDescriptor.ValueTypeStringConverter.class)
     protected Class<T> type;

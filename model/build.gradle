@@ -29,6 +29,10 @@ dependencies {
     compile "com.google.guava:guava:$guavaVersion"
 
     compile "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
+
+    compile "com.github.victools:jsonschema-generator:$jsonSchemaVersion"
+    compile "com.github.victools:jsonschema-module-jackson:$jsonSchemaVersion"
+    compile "com.github.victools:jsonschema-module-javax-validation:$jsonSchemaVersion"
 }
 
 jar {

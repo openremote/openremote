@@ -67,7 +67,6 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.IDENTITY_NETWORK_WEBSERVER_PORT
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
 
 trait ContainerTrait {
@@ -89,7 +88,7 @@ trait ContainerTrait {
                 if (currentConfig.size() == config.size()) {
                     configsMatch = currentConfig.entrySet().stream().allMatch{entry ->
                         // ignore webserver port config
-                        if (entry.key == WEBSERVER_LISTEN_PORT || entry.key == IDENTITY_NETWORK_WEBSERVER_PORT) {
+                        if (entry.key == WEBSERVER_LISTEN_PORT) {
                             return true
                         }
                         entry.value == config.get(entry.key)

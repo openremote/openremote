@@ -95,17 +95,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final int IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
     public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 2628000; // 5 years
-    public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";
-    public static final boolean IDENTITY_NETWORK_SECURE_DEFAULT = false;
-    public static final String IDENTITY_NETWORK_HOST = "IDENTITY_NETWORK_HOST";
-    public static final String IDENTITY_NETWORK_HOST_DEFAULT = "localhost";
-    public static final String IDENTITY_NETWORK_WEBSERVER_PORT = "IDENTITY_NETWORK_WEBSERVER_PORT";
-    public static final int IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
 
     public static final String KEYCLOAK_AUTH_PATH = "auth";
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
-    // The externally visible address of this installation
-    protected UriBuilder externalServerUri;
     // The (internal) URI where Keycloak can be found
     protected UriBuilder keycloakServiceUri;
     // Configuration options for new realms
@@ -151,19 +143,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             return;
         }
 
-        boolean identityNetworkSecure = getBoolean(container.getConfig(), IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
-        String identityNetworkHost = getString(container.getConfig(), IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
-        int identityNetworkPort = getInteger(container.getConfig(), IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
-
-        externalServerUri = UriBuilder.fromUri("")
-            .scheme(identityNetworkSecure ? "https" : "http")
-            .host(identityNetworkHost);
-
-        // Only set the port if it's not the default protocol port
-        if (identityNetworkPort != 80 && identityNetworkPort != 443) {
-            externalServerUri = externalServerUri.port(identityNetworkPort);
-        }
-
         sessionMaxSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_MAX_MINUTES, IDENTITY_SESSION_MAX_MINUTES_DEFAULT) * 60;
         if (sessionMaxSeconds < 60) {
             throw new IllegalArgumentException(IDENTITY_SESSION_MAX_MINUTES + " must be more than 1 minute");
@@ -177,7 +156,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             throw new IllegalArgumentException(IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES + " must be more than 1 minute");
         }
 
-        LOG.info("External system base URL: " + externalServerUri.build());
         keycloakServiceUri =
             UriBuilder.fromPath("/")
                 .scheme("http")

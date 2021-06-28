@@ -33,18 +33,31 @@ certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-co
 Username: admin  
 Password: secret
 
-### Not using localhost?
-The URL you use to access the system is important, by default keycloak expects it to be `https://localhost` if you are using a VM then you will need to tell keycloak at startup, so if for example you will be accessing using `https://192.168.1.1` then use the following startup command:
+### Changing host and/or port
+The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `EXTERNAL_URL` environmnet variable and if changing ports you'll need to update your docker compose profile, so if for example you will be accessing using `https://192.168.1.1:8443` then update your `docker-compose.yml` file:
+
+```
+  proxy:
+    ...
+    ports:
+      - "8000:80"
+      - "8443:443"
+      - "8883:8883"
+```
+
+Then use the following startup command:
+
+
 
 BASH: 
 ```
-KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth docker-compose -p openremote up -d
+EXTERNAL_URL=https://192.168.1.1:8443 docker-compose -p openremote up -d
 ```
 or
 
 CMD:
 ```
-cmd /C "set KEYCLOAK_FRONTEND_URL=https://192.168.1.1/auth && docker-compose -p openremote up -d"
+cmd /C "set EXTERNAL_URL=https://192.168.1.1:8443 && docker-compose -p openremote up -d"
 ```
 
 

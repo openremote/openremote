@@ -26,7 +26,9 @@ import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.Values;
 
 import javax.net.ssl.*;
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.net.URI;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -35,12 +37,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.*;
-import static org.openremote.container.util.MapAccess.getBoolean;
-import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
 
 public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider, ContainerService {
 
+    public static final String EXTERNAL_URL = "EXTERNAL_URL";
+    public static final String EXTERNAL_URL_DEFAULT = "http://localhost";
     public static final String NAME = "ssl";
     public static final String VERSION = "1.0";
     protected static final Logger LOG = Logger.getLogger(SslHealthStatusProvider.class.getName());
@@ -56,9 +58,11 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
     @Override
     public void init(Container container) throws Exception {
-        sslEnabled = getBoolean(container.getConfig(), IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
-        hostname = container.getConfig().getOrDefault(IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
-        port = getInteger(container.getConfig(), IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
+        String externalUrlStr = getString(container.getConfig(), EXTERNAL_URL, EXTERNAL_URL_DEFAULT);
+        URI externalURI = UriBuilder.fromUri(externalUrlStr).build();
+        sslEnabled = "https".equals(externalURI.getScheme());
+        hostname = externalURI.getHost();
+        port = externalURI.getPort() > 0 ? externalURI.getPort() : sslEnabled ? 443 : 80;
     }
 
     @Override

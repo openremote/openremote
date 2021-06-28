@@ -106,6 +106,8 @@
   "ending": "Einde",
   "timeframe": "Tijdvak",
   "addAttribute": "Attribuut toevoegen",
+  "clearTable": "Leeg maken",
+  "addAssetAttribute": "Voeg asset attribuut toe",
   "add": "toevoegen",
   "EQUALS_COMPARATOR": "Gelijk aan",
   "GREATER_THAN": "Groter dan",
@@ -130,6 +132,7 @@
   "processors": "Processors",
   "output": "Output",
   "selectAsset": "Selecteer asset",
+  "selectAssetOnTheLeft": "Selecteer een asset aan de linkerkant",
   "noRuleStateAttributes": "Geen rule state attributes",
   "copy": "Kopiëren",
   "paste": "Plakken",
@@ -375,5 +378,12 @@
   "createAssetFailed": "Asset aanmaken is niet gelukt",
   "readPermissions": "Leesrechten",
   "writePermissions": "Schrijfrechten",
-  "valueType": "Value type"
+  "valueType": "Value type",
+  "dataExport": "Data export",
+  "dataSelection": "Data selectie",
+  "exportFrom": "Exporteer vanaf",
+  "assetName": "Asset naam",
+  "attributeName": "Attribuut naam",
+  "oldestDatapoint": "Oudste datapunt",
+  "latestDatapoint": "Laatste datapunt"
 }
