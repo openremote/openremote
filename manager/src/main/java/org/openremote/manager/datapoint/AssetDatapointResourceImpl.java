@@ -44,12 +44,17 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.openremote.model.value.Values.JSON;
 
@@ -176,19 +181,21 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
 
             try {
                 exportFile = exportFuture.get();
-                response.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + exportFile.getName());
 
-                OutputStream out = response.getOutputStream();
-                FileInputStream in = new FileInputStream(exportFile);
-                IOUtils.copy(in, out);
-                out.close();
-                in.close();
+                ZipOutputStream zipOut = new ZipOutputStream(response.getOutputStream());
+                FileInputStream fin = new FileInputStream(exportFile);
+                ZipEntry zipEntry = new ZipEntry(exportFile.getName());
+                zipOut.putNextEntry(zipEntry);
+                IOUtils.copy(fin, zipOut);
+                zipOut.closeEntry();
+                zipOut.close();
+                fin.close();
+
+                response.setContentType("application/zip");
+                response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.zip\"");
 
                 asyncResponse.resume(
-                    Response.ok(exportFile)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"dataexport.csv\"" )
-                        .build()
+                    response
                 );
             } catch (Exception ex) {
                 exportFuture.cancel(true);

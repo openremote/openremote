@@ -62,7 +62,7 @@ public interface AssetDatapointResource {
 
     @GET
     @Path("export")
-    @Produces("text/csv")
+    @Produces("application/zip")
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
     void getDatapointExport(@Suspended AsyncResponse asyncResponse,
                             @QueryParam("attributeRefs") String attributeRefsString,
