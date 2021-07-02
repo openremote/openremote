@@ -28,6 +28,14 @@ export interface OrExportConfig {
     selectedAttributes: AttributeRef[];
 }
 
+interface tableRow {
+    assetName: string,
+    assetId: string,
+    attributeName: string,
+    oldestTimestamp: number,
+    latestTimestamp: number
+}
+
 @customElement("page-export")
 class PageExport<S extends AppStateKeyed> extends Page<S> {
 
@@ -189,9 +197,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     };
     private isClearExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
-    private attrRefs: any[];
     
-    private tableRows: any[] = []; //todo type this so it can be put in table
+    private tableRows: tableRow[] = [];
 
     get name(): string {
         return "export";
@@ -274,28 +281,18 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                 const allAssets = assetInfos.map(attr => attr.data),
                     allDatapoints = datapointPeriod.map(datapoints => datapoints.data);
 
-                this.tableRows = allDatapoints.map(dataInfo => {
-                    const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
-                    return {
-                        assetName: relevantAssetInfo.name,
-                        assetId: relevantAssetInfo.id,
-                        attributeName: dataInfo.attributeName,
-                        oldestTimestamp: dataInfo.oldestTimestamp,
-                        latestTimestamp: dataInfo.latestTimestamp
-                    };
-                });
-                this.renderTableRows();
-
                 if (allDatapoints.length > 0) {
-                    this.attrRefs = allDatapoints.map(dataInfo => {
+                    this.tableRows = allDatapoints.map(dataInfo => {
                         const relevantAssetInfo = allAssets.find(asset => asset.id === dataInfo.assetId);
                         return {
-                            id: relevantAssetInfo.id,
-                            name: dataInfo.attributeName
-                        }
+                            assetName: relevantAssetInfo.name,
+                            assetId: relevantAssetInfo.id,
+                            attributeName: dataInfo.attributeName,
+                            oldestTimestamp: dataInfo.oldestTimestamp,
+                            latestTimestamp: dataInfo.latestTimestamp
+                        };
                     });
-                    this.oldestTimestamp = allDatapoints[0].oldestTimestamp;
-                    this.latestTimestamp = allDatapoints[0].oldestTimestamp;
+                    this.renderTableRows();
                     this.isClearExportBtnDisabled = false;
                     this.isExportBtnDisabled = false;
                 } else {
@@ -358,7 +355,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     protected export = () => {
         manager.rest.api.AssetDatapointResource.getDatapointExport({
-            attributeRefs: JSON.stringify(this.attrRefs),
+            attributeRefs: JSON.stringify(this.tableRows.map(attr => ({id: attr.assetId, name: attr.attributeName}))),
             fromTimestamp: this.oldestTimestamp,
             toTimestamp: this.latestTimestamp
         }, {
@@ -400,7 +397,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         this.saveConfig();
         this.tableRows = [];
         this.renderTableRows();
-        this.attrRefs = [];
         this.isClearExportBtnDisabled = true;
         this.isExportBtnDisabled = true;
     }

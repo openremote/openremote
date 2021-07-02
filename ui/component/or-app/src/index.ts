@@ -18,7 +18,7 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {Auth, DefaultColor2, DefaultColor3, ManagerConfig, Util, BasicLoginResult, OREvent, normaliseConfig, Manager} from "@openremote/core";
+import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, OREvent, normaliseConfig, Manager} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
 import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -100,8 +100,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return css`
             :host {
                 --or-app-color2: ${unsafeCSS(DefaultColor2)};
-                --or-app-color3: #4C4C4C;
-                --or-app-color4: #4D9D2A;
+                --or-app-color3: ${unsafeCSS(DefaultColor3)};
+                --or-app-color4: ${unsafeCSS(DefaultColor4)};
                 --or-console-primary-color: #4D9D2A;
                 color: ${unsafeCSS(DefaultColor3)};
                 fill: ${unsafeCSS(DefaultColor3)};
