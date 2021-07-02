@@ -869,15 +869,16 @@ export class OrMwcInput extends LitElement {
                                 inputValue.push(value);
                             }
                             const listItemEl = (ev.composedPath()[0] as HTMLElement).closest("li") as HTMLElement,
-                                icon = (ev.composedPath()[0] as HTMLElement).getElementsByTagName("or-icon")[0] as OrIcon;
-                            if (icon) {
+                                iconEl = listItemEl.getElementsByTagName("or-icon")[0] as OrIcon;
+                            if (listItemEl) {
                                 if (index >= 0) {
-                                    icon.icon = "checkbox-blank-outline";
                                     listItemEl.classList.remove("mdc-list-item--selected");
                                 } else {
-                                    icon.icon = "checkbox-marked";
                                     listItemEl.classList.add("mdc-list-item--selected");
                                 }
+                            }
+                            if (iconEl) {
+                                iconEl.icon = index >= 0 ? "checkbox-blank-outline" : "checkbox-marked";
                             }
                             this._tempValue = inputValue;
                         }
