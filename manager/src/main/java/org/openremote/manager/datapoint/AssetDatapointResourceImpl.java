@@ -33,6 +33,7 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.syslog.SyslogCategory;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.BeanParam;
@@ -56,11 +57,13 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static org.openremote.model.syslog.SyslogCategory.DATA;
 import static org.openremote.model.value.Values.JSON;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 
     private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
+    private static final Logger DATA_EXPORT_LOG = SyslogCategory.getLogger(DATA, AssetDatapointResourceImpl.class);
 
     protected final AssetStorageService assetStorageService;
     protected final AssetDatapointService assetDatapointService;
@@ -163,7 +166,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 }
 
                 if (!isTenantActiveAndAccessible(asset.getRealm())) {
-                    LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
+                    DATA_EXPORT_LOG.info("Forbidden access for user '" + getUsername() + "': " + asset);
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }
 
@@ -171,6 +174,8 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                         new WebApplicationException(Response.Status.NOT_FOUND)
                 );
             }
+
+            DATA_EXPORT_LOG.info("User '" + getUsername() +  "' started data export for " + attributeRefsString + " from " + fromTimestamp + " to " + toTimestamp);
 
             ScheduledFuture<File> exportFuture = assetDatapointService.exportDatapoints(attributeRefs, fromTimestamp, toTimestamp);
             asyncResponse.register((ConnectionCallback) disconnected -> {
@@ -200,13 +205,13 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             } catch (Exception ex) {
                 exportFuture.cancel(true);
                 asyncResponse.resume(new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR));
-                LOG.log(Level.WARNING, "Exception in ScheduledFuture: ", ex);
+                DATA_EXPORT_LOG.log(Level.WARNING, "Exception in ScheduledFuture: ", ex);
             } finally {
                 if (exportFile != null && exportFile.exists()) {
                     try {
                         exportFile.delete();
                     } catch (Exception e) {
-                        LOG.log(Level.WARNING, "Failed to delete temporary export file: " + exportFile.getPath(), e);
+                        DATA_EXPORT_LOG.log(Level.WARNING, "Failed to delete temporary export file: " + exportFile.getPath(), e);
                     }
                 }
             }
