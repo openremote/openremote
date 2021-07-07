@@ -412,7 +412,7 @@ Resources:
         CidrIpv6: ::/0
         Description: SNMP
       - IpProtocol: icmpv6
-        FromPort: '8'
+        FromPort: '-1'
         ToPort: '-1'
         CidrIpv6: ::/0
         Description: Ping
