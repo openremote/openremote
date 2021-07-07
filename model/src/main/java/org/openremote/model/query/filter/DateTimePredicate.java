@@ -33,7 +33,7 @@ import java.util.function.Supplier;
  * (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss\u00b1HH:mm), offset and time are optional, if no offset
  * information is supplied then UTC is assumed.
  */
-public class DateTimePredicate implements ValuePredicate {
+public class DateTimePredicate extends ValuePredicate {
 
     public static final String name = "datetime";
     public String value; // Sliding window value as ISO8601 duration e.g. PT1H or fixed date time in ISO 8601

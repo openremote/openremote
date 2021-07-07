@@ -46,7 +46,7 @@ services:
         condition: service_healthy
     environment:
       # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost:8443}/auth
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
 
   postgresql:
     extends:

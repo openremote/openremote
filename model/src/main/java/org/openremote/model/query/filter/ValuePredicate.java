@@ -43,11 +43,11 @@ import java.util.function.Supplier;
     use = JsonTypeInfo.Id.NAME,
     property = "predicateType"
 )
-public interface ValuePredicate extends Serializable {
+public abstract class ValuePredicate implements Serializable {
 
-    static Predicate<Object> asPredicateOrTrue(Supplier<Long> currentMillisSupplier, ValuePredicate valuePredicate) {
+    public static Predicate<Object> asPredicateOrTrue(Supplier<Long> currentMillisSupplier, ValuePredicate valuePredicate) {
         return obj -> Optional.ofNullable(valuePredicate).map(vp -> vp.asPredicate(currentMillisSupplier).test(obj)).orElse(true);
     }
 
-    Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier);
+    public abstract Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier);
 }

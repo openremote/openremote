@@ -4,7 +4,7 @@ import "@openremote/or-translate";
 import "./or-mwc-input";
 import {InputType} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
-import {DefaultColor2, DefaultColor5, Util } from "@openremote/core";
+import {DefaultColor2, DefaultColor4, DefaultColor5, Util } from "@openremote/core";
 import { Asset, AssetEvent, Attribute, AttributeRef } from "@openremote/model";
 import manager from "@openremote/core";
 import {ListItem, ListType, OrMwcListChangedEvent} from "./or-mwc-list";
@@ -383,6 +383,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             }
             footer.mdc-dialog__actions {
                 border-top: 1px solid ${unsafeCSS(DefaultColor5)};
+            }
+            #header {
+                background-color: ${unsafeCSS(DefaultColor4)} !important;
             }
         `;
         

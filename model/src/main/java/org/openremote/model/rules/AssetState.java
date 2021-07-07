@@ -26,10 +26,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaMap;
-import org.openremote.model.value.MetaHolder;
-import org.openremote.model.value.NameValueHolder;
-import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.util.Date;
 import java.util.Objects;
@@ -182,6 +179,14 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
 
     public MetaMap getMeta() {
         return meta;
+    }
+
+    public <U> Optional<U> getMetaValue(MetaItemDescriptor<U> metaItemDescriptor) {
+        return getMeta().getValue(metaItemDescriptor);
+    }
+
+    public boolean hasMeta(MetaItemDescriptor<?> metaItemDescriptor) {
+        return getMeta().has(metaItemDescriptor);
     }
 
     /**

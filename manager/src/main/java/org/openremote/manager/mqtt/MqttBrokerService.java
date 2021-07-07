@@ -317,14 +317,36 @@ public class MqttBrokerService implements ContainerService {
 
     protected Consumer<SharedEvent> getEventConsumer(MqttConnection connection, String topic, boolean isValueSubscription) {
         return ev -> {
-            if (isValueSubscription) {
-                if (ev instanceof AttributeEvent) {
-                    AttributeEvent attributeEvent = (AttributeEvent) ev;
-                    sendToSession(connection.getSessionId(), topic, attributeEvent.getValue().orElse(null));
+            List<String> topicTokens = Arrays.asList(topic.split("/"));
+            int wildCardIndex = Math.max(topicTokens.indexOf(MULTI_LEVEL_WILDCARD), topicTokens.indexOf(SINGLE_LEVEL_WILDCARD));
+
+            if (ev instanceof AssetEvent) {
+                AssetEvent assetEvent = (AssetEvent) ev;
+                if (wildCardIndex > 0) {
+                    topicTokens.set(wildCardIndex, assetEvent.getAssetId());
                 }
-            } else {
-                if (ev instanceof AttributeEvent || ev instanceof AssetEvent) {
-                    sendToSession(connection.getSessionId(), topic, ev);
+                sendToSession(connection.getSessionId(), String.join("/", topicTokens), ev);
+            }
+
+            if (ev instanceof AttributeEvent) {
+                AttributeEvent attributeEvent = (AttributeEvent) ev;
+                if (wildCardIndex > 0) {
+                    if (wildCardIndex == 1) { // attribute/<wildcard>
+                        topicTokens.set(wildCardIndex, attributeEvent.getAssetId());
+                    } else if (wildCardIndex == 2) {
+                        if (topicTokens.size() == 3) { // attribute/assetId/<wildcard>
+                            topicTokens.set(wildCardIndex, attributeEvent.getAttributeName());
+                        } else { // attribute/parentId/<wildcard>/attributeName
+                            topicTokens.set(wildCardIndex, attributeEvent.getAssetId());
+                        }
+                    } else if (wildCardIndex == 3) { //attribute/parentId/assetId/<wildcard>
+                        topicTokens.set(wildCardIndex, attributeEvent.getAttributeName());
+                    }
+                }
+                if(isValueSubscription) {
+                    sendToSession(connection.getSessionId(), String.join("/", topicTokens), attributeEvent.getValue().orElse(null));
+                } else {
+                    sendToSession(connection.getSessionId(), String.join("/", topicTokens), ev);
                 }
             }
         };

@@ -24,7 +24,7 @@ import org.openremote.model.value.Values;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class BooleanPredicate implements ValuePredicate {
+public class BooleanPredicate extends ValuePredicate {
 
     public static final String name = "boolean";
     public boolean value;

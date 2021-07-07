@@ -56,7 +56,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public static final String DATA_POINTS_MAX_AGE_DAYS = "DATA_POINTS_MAX_AGE_DAYS";
     public static final int DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
     public static final String DATA_POINTS_EXPORT_DIR = "DATA_POINTS_EXPORT_DIR";
-    public static final String DATA_POINTS_EXPORT_DIR_DEFAULT = "profile/tmp";
+    public static final String DATA_POINTS_EXPORT_DIR_DEFAULT = "/tmp";
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     protected int maxDatapointAgeDays;
     protected Path exportPath;

@@ -26,7 +26,7 @@ import org.openremote.model.value.Values;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class NumberPredicate implements ValuePredicate {
+public class NumberPredicate extends ValuePredicate {
 
     public static final String name = "number";
     public Number value;
