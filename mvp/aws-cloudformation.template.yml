@@ -31,12 +31,12 @@ Parameters:
     Type: String
     # AWS Compute Optimizer reports that this instance type is under-provisioned and advise to use
     # more than double the price instance. However, it works in our test setup.
-    Default: t3a.small
+    Default: t4g.small
     ConstraintDescription: must be a valid EC2 instance type.
   InstanceAMI:
     Description: Managed AMI ID for EC2 Instance (don't change it unless you know what you are doing)
     Type : String
-    Default: ami-022e8cc8f0d3c52fd
+    Default: ami-03ec287fa560a6ccc
 Conditions:
   DnsRecordCreate: !Equals [!Ref HostedZone, true]
   DomainName: !Not [ !Equals [!Ref DomainName, ""] ]
@@ -184,6 +184,7 @@ Resources:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
         install_logs:
+          # TODO this won't work. sed is needed on install script. See UserData
           # packages:
           #   pip:
           #     awslogs: []
@@ -316,21 +317,17 @@ Resources:
           then
             export DOMAINNAME=${HostName}.${DomainName}
             export EXTERNAL_URL=https://$DOMAINNAME
-            echo a $DOMAINNAME $EXTERNAL_URL
           elif [ ${DomainName} ]
           then
             export DOMAINNAME=${DomainName}
             export EXTERNAL_URL=https://$DOMAINNAME
-            echo b $DOMAINNAME $EXTERNAL_URL
           elif [ ${HostName} ]
           then
             export DOMAINNAME=${HostName}
             export EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-            echo c $DOMAINNAME $EXTERNAL_URL
           else
             export DOMAINNAME=localhost
             export EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-            echo d $DOMAINNAME $EXTERNAL_URL
           fi
           openremote-cli -V -t
           export PASSWORD=${OpenRemotePassword}
