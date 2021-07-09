@@ -530,6 +530,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     <div class="meta-item-container">
                         <div class="row">
                             <div class="column">
+                                <h5>${i18next.t("details")}</h5>
+                                <!-- user details -->
                                 <or-mwc-input ?readonly="${!!user.id || readonly}"
                                               .label="${i18next.t("username")}"
                                               .type="${InputType.TEXT}" min="1" required
@@ -550,20 +552,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .type="${InputType.TEXT}" min="1"
                                               .value="${user.lastName}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.lastName = e.detail.value}"></or-mwc-input>
-                            </div>
 
-                            <div class="column">
-                                <or-mwc-input ?readonly="${readonly}"
-                                              ?disabled="${isSameUser}"
-                                              .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
-                                              .type="${InputType.SELECT}" multiple
-                                              .options="${roleOptions}" 
-                                              .label="${i18next.t("role")}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  const roleNames = e.detail.value as string[];
-                                                  const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
-                                                  user.roles = roles;
-                                              }}"></or-mwc-input>
+                                <!-- password -->
+                                <h5>${i18next.t("password")}</h5>
                                 ${user.serviceAccount ? html`
                                     <or-mwc-input id="password-${suffix}" readonly
                                                   .label="${i18next.t("secret")}"
@@ -573,7 +564,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                                   .label="${i18next.t("regenerateSecret")}"
                                                   .type="${InputType.BUTTON}"
                                                   @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-"+suffix)}"></or-mwc-input>`
-                                : html`
+                                        : html`
                                     <or-mwc-input id="password-${suffix}"
                                               ?readonly="${readonly}"
                                               .label="${i18next.t("password")}"
@@ -585,12 +576,37 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .type="${InputType.PASSWORD}" min="1"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {this._onPasswordChanged(user, suffix)}}"></or-mwc-input>
                                 `}
+                            </div>
+
+                            <div class="column">
+                                <h5>${i18next.t("settings")}</h5>
+                                <!-- enabled -->
                                 <or-mwc-input ?readonly="${readonly}"
-                                              .label="${i18next.t("enabled")}"
+                                              .label="${i18next.t("active")}"
                                               .type="${InputType.SWITCH}" min="1"
                                               .value="${user.enabled}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
                                               style="height: 56px;"></or-mwc-input>
+
+                                <!-- is admin -->
+                                <!-- placeholder -->
+                                
+                                <!-- roles -->
+                                <or-mwc-input ?readonly="${readonly}"
+                                              ?disabled="${isSameUser}"
+                                              .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
+                                              .type="${InputType.SELECT}" multiple
+                                              .options="${roleOptions}" 
+                                              .label="${i18next.t("role")}"
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                  const roleNames = e.detail.value as string[];
+                                                  const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
+                                                  user.roles = roles;
+                                              }}"></or-mwc-input>
+
+
+                                <!-- restricted access -->
+                                <!-- placeholder -->
                             </div>
                         </div>
 

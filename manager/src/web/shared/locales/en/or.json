@@ -253,6 +253,7 @@
   "submit": "Submit",
   "password": "Password",
   "repeatPassword": "Repeat password",
+  "details": "Details",
   "permissions":"Permissions",
   "noChildAssets": "No child assets",
   "account": "Account",

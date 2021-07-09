@@ -258,6 +258,7 @@
   "submit": "Verzenden",
   "password": "Wachtwoord",
   "repeatPassword": "Herhaal wachtwoord",
+  "details": "Details",
   "permissions":"Rechten",
   "units": {
     "CELSIUS": "°C",
