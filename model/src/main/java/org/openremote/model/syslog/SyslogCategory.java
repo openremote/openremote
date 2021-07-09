@@ -70,6 +70,10 @@ public enum SyslogCategory {
     API(
             "API",
             true
+    ),
+    DATA(
+            "DATA",
+            true
     );
 
     protected final String categoryLabel;

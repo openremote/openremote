@@ -127,8 +127,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     // The objects are already in memory inside the rule engines but keeping them
     // here means we can quickly insert facts into newly started engines
     protected Set<AssetState<?>> assetStates = new HashSet<>();
+    protected Set<AssetState<?>> preInitassetStates = new HashSet<>();
     protected String configEventExpires;
     protected boolean initDone;
+    protected boolean startDone;
 
     @Override
     public int getPriority() {
@@ -299,6 +301,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
         tenantEngines.values().forEach(RulesEngine::start);
         assetEngines.values().forEach(RulesEngine::start);
+
+        preInitassetStates.forEach(this::doProcessAssetUpdate);
+        preInitassetStates.clear();
+
+        startDone = true;
     }
 
     @Override
@@ -339,22 +346,30 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                                       Asset<?> asset,
                                       Attribute<?> attribute,
                                       Source source) throws AssetProcessingException {
-        // We might process two facts for a single attribute update, if that is what the user wants
-
-        // First as asset state
-        if (attributeIsRuleState(attribute)) {
-            updateAssetState(new AssetState<>(asset, attribute, source));
-        }
-
-        // Then as asset event (if there wasn't an error), this will also fire the rules engines
-        if (attribute.getMetaValue(MetaItemType.RULE_EVENT).orElse(false)) {
-            insertAssetEvent(
-                new AssetState<>(asset, attribute, source),
-                attribute.getMetaValue(MetaItemType.RULE_EVENT_EXPIRES).orElse(configEventExpires)
-            );
+        if (!startDone) {
+            preInitassetStates.add(new AssetState<>(asset, attribute, source));
+        } else {
+            doProcessAssetUpdate(new AssetState<>(asset, attribute, source));
         }
 
         return false;
+    }
+
+    protected void doProcessAssetUpdate(AssetState<?> assetState) {
+        // We might process two facts for a single attribute update, if that is what the user wants
+
+        // First as asset state
+        if (assetState.getMetaValue(MetaItemType.RULE_STATE).orElse(assetState.hasMeta(MetaItemType.AGENT_LINK))) {
+            updateAssetState(assetState);
+        }
+
+        // Then as asset event (if there wasn't an error), this will also fire the rules engines
+        if (assetState.getMetaValue(MetaItemType.RULE_EVENT).orElse(false)) {
+            insertAssetEvent(
+                    assetState,
+                    assetState.getMetaValue(MetaItemType.RULE_EVENT_EXPIRES).orElse(configEventExpires)
+            );
+        }
     }
 
     public boolean isRulesetKnown(Ruleset ruleset) {
