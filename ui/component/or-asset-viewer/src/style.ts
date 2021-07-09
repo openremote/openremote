@@ -96,7 +96,7 @@ export const style = css`
         margin-top: 0;
         box-sizing: border-box;
         display: grid;
-        padding: 0px 20px 20px;
+        padding: 0 20px 20px;
         grid-gap: 10px;
         grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
         grid-auto-rows: 5px;
@@ -159,7 +159,7 @@ export const style = css`
 
     #asset-header.editmode {
         padding: 14px 30px;
-        background-color: white;
+        background-color: var(--internal-or-asset-viewer-panel-color);
         border-bottom: solid 1px #e5e5e5;
     }
 

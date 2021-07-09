@@ -69,7 +69,7 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     if (buttonIcon) {
         content = html`
                 ${content}
-                <or-mwc-input id="send-btn" icon="${buttonIcon}" title="Send input" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                <or-mwc-input id="send-btn" icon="${buttonIcon}" type="button" .disabled="${disabled || loading}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
             e.stopPropagation();
             if (sendValue) {
                 sendValue();

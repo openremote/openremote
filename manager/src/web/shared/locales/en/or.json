@@ -396,5 +396,6 @@
   "attributeName": "Attribute name",
   "oldestDatapoint": "Oldest datapoint",
   "latestDatapoint": "Latest datapoint",
-  "arrayDimensions": "Array dimensions"
+  "arrayDimensions": "Array dimensions",
+  "array": "Array"
 }
