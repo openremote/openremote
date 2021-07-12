@@ -205,13 +205,13 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             } catch (Exception ex) {
                 exportFuture.cancel(true);
                 asyncResponse.resume(new WebApplicationException(Response.Status.INTERNAL_SERVER_ERROR));
-                DATA_EXPORT_LOG.log(Level.WARNING, "Exception in ScheduledFuture: ", ex);
+                DATA_EXPORT_LOG.log(Level.SEVERE, "Exception in ScheduledFuture: ", ex);
             } finally {
                 if (exportFile != null && exportFile.exists()) {
                     try {
                         exportFile.delete();
                     } catch (Exception e) {
-                        DATA_EXPORT_LOG.log(Level.WARNING, "Failed to delete temporary export file: " + exportFile.getPath(), e);
+                        DATA_EXPORT_LOG.log(Level.SEVERE, "Failed to delete temporary export file: " + exportFile.getPath(), e);
                     }
                 }
             }
