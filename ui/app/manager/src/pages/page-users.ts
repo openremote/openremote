@@ -617,7 +617,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
                                               .type="${InputType.SELECT}" multiple
                                               .options="${permissionOptions}" 
-                                              .label="${i18next.t("role")}"
+                                              .label="${i18next.t("permissions")}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                   const roleNames = e.detail.value as string[];
                                                   const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
