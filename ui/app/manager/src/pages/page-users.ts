@@ -190,6 +190,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     protected _serviceUsers: UserModel[] = [];
 
     @property()
+    protected _roles: Role[] = [];
+
+    @property()
     protected _compositeRoles: Role[] = [];
 
     @property()
@@ -251,6 +254,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         const compositeRoles = ORClientRoleResponse.data.filter(role => role.composite);
+        const roles = ORClientRoleResponse.data.filter(role => !role.composite);
         const usersResponse = await manager.rest.api.UserResource.getAll(manager.displayRealm);
         const serviceUsersResponse = await manager.rest.api.UserResource.getAllService(manager.displayRealm);
 
@@ -271,6 +275,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         await Promise.all(roleLoaders);
         this._users = users.sort(Util.sortByString(u => u.username));
         this._serviceUsers = serviceUsers.sort(Util.sortByString(u => u.username));
+        this._roles = roles;
         this._compositeRoles = compositeRoles;
         this.loading = false;
     }
@@ -354,6 +359,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         const roleOptions: string[] = this._compositeRoles.map(cr => cr.name);
+        const readRoles: [string, string][] = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.name, e.name]);
+        const writeRoles: [string, string][] = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.name, e.name]);
+        const permissionOptions: [string, string][] = [...readRoles, ...writeRoles];
         const readonly = !manager.hasRole(ClientRole.WRITE_USER);
 
         return html`
@@ -388,7 +396,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             <tbody class="mdc-data-table__content">
                             ${this._users.map((user, index) => this._getUserTemplate(() => {
                                 this._users.pop(); this._users = [...this._users];
-                            }, user, readonly, roleOptions, "user"+index))}
+                            }, user, readonly, roleOptions, permissionOptions, "user"+index))}
                             ${(this._users.length === 0 || (this._users.length > 0 && !!this._users[this._users.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._users = [...this._users, {enabled: true}];
@@ -429,7 +437,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             <tbody class="mdc-data-table__content">
                             ${this._serviceUsers.map((user, index) => this._getUserTemplate(() => {
                                 this._serviceUsers.pop(); this._serviceUsers = [...this._serviceUsers];
-                            }, user, readonly, roleOptions, "serviceuser" + index))}
+                            }, user, readonly, roleOptions, permissionOptions, "serviceuser" + index))}
                             ${(this._serviceUsers.length === 0 || (this._serviceUsers.length > 0 && !!this._serviceUsers[this._serviceUsers.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._serviceUsers = [...this._serviceUsers, {
@@ -505,7 +513,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         secretElem.disabled = false;
     }
 
-    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, roleOptions: string[], suffix: string): TemplateResult {
+    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, roleOptions: string[], permissionOptions: [string, string][], suffix: string): TemplateResult {
         const isSameUser = user.username === manager.username;
 
         return html`
@@ -596,6 +604,19 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
                                               .type="${InputType.SELECT}" multiple
                                               .options="${roleOptions}" 
+                                              .label="${i18next.t("role")}"
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                  const roleNames = e.detail.value as string[];
+                                                  const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
+                                                  user.roles = roles;
+                                              }}"></or-mwc-input>
+
+                                <!-- permissions -->
+                                <or-mwc-input ?readonly="${readonly}"
+                                              ?disabled="${isSameUser}"
+                                              .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
+                                              .type="${InputType.SELECT}" multiple
+                                              .options="${permissionOptions}" 
                                               .label="${i18next.t("role")}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                   const roleNames = e.detail.value as string[];
