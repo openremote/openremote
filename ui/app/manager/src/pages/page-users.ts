@@ -118,7 +118,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     flex-direction: column;
                     margin: 0px;
                     flex: 1 1 0;
-
+                    max-width: 50%;
                 }
 
                 .mdc-data-table__header-cell {
@@ -194,6 +194,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
     @property()
     protected _compositeRoles: Role[] = [];
+
+    @property()
+    protected permissionIdsFromRoles: string[] = [];
 
     @property()
     public validPassword?: boolean = true;
@@ -359,8 +362,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         const roleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const readRoles: [string, string][] = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.name, e.name]);
-        const writeRoles: [string, string][] = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.name, e.name]);
+        const readRoles: [string, string][] = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.id, e.name]);
+        const writeRoles: [string, string][] = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.id, e.name]);
         const permissionOptions: [string, string][] = [...readRoles, ...writeRoles];
         const readonly = !manager.hasRole(ClientRole.WRITE_USER);
 
@@ -609,18 +612,19 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                                   const roleNames = e.detail.value as string[];
                                                   const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
                                                   user.roles = roles;
+                                                  this.permissionIdsFromRoles = [].concat(...roles.map(r => r.compositeRoleIds)); //flat array of permission ids
                                               }}"></or-mwc-input>
 
                                 <!-- permissions -->
                                 <or-mwc-input ?readonly="${readonly}"
                                               ?disabled="${isSameUser}"
-                                              .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
+                                              .value="${this.permissionIdsFromRoles && this.permissionIdsFromRoles.length > 0 ? this.permissionIdsFromRoles : undefined}"
                                               .type="${InputType.SELECT}" multiple
                                               .options="${permissionOptions}" 
                                               .label="${i18next.t("permissions")}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  const roleNames = e.detail.value as string[];
-                                                  const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
+                                                  const permissionNames = e.detail.value as string[];
+                                                  const roles = this._compositeRoles.filter(cr => permissionNames.some(rn => cr.name === rn));
                                                   user.roles = roles;
                                               }}"></or-mwc-input>
 
