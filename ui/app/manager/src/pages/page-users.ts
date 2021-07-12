@@ -92,15 +92,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 td, th {
                     width: 25%
                 }
-
-                .meta-item-container {
-                    flex-direction: row;
-                    overflow: hidden;
-                    max-height: 0;
-                    transition: max-height 0.25s ease-out;
-                    padding-left: 16px;
-                }
-
+                
                 or-mwc-input {
                     margin-bottom: 20px;
                     margin-right: 16px;
@@ -142,9 +134,16 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     padding: 0;
                 }
 
+                .meta-item-container {
+                    flex-direction: row;
+                    overflow: hidden;
+                    max-height: 0;
+                    padding-left: 16px;
+                }
+
                 .attribute-meta-row.expanded .meta-item-container {
-                    max-height: 1000px;
-                    transition: max-height 1s ease-in;
+                    overflow: visible;
+                    max-height: unset;
                 }
 
                 .button {
