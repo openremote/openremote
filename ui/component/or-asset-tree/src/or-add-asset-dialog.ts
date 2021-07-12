@@ -85,7 +85,7 @@ export class OrAddAssetDialog extends LitElement {
             #name-wrapper {
                 display: flex;
                 flex-direction: column;
-                margin-top: 10px;
+                margin-top: 12px;
             }
 
             #toggle-parent-selector,
@@ -136,9 +136,16 @@ export class OrAddAssetDialog extends LitElement {
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
 
+            #type-title {
+                display: flex;
+                align-items: center;
+                margin: 9px 4px;
+            }
+
             #type-description {
                 text-transform: capitalize;
                 color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                margin-left: 10px;
                 font-size: 18px;
                 font-weight: bold;
                 font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
@@ -239,8 +246,10 @@ export class OrAddAssetDialog extends LitElement {
             optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
 
         return html`
-            <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
-            <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            <div id="type-title">
+                <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
+                <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            </div>
             <div id="name-wrapper">
                 <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
                 <div id="parent-wrapper">
