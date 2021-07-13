@@ -626,18 +626,22 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               }}"></or-mwc-input>
 
                                 <!-- permissions -->
-                                <or-mwc-input ?readonly="${readonly}"
-                                              ?disabled="${isSameUser}"
-                                              .value="${this.permissionIdsFromRoles && this.permissionIdsFromRoles.length > 0 ? this.permissionIdsFromRoles : undefined}"
-                                              .type="${InputType.SELECT}" multiple
-                                              .options="${permissionOptions}" 
-                                              .label="${i18next.t("permissions")}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  const permissionNames = e.detail.value as string[];
-                                                  const roles = this._compositeRoles.filter(cr => permissionNames.some(rn => cr.name === rn));
-                                                  user.roles = roles;
-                                              }}"></or-mwc-input>
-
+                                <div style="display:flex;flex-wrap:wrap;">
+                                    ${permissionOptions.map(p => {
+                                        return html`
+                                            <or-mwc-input ?readonly="${readonly}"
+                                                ?disabled="${isSameUser}"
+                                                .value="${this.permissionIdsFromRoles && this.permissionIdsFromRoles.includes(p.id) ? p : undefined}"
+                                                .type="${InputType.CHECKBOX}"
+                                                .label="${p.name}"
+                                                style="width:25%;margin:0"
+                                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                    const permission = e.detail.value;
+                                                    console.log(permission);
+                                                }}"></or-mwc-input>
+                                        `
+                                    })}
+                                </div>
 
                                 <!-- restricted access -->
                                 <!-- placeholder -->
