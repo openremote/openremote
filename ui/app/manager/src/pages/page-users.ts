@@ -22,6 +22,11 @@ export function pageUsersProvider<S extends AppStateKeyed>(store: EnhancedStore<
     };
 }
 
+interface Permission {
+    id?: string;
+    name?: string;
+}
+
 interface UserModel extends User {
     password?: string;
     roles?: Role[];
@@ -210,7 +215,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     get name(): string {
         return "user_plural";
     }
-
+    
     constructor(store: EnhancedStore<S>) {
         super(store);
         this.loadUsers();
@@ -223,7 +228,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 break;
         }
     };
-
+    
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
         if (_changedProperties.has("realm")) {
@@ -274,7 +279,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             const userRolesResponse = await (user.serviceAccount ? manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, user.username) : manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
             user.roles = userRolesResponse.data.filter(r => r.composite && r.assigned);
         });
-
+        
         await Promise.all(roleLoaders);
         this._users = users.sort(Util.sortByString(u => u.username));
         this._serviceUsers = serviceUsers.sort(Util.sortByString(u => u.username));
@@ -329,6 +334,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, user.username, compositeRoles);
         }
     }
+    
+    private _setPermissionIdsFromSelectedRoles(roles: Role[]) {
+        this.permissionIdsFromRoles = [].concat(...roles.map(r => r.compositeRoleIds)); //flat array of permission ids
+    }
 
 
     private _deleteUser(user) {
@@ -362,9 +371,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         const roleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const readRoles: [string, string][] = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.id, e.name]);
-        const writeRoles: [string, string][] = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name)).map(e => [e.id, e.name]);
-        const permissionOptions: [string, string][] = [...readRoles, ...writeRoles];
+        const readRoles: Permission[] = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name)).map(e => ({id: e.id, name: e.name}));
+        const writeRoles: Permission[] = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name)).map(e => ({id: e.id, name: e.name}));
+        const permissionOptions: Permission[] = [...readRoles, ...writeRoles];
         const readonly = !manager.hasRole(ClientRole.WRITE_USER);
 
         return html`
@@ -516,8 +525,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         secretElem.disabled = false;
     }
 
-    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, roleOptions: string[], permissionOptions: [string, string][], suffix: string): TemplateResult {
+    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, roleOptions: string[], permissionOptions: Permission[], suffix: string): TemplateResult {
         const isSameUser = user.username === manager.username;
+        this._setPermissionIdsFromSelectedRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
 
         return html`
             <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev)}">
@@ -612,7 +622,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                                   const roleNames = e.detail.value as string[];
                                                   const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
                                                   user.roles = roles;
-                                                  this.permissionIdsFromRoles = [].concat(...roles.map(r => r.compositeRoleIds)); //flat array of permission ids
+                                                  this._setPermissionIdsFromSelectedRoles(roles);
                                               }}"></or-mwc-input>
 
                                 <!-- permissions -->
