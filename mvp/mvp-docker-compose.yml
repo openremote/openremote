@@ -26,6 +26,14 @@ volumes:
   postgresql-data:
   deployment-data:
 
+x-app: &awslogs
+  logging:
+    driver: awslogs
+    options:
+      awslogs-region: ${AWS_REGION:-eu-west-1}
+      awslogs-group: ${DEPLOYMENT_NAME:-openremote}
+      awslogs-create-group: 'true'
+
 services:
   proxy:
     image: openremote/proxy:${PROXY_VERSION:-2.1.2.3}
@@ -58,6 +66,7 @@ services:
     environment:
       DOMAINNAME: ${DOMAINNAME:-localhost}
       LE_EMAIL: admin@${DOMAINNAME}
+    <<: *awslogs
 
   manager:
     image: openremote/manager:${MANAGER_VERSION:-latest}
@@ -91,6 +100,7 @@ services:
       SETUP_EMAIL_PORT: ${SETUP_EMAIL_PORT:-587}
       SETUP_EMAIL_FROM_KEYCLOAK: no-reply@${DOMAINNAME}
       SETUP_EMAIL_FROM_DEFAULT: admin@${DOMAINNAME}
+    <<: *awslogs
 
   keycloak:
     image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.0}
@@ -116,6 +126,7 @@ services:
     environment:
       KEYCLOAK_PASSWORD: ${PASSWORD:-secret}
       KEYCLOAK_FRONTEND_URL: "${EXTERNAL_URL:-https://localhost}/auth"
+    <<: *awslogs
 
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}
@@ -135,3 +146,4 @@ services:
         delay: 20m
     volumes:
       - postgresql-data:/var/lib/postgresql/data
+    <<: *awslogs
