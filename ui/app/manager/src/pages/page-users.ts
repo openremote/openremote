@@ -620,9 +620,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .label="${i18next.t("role")}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                   const roleNames = e.detail.value as string[];
-                                                  const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
-                                                  user.roles = roles;
-                                                  this._setPermissionIdsFromSelectedRoles(roles);
+                                                  user.roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
+                                                  this._setPermissionIdsFromSelectedRoles(user.roles);
                                               }}"></or-mwc-input>
 
                                 <!-- permissions -->
@@ -630,14 +629,19 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     ${permissionOptions.map(p => {
                                         return html`
                                             <or-mwc-input ?readonly="${readonly}"
-                                                ?disabled="${isSameUser}"
+                                                ?disabled="${this.permissionIdsFromRoles.includes(p.id)}"
                                                 .value="${this.permissionIdsFromRoles && this.permissionIdsFromRoles.includes(p.id) ? p : undefined}"
                                                 .type="${InputType.CHECKBOX}"
                                                 .label="${p.name}"
                                                 style="width:25%;margin:0"
                                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                    const permission = e.detail.value;
-                                                    console.log(permission);
+                                                    if (!!e.detail.value) {
+                                                        this.permissionIdsFromRoles.push(p.id);
+                                                    } else {
+                                                        this.permissionIdsFromRoles.splice(this.permissionIdsFromRoles.indexOf(p.id), 1);
+                                                    }
+                                                    console.log(this.permissionIdsFromRoles);
+                                                    // todo: store this in some kind of additional permissions collection
                                                 }}"></or-mwc-input>
                                         `
                                     })}
