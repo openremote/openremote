@@ -31,7 +31,7 @@ x-app: &awslogs
     driver: awslogs
     options:
       awslogs-region: ${AWS_REGION:-eu-west-1}
-      awslogs-group: ${DEPLOYMENT_NAME:-openremote}
+      awslogs-group:  ${AWSLOGS_GROUP:-openremote}
       awslogs-create-group: 'true'
 
 services:
