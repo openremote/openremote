@@ -438,6 +438,15 @@ public class RulesetDeployment {
             binding.setVariable("notifications", notificationFacade);
             binding.setVariable("historicDatapoints", historicDatapointsFacade);
             binding.setVariable("predictedDatapoints", predictedDatapointsFacade);
+
+            if(ruleset instanceof TenantRuleset) {
+                binding.setVariable("realm", ((TenantRuleset) ruleset).getRealm());
+            }
+
+            if (ruleset instanceof AssetRuleset) {
+                binding.setVariable("assetId", ((AssetRuleset) ruleset).getAssetId());
+            }
+
             script.setBinding(binding);
             script.run();
             for (Rule rule : rulesBuilder.build()) {
