@@ -527,7 +527,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
     protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, roleOptions: string[], permissionOptions: Permission[], suffix: string): TemplateResult {
         const isSameUser = user.username === manager.username;
-        this._setPermissionIdsFromSelectedRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
+        if (user.roles) {
+            this._setPermissionIdsFromSelectedRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
+        }
 
         return html`
             <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev)}">
