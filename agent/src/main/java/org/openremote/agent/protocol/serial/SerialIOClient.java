@@ -25,6 +25,11 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.util.TextUtil;
 
+
+import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Paritybit.NONE;
+import static org.openremote.agent.protocol.serial.JSerialCommChannelConfig.Stopbits.STOPBITS_1;
+import static org.openremote.agent.protocol.serial.JSerialCommChannelOption.*;
+
 /**
  * This is a {@link IOClient} implementation for serial ports.
  * <p>
@@ -34,7 +39,7 @@ import org.openremote.model.util.TextUtil;
  * to this client via {@link AbstractNettyIOClient#onMessageReceived} (see {@link ByteToMessageDecoder and
  * {@link MessageToMessageDecoder}).
  */
-public class SerialIOClient<T> extends AbstractNettyIOClient<T, NrJavaSerialAddress> {
+public class SerialIOClient<T> extends AbstractNettyIOClient<T, JSerialCommDeviceAddress> {
 
     protected String port;
     protected int baudRate;
@@ -48,12 +53,12 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, NrJavaSerialAddr
 
     @Override
     protected Class<? extends Channel> getChannelClass() {
-        return NrJavaSerialChannel.class;
+        return JSerialCommChannel.class;
     }
 
     @Override
     protected ChannelFuture startChannel() {
-        return bootstrap.connect(new NrJavaSerialAddress(port, baudRate));
+        return bootstrap.connect(new JSerialCommDeviceAddress(port));
     }
 
     @Override
@@ -67,5 +72,14 @@ public class SerialIOClient<T> extends AbstractNettyIOClient<T, NrJavaSerialAddr
         // Note that OioEventLoopGroup has to be used because NioEventLoopGroup is *NOT* compatible
         // with io.netty.channel.rxtx.RxtxChannel and causes IllegalStateException.
         return new io.netty.channel.oio.OioEventLoopGroup(1);
+    }
+
+    @Override
+    protected void configureChannel() {
+        super.configureChannel();
+        bootstrap.option(BAUD_RATE, baudRate);
+        bootstrap.option(DATA_BITS, 8);
+        bootstrap.option(STOP_BITS, STOPBITS_1);
+        bootstrap.option(PARITY_BIT, NONE);
     }
 }
