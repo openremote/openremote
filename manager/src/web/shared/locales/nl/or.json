@@ -260,6 +260,7 @@
   "repeatPassword": "Herhaal wachtwoord",
   "details": "Details",
   "permissions":"Rechten",
+  "fullAccessLabel":"Admin: volledige toegang; gebruikers en rollen beheren",
   "units": {
     "CELSIUS": "°C",
     "FAHRENHEIT": "°F",

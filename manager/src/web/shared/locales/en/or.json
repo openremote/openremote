@@ -255,6 +255,7 @@
   "repeatPassword": "Repeat password",
   "details": "Details",
   "permissions":"Permissions",
+  "fullAccessLabel":"Admin: full access; manage users and roles",
   "noChildAssets": "No child assets",
   "account": "Account",
   "editAttribute": "Change attribute",
