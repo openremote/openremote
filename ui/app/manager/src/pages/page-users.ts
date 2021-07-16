@@ -22,11 +22,6 @@ export function pageUsersProvider<S extends AppStateKeyed>(store: EnhancedStore<
     };
 }
 
-interface Permission {
-    id?: string;
-    name?: string;
-}
-
 interface UserModel extends User {
     password?: string;
     roles?: Role[];
@@ -201,7 +196,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     protected _compositeRoles: Role[] = [];
 
     @property()
-    protected permissionIdsFromRoles: string[] = [];
+    protected separateRoleIds: string[] = []; //todo: do statemanagement for selected roles and composite roles separately
 
     @property()
     public validPassword?: boolean = true;
@@ -277,7 +272,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         // Load each users assigned roles
         const roleLoaders = [...users, ...serviceUsers].map(async user => {
             const userRolesResponse = await (user.serviceAccount ? manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, user.username) : manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
-            user.roles = userRolesResponse.data.filter(r => r.composite && r.assigned);
+            user.roles = userRolesResponse.data.filter(r => r.assigned);
         });
         
         await Promise.all(roleLoaders);
@@ -320,7 +315,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return;
         }
 
-        const compositeRoles = this._compositeRoles.filter(c => user.roles.some(r => r.name === c.name)).map(r => {
+        const compositeRoles = [...this._compositeRoles, ...this._roles].filter(c => user.roles.some(r => r.name === c.name)).map(r => {
             return {...r, assigned: true}
         });
 
@@ -335,8 +330,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
     }
     
-    private _setPermissionIdsFromSelectedRoles(roles: Role[]) {
-        this.permissionIdsFromRoles = [].concat(...roles.map(r => r.compositeRoleIds)); //flat array of permission ids
+    private setRoleIdsForSelectedCompositeRoles(roles: Role[]) {
+        this.separateRoleIds = [].concat(...roles.map(r => r.compositeRoleIds)); //flat array of permission ids
     }
 
 
@@ -370,19 +365,14 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return html``;
         }
 
-        const roleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const readRoles: Permission[] = this._roles.filter(role => role.name.includes('read')).sort((a, b) => a.name.localeCompare(b.name)).map(e => ({id: e.id, name: e.name}));
-        const writeRoles: Permission[] = this._roles.filter(role => role.name.includes('write')).sort((a, b) => a.name.localeCompare(b.name)).map(e => ({id: e.id, name: e.name}));
-        const permissionOptions: Permission[] = [...readRoles, ...writeRoles];
+        const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
         const readonly = !manager.hasRole(ClientRole.WRITE_USER);
 
         return html`
             <div id="wrapper">
                 <div id="title">
                     <or-icon icon="account-group"></or-icon>
-                    ${i18next.t(
-                            "user_plural"
-                    )}
+                    ${i18next.t("user_plural")}
                 </div>
 
                 <div class="panel">
@@ -408,7 +398,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             <tbody class="mdc-data-table__content">
                             ${this._users.map((user, index) => this._getUserTemplate(() => {
                                 this._users.pop(); this._users = [...this._users];
-                            }, user, readonly, roleOptions, permissionOptions, "user"+index))}
+                            }, user, readonly, compositeRoleOptions, "user"+index))}
                             ${(this._users.length === 0 || (this._users.length > 0 && !!this._users[this._users.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._users = [...this._users, {enabled: true}];
@@ -449,7 +439,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             <tbody class="mdc-data-table__content">
                             ${this._serviceUsers.map((user, index) => this._getUserTemplate(() => {
                                 this._serviceUsers.pop(); this._serviceUsers = [...this._serviceUsers];
-                            }, user, readonly, roleOptions, permissionOptions, "serviceuser" + index))}
+                            }, user, readonly, compositeRoleOptions, "serviceuser" + index))}
                             ${(this._serviceUsers.length === 0 || (this._serviceUsers.length > 0 && !!this._serviceUsers[this._serviceUsers.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._serviceUsers = [...this._serviceUsers, {
@@ -525,12 +515,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         secretElem.disabled = false;
     }
 
-    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, roleOptions: string[], permissionOptions: Permission[], suffix: string): TemplateResult {
+    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], suffix: string): TemplateResult {
         const isSameUser = user.username === manager.username;
-        if (user.roles) {
-            this._setPermissionIdsFromSelectedRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
-        }
-
+        this.setRoleIdsForSelectedCompositeRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
+        
         return html`
             <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev)}">
                 <td class="padded-cell mdc-data-table__cell">
@@ -541,7 +529,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     ${user.email}
                 </td>
                 <td class="padded-cell mdc-data-table__cell">
-                    ${user.roles ? user.roles.map(r => r.name).join(",") : null}
+                    ${user.roles ? user.roles.filter(r => r.composite).map(r => r.name).join(",") : null}
                 </td>
                 <td class="padded-cell mdc-data-table__cell hide-mobile">
                     <or-translate .value="${user.enabled ? "enabled" : "disabled"}"></or-translate>
@@ -613,37 +601,35 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 <!-- is admin -->
                                 <!-- placeholder -->
                                 
-                                <!-- roles -->
+                                <!-- composite roles -->
                                 <or-mwc-input ?readonly="${readonly}"
                                               ?disabled="${isSameUser}"
-                                              .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
+                                              .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
                                               .type="${InputType.SELECT}" multiple
-                                              .options="${roleOptions}" 
+                                              .options="${compositeRoleOptions}" 
                                               .label="${i18next.t("role")}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                   const roleNames = e.detail.value as string[];
                                                   user.roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
-                                                  this._setPermissionIdsFromSelectedRoles(user.roles);
+                                                  this.setRoleIdsForSelectedCompositeRoles(user.roles);
                                               }}"></or-mwc-input>
 
-                                <!-- permissions -->
+                                <!-- roles -->
                                 <div style="display:flex;flex-wrap:wrap;">
-                                    ${permissionOptions.map(p => {
+                                    ${this._roles.map(r => {
                                         return html`
                                             <or-mwc-input ?readonly="${readonly}"
-                                                ?disabled="${this.permissionIdsFromRoles.includes(p.id)}"
-                                                .value="${this.permissionIdsFromRoles && this.permissionIdsFromRoles.includes(p.id) ? p : undefined}"
+                                                ?disabled="${this.separateRoleIds.includes(r.id)}"
+                                                .value="${(user.roles && user.roles.map(r => r.id).includes(r.id)) || this.separateRoleIds.includes(r.id) ? r : undefined}"
                                                 .type="${InputType.CHECKBOX}"
-                                                .label="${p.name}"
+                                                .label="${r.name}"
                                                 style="width:25%;margin:0"
                                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                     if (!!e.detail.value) {
-                                                        this.permissionIdsFromRoles.push(p.id);
+                                                        user.roles.push(r);
                                                     } else {
-                                                        this.permissionIdsFromRoles.splice(this.permissionIdsFromRoles.indexOf(p.id), 1);
+                                                        user.roles = user.roles.filter(e => e.id !== r.id);
                                                     }
-                                                    console.log(this.permissionIdsFromRoles);
-                                                    // todo: store this in some kind of additional permissions collection
                                                 }}"></or-mwc-input>
                                         `
                                     })}
