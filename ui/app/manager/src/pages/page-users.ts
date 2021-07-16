@@ -8,7 +8,7 @@ import {ClientRole, Role, User} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog"; 
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
