@@ -350,11 +350,12 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
             grant.setTokenEndpointUri(getTokenUri("master").toString());
         }
 
-        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, keycloakServiceUri.build())
+        URI proxyURI = keycloakServiceUri.build();
+        WebTargetBuilder targetBuilder = new WebTargetBuilder(httpClient, proxyURI)
             .setOAuthAuthentication(grant);
         keycloakTarget = targetBuilder.build();
         realmsResourcePool.clear();
-        LOG.info("Keycloak proxy credentials set to: " + grant);
+        LOG.info("Keycloak proxy URI set to: " + proxyURI);
     }
 
     protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> createKeycloakDeploymentCache() {
