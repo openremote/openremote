@@ -44,6 +44,7 @@ import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static javax.persistence.DiscriminatorType.STRING;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
@@ -559,7 +560,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         }
         return "[" +
             attributes.values().stream().map(attr ->
-                "attr=" + attr.getName() + ",timestamp=" + attr.getTimestamp().orElse(null) + ",meta=" + getMetaString(attr.getMeta())) +
+                "attr=" + attr.getName() + ",timestamp=" + attr.getTimestamp().orElse(null) + ",meta=" + getMetaString(attr.getMeta())).collect(Collectors.joining("; ")) +
         "]";
     }
 
@@ -570,7 +571,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
         return "[" +
             meta.entrySet().stream().map(nameAndValue ->
-                "meta=" + nameAndValue.getKey() + ",value=" + Values.asJSON(nameAndValue.getValue().getValue()).orElse(null)) +
+                "meta=" + nameAndValue.getKey() + ",value=" + Values.asJSON(nameAndValue.getValue().getValue()).orElse(null)).collect(Collectors.joining("; ")) +
         "]";
     }
 
