@@ -250,6 +250,7 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
         }
 
         when: "the echo world attribute is also updated to work with hex server"
+        asset = assetStorageService.find(asset.id)
         asset.getAttribute("echoWorld").get().getMetaValue(AGENT_LINK).get().setWriteValue("123456")
         asset = assetStorageService.merge(asset)
 
