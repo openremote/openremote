@@ -139,7 +139,7 @@ public interface UserResource {
     void updateUserRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
 
     @PUT
-    @Path("{realm}/userRoles/{userId}//{clientId}")
+    @Path("{realm}/userRoles/{userId}/{clientId}")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     void updateUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles, @PathParam("clientId") String clientId);
