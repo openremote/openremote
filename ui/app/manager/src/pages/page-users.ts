@@ -8,7 +8,7 @@ import {ClientRole, Role, User} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog"; 
+import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -92,7 +92,15 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 td, th {
                     width: 25%
                 }
-                
+
+                .meta-item-container {
+                    flex-direction: row;
+                    overflow: hidden;
+                    max-height: 0;
+                    transition: max-height 0.25s ease-out;
+                    padding-left: 16px;
+                }
+
                 or-mwc-input {
                     margin-bottom: 20px;
                     margin-right: 16px;
@@ -118,7 +126,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     flex-direction: column;
                     margin: 0px;
                     flex: 1 1 0;
-                    max-width: 50%;
+
                 }
 
                 .mdc-data-table__header-cell {
@@ -134,16 +142,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     padding: 0;
                 }
 
-                .meta-item-container {
-                    flex-direction: row;
-                    overflow: hidden;
-                    max-height: 0;
-                    padding-left: 16px;
-                }
-
                 .attribute-meta-row.expanded .meta-item-container {
-                    overflow: visible;
-                    max-height: unset;
+                    max-height: 1000px;
+                    transition: max-height 1s ease-in;
                 }
 
                 .button {
@@ -190,13 +191,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     protected _serviceUsers: UserModel[] = [];
 
     @property()
-    protected _roles: Role[] = [];
-
-    @property()
     protected _compositeRoles: Role[] = [];
-
-    @property()
-    protected separateRoleIds: string[] = []; //todo: do statemanagement for selected roles and composite roles separately
 
     @property()
     public validPassword?: boolean = true;
@@ -210,7 +205,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     get name(): string {
         return "user_plural";
     }
-    
+
     constructor(store: EnhancedStore<S>) {
         super(store);
         this.loadUsers();
@@ -223,7 +218,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 break;
         }
     };
-    
+
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
         if (_changedProperties.has("realm")) {
@@ -257,7 +252,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
 
         const compositeRoles = ORClientRoleResponse.data.filter(role => role.composite);
-        const roles = ORClientRoleResponse.data.filter(role => !role.composite);
         const usersResponse = await manager.rest.api.UserResource.getAll(manager.displayRealm);
         const serviceUsersResponse = await manager.rest.api.UserResource.getAllService(manager.displayRealm);
 
@@ -272,13 +266,12 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         // Load each users assigned roles
         const roleLoaders = [...users, ...serviceUsers].map(async user => {
             const userRolesResponse = await (user.serviceAccount ? manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, user.username) : manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
-            user.roles = userRolesResponse.data.filter(r => r.assigned);
+            user.roles = userRolesResponse.data.filter(r => r.composite && r.assigned);
         });
-        
+
         await Promise.all(roleLoaders);
         this._users = users.sort(Util.sortByString(u => u.username));
         this._serviceUsers = serviceUsers.sort(Util.sortByString(u => u.username));
-        this._roles = roles;
         this._compositeRoles = compositeRoles;
         this.loading = false;
     }
@@ -315,7 +308,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return;
         }
 
-        const compositeRoles = [...this._compositeRoles, ...this._roles].filter(c => user.roles.some(r => r.name === c.name)).map(r => {
+        const compositeRoles = this._compositeRoles.filter(c => user.roles.some(r => r.name === c.name)).map(r => {
             return {...r, assigned: true}
         });
 
@@ -328,10 +321,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         } else {
             await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, user.username, compositeRoles);
         }
-    }
-    
-    private setRoleIdsForSelectedCompositeRoles(roles: Role[]) {
-        this.separateRoleIds = [].concat(...roles.map(r => r.compositeRoleIds)); //flat array of permission ids
     }
 
 
@@ -365,14 +354,16 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return html``;
         }
 
-        const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
+        const roleOptions: string[] = this._compositeRoles.map(cr => cr.name);
         const readonly = !manager.hasRole(ClientRole.WRITE_USER);
 
         return html`
             <div id="wrapper">
                 <div id="title">
                     <or-icon icon="account-group"></or-icon>
-                    ${i18next.t("user_plural")}
+                    ${i18next.t(
+                            "user_plural"
+                    )}
                 </div>
 
                 <div class="panel">
@@ -398,7 +389,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             <tbody class="mdc-data-table__content">
                             ${this._users.map((user, index) => this._getUserTemplate(() => {
                                 this._users.pop(); this._users = [...this._users];
-                            }, user, readonly, compositeRoleOptions, "user"+index))}
+                            }, user, readonly, roleOptions, "user"+index))}
                             ${(this._users.length === 0 || (this._users.length > 0 && !!this._users[this._users.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._users = [...this._users, {enabled: true}];
@@ -439,7 +430,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                             <tbody class="mdc-data-table__content">
                             ${this._serviceUsers.map((user, index) => this._getUserTemplate(() => {
                                 this._serviceUsers.pop(); this._serviceUsers = [...this._serviceUsers];
-                            }, user, readonly, compositeRoleOptions, "serviceuser" + index))}
+                            }, user, readonly, roleOptions, "serviceuser" + index))}
                             ${(this._serviceUsers.length === 0 || (this._serviceUsers.length > 0 && !!this._serviceUsers[this._serviceUsers.length - 1].id)) && !readonly ? html`
                                 <tr class="mdc-data-table__row" @click="${() => {
                                     this._serviceUsers = [...this._serviceUsers, {
@@ -515,10 +506,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         secretElem.disabled = false;
     }
 
-    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], suffix: string): TemplateResult {
+    protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, roleOptions: string[], suffix: string): TemplateResult {
         const isSameUser = user.username === manager.username;
-        this.setRoleIdsForSelectedCompositeRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
-        
+
         return html`
             <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev)}">
                 <td class="padded-cell mdc-data-table__cell">
@@ -529,7 +519,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     ${user.email}
                 </td>
                 <td class="padded-cell mdc-data-table__cell">
-                    ${user.roles ? user.roles.filter(r => r.composite).map(r => r.name).join(",") : null}
+                    ${user.roles ? user.roles.map(r => r.name).join(",") : null}
                 </td>
                 <td class="padded-cell mdc-data-table__cell hide-mobile">
                     <or-translate .value="${user.enabled ? "enabled" : "disabled"}"></or-translate>
@@ -540,8 +530,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     <div class="meta-item-container">
                         <div class="row">
                             <div class="column">
-                                <h5>${i18next.t("details")}</h5>
-                                <!-- user details -->
                                 <or-mwc-input ?readonly="${!!user.id || readonly}"
                                               .label="${i18next.t("username")}"
                                               .type="${InputType.TEXT}" min="1" required
@@ -562,9 +550,20 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .type="${InputType.TEXT}" min="1"
                                               .value="${user.lastName}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.lastName = e.detail.value}"></or-mwc-input>
+                            </div>
 
-                                <!-- password -->
-                                <h5>${i18next.t("password")}</h5>
+                            <div class="column">
+                                <or-mwc-input ?readonly="${readonly}"
+                                              ?disabled="${isSameUser}"
+                                              .value="${user.roles && user.roles.length > 0 ? user.roles.map(r => r.name) : undefined}"
+                                              .type="${InputType.SELECT}" multiple
+                                              .options="${roleOptions}" 
+                                              .label="${i18next.t("role")}"
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                  const roleNames = e.detail.value as string[];
+                                                  const roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
+                                                  user.roles = roles;
+                                              }}"></or-mwc-input>
                                 ${user.serviceAccount ? html`
                                     <or-mwc-input id="password-${suffix}" readonly
                                                   .label="${i18next.t("secret")}"
@@ -574,7 +573,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                                   .label="${i18next.t("regenerateSecret")}"
                                                   .type="${InputType.BUTTON}"
                                                   @or-mwc-input-changed="${(ev) => this._regenerateSecret(ev, user, "password-"+suffix)}"></or-mwc-input>`
-                                        : html`
+                                : html`
                                     <or-mwc-input id="password-${suffix}"
                                               ?readonly="${readonly}"
                                               .label="${i18next.t("password")}"
@@ -586,62 +585,12 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .type="${InputType.PASSWORD}" min="1"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => {this._onPasswordChanged(user, suffix)}}"></or-mwc-input>
                                 `}
-                            </div>
-
-                            <div class="column">
-                                <h5>${i18next.t("settings")}</h5>
-                                <!-- enabled -->
                                 <or-mwc-input ?readonly="${readonly}"
-                                              .label="${i18next.t("active")}"
-                                              .type="${InputType.CHECKBOX}"
+                                              .label="${i18next.t("enabled")}"
+                                              .type="${InputType.SWITCH}" min="1"
                                               .value="${user.enabled}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
                                               style="height: 56px;"></or-mwc-input>
-
-                                <!-- is admin -->
-                                <or-mwc-input ?readonly="${true}"
-                                              .label="${i18next.t("fullAccessLabel")}"
-                                              .type="${InputType.CHECKBOX}"
-                                              .value="${user.enabled}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => console.log(e.detail.value)}"
-                                              style="height: 56px;"></or-mwc-input>
-                                
-                                <!-- composite roles -->
-                                <or-mwc-input ?readonly="${readonly}"
-                                              ?disabled="${isSameUser}"
-                                              .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
-                                              .type="${InputType.SELECT}" multiple
-                                              .options="${compositeRoleOptions}" 
-                                              .label="${i18next.t("role")}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  const roleNames = e.detail.value as string[];
-                                                  user.roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
-                                                  this.setRoleIdsForSelectedCompositeRoles(user.roles);
-                                              }}"></or-mwc-input>
-
-                                <!-- roles -->
-                                <div style="display:flex;flex-wrap:wrap;">
-                                    ${this._roles.map(r => {
-                                        return html`
-                                            <or-mwc-input ?readonly="${readonly}"
-                                                ?disabled="${this.separateRoleIds.includes(r.id)}"
-                                                .value="${(user.roles && user.roles.map(r => r.id).includes(r.id)) || this.separateRoleIds.includes(r.id) ? r : undefined}"
-                                                .type="${InputType.CHECKBOX}"
-                                                .label="${r.name}"
-                                                style="width:25%;margin:0"
-                                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                    if (!!e.detail.value) {
-                                                        user.roles.push(r);
-                                                    } else {
-                                                        user.roles = user.roles.filter(e => e.id !== r.id);
-                                                    }
-                                                }}"></or-mwc-input>
-                                        `
-                                    })}
-                                </div>
-
-                                <!-- restricted access -->
-                                <!-- placeholder -->
                             </div>
                         </div>
 

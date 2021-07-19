@@ -118,9 +118,9 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
     let icon = listItem.icon;
     let selectedClassName = "mdc-list-item--selected";
     translate = translate || item.translate;
-    
+
     if (multiSelect && type === ListType.MULTI_TICK) {
-        icon = isSelected ? "checkbox-marked" : "checkbox-blank-outline";
+        icon = isSelected ? "check" : undefined;
     }
 
     if (type === ListType.MULTI_TICK || icon) {
@@ -177,7 +177,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
             break;
         case ListType.MULTI_TICK:
             ariaChecked = isSelected ? "true" : "false";
-            selectedClassName = "mdc-list-item--selected";
+            selectedClassName = "mdc-menu-item--selected";
             break;
     }
 
