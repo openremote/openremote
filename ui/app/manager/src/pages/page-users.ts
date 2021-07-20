@@ -331,7 +331,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     }
     
     private setRoleIdsForSelectedCompositeRoles(roles: Role[]) {
-        this.separateRoleIds = [].concat(...roles.map(r => r.compositeRoleIds)); //flat array of permission ids
+        this.separateRoleIds = roles.map(r => r.compositeRoleIds).flat();
     }
 
 
