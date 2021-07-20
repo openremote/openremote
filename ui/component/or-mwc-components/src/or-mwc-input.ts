@@ -550,6 +550,10 @@ const style = css`
     #field {
         height: 100%;
     }
+
+    .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
+        --or-icon-fill: var(--or-app-color4);
+    }
 `;
 
 @customElement("or-mwc-input")
@@ -864,9 +868,17 @@ export class OrMwcInput extends LitElement {
                             } else {
                                 inputValue.push(value);
                             }
-                            const icon = (ev.composedPath()[0] as HTMLElement).getElementsByTagName("or-icon")[0] as OrIcon;
-                            if (icon) {
-                                icon.icon = index >= 0 ? undefined : "check";
+                            const listItemEl = (ev.composedPath()[0] as HTMLElement).closest("li") as HTMLElement,
+                                iconEl = listItemEl.getElementsByTagName("or-icon")[0] as OrIcon;
+                            if (listItemEl) {
+                                if (index >= 0) {
+                                    listItemEl.classList.remove("mdc-list-item--selected");
+                                } else {
+                                    listItemEl.classList.add("mdc-list-item--selected");
+                                }
+                            }
+                            if (iconEl) {
+                                iconEl.icon = index >= 0 ? "checkbox-blank-outline" : "checkbox-marked";
                             }
                             this._tempValue = inputValue;
                         }
