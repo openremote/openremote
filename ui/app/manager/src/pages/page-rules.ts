@@ -1,4 +1,5 @@
-import {css, customElement, html, property} from "lit-element";
+import {css, html} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-rules";
 import {ActionTargetType, RulesConfig} from "@openremote/or-rules";
 import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";

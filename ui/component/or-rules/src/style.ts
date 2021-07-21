@@ -1,5 +1,5 @@
 import {DefaultColor5} from "@openremote/core";
-import {css, unsafeCSS} from "lit-element";
+import {css, unsafeCSS} from "lit";
 
 // language=CSS
 export const invalidStyle = css`

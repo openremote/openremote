@@ -1,4 +1,5 @@
-import {css, customElement, html, property, query, TemplateResult, unsafeCSS} from "lit-element";
+import {css, html, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-asset-tree";
 import "@openremote/or-asset-viewer";
 import {
@@ -6,9 +7,9 @@ import {
     OrAssetViewerEditToggleEvent,
     OrAssetViewerRequestEditToggleEvent,
     OrAssetViewerSaveEvent,
-    ViewerConfig,
     saveAsset,
-    SaveResult
+    SaveResult,
+    ViewerConfig
 } from "@openremote/or-asset-viewer";
 import {
     AssetTreeConfig,
@@ -19,12 +20,12 @@ import {
     OrAssetTreeSelectionEvent
 } from "@openremote/or-asset-tree";
 import {DefaultBoxShadow, Util} from "@openremote/core";
-import {Page, PageProvider, router} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
+import "@openremote/or-json-forms";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -81,32 +82,32 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     static get styles() {
         // language=CSS
         return css`
-            
+
             or-asset-tree {
                 align-items: stretch;
                 z-index: 1;
             }
-            
+
             .hideMobile {
                 display: none;
             }
-                
+
             or-asset-viewer {
                 align-items: stretch;
                 z-index: 0;
             }
-            
+
             @media only screen and (min-width: 768px){
                 or-asset-tree {
                     width: 300px;
                     min-width: 300px;
-                    box-shadow: ${unsafeCSS(DefaultBoxShadow)} 
+                    box-shadow: ${unsafeCSS(DefaultBoxShadow)}
                 }
-                
+
                 .hideMobile {
                     display: flex;
                 }
-                
+
                 or-asset-viewer,
                 or-asset-viewer.hideMobile {
                     display: initial;

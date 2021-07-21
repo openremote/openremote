@@ -1,13 +1,13 @@
 import {
     CSSResult,
     CSSResultArray,
-    customElement,
+    CSSResultGroup,
     html,
     LitElement,
-    property,
     PropertyValues,
     TemplateResult
-} from "lit-element";
+} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {
     Asset,
     AssetEvent,
@@ -76,7 +76,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
     @property({type: Boolean, attribute: true})
     public useAssetColor: boolean = true;
 
-    static get styles(): CSSResultArray | CSSResult {
+    static get styles(): CSSResultGroup {
         return mapAssetCardStyle;
     }
 

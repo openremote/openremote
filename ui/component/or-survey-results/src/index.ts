@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, PropertyValues} from "lit-element";
+import {html, LitElement, PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {Asset, AssetQuery} from "@openremote/model";
 import {surveyResultStyle} from "./style";
 import manager, { OREvent, EventCallback } from "@openremote/core";

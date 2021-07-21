@@ -8,7 +8,7 @@ import i18next from "i18next";
 import { Utilities } from "../utils";
 import { CopyMachine } from "../node-structure";
 import { ContextMenu } from "./context-menu";
-import { html } from "lit-element";
+import { html } from "lit";
 
 export const createContextMenuButtons = (workspace: EditorWorkspace, e: MouseEvent) => {
     const selectedNodes = input.selected.filter((s) => s instanceof FlowNode && s.selected) as FlowNode[];

@@ -22,6 +22,7 @@
     { "path": "../or-survey-results" },
     { "path": "../or-attribute-input" },
     { "path": "../or-attribute-history" },
-    { "path": "../or-mwc-components" }
+    { "path": "../or-mwc-components" },
+    { "path": "../or-json-forms" }
   ]
 }

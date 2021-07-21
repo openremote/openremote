@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, PropertyValues} from "lit-element";
+import {html, LitElement, PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {Asset, AssetQuery} from "@openremote/model";
 import {surveyLayoutStyle, surveySectionStyle} from "./style";
 import set from "lodash-es/set";

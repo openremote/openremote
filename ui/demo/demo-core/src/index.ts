@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, TemplateResult, PropertyValues} from "lit-element";
+import {html, LitElement, TemplateResult, PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import manager, {AssetModelUtil, Auth, Manager, OREvent, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import "@openremote/or-translate";

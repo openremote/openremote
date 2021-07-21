@@ -1,6 +1,7 @@
 import manager, {EventCallback, MapType, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
-import {CSSResult, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
+import {CSSResult, html, LitElement, PropertyValues} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";

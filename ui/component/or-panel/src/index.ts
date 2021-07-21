@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, PropertyValues, query, unsafeCSS, property} from "lit-element";
+import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import SimpleBar from "simplebar";
 import {DefaultColor2} from "@openremote/core";
 

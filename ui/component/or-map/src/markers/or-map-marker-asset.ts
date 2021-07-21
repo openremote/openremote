@@ -1,4 +1,5 @@
-import {customElement, property, PropertyValues} from "lit-element";
+import {PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {OrMapMarker} from "./or-map-marker";
 import {AttributeEvent, GeoJSONPoint, AssetEvent, AssetEventCause, Asset, SharedEvent, AssetDescriptor, WellknownAttributes} from "@openremote/model";
 import {subscribe} from "@openremote/core";

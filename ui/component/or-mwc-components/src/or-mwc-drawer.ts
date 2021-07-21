@@ -1,6 +1,7 @@
-import { css, customElement, html, LitElement, property, TemplateResult, unsafeCSS, query } from "lit-element";
+import { css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import { MDCDrawer } from "@material/drawer";
-import { classMap } from "lit-html/directives/class-map";
+import { classMap } from "lit/directives/class-map";
 
 const drawerStyle = require("@material/drawer/dist/mdc.drawer.css");
 

@@ -16,7 +16,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/rest": "^1.0.3",
-    "lit-element": "^2.4.0"
+    "lit": "^2.0.0-rc.2"
   },
   "devDependencies": {
     "@openremote/util": "^1.0.4",

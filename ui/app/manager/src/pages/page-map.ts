@@ -1,4 +1,5 @@
-import {css, customElement, html, property, query} from "lit-element";
+import {css, html} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {Action, createSlice, EnhancedStore, PayloadAction, ThunkAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {

@@ -664,7 +664,8 @@ export class Manager implements EventProviderFactory {
             success = this.doRestApiInit();
         }
 
-        success = await this.doConsoleInit() && success;
+        // Don't let console registration error prevent loading
+        await this.doConsoleInit();
         success = await this.doTranslateInit() && success;
 
         if (success) {

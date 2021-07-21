@@ -1,5 +1,6 @@
-import {css, customElement, html, LitElement, property, TemplateResult} from "lit-element";
-import {until} from "lit-html/directives/until";
+import {css, html, LitElement, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
+import {until} from "lit/directives/until";
 import {ActionTargetType, ActionType, OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {
     AssetQuery,

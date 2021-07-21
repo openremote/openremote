@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS, PropertyValues} from "lit-element";
+import {css, html, LitElement, TemplateResult, unsafeCSS, PropertyValues} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";

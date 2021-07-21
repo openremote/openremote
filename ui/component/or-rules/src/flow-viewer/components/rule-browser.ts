@@ -1,4 +1,5 @@
-import { LitElement, customElement, css, property, html } from "lit-element";
+import { LitElement, css, html } from "lit";
+import {customElement, property} from "lit/decorators.js";
 import { GlobalRuleset } from "@openremote/model";
 import rest from "@openremote/rest";
 import { i18next, translate } from "@openremote/or-translate";

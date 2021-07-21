@@ -1,4 +1,5 @@
-import {html, LitElement, property, customElement} from "lit-element";
+import {html, LitElement} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import moment from "moment";
 
 @customElement("or-timeline")

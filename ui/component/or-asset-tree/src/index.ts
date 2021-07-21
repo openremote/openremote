@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import {html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-icon";
 import {
