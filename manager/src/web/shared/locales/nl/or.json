@@ -259,6 +259,7 @@
   "password": "Wachtwoord",
   "repeatPassword": "Herhaal wachtwoord",
   "permissions":"Rechten",
+  "restrictAccess": "Beperkte toegang",
   "units": {
     "CELSIUS": "°C",
     "FAHRENHEIT": "°F",

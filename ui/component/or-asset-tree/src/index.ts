@@ -242,6 +242,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: String})
     public sortBy?: string = "name";
 
+    @property({type: Boolean})
+    public expandNodes?: boolean = false;
+
     protected config?: AssetTreeConfig;
 
     @property({attribute: false})
@@ -871,6 +874,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (this.selectedIds && this.selectedIds.length > 0) {
             this._updateSelectedNodes();
+        }
+
+        if (this.expandNodes) {
+            OrAssetTree._forEachNodeRecursive(this._nodes, (node) => {
+                if (node.children && node.children.length > 0) {
+                    node.expanded = true;
+                }
+            });
         }
     }
 

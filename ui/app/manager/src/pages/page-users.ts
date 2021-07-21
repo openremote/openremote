@@ -8,7 +8,7 @@ import {ClientRole, Role, User} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -362,7 +362,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 <div id="title">
                     <or-icon icon="account-group"></or-icon>
                     ${i18next.t(
-                            "user_plural"
+                        "user_plural"
                     )}
                 </div>
 
@@ -468,6 +468,20 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             expanderIcon.icon = "chevron-right";
             userRow.classList.remove("expanded");
         }
+    }
+
+    protected _openAssetSelector() {
+        const hostElement = document.body;
+
+        const dialog = new OrMwcDialog();
+        dialog.isOpen = true;
+        dialog.dialogTitle = i18next.t("restrictAccess");
+        dialog.dialogContent = html`
+            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="" .showSortBtn="${false}" .expandNodes="${true}"></or-asset-tree>
+        `;
+        
+        hostElement.append(dialog);
+        return dialog;
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
@@ -591,6 +605,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .value="${user.enabled}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
                                               style="height: 56px;"></or-mwc-input>
+                                
+                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
+                                    @click="${() => this._openAssetSelector()}"></or-mwc-input>
                             </div>
                         </div>
 

@@ -254,6 +254,7 @@
   "password": "Password",
   "repeatPassword": "Repeat password",
   "permissions":"Permissions",
+  "restrictAccess": "Restrict access",
   "noChildAssets": "No child assets",
   "account": "Account",
   "editAttribute": "Change attribute",
