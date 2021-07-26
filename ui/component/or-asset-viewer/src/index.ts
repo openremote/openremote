@@ -1083,6 +1083,25 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
 
+        if (changedProperties.has("assetId")) {
+            this.asset = undefined;
+            if (this.assetId) {
+                this._loading = true;
+                super.assetIds = [this.assetId];
+            } else {
+                this._loading = false;
+                super.assetIds = undefined;
+            }
+        } else if (changedProperties.has("editMode") && !this.editMode) {
+            this.reloadAsset();
+        }
+
+        this.onCompleted().then(() => {
+            onRenderComplete.startCallbacks().then(() => {
+                OrAssetViewer.generateGrid(this.shadowRoot);
+            });
+        });
+
         return super.shouldUpdate(changedProperties);
     }
 
@@ -1161,29 +1180,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 ${content}
             </div>
         `;
-    }
-
-    protected updated(_changedProperties: PropertyValues) {
-        super.updated(_changedProperties);
-
-        if (_changedProperties.has("assetId")) {
-            this.asset = undefined;
-            if (this.assetId) {
-                this._loading = true;
-                super.assetIds = [this.assetId];
-            } else {
-                this._loading = false;
-                super.assetIds = undefined;
-            }
-        } else if (_changedProperties.has("editMode") && !this.editMode) {
-            this.reloadAsset();
-        }
-
-        this.onCompleted().then(() => {
-            onRenderComplete.startCallbacks().then(() => {
-                OrAssetViewer.generateGrid(this.shadowRoot);
-            });
-        });
     }
 
     public reloadAsset() {

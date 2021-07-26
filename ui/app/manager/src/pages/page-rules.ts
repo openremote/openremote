@@ -1,11 +1,13 @@
 import {css, html} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-rules";
-import {ActionTargetType, RulesConfig} from "@openremote/or-rules";
+import {ActionTargetType, OrRules, RulesConfig} from "@openremote/or-rules";
 import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
+import manager from "@openremote/core";
+import {createSelector} from "reselect";
 
 export interface PageRulesConfig {
     rules: RulesConfig;
@@ -76,6 +78,20 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
     @property()
     public config?: PageRulesConfig;
 
+    @query("#rules")
+    protected _orRules!: OrRules;
+
+    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+
+    protected getRealmState = createSelector(
+        [this._realmSelector],
+        async (realm) => {
+            if (this._orRules) {
+                this._orRules.refresh();
+            }
+        }
+    )
+
     get name(): string {
         return "rules";
     }
@@ -86,10 +102,11 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
 
     protected render() {
         return html`
-            <or-rules .config="${this.config && this.config.rules ? this.config.rules : PAGE_RULES_CONFIG_DEFAULT.rules}"></or-rules>
+            <or-rules id="rules" .config="${this.config && this.config.rules ? this.config.rules : PAGE_RULES_CONFIG_DEFAULT.rules}"></or-rules>
         `;
     }
 
     public stateChanged(state: S) {
+        this.getRealmState(state);
     }
 }

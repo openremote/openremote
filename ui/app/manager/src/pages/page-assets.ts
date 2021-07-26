@@ -19,13 +19,14 @@ import {
     OrAssetTreeRequestSelectionEvent,
     OrAssetTreeSelectionEvent
 } from "@openremote/or-asset-tree";
-import {DefaultBoxShadow, Util} from "@openremote/core";
+import manager, {DefaultBoxShadow, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
+import {createSelector} from "reselect";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -132,10 +133,20 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     protected _viewer!: OrAssetViewer;
 
     protected _addedAssetId?: string;
+    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
 
     get name(): string {
         return "assets";
     }
+
+    protected getRealmState = createSelector(
+        [this._realmSelector],
+        async (realm) => {
+            if (this._tree) {
+                this._tree.refresh();
+            }
+        }
+    )
 
     constructor(store: EnhancedStore<S>) {
         super(store);
@@ -159,6 +170,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         // State is only utilised for initial loading
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
         this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
+        this.getRealmState(state);
     }
 
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {

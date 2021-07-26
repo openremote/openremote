@@ -144,12 +144,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     public async refresh() {
+        this._nodes = undefined;
         await this._loadRulesets();
-    }
-
-    public disconnectedCallback() {
-        super.disconnectedCallback();
-        manager.removeListener(this.onManagerEvent);
     }
 
     protected get _allowedLanguages(): RulesetLang[] | undefined {
@@ -183,22 +179,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        manager.addListener(this.onManagerEvent);
         if (manager.ready) {
             this._onReady();
-        }
-    }
-
-    protected onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.READY:
-                if (!manager.ready) {
-                    this._onReady();
-                }
-                break;
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this._nodes = undefined;
-                break;
         }
     }
 
@@ -624,7 +606,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             this._nodes = [];
         } else {
 
-            let nodes = rulesets.map((ruleset) => {
+            const nodes = rulesets.map((ruleset) => {
                 return {
                     ruleset: ruleset
                 } as RulesetNode;

@@ -262,26 +262,16 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public connectedCallback() {
         super.connectedCallback();
-        manager.addListener(this.onManagerEvent);
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
         this.requestUpdate();
-        manager.removeListener(this.onManagerEvent);
     }
 
     public refresh() {
         // Clear nodes to re-fetch them
         this._nodes = undefined;
-    }
-
-    protected onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this._nodes = undefined;
-                break;
-        }
     }
 
     public isAncestorSelected(node: UiAssetTreeNode) {

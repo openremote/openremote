@@ -588,6 +588,10 @@ export class OrRules extends translate(i18next)(LitElement) {
         `;
     }
 
+    public refresh() {
+        this._rulesList.refresh();
+    }
+
     protected isReadonly(): boolean {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }

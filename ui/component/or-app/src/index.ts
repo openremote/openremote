@@ -22,7 +22,7 @@ import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremot
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
-import {AppStateKeyed, updatePage} from "./app";
+import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
 
@@ -165,6 +165,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _onManagerEvent = (event: OREvent) => {
         switch (event) {
             case OREvent.DISPLAY_REALM_CHANGED:
+                this._store.dispatch(updateRealm(manager.displayRealm));
                 const config = this._getConfig(manager.displayRealm);
 
                 if (!config) {
