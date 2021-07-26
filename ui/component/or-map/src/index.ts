@@ -183,6 +183,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);
     const compact = !!(options && options.compact);
+    const comfortable = !!(options && options.comfortable);
     const centerControl = new CenterControl();
     const coordinatesControl = new CoordinatesControl(disabled, valueChangeNotifier);
 
@@ -292,7 +293,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     }
                 </style>
                 <div id="geo-json-point-input-compact-wrapper">
-                    <or-mwc-input .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-mwc-input>
+                    <or-mwc-input .comfortable="${comfortable}" .type="${InputType.TEXT}" .value="${centerStr}" .pattern="${CoordinatesRegexPattern}" @keyup="${(e: KeyboardEvent) => getCoordinatesInputKeyHandler(valueChangeNotifier)(e)}"></or-mwc-input>
                     <or-mwc-input style="width: auto;" .type="${InputType.BUTTON}" compact icon="crosshairs-gps" @click="${onClick}"></or-mwc-input>
                 </div>
             `;

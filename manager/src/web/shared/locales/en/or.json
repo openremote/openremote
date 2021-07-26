@@ -398,5 +398,6 @@
   "latestDatapoint": "Latest datapoint",
   "arrayDimensions": "Array dimensions",
   "addParameter": "Add parameter",
-  "addItem": "Add item"
+  "addItem": "Add item",
+  "array": "Array"
 }

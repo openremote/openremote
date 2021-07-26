@@ -227,7 +227,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected _confirmContinue(action: () => void) {
         if (this._viewer.isModified()) {
-            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueAssetModified"))
+            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueAssetModified"), i18next.t("discard"))
                 .then((ok) => {
                     if (ok) {
                         action();

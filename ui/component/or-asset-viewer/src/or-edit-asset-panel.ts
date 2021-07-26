@@ -250,7 +250,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
-                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
+                    <or-attribute-input compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>
@@ -301,7 +301,8 @@ export class OrEditAssetPanel extends LitElement {
             content = html`<p>NOT SUPPORTED</p>`;
         } else {
             const options: ValueInputProviderOptions = {
-                label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true)
+                label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true),
+                resizeVertical: true
             };
             const provider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail: OrInputChangedEventDetail) => this._onMetaItemModified(attribute, metaItem, detail), options);
 
@@ -341,11 +342,6 @@ export class OrEditAssetPanel extends LitElement {
                         overflow-y: visible !important;
                     }
                     #dialog-content {
-                        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                        border-top-width: 1px;
-                        border-top-style: solid;
-                        border-bottom-width: 1px;
-                        border-bottom-style: solid;
                         padding: 0;
                         overflow: visible;
                     }
@@ -398,13 +394,6 @@ export class OrEditAssetPanel extends LitElement {
             `,
             styles: html`
                 <style>
-                    #dialog-content {
-                        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                        border-top-width: 1px;
-                        border-top-style: solid;
-                        border-bottom-width: 1px;
-                        border-bottom-style: solid;
-                    }
                     #meta-creator {
                         height: 600px;
                         max-height: 100%;
@@ -531,7 +520,7 @@ export class OrEditAssetPanel extends LitElement {
         return html`
             <div id="parent-edit-wrapper">
                 ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: false, label: i18next.t("parent")})}
-                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" raised .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
+                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
             </div>
         `;
     }
