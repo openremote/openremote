@@ -18,7 +18,7 @@
     "@openremote/or-icon": "^1.0.3",
     "@openremote/or-translate": "^1.0.3",
     "@openremote/rest": "^1.0.3",
-    "lit-element": "^2.4.0",
+    "lit": "^2.0.0-rc.2",
     "moment": "^2.24.0"
   },
   "devDependencies": {

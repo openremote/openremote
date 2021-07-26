@@ -15,7 +15,7 @@
     "@material/data-table": "^9.0.0",
     "@openremote/core": "^1.0.3",
     "@openremote/or-mwc-components": "^1.0.3",
-    "lit-element": "^2.4.0",
+    "lit": "^2.0.0-rc.2",
     "moment": "^2.24.0",
     "parse-link-header": "^1.0.1"
   },

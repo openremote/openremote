@@ -22,7 +22,7 @@
     "@openremote/rest": "^1.0.3",
     "ace-builds": "^1.4.7",
     "linqts": "^1.12.6",
-    "lit-element": "^2.4.0",
+    "lit": "^2.0.0-rc.2",
     "moment": "^2.24.0",
     "resize-observer": "^1.0.0",
     "rrule": "^2.6.4",

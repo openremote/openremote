@@ -17,6 +17,7 @@
     "@openremote/model": "^1.0.3",
     "@openremote/or-attribute-history": "^1.0.4",
     "@openremote/or-attribute-input": "^1.0.4",
+    "@openremote/or-json-forms": "^1.0.4",
     "@openremote/or-chart": "^1.0.4",
     "@openremote/or-icon": "^1.0.3",
     "@openremote/or-mwc-components": "^1.0.3",
@@ -26,7 +27,7 @@
     "@openremote/or-table": "^1.0.3",
     "@openremote/or-translate": "^1.0.3",
     "@openremote/rest": "^1.0.3",
-    "lit-element": "^2.4.0"
+    "lit": "^2.0.0-rc.2"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",

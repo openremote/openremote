@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query, unsafeCSS} from "lit-element";
+import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {
     Asset,

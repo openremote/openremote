@@ -1,4 +1,5 @@
-import {css, customElement, html, property, TemplateResult} from "lit-element";
+import {css, html, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig} from "@openremote/or-data-viewer";
 import {Page, PageProvider} from "@openremote/or-app";

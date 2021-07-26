@@ -1,4 +1,5 @@
-import {LitElement, html, css, query, customElement, property} from "lit-element";
+import {LitElement, html, css} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import "./or-navigation-item";
 import { FlattenedNodesObserver } from "@polymer/polymer/lib/utils/flattened-nodes-observer";
 import {OrNavigationItem} from "./or-navigation-item";

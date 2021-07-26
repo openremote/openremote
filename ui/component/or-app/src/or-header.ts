@@ -1,5 +1,6 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
-import {until} from "lit-html/directives/until";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
+import {until} from "lit/directives/until";
 import manager, {
     Util,
     DefaultBoxShadowBottom,

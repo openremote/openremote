@@ -1,4 +1,4 @@
-import { ComplexAttributeConverter } from "lit-element";
+import { ComplexAttributeConverter } from "lit";
 import { Node } from "@openremote/model";
 import { project } from "../components/flow-editor";
 

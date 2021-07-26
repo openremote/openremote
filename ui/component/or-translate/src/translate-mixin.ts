@@ -1,4 +1,4 @@
-import {PropertyValues} from "lit-element";
+import {PropertyValues} from "lit";
 import { InitOptions, i18n } from "i18next";
 
 declare type Constructor<T> = new (...args: any[]) => T;

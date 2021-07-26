@@ -1,14 +1,12 @@
 import {
     css,
-    customElement,
     html,
     LitElement,
-    property,
     PropertyValues,
-    query,
     TemplateResult,
     unsafeCSS
-} from "lit-element";
+} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {MDCMenu} from "@material/menu";
 import {DefaultColor4, DefaultColor8} from "@openremote/core";
 

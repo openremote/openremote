@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, TemplateResult} from "lit-element";
+import {css, html, LitElement, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {buttonStyle} from "../style";
 import "./or-rule-asset-query";
 import {ActionType, getAssetTypeFromQuery, RulesConfig} from "../index";

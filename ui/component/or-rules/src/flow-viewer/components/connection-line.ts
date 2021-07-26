@@ -1,4 +1,5 @@
-import { html, customElement, css, property } from "lit-element";
+import { html, css } from "lit";
+import {customElement, property} from "lit/decorators.js";
 import { NodeConnection } from "@openremote/model";
 import { IdentityDomLink, IdentityAssigner, NodeUtilities } from "../node-structure";
 import { FlowNodeSocket } from "./flow-node-socket";

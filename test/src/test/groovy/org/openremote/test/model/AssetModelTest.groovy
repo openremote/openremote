@@ -99,8 +99,15 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         AssetModelUtil.getAssetDescriptor(ThingAsset.class) != null
         AssetModelUtil.getAgentDescriptor(SimulatorAgent.class) != null
 
-        and: "the test asset model provider should have registered test agents and assets"
-        AssetModelUtil.getAgentDescriptor(HTTPServerTestAgent.DESCRIPTOR.name).isPresent()
+        when: "the http test server agent descriptor is retrieved (the test asset model provider should have registered test agents and assets)"
+        def testAgentDescriptor = AssetModelUtil.getAgentDescriptor(HTTPServerTestAgent.DESCRIPTOR.name).orElse(null)
+
+        then: "the descriptor should have been found"
+        assert testAgentDescriptor != null
+
+        and: "the descriptor should contain an agent link schema"
+        def schema = testAgentDescriptor.getAgentLinkSchema()
+        assert schema != null
     }
 
     def "Serialize/Deserialize asset model"() {

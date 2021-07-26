@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, PropertyValues} from "lit-element";
+import {css, html, LitElement, PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {
     Asset,
     AssetDescriptor,
@@ -28,7 +29,7 @@ import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
 import {OrAttributeInputChangedEvent} from "@openremote/or-attribute-input";
 import "./modals/or-rule-radial-modal";
-import { ifDefined } from "lit-html/directives/if-defined";
+import { ifDefined } from "lit/directives/if-defined";
 
 // language=CSS
 const style = css`

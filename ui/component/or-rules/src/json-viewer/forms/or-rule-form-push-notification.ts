@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, css, property} from "lit-element";
+import {html, LitElement, css} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
