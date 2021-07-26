@@ -1,12 +1,11 @@
 import {
   css,
-  customElement,
   html,
-  property,
   PropertyValues,
   TemplateResult,
   unsafeCSS,
-} from "lit-element";
+} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";

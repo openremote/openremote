@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
+import {css, html, LitElement, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import manager, {
     AssetModelUtil,
     DefaultBoxShadow,
@@ -585,6 +586,10 @@ export class OrRules extends translate(i18next)(LitElement) {
             <or-rule-list id="rule-list" .config="${this.config}" .language="${this.language}" .selectedIds="${this.selectedIds}"></or-rule-list>
             <or-rule-viewer id="rule-viewer" .config="${this.config}" .readonly="${this.isReadonly()}"></or-rule-viewer>
         `;
+    }
+
+    public refresh() {
+        this._rulesList.refresh();
     }
 
     protected isReadonly(): boolean {

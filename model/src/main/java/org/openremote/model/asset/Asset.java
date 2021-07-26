@@ -30,6 +30,7 @@ import org.openremote.model.asset.impl.ThingAsset;
 import org.openremote.model.asset.impl.UnknownAsset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
+import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.util.AssetModelUtil;
@@ -37,11 +38,13 @@ import org.openremote.model.util.TsIgnore;
 import org.openremote.model.validation.AssetValid;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static javax.persistence.DiscriminatorType.STRING;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
@@ -547,8 +550,29 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
             ", parentType='" + parentType + '\'' +
             ", realm='" + realm + '\'' +
             ", path=" + Arrays.toString(path) +
-            ", attributes=" + attributes +
+            ", attributes=" + getAttributesString() +
             '}';
+    }
+
+    protected String getAttributesString() {
+        if (attributes == null || attributes.isEmpty()) {
+            return "";
+        }
+        return "[" +
+            attributes.values().stream().map(attr ->
+                "attr=" + attr.getName() + ",timestamp=" + attr.getTimestamp().orElse(null) + ",meta=" + getMetaString(attr.getMeta())).collect(Collectors.joining("; ")) +
+        "]";
+    }
+
+    protected String getMetaString(MetaMap meta) {
+        if (meta == null || meta.isEmpty()) {
+            return "[]";
+        }
+
+        return "[" +
+            meta.entrySet().stream().map(nameAndValue ->
+                "meta=" + nameAndValue.getKey() + ",value=" + Values.asJSON(nameAndValue.getValue().getValue()).orElse(null)).collect(Collectors.joining("; ")) +
+        "]";
     }
 
     /* WELL KNNOWN ATTRIBUTE GETTER / SETTERS */

@@ -229,13 +229,6 @@ Resources:
                   - "\n"
                   - "log_stream_name = {instance_id}/cfn-wire.log\n"
                   - "datetime_format = \n"
-                  - "[/var/log/docker]\n"
-                  - "file = /var/log/docker.log\n"
-                  - 'log_group_name = '
-                  - !Ref 'CloudFormationLogs'
-                  - "\n"
-                  - "log_stream_name = {instance_id}/docker.log\n"
-                  - "datetime_format = %d/%b/%Y:%H:%M:%S\n"
               mode: '000444'
               owner: root
               group: root
@@ -316,7 +309,7 @@ Resources:
           # Create volume for deployment (needed for SWARM due to concurency in compose-file)
           # docker volume create openremote_deployment-data
           # docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:mvp
-          wget https://github.com/openremote/openremote/raw/master/mvp/mvp-docker-compose.yml
+          wget https://github.com/openremote/openremote/raw/master/mvp/mvp-docker-compose-awslogs.yml
           docker swarm init
           if [ ${HostName} ] && [ ${DomainName} ]
           then
@@ -338,9 +331,9 @@ Resources:
           export PASSWORD=${OpenRemotePassword}
           export EMAIL_USER=${AccessKeys}
           export EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet)
-          export EMAIL_HOST=email-smtp.eu-west-1.amazonaws.com
-          docker-compose -f mvp-docker-compose.yml -p openremote up -d
-          docker-compose -f mvp-docker-compose.yml -p openremote logs --no-color -f &> /var/log/docker.log &
+          export EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com
+          export AWSLOGS_GROUP=${CloudFormationLogs}
+          docker-compose -f mvp-docker-compose-awslogs.yml -p openremote up -d
           echo USER=${AccessKeys} > access.txt
           echo SECRET=${AccessKeys.SecretAccessKey} >> access.txt
           echo export EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
@@ -349,6 +342,7 @@ Resources:
           echo export PASSWORD=${OpenRemotePassword} >> access.txt
           echo export DOMAINNAME=$DOMAINNAME >> access.txt
           echo export EXTERNAL_URL=$EXTERNAL_URL >> access.txt
+          echo export AWSLOGS_GROUP=${CloudFormationLogs} >> access.txt
           mkdir ${HostName}
           cd ${HostName}
           wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh -O fetch.txt

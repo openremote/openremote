@@ -1,6 +1,7 @@
 import manager, {EventCallback, MapType, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
-import {CSSResult, customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
+import {CSSResult, html, LitElement, PropertyValues} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
@@ -375,25 +376,6 @@ export class OrMap extends LitElement {
             this.loadMap();
         }
     }
-    
-    protected onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.READY:
-                if (manager.ready) {
-                    this.loadMap();
-                }
-                break;
-            case OREvent.DISPLAY_REALM_CHANGED:
-                if(this._map){
-                    this._map.loadViewSettings().then(()=> {
-                        if(!this._map) return
-                        this._map.setCenter()
-                        this._map.flyTo();
-                    });
-                }
-                break;
-        }
-    }
 
     public get markers(): OrMapMarker[] {
         return this._markers;
@@ -401,7 +383,6 @@ export class OrMap extends LitElement {
 
     public connectedCallback() {
         super.connectedCallback();
-        manager.addListener(this.onManagerEvent);
     }
 
     public disconnectedCallback() {
@@ -409,7 +390,6 @@ export class OrMap extends LitElement {
         if (this._observer) {
             this._observer.disconnect();
         }
-        manager.removeListener(this.onManagerEvent);
     }
 
     protected render() {
@@ -432,9 +412,14 @@ export class OrMap extends LitElement {
         }
     }
 
-    public reloadMap() {
-        this._loaded = false;
-        this.loadMap();
+    public refresh() {
+        if (this._map) {
+            this._map.loadViewSettings().then(() => {
+                if (!this._map) return;
+                this._map.setCenter();
+                this._map.flyTo();
+            });
+        }
     }
 
     public loadMap() {

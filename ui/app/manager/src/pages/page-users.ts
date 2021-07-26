@@ -1,4 +1,5 @@
-import {css, customElement, html, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
+import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import manager, {DefaultColor3, OREvent, Util} from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
@@ -479,13 +480,11 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
         if (repeatPasswordComponent.value !== passwordComponent.value) {
             const error = i18next.t("passwordMismatch");
-            repeatPasswordComponent.validationMessage = error;
             repeatPasswordComponent.setCustomValidity(error);
-            repeatPasswordComponent.helperText = error;
             saveBtn.disabled = true;
             user.password = "";
         } else {
-            repeatPasswordComponent.helperText = "";
+            repeatPasswordComponent.setCustomValidity(undefined);
             user.password = passwordComponent.value;
             saveBtn.disabled = false;
         }

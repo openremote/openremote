@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2021, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,17 +19,22 @@
  */
 package org.openremote.agent.protocol.serial;
 
-@SuppressWarnings("deprecation")
-public class NrJavaSerialAddress extends io.netty.channel.rxtx.RxtxDeviceAddress {
+import java.net.SocketAddress;
 
-    protected int baudRate;
+/**
+ * A SocketAddress subclass to wrap the serial port address of a jSerialComm device (e.g. COM1, /dev/ttyUSB0).
+ */
+public class JSerialCommDeviceAddress extends SocketAddress {
 
-    public NrJavaSerialAddress(String port, int baudRate) {
-        super(port);
-        this.baudRate = baudRate;
+    private static final long serialVersionUID = -2907820090993709523L;
+
+    private final String value;
+
+    public JSerialCommDeviceAddress(String value) {
+        this.value = value;
     }
 
-    public int getBaudRate() {
-        return baudRate;
+    public String value() {
+        return value;
     }
 }

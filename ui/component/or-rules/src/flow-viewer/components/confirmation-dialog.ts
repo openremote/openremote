@@ -1,4 +1,5 @@
-import { LitElement, html, customElement, css, property } from "lit-element";
+import { LitElement, html, css } from "lit";
+import {customElement, property} from "lit/decorators.js";
 import { i18next, translate } from "@openremote/or-translate";
 
 @customElement("confirmation-dialog")

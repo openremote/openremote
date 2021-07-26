@@ -1,16 +1,14 @@
 import {
     css,
-    customElement,
     html,
     LitElement,
-    property,
     PropertyValues,
-    query,
     TemplateResult,
     unsafeCSS
-} from "lit-element";
-import {styleMap} from "lit-html/directives/style-map";
-import {ifDefined} from "lit-html/directives/if-defined";
+} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
+import {styleMap} from "lit/directives/style-map";
+import {ifDefined} from "lit/directives/if-defined";
 import {MDCList, MDCListActionEvent} from "@material/list";
 import { DefaultColor8, DefaultColor4, Util } from "@openremote/core";
 import "@openremote/or-translate";

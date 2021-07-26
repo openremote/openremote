@@ -22,7 +22,7 @@
     "@polymer/polymer": "^3.3.1",
     "@types/mapbox": "^1.6.41",
     "@types/mapbox-gl": "^2.0.2",
-    "lit-element": "^2.4.0",
+    "lit": "^2.0.0-rc.2",
     "mapbox-gl": "^1.13.0",
     "mapbox.js": "^3.2.0"
   },

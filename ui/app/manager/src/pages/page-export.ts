@@ -1,4 +1,5 @@
-import {css, customElement, html, unsafeCSS, TemplateResult, property} from "lit-element";
+import {css, html, unsafeCSS, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-rules";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";

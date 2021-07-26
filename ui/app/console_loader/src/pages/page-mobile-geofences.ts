@@ -1,4 +1,5 @@
-import {css, customElement, html, property, PropertyValues} from "lit-element";
+import {css, html, PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {AppStateKeyed} from "@openremote/or-app/dist/app";
 import {Page, PageProvider} from "@openremote/or-app/dist/types";
 import {NavigationControl} from "mapbox-gl";

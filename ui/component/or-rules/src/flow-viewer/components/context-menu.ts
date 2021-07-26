@@ -1,4 +1,5 @@
-import { LitElement, property, customElement, html, css } from "lit-element";
+import { LitElement, html, css } from "lit";
+import {customElement, property} from "lit/decorators.js";
 import { ContextMenuEntry, ContextMenuButton } from "../models/context-menu-button";
 import { translate, i18next } from "@openremote/or-translate";
 

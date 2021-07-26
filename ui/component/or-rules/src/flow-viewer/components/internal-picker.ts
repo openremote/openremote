@@ -1,4 +1,5 @@
-import { LitElement, property, customElement, html, css, TemplateResult } from "lit-element";
+import { LitElement, html, css, TemplateResult } from "lit";
+import {customElement, property} from "lit/decorators.js";
 import { Node, PickerType, AttributeInternalValue, AssetState, WellknownMetaItems, Asset, NodeDataType } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";

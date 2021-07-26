@@ -153,6 +153,7 @@ export class MapWidget {
     }
 
     public async loadViewSettings() {
+
         let settingsResponse;
         if (this._type === MapType.RASTER) {
             settingsResponse = await manager.rest.api.MapResource.getSettingsJs();
@@ -164,8 +165,7 @@ export class MapWidget {
         // Load options for current realm or fallback to default if exist
         const realmName = manager.displayRealm || "default";
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
-        return settings
-
+        return settings;
     }
 
     public async load(): Promise<void> {

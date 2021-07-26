@@ -1,14 +1,12 @@
 import {
     css,
-    customElement,
     html,
     LitElement,
-    property,
     PropertyValues,
-    query,
     TemplateResult,
     unsafeCSS
-} from "lit-element";
+} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {Asset, Attribute, AttributeRef, DatapointInterval, WellknownMetaItems, ReadAssetEvent, AssetEvent, ValueDatapoint, AssetQuery} from "@openremote/model";
@@ -507,8 +505,8 @@ export class OrChart extends translate(i18next)(LitElement) {
                 this._chart.options!.scales!.x!.max = this._endOfPeriod;
                 (this._chart.options!.scales!.x! as TimeScaleOptions).time!.unit = this._timeUnits!;
                 (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
-                (this._chart.options!.plugins!.annotation!.annotations![0] as AnnotationOptions<"line">).xMin = now;
-                (this._chart.options!.plugins!.annotation!.annotations![0] as AnnotationOptions<"line">).xMax = now;
+                (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMin = now;
+                (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMax = now;
                 this._chart.data.datasets = this._data;
                 this._chart.update();
             }

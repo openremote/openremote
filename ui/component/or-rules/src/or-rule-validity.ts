@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
+import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {CalendarEvent, RulesetUnion, WellknownRulesetMetaItems} from "@openremote/model";
 import {OrRulesRuleChangedEvent} from "./index";
 import "@openremote/or-mwc-components/or-mwc-input";

@@ -2,7 +2,8 @@ import "@polymer/iron-demo-helpers/demo-pages-shared-styles";
 import "@polymer/iron-demo-helpers/demo-snippet";
 import "@openremote/or-asset-tree";
 import manager, {Auth} from "@openremote/core";
-import {customElement, html, LitElement, property, TemplateResult, css} from "lit-element";
+import {html, LitElement, TemplateResult, css} from "lit";
+import {customElement, property} from "lit/decorators.js";
 
 @customElement("or-demo-app")
 class App extends LitElement {

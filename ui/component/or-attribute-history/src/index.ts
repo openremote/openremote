@@ -3,15 +3,13 @@ declare function require(name: string): any;
 
 import {
     css,
-    customElement,
     html,
     LitElement,
-    property,
     PropertyValues,
-    query,
     TemplateResult,
     unsafeCSS
-} from "lit-element";
+} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 import {Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
@@ -26,7 +24,7 @@ import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-m
 import {MDCDataTable} from "@material/data-table";
 import {JSONPath} from "jsonpath-plus";
 import moment from "moment";
-import {styleMap} from "lit-html/directives/style-map";
+import {styleMap} from "lit/directives/style-map";
 
 export class OrAttributeHistoryEvent extends CustomEvent<OrAttributeHistoryEventDetail> {
 

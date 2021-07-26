@@ -1,15 +1,13 @@
 import {
     css,
-    customElement,
     html,
     LitElement,
-    property,
     PropertyValues,
-    query,
     TemplateResult,
     unsafeCSS
-} from "lit-element";
-import {ifDefined} from "lit-html/directives/if-defined";
+} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
+import {ifDefined} from "lit/directives/if-defined";
 import {i18next, translate} from "@openremote/or-translate";
 import {
     Attribute,

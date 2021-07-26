@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
+import {css, html, LitElement, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor} from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";

@@ -1,6 +1,7 @@
-import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS, query} from "lit-element";
-import {classMap} from "lit-html/directives/class-map";
-import {ifDefined} from "lit-html/directives/if-defined";
+import {css, html, LitElement, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
+import {classMap} from "lit/directives/class-map";
+import {ifDefined} from "lit/directives/if-defined";
 import {MDCDataTable} from "@material/data-table";
 
 import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";

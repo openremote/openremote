@@ -1,6 +1,6 @@
 import {HeaderConfig} from "./or-header";
 import {AppStateKeyed} from "./app";
-import { TemplateResult, LitElement } from "lit-element";
+import { TemplateResult, LitElement } from "lit";
 import i18next from "i18next";
 import { translate } from "@openremote/or-translate";
 import { EnhancedStore, AnyAction, Unsubscribe } from "@reduxjs/toolkit";

@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, PropertyValues} from "lit-element";
+import {html, LitElement, PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {Asset, AssetQuery} from "@openremote/model";
 import {surveyLayoutStyle, surveySectionStyle} from "./style";
 import set from "lodash-es/set";
@@ -6,7 +7,7 @@ import get from "lodash-es/get";
 import orderBy from "lodash-es/orderBy";
 
 import * as momentImported from 'moment';
-import manager, {EventCallback, OREvent} from "@openremote/core";
+import manager, {EventCallback} from "@openremote/core";
 import filter from "lodash-es/filter";
 import "@openremote/or-translate";
 
@@ -201,19 +202,7 @@ class OrSurvey extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-
-        if (!manager.ready) {
-            // Defer until openremote is initialised
-            this._initCallback = (initEvent: OREvent) => {
-                if (initEvent === OREvent.READY) {
-                    this.getSurvey();
-                    manager.removeListener(this._initCallback!);
-                }
-            };
-            manager.addListener(this._initCallback);
-        } else {
-            this.getSurvey();
-        }
+        this.getSurvey();
     }
 
     protected updated(_changedProperties: PropertyValues): void {
@@ -290,7 +279,7 @@ class OrSurvey extends LitElement {
             this.previousButton = false;
         }
 
-        if (this.questionIndex + 1 == this.questions.length) {
+        if (this.questionIndex + 1 === this.questions.length) {
             this.nextButtonLabel= 'Send';
         } else {
             this.nextButtonLabel= 'Next';
@@ -301,7 +290,7 @@ class OrSurvey extends LitElement {
             if (this.survey.attributes && this.survey.attributes.published.value && this.saveanswers) {
                 localStorage.setItem('survey'+this.survey.id, "set");
 
-                var xhttp = new XMLHttpRequest();
+                const xhttp = new XMLHttpRequest();
                 const url = manager.config.managerUrl ? manager.config.managerUrl+"/rest/survey/" : window.location.origin+"/rest/survey/";
                 xhttp.open("POST", url + this.survey.id, true);
                 xhttp.setRequestHeader("Content-type", "application/json");
@@ -348,13 +337,13 @@ class OrSurvey extends LitElement {
             return;
         }
         const target = e.currentTarget;
-        let surveyAnswers = this.surveyAnswers;
-        let currQuestion:Asset = this.questions[this.questionIndex];
+        const surveyAnswers = this.surveyAnswers;
+        const currQuestion = this.questions[this.questionIndex];
         if (this.getType(currQuestion.type) === "singleSelect" || this.getType(currQuestion.type) === "rating") {
             if (!(target instanceof HTMLButtonElement) && !(target instanceof HTMLLabelElement)) {
                 return;
             }
-            if (target && target.dataset.autoforward == "true") {
+            if (target && target.dataset.autoforward === "true") {
                 this.nextQuestion();
             } else {
                 if(currQuestion && currQuestion.id && surveyAnswers){
@@ -366,11 +355,11 @@ class OrSurvey extends LitElement {
 
         }
         else if (this.getType(currQuestion.type) === "text") {
-            let id = this.questions[this.questionIndex].id;
+            const id = this.questions[this.questionIndex].id;
             if(this.shadowRoot && id) {
-                const element = (<HTMLInputElement>this.shadowRoot.getElementById(id));
+                const element = this.shadowRoot.getElementById(id) as HTMLInputElement;
                 if (element && currQuestion && currQuestion.id && surveyAnswers) {
-                    let value = element.value;
+                    const value = element.value;
                     surveyAnswers[currQuestion.id] = value;
                 }
             }
@@ -381,7 +370,7 @@ class OrSurvey extends LitElement {
                 return;
             }
 
-            if (target.dataset.autoforward == "true") {
+            if (target.dataset.autoforward === "true") {
                 this.nextQuestion();
             } else {
                 if(currQuestion && currQuestion.id && surveyAnswers && target instanceof HTMLLabelElement) {
@@ -390,12 +379,12 @@ class OrSurvey extends LitElement {
                     }
                     const array = surveyAnswers[currQuestion.id];
                     if(this.shadowRoot && Array.isArray(array)) {
-                        let input = (<HTMLInputElement>this.shadowRoot.getElementById(target.htmlFor));
+                        const input = this.shadowRoot.getElementById(target.htmlFor) as HTMLInputElement;
                         if (!input.checked) {
                             array.push(answer.value);
                         } else {
                             // Delete answer from array
-                            let index = surveyAnswers[currQuestion.id].indexOf(answer.value);
+                            const index = surveyAnswers[currQuestion.id].indexOf(answer.value);
                             array.splice(index, 1);
                         }
                         this.surveyAnswers = surveyAnswers;
@@ -407,7 +396,7 @@ class OrSurvey extends LitElement {
 
     getSurvey() {
         let surveyId: string;
-        if (location.hash.indexOf('survey') != -1) {
+        if (location.hash.indexOf('survey') !== -1) {
             surveyId = location.hash.split('/')[1];
             if(!surveyId) {
                 this.checkButtons();

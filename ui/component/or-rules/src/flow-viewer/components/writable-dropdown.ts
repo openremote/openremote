@@ -1,4 +1,5 @@
-import { LitElement, customElement, property, html, query, PropertyValues } from "lit-element";
+import { LitElement, html, PropertyValues } from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import { PickerStyle } from "../styles/picker-styles";
 
 @customElement("writable-dropdown")
