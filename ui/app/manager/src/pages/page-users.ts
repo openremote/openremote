@@ -312,17 +312,17 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
      * the names will match so that's ok
      */
     private async _updateRoles(user: UserModel) {
-        if (this._compositeRoles.length === 0 || !user.roles || user.roles.length === 0) {
+        if (this._compositeRoles.length === 0 || !user.roles) {
             return;
         }
 
         const compositeRoles = [...this._compositeRoles, ...this._roles].filter(c => user.roles.some(r => r.name === c.name)).map(r => {
             return {...r, assigned: true}
         });
-
-        if (compositeRoles.length === 0) {
-            return;
-        }
+        
+        // if (compositeRoles.length === 0) {
+        //     return;
+        // }
         
         if (!user.serviceAccount) {
             await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, compositeRoles);
