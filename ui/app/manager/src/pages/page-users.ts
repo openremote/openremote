@@ -197,7 +197,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     protected _compositeRoles: Role[] = [];
 
     @property()
-    protected separateRoleIds: string[] = []; //todo: do statemanagement for selected roles and composite roles separately
+    protected selectedRoleNames: string[] = [];
 
     @property()
     public validPassword?: boolean = true;
@@ -323,7 +323,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         if (compositeRoles.length === 0) {
             return;
         }
-
+        
         if (!user.serviceAccount) {
             await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, compositeRoles);
         } else {
@@ -331,8 +331,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
     }
     
-    private setRoleIdsForSelectedCompositeRoles(roles: Role[]) {
-        this.separateRoleIds = roles.map(r => r.compositeRoleIds).flat();
+    private setRoleNamesForSelectedCompositeRoles(roles: Role[]) {
+        const separateRoleIds = roles.map(r => r.compositeRoleIds).flat();
+        this.selectedRoleNames = this._roles.filter(r => separateRoleIds.includes(r.id)).map(r => r.name);
     }
 
 
@@ -517,7 +518,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], suffix: string): TemplateResult {
         const isSameUser = user.username === manager.username;
         user.roles = user.roles || [];
-        this.setRoleIdsForSelectedCompositeRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
+        this.setRoleNamesForSelectedCompositeRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
         
         return html`
             <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev)}">
@@ -603,7 +604,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .label="${i18next.t("fullAccessLabel")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${user.enabled}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => console.log(e.detail.value)}"
                                               style="height: 56px;"></or-mwc-input>
                                 
                                 <!-- composite roles -->
@@ -617,7 +617,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                         const roleNames = e.detail.value as string[];
                                         user.roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
-                                        this.setRoleIdsForSelectedCompositeRoles(user.roles);
+                                        this.setRoleNamesForSelectedCompositeRoles(user.roles);
                                     }}"></or-mwc-input>
 
                                 <!-- roles -->
@@ -626,8 +626,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                         return html`
                                             <or-mwc-input 
                                                 ?readonly="${readonly}"
-                                                ?disabled="${this.separateRoleIds.includes(r.id)}"
-                                                .value="${(user.roles && user.roles.map(r => r.id).includes(r.id)) || this.separateRoleIds.includes(r.id) ? r : undefined}"
+                                                ?disabled="${this.selectedRoleNames.includes(r.name)}"
+                                                .value="${(user.roles && user.roles.map(r => r.name).includes(r.name)) || this.selectedRoleNames.includes(r.name) ? r : undefined}"
                                                 .type="${InputType.CHECKBOX}"
                                                 .label="${r.name}"
                                                 style="width:25%;margin:0"
