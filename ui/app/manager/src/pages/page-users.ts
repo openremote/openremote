@@ -607,23 +607,25 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               style="height: 56px;"></or-mwc-input>
                                 
                                 <!-- composite roles -->
-                                <or-mwc-input ?readonly="${readonly}"
-                                              ?disabled="${isSameUser}"
-                                              .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
-                                              .type="${InputType.SELECT}" multiple
-                                              .options="${compositeRoleOptions}" 
-                                              .label="${i18next.t("role")}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                  const roleNames = e.detail.value as string[];
-                                                  user.roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
-                                                  this.setRoleIdsForSelectedCompositeRoles(user.roles);
-                                              }}"></or-mwc-input>
+                                <or-mwc-input
+                                    ?readonly="${readonly}"
+                                    ?disabled="${isSameUser}"
+                                    .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
+                                    .type="${InputType.SELECT}" multiple
+                                    .options="${compositeRoleOptions}" 
+                                    .label="${i18next.t("role_plural")}"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                        const roleNames = e.detail.value as string[];
+                                        user.roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
+                                        this.setRoleIdsForSelectedCompositeRoles(user.roles);
+                                    }}"></or-mwc-input>
 
                                 <!-- roles -->
                                 <div style="display:flex;flex-wrap:wrap;">
                                     ${this._roles.map(r => {
                                         return html`
-                                            <or-mwc-input ?readonly="${readonly}"
+                                            <or-mwc-input 
+                                                ?readonly="${readonly}"
                                                 ?disabled="${this.separateRoleIds.includes(r.id)}"
                                                 .value="${(user.roles && user.roles.map(r => r.id).includes(r.id)) || this.separateRoleIds.includes(r.id) ? r : undefined}"
                                                 .type="${InputType.CHECKBOX}"
