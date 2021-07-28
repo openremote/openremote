@@ -1,5 +1,6 @@
 import {OrRulesRuleChangedEvent, RulesConfig, RuleView} from "./index";
-import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
+import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {RulesetLang, RulesetUnion} from "@openremote/model";
 import ace, {Ace} from "ace-builds";
 import "ace-builds/src-noconflict/mode-javascript";
@@ -7,6 +8,7 @@ import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-groovy";
 import "ace-builds/webpack-resolver";
 
+// language=CSS
 const style = css`
     :host {
         display: flex;
@@ -87,11 +89,11 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
     }
 
     protected refresh() {
-        this.destoryEditor()
+        this.destroyEditor()
         this.initEditor();
     }
 
-    protected destoryEditor() {
+    protected destroyEditor() {
         if (this._aceEditor) {
             this._aceEditor.destroy();
             this._aceEditor = undefined;
@@ -119,7 +121,7 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
         }
         
         if (!this._aceElem) {
-            this.destoryEditor();
+            this.destroyEditor();
         } else {
             if (!this._aceEditor) {
               this.initEditor();

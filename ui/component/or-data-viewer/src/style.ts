@@ -1,4 +1,4 @@
-import {css, unsafeCSS} from "lit-element";
+import {css, unsafeCSS} from "lit";
 import {DefaultBoxShadow, DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5} from "@openremote/core";
 
 // language=CSS

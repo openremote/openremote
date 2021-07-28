@@ -7,6 +7,7 @@ export interface AppState {
     resolved: boolean,
     drawerOpened: boolean;
     scrollTop: number;
+    realm?: string;
 }
 
 export interface AppStateKeyed {
@@ -20,6 +21,7 @@ const INITIAL_STATE: AppState = {
     resolved: false,
     drawerOpened: false,
     scrollTop: 0,
+    realm: undefined
 };
 
 export interface PageAndParams {
@@ -49,9 +51,15 @@ const appSlice = createSlice({
                 ...state,
                 scrollTop: action.payload
             };
+        },
+        updateRealm(state, action: PayloadAction<string>) {
+            return {
+                ...state,
+                realm: action.payload
+            }
         }
     }
 });
 
-export const {updatePage, updateDrawer, scrollToTop} = appSlice.actions;
+export const {updatePage, updateDrawer, scrollToTop, updateRealm} = appSlice.actions;
 export const appReducer = appSlice.reducer;

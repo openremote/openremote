@@ -93,11 +93,6 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
 
-        if (topicTokens.size() < 2) {
-            LOG.fine("Topic must contain at least two tokens '" + topic + "': " + connection);
-            return false;
-        }
-
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
 
@@ -106,25 +101,30 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        String assetId = topicTokens.get(1);
+        if(topicTokens.size() > 1) {
+            String assetId = topicTokens.get(1);
 
-        if (!SINGLE_LEVEL_WILDCARD.equals(assetId) && !MULTI_LEVEL_WILDCARD.equals(assetId)) {
-            Asset<?> asset = assetStorageService.find(assetId);
+            if (!SINGLE_LEVEL_WILDCARD.equals(assetId) && !MULTI_LEVEL_WILDCARD.equals(assetId)) {
+                Asset<?> asset = assetStorageService.find(assetId);
 
-            if (asset == null) {
-                LOG.fine("Asset not found for topic '" + topic + "': " + connection);
-                return false;
-            }
-
-            if (isAttributeTopic && topicTokens.size() > 2
-                && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)))) {
-                String attributeName = topicTokens.get(2);
-
-                if (!asset.hasAttribute(attributeName)) {
-                    LOG.fine("Asset attribute not found for topic '" + topic + "': " + connection);
+                if (asset == null) {
+                    LOG.fine("Asset not found for topic '" + topic + "': " + connection);
                     return false;
                 }
+
+                if (isAttributeTopic && topicTokens.size() > 2
+                        && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)))) {
+                    String attributeName = topicTokens.get(2);
+
+                    if (!asset.hasAttribute(attributeName)) {
+                        LOG.fine("Asset attribute not found for topic '" + topic + "': " + connection);
+                        return false;
+                    }
+                }
             }
+        } else if(!isWrite) {
+            LOG.fine("Topic must contain at least two tokens '" + topic + "': " + connection);
+            return false;
         }
 
         if (isWrite) {

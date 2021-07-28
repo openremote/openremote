@@ -1,4 +1,5 @@
-import { customElement, LitElement, css, html, property, TemplateResult } from "lit-element";
+import { LitElement, css, html, TemplateResult } from "lit";
+import {customElement, property} from "lit/decorators.js";
 import { modal } from "./flow-editor";
 import { translate, i18next } from "@openremote/or-translate";
 

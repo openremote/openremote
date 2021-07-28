@@ -1,4 +1,5 @@
-import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
+import {html, LitElement, PropertyValues} from "lit";
+import {customElement, property} from "lit/decorators.js";
 
 import moment from "moment";
 

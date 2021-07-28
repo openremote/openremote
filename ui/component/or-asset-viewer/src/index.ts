@@ -1,7 +1,8 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 
-import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
+import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
@@ -35,8 +36,8 @@ import {
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
-import {styleMap} from "lit-html/directives/style-map";
-import {classMap} from "lit-html/directives/class-map";
+import {styleMap} from "lit/directives/style-map";
+import {classMap} from "lit/directives/class-map";
 import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
@@ -1082,6 +1083,25 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
 
+        if (changedProperties.has("assetId")) {
+            this.asset = undefined;
+            if (this.assetId) {
+                this._loading = true;
+                super.assetIds = [this.assetId];
+            } else {
+                this._loading = false;
+                super.assetIds = undefined;
+            }
+        } else if (changedProperties.has("editMode") && !this.editMode) {
+            this.reloadAsset();
+        }
+
+        this.onCompleted().then(() => {
+            onRenderComplete.startCallbacks().then(() => {
+                OrAssetViewer.generateGrid(this.shadowRoot);
+            });
+        });
+
         return super.shouldUpdate(changedProperties);
     }
 
@@ -1160,29 +1180,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 ${content}
             </div>
         `;
-    }
-
-    protected updated(_changedProperties: PropertyValues) {
-        super.updated(_changedProperties);
-
-        if (_changedProperties.has("assetId")) {
-            this.asset = undefined;
-            if (this.assetId) {
-                this._loading = true;
-                super.assetIds = [this.assetId];
-            } else {
-                this._loading = false;
-                super.assetIds = undefined;
-            }
-        } else if (_changedProperties.has("editMode") && !this.editMode) {
-            this.reloadAsset();
-        }
-
-        this.onCompleted().then(() => {
-            onRenderComplete.startCallbacks().then(() => {
-                OrAssetViewer.generateGrid(this.shadowRoot);
-            });
-        });
     }
 
     public reloadAsset() {

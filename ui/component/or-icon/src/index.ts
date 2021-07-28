@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {AssetDescriptor, WellknownAssets} from "@openremote/model";
 import {IconSetAddedEvent, ORIconSets, AssetModelUtil} from "@openremote/core";
 

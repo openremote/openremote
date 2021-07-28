@@ -19,6 +19,11 @@
  */
 package org.openremote.model.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.github.victools.jsonschema.generator.*;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.javax.validation.JavaxValidationModule;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.ModelDescriptor;
 import org.openremote.model.ModelDescriptors;
@@ -117,6 +122,7 @@ public final class AssetModelUtil {
     protected static List<MetaItemDescriptor<?>> metaItemDescriptors;
     protected static List<ValueDescriptor<?>> valueDescriptors;
     protected static Validator validator;
+    protected static SchemaGenerator generator;
 
     static {
         // Find all service loader registered asset model providers
@@ -462,8 +468,8 @@ public final class AssetModelUtil {
     }
 
     /**
-     * Validates the supplied object using standard JSR-380 bean validation; therefore any passed in here must follow
-     * the JSR-380 annotation requirements.
+     * Validates the supplied object using standard JSR-380 bean validation; therefore any type passed in here must
+     * follow the JSR-380 annotation requirements.
      */
     // TODO: Implement validation using javax bean validation JSR-380
     public static <T> Set<ConstraintViolation<T>> validate(@NotNull T obj, Class<?>... groups) {
@@ -480,6 +486,26 @@ public final class AssetModelUtil {
         }
 
         return validator;
+    }
+
+    /**
+     * Returns the schema for the specified type
+     */
+    public static JsonNode getSchema(Class<?> clazz) {
+        if (generator == null) {
+            JacksonModule module = new JacksonModule(
+                JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
+            );
+            JavaxValidationModule validationModule = new JavaxValidationModule();
+            SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(Values.JSON, SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON);
+            configBuilder.with(module);
+//                .with(validationModule);
+            SchemaGeneratorConfig config = configBuilder.build();
+
+
+            generator = new SchemaGenerator(config);
+        }
+        return generator.generateSchema(clazz);
     }
 
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {

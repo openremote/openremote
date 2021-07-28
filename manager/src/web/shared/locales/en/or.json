@@ -253,8 +253,10 @@
   "submit": "Submit",
   "password": "Password",
   "repeatPassword": "Repeat password",
+  "details": "Details",
   "permissions":"Permissions",
   "restrictAccess": "Restrict access",
+  "fullAccessLabel":"Admin: full access; manage users and roles",
   "noChildAssets": "No child assets",
   "account": "Account",
   "editAttribute": "Change attribute",
@@ -397,5 +399,7 @@
   "attributeName": "Attribute name",
   "oldestDatapoint": "Oldest datapoint",
   "latestDatapoint": "Latest datapoint",
-  "arrayDimensions": "Array dimensions"
+  "arrayDimensions": "Array dimensions",
+  "addParameter": "Add parameter",
+  "addItem": "Add item"
 }
