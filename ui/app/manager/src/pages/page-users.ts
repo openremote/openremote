@@ -9,11 +9,8 @@ import {ClientRole, Role, User} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-<<<<<<< HEAD
 import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-=======
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog"; 
->>>>>>> feature/role-management
+import { AssetTreeConfig } from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -492,7 +489,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         dialog.isOpen = true;
         dialog.dialogTitle = i18next.t("restrictAccess");
         dialog.dialogContent = html`
-            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="" .showSortBtn="${false}" .expandNodes="${true}"></or-asset-tree>
+            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="" .showSortBtn="${false}" .expandNodes="${true}" .checkboxes="${true}"></or-asset-tree>
         `;
         
         hostElement.append(dialog);
@@ -617,10 +614,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
                                               style="height: 56px;"></or-mwc-input>
 
-                                <!-- restrict access btn -->
-                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
-                                    @click="${() => this._openAssetSelector()}"></or-mwc-input>
-
                                 <!-- is admin -->
                                 <or-mwc-input ?readonly="${true}"
                                               .label="${i18next.t("fullAccessLabel")}"
@@ -665,8 +658,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 </div>
 
                                 <!-- restricted access -->
+                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
+                                              @click="${() => this._openAssetSelector()}"></or-mwc-input>
+
                                 <!-- placeholder -->
->>>>>>> feature/role-management
                             </div>
                         </div>
 
