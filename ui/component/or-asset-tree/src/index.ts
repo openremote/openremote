@@ -246,6 +246,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({type: Boolean})
     public expandNodes?: boolean = false;
 
+    @property({type: Boolean})
+    public checkboxes?: boolean = false;
+
     protected config?: AssetTreeConfig;
 
     @property({attribute: false})
@@ -460,6 +463,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     selectedNodes.splice(index, 1);
                 }
             }
+            console.log(selectedNodes);
 
             Util.dispatchCancellableEvent(this, new OrAssetTreeRequestSelectionEvent({
                 oldNodes: this.selectedNodes,
@@ -896,6 +900,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
+        // checkbox-blank-outline
+        // checkbox-marked
+        // checkbox-multiple-blank-outline
+        // checkbox-multiple-marked
+        // checkbox-multiple-marked-outline
 
         return html`
             <li ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
@@ -904,6 +913,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
                         ${getAssetDescriptorIconTemplate(descriptor)}
                         <span>${treeNode.asset!.name}</span>
+                        ${this.checkboxes ? html`
+                            <span class="mdc-list-item__graphic" style="margin-left: auto;">
+                                <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
+                                    ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>`: html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
+                                </div>
+                            </span>` 
+                        : ``}
                     </div>
                 </div>
                 <ol>
