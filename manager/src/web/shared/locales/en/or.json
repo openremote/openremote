@@ -399,5 +399,8 @@
   "arrayDimensions": "Array dimensions",
   "addParameter": "Add parameter",
   "addItem": "Add item",
-  "array": "Array"
+  "array": "Array",
+  "agentId": "Agent ID",
+  "agentNotFound": "Agent not found",
+  "agentTypeMismatch": "Agent type mismatch"
 }

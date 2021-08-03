@@ -34,7 +34,13 @@ declare global {
     }
 }
 
-export {ErrorObject, StandardRenderers, getTemplateWrapper, JsonFormsRendererRegistryEntry};
+export {
+    ErrorObject,
+    StandardRenderers,
+    getTemplateWrapper,
+    JsonFormsRendererRegistryEntry,
+    UISchemaElement
+};
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {
     dispatch: Dispatch<CoreActions>;
