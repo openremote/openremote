@@ -1,4 +1,5 @@
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {until} from "lit/directives/until";
 import {customElement, property} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
@@ -15,7 +16,7 @@ import {
 } from "./or-add-attribute-panel";
 import {panelStyles} from "./style";
 import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
-import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
+import {jsonFormsInputTemplateProvider, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -280,9 +281,9 @@ export class OrEditAssetPanel extends LitElement {
         this._onModified();
     }
 
-    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, detail: OrInputChangedEventDetail) {
-        metaItem.value = detail.value;
-        attribute.meta![metaItem.name!] = detail.value;
+    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, detail: OrInputChangedEventDetail | undefined) {
+        metaItem.value = detail ? detail.value : undefined;
+        attribute.meta![metaItem.name!] = metaItem.value;
         this._onModified();
     }
 
@@ -294,7 +295,7 @@ export class OrEditAssetPanel extends LitElement {
         };
 
         const descriptor = AssetModelUtil.getMetaItemDescriptor(metaItem.name);
-        let valueDescriptor = descriptor ? AssetModelUtil.getValueDescriptor(descriptor.type) : undefined;
+        const valueDescriptor = descriptor ? AssetModelUtil.getValueDescriptor(descriptor.type) : undefined;
         let content: TemplateResult = html``;
 
         if (!valueDescriptor) {
@@ -304,10 +305,16 @@ export class OrEditAssetPanel extends LitElement {
                 label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true),
                 resizeVertical: true
             };
-            const provider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail: OrInputChangedEventDetail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+
+            const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+            let provider = jsonFormsInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options, standardInputProvider);
+
+            if (!provider) {
+                provider = standardInputProvider;
+            }
 
             if (provider.templateFunction) {
-                content = provider.templateFunction(metaItem.value, false, false, false, false, undefined);
+                content = html`${until(provider.templateFunction(metaItem.value, false, false, false, false, undefined), ``)}`;
             }
         }
 

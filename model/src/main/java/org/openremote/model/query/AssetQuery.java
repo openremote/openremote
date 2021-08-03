@@ -24,8 +24,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.query.filter.*;
-import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -237,9 +238,17 @@ public class AssetQuery {
 
     public static class StringToAssetClassConverter extends StdConverter<String, Class<? extends Asset<?>>> {
 
+        @SuppressWarnings("unchecked")
         @Override
         public Class<? extends Asset<?>> convert(String value) {
-            return AssetModelUtil.getAssetDescriptor(value).map(AssetDescriptor::getType).orElse(null);
+            if (Agent.class.getSimpleName().equals(value)) {
+                return (Class<? extends Asset<?>>)(Class<?>) Agent.class;
+            }
+            if (Asset.class.getSimpleName().equals(value)) {
+                return (Class<? extends Asset<?>>)(Class<?>) Asset.class;
+            }
+
+            return Values.getAssetDescriptor(value).map(AssetDescriptor::getType).orElse(null);
         }
     }
 

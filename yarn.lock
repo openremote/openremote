@@ -985,10 +985,10 @@
   dependencies:
     "@fortawesome/fontawesome-common-types" "^0.2.35"
 
-"@jsonforms/core@^3.0.0-alpha.0":
-  version "3.0.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@jsonforms/core/-/core-3.0.0-alpha.0.tgz#c960e37ebf47c17c4ef2839b3410ee140e3909be"
-  integrity sha512-CIUh7uDlhH8a5/zk6YF5LXAbmu299eYBTJXLzjZSnCL1lyZtckCnEGvWzF8Y7A9cgAg18URRyjyloxfT0ARaRQ==
+"@jsonforms/core@^3.0.0-alpha.1":
+  version "3.0.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/@jsonforms/core/-/core-3.0.0-alpha.1.tgz#2330aaef0f5d2458109c7eb8ac715edeba33c027"
+  integrity sha512-wiPk8kMQr91FaBeBSj7U/jPhTH52yF0GC1Z5QIyrexVWz/QP9xwoAZpRaXM1TL4nNzX0Cgl2WBRedxB/4LmNmA==
   dependencies:
     "@types/json-schema" "^7.0.3"
     ajv "^6.10.2"

@@ -53,7 +53,6 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
@@ -591,7 +590,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
 
             // Do standard JSR-380 validation on the asset (includes custom validation)
-            Set<ConstraintViolation<Asset<?>>> validationFailures = AssetModelUtil.validate(asset, Asset.AssetSave.class);
+            Set<ConstraintViolation<Asset<?>>> validationFailures = Values.validate(asset, Asset.AssetSave.class);
 
             if (validationFailures.size() > 0) {
                 String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;
@@ -1591,7 +1590,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected static String[] getResolvedAssetTypes(Class<? extends Asset<?>>[] assetClasses) {
         return Arrays.stream(assetClasses)
             .flatMap(assetClass ->
-                Arrays.stream(AssetModelUtil.getAssetClasses(null)).filter(assetClass::isAssignableFrom))
+                Arrays.stream(Values.getAssetClasses(null)).filter(assetClass::isAssignableFrom))
             .map(Class::getSimpleName)
             .distinct()
             .toArray(String[]::new);

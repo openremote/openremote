@@ -22,43 +22,131 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.node.*;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.github.victools.jsonschema.generator.*;
+import com.github.victools.jsonschema.module.jackson.JacksonModule;
+import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.javax.validation.JavaxValidationModule;
+import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.hibernate.internal.util.SerializationHelper;
+import org.openremote.model.AssetModelProvider;
+import org.openremote.model.ModelDescriptor;
+import org.openremote.model.ModelDescriptors;
+import org.openremote.model.StandardModelProvider;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetDescriptor;
+import org.openremote.model.asset.AssetTypeInfo;
+import org.openremote.model.asset.agent.Agent;
+import org.openremote.model.asset.agent.AgentDescriptor;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.ModelIgnore;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TsIgnore;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
 
+import javax.persistence.Entity;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.lang.reflect.Modifier.isPublic;
+import static java.lang.reflect.Modifier.isStatic;
+import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
+
 /**
- * Utilities for working with values and JSON
+ * Utilities for working with values/JSON and asset model
+ * <p>
+ * Custom descriptors can be added by simply adding new {@link Asset}/{@link Agent} sub types and following the discovery
+ * rules described in {@link StandardModelProvider}; alternatively a custom {@link AssetModelProvider} implementation
+ * can be created and discovered with the {@link ServiceLoader} or manually added to this class via
+ * {@link Values#getModelProviders()} collection.
  */
 @SuppressWarnings({"unchecked", "deprecation"})
 @TsIgnore
 public class Values {
 
-    private static final Logger LOG = Logger.getLogger(Values.class.getName());
-    public static final ObjectMapper JSON;
+    /**
+     * Copied from: https://puredanger.github.io/tech.puredanger.com/2006/11/29/writing-a-class-hierarchy-comparator/
+     */
+    protected static class ClassHierarchyComparator implements Comparator<Class<?>> {
+
+        public int compare(Class<?> c1, Class<?> c2) {
+            if(c1 == null) {
+                if(c2 == null) {
+                    return 0;
+                } else {
+                    // Sort nulls first
+                    return 1;
+                }
+            } else if(c2 == null) {
+                // Sort nulls first
+                return -1;
+            }
+
+            // At this point, we know that c1 and c2 are not null
+            if(c1.equals(c2)) {
+                return 0;
+            }
+
+            // At this point, c1 and c2 are not null and not equal, here we
+            // compare them to see which is "higher" in the class hierarchy
+            boolean c1Lower = c2.isAssignableFrom(c1);
+            boolean c2Lower = c1.isAssignableFrom(c2);
+
+            if(c1Lower && !c2Lower) {
+                return 1;
+            } else if(c2Lower && !c1Lower) {
+                return -1;
+            }
+
+            // Doesn't matter, sort consistently on classname
+            return c1.getName().compareTo(c2.getName());
+        }
+    }
+
+    // Preload the Standard model provider so it takes priority over others
+    public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, Values.class);
+    public static ObjectMapper JSON;
+    protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>(Collections.singletonList(new StandardModelProvider()));
+    protected static Map<Class<? extends Asset<?>>, AssetTypeInfo> assetInfoMap;
+    protected static Map<String, Class<? extends Asset<?>>> assetTypeMap;
+    protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap;
+    protected static List<MetaItemDescriptor<?>> metaItemDescriptors;
+    protected static List<ValueDescriptor<?>> valueDescriptors;
+    protected static Validator validator;
+    protected static SchemaGenerator generator;
 
     static {
-        JSON = configureObjectMapper(new ObjectMapper());
+        // Find all service loader registered asset model providers
+        ServiceLoader.load(AssetModelProvider.class).forEach(Values.assetModelProviders::add);
+        initialise();
     }
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
@@ -72,7 +160,6 @@ public class Values {
             .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
             .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
-            //.registerModule(new ORModelModule())
             .registerModule(new Jdk8Module())
             .registerModule(new JavaTimeModule())
             .registerModule(new ParameterNamesModule(JsonCreator.Mode.PROPERTIES));
@@ -302,137 +389,13 @@ public class Values {
         return getValue(value, ArrayNode.class);
     }
 
-    public static <T> T[] reverseArray(T[] array, Class<T> clazz) {
-        if (array == null) {
-            return null;
-        }
-
-        List<T> list = Arrays.asList(array);
-        Collections.reverse(list);
-        return list.toArray(createArray(0, clazz));
-    }
-
-    public static <T> T[] createArray(int size, Class<T> clazz) {
-        return (T[]) Array.newInstance(clazz, size);
-    }
-
     public static ObjectNode createJsonObject() {
         return Values.JSON.createObjectNode();
-    }
-
-    public static List<Object> createObjectList() {
-        return new ArrayList<>();
-    }
-
-    /**
-     * @param o A timestamp string as 'HH:mm:ss' or 'HH:mm'.
-     * @return Epoch time or 0 if there is a problem parsing the timestamp string.
-     */
-    public static long parseTimestamp(Object o) {
-        String timestamp = "";
-        try {
-            timestamp = o.toString();
-        } catch (Exception e) {
-            return (0L);
-        }
-        SimpleDateFormat sdf;
-        if (timestamp.length() == 8) {
-            sdf = new SimpleDateFormat("HH:mm:ss");
-        } else if (timestamp.length() == 5) {
-            sdf = new SimpleDateFormat("HH:mm");
-        } else {
-            return (0L);
-        }
-        try {
-            return (sdf.parse(timestamp).getTime());
-        } catch (ParseException e) {
-            return (0L);
-        }
-    }
-
-    /**
-     * @param timestamp Epoch time
-     * @return The timestamp formatted as 'HH:mm' or <code>null</code> if the timestamp is <= 0.
-     */
-    public static String formatTimestamp(long timestamp) {
-        if (timestamp <= 0)
-            return null;
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-        return (sdf.format(new Date(timestamp)));
-    }
-
-    /**
-     * @param timestamp Epoch time
-     * @return The timestamp formatted as 'HH:mm:ss' or <code>null</code> if the timestamp is <= 0.
-     */
-    public static String formatTimestampWithSeconds(long timestamp) {
-        if (timestamp <= 0)
-            return null;
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-        return (sdf.format(new Date(timestamp)));
-    }
-
-    /**
-     * @param timestamp Epoch time
-     * @return The timestamp formatted as 'EEE' or <code>null</code> if the timestamp is <= 0.
-     */
-    public static String formatDayOfWeek(long timestamp) {
-        if (timestamp <= 0)
-            return null;
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE");
-        return (sdf.format(new Date(timestamp)));
-    }
-
-    /**
-     * @param o       A timestamp string as 'HH:mm' or '-'.
-     * @param minutes The minutes to increment/decrement from timestamp.
-     * @return Timestamp string as 'HH:mm', modified with the given minutes or the current time + 60 minutes if the
-     * given timestamp was '-' or the given timestamp couldn't be parsed.
-     */
-    public static String shiftTime(Object o, int minutes) {
-        String timestamp = o.toString();
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
-        Date date;
-        if (timestamp != null && timestamp.length() >= 1 && timestamp.startsWith("-")) {
-            date = new Date();
-            date.setTime(date.getTime() + 60 * 60000);
-        } else {
-            try {
-                date = sdf.parse(timestamp);
-                date.setTime(date.getTime() + minutes * 60000);
-            } catch (ParseException ex) {
-                date = new Date();
-                date.setTime(date.getTime() + 60 * 60000);
-            }
-        }
-        return (sdf.format(date));
     }
 
     public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
         return t -> seen.add(keyExtractor.apply(t));
-    }
-
-    @SafeVarargs
-    public static <T> List<T> joinCollections(Collection<T>... collections) {
-        if (collections == null || collections.length == 0) {
-            return Collections.emptyList();
-        }
-
-        List<T> newCollection = null;
-
-        for (Collection<T> collection : collections) {
-            if (collection == null) {
-                continue;
-            }
-
-            if (newCollection == null) {
-                newCollection = new ArrayList<>(collection);
-            } else {
-                newCollection.addAll(collection);
-            }
-        }
-        return newCollection;
     }
 
     public static <T> T convert(Object object, Class<T> targetType) {
@@ -466,7 +429,6 @@ public class Values {
     public static boolean isString(Class<?> clazz) {
         return String.class.isAssignableFrom(clazz) || TextNode.class.isAssignableFrom(clazz) || BinaryNode.class.isAssignableFrom(clazz);
     }
-
 
     public static boolean isObject(Class<?> clazz) {
         return !isArray(clazz) && !isBoolean(clazz) && !isNumber(clazz) && !isString(clazz);
@@ -570,5 +532,525 @@ public class Values {
             }
         }
         return null;
+    }
+
+    public static AssetTypeInfo[] getAssetInfos(String parentType) {
+        return assetInfoMap.values().toArray(new AssetTypeInfo[0]);
+    }
+
+    public static Class<? extends Asset<?>>[] getAssetClasses(String parentType) {
+        return assetTypeMap.values().toArray(new Class[0]);
+    }
+
+    public static Optional<AssetTypeInfo> getAssetInfo(Class<? extends Asset<?>> assetType) {
+        return Optional.ofNullable(assetInfoMap.get(assetType));
+    }
+
+    public static Optional<AssetTypeInfo> getAssetInfo(String assetType) {
+        Class<? extends Asset<?>> assetClass = assetTypeMap.get(assetType);
+        return Optional.ofNullable(assetClass != null ? assetInfoMap.get(assetClass) : null);
+    }
+
+    // TODO: Implement ability to restrict which asset types are allowed to be added to a given parent type
+    public static AssetDescriptor<?>[] getAssetDescriptors(String parentType) {
+        return Arrays.stream(getAssetInfos(parentType)).map(AssetTypeInfo::getAssetDescriptor).toArray(AssetDescriptor[]::new);
+    }
+
+    public static <T extends Asset<?>> Optional<AssetDescriptor<T>> getAssetDescriptor(Class<T> assetType) {
+        return getAssetInfo(assetType).map(assetInfo -> (AssetDescriptor<T>)assetInfo.getAssetDescriptor());
+    }
+
+    public static Optional<AssetDescriptor<?>> getAssetDescriptor(String assetType) {
+        return getAssetInfo(assetType).map(AssetTypeInfo::getAssetDescriptor);
+    }
+
+    public static <T extends Agent<T, ?, ?>> Optional<AgentDescriptor<T, ?, ?>> getAgentDescriptor(Class<T> agentType) {
+        return getAssetDescriptor(agentType)
+            .map(assetDescriptor -> assetDescriptor instanceof AgentDescriptor ? (AgentDescriptor<T, ?, ?>)assetDescriptor : null);
+    }
+
+    public static Optional<AgentDescriptor<?, ?, ?>> getAgentDescriptor(String agentType) {
+        return getAssetDescriptor(agentType)
+            .map(assetDescriptor -> assetDescriptor instanceof AgentDescriptor ? (AgentDescriptor<?, ?, ?>)assetDescriptor : null);
+    }
+
+    public static MetaItemDescriptor<?>[] getMetaItemDescriptors() {
+        return metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]);
+    }
+
+    public static Optional<MetaItemDescriptor<?>[]> getMetaItemDescriptors(Class<? extends Asset<?>> assetType) {
+        return getAssetInfo(assetType).map(AssetTypeInfo::getMetaItemDescriptors);
+    }
+
+    public static Optional<MetaItemDescriptor<?>[]> getMetaItemDescriptors(String assetType) {
+        return getAssetInfo(assetType).map(AssetTypeInfo::getMetaItemDescriptors);
+    }
+
+    public static Optional<MetaItemDescriptor<?>> getMetaItemDescriptor(String name) {
+        if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
+        return metaItemDescriptors.stream().filter(mid -> mid.getName().equals(name)).findFirst();
+    }
+
+    public static ValueDescriptor<?>[] getValueDescriptors() {
+        return valueDescriptors.toArray(new ValueDescriptor<?>[0]);
+    }
+
+    public static Optional<ValueDescriptor<?>[]> getValueDescriptors(Class<? extends Asset<?>> assetType) {
+        return getAssetInfo(assetType).map(AssetTypeInfo::getValueDescriptors);
+    }
+
+    public static Optional<ValueDescriptor<?>[]> getValueDescriptors(String assetType) {
+        return getAssetInfo(assetType).map(AssetTypeInfo::getValueDescriptors);
+    }
+
+    public static Optional<ValueDescriptor<?>> getValueDescriptor(String name) {
+        if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
+
+        int arrayDimensions = 0;
+
+        while(name.endsWith("[]")) {
+            name = name.substring(0, name.length() - 2);
+            arrayDimensions++;
+        }
+
+        String finalName = name;
+        int finalArrayDimensions = arrayDimensions;
+        return valueDescriptors.stream().filter(vd -> vd.getName().equals(finalName)).findFirst().map(vd -> {
+            int dims = finalArrayDimensions;
+            while(dims > 0) {
+                vd = vd.asArray();
+                dims--;
+            }
+            return vd;
+        });
+    }
+
+    public static ValueDescriptor<?> getValueDescriptorForValue(Object value) {
+        if (value == null) {
+            return ValueDescriptor.UNKNOWN;
+        }
+
+        Class<?> valueClass = value.getClass();
+        boolean isArray = valueClass.isArray();
+        valueClass = isArray ? valueClass.getComponentType() : valueClass;
+        ValueDescriptor<?> valueDescriptor = ValueDescriptor.UNKNOWN;
+
+        if (valueClass == Boolean.class) valueDescriptor = ValueType.BOOLEAN;
+        else if (valueClass == String.class) valueDescriptor = ValueType.TEXT;
+        else if (valueClass == Integer.class) valueDescriptor = ValueType.INTEGER;
+        else if (valueClass == Long.class) valueDescriptor = ValueType.LONG;
+        else if (valueClass == Double.class || valueClass == Float.class) valueDescriptor = ValueType.NUMBER;
+        else if (valueClass == BigInteger.class) valueDescriptor = ValueType.BIG_INTEGER;
+        else if (valueClass == BigDecimal.class) valueDescriptor = ValueType.BIG_NUMBER;
+        else if (valueClass == Byte.class) valueDescriptor = ValueType.BYTE;
+        else if (Map.class.isAssignableFrom(valueClass)) {
+            Object firstElem = findFirstNonNullEntry((Map<?,?>)value);
+
+            if (firstElem == null) valueDescriptor = ValueType.JSON_OBJECT;
+            else {
+                boolean elemIsArray = firstElem.getClass().isArray();
+                Class<?> elemClass = elemIsArray ? firstElem.getClass() : firstElem.getClass().getComponentType();
+                if (elemIsArray) {
+                    valueDescriptor = elemClass == String.class ? ValueType.MULTIVALUED_TEXT_MAP : ValueType.JSON_OBJECT;
+                } else {
+                    if (elemClass == String.class)
+                        valueDescriptor = ValueType.TEXT_MAP;
+                    else if (elemClass == Double.class || elemClass == Float.class)
+                        valueDescriptor = ValueType.NUMBER_MAP;
+                    else if (elemClass == Integer.class)
+                        valueDescriptor = ValueType.TEXT_MAP;
+                    else if (elemClass == Boolean.class)
+                        valueDescriptor = ValueType.BOOLEAN_MAP;
+                }
+            }
+        }
+
+        return isArray ? valueDescriptor.asArray() : valueDescriptor;
+    }
+
+    public static List<AssetModelProvider> getModelProviders() {
+        return assetModelProviders;
+    }
+
+    public static void initialise() throws IllegalStateException {
+        try {
+            doInitialise();
+        } catch (IllegalStateException e) {
+            LOG.log(Level.SEVERE, "Failed to initialise the asset model", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Initialise the asset model and throw an {@link IllegalStateException} exception if a problem is detected; this
+     * can be called by applications at startup to fail hard and fast if the asset model is un-usable
+     */
+    protected static void doInitialise() throws IllegalStateException {
+        assetInfoMap = new HashMap<>();
+        assetTypeMap = new HashMap<>();
+        agentLinkMap = new HashMap<>();
+        metaItemDescriptors = new ArrayList<>();
+        valueDescriptors = new ArrayList<>();
+        generator = null;
+
+        // Provide basic Object Mapper and enhance once asset model is initialised
+        JSON = configureObjectMapper(new ObjectMapper());
+
+        LOG.info("Initialising asset model...");
+        Map<Class<? extends Asset<?>>, List<NameHolder>> assetDescriptorProviders = new TreeMap<>(new ClassHierarchyComparator());
+        //noinspection RedundantCast
+        assetDescriptorProviders.put((Class<? extends Asset<?>>)(Class<?>)Asset.class, new ArrayList<>(getDescriptorFields(Asset.class)));
+
+        getModelProviders().forEach(assetModelProvider -> {
+            LOG.fine("Processing asset model provider: " + assetModelProvider.getClass().getSimpleName());
+            LOG.fine("Auto scan = " + assetModelProvider.useAutoScan());
+
+            if (assetModelProvider.useAutoScan()) {
+
+                Set<Class<? extends Asset<?>>> assetClasses = getAssetClasses(assetModelProvider);
+                LOG.fine("Found " + assetClasses.size() + " asset class(es)");
+
+                assetClasses.forEach(assetClass ->
+                    assetDescriptorProviders.computeIfAbsent(assetClass, aClass ->
+                        new ArrayList<>(getDescriptorFields(aClass))));
+
+                ModelDescriptors modelDescriptors = assetModelProvider.getClass().getAnnotation(ModelDescriptors.class);
+                if (modelDescriptors != null) {
+                    for (ModelDescriptor modelDescriptor : modelDescriptors.value()) {
+                        Class<? extends Asset<?>> assetClass = (Class<? extends Asset<?>>)modelDescriptor.assetType();
+
+                        assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                            if (list == null) {
+                                list = new ArrayList<>();
+                            }
+
+                            list.addAll(getDescriptorFields(modelDescriptor.provider()));
+                            return list;
+                        });
+                    }
+                }
+            }
+
+            if (assetModelProvider.getAssetDescriptors() != null) {
+                for (AssetDescriptor<?> assetDescriptor : assetModelProvider.getAssetDescriptors()) {
+                    Class<? extends Asset<?>> assetClass = assetDescriptor.getType();
+
+                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                        if (list == null) {
+                            list = new ArrayList<>();
+                        }
+
+                        list.add(assetDescriptor);
+                        return list;
+                    });
+                }
+            }
+
+            if (assetModelProvider.getAttributeDescriptors() != null) {
+                assetModelProvider.getAttributeDescriptors().forEach((assetClass, attributeDescriptors) ->
+                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                        if (list == null) {
+                            list = new ArrayList<>();
+                        }
+
+                        list.addAll(attributeDescriptors);
+                        return list;
+                    }));
+            }
+
+            if (assetModelProvider.getMetaItemDescriptors() != null) {
+                assetModelProvider.getMetaItemDescriptors().forEach((assetClass, metaDescriptors) ->
+                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                        if (list == null) {
+                            list = new ArrayList<>();
+                        }
+
+                        list.addAll(metaDescriptors);
+                        return list;
+                    }));
+            }
+
+            if (assetModelProvider.getValueDescriptors() != null) {
+                assetModelProvider.getValueDescriptors().forEach((assetClass, valueDescriptors) ->
+                    assetDescriptorProviders.compute(assetClass, (aClass, list) -> {
+                        if (list == null) {
+                            list = new ArrayList<>();
+                        }
+
+                        list.addAll(valueDescriptors);
+                        return list;
+                    }));
+            }
+        });
+
+        // Build each asset info checking that no conflicts occur
+        Map<Class<? extends Asset<?>>, List<NameHolder>> copy = new HashMap<>(assetDescriptorProviders);
+        assetDescriptorProviders.forEach((assetClass, descriptors) -> {
+
+            // Skip abstract classes as a start point - they should be in the class hierarchy of concrete class
+            if (!Modifier.isAbstract(assetClass.getModifiers())) {
+
+                AssetTypeInfo assetInfo = buildAssetInfo(assetClass, copy);
+                assetInfoMap.put(assetClass, assetInfo);
+                assetTypeMap.put(assetInfo.getAssetDescriptor().getName(), assetClass);
+
+                if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor) {
+                    AgentDescriptor<?,?,?> agentDescriptor = (AgentDescriptor<?,?,?>)assetInfo.getAssetDescriptor();
+                    String agentLinkName = agentDescriptor.getAgentLinkClass().getSimpleName();
+                    if (agentLinkMap.containsKey(agentLinkName) && agentLinkMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
+                        throw new IllegalStateException("AgentLink simple class name must be unique, duplicate found for: " + agentDescriptor.getAgentLinkClass());
+                    }
+                    agentLinkMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
+                }
+            }
+        });
+
+        // Check each value type implements serializable interface
+        List<ValueDescriptor<?>> nonSerializableValueDescriptors = new ArrayList<>();
+        valueDescriptors.forEach(vd -> {
+            if (!Serializable.class.isAssignableFrom(vd.getType())) {
+                nonSerializableValueDescriptors.add(vd);
+            }
+        });
+
+        if (!nonSerializableValueDescriptors.isEmpty()) {
+            String vds = nonSerializableValueDescriptors.stream().map(ValueDescriptor::toString).collect(Collectors.joining(",\n"));
+            throw new IllegalStateException("One or more value types do not implement java.io.Serializable: " + vds);
+        }
+
+        // Call on finished on each provider
+        assetModelProviders.forEach(AssetModelProvider::onAssetModelFinished);
+
+        // Add agent link sub types to object mapper (need to avoid circular dependency)
+        NamedType[] agentLinkSubTypes = Arrays.stream(getAgentLinkClasses())
+            .map(agentLinkClass -> new NamedType(
+                agentLinkClass,
+                agentLinkClass.getSimpleName()
+            )).toArray(NamedType[]::new);
+        JSON.registerSubtypes(agentLinkSubTypes);
+
+        doSchemaInit();
+    }
+
+    protected static void doSchemaInit() {
+        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(JSON, SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON)
+            .with(
+                new JacksonModule(
+                    JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
+                )
+            )
+            .with(
+                new Swagger2Module()
+            );
+//                .with(new JavaxValidationModule());
+
+        configBuilder.forTypesInGeneral()
+            .withSubtypeResolver((declaredType, generationContext) -> {
+                if (declaredType.getErasedType() == AgentLink.class) {
+                    TypeContext typeContext = generationContext.getTypeContext();
+                    return Arrays.stream(getAgentLinkClasses())
+                        .map(agentLinkClass -> typeContext.resolveSubtype(declaredType, agentLinkClass))
+                        .collect(Collectors.toList());
+                }
+                return null;
+            });
+
+        SchemaGeneratorConfig config = configBuilder.build();
+        generator = new SchemaGenerator(config);
+    }
+
+    protected static Class<?>[] getAgentLinkClasses() {
+        return Arrays.stream(getAssetDescriptors(null))
+            .filter(descriptor -> descriptor instanceof AgentDescriptor)
+            .map(descriptor ->
+                ((AgentDescriptor<?, ?, ?>) descriptor).getAgentLinkClass()
+            )
+            .distinct()
+            .toArray(Class<?>[]::new);
+    }
+
+    /**
+     * Validates the supplied object using standard JSR-380 bean validation; therefore any type passed in here must
+     * follow the JSR-380 annotation requirements.
+     */
+    // TODO: Implement validation using javax bean validation JSR-380
+    public static <T> Set<ConstraintViolation<T>> validate(@NotNull T obj, Class<?>... groups) {
+
+        Validator validator = getValidator();
+        return validator.validate(obj, groups);
+    }
+
+    public static Validator getValidator() {
+        if (validator == null) {
+            validator = Validation
+                .buildDefaultValidatorFactory()
+                .getValidator();
+        }
+
+        return validator;
+    }
+
+    /**
+     * Returns the schema for the specified type
+     */
+    public static JsonNode getSchema(Class<?> clazz) {
+        if (generator == null) {
+            return JSON.createObjectNode();
+        }
+        return generator.generateSchema(clazz);
+    }
+
+    public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {
+        AssetTypeInfo assetInfo = getAssetInfo(asset.getType()).orElseThrow(() -> new IllegalStateException("Cannot get asset model info for requested asset type: " + asset.getType()));
+        asset.getAttributes().addOrReplace(
+            Arrays.stream(assetInfo.getAttributeDescriptors())
+            .filter(attributeDescriptor -> !attributeDescriptor.isOptional())
+            .map(Attribute::new)
+            .collect(Collectors.toList())
+        );
+    }
+
+    protected static boolean isGetter(Method method) {
+        if (Modifier.isPublic(method.getModifiers()) &&
+            method.getParameterTypes().length == 0) {
+            if (method.getName().matches("^get[A-Z].*") &&
+                !method.getReturnType().equals(void.class))
+                return true;
+            if (method.getName().matches("^is[A-Z].*") &&
+                method.getReturnType().equals(boolean.class))
+                return true;
+        }
+        return false;
+    }
+
+    protected static Set<Class<? extends Asset<?>>> getAssetClasses(AssetModelProvider assetModelProvider) {
+
+        Set<Class<? extends Asset<?>>> assetClasses;
+
+        // Search for concrete asset classes in the same JAR as the provided AssetModelProvider
+        Reflections reflections = new Reflections(new ConfigurationBuilder()
+            .setUrls(ClasspathHelper.forClass(assetModelProvider.getClass()))
+            .setScanners(
+                new SubTypesScanner(true)
+            ));
+
+        LOG.fine("Scanning for Asset classes");
+
+        assetClasses = reflections.getSubTypesOf(Asset.class).stream()
+            .map(assetClass -> (Class<? extends Asset<?>>)assetClass)
+            .filter(assetClass -> assetClass.getAnnotation(ModelIgnore.class) == null)
+            .collect(Collectors.toSet());
+
+        LOG.fine("Found asset class count = " + assetClasses.size());
+
+        return assetClasses;
+    }
+
+    /**
+     * Extract public static field values that are of type {@link AssetDescriptor}, {@link AttributeDescriptor}, {@link MetaItemDescriptor} or {@link ValueDescriptor}.
+     */
+    protected static List<NameHolder> getDescriptorFields(Class<?> type) {
+        return Arrays.stream(type.getDeclaredFields())
+            .filter(field ->
+                isStatic(field.getModifiers())
+                && isPublic(field.getModifiers())
+                && (AssetDescriptor.class.isAssignableFrom(field.getType())
+                    || AttributeDescriptor.class.isAssignableFrom(field.getType())
+                    || MetaItemDescriptor.class.isAssignableFrom(field.getType())
+                    || ValueDescriptor.class.isAssignableFrom(field.getType())))
+            .map(field -> {
+                try {
+                    return (NameHolder)field.get(null);
+                } catch (IllegalAccessException e) {
+                    String msg = "Failed to extract descriptor fields from class: " + type.getName();
+                    LOG.log(Level.SEVERE, msg, e);
+                    throw new IllegalStateException(msg);
+                }
+            })
+            .collect(Collectors.toList());
+    }
+
+    protected static AssetTypeInfo buildAssetInfo(Class<? extends Asset<?>> assetClass, Map<Class<? extends Asset<?>>, List<NameHolder>> classDescriptorMap) throws IllegalStateException {
+
+        Class<?> currentClass = assetClass;
+        List<Class<?>> classTree = new ArrayList<>();
+
+        while (Asset.class.isAssignableFrom(currentClass)) {
+            classTree.add(currentClass);
+            currentClass = currentClass.getSuperclass();
+        }
+
+        // Check asset class has JPA entity annotation for JPA polymorphism
+        if (assetClass.getAnnotation(Entity.class) == null) {
+            throw new IllegalStateException("Asset class must have @Entity JPA annotation for polymorphic JPA support: " + assetClass);
+        }
+
+        if (Arrays.stream(assetClass.getDeclaredConstructors()).noneMatch(ctor -> ctor.getParameterCount() == 0)) {
+            throw new IllegalStateException("Asset class must have a no args constructor for JPA support: " + assetClass);
+        }
+
+        // Order from Asset class downwards
+        Collections.reverse(classTree);
+
+        AtomicReference<AssetDescriptor<?>> assetDescriptor = new AtomicReference<>();
+        Set<AttributeDescriptor<?>> attributeDescriptors = new HashSet<>(10);
+        List<MetaItemDescriptor<?>> metaItemDescriptors = new ArrayList<>(50);
+        List<ValueDescriptor<?>> valueDescriptors = new ArrayList<>(50);
+
+        classTree.forEach(aClass -> {
+            List<NameHolder> descriptors = classDescriptorMap.get(aClass);
+            if (descriptors != null) {
+                descriptors.forEach(descriptor -> {
+                    if (aClass == assetClass && descriptor instanceof AssetDescriptor) {
+                        if (assetDescriptor.get() != null) {
+                            throw new IllegalStateException("Duplicate asset descriptor found: asset type=" + assetClass +", descriptor=" + assetDescriptor.get() + ", duplicate descriptor=" + descriptor);
+                        }
+                        assetDescriptor.set((AssetDescriptor<?>) descriptor);
+                    } else if (descriptor instanceof AttributeDescriptor) {
+                        attributeDescriptors.stream().filter(d -> d.equals(descriptor)).findFirst()
+                            .ifPresent(existingDescriptor -> {
+                                if (!existingDescriptor.getType().equals(((AttributeDescriptor<?>) descriptor).getType())) {
+                                    throw new IllegalStateException("Attribute descriptor override cannot change the value type found: asset type=" + assetClass + ", descriptor=" + existingDescriptor + ", duplicate descriptor=" + descriptor);
+                                }
+                                attributeDescriptors.remove(existingDescriptor);
+                            });
+                        attributeDescriptors.add((AttributeDescriptor<?>) descriptor);
+                    } else if (descriptor instanceof MetaItemDescriptor) {
+                        int index = Values.metaItemDescriptors.indexOf(descriptor);
+                        if (index >= 0 && Values.metaItemDescriptors.get(index) != descriptor) {
+                            throw new IllegalStateException("Duplicate meta item descriptor found: asset type=" + assetClass +", descriptor=" + metaItemDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
+                        }
+                        metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
+                        if (!Values.metaItemDescriptors.contains(descriptor)) {
+                            Values.metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
+                        }
+                    } else if (descriptor instanceof ValueDescriptor) {
+                        ValueDescriptor<?> valueDescriptor = (ValueDescriptor<?>)descriptor;
+                        // Only store basic value type ignore array type for value descriptor as any value descriptor can be an array value descriptor
+
+                        valueDescriptor = valueDescriptor.asNonArray();
+
+                        int index = valueDescriptors.indexOf(descriptor);
+                        if (index >= 0 && valueDescriptors.get(index).getType() != valueDescriptor.getType()) {
+                            throw new IllegalStateException("Duplicate value descriptor found: asset type=" + assetClass +", descriptor=" + valueDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
+                        }
+                        valueDescriptors.add(valueDescriptor);
+                        if (!Values.valueDescriptors.contains(descriptor)) {
+                            Values.valueDescriptors.add((ValueDescriptor<?>) descriptor);
+                        }
+                    }
+                });
+            }
+        });
+
+        if (assetDescriptor.get() == null || assetDescriptor.get().getType() != assetClass) {
+            throw new IllegalStateException("Asset descriptor not found or is not for this asset type: asset type=" + assetClass +", descriptor=" + assetDescriptor.get());
+        }
+
+        return new AssetTypeInfo(
+            assetDescriptor.get(),
+            attributeDescriptors.toArray(new AttributeDescriptor<?>[0]),
+            metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]),
+            valueDescriptors.toArray(new ValueDescriptor<?>[0]));
     }
 }

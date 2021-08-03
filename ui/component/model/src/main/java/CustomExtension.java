@@ -19,20 +19,16 @@
  */
 
 import cz.habarta.typescript.generator.Extension;
-import cz.habarta.typescript.generator.Settings;
 import cz.habarta.typescript.generator.TsType;
 import cz.habarta.typescript.generator.compiler.ModelCompiler;
 import cz.habarta.typescript.generator.compiler.TsModelTransformer;
 import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
 import cz.habarta.typescript.generator.emitter.TsBeanModel;
-import cz.habarta.typescript.generator.emitter.TsModel;
 import cz.habarta.typescript.generator.emitter.TsPropertyModel;
-import org.openremote.agent.protocol.AgentModelProvider;
 import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.util.AssetModelUtil;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Does some custom processing for our specific model:

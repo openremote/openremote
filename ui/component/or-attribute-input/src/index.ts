@@ -8,6 +8,8 @@ import {
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {ifDefined} from "lit/directives/if-defined";
+import {until} from "lit/directives/until";
+import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {i18next, translate} from "@openremote/or-translate";
 import {
     Attribute,
@@ -17,13 +19,26 @@ import {
     WellknownMetaItems,
     SharedEvent,
     ValueDescriptor,
-    WellknownValueTypes
+    WellknownValueTypes,
+    AgentLink,
+    Agent,
+    AgentDescriptor,
+    AssetDescriptor,
+    NameHolder,
+    ValueHolder,
+    ValueDescriptorHolder
 } from "@openremote/model";
 import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
-import {InputType, OrMwcInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent, ValueInputProviderOptions, ValueInputProviderGenerator, getValueHolderInputTemplateProvider, ValueInputProvider, OrInputChangedEventDetail, ValueInputTemplateFunction} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-map";
 import { geoJsonPointInputTemplateProvider } from "@openremote/or-map";
+import "@openremote/or-json-forms";
+import {OrJSONForms, StandardRenderers} from "@openremote/or-json-forms";
+import "./or-agent-picker";
+import {OrAgentPickerChangedEvent, OrAgentPickerLoadedEvent} from "./or-agent-picker";
+import { ErrorObject } from "@openremote/or-json-forms";
+import {agentIdRendererRegistryEntry} from "./agent-link-json-forms-renderer";
 
 export class OrAttributeInputChangedEvent extends CustomEvent<OrAttributeInputChangedEventDetail> {
 
@@ -99,6 +114,133 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 
     return i18next.t("updatedWithDate", { date: new Date(timestamp) });
 }
+
+const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry];
+
+export const jsonFormsInputTemplateProvider: (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions, fallback: ValueInputProvider) => ValueInputProvider = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options, fallback) => {
+
+    const disabled = !!(options && options.disabled);
+    const readonly = !!(options && options.readonly);
+    const label = options.label;
+
+    // Agent link needs some special handling as we need an agent picker no matter what
+    if (valueDescriptor.name === WellknownValueTypes.AGENTLINK) {
+
+        const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
+            const jsonForms: Ref<OrJSONForms> = createRef();
+            const editorDiv: Ref<HTMLDivElement> = createRef();
+            const errorDiv: Ref<HTMLDivElement> = createRef();
+            const agentLink = value as AgentLink;
+            const agentPickerLoadedDeferred: Util.Deferred<{agent: Agent, error: boolean}> = new Util.Deferred();
+            const schemaEditorPromise: PromiseLike<TemplateResult> = agentPickerLoadedDeferred.promise.then((agentAndError) => {
+
+                const onAgentLinkChanged = (dataAndErrors: {errors: ErrorObject[] | undefined, data: any}) => {
+                    valueChangeNotifier({
+                        value: dataAndErrors.data
+                    });
+                };
+
+                const schema = JSON.parse("{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"definitions\":{\"ArrayPredicate-1\":{\"type\":\"object\",\"properties\":{\"index\":{\"type\":\"integer\"},\"lengthEquals\":{\"type\":\"integer\"},\"lengthGreaterThan\":{\"type\":\"integer\"},\"lengthLessThan\":{\"type\":\"integer\"},\"negated\":{\"type\":\"boolean\"},\"value\":{}}},\"ArrayPredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/ArrayPredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"ArrayPredicate\"}}}]},\"BooleanPredicate-1\":{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"boolean\"}}},\"BooleanPredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/BooleanPredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"BooleanPredicate\"}}}]},\"CalendarEventPredicate-1\":{\"type\":\"object\",\"properties\":{\"timestamp\":{\"type\":\"string\"}}},\"CalendarEventPredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/CalendarEventPredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"CalendarEventPredicate\"}}}]},\"DateTimePredicate-1\":{\"type\":\"object\",\"properties\":{\"negate\":{\"type\":\"boolean\"},\"operator\":{\"$ref\":\"#/definitions/Operator\"},\"rangeValue\":{\"type\":\"string\"},\"value\":{\"type\":\"string\"}}},\"DateTimePredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/DateTimePredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"DateTimePredicate\"}}}]},\"JsonPathFilter-1\":{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"},\"returnFirst\":{\"type\":\"boolean\"},\"returnLast\":{\"type\":\"boolean\"}}},\"JsonPathFilter-2\":{\"allOf\":[{\"$ref\":\"#/definitions/JsonPathFilter-1\"},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"jsonPath\"}}}]},\"Map(String,List(String))\":{\"type\":\"object\"},\"NumberPredicate-1\":{\"type\":\"object\",\"properties\":{\"negate\":{\"type\":\"boolean\"},\"operator\":{\"$ref\":\"#/definitions/Operator\"},\"rangeValue\":{\"type\":\"number\"},\"value\":{\"type\":\"number\"}}},\"NumberPredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/NumberPredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"NumberPredicate\"}}}]},\"ObjectNode\":{\"type\":\"object\"},\"Operator\":{\"type\":\"string\",\"enum\":[\"EQUALS\",\"GREATER_THAN\",\"GREATER_EQUALS\",\"LESS_THAN\",\"LESS_EQUALS\",\"BETWEEN\"]},\"RadialGeofencePredicate-1\":{\"type\":\"object\",\"properties\":{\"lat\":{\"type\":\"number\"},\"lng\":{\"type\":\"number\"},\"negated\":{\"type\":\"boolean\"},\"radius\":{\"type\":\"integer\"}}},\"RadialGeofencePredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/RadialGeofencePredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"RadialGeofencePredicate\"}}}]},\"RectangularGeofencePredicate-1\":{\"type\":\"object\",\"properties\":{\"latMax\":{\"type\":\"number\"},\"latMin\":{\"type\":\"number\"},\"lngMax\":{\"type\":\"number\"},\"lngMin\":{\"type\":\"number\"},\"negated\":{\"type\":\"boolean\"}}},\"RectangularGeofencePredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/RectangularGeofencePredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"RectangularGeofencePredicate\"}}}]},\"RegexValueFilter-1\":{\"type\":\"object\",\"properties\":{\"matchGroup\":{\"type\":\"integer\"},\"matchIndex\":{\"type\":\"integer\"},\"pattern\":{\"type\":\"object\",\"properties\":{\"flags\":{\"type\":\"integer\"},\"pattern\":{\"type\":\"string\"}}}}},\"RegexValueFilter-2\":{\"allOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-1\"},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"regex\"}}}]},\"StringPredicate-1\":{\"type\":\"object\",\"properties\":{\"caseSensitive\":{\"type\":\"boolean\"},\"match\":{\"type\":\"string\",\"enum\":[\"EXACT\",\"BEGIN\",\"END\",\"CONTAINS\"]},\"negate\":{\"type\":\"boolean\"},\"value\":{\"type\":\"string\"}}},\"StringPredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/StringPredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"StringPredicate\"}}}]},\"SubStringValueFilter-1\":{\"type\":\"object\",\"properties\":{\"beginIndex\":{\"type\":\"integer\"},\"endIndex\":{\"type\":\"integer\"}}},\"SubStringValueFilter-2\":{\"allOf\":[{\"$ref\":\"#/definitions/SubStringValueFilter-1\"},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"substring\"}}}]},\"ValueEmptyPredicate-1\":{\"type\":\"object\"},\"ValueEmptyPredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/ValueEmptyPredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"ValueEmptyPredicate\"}}}]},\"ValueNotEmptyPredicate-1\":{\"type\":\"object\"},\"ValueNotEmptyPredicate-2\":{\"allOf\":[{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-1\"},{\"type\":\"object\",\"properties\":{\"predicateType\":{\"const\":\"ValueNotEmptyPredicate\"}}}]},\"WebsocketHTTPSubscription-1\":{\"type\":\"object\",\"properties\":{\"body\":{},\"contentType\":{\"type\":\"string\"},\"headers\":{\"$ref\":\"#/definitions/Map(String,List(String))\"},\"method\":{\"type\":\"string\",\"enum\":[\"GET\",\"PUT\",\"POST\"]},\"type\":{\"type\":\"string\"},\"uri\":{\"type\":\"string\"}}},\"WebsocketHTTPSubscription-2\":{\"allOf\":[{\"$ref\":\"#/definitions/WebsocketHTTPSubscription-1\"},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"WebsocketHTTPSubscription\"}}}]},\"WebsocketSubscription\":{\"anyOf\":[{\"$ref\":\"#/definitions/WebsocketSubscription\"},{\"$ref\":\"#/definitions/WebsocketHTTPSubscription-2\"}]}},\"anyOf\":[{\"allOf\":[{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"oid\":{\"type\":\"string\"},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"SNMPAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"deviceEndpoint\":{\"type\":\"integer\"},\"deviceNodeId\":{\"type\":\"integer\"},\"deviceValue\":{\"type\":\"string\"},\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"ZWaveAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"deviceAddress\":{\"type\":\"integer\"},\"deviceValueLink\":{\"type\":\"string\"},\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"VelbusAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"DefaultAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"replayData\":{\"description\":\"Used to store 24h dataset of values that should be replayed (i.e. written to the linked attribute) in a continuous loop.\",\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"timestamp\":{\"type\":\"integer\"},\"value\":{}}}},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"SimulatorAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"websocketSubscriptions\":{\"description\":\"Array of WebsocketSubscriptions that should be executed when the linked attribute is linked; the subscriptions are executed in the order specified in the array.\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/WebsocketSubscription\"},{\"$ref\":\"#/definitions/WebsocketHTTPSubscription-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"WebsocketAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"contentType\":{\"type\":\"string\"},\"headers\":{\"$ref\":\"#/definitions/Map(String,List(String))\"},\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"method\":{\"type\":\"string\",\"enum\":[\"GET\",\"POST\",\"PUT\",\"DELETE\",\"OPTIONS\",\"PATCH\"]},\"pagingMode\":{\"type\":\"boolean\"},\"path\":{\"type\":\"string\"},\"pollingAttribute\":{\"type\":\"string\"},\"pollingMillis\":{\"type\":\"integer\"},\"queryParameters\":{\"$ref\":\"#/definitions/Map(String,List(String))\"},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"HTTPAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"requiredValue\":{\"type\":\"string\"},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"MockAgentLink\"}}}]},{\"allOf\":[{\"type\":\"object\",\"properties\":{\"actionGroupAddress\":{\"type\":\"string\"},\"dpt\":{\"type\":\"string\"},\"id\":{\"type\":\"string\",\"format\":\"or-agent-id\"},\"messageMatchFilters\":{\"description\":\"ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"messageMatchPredicate\":{\"anyOf\":[{\"$ref\":\"#/definitions/StringPredicate-2\"},{\"$ref\":\"#/definitions/BooleanPredicate-2\"},{\"$ref\":\"#/definitions/DateTimePredicate-2\"},{\"$ref\":\"#/definitions/NumberPredicate-2\"},{\"$ref\":\"#/definitions/RadialGeofencePredicate-2\"},{\"$ref\":\"#/definitions/RectangularGeofencePredicate-2\"},{\"$ref\":\"#/definitions/ArrayPredicate-2\"},{\"$ref\":\"#/definitions/ValueEmptyPredicate-2\"},{\"$ref\":\"#/definitions/ValueNotEmptyPredicate-2\"},{\"$ref\":\"#/definitions/CalendarEventPredicate-2\"}]},\"statusGroupAddress\":{\"type\":\"string\"},\"valueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Defines a value converter map to allow for basic value type conversion; the incoming value will be converted to JSON and if this string matches a key in the converter then the value of that key will be pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but you want to connect this to a Boolean attribute\"}]},\"valueFilters\":{\"description\":\"Defines ValueFilters to apply to an incoming value before it is written to a protocol linked attribute; this is particularly useful for generic protocols. The message should pass through the filters in array order\",\"type\":\"array\",\"items\":{\"anyOf\":[{\"$ref\":\"#/definitions/RegexValueFilter-2\"},{\"$ref\":\"#/definitions/SubStringValueFilter-2\"},{\"$ref\":\"#/definitions/JsonPathFilter-2\"}]}},\"writeValue\":{\"type\":\"string\",\"description\":\"String to be used for attribute writes and can contain '{$value}' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the protocol\"},\"writeValueConverter\":{\"allOf\":[{\"$ref\":\"#/definitions/ObjectNode\"},{\"description\":\"Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion\"}]}}},{\"type\":\"object\",\"properties\":{\"type\":{\"const\":\"KNXAgentLink\"}}}]}]}");
+
+                return html`
+                    ${agentAndError.error
+                        ? html``
+                        : html`
+                                <div>
+                                    <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)}
+                                       .schema="${schema}" .onChange="${onAgentLinkChanged}"
+                                       .data="${agentLink}"></or-json-forms>
+                                </div>
+                        `
+                    }
+                `
+            });
+
+            const onAgentPickerLoaded = (agents: Agent[]) => {
+                console.log("Picker loaded");
+                if (!agents) {
+                    console.warn("Failed to load agent assets for agent picker");
+                    return;
+                }
+
+                if (!agentLink) {
+                    // Just remove disabled class
+                    editorDiv.value!.classList.remove("disabled");
+                    return;
+                }
+
+                const matchedAgent = agents.find(agent => agent.id === agentLink.id);
+                let error = false;
+
+                if (!matchedAgent) {
+                    console.warn("Linked agent cannot be found: " + agentLink);
+                    error = true;
+                } else {
+                    // Check agent link type
+                    const agentDescriptor = AssetModelUtil.getAssetDescriptor(matchedAgent.type) as AgentDescriptor;
+                    if (!agentDescriptor) {
+                        console.warn("Failed to load agent descriptor for agent link: " + agentLink);
+                        error = true;
+                    } else if (agentDescriptor.agentLinkType !== agentLink.type) {
+                        console.warn("Agent link type does not match agent descriptor agent link type: " + agentLink);
+                        error = true;
+                    }
+                }
+
+                if (matchedAgent) {
+                    if (!error) {
+                        editorDiv.value!.classList.remove("disabled");
+                    }
+                    agentPickerLoadedDeferred.resolve({
+                        agent: matchedAgent,
+                        error: error
+                    });
+                }
+            };
+
+            const onAgentChanged = (agent: Agent) => {
+                console.log("AGENT CHANGED! " + (agent ? agent.id : ""));
+                let agentLink: AgentLink | undefined;
+
+                if (agent) {
+                    const agentDescriptor = AssetModelUtil.getAssetDescriptor(agent.type) as AgentDescriptor;
+                    agentLink = {
+                        id: agent.id,
+                        type: agentDescriptor.agentLinkType!
+                    };
+                }
+
+                valueChangeNotifier({
+                    value: agentLink
+                });
+            };
+
+            return html`
+                <style>
+                    .disabled {
+                        opacity: 0.5;
+                        pointer-events: none;
+                    }
+                </style>
+                <div ${ref(editorDiv)} class="disabled">
+                    <div>
+                        <or-agent-picker .agentId="${agentLink ? agentLink.id : undefined}" @or-agent-picker-loaded="${(ev: OrAgentPickerLoadedEvent) => onAgentPickerLoaded(ev.detail)}" @or-agent-picker-changed="${(ev: OrAgentPickerChangedEvent) => onAgentChanged(ev.detail)}"></or-agent-picker>
+                    </div>
+                    ${until(schemaEditorPromise, html``)}
+                </div>
+            `;
+        };
+
+        return {
+            templateFunction: templateFunction,
+            supportsHelperText: false,
+            supportsLabel: false,
+            supportsSendButton: false
+        };
+    }
+
+    return fallback;
+};
 
 const DEFAULT_TIMEOUT = 5000;
 
@@ -519,15 +661,21 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             return;
         }
 
-        // Fallback to simple input provider
-        const valueChangeHandler = (detail: OrInputChangedEventDetail) => {
-            if (detail.enterPressed || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton) {
+        // Use json forms with fallback to simple input provider
+        const valueChangeHandler = (detail: OrInputChangedEventDetail | undefined) => {
+            if (detail && (detail.enterPressed || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton)) {
                 this._onInputValueChanged(detail.value);
             } else {
-                this._newValue = detail.value;
+                this._newValue = detail ? detail.value : undefined;
             }
         };
-        this._templateProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (e: OrInputChangedEventDetail) => valueChangeHandler(e), options);
+
+        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (e) => valueChangeHandler(e), options);
+        this._templateProvider = jsonFormsInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor,  (v: any) => this._onInputValueChanged(v), options, standardInputProvider);
+
+        if (!this._templateProvider) {
+            this._templateProvider = standardInputProvider;
+        }
     }
 
     public getLabel(): string | undefined {
@@ -569,7 +717,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         const buttonIcon = !this.showButton ? (this.disableButton ? undefined : "") : this._writeTimeoutHandler ? "send-clock" : "send";
 
         if (this._templateProvider && this._templateProvider.templateFunction) {
-            content = this._templateProvider.templateFunction(value, focus, loading, !!this._writeTimeoutHandler, this._sendError, this._templateProvider.supportsHelperText ? helperText : undefined);
+            content = html`${until(this._templateProvider.templateFunction(value, focus, loading, !!this._writeTimeoutHandler, this._sendError, this._templateProvider.supportsHelperText ? helperText : undefined), ``)}`;
         } else {
             content = html`<or-translate .value="attributeUnsupported"></or-translate>`;
         }

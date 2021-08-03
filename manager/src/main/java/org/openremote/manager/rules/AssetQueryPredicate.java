@@ -28,7 +28,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.AssetState;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
 import org.openremote.model.value.Values;
@@ -86,7 +85,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
         if (query.types != null && query.types.length > 0) {
             if (Arrays.stream(query.types).noneMatch(type ->
                         type.isAssignableFrom(
-                            AssetModelUtil.getAssetDescriptor(assetState.getAssetType())
+                            Values.getAssetDescriptor(assetState.getAssetType())
                                 .orElse(ThingAsset.DESCRIPTOR).getType()))
                     ) {
                 return false;
