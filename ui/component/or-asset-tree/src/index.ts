@@ -21,7 +21,7 @@ import {style} from "./style";
 import manager, {AssetModelUtil, EventCallback, OREvent, subscribe, Util} from "@openremote/core";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import Qs from "qs";
-import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
+import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
@@ -418,6 +418,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         const isExpander = evt && (evt.target as HTMLElement).className.indexOf("expander") >= 0;
+        const isParentCheckbox = evt && (evt.target as OrIcon)?.icon?.includes("checkbox-multiple");
+        const isCheckbox = !isParentCheckbox && evt && (evt.target as OrIcon)?.icon?.includes("checkbox");
 
         if (isExpander) {
             if (node && node.expandable) {
@@ -444,14 +446,29 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let deselectOthers = true;
                 const multiSelect = !this._isReadonly() && (!this.config || !this.config.select || !this.config.select.multiSelect);
 
-                if (multiSelect && evt && (evt.ctrlKey || evt.metaKey)) {
+                if (isCheckbox || (multiSelect && evt && (evt.ctrlKey || evt.metaKey))) {
                     deselectOthers = false;
                     if (index >= 0 && this.selectedIds && this.selectedIds.length > 1) {
                         select = false;
                     }
                 }
+                if (isParentCheckbox) {
+                    deselectOthers = false;
+                    if ((evt!.target as OrIcon).icon!.includes('multiple-marked')) {
+                        select = false;
+                    }
+                }
 
-                if (deselectOthers) {
+                if (isParentCheckbox) {
+                    selectedNodes = [...this.selectedNodes];
+                    const childNodes: UiAssetTreeNode[] = [];
+                    OrAssetTree._forEachNodeRecursive([node], (childNode) => {
+                        childNodes.push(childNode);
+                    });
+                    // based on multiple-box already selected, remove or add to array of selected nodes
+                    selectedNodes = (select) ? selectedNodes.concat(childNodes) : selectedNodes
+                        .filter(n => !childNodes.map(cn => cn.asset!.id).includes(n.asset!.id));
+                } else if (deselectOthers) {
                     selectedNodes = [node];
                 } else if (select) {
                     if (index < 0) {
@@ -463,7 +480,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     selectedNodes.splice(index, 1);
                 }
             }
-            console.log(selectedNodes);
 
             Util.dispatchCancellableEvent(this, new OrAssetTreeRequestSelectionEvent({
                 oldNodes: this.selectedNodes,
@@ -914,10 +930,15 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         ${getAssetDescriptorIconTemplate(descriptor)}
                         <span>${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
-                            <span class="mdc-list-item__graphic" style="margin-left: auto;">
+                            <span class="mdc-list-item__graphic" style="margin-left: auto;display: flex;">
                                 <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
                                     ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>`: html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
                                 </div>
+                                ${treeNode.expandable ? html`
+                                    <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
+                                        ${treeNode.selected ? html`<or-icon icon="checkbox-multiple-marked"></or-icon>`: html`<or-icon icon="checkbox-multiple-blank-outline"></or-icon>`}
+                                    </div>`
+                                : ``}
                             </span>` 
                         : ``}
                     </div>
