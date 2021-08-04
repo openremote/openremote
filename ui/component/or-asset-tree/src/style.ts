@@ -190,5 +190,10 @@ export const style = css`
             width: 26px;
         }
     }
+    
+    .mdc-checkbox or-icon {
+        height: 15px;
+        width: auto;
+    }
 
 `;
