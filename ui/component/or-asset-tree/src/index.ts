@@ -446,6 +446,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let deselectOthers = true;
                 const multiSelect = !this._isReadonly() && (!this.config || !this.config.select || !this.config.select.multiSelect);
 
+                // determine if node was already selected
                 if (isCheckbox || (multiSelect && evt && (evt.ctrlKey || evt.metaKey))) {
                     deselectOthers = false;
                     if (index >= 0 && this.selectedIds && this.selectedIds.length > 1) {
@@ -459,6 +460,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     }
                 }
 
+                // handle selected state
                 if (isParentCheckbox) {
                     selectedNodes = [...this.selectedNodes];
                     const childNodes: UiAssetTreeNode[] = [];
@@ -466,8 +468,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         childNodes.push(childNode);
                     });
                     // based on multiple-box already selected, remove or add to array of selected nodes
-                    selectedNodes = (select) ? selectedNodes.concat(childNodes) : selectedNodes
-                        .filter(n => !childNodes.map(cn => cn.asset!.id).includes(n.asset!.id));
+                    selectedNodes = (select)
+                        ? selectedNodes.concat(childNodes)
+                        : selectedNodes.filter(n => !childNodes.map(cn => cn.asset!.id).includes(n.asset!.id));
                 } else if (deselectOthers) {
                     selectedNodes = [node];
                 } else if (select) {
@@ -916,11 +919,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _treeNodeTemplate(treeNode: UiAssetTreeNode, level: number): TemplateResult | string {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
-        // checkbox-blank-outline
-        // checkbox-marked
-        // checkbox-multiple-blank-outline
-        // checkbox-multiple-marked
-        // checkbox-multiple-marked-outline
 
         return html`
             <li ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
@@ -931,14 +929,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         <span>${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic" style="margin-left: auto;display: flex;">
+                                ${treeNode.expandable ? html`
+                                    <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
+                                        ${treeNode.selected ? html`<or-icon icon="checkbox-multiple-marked" style="height: 17px"></or-icon>`: html`<or-icon icon="checkbox-multiple-blank-outline" style="height: 17px"></or-icon>`}
+                                    </div>`
+                                : ``}
                                 <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
                                     ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>`: html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
                                 </div>
-                                ${treeNode.expandable ? html`
-                                    <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
-                                        ${treeNode.selected ? html`<or-icon icon="checkbox-multiple-marked"></or-icon>`: html`<or-icon icon="checkbox-multiple-blank-outline"></or-icon>`}
-                                    </div>`
-                                : ``}
                             </span>` 
                         : ``}
                     </div>
