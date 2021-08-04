@@ -25,7 +25,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <p>
  * To use this protocol create a {@link SNMPAgent}.
  */
-public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgent.SNMPAgentLink> {
+public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "SNMP Client";
     protected static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SNMPProtocol.class);
@@ -100,7 +100,7 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgent.SNMPAgen
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, SNMPAgent.SNMPAgentLink agentLink) throws RuntimeException {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, SNMPAgentLink agentLink) throws RuntimeException {
         String oid = agentLink.getOID().orElseThrow(() -> {
             String msg = "No OID provided for protocol: " + this;
             LOG.info(msg);
@@ -117,12 +117,12 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgent.SNMPAgen
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, SNMPAgent.SNMPAgentLink agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, SNMPAgentLink agentLink) {
         agentLink.getOID().ifPresent(oidMap::remove);
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, SNMPAgent.SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, SNMPAgentLink agentLink, AttributeEvent event, Object processedValue) {
         // Nothing to do here
     }
 }

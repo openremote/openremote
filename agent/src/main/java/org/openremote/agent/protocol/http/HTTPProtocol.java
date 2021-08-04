@@ -59,7 +59,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.http.HTTPAgent.*;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.web.QueryParameterInjectorFilter.QUERY_PARAMETERS_PROPERTY;
 import static org.openremote.container.web.WebTargetBuilder.createClient;

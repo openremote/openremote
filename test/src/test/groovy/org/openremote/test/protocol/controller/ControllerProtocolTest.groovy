@@ -22,6 +22,7 @@ package org.openremote.test.protocol.controller
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.controller.ControllerAgent
+import org.openremote.agent.protocol.controller.ControllerAgentLink
 import org.openremote.agent.protocol.controller.ControllerProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -203,13 +204,13 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
                 new Attribute<>("sensor", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new ControllerAgent.ControllerAgentLink(agent1.id, "MyDevice")
+                        new MetaItem<>(AGENT_LINK, new ControllerAgentLink(agent1.id, "MyDevice")
                             .setSensorName("my_sensor1a")),
                         new MetaItem<>(READ_ONLY)
                     ),
                 new Attribute<>("command", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new ControllerAgent.ControllerAgentLink(agent1.id, "MyDevice")
+                        new MetaItem<>(AGENT_LINK, new ControllerAgentLink(agent1.id, "MyDevice")
                             .setCommandName("my_command"))
                     )
         )
@@ -279,7 +280,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
                 new Attribute<>("command", TEXT, "command1")
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new ControllerAgent.ControllerAgentLink(agent3.id, "DeviceName2")
+                        new MetaItem<>(AGENT_LINK, new ControllerAgentLink(agent3.id, "DeviceName2")
                             .setCommandsMap(new HashMap<String, List<String>>([
                                 ("command1") : ["my_command"],
                                 ("command2") : ["wrong"]

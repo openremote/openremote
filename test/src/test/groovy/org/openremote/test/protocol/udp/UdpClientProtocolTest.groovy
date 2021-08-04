@@ -27,7 +27,6 @@ import io.netty.handler.codec.MessageToMessageEncoder
 import io.netty.handler.codec.bytes.ByteArrayDecoder
 import org.openremote.agent.protocol.udp.UDPAgent
 import org.openremote.model.asset.agent.Agent
-import org.openremote.model.asset.agent.AgentLink
 import org.openremote.agent.protocol.udp.AbstractUDPServer
 import org.openremote.agent.protocol.udp.UDPProtocol
 import org.openremote.agent.protocol.udp.UDPStringServer
@@ -36,6 +35,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.Constants
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.asset.agent.DefaultAgentLink
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
 import org.openremote.model.query.AssetQuery
@@ -118,29 +118,29 @@ class UdpClientProtocolTest extends Specification implements ManagerContainerTra
             .addOrReplaceAttributes(
             new Attribute<>("startHello", EXECUTION_STATUS)
                 .addMeta(
-                    new MetaItem<>(AGENT_LINK, new AgentLink.Default(agent.id)
+                    new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
                         .setWriteValue("abcdef"))
                 ),
             new Attribute<>("echoHello", TEXT)
                 .addMeta(
-                    new MetaItem<>(AGENT_LINK, new AgentLink.Default(agent.id)
+                    new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
                         .setWriteValue('Hello {$value};'))
                 ),
             new Attribute<>("echoWorld", TEXT)
                 .addMeta(
-                    new MetaItem<>(AGENT_LINK, new AgentLink.Default(agent.id)
+                    new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
                     .setWriteValue("World;"))
                 ),
             new Attribute<>("responseHello", TEXT)
                 .addMeta(
-                    new MetaItem<>(AGENT_LINK, new AgentLink.Default(agent.id)
+                    new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
                         .setMessageMatchPredicate(
                             new StringPredicate(AssetQuery.Match.BEGIN, true, "Hello"))
                         )
                 ),
             new Attribute<>("responseWorld", TEXT)
                 .addMeta(
-                    new MetaItem<>(AGENT_LINK, new AgentLink.Default(agent.id)
+                    new MetaItem<>(AGENT_LINK, new DefaultAgentLink(agent.id)
                         .setMessageMatchPredicate(
                             new StringPredicate(AssetQuery.Match.BEGIN, true, "Hello"))
                     )

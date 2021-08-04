@@ -1,4 +1,4 @@
-import {computeLabel, createDefaultValue, isControl, isPlainLabel, JsonFormsState, LayoutProps, mapStateToControlProps,
+import {computeLabel, createDefaultValue, isControl, JsonFormsState, LayoutProps, mapStateToControlProps,
     OwnPropsOfControl, OwnPropsOfRenderer, RankedTester, rankWith, StatePropsOfControl, uiTypeIs, update, VerticalLayout} from "@jsonforms/core";
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement} from "lit/decorators.js";
@@ -164,7 +164,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout> {
         let selectedParameter: StatePropsOfControl | undefined;
 
         const listItems: ListItem[] = optionalProps.map(props => {
-            const labelStr = isPlainLabel(props.label) ? computeLabel(props.label, !!props.required, false) : props.label.default;
+            const labelStr = computeLabel(props.label, !!props.required, false);
             return {
                 text: labelStr,
                 value: labelStr,

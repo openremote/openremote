@@ -66,7 +66,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     border: 1px solid #e5e5e5;
                     border-radius: 5px;
                     position: relative;
-                    margin: 20px auto;
+                    margin: 5px auto;
                     padding: 24px;
                 }
 
@@ -75,6 +75,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     font-weight: bolder;
                     line-height: 1em;
                     color: var(--internal-or-asset-viewer-title-text-color);
+                    margin-bottom: 20px;
+                    margin-top: 0;
                     flex: 0 0 auto;
                     letter-spacing: 0.025em;
                 }
@@ -149,9 +151,14 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
                 .button {
                     cursor: pointer;
+                    display: flex;
+                    flex-direction: row;
                     align-content: center;
+                    padding: 16px;
                     align-items: center;
-                    margin: 0;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    color: var(--or-app-color4);
                 }
 
                 @media screen and (max-width: 768px) {
@@ -338,7 +345,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
 
     private _deleteUser(user) {
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"))
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     this.doDelete(user);
@@ -406,10 +413,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     this._users = [...this._users, {enabled: true}];
                                 }}">
                                     <td colspan="100%">
-                                        <or-mwc-input class="button" .type="${InputType.BUTTON}"
-                                                      .label="${i18next.t("add")} ${i18next.t("user")}"
-                                                      icon="plus">
-                                        </or-mwc-input>
+                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("user")}</a>
                                     </td>
                                 </tr>
                             ` : ``}
@@ -449,10 +453,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                         serviceAccount: true}]
                                 }}">
                                     <td colspan="100%">
-                                        <or-mwc-input class="button" .type="${InputType.BUTTON}"
-                                                      .label="${i18next.t("add")} ${i18next.t("user")}"
-                                                      icon="plus">
-                                        </or-mwc-input>
+                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("user")}</a>
                                     </td>
                                 </tr>
                             ` : ``}

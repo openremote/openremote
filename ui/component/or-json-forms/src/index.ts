@@ -22,10 +22,11 @@ import {
     StatePropsOfJsonFormsRenderer,
     UISchemaElement
 } from "@jsonforms/core";
-import {renderers} from "./renderers";
+import {getTemplateWrapper, StandardRenderers} from "./standardRenderers";
 import {getTemplateFromProps} from "./util";
 import {useEffect, useMemo, useReducer, useRef} from "haunted";
 import {baseStyle} from "./styles";
+import { Util } from "@openremote/core";
 
 declare global {
     interface SymbolConstructor {
@@ -33,7 +34,13 @@ declare global {
     }
 }
 
-export {ErrorObject};
+export {
+    ErrorObject,
+    StandardRenderers,
+    getTemplateWrapper,
+    JsonFormsRendererRegistryEntry,
+    UISchemaElement
+};
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {
     dispatch: Dispatch<CoreActions>;
@@ -89,7 +96,7 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
     public data: any;
 
     @property({type: Array})
-    public renderers?: JsonFormsRendererRegistryEntry[] = renderers;
+    public renderers?: JsonFormsRendererRegistryEntry[] = StandardRenderers;
 
     @property({type: Array})
     public cells?: JsonFormsCellRendererRegistryEntry[];
@@ -116,7 +123,7 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
     render() {
 
         const schemaToUse = useMemo(
-            () => (this.schema !== undefined ? this.schema : generateJsonSchema(this.data)),
+            () => (this.schema !== undefined ? this.schema : this.data !== undefined ? generateJsonSchema(this.data) : {}),
             [this.schema, this.data]
         );
 
@@ -130,7 +137,7 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
             undefined,
             () => coreReducer(
                  {
-                    ajv: createAjv({useDefaults: true}),
+                    ajv: createAjv({useDefaults: true, format: false}),
                     data: {},
                     schema: schemaToUse,
                     uischema: uischemaToUse
@@ -168,7 +175,7 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
         }), [core, this.renderers, this.cells, config, this.readonly]);
 
         useEffect(() => {
-            if (this.onChange) {
+            if (this.onChange && !Util.objectsEqual(core.data, this.data, true)) {
                 this.onChange({data: core.data, errors: core.errors});
             }
         }, [core.data, core.errors]);

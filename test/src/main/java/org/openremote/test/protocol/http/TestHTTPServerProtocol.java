@@ -20,7 +20,7 @@
 package org.openremote.test.protocol.http;
 
 import org.openremote.agent.protocol.http.AbstractHTTPServerProtocol;
-import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 
@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class TestHTTPServerProtocol extends AbstractHTTPServerProtocol<TestHTTPServerProtocol, HTTPServerTestAgent, AgentLink.Default> {
+public class TestHTTPServerProtocol extends AbstractHTTPServerProtocol<TestHTTPServerProtocol, HTTPServerTestAgent, DefaultAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "HTTP Server Test Protocol";
     public TestResourceImpl resource1 = new TestResourceImpl();
@@ -43,17 +43,17 @@ public class TestHTTPServerProtocol extends AbstractHTTPServerProtocol<TestHTTPS
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) throws RuntimeException {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) throws RuntimeException {
 
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
 
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, AgentLink.Default agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
     }
 

@@ -21,109 +21,15 @@ package org.openremote.agent.protocol.http;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Entity
-public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgent.HTTPAgentLink> {
-
-    public static class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
-
-        protected Map<String, List<String>> headers;
-        protected Map<String, List<String>> queryParameters;
-        protected Integer pollingMillis;
-        protected Boolean pagingMode;
-        protected String path;
-        protected HTTPMethod method;
-        protected String contentType;
-        protected String pollingAttribute;
-
-        // For Hydrators
-        protected HTTPAgentLink() {}
-
-        public HTTPAgentLink(String id) {
-            super(id);
-        }
-
-        public Optional<Map<String, List<String>>> getHeaders() {
-            return Optional.ofNullable(headers);
-        }
-
-        public HTTPAgentLink setHeaders(ValueType.MultivaluedStringMap headers) {
-            this.headers = headers;
-            return this;
-        }
-
-        public Optional<Map<String, List<String>>> getQueryParameters() {
-            return Optional.ofNullable(queryParameters);
-        }
-
-        public HTTPAgentLink setQueryParameters(ValueType.MultivaluedStringMap queryParameters) {
-            this.queryParameters = queryParameters;
-            return this;
-        }
-
-        public Optional<Integer> getPollingMillis() {
-            return Optional.ofNullable(pollingMillis);
-        }
-
-        public HTTPAgentLink setPollingMillis(Integer pollingMillis) {
-            this.pollingMillis = pollingMillis;
-            return this;
-        }
-
-        public Optional<Boolean> getPagingMode() {
-            return Optional.ofNullable(pagingMode);
-        }
-
-        public HTTPAgentLink setPagingMode(Boolean pagingMode) {
-            this.pagingMode = pagingMode;
-            return this;            
-        }
-
-        public Optional<String> getPath() {
-            return Optional.ofNullable(path);
-        }
-
-        public HTTPAgentLink setPath(String path) {
-            this.path = path;
-            return this;
-        }
-
-        public Optional<HTTPMethod> getMethod() {
-            return Optional.ofNullable(method);
-        }
-
-        public HTTPAgentLink setMethod(HTTPMethod method) {
-            this.method = method;
-            return this;
-        }
-
-        public Optional<String> getContentType() {
-            return Optional.ofNullable(contentType);
-        }
-
-        public HTTPAgentLink setContentType(String contentType) {
-            this.contentType = contentType;
-            return this;
-        }
-
-        public Optional<String> getPollingAttribute() {
-            return Optional.ofNullable(pollingAttribute);
-        }
-
-        public HTTPAgentLink setPollingAttribute(String pollingAttribute) {
-            this.pollingAttribute = pollingAttribute;
-            return this;
-        }
-    }
+public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgentLink> {
 
     public static final ValueDescriptor<HTTPMethod> VALUE_HTTP_METHOD = new ValueDescriptor<>("HTTPMethod", HTTPMethod.class);
 

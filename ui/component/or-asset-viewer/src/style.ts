@@ -87,19 +87,19 @@ export const style = css`
 
     #view-container, #edit-container {
         flex: 0 1 auto;
-        margin-top: 10px;
+        padding-top: 10px;
         overflow: auto;
+        min-height: calc(100vh - 88px - var(--internal-or-header-height));
     }
     
     #view-container {
         margin-top: 0;
         box-sizing: border-box;
         display: grid;
-        padding: 20px 20px;
+        padding: 0 20px 20px;
         grid-gap: 10px;
         grid-template-columns: repeat(auto-fill, minmax(calc(50% - 5px),1fr));
         grid-auto-rows: 5px;
-        min-height: calc(100vh - 68px - var(--internal-or-header-height));
 
         -webkit-animation: fadein 0.3s; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadein 0.3s; /* Firefox < 16 */
@@ -150,11 +150,17 @@ export const style = css`
     }
 
     #asset-header {
-        padding: 20px 30px 0 30px;
+        padding: 20px 30px;
         display: flex;
         flex: 0 0 auto;
         align-items: center;
         justify-content: space-between;
+    }
+
+    #asset-header.editmode {
+        padding: 14px 30px;
+        background-color: var(--internal-or-asset-viewer-panel-color);
+        border-bottom: solid 1px #e5e5e5;
     }
 
     #title {
@@ -186,6 +192,10 @@ export const style = css`
 
     #save-btn {
         margin-left: 20px;
+    }
+
+    #edit-btn {
+        margin-left: 15px;
     }
     
     #location-panel .panel-content {
@@ -254,7 +264,7 @@ export const style = css`
         #view-container { 
             grid-auto-rows: auto;
             grid-template-columns: 100% !important;
-            padding: 20px 0;
+            padding: 10px 0;
             min-height: unset;
         }
     }

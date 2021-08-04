@@ -19,59 +19,13 @@
  */
 package org.openremote.agent.protocol.velbus;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.asset.agent.Agent;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.util.Optional;
 
-public abstract class VelbusAgent<T extends VelbusAgent<T, U>, U extends AbstractVelbusProtocol<U, T>> extends Agent<T, U, VelbusAgent.VelbusAgentLink> {
-
-    public static class VelbusAgentLink extends AgentLink<VelbusAgentLink> {
-
-        @NotBlank
-        protected String deviceValueLink;
-
-        @Min(1)
-        @Max(255)
-        @NotNull
-        protected Integer deviceAddress;
-
-        // For Hydrators
-        protected VelbusAgentLink() {}
-
-        @JsonCreator
-        public VelbusAgentLink(@JsonProperty("id") String id, @JsonProperty("deviceAddress") Integer deviceAddress, @JsonProperty("deviceValueLink") String deviceValueLink) {
-            super(id);
-            this.deviceValueLink = deviceValueLink;
-            this.deviceAddress = deviceAddress;
-        }
-
-        public Optional<String> getDeviceValueLink() {
-            return Optional.ofNullable(deviceValueLink);
-        }
-
-        public VelbusAgentLink setDeviceValueLink(String deviceValueLink) {
-            this.deviceValueLink = deviceValueLink;
-            return this;
-        }
-
-        public Optional<Integer> getDeviceAddress() {
-            return Optional.ofNullable(deviceAddress);
-        }
-
-        public VelbusAgentLink setDeviceAddress(Integer deviceAddress) {
-            this.deviceAddress = deviceAddress;
-            return this;
-        }
-    }
+public abstract class VelbusAgent<T extends VelbusAgent<T, U>, U extends AbstractVelbusProtocol<U, T>> extends Agent<T, U, VelbusAgentLink> {
 
     public static final AttributeDescriptor<Integer> TIME_INJECTION_INTERVAL_SECONDS = new AttributeDescriptor<>("timeInjectionInterval", ValueType.POSITIVE_INTEGER);
 

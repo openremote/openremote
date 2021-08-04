@@ -19,10 +19,8 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
@@ -31,29 +29,7 @@ import javax.persistence.Entity;
 import java.util.Optional;
 
 @Entity
-public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtocol, WebsocketAgent.WebsocketAgentLink> {
-
-    public static class WebsocketAgentLink extends AgentLink<WebsocketAgentLink> {
-
-        protected WebsocketSubscription[] websocketSubscriptions;
-
-        // For Hydrators
-        protected WebsocketAgentLink() {}
-
-        public WebsocketAgentLink(String id) {
-            super(id);
-        }
-
-        @JsonPropertyDescription("Array of WebsocketSubscriptions that should be executed when the linked attribute is linked; the subscriptions are executed in the order specified in the array.")
-        public Optional<WebsocketSubscription[]> getWebsocketSubscriptions() {
-            return Optional.ofNullable(websocketSubscriptions);
-        }
-
-        public WebsocketAgentLink setWebsocketSubscriptions(WebsocketSubscription[] websocketSubscriptions) {
-            this.websocketSubscriptions = websocketSubscriptions;
-            return this;
-        }
-    }
+public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtocol, WebsocketAgentLink> {
 
     public static final ValueDescriptor<WebsocketSubscription> WEBSOCKET_SUBSCRIPTION_VALUE_DESCRIPTOR = new ValueDescriptor<>("websocketSubscription", WebsocketSubscription.class);
 
