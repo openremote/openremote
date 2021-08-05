@@ -624,6 +624,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
             ClientRepresentation clientRepresentation = null;
+            ClientResource clientResource = null;
 
             if (client != null) {
                 clientRepresentation = getClient(realm, client);
@@ -631,22 +632,35 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 if (clientRepresentation == null) {
                     throw new IllegalStateException("Invalid client: " + client);
                 }
+                clientResource = realmResource.clients().get(clientRepresentation.getId());
             }
 
-            // Get all role mappings for user on this client and remove any no longer in the roles
-            List<RoleRepresentation> mappedRoles = clientRepresentation != null ? roleMappingResource.clientLevel(clientRepresentation.getId()).listAll() : roleMappingResource.realmLevel().listAll();
-            List<RoleRepresentation> availableRoles = clientRepresentation != null ? roleMappingResource.clientLevel(clientRepresentation.getId()).listAvailable() : roleMappingResource.realmLevel().listAvailable();
+            // Get all roles
+            List<RoleRepresentation> existingRoles = clientRepresentation != null ? roleMappingResource.clientLevel(clientRepresentation.getId()).listAll() : roleMappingResource.realmLevel().listAll();
+            List<RoleRepresentation> availableRoles = clientResource != null ? clientResource.roles().list() : realmResource.roles().list();
+            List<RoleRepresentation> requestedRoles = availableRoles.stream().filter(role -> Arrays.stream(roles).anyMatch(name -> role.getName().equals(name))).collect(Collectors.toList());
+
+            // Strip out requested roles that are already in a requested composite role
+            List<String> removeRequestedRoles = requestedRoles.stream()
+                .filter(RoleRepresentation::isComposite)
+                .flatMap(role ->
+                    realmResource.rolesById().getRoleComposites(role.getId()).stream().map(RoleRepresentation::getId)
+                ).collect(Collectors.toList());
+
+            requestedRoles = requestedRoles.stream()
+                .filter(role -> removeRequestedRoles.stream().noneMatch(id -> id.equals(role.getId())))
+                .collect(Collectors.toList());
+
 
             // Get newly defined roles
-            List<RoleRepresentation> addRoles = roles == null ? Collections.emptyList() : Arrays.stream(roles)
-                .filter(cr -> mappedRoles.stream().noneMatch(r -> r.getName().equals(cr)))
-                .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr)).findFirst().orElse(null))
-                .filter(Objects::nonNull)
+            List<RoleRepresentation> addRoles = requestedRoles.isEmpty() ? Collections.emptyList() : requestedRoles.stream()
+                .filter(requestedRole -> existingRoles.stream().noneMatch(r -> r.getId().equals(requestedRole.getId())))
                 .collect(Collectors.toList());
 
             // Remove obsolete roles
-            List<RoleRepresentation> removeRoles = roles == null ? mappedRoles : mappedRoles.stream()
-                .filter(r -> Arrays.stream(roles).noneMatch(cr -> cr.equals(r.getName())))
+            List<RoleRepresentation> finalRequestedRoles = requestedRoles;
+            List<RoleRepresentation> removeRoles = requestedRoles.isEmpty() ? existingRoles : existingRoles.stream()
+                .filter(r -> finalRequestedRoles.stream().noneMatch(requestedRole -> requestedRole.getId().equals(r.getId())))
                 .collect(Collectors.toList());
 
             if (!removeRoles.isEmpty()) {

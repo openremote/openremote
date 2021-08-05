@@ -253,7 +253,9 @@
   "submit": "Submit",
   "password": "Password",
   "repeatPassword": "Repeat password",
+  "details": "Details",
   "permissions":"Permissions",
+  "fullAccessLabel":"Admin: full access; manage users and roles",
   "noChildAssets": "No child assets",
   "account": "Account",
   "editAttribute": "Change attribute",
@@ -402,5 +404,8 @@
   "array": "Array",
   "agentId": "Agent ID",
   "agentNotFound": "Agent not found",
-  "agentTypeMismatch": "Agent type mismatch"
+  "agentTypeMismatch": "Agent type mismatch",
+  "loadFailedRoles": "Failed to load roles",
+  "loadFailedUsers": "Failed to load users",
+  "loadFailedServiceUsers": "Failed to load service users"
 }
