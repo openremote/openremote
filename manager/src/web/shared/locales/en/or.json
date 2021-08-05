@@ -404,5 +404,8 @@
   "array": "Array",
   "agentId": "Agent ID",
   "agentNotFound": "Agent not found",
-  "agentTypeMismatch": "Agent type mismatch"
+  "agentTypeMismatch": "Agent type mismatch",
+  "loadFailedRoles": "Failed to load roles",
+  "loadFailedUsers": "Failed to load users",
+  "loadFailedServiceUsers": "Failed to load service users"
 }
