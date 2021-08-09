@@ -22,7 +22,7 @@ package org.openremote.manager.system;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,10 +50,10 @@ public class StatusResourceImpl implements StatusResource {
 
     @Override
     public ObjectNode getHealthStatus() {
-        ObjectNode objectValue = Values.JSON.createObjectNode();
+        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
 
         healthStatusProviderList.forEach(healthStatusProvider -> {
-                ObjectNode providerValue = Values.JSON.createObjectNode();
+                ObjectNode providerValue = ValueUtil.JSON.createObjectNode();
                 providerValue.put("version", healthStatusProvider.getHealthStatusVersion());
                 providerValue.putPOJO("data", healthStatusProvider.getHealthStatus());
                 objectValue.set(healthStatusProvider.getHealthStatusName(), providerValue);
@@ -66,7 +66,7 @@ public class StatusResourceImpl implements StatusResource {
     @Override
     public ObjectNode getInfo() {
         String version = versionProps.getProperty("version");
-        ObjectNode objectValue = Values.JSON.createObjectNode();
+        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
         objectValue.put("version", version);
         return objectValue;
     }

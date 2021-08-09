@@ -5,7 +5,7 @@ import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.flow.*;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +21,7 @@ public enum NodeModel {
                     new NodeSocket("value", NodeDataType.ANY)
             }),
             info -> {
-                AttributeInternalValue assetAttributePair = Values.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
+                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = assetAttributePair.getAssetId();
                 String attributeName = assetAttributePair.getAttributeName();
                 Optional<AssetState<?>> readValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetId).attributeName(attributeName));
@@ -29,7 +29,7 @@ public enum NodeModel {
                 return readValue.get().getValue().orElse(null);
             },
             params -> {
-                AttributeInternalValue internal = Values.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
+                AttributeInternalValue internal = ValueUtil.JSON.convertValue(params.getNode().getInternals()[0].getValue(), AttributeInternalValue.class);
                 String assetId = internal.getAssetId();
                 String attributeName = internal.getAttributeName();
                 List<AssetState<?>> allAssets = params.getFacts().matchAssetState(new AssetQuery().ids(assetId).attributeName(attributeName)
@@ -56,7 +56,7 @@ public enum NodeModel {
                     RulesEngine.LOG.warning("Flow rule error: node " + info.getNode().getName() + " receives invalid value");
                     return;
                 }
-                AttributeInternalValue assetAttributePair = Values.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
+                AttributeInternalValue assetAttributePair = ValueUtil.JSON.convertValue(info.getInternals()[0].getValue(), AttributeInternalValue.class);
                 Optional<AssetState<?>> existingValue = info.getFacts().matchFirstAssetState(new AssetQuery().ids(assetAttributePair.getAssetId()).attributeName(assetAttributePair.getAttributeName()));
 
                 if (existingValue.isPresent())
@@ -137,7 +137,7 @@ public enum NodeModel {
     }),
             info -> {
                 try {
-                    return Values.convert(info.getInternals()[0].getValue(), Double.class);
+                    return ValueUtil.convert(info.getInternals()[0].getValue(), Double.class);
                 } catch (IllegalArgumentException e) {
                     RulesEngine.RULES_LOG.warning("Number node returned invalid value");
                     return 0f;
@@ -338,7 +338,7 @@ public enum NodeModel {
     }),
             info -> {
                 try {
-                    boolean condition = Values.convert(info.getValueFromInput(0), Boolean.class);
+                    boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
 
                     Number a = (Number) info.getValueFromInput(1);
                     Number b = (Number) info.getValueFromInput(2);
@@ -372,9 +372,9 @@ public enum NodeModel {
     }),
             info -> {
                 try {
-                    Object joiner = Values.convert(info.getInternals()[0].getValue(), String.class);
-                    Object a = Values.convert(info.getValueFromInput(0), String.class);
-                    Object b = Values.convert(info.getValueFromInput(1), String.class);
+                    Object joiner = ValueUtil.convert(info.getInternals()[0].getValue(), String.class);
+                    Object a = ValueUtil.convert(info.getValueFromInput(0), String.class);
+                    Object b = ValueUtil.convert(info.getValueFromInput(1), String.class);
 
                     joiner = joiner == null ? "" : joiner;
                     return "" + a + joiner + b;
@@ -392,9 +392,9 @@ public enum NodeModel {
             new NodeSocket("output", NodeDataType.STRING),
     }),
             info -> {
-                boolean condition = Values.convert(info.getValueFromInput(0), Boolean.class);
-                String a = Values.convert(info.getValueFromInput(1), String.class);
-                String b = Values.convert(info.getValueFromInput(2), String.class);
+                boolean condition = ValueUtil.convert(info.getValueFromInput(0), Boolean.class);
+                String a = ValueUtil.convert(info.getValueFromInput(1), String.class);
+                String b = ValueUtil.convert(info.getValueFromInput(2), String.class);
                 return condition ? a : b;
             }),
 

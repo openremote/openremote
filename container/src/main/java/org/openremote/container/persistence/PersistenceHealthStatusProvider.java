@@ -24,7 +24,7 @@ import com.zaxxer.hikari.HikariPoolMXBean;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.management.JMX;
 import javax.management.MBeanServer;
@@ -93,7 +93,7 @@ public class PersistenceHealthStatusProvider implements HealthStatusProvider, Co
             int totalConnections = poolMBean.getTotalConnections();
             int threadsWaiting = poolMBean.getThreadsAwaitingConnection();
 
-            ObjectNode value = Values.JSON.createObjectNode();
+            ObjectNode value = ValueUtil.JSON.createObjectNode();
             value.put("idleConnections", idleConnections);
             value.put("activeConnections", activeConnections);
             value.put("totalConnections", totalConnections);

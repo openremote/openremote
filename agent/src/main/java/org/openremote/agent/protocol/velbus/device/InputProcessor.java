@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 
@@ -82,8 +82,8 @@ public class InputProcessor extends ChannelProcessor {
                 return Optional.empty();
             }
 
-            if (Values.isBoolean(value.getClass())) {
-                return fromBoolean(Values.getBoolean(value).orElse(null));
+            if (ValueUtil.isBoolean(value.getClass())) {
+                return fromBoolean(ValueUtil.getBoolean(value).orElse(null));
             }
 
             return EnumUtil.enumFromValue(ChannelState.class, value);
@@ -211,11 +211,11 @@ public class InputProcessor extends ChannelProcessor {
                                 );
                             break;
                         case LOCK_STATE:
-                            Values.getBoolean(value)
+                            ValueUtil.getBoolean(value)
                                 .ifPresent(locked -> packets.addAll(getLockStatePackets(device, channelNumber, locked ? -1 : 0)));
                             break;
                         case LOCK_DURATION:
-                            Values.getIntegerCoerced(value)
+                            ValueUtil.getIntegerCoerced(value)
                                 .ifPresent(
                                     duration -> {
                                         packets.addAll(getLockStatePackets(device, channelNumber, duration));

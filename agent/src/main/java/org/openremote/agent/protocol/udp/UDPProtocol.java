@@ -27,7 +27,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,6 +92,6 @@ public class UDPProtocol extends AbstractUDPProtocol<UDPProtocol, UDPAgent, Defa
 
     @Override
     protected String createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
-        return Values.convert(processedValue, String.class);
+        return ValueUtil.convert(processedValue, String.class);
     }
 }

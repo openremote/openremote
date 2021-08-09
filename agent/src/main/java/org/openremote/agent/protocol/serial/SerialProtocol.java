@@ -28,8 +28,8 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +98,7 @@ public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, Seria
 
         if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
             AttributeExecuteStatus status = event.getValue()
-                .flatMap(Values::getString)
+                .flatMap(ValueUtil::getString)
                 .flatMap(AttributeExecuteStatus::fromString)
                 .orElse(null);
 
@@ -108,6 +108,6 @@ public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, Seria
             }
         }
 
-        return Values.convert(processedValue, String.class);
+        return ValueUtil.convert(processedValue, String.class);
     }
 }

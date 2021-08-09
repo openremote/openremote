@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vividsolutions.jts.geom.Coordinate;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -104,7 +104,7 @@ public class RadialGeofencePredicate extends GeofencePredicate {
             if (obj instanceof Coordinate) {
                 coordinate = (Coordinate)obj;
             } else {
-                coordinate = Values.getValue(obj, GeoJSONPoint.class).map(GeoJSONPoint::getCoordinates).orElse(null);
+                coordinate = ValueUtil.getValue(obj, GeoJSONPoint.class).map(GeoJSONPoint::getCoordinates).orElse(null);
             }
 
             if (coordinate == null) {

@@ -38,7 +38,6 @@ import org.openremote.manager.rules.flow.FlowResourceImpl;
 import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
@@ -53,8 +52,8 @@ import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
 import java.util.*;
@@ -475,7 +474,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             // We must load the asset from database (only when required), as the
             // persistence event might not contain a completely loaded asset
             BiFunction<Asset<?>, Attribute<?>, AssetState<?>> buildAssetState = (loadedAsset, attribute) ->
-                new AssetState<>(loadedAsset, Values.clone(attribute), Source.INTERNAL);
+                new AssetState<>(loadedAsset, ValueUtil.clone(attribute), Source.INTERNAL);
 
             switch (persistenceEvent.getCause()) {
                 case CREATE: {

@@ -37,8 +37,8 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueDescriptor;
-import org.openremote.model.value.Values;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.MultivaluedMap;
@@ -237,7 +237,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
 
         if (controllerCommand instanceof ControllerCommandBasic) {
             body = event.getValue().map(v -> {
-                ObjectNode objectValue = Values.JSON.createObjectNode();
+                ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
                 objectValue.putPOJO("parameter", processedValue);
                 return objectValue.toString();
             }).orElse(null);
@@ -376,15 +376,15 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
                 LOG.info("### New sensors status received");
                 LOG.finer("### Polling request body response : " + responseBodyAsString);
 
-                ArrayNode statusArray = Values.convert(responseBodyAsString, ArrayNode.class);
+                ArrayNode statusArray = ValueUtil.convert(responseBodyAsString, ArrayNode.class);
 
                 if (statusArray == null) {
                     LOG.warning("### Polling response is not a JSON array or empty: " + responseBodyAsString);
                 } else {
                     statusArray.forEach(status -> {
 
-                        String name = Optional.ofNullable(status.get("name")).flatMap(Values::getString).orElse(null);
-                        String value = Optional.ofNullable(status.get("value")).flatMap(Values::getString).orElse(null);
+                        String name = Optional.ofNullable(status.get("name")).flatMap(ValueUtil::getString).orElse(null);
+                        String value = Optional.ofNullable(status.get("value")).flatMap(ValueUtil::getString).orElse(null);
 
                         /**
                          * For every sensors in the request body, find the linked attributeref and update value by calling {@link #updateAttributeValue}
@@ -413,7 +413,7 @@ public class ControllerProtocol extends AbstractProtocol<ControllerAgent, Contro
     private void updateAttributeValue(AttributeRef attributeRef, String value) {
         LOG.finest("### Updating attribute " + attributeRef + " with value " + value);
         ValueDescriptor<?> valueType = this.linkedAttributes.get(attributeRef).getType();
-        Object valueObj = Values.convert(value, valueType.getType());
+        Object valueObj = ValueUtil.convert(value, valueType.getType());
         this.updateLinkedAttribute(new AttributeState(attributeRef, valueObj));
     }
 

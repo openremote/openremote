@@ -3,7 +3,7 @@ package org.openremote.test.assets
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.attribute.AttributeState
 import org.openremote.model.attribute.AttributeWriteFailure
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
@@ -839,7 +839,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(AssetResource.class)
 
         when: "the public assets are retrieved using the query parameter endpoint"
-        def assets = assetResource.getPublicAssets(null, Values.asJSON(
+        def assets = assetResource.getPublicAssets(null, ValueUtil.asJSON(
                 new AssetQuery().tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
         ).get())
 

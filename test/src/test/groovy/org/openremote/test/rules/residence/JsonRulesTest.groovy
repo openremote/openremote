@@ -34,7 +34,7 @@ import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.rules.json.JsonRulesetDefinition
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import org.simplejavamail.email.Email
 import spock.lang.Specification
@@ -47,7 +47,7 @@ import static java.util.concurrent.TimeUnit.HOURS
 import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_SMART_BUILDING
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.value.Values.parse
+import static org.openremote.model.util.ValueUtil.parse
 
 class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
@@ -240,7 +240,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert emailMessages.size() == 1
             assert emailMessages[0].recipients.size() == 1
             assert emailMessages[0].recipients[0].address == "test@openremote.io"
-            assert emailMessages[0].HTMLText == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + Values.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
+            assert emailMessages[0].HTMLText == "<table cellpadding=\"30\"><tr><th>Asset ID</th><th>Asset Name</th><th>Attribute</th><th>Value</th></tr><tr><td>${consoleRegistration.id}</td><td>Test Console</td><td>location</td><td>" + ValueUtil.asJSON(outsideLocation).orElse("") + "</td></tr></table>"
         }
 
         and: "after a few seconds the rule should not have fired again"
@@ -278,9 +278,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the ruleset is modified to add a 4hr recurrence per asset"
         def version = ruleset.version
-        JsonRulesetDefinition jsonRules = Values.JSON.readValue(ruleset.rules, JsonRulesetDefinition.class)
+        JsonRulesetDefinition jsonRules = ValueUtil.JSON.readValue(ruleset.rules, JsonRulesetDefinition.class)
         jsonRules.rules[0].recurrence.mins = 240
-        ruleset.rules = Values.asJSON(jsonRules).orElse(null)
+        ruleset.rules = ValueUtil.asJSON(jsonRules).orElse(null)
         ruleset = rulesetStorageService.merge(ruleset)
 
         then: "the ruleset to be redeployed"

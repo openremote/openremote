@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * Describes a {@link MetaItem} that can be added to an {@link Attribute}; the {@link #getName()} must match the {@link
@@ -53,7 +54,7 @@ public class MetaItemDescriptor<T> extends AbstractNameValueDescriptorHolder<T> 
 
         @Override
         public MetaItemDescriptor<?> convert(String value) {
-            return Values.getMetaItemDescriptor(value).orElse(MetaItemDescriptor.UNKNOWN);
+            return ValueUtil.getMetaItemDescriptor(value).orElse(MetaItemDescriptor.UNKNOWN);
         }
     }
 

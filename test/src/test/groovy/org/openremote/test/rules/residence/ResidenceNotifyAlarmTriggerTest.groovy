@@ -27,7 +27,7 @@ import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TemporaryFact
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -38,7 +38,7 @@ import static org.openremote.test.setup.ManagerTestSetup.DEMO_RULE_STATES_APARTM
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
-import static org.openremote.model.value.Values.parse
+import static org.openremote.model.util.ValueUtil.parse
 
 class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
 
@@ -190,7 +190,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             assert pushMessage.buttons[1].title == "Alarm uit"
             assert pushMessage.buttons[1].action.url == getWriteAttributeUrl(new AttributeRef(managerTestSetup.apartment1Id, "alarmEnabled"))
             assert pushMessage.buttons[1].action.httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-            assert !Values.getBoolean(pushMessage.buttons[1].action.data).orElse(true)
+            assert !ValueUtil.getBoolean(pushMessage.buttons[1].action.data).orElse(true)
             assert !pushMessage.buttons[1].action.openInBrowser
             assert pushMessage.buttons[1].action.silent
         }

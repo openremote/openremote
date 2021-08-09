@@ -37,8 +37,8 @@ import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.client.Entity;
@@ -543,7 +543,7 @@ public class HTTPProtocol extends AbstractProtocol<HTTPAgent, HTTPAgentLink> {
     protected void executeAttributeWriteRequest(HttpClientRequest clientRequest,
                                                 Object attributeValue,
                                                 Consumer<Response> responseConsumer) {
-        String valueStr = attributeValue == null ? null : Values.convert(attributeValue, String.class);
+        String valueStr = attributeValue == null ? null : ValueUtil.convert(attributeValue, String.class);
         Response response = null;
 
         try {

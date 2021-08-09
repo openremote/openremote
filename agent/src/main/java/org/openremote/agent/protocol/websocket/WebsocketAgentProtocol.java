@@ -38,8 +38,8 @@ import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -121,7 +121,7 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
 
         if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
             boolean isRequestStart = event.getValue()
-                .flatMap(v -> Values.getValue(v, AttributeExecuteStatus.class))
+                .flatMap(v -> ValueUtil.getValue(v, AttributeExecuteStatus.class))
                 .map(status -> status == AttributeExecuteStatus.REQUEST_START)
                 .orElse(false);
             if (!isRequestStart) {
@@ -130,7 +130,7 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
             }
         }
 
-        return Values.convert(processedValue, String.class);
+        return ValueUtil.convert(processedValue, String.class);
     }
 
     @Override
@@ -315,7 +315,7 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
                 LOG.warning("WebsocketHttpSubscription returned an un-successful response code: " + response.getStatus());
             }
         } else {
-            client.ioClient.sendMessage(Values.convert(subscription.body, String.class));
+            client.ioClient.sendMessage(ValueUtil.convert(subscription.body, String.class));
         }
     }
 }

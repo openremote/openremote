@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -67,7 +67,7 @@ public class JvmHealthStatusProvider implements HealthStatusProvider, ContainerS
 
     @Override
     public Object getHealthStatus() {
-        ObjectNode objectValue = Values.createJsonObject();
+        ObjectNode objectValue = ValueUtil.createJsonObject();
         com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();

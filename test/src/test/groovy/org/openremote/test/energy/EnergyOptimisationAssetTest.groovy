@@ -12,7 +12,7 @@ import org.openremote.model.asset.impl.*
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Specification
@@ -279,7 +279,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         def optimisationAsset = assetStorageService.find(managerTestSetup.electricityOptimisationAssetId) as EnergyOptimisationAsset
         optimisationAsset.setOptimisationDisabled(true)
         optimisationAsset.setFinancialSaving(0d)
-        optimisationAsset = Values.clone(assetStorageService.merge(optimisationAsset))
+        optimisationAsset = ValueUtil.clone(assetStorageService.merge(optimisationAsset))
         optimisationAsset.setOptimisationDisabled(false)
         optimisationAsset = assetStorageService.merge(optimisationAsset)
 

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 public class AssetPredictedDatapointHealthStatusProvider implements HealthStatusProvider, ContainerService {
     public static final String NAME = "predicted";
@@ -62,7 +62,7 @@ public class AssetPredictedDatapointHealthStatusProvider implements HealthStatus
 
     @Override
     public Object getHealthStatus() {
-        ObjectNode value = Values.JSON.createObjectNode();
+        ObjectNode value = ValueUtil.JSON.createObjectNode();
         value.put("totalDatapoints", assetPredictedDatapointService.getDatapointsCount());
         return value;
     }

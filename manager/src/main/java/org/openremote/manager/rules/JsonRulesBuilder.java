@@ -38,8 +38,8 @@ import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.Values;
 import org.quartz.CronExpression;
 
 import java.util.*;
@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.manager.rules.AssetQueryPredicate.groupIsEmpty;
 import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicates;
-import static org.openremote.model.value.Values.distinctByKey;
+import static org.openremote.model.util.ValueUtil.distinctByKey;
 
 public class JsonRulesBuilder extends RulesBuilder {
 
@@ -519,7 +519,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_ID, Long.toString(ruleset.getId()));
         rulesStr = rulesStr.replace(PLACEHOLDER_RULESET_NAME, ruleset.getName());
 
-        JsonRulesetDefinition jsonRulesetDefinition = Values.parse(rulesStr, JsonRulesetDefinition.class).orElse(null);
+        JsonRulesetDefinition jsonRulesetDefinition = ValueUtil.parse(rulesStr, JsonRulesetDefinition.class).orElse(null);
 
         if (jsonRulesetDefinition == null || jsonRulesetDefinition.rules == null || jsonRulesetDefinition.rules.length == 0) {
             throw new IllegalArgumentException("No rules within ruleset so nothing to start: " + ruleset);
@@ -752,7 +752,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     if (!TextUtil.isNullOrEmpty(body)) {
                         if (body.contains(PLACEHOLDER_TRIGGER_ASSETS)) {
                             // Need to clone the notification
-                            notification = Values.clone(notification);
+                            notification = ValueUtil.clone(notification);
                             String triggeredAssetInfo = buildTriggeredAssetInfo(useUnmatched, ruleState, isHtml);
                             body = body.replace(PLACEHOLDER_TRIGGER_ASSETS, triggeredAssetInfo);
 
@@ -894,42 +894,42 @@ public class JsonRulesBuilder extends RulesBuilder {
                 matchingAssetStates.forEach(assetState -> {
                     Object value = assetState.getValue().orElse(null);
                     Class<?> valueType = assetState.getType().getType();
-                    boolean isArray = Values.isArray(valueType);
+                    boolean isArray = ValueUtil.isArray(valueType);
 
-                    if (!isArray && !Values.isObject(valueType)) {
+                    if (!isArray && !ValueUtil.isObject(valueType)) {
                         log(Level.WARNING, "Rule action target asset cannot determine value type or incompatible value type for attribute: " + assetState);
                     } else {
 
                         // Convert value to JSON Node to easily manipulate it
-                        value = isArray ? Values.convert(value, ArrayNode.class) : Values.convert(value, ObjectNode.class);
+                        value = isArray ? ValueUtil.convert(value, ArrayNode.class) : ValueUtil.convert(value, ObjectNode.class);
 
                         switch (attributeUpdateAction.updateAction) {
                             case ADD:
                                 if (isArray) {
-                                    value = value == null ? Values.JSON.createArrayNode() : value;
-                                    ((ArrayNode)value).add(Values.convert(attributeUpdateAction.value, JsonNode.class));
+                                    value = value == null ? ValueUtil.JSON.createArrayNode() : value;
+                                    ((ArrayNode)value).add(ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
                                 } else {
-                                    value = value == null ? Values.JSON.createObjectNode() : value;
-                                    ((ObjectNode) value).set(attributeUpdateAction.key, Values.convert(attributeUpdateAction.value, JsonNode.class));
+                                    value = value == null ? ValueUtil.JSON.createObjectNode() : value;
+                                    ((ObjectNode) value).set(attributeUpdateAction.key, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
                                 }
                                 break;
                             case ADD_OR_REPLACE:
                             case REPLACE:
                                 if (isArray) {
-                                    value = value == null ? Values.JSON.createArrayNode() : value;
+                                    value = value == null ? ValueUtil.JSON.createArrayNode() : value;
                                     ArrayNode arrayValue = (ArrayNode) value;
 
                                     if (attributeUpdateAction.index != null && arrayValue.size() >= attributeUpdateAction.index) {
-                                        arrayValue.set(attributeUpdateAction.index, Values.convert(attributeUpdateAction.value, JsonNode.class));
+                                        arrayValue.set(attributeUpdateAction.index, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
                                     } else {
-                                        arrayValue.add(Values.convert(attributeUpdateAction.value, JsonNode.class));
+                                        arrayValue.add(ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
                                     }
                                 } else {
-                                    value = value == null ? Values.JSON.createObjectNode() : value;
+                                    value = value == null ? ValueUtil.JSON.createObjectNode() : value;
                                     if (!TextUtil.isNullOrEmpty(attributeUpdateAction.key)) {
-                                        ((ObjectNode) value).set(attributeUpdateAction.key, Values.convert(attributeUpdateAction.value, JsonNode.class));
+                                        ((ObjectNode) value).set(attributeUpdateAction.key, ValueUtil.convert(attributeUpdateAction.value, JsonNode.class));
                                     } else {
-                                        log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + Values.asJSON(attributeUpdateAction));
+                                        log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + ValueUtil.asJSON(attributeUpdateAction));
                                     }
                                 }
                                 break;
@@ -944,9 +944,9 @@ public class JsonRulesBuilder extends RulesBuilder {
                                 break;
                             case CLEAR:
                                 if (isArray) {
-                                    value = Values.JSON.createArrayNode();
+                                    value = ValueUtil.JSON.createArrayNode();
                                 } else {
-                                    value = Values.JSON.createObjectNode();
+                                    value = ValueUtil.JSON.createObjectNode();
                                 }
                                 break;
                         }
@@ -994,7 +994,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 sb.append("</td><td>");
                 sb.append(assetState.getName());
                 sb.append("</td><td>");
-                sb.append(assetState.getValue().flatMap(Values::asJSON).orElse(""));
+                sb.append(assetState.getValue().flatMap(ValueUtil::asJSON).orElse(""));
                 sb.append("</td></tr>");
             }));
             sb.append("</table>");
@@ -1007,7 +1007,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 sb.append("\t\t");
                 sb.append(assetState.getName());
                 sb.append("\t\t");
-                sb.append(assetState.getValue().map(v -> Values.convert(v, String.class)).orElse(""));
+                sb.append(assetState.getValue().map(v -> ValueUtil.convert(v, String.class)).orElse(""));
             }));
         }
 

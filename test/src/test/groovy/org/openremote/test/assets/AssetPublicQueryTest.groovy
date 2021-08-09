@@ -12,7 +12,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.query.AssetQuery
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -91,7 +91,7 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
 
         when: "a GET query for a specific public asset is executed"
         def queryJson = "{\"select\":{\"include\":\"ALL\"},\"id\":\"${returnedAssets.get(0).id}\"}"
-        queryJson = Values.JSON.writeValueAsString(query)
+        queryJson = ValueUtil.JSON.writeValueAsString(query)
         assets = assetResource.getPublicAssets(null, queryJson)
 
         then: "the result should match"

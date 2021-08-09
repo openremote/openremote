@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.net.ssl.*;
 import javax.ws.rs.core.UriBuilder;
@@ -105,7 +105,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
             Date date = serverCert.getNotAfter();
             long validDays = DAYS.between(Instant.now(), date.toInstant());
-            ObjectNode objectValue = Values.JSON.createObjectNode();
+            ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
             objectValue.put("validDays", validDays);
             return objectValue;
         } catch (IOException e) {

@@ -27,7 +27,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.value.ValueFilter;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
 import java.util.Optional;
@@ -142,7 +142,7 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     public static <T> T getOrThrowAgentLinkProperty(Optional<T> value, String name) {
         return value.orElseThrow(() -> {
             String msg = "Required agent link property is undefined: " + name;
-            Values.LOG.warning(msg);
+            ValueUtil.LOG.warning(msg);
             return new IllegalStateException("msg");
         });
     }

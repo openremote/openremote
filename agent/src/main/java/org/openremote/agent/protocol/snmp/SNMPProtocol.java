@@ -11,7 +11,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 import org.snmp4j.PDU;
 
 import java.util.HashMap;
@@ -74,7 +74,7 @@ public class SNMPProtocol extends AbstractProtocol<SNMPAgent, SNMPAgentLink> {
 
                             AttributeRef wildCardAttributeRef;
                             if ((wildCardAttributeRef = oidMap.get("*")) != null) {
-                                ObjectNode wildCardValue = Values.createJsonObject();
+                                ObjectNode wildCardValue = ValueUtil.createJsonObject();
                                 pdu.getVariableBindings().forEach(variableBinding -> {
                                     wildCardValue.put(variableBinding.getOid().format(), variableBinding.toValueString());
                                 });
