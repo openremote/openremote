@@ -36,7 +36,7 @@ import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
 
 import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
@@ -424,7 +424,7 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment2Livingroom.setAccessPublicRead(true);
         apartment2Livingroom.setParent(apartment2);
 
-        ObjectNode objectMap = Values.createJsonObject();
+        ObjectNode objectMap = ValueUtil.createJsonObject();
         objectMap.put("cactus", 0.8);
 
         apartment2Livingroom.getAttributes().addOrReplace(

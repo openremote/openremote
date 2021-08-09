@@ -148,7 +148,7 @@ public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, Art
 //                        Map<String, Integer> valuesToUpdate = new LinkedHashMap<>();
 //                        for(String requiredKey : updatedLight.getRequiredValues()) {
 //                            try {
-//                                JsonNode node = Values.JSON.readTree(processedValue.toJson());
+//                                JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
 //                                JsonNode requiredKeyValue = node.get(requiredKey);
 //                                if(requiredKeyValue == null)
 //                                    throw new NullPointerException("Could not find key: " + requiredKey + " in the json-file.");
@@ -162,7 +162,7 @@ public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, Art
 //                    //UPDATE DIM
 //                    else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Dim")) {
 //                        try {
-//                            JsonNode node = Values.JSON.readTree(processedValue.toJson());
+//                            JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
 //                            int dimValue = node.asInt();
 //                            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), dimValue, oldLightState.isEnabled()));
 //                        } catch (JsonProcessingException e) {
@@ -172,7 +172,7 @@ public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, Art
 //                    //UPDATE ENABLED/DISABLED
 //                    else if(event.getAttributeRef().getAttributeName().equalsIgnoreCase("Switch")) {
 //                        try{
-//                            JsonNode node = Values.JSON.readTree(processedValue.toJson());
+//                            JsonNode node = ValueUtil.JSON.readTree(processedValue.toJson());
 //                            boolean enabled = node.asBoolean();
 //                            updateLightStateInMemory(lightId, new ArtnetLightState(lightId, oldLightState.getReceivedValues(), oldLightState.getDim(), enabled));
 //                        } catch (JsonProcessingException e) {
@@ -196,7 +196,7 @@ public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, Art
 //
 //            String jsonString;
 //            jsonString = new String(fileData);
-//            ObjectMap lightsObjectNode = Values.convert(ObjectNode.class, jsonString);
+//            ObjectMap lightsObjectNode = ValueUtil.convert(ObjectNode.class, jsonString);
 //            List<ArtnetLight> newLights = parseArtnetLightsFromImport(lightsObjectNode);
 //            syncLightsToMemory(newLights);
 //            assetConsumer.accept(syncLightsToAssets(newLights, protocolConfiguration));
@@ -283,12 +283,12 @@ public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, Art
 //                                for(String key : updatedLight.getRequiredValues())
 //                                    values.put(key, 0);
 //                                List<Attribute<?>> artNetLightAttributes = Arrays.asList(
-//                                        new Attribute<>("Id", NUMBER, Values.create(updatedLight.getLightId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                                        new Attribute<>("GroupId", NUMBER, Values.create(updatedLight.getGroupId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                                        new Attribute<>("Universe", NUMBER, Values.create(updatedLight.getUniverse())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                                        new Attribute<>("AmountOfLeds", NUMBER, Values.create(updatedLight.getAmountOfLeds())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                                        new Attribute<>("RequiredValues", STRING, Values.create(String.join(",", updatedLight.getRequiredValues()))).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                                        new Attribute<>("Values", OBJECT, Values.parseOrNull(Values.JSON.writeValueAsString(values))).addMeta(
+//                                        new Attribute<>("Id", NUMBER, ValueUtil.create(updatedLight.getLightId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                                        new Attribute<>("GroupId", NUMBER, ValueUtil.create(updatedLight.getGroupId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                                        new Attribute<>("Universe", NUMBER, ValueUtil.create(updatedLight.getUniverse())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                                        new Attribute<>("AmountOfLeds", NUMBER, ValueUtil.create(updatedLight.getAmountOfLeds())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                                        new Attribute<>("RequiredValues", STRING, ValueUtil.create(String.join(",", updatedLight.getRequiredValues()))).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                                        new Attribute<>("ValueUtil", OBJECT, ValueUtil.parseOrNull(ValueUtil.JSON.writeValueAsString(values))).addMeta(
 //                                                new MetaItem<>(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
 //                                        ),
 //                                        new Attribute<>("Switch", BOOLEAN, true).addMeta(
@@ -351,11 +351,11 @@ public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, Art
 //        for(String key : light.getRequiredValues())
 //            values.put(key, 0);
 //        List<Attribute<?>> artNetLightAttributes = Arrays.asList(
-//                new Attribute<>("Id", NUMBER, Values.create(light.getLightId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                new Attribute<>("GroupId", NUMBER, Values.create(light.getGroupId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                new Attribute<>("Universe", NUMBER, Values.create(light.getUniverse())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                new Attribute<>("AmountOfLeds", NUMBER, Values.create(light.getAmountOfLeds())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
-//                new Attribute<>("RequiredValues", STRING, Values.create(String.join(",", light.getRequiredValues()))).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                new Attribute<>("Id", NUMBER, ValueUtil.create(light.getLightId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                new Attribute<>("GroupId", NUMBER, ValueUtil.create(light.getGroupId())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                new Attribute<>("Universe", NUMBER, ValueUtil.create(light.getUniverse())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                new Attribute<>("AmountOfLeds", NUMBER, ValueUtil.create(light.getAmountOfLeds())).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
+//                new Attribute<>("RequiredValues", STRING, ValueUtil.create(String.join(",", light.getRequiredValues()))).addMeta(new Meta(new MetaItem<>(READ_ONLY, true))),
 //                new Attribute<>("Values", OBJECT, Values.parseOrNull(Values.JSON.writeValueAsString(values))).addMeta(
 //                        new MetaItem<>(AGENT_LINK, new AttributeRef(parentAgent.getId(), agentProtocolConfigName).toArrayValue())
 //                ),

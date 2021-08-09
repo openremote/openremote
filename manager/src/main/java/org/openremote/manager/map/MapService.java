@@ -31,7 +31,7 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.core.UriBuilder;
 import java.nio.file.Files;
@@ -43,7 +43,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -102,9 +101,9 @@ public class MapService implements ContainerService {
             int maxZoom = Integer.parseInt(resultMap.get("maxzoom"));
             int minZoom = Integer.parseInt(resultMap.get("minzoom"));
 
-            ArrayNode vectorLayer = resultMap.containsKey("json") ? (ArrayNode)Values.JSON.readTree(resultMap.get("json")).get("vector_layers") : null;
-            ArrayNode center = resultMap.containsKey("center") ? (ArrayNode)Values.JSON.readTree("[" + resultMap.get("center") + "]") : null;
-            ArrayNode bounds = resultMap.containsKey("bounds") ? (ArrayNode)Values.JSON.readTree("[" + resultMap.get("bounds") + "]") : null;
+            ArrayNode vectorLayer = resultMap.containsKey("json") ? (ArrayNode) ValueUtil.JSON.readTree(resultMap.get("json")).get("vector_layers") : null;
+            ArrayNode center = resultMap.containsKey("center") ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("center") + "]") : null;
+            ArrayNode bounds = resultMap.containsKey("bounds") ? (ArrayNode) ValueUtil.JSON.readTree("[" + resultMap.get("bounds") + "]") : null;
 
             if (!TextUtil.isNullOrEmpty(attribution) && vectorLayer != null && !vectorLayer.isEmpty() && maxZoom > 0) {
                 metadata = new Metadata(attribution, vectorLayer, bounds, center, maxZoom, minZoom);
@@ -123,7 +122,7 @@ public class MapService implements ContainerService {
         ObjectNode mapSettings = null;
 
         try {
-            mapSettings = (ObjectNode)Values.JSON.readTree(Files.readAllBytes(mapSettingsPath));
+            mapSettings = (ObjectNode) ValueUtil.JSON.readTree(Files.readAllBytes(mapSettingsPath));
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "Failed to extract map config from: " + mapSettingsPath.toAbsolutePath(), ex);
         }
@@ -365,13 +364,13 @@ public class MapService implements ContainerService {
             return mapSettingsJs.get(realm);
         }
 
-        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realm, r -> Values.JSON.createObjectNode());
+        final ObjectNode settings = mapSettingsJs.computeIfAbsent(realm, r -> ValueUtil.JSON.createObjectNode());
 
         if (!metadata.isValid() || mapConfig.isEmpty()) {
             return settings;
         }
 
-        ArrayNode tilesArray = Values.JSON.createArrayNode();
+        ArrayNode tilesArray = ValueUtil.JSON.createArrayNode();
         String tileUrl = baseUriBuilder.clone().replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
         tilesArray.insert(0, tileUrl);
 

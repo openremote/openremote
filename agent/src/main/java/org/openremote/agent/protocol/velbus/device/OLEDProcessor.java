@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class OLEDProcessor extends FeatureProcessor {
     @Override
     public List<VelbusPacket> getPropertyWritePackets(VelbusDevice device, String property, Object value) {
         if (property.equals("MEMO_TEXT")) {
-            return Values.getString(value)
+            return ValueUtil.getString(value)
                 .map(text -> {
 
                     if (text.length() == 0) {

@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.velbus.device;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 
@@ -159,7 +159,7 @@ public class ThermostatProcessor extends FeatureProcessor {
             String modeStr = property.substring("TEMP_TARGET_".length());
             return EnumUtil
                 .enumFromString(TemperatureMode.class, modeStr)
-                .map(mode -> Values.getDoubleCoerced(value)
+                .map(mode -> ValueUtil.getDoubleCoerced(value)
                     .map(newTemp -> Math.round(newTemp*2d))
                     .map(newTemp -> {
                         int busValue = Math.toIntExact(newTemp);
@@ -179,7 +179,7 @@ public class ThermostatProcessor extends FeatureProcessor {
                 .map(mode -> getTempModePackets(device, mode, 0xFF00)) // Do this as a program step
                 .orElse(null);
         }  else if(property.startsWith("TEMP_MODE_") && property.endsWith("_MINS")) {
-            return Values
+            return ValueUtil
                 .getIntegerCoerced(value)
                 .map(durationMinutes -> {
                     String modeStr = property.substring("TEMP_MODE_".length(), property.length() - "_MINS".length());
@@ -196,7 +196,7 @@ public class ThermostatProcessor extends FeatureProcessor {
                 .map(state -> getTempStatePackets(device, state, -1))
                 .orElse(null);
         } else if ("TEMP_STATE_DISABLE_SECONDS".equals(property)) {
-            return Values
+            return ValueUtil
                 .getIntegerCoerced(value)
                 .map(durationSeconds -> getTempStatePackets(device, TemperatureState.DISABLED, durationSeconds))
                 .orElse(null);

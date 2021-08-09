@@ -49,7 +49,7 @@ import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -372,11 +372,11 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
     protected <T> T messageFromString(String message, String prefix, Class<T> clazz) {
         message = message.substring(prefix.length());
-        return Values.parse(message, clazz).orElse(null);
+        return ValueUtil.parse(message, clazz).orElse(null);
     }
 
     protected String messageToString(String prefix, Object message) {
-        String str = Values.asJSON(message).orElse("null");
+        String str = ValueUtil.asJSON(message).orElse("null");
         return prefix + str;
     }
 

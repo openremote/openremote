@@ -23,6 +23,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
 import java.util.*;
@@ -70,7 +71,7 @@ public class StandardModelProvider implements AssetModelProvider {
     public void onAssetModelFinished() {
         // Inject allowed asset types into GroupAsset
         List<ValueConstraint> constraints = ValueType.ASSET_TYPE.getConstraints() != null ? new ArrayList<>(Arrays.asList(ValueType.ASSET_TYPE.getConstraints())): new ArrayList<>();
-        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(Values.getAssetClasses(null)).map(Class::getSimpleName).toArray()));
+        constraints.add(new ValueConstraint.AllowedValues(Arrays.stream(ValueUtil.getAssetClasses(null)).map(Class::getSimpleName).toArray()));
         ValueType.ASSET_TYPE.updateConstraints(constraints.toArray(new ValueConstraint[0]));
     }
 }

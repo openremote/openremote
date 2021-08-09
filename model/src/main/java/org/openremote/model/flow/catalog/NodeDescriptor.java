@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static org.openremote.model.value.Values.JSON;
+import static org.openremote.model.util.ValueUtil.JSON;
 
 
 public abstract class NodeDescriptor {

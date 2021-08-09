@@ -22,6 +22,7 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;
 
@@ -45,7 +46,7 @@ public class SubStringValueFilter extends ValueFilter {
 
     @Override
     public Object filter(Object value) {
-        Optional<String> valueStr = Values.getValue(value, String.class, true);
+        Optional<String> valueStr = ValueUtil.getValue(value, String.class, true);
         if (!valueStr.isPresent()) {
             return null;
         }

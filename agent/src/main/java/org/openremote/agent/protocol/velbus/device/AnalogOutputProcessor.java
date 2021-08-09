@@ -22,9 +22,9 @@ package org.openremote.agent.protocol.velbus.device;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -167,7 +167,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_LOCKED":
-                            command = Values.getBoolean(value)
+                            command = ValueUtil.getBoolean(value)
                                 .map(locked -> {
                                     params[2] = 0xFFFFFF;
                                     return locked ? LOCK : LOCK_CANCEL;
@@ -175,7 +175,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_FORCED":
-                            command = Values.getBoolean(value)
+                            command = ValueUtil.getBoolean(value)
                                 .map(locked -> {
                                     params[2] = 0xFFFFFF;
                                     return locked ? FORCE_ON : FORCE_ON_CANCEL;
@@ -183,7 +183,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_INHIBITED":
-                            command = Values.getBoolean(value)
+                            command = ValueUtil.getBoolean(value)
                                 .map(inhibited -> {
                                     params[2] = 0xFFFFFF;
                                     return inhibited ? INHIBIT : INHIBIT_CANCEL;
@@ -202,7 +202,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                             break;
                         case "_VALUE":
                         case "_LEVEL":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(level -> {
                                     params[0] = level;
                                     return level < 0 ? SET_LEVEL_HALT : channelNumberAndPropertySuffix.value.equals("_VALUE") ? SET_VALUE : SET_LEVEL;
@@ -211,7 +211,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                             break;
                         case "_LOCK":
                         case "_FORCE_OFF":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[2] = duration;
                                     return duration == 0 ? LOCK_CANCEL : LOCK;
@@ -219,7 +219,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_ON":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[2] = duration;
                                     if (duration == 0) {
@@ -232,7 +232,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_FORCE_ON":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[2] = duration;
                                     return duration == 0 ? FORCE_ON_CANCEL : FORCE_ON;
@@ -240,7 +240,7 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_INHIBIT":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[2] = duration;
                                     return duration == 0 ? INHIBIT_CANCEL : INHIBIT;
@@ -410,8 +410,8 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
             return Optional.empty();
         }
 
-        if (Values.isString(value.getClass())) {
-            return Values.getString(value)
+        if (ValueUtil.isString(value.getClass())) {
+            return ValueUtil.getString(value)
                 .map(levelSpeedStr -> {
                     String[] levelSpeedArr = levelSpeedStr.split("(?<=\\d):(?=\\d)");
                     if (levelSpeedArr.length == 2) {
@@ -423,20 +423,20 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
                 });
         }
 
-        if (Values.isArray(value.getClass())) {
-            return Values.asJSONArray(value)
+        if (ValueUtil.isArray(value.getClass())) {
+            return ValueUtil.asJSONArray(value)
                 .map(arr -> {
-                    Optional<Integer> level = Values.getIntegerCoerced(arr.get(0));
-                    Optional<Integer> speed = Values.getIntegerCoerced(arr.get(1));
+                    Optional<Integer> level = ValueUtil.getIntegerCoerced(arr.get(0));
+                    Optional<Integer> speed = ValueUtil.getIntegerCoerced(arr.get(1));
                     return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
                 });
         }
 
-        if (Values.isObject(value.getClass())) {
-            return Values.asJSONObject(value)
+        if (ValueUtil.isObject(value.getClass())) {
+            return ValueUtil.asJSONObject(value)
                 .map(obj -> {
-                    Optional<Integer> level = Values.getIntegerCoerced(obj.get("level"));
-                    Optional<Integer> speed = Values.getIntegerCoerced(obj.get("speed"));
+                    Optional<Integer> level = ValueUtil.getIntegerCoerced(obj.get("level"));
+                    Optional<Integer> speed = ValueUtil.getIntegerCoerced(obj.get("speed"));
                     return level.isPresent() && speed.isPresent() ? new Pair<>(level.get(), speed.get()) : null;
                 });
         }

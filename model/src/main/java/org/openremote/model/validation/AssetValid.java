@@ -23,8 +23,8 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.Values;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -78,7 +78,7 @@ public @interface AssetValid {
         public boolean isValid(Asset<?> value, ConstraintValidatorContext context) {
 
             String type = value.getType();
-            AssetTypeInfo assetModelInfo = Values.getAssetInfo(type).orElse(null);
+            AssetTypeInfo assetModelInfo = ValueUtil.getAssetInfo(type).orElse(null);
 
             if (assetModelInfo == null || value.getClass() != assetModelInfo.getAssetDescriptor().getType()) {
                 context.buildConstraintViolationWithTemplate(ASSET_TYPE_INVALID).addConstraintViolation();

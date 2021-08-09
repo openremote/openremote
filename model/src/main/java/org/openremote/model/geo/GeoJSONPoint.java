@@ -23,8 +23,6 @@ import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import com.vividsolutions.jts.geom.Coordinate;
-import net.minidev.json.JSONArray;
-import org.openremote.model.value.Values;
 
 import static org.openremote.model.geo.GeoJSONPoint.TYPE;
 

@@ -26,6 +26,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.MetaMap;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
 import java.util.Date;
@@ -117,7 +118,7 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
 
     @Override
     public <U> Optional<U> getValueAs(Class<U> valueType) {
-        return Values.getValueCoerced(value, valueType);
+        return ValueUtil.getValueCoerced(value, valueType);
     }
 
     @Override

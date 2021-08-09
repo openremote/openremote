@@ -21,9 +21,8 @@ package org.openremote.model.query.filter;
 
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.value.NameHolder;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
-import java.io.Serializable;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -62,7 +61,7 @@ public class StringPredicate extends ValuePredicate {
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
         return obj -> {
 
-            String string = Values.getValueCoerced(obj, String.class).orElse(null);
+            String string = ValueUtil.getValueCoerced(obj, String.class).orElse(null);
 
             if (string == null && value == null)
                 return !negate;

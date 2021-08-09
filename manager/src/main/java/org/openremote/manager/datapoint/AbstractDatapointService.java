@@ -5,7 +5,6 @@ import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
@@ -17,30 +16,24 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.DatapointPeriod;
 import org.openremote.model.datapoint.ValueDatapoint;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGInterval;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.TypedQuery;
-import java.io.File;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -324,12 +317,12 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
                                     Object value = null;
                                     if (rs.getObject(2) != null) {
                                         if (downsample) {
-                                            value = Values.getValueCoerced(rs.getObject(2), Double.class).orElse(null);
+                                            value = ValueUtil.getValueCoerced(rs.getObject(2), Double.class).orElse(null);
                                         } else {
                                             if (rs.getObject(2) instanceof PGobject) {
-                                                value = Values.parse(((PGobject) rs.getObject(2)).getValue()).orElse(null);
+                                                value = ValueUtil.parse(((PGobject) rs.getObject(2)).getValue()).orElse(null);
                                             } else {
-                                                value = Values.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
+                                                value = ValueUtil.getValueCoerced(rs.getObject(2), JsonNode.class).orElse(null);
                                             }
                                         }
                                     }
@@ -382,7 +375,7 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     protected void setUpsertValues(PreparedStatement st, String assetId, String attributeName, Object value, LocalDateTime timestamp) throws Exception {
         PGobject pgJsonValue = new PGobject();
         pgJsonValue.setType("jsonb");
-        pgJsonValue.setValue(Values.asJSON(value).orElse("null"));
+        pgJsonValue.setValue(ValueUtil.asJSON(value).orElse("null"));
         st.setString(1, assetId);
         st.setString(2, attributeName);
         st.setObject(3, pgJsonValue);

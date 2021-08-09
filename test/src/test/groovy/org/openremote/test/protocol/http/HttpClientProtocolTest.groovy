@@ -41,7 +41,7 @@ import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.ValueFilter
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -166,7 +166,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        ObjectNode body = Values.parse(bodyStr).orElse(null)
+                        ObjectNode body = ValueUtil.parse(bodyStr).orElse(null)
                         if (body.has("prop1")
                             && body.get("prop1").get("myProp1").asInt() == 123
                             && body.get("prop1").get("myProp2").asBoolean()
@@ -265,10 +265,10 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             )
         .setFollowRedirects(true)
         .setRequestHeaders(
-            Values.parse(/{"header1": ["header1Value1"], "header2": ["header2Value1","header2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
+            ValueUtil.parse(/{"header1": ["header1Value1"], "header2": ["header2Value1","header2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
         )
         .setRequestQueryParameters(
-            Values.parse(/{"param1": ["param1Value1"], "param2": ["param2Value1","param2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
+            ValueUtil.parse(/{"param1": ["param1Value1"], "param2": ["param2Value1","param2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
         )
 
         and: "the agent is added to the asset service"
@@ -310,7 +310,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath('value/{$value}/set')
-                            .setWriteValueConverter((ObjectNode)Values.parse("{\n" +
+                            .setWriteValueConverter((ObjectNode)ValueUtil.parse("{\n" +
                                 "    \"TRUE\": \"on\",\n" +
                                 "    \"FALSE\": \"off\"\n" +
                                 "}").get())
@@ -369,7 +369,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         when: "a linked attribute value is updated"
         def attributeEvent = new AttributeEvent(asset.id,
             "putRequestWithHeaders",
-            Values.parse('{"myProp1": 123,"myProp2": true}').get())
+                ValueUtil.parse('{"myProp1": 123,"myProp2": true}').get())
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the server should have received the request"
@@ -405,9 +405,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             .setFollowRedirects(null)
             .setRequestHeaders(null)
             .setRequestQueryParameters(null)
-        def agent3 = Values.clone(agent2)
+        def agent3 = ValueUtil.clone(agent2)
             .setId(null)
-        def agent4 = Values.clone(agent2)
+        def agent4 = ValueUtil.clone(agent2)
             .setId(null)
             .setFollowRedirects(true)
 

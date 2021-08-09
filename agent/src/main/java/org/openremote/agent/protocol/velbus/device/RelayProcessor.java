@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.velbus.device;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,8 +65,8 @@ public class RelayProcessor extends OutputChannelProcessor {
                 return Optional.empty();
             }
 
-            if (Values.isBoolean(value.getClass())) {
-                return fromBoolean(Values.getBoolean(value).orElse(null));
+            if (ValueUtil.isBoolean(value.getClass())) {
+                return fromBoolean(ValueUtil.getBoolean(value).orElse(null));
             }
 
             return EnumUtil.enumFromValue(ChannelState.class, value);
@@ -207,7 +207,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                             }
                             break;
                         case "_LOCKED":
-                            command = Values.getBoolean(value)
+                            command = ValueUtil.getBoolean(value)
                                 .map(locked -> {
                                     params[0] = 0xFFFFFF;
                                     return locked ? LOCK : LOCK_CANCEL;
@@ -215,7 +215,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_INHIBITED":
-                            command = Values.getBoolean(value)
+                            command = ValueUtil.getBoolean(value)
                                 .map(inhibited -> {
                                     params[0] = 0xFFFFFF;
                                     return inhibited ? INHIBIT : INHIBIT_CANCEL;
@@ -223,7 +223,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_FORCED":
-                            command = Values.getBoolean(value)
+                            command = ValueUtil.getBoolean(value)
                                 .map(inhibited -> {
                                     params[0] = 0xFFFFFF;
                                     return inhibited ? FORCE_ON : FORCE_ON_CANCEL;
@@ -231,7 +231,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_ON":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[0] = duration;
                                     return duration == 0 ? RELAY_OFF : RELAY_ON_TIMER;
@@ -239,7 +239,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                              break;
                         case "_INTERMITTENT":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[0] = duration;
                                     return duration == 0 ? RELAY_OFF : RELAY_BLINK_TIMER;
@@ -248,7 +248,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                             break;
                         case "_LOCK":
                         case "_FORCE_OFF":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[0] = duration;
                                     return duration == 0 ? LOCK_CANCEL : LOCK;
@@ -256,7 +256,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_FORCE_ON":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[0] = duration;
                                     return duration == 0 ? FORCE_ON_CANCEL : FORCE_ON;
@@ -264,7 +264,7 @@ public class RelayProcessor extends OutputChannelProcessor {
                                 .orElse(null);
                             break;
                         case "_INHIBIT":
-                            command = Values.getIntegerCoerced(value)
+                            command = ValueUtil.getIntegerCoerced(value)
                                 .map(duration -> {
                                     params[0] = duration;
                                     return duration == 0 ? INHIBIT_CANCEL : INHIBIT;

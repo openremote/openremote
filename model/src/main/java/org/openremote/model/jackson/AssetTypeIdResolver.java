@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.impl.UnknownAsset;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 
@@ -59,7 +59,7 @@ public class AssetTypeIdResolver extends TypeIdResolverBase {
 
     @Override
     public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-        AssetDescriptor<?> descriptor = Values.getAssetDescriptor(id).orElse(UnknownAsset.DESCRIPTOR);
+        AssetDescriptor<?> descriptor = ValueUtil.getAssetDescriptor(id).orElse(UnknownAsset.DESCRIPTOR);
         return context.constructType(descriptor.getType());
     }
 }

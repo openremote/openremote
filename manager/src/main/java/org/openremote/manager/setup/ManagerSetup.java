@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.setup;
 
-import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetDatapointService;
@@ -31,14 +30,13 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import jline.internal.Log;
 
@@ -46,10 +44,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.DayOfWeek;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -473,7 +467,7 @@ public class ManagerSetup implements Setup {
         Files.list(Paths.get(provisionDocRoot.toString(), "consoleappconfig")).filter(Files::isRegularFile)
                 .forEach(file -> {
                     try {
-                        ConsoleAppConfig config = Values.JSON.readValue(file.toFile(), ConsoleAppConfig.class);
+                        ConsoleAppConfig config = ValueUtil.JSON.readValue(file.toFile(), ConsoleAppConfig.class);
                         persistenceService.doTransaction(entityManager -> entityManager.merge(config));
 
                         Log.info("Console app config added for realm: " + config.getRealm());
@@ -495,7 +489,7 @@ public class ManagerSetup implements Setup {
         Files.list(Paths.get(provisionDocRoot.toString(), "assets")).sorted()
                 .forEach(file -> {
                     try {
-                        Asset<?> asset =  Values.JSON.readValue(file.toFile(), Asset.class);
+                        Asset<?> asset =  ValueUtil.JSON.readValue(file.toFile(), Asset.class);
                         asset = assetStorageService.merge(asset);
 
                         Log.info("Asset merged: " + asset.toString());

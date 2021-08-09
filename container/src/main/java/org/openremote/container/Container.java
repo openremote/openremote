@@ -25,7 +25,7 @@ import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
 import org.openremote.model.ContainerService;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -116,7 +116,7 @@ public class Container implements org.openremote.model.Container {
         this.devMode = getBoolean(this.config, DEV_MODE, DEV_MODE_DEFAULT);
 
         if (this.devMode) {
-            Values.JSON.enable(SerializationFeature.INDENT_OUTPUT);
+            ValueUtil.JSON.enable(SerializationFeature.INDENT_OUTPUT);
         }
 
         int scheduledTasksThreadsMax = getInteger(

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -118,7 +119,7 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
         AbstractNameValueHolder<?> that = (AbstractNameValueHolder<?>) o;
         return name.equals(that.name)
             && Objects.equals(type, that.type)
-            && Objects.equals(Values.convert(value, JsonNode.class), Values.convert(that.value, JsonNode.class));
+            && Objects.equals(ValueUtil.convert(value, JsonNode.class), ValueUtil.convert(that.value, JsonNode.class));
     }
 
     @Override

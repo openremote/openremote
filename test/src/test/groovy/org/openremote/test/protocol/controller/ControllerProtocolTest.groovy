@@ -35,7 +35,7 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -145,7 +145,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
                                 def queryParams = uriInfo.getQueryParameters(true)
                                 if (queryParams.get("name").size() == 1 && queryParams.getFirst("name") == "my_command") {
                                     String bodyStr = (String)requestContext.getEntity()
-                                    ObjectNode body = Values.parse(bodyStr).orElse(null)
+                                    ObjectNode body = ValueUtil.parse(bodyStr).orElse(null)
 
                                     if (body != null && body.get("parameter").isPresent() && body.get("parameter").orElse(null).toString() == "a_parameter") {
                                         requestContext.abortWith(Response.ok().build())

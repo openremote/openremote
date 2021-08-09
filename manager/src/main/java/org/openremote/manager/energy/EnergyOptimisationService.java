@@ -46,7 +46,7 @@ import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -589,7 +589,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             return false;
         }
 
-        Class<?> assetClass = Values
+        Class<?> assetClass = ValueUtil
             .getAssetDescriptor(((GroupAsset)asset).getChildAssetType().orElse(null))
             .map(AssetDescriptor::getType)
             .orElse(null);

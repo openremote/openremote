@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openremote.agent.protocol.tradfri.device.event.*;
 import org.openremote.agent.protocol.tradfri.payload.DeviceResponse;
 import org.openremote.agent.protocol.tradfri.util.CoapClient;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.ArrayList;
 
@@ -22,7 +22,7 @@ public class DeviceObserver extends Observer {
     /**
      * An object mapper used for mapping JSON responses from the IKEA TRÅDFRI gateway to Java classes
      */
-    private final ObjectMapper objectMapper = Values.JSON;
+    private final ObjectMapper objectMapper = ValueUtil.JSON;
 
     /**
      * Construct the DeviceObserver class

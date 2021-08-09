@@ -41,7 +41,7 @@ import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -392,7 +392,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         }
 
         if (pushMessage.getData() != null) {
-            builder.putAllData(Values.JSON.convertValue(pushMessage.getData(), new TypeReference<Map<String, String>>(){}));
+            builder.putAllData(ValueUtil.JSON.convertValue(pushMessage.getData(), new TypeReference<Map<String, String>>(){}));
 
             if (dataOnly) {
                 apsBuilder.setContentAvailable(true);
@@ -404,11 +404,11 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         try {
             if (pushMessage.getAction() != null) {
-                builder.putData("action", Values.asJSONOrThrow(pushMessage.getAction()));
+                builder.putData("action", ValueUtil.asJSONOrThrow(pushMessage.getAction()));
             }
 
             if (pushMessage.getButtons() != null) {
-                builder.putData("buttons", Values.asJSONOrThrow(pushMessage.getButtons()));
+                builder.putData("buttons", ValueUtil.asJSONOrThrow(pushMessage.getButtons()));
             }
         } catch (JsonProcessingException e) {
             e.printStackTrace();

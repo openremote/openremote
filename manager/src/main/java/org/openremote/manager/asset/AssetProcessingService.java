@@ -42,9 +42,9 @@ import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.*;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
 import java.util.ArrayList;
@@ -352,7 +352,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     // For executable attributes, non-sensor sources can set a writable attribute execute status
                     if (oldAttribute.getType() == ValueType.EXECUTION_STATUS && source != SENSOR) {
                         Optional<AttributeExecuteStatus> status = event.getValue()
-                            .flatMap(Values::getString)
+                            .flatMap(ValueUtil::getString)
                             .flatMap(AttributeExecuteStatus::fromString);
 
                         if (status.isPresent() && !status.get().isWrite()) {
@@ -363,7 +363,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     // Type coercion
                     Object value = event.getValue().map(eventValue -> {
                         Class<?> attributeValueType = oldAttribute.getType().getType();
-                        return Values.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
+                        return ValueUtil.getValueCoerced(eventValue, attributeValueType).orElseThrow(() -> {
                             LOG.info("Failed to coerce attribute event value into the correct value type: event value type=" + eventValue.getClass() + ", attribute value type=" + attributeValueType);
                             return new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE);
                         });
@@ -413,7 +413,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                     // Create a copy of the attribute and set the new value and timestamp
                     @SuppressWarnings("rawtypes")
-                    Attribute updatedAttribute = Values.clone(oldAttribute);
+                    Attribute updatedAttribute = ValueUtil.clone(oldAttribute);
                     updatedAttribute.setValue(value, eventTime);
 
                     // Push through all processors

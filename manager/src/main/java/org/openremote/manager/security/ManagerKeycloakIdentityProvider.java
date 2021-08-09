@@ -45,7 +45,7 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAllowedException;
@@ -73,7 +73,7 @@ import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS_
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK;
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.Values.convert;
+import static org.openremote.model.util.ValueUtil.convert;
 
 /**
  * All keycloak interaction is done through the admin-cli client; security is implemented downstream of here; anything
@@ -804,7 +804,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             try (InputStream is = Files.newInputStream(grantPath)) {
                 String grantJson = IOUtils.toString(is, StandardCharsets.UTF_8);
-                grant = Values.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
+                grant = ValueUtil.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
                     LOG.info("Failed to load KEYCLOAK_GRANT_FILE: " + grantFile);
                     return null;
                 });
@@ -827,7 +827,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         Path grantPath = Paths.get(grantFile);
 
         try {
-            Files.write(grantPath, Values.asJSON(grant).orElse("null").getBytes(),
+            Files.write(grantPath, ValueUtil.asJSON(grant).orElse("null").getBytes(),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING);
