@@ -1,7 +1,8 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 declare function require(name: string): any;
 
-import {customElement, html, LitElement, property, PropertyValues, query, TemplateResult, unsafeCSS} from "lit-element";
+import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
@@ -35,8 +36,8 @@ import {
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
-import {styleMap} from "lit-html/directives/style-map";
-import {classMap} from "lit-html/directives/class-map";
+import {styleMap} from "lit/directives/style-map";
+import {classMap} from "lit/directives/class-map";
 import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
@@ -661,7 +662,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     <div style="display: grid">
                         ${availableAttributes.sort().map((attribute) =>
                             html`<div style="grid-column: 1 / -1;">
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(attribute)}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t(Util.camelCaseToSentenceCase(attribute))}" .value="${!!selectedAttributes.find((selected) => selected === attribute)}"
                                         @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? newlySelectedAttributes.push(attribute) : newlySelectedAttributes.splice(newlySelectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
                                 </div>`)}
                     </div>
@@ -795,7 +796,7 @@ export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, ho
     }
 
     return html`
-        <or-attribute-input dense .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}"></or-attribute-input>
+        <or-attribute-input .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}"></or-attribute-input>
     `;
 }
 
@@ -1082,6 +1083,25 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
 
+        if (changedProperties.has("assetId")) {
+            this.asset = undefined;
+            if (this.assetId) {
+                this._loading = true;
+                super.assetIds = [this.assetId];
+            } else {
+                this._loading = false;
+                super.assetIds = undefined;
+            }
+        } else if (changedProperties.has("editMode") && !this.editMode) {
+            this.reloadAsset();
+        }
+
+        this.onCompleted().then(() => {
+            onRenderComplete.startCallbacks().then(() => {
+                OrAssetViewer.generateGrid(this.shadowRoot);
+            });
+        });
+
         return super.shouldUpdate(changedProperties);
     }
 
@@ -1138,7 +1158,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         return html`
             <div id="wrapper">
-                <div id="asset-header">
+                <div id="asset-header" class=${editMode ? "editmode" : ""}>
                     <a class="back-navigation" @click="${() => window.history.back()}">
                         <or-icon icon="chevron-left"></or-icon>
                     </a>
@@ -1146,43 +1166,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
                         ${editMode ? html`<or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-mwc-input>` : html`<span>${this.asset.name}</span>`}
                     </div>
-                    ${!this._isReadonly() ? html`
-                        <span id="edit-wrapper" class="mobileHidden">
-                            <or-translate value="editAsset"></or-translate>
-                            <or-mwc-input id="edit-btn" .type="${InputType.SWITCH}" .value="${this.editMode}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onEditToggleClicked(ev.detail.value)}"></or-mwc-input>
-                        </span>
-                    `: ``}
                     <div id="right-wrapper" class="mobileHidden">
                         ${this.asset!.createdOn ? html`<or-translate id="created-time" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``}
                         ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
+                        ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" class="mobileHidden" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("view") : i18next.t("modify")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
+                        `: ``}
                     </div>
                 </div>
                 ${content}
             </div>
         `;
-    }
-
-    protected updated(_changedProperties: PropertyValues) {
-        super.updated(_changedProperties);
-
-        if (_changedProperties.has("assetId")) {
-            this.asset = undefined;
-            if (this.assetId) {
-                this._loading = true;
-                super.assetIds = [this.assetId];
-            } else {
-                this._loading = false;
-                super.assetIds = undefined;
-            }
-        } else if (_changedProperties.has("editMode") && !this.editMode) {
-            this.reloadAsset();
-        }
-
-        this.onCompleted().then(() => {
-            onRenderComplete.startCallbacks().then(() => {
-                OrAssetViewer.generateGrid(this.shadowRoot);
-            });
-        });
     }
 
     public reloadAsset() {

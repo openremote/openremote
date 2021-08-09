@@ -1,4 +1,4 @@
-import {css, unsafeCSS} from "lit-element";
+import {css, unsafeCSS} from "lit";
 import { DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5, DefaultHeaderHeight, DefaultBoxShadow} from "@openremote/core";
 
 export const markerColorVar = "--internal-or-map-marker-color";

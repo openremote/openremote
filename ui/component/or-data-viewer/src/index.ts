@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import {html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-chart";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
@@ -7,8 +8,8 @@ import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {Asset, Attribute} from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
-import {styleMap} from "lit-html/directives/style-map";
-import {classMap} from "lit-html/directives/class-map";
+import {styleMap} from "lit/directives/style-map";
+import {classMap} from "lit/directives/class-map";
 import "@openremote/or-attribute-card";
 
 export type PanelType = "chart" | "kpi";

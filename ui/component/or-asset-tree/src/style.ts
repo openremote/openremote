@@ -1,5 +1,5 @@
-import {css, unsafeCSS} from "lit-element";
-import {DefaultBoxShadow, DefaultColor1, DefaultColor2, DefaultColor4, DefaultColor5} from "@openremote/core";
+import {css, unsafeCSS} from "lit";
+import {DefaultColor1, DefaultColor2, DefaultColor4, DefaultColor5} from "@openremote/core";
 import {mdiChevronRight} from "@mdi/js";
 import {mdiChevronDown} from "@mdi/js";
 

@@ -231,7 +231,7 @@ public class ZWaveNetwork {
         int endpoint = channel.getCommandClass() != null ? channel.getCommandClass().getContext().getDestEndPoint() : 0;
         String linkValue = channel.getLinkName();
 
-        ZWaveAgent.ZWaveAgentLink agentLink = new ZWaveAgent.ZWaveAgentLink(agentId, nodeId, endpoint, linkValue);
+        ZWaveAgentLink agentLink = new ZWaveAgentLink(agentId, nodeId, endpoint, linkValue);
 
         attribute.addOrReplaceMeta(
             new MetaItem<>(AGENT_LINK, agentLink),

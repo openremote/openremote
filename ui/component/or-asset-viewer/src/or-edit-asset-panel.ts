@@ -1,4 +1,6 @@
-import {css, customElement, html, LitElement, property, TemplateResult, unsafeCSS} from "lit-element";
+import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {until} from "lit/directives/until";
+import {customElement, property} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder} from "@openremote/model";
@@ -14,7 +16,7 @@ import {
 } from "./or-add-attribute-panel";
 import {panelStyles} from "./style";
 import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
-import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
+import {jsonFormsInputTemplateProvider, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -249,7 +251,7 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
-                    <or-attribute-input compact .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
+                    <or-attribute-input compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>
@@ -279,9 +281,9 @@ export class OrEditAssetPanel extends LitElement {
         this._onModified();
     }
 
-    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, detail: OrInputChangedEventDetail) {
-        metaItem.value = detail.value;
-        attribute.meta![metaItem.name!] = detail.value;
+    protected _onMetaItemModified(attribute: Attribute<any>, metaItem: NameValueHolder<any>, detail: OrInputChangedEventDetail | undefined) {
+        metaItem.value = detail ? detail.value : undefined;
+        attribute.meta![metaItem.name!] = metaItem.value;
         this._onModified();
     }
 
@@ -293,19 +295,26 @@ export class OrEditAssetPanel extends LitElement {
         };
 
         const descriptor = AssetModelUtil.getMetaItemDescriptor(metaItem.name);
-        let valueDescriptor = descriptor ? AssetModelUtil.getValueDescriptor(descriptor.type) : undefined;
+        const valueDescriptor = descriptor ? AssetModelUtil.getValueDescriptor(descriptor.type) : undefined;
         let content: TemplateResult = html``;
 
         if (!valueDescriptor) {
             content = html`<p>NOT SUPPORTED</p>`;
         } else {
             const options: ValueInputProviderOptions = {
-                label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true)
+                label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true),
+                resizeVertical: true
             };
-            const provider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail: OrInputChangedEventDetail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+
+            const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
+            let provider = jsonFormsInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options, standardInputProvider);
+
+            if (!provider) {
+                provider = standardInputProvider;
+            }
 
             if (provider.templateFunction) {
-                content = provider.templateFunction(metaItem.value, false, false, false, false, undefined);
+                content = html`${until(provider.templateFunction(metaItem.value, false, false, false, false, undefined), ``)}`;
             }
         }
 
@@ -340,11 +349,6 @@ export class OrEditAssetPanel extends LitElement {
                         overflow-y: visible !important;
                     }
                     #dialog-content {
-                        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                        border-top-width: 1px;
-                        border-top-style: solid;
-                        border-bottom-width: 1px;
-                        border-bottom-style: solid;
                         padding: 0;
                         overflow: visible;
                     }
@@ -397,13 +401,6 @@ export class OrEditAssetPanel extends LitElement {
             `,
             styles: html`
                 <style>
-                    #dialog-content {
-                        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                        border-top-width: 1px;
-                        border-top-style: solid;
-                        border-bottom-width: 1px;
-                        border-bottom-style: solid;
-                    }
                     #meta-creator {
                         height: 600px;
                         max-height: 100%;
@@ -530,7 +527,7 @@ export class OrEditAssetPanel extends LitElement {
         return html`
             <div id="parent-edit-wrapper">
                 ${getPropertyTemplate(this.asset, "parentId", this, undefined, undefined, {readonly: false, label: i18next.t("parent")})}
-                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" raised .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
+                <or-mwc-input id="change-parent-btn" type="${InputType.BUTTON}" outlined .label="${i18next.t("edit")}" @or-mwc-input-changed="${openDialog}"></or-mwc-input>
             </div>
         `;
     }

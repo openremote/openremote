@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, query, TemplateResult, unsafeCSS, PropertyValues} from "lit-element";
+import {css, html, LitElement, TemplateResult, unsafeCSS, PropertyValues} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
@@ -91,7 +92,7 @@ export async function showErrorDialog(errorMessage: string, hostElement?: HTMLEl
     await deferred.promise;
 }
 
-export async function showOkCancelDialog(title: string, content: string | TemplateResult) {
+export async function showOkCancelDialog(title: string, content: string | TemplateResult, okText?: string) {
 
     const deferred = new Util.Deferred<boolean>();
 
@@ -100,15 +101,15 @@ export async function showOkCancelDialog(title: string, content: string | Templa
             content: typeof(content) === "string" ? html`<p>${content}</p>` : content,
             actions: [
                 {
-                    actionName: "ok",
-                    content: "ok",
-                    action: () => deferred.resolve(true)
-                },
-                {
                     actionName: "cancel",
                     content: "cancel",
                     default: true,
                     action: () => deferred.resolve(false)
+                },
+                {
+                    actionName: "ok",
+                    content: okText ? okText : "ok",
+                    action: () => deferred.resolve(true)
                 }
             ],
             title: title

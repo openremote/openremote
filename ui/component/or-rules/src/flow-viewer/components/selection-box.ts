@@ -1,4 +1,5 @@
-import { LitElement, customElement, property, html, css } from "lit-element";
+import { LitElement, html, css } from "lit";
+import {customElement, property} from "lit/decorators.js";
 import { Utilities } from "../utils";
 import { EditorWorkspace } from "./editor-workspace";
 import { input } from "./flow-editor";

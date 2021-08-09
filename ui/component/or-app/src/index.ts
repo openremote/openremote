@@ -1,15 +1,13 @@
 import {
     css,
-    customElement,
     html,
     LitElement,
-    property,
     PropertyValues,
-    query,
     TemplateResult,
     unsafeCSS
-} from "lit-element";
-import {unsafeHTML} from "lit-html/directives/unsafe-html";
+} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
+import {unsafeHTML} from "lit/directives/unsafe-html";
 import {AppConfig, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -24,12 +22,12 @@ import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremot
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
-import {AppStateKeyed, updatePage} from "./app";
+import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
 
-const DefaultLogo = require("../images/logo.png");
-const DefaultMobileLogo = require("../images/logo-mobile.png");
+const DefaultLogo = require("../images/logo.svg");
+const DefaultMobileLogo = require("../images/logo-mobile.svg");
 const DefaultFavIcon = require("../images/favicon.ico");
 
 export * from "./app";
@@ -153,10 +151,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         OrMwcSnackbar.DialogHostElement = this;
     }
 
+    public getState(): S {
+        return this._store.getState();
+    }
+
     connectedCallback() {
         super.connectedCallback();
-        this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this._store.getState()));
-        this.stateChanged(this._store.getState());
+        this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
+        this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {
@@ -167,6 +169,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _onManagerEvent = (event: OREvent) => {
         switch (event) {
             case OREvent.DISPLAY_REALM_CHANGED:
+                this._store.dispatch(updateRealm(manager.displayRealm));
                 const config = this._getConfig(manager.displayRealm);
 
                 if (!config) {
@@ -382,7 +385,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             consoleStyles = html`<style>:host {--or-console-primary-color:${primary};--or-console-secondary-color:${secondary};}</style>`;
         }
         return html`
-            ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : unsafeHTML(this._config.styles.strings) : ``}
+            ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
             ${consoleStyles}
             ${this._config.header ? html`
                 <or-header .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>

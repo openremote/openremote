@@ -1,4 +1,5 @@
-import {css, customElement, html, property, query} from "lit-element";
+import {css, html} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {Action, createSlice, EnhancedStore, PayloadAction, ThunkAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
@@ -49,10 +50,10 @@ const pageMapSlice = createSlice({
             return state;
         },
         attributeEventReceived(state: MapState, action: PayloadAction<AttributeEvent>) {
-            let assets = state.assets;
+            const assets = state.assets;
             const assetId = action.payload.attributeState.ref.id;
             const index = assets.findIndex((asst) => asst.id === assetId);
-            let asset = index >= 0 ? assets[index] : null;
+            const asset = index >= 0 ? assets[index] : null;
 
             if (!asset) {
                 return state;
@@ -156,14 +157,12 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
 
     protected _assetSelector = (state: S) => state.map.assets;
     protected _paramsSelector = (state: S) => state.app.params;
-    protected subscribedRealm?: string;
+    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+
     protected assetSubscriptionId: string;
     protected attributeSubscriptionId: string;
 
-    protected subscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => async (dispatch) => {
-
-        const realm = manager.displayRealm;
-        this.subscribedRealm = realm;
+    protected subscribeAssets = async (realm: string) => {
 
         try {
             const result = await manager.rest.api.AssetResource.queryAssets({
@@ -206,25 +205,21 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                 }
             });
 
-            if (realm !== this.subscribedRealm) {
-                // Realm has changed
-                return;
-            }
-
-            if (!this.isConnected) {
+            if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
+                // No longer connected or realm has changed
                 return;
             }
 
             if (result.data) {
                 const assets = result.data;
 
-                dispatch(setAssets(assets));
+                this._store.dispatch(setAssets(assets));
 
                 const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, undefined, (event) => {
-                    dispatch(assetEventReceived(event));
+                    this._store.dispatch(assetEventReceived(event));
                 });
 
-                if (!this.isConnected || realm !== this.subscribedRealm) {
+                if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
                     manager.events.unsubscribe(assetSubscriptionId);
                     return;
                 }
@@ -232,10 +227,11 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                 this.assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
-                    dispatch(attributeEventReceived(event));
+                    this._store.dispatch(attributeEventReceived(event));
                 });
 
-                if (!this.isConnected || realm !== this.subscribedRealm) {
+                if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
+                    this.assetSubscriptionId = undefined;
                     manager.events.unsubscribe(assetSubscriptionId);
                     manager.events.unsubscribe(attributeSubscriptionId);
                     return;
@@ -248,7 +244,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         }
     };
 
-    protected unsubscribeAssets = (): ThunkAction<void, MapStateKeyed, unknown, Action<string>> => (dispatch, getState) => {
+    protected unsubscribeAssets = () => {
         if (this.assetSubscriptionId) {
             manager.events.unsubscribe(this.assetSubscriptionId);
             this.assetSubscriptionId = undefined;
@@ -258,6 +254,22 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
             this.attributeSubscriptionId = undefined;
         }
     };
+
+    protected getRealmState = createSelector(
+        [this._realmSelector],
+        async (realm) => {
+            if (this._assets.length > 0) {
+                // Clear existing assets
+                this._assets = [];
+            }
+            this.unsubscribeAssets();
+            this.subscribeAssets(realm);
+
+            if (this._map) {
+                this._map.refresh();
+            }
+        }
+    )
 
     protected _getMapAssets = createSelector(
         [this._assetSelector],
@@ -312,30 +324,19 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         super.connectedCallback();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.addEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        manager.addListener(this.onManagerEvent);
-        this._store.dispatch(this.subscribeAssets());
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
         this.removeEventListener(OrMapClickedEvent.NAME, this.onMapClick);
-        manager.removeListener(this.onManagerEvent);
-        this._store.dispatch(this.unsubscribeAssets());
-    }
-
-    protected onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this._store.dispatch(this.unsubscribeAssets());
-                this._store.dispatch(this.subscribeAssets());
-                break;
-        }
+        this.unsubscribeAssets();
     }
 
     stateChanged(state: S) {
         this._assets = this._getMapAssets(state);
         this._currentAsset = this._getCurrentAsset(state);
+        this.getRealmState(state);
     }
 
     protected onMapMarkerClick(e: OrMapMarkerClickedEvent) {
@@ -348,7 +349,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
     }
 
     protected getCurrentAsset() {
-        this._getCurrentAsset(this._store.getState());
+        this._getCurrentAsset(this.getState());
     }
 
     protected onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {

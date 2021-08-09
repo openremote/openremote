@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
+import {css, html, LitElement, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import manager, {
     AssetModelUtil,
     DefaultBoxShadow,
@@ -587,13 +588,17 @@ export class OrRules extends translate(i18next)(LitElement) {
         `;
     }
 
+    public refresh() {
+        this._rulesList.refresh();
+    }
+
     protected isReadonly(): boolean {
         return this.readonly || !manager.hasRole(ClientRole.WRITE_RULES);
     }
 
     protected _confirmContinue(action: () => void) {
         if (this._viewer.modified) {
-            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueRulesetModified"))
+            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueRulesetModified"), i18next.t("discard"))
                 .then((ok) => {
                     if (ok) {
                         action();

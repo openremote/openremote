@@ -20,22 +20,17 @@
 package org.openremote.model.calendar;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import net.fortuna.ical4j.model.DateList;
 import net.fortuna.ical4j.model.Recur;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.Pair;
 
 import java.io.Serializable;
-import java.text.ParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.logging.Level;
 
 /**
  * Represents an event that occurs at a point in time with a {@link #start}, {#link #end} and optional

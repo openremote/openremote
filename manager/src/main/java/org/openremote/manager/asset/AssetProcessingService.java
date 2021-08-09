@@ -302,7 +302,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
                                 // Check read-only
-                                if (oldAttribute.hasMeta(MetaItemType.READ_ONLY)) {
+                                if (oldAttribute.getMetaValue(MetaItemType.READ_ONLY).orElse(false)) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
                             } else {
@@ -313,7 +313,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                 }
 
                                 // Check read-only
-                                if (oldAttribute.hasMeta(MetaItemType.READ_ONLY) && !authContext.isSuperUser()) {
+                                if (oldAttribute.getMetaValue(MetaItemType.READ_ONLY).orElse(false) && !authContext.isSuperUser()) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
 

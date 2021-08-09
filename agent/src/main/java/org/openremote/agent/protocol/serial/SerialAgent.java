@@ -22,18 +22,18 @@ package org.openremote.agent.protocol.serial;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 
 import javax.persistence.Entity;
 
 @Entity
-public class SerialAgent extends IOAgent<SerialAgent, SerialProtocol, AgentLink.Default> {
+public class SerialAgent extends IOAgent<SerialAgent, SerialProtocol, DefaultAgentLink> {
 
     public static final AttributeDescriptor<String> SERIAL_PORT = Agent.SERIAL_PORT.withOptional(false);
 
-    public static final AgentDescriptor<SerialAgent, SerialProtocol, AgentLink.Default> DESCRIPTOR = new AgentDescriptor<>(
-        SerialAgent.class, SerialProtocol.class, AgentLink.Default.class
+    public static final AgentDescriptor<SerialAgent, SerialProtocol, DefaultAgentLink> DESCRIPTOR = new AgentDescriptor<>(
+        SerialAgent.class, SerialProtocol.class, DefaultAgentLink.class
     );
 
     /**

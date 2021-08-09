@@ -1,4 +1,4 @@
-import { html, unsafeCSS } from "lit-element";
+import { html, unsafeCSS } from "lit";
 import {DefaultColor1, DefaultColor2,DefaultColor3, DefaultColor4, DefaultColor5, DefaultColor6, DefaultColor7} from "@openremote/core";
 
 export const surveySectionStyle = html`

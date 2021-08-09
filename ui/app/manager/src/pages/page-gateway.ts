@@ -1,4 +1,5 @@
-import {css, customElement, html, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
+import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import i18next from "i18next";
 import "@openremote/or-panel";
 import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";

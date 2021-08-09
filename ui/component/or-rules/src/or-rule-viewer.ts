@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, PropertyValues, query, TemplateResult} from "lit-element";
+import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {
     OrRulesRuleChangedEvent,
     OrRulesRuleUnsupportedEvent,

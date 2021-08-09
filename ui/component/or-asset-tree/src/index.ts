@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import {html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-icon";
 import {
@@ -237,6 +238,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     public selectedIds?: string[];
 
     @property({type: Boolean})
+    public showDeselectBtn?: boolean = true;
+
+    @property({type: Boolean})
     public showSortBtn?: boolean = true;
 
     @property({type: String})
@@ -261,26 +265,16 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     public connectedCallback() {
         super.connectedCallback();
-        manager.addListener(this.onManagerEvent);
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
         this.requestUpdate();
-        manager.removeListener(this.onManagerEvent);
     }
 
     public refresh() {
         // Clear nodes to re-fetch them
         this._nodes = undefined;
-    }
-
-    protected onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this._nodes = undefined;
-                break;
-        }
     }
 
     public isAncestorSelected(node: UiAssetTreeNode) {
@@ -306,14 +300,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
 
                 <div id="header-btns">
-                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-mwc-input>
                     <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-mwc-input>
                     <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-mwc-input>
                     <or-mwc-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-mwc-input>
                     <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
                     
                     ${getContentWithMenuTemplate(
-                            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant" ?hidden="${!this.showSortBtn}"></or-mwc-input>`,
+                            html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
                             ["name", "type", "createdOn", "status"].map((sort) => { return {value: sort, text: i18next.t(sort)} as ListItem; }),
                             this.sortBy,
                             (v) => this._onSortClicked(v as string))}
@@ -672,7 +666,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteAssetsConfirm"))
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteAssetsConfirm"), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();

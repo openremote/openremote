@@ -243,6 +243,8 @@ public class MqttBrokerService implements ContainerService {
                         //attribute/assetId/+
                         parentIds.add(assetId);
                     } else {
+                        assetIds.add(assetId);
+
                         String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)) ? null : topicTokens.get(2);
                         if (attributeName != null) {
                             //attribute/assetId/attributeName
@@ -280,8 +282,8 @@ public class MqttBrokerService implements ContainerService {
                     //attribute/#/attributeName
                     // No asset filtering required
                 } else if (singleLevelIndex == 2) {
-                    //attribute/+/attributeName
-                    parentIds.add(null);
+                    //attribute/assetId/+/attributeName
+                    parentIds.add(assetId);
                 } else {
                     return null;
                 }

@@ -1,6 +1,7 @@
 import {translate} from "./translate-mixin";
 import i18next, {InitOptions, TOptions } from "i18next";
-import {LitElement, customElement, property, html, css} from "lit-element";
+import {LitElement, html, css} from "lit";
+import {customElement, property} from "lit/decorators.js";
 
 export {i18next};
 

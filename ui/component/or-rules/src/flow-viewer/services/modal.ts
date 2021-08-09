@@ -1,5 +1,5 @@
 import { PopupModal } from "../components/popup-modal";
-import { html, TemplateResult } from "lit-element";
+import { html, TemplateResult } from "lit";
 import { i18next } from "@openremote/or-translate";
 
 export class ModalService {

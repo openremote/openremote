@@ -1,4 +1,5 @@
-import {css, html, LitElement, property, customElement} from "lit-element";
+import {css, html, LitElement} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import manager from "@openremote/core";
 import {AttributeEvent} from "@openremote/model";
 

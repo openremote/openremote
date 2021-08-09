@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult} from "lit-element";
+import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset, WellknownMetaItems, WellknownRulesetMetaItems} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {OREvent, Util} from "@openremote/core";
@@ -143,12 +144,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     public async refresh() {
+        this._nodes = undefined;
         await this._loadRulesets();
-    }
-
-    public disconnectedCallback() {
-        super.disconnectedCallback();
-        manager.removeListener(this.onManagerEvent);
     }
 
     protected get _allowedLanguages(): RulesetLang[] | undefined {
@@ -182,22 +179,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        manager.addListener(this.onManagerEvent);
         if (manager.ready) {
             this._onReady();
-        }
-    }
-
-    protected onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.READY:
-                if (!manager.ready) {
-                    this._onReady();
-                }
-                break;
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this._nodes = undefined;
-                break;
         }
     }
 
@@ -292,7 +275,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
                         
                         ${getContentWithMenuTemplate(
-            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant"></or-mwc-input>`,
+            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant" ></or-mwc-input>`,
             sortOptions.map((sort) => { return { value: sort, text: i18next.t(sort) } as ListItem; }),
             this.sortBy,
             (v) => this._onSortClicked(v as string))}
@@ -558,7 +541,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"))
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();
@@ -623,7 +606,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
             this._nodes = [];
         } else {
 
-            let nodes = rulesets.map((ruleset) => {
+            const nodes = rulesets.map((ruleset) => {
                 return {
                     ruleset: ruleset
                 } as RulesetNode;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2021, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,19 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.serial;
+package org.openremote.test.protocol;
 
-@SuppressWarnings("deprecation")
-public class NrJavaSerialAddress extends io.netty.channel.rxtx.RxtxDeviceAddress {
+import org.openremote.model.asset.agent.AgentLink;
 
-    protected int baudRate;
+import java.util.Optional;
 
-    public NrJavaSerialAddress(String port, int baudRate) {
-        super(port);
-        this.baudRate = baudRate;
+public class MockAgentLink extends AgentLink<MockAgentLink> {
+
+    protected String requiredValue;
+
+    // For Hydrators
+    protected MockAgentLink() {
     }
 
-    public int getBaudRate() {
-        return baudRate;
+    protected MockAgentLink(String id) {
+        super(id);
+    }
+
+    public Optional<String> getRequiredValue() {
+        return Optional.ofNullable(requiredValue);
+    }
+
+    public MockAgentLink setRequiredValue(String requiredValue) {
+        this.requiredValue = requiredValue;
+        return this;
     }
 }

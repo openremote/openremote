@@ -1,4 +1,5 @@
-import { LitElement, property } from "lit-element";
+import { LitElement } from "lit";
+import {property} from "lit/decorators.js";
 import { input } from "./flow-editor";
 import { i18next, translate } from "@openremote/or-translate";
 

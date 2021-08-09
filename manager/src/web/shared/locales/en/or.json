@@ -253,7 +253,9 @@
   "submit": "Submit",
   "password": "Password",
   "repeatPassword": "Repeat password",
+  "details": "Details",
   "permissions":"Permissions",
+  "fullAccessLabel":"Admin: full access; manage users and roles",
   "noChildAssets": "No child assets",
   "account": "Account",
   "editAttribute": "Change attribute",
@@ -396,5 +398,14 @@
   "attributeName": "Attribute name",
   "oldestDatapoint": "Oldest datapoint",
   "latestDatapoint": "Latest datapoint",
-  "arrayDimensions": "Array dimensions"
+  "arrayDimensions": "Array dimensions",
+  "addParameter": "Add parameter",
+  "addItem": "Add item",
+  "array": "Array",
+  "agentId": "Agent ID",
+  "agentNotFound": "Agent not found",
+  "agentTypeMismatch": "Agent type mismatch",
+  "loadFailedRoles": "Failed to load roles",
+  "loadFailedUsers": "Failed to load users",
+  "loadFailedServiceUsers": "Failed to load service users"
 }

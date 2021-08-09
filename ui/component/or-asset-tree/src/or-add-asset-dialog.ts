@@ -1,4 +1,5 @@
-import {css, customElement, html, LitElement, property, query, unsafeCSS} from "lit-element";
+import {css, html, LitElement, unsafeCSS} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor} from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
@@ -217,6 +218,12 @@ export class OrAddAssetDialog extends LitElement {
 
         return html`
             <div class="col">
+                <div id="name-wrapper">
+                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
+                    <or-mwc-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
+                    <or-mwc-input id="toggle-parent-selector" icon="pencil" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}" title="Edit parent"></or-mwc-input>
+                    <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}" title="Remove parent"></or-mwc-input>
+                </div>
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}
@@ -228,7 +235,7 @@ export class OrAddAssetDialog extends LitElement {
                     </div>
                     ${!this.showParentAssetSelector
                         ? html``
-                        : html`<or-asset-tree id="parent-selector" class="col" .showSortBtn="${false}" selectedNodes readonly></or-asset-tree>`
+                        : html`<or-asset-tree id="parent-selector" class="col" .showDeselectBtn="${false}" .showSortBtn="${false}" selectedNodes readonly></or-asset-tree>`
                     }
                 </form>
             </div>

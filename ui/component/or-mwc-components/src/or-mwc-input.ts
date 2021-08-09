@@ -1,6 +1,7 @@
-import {css, customElement, html, LitElement, property, PropertyValues, TemplateResult, unsafeCSS} from "lit-element";
-import {classMap} from "lit-html/directives/class-map";
-import {ifDefined} from "lit-html/directives/if-defined";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, state} from "lit/decorators.js";
+import {classMap} from "lit/directives/class-map";
+import {ifDefined} from "lit/directives/if-defined";
 import {MDCTextField} from "@material/textfield";
 import {MDCComponent} from "@material/base";
 import {MDCRipple} from "@material/ripple";
@@ -45,6 +46,7 @@ import {
 } from "@openremote/model";
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
+import { MDCMenu } from "@material/menu";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -129,6 +131,8 @@ export interface ValueInputProviderOptions {
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
+    comfortable?: boolean;
+    resizeVertical?: boolean;
     inputType?: InputType;
 }
 
@@ -139,9 +143,9 @@ export interface ValueInputProvider {
     supportsSendButton: boolean;
 }
 
-export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult) | undefined;
+export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
 
-export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | any | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return inputType === InputType.NUMBER
@@ -374,6 +378,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
     const readonly = options.readonly;
+    const comfortable = options.comfortable;
+    const resizeVertical = options.resizeVertical;
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
 
@@ -382,8 +388,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
         return html`<or-mwc-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
-            .options="${selectOptions}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
-            .helperText="${helperText}" .helperPersistent="${true}"
+            .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
+            .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                 e.stopPropagation();
                 e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
@@ -505,11 +511,15 @@ const style = css`
         color: var(--mdc-theme-primary);
     }
 
+    .mdc-text-field__input.resize-vertical {
+        resize: vertical;
+    }
+
     .mdc-text-field, .mdc-text-field-helper-line {
         width: 100%;
     }
     
-    .mdc-text-field.dense-comfortable {
+    .mdc-text-field.dense-comfortable, .mdc-select.dense-comfortable {
         height: 48px;
     }
     
@@ -549,6 +559,10 @@ const style = css`
     
     #field {
         height: 100%;
+    }
+
+    .mdc-select__menu .mdc-list .mdc-list-item.mdc-list-item--selected or-icon {
+        --or-icon-fill: var(--or-app-color4);
     }
 `;
 
@@ -684,7 +698,10 @@ export class OrMwcInput extends LitElement {
     public helperPersistent: boolean = false;
 
     @property({type: String})
-    public validationMessage = "";
+    public validationMessage?: string;
+
+    @property({type: Boolean})
+    public autoValidate = false;
 
     @property({type: Boolean})
     public charCounter: boolean = false;
@@ -698,6 +715,8 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public continuous: boolean = false;
 
+    @property({type: Boolean})
+    public resizeVertical: boolean = false;
 
     /* TEXT INPUT STYLES END */
 
@@ -705,6 +724,8 @@ export class OrMwcInput extends LitElement {
     protected _mdcComponent2?: MDCComponent<any>;
     protected _selectedIndex = -1;
     protected _tempValue: any;
+    @state()
+    protected isUiValid = true;
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
@@ -762,17 +783,6 @@ export class OrMwcInput extends LitElement {
         }
     }
 
-    public setCustomValidity(msg?: string) {
-        const elem = this.shadowRoot!.getElementById("elem") as HTMLElement;
-        if (!elem || !(elem as any).setCustomValidity) {
-            return;
-        }
-        (elem as any).setCustomValidity(msg);
-        if (this._mdcComponent && (this._mdcComponent as any).valid) {
-            (this._mdcComponent as any).valid = (elem as any).checkValidity();
-        }
-    }
-
     protected render() {
 
         if (this.type) {
@@ -780,7 +790,7 @@ export class OrMwcInput extends LitElement {
             const showLabel = !this.fullWidth && this.label;
             let outlined = !this.fullWidth && this.outlined;
             let hasHelper = !!this.helperText;
-            const showValidationMessage = this.validationMessage;
+            const showValidationMessage = !this.isUiValid && !!this.validationMessage;
             const helperClasses = {
                 "mdc-text-field-helper-text--persistent": this.helperPersistent,
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
@@ -843,6 +853,7 @@ export class OrMwcInput extends LitElement {
                         "mdc-select--disabled": this.disabled || this.readonly,
                         "mdc-select--required": this.required,
                         "mdc-select--dense": false, // this.dense,
+                        "dense-comfortable": this.comfortable,
                         "mdc-select--no-label": !this.label,
                         "mdc-select--with-leading-icon": !!this.icon
                     };
@@ -854,19 +865,25 @@ export class OrMwcInput extends LitElement {
 
                         if (this.multiple) {
                             ev.stopPropagation();
-                            let inputValue = this._tempValue || this.value;
-                            if (!Array.isArray(inputValue)) {
-                                inputValue = inputValue ? [this.value] : [];
-                            }
+                            const inputValue = this._tempValue ?? (Array.isArray(this.value) ? [...this.value] : this.value !== undefined ? [this.value] : []);
+
                             const index = inputValue.findIndex((v: any) => v === value);
                             if (index >= 0) {
                                 inputValue.splice(index, 1);
                             } else {
                                 inputValue.push(value);
                             }
-                            const icon = (ev.composedPath()[0] as HTMLElement).getElementsByTagName("or-icon")[0] as OrIcon;
-                            if (icon) {
-                                icon.icon = index >= 0 ? undefined : "check";
+                            const listItemEl = (ev.composedPath()[0] as HTMLElement).closest("li") as HTMLElement,
+                                iconEl = listItemEl.getElementsByTagName("or-icon")[0] as OrIcon;
+                            if (listItemEl) {
+                                if (index >= 0) {
+                                    listItemEl.classList.remove("mdc-list-item--selected");
+                                } else {
+                                    listItemEl.classList.add("mdc-list-item--selected");
+                                }
+                            }
+                            if (iconEl) {
+                                iconEl.icon = index >= 0 ? "checkbox-blank-outline" : "checkbox-marked";
                             }
                             this._tempValue = inputValue;
                         }
@@ -874,7 +891,7 @@ export class OrMwcInput extends LitElement {
 
                     const menuCloseHandler = () => {
 
-                        const v = (this._tempValue || this.value);
+                        const v = (this._tempValue ?? this.value);
                         window.setTimeout(() => {
                             if (this._mdcComponent) {
                                 // Hack to stop label moving down when there is a value set
@@ -901,7 +918,7 @@ export class OrMwcInput extends LitElement {
                                     <span class="mdc-select__ripple"></span>
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                     <span class="mdc-select__selected-text-container">
-                                      <span id="selected-text" class="mdc-select__selected-text">${this.getSelectedTextValue(opts)}</span>
+                                      <span id="selected-text" class="mdc-select__selected-text"></span>
                                     </span>
                                     <span class="mdc-select__dropdown-icon">
                                         <svg
@@ -945,7 +962,7 @@ export class OrMwcInput extends LitElement {
                                     )}
                                 </div>
 
-                                ${hasHelper ? html`
+                                ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
                                         ${showValidationMessage ? this.validationMessage : this.helperText}
                                     </p>` : ``}
@@ -1030,7 +1047,7 @@ export class OrMwcInput extends LitElement {
                                 <input type="checkbox" 
                                     id="elem"
                                     ?checked="${this.value}"
-                                    ?required="${!this.required}"
+                                    ?required="${this.required}"
                                     ?disabled="${this.disabled || this.readonly}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).checked)}"
                                     class="mdc-checkbox__native-control" id="elem"/>
@@ -1124,7 +1141,7 @@ export class OrMwcInput extends LitElement {
                             "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
                             "mdc-text-field--disabled": this.disabled,
                             "mdc-text-field--fullwidth": this.fullWidth && !outlined,
-                            "dense-comfortable": this.comfortable,
+                            "dense-comfortable": this.comfortable && !(type === InputType.TEXTAREA || type === InputType.JSON),
                             "dense-compact": !this.comfortable && this.compact,
                             "mdc-text-field--label-floating": hasValue,
                             "mdc-text-field--no-label": !this.label,
@@ -1134,7 +1151,7 @@ export class OrMwcInput extends LitElement {
 
                         inputElem = type === InputType.TEXTAREA || type === InputType.JSON
                             ? html`
-                                <textarea id="elem" class="mdc-text-field__input" ?required="${this.required}"
+                                <textarea id="elem" class="mdc-text-field__input ${this.resizeVertical ? "resize-vertical" : ""}" ?required="${this.required}"
                                 ?readonly="${this.readonly}" ?disabled="${this.disabled}" minlength="${ifDefined(this.minLength)}"
                                 maxlength="${ifDefined(this.maxLength)}" rows="${this.rows ? this.rows : 5}"
                                 cols="${ifDefined(this.cols)}" aria-label="${ifDefined(label)}"
@@ -1151,19 +1168,19 @@ export class OrMwcInput extends LitElement {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
-                            @input="${(e: Event) => this.clearValidation(e)}" 
+                            @blur="${(e: Event) => this.reportValidity()}" 
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
                                 ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                                <span class="mdc-text-field__ripple"></span>
+                                ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
-                                <span class="mdc-line-ripple"></span>
+                                ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
                                 ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                             </label>
-                            ${hasHelper ? html`
+                            ${hasHelper || showValidationMessage ? html`
                                 <div class="mdc-text-field-helper-line">
                                     <div class="mdc-text-field-helper-text ${classMap(helperClasses)}">${showValidationMessage ? this.validationMessage : this.helperText}</div>
                                     ${this.charCounter && !this.readonly ? html`<div class="mdc-text-field-character-counter"></div>` : ``}
@@ -1222,8 +1239,31 @@ export class OrMwcInput extends LitElement {
         }
     }
 
+    update(_changedProperties: PropertyValues) {
+        if (_changedProperties.has('autoValidate') && this._mdcComponent) {
+            const comp = this._mdcComponent as any;
+            if (comp.foundation && comp.foundation.setValidateOnValueChange) {
+                comp.foundation.setValidateOnValueChange(this.autoValidate);
+            }
+        }
+
+        super.update(_changedProperties);
+    }
+
+    firstUpdated(_changedProperties: PropertyValues) {
+        super.firstUpdated(_changedProperties);
+
+        if (this.autoValidate) {
+            this.reportValidity();
+        }
+    }
+
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
+
+        if (this.autoValidate) {
+            this.reportValidity();
+        }
 
         if (_changedProperties.has("type")) {
             const component = this.shadowRoot!.getElementById("component");
@@ -1250,6 +1290,22 @@ export class OrMwcInput extends LitElement {
                         if (!this.value) {
                             mdcSelect.selectedIndex = -1; // Without this first option will be shown as selected
                         }
+
+                        if (this.multiple) {
+                            // To make multiple select work then override the adapter getSelectedIndex
+                            (this._mdcComponent as any).foundation.adapter.getSelectedIndex = () => {
+                                // Return first item index
+                                if (!Array.isArray(this.value) || (this.value as []).length === 0) {
+                                    return -1;
+                                }
+                                const firstSelected = (this.value as any[])[0];
+                                const items = (this._mdcComponent as any).foundation.adapter.getMenuItemValues();
+                                return items.indexOf(firstSelected);
+                            };
+                        }
+
+                        mdcSelect.useDefaultValidation = !this.multiple;
+                        mdcSelect.valid = (!this.multiple && mdcSelect.valid) || (this.multiple && this.required && Array.isArray(this.value) && (this.value as []).length > 0);
 
                         const selectedText = this.getSelectedTextValue();
                         (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
@@ -1318,6 +1374,8 @@ export class OrMwcInput extends LitElement {
                 if (_changedProperties.has("options")) {
                     (this._mdcComponent as MDCSelect).layoutOptions();
                 }
+                (this._mdcComponent as MDCSelect).useDefaultValidation = !this.multiple;
+                (this._mdcComponent as MDCSelect).valid = (!this.multiple && (this._mdcComponent as MDCSelect).valid) || (this.multiple && this.required && Array.isArray(this.value) && (this.value as []).length > 0);
                 const selectedText = this.getSelectedTextValue();
                 (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
                 (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
@@ -1335,6 +1393,8 @@ export class OrMwcInput extends LitElement {
                 checkbox.checked = !!this.value;
                 checkbox.disabled = this.disabled || this.readonly;
             }
+
+            (this._mdcComponent as any).required = this.required;
         }
     }
 
@@ -1352,23 +1412,38 @@ export class OrMwcInput extends LitElement {
         `;
     }
 
-    protected clearValidation(e:Event){
-        const input = e.target as HTMLInputElement
-        if(input) input.setCustomValidity("");
+    public setCustomValidity(msg: string | undefined) {
+        this.validationMessage = msg;
+        const elem = this.shadowRoot!.getElementById("elem") as HTMLElement;
+        if (elem && (elem as any).setCustomValidity) {
+            (elem as any).setCustomValidity(msg ?? "");
+        }
+        this.reportValidity();
+    }
+
+    public checkValidity(): boolean {
+        const elem = this.shadowRoot!.getElementById("elem") as any;
+        if (elem && elem.validity) {
+            const nativeValidity = elem.validity as ValidityState;
+            return nativeValidity.valid;
+        }
+        return true;
+    }
+
+    public reportValidity(): boolean {
+        const isValid = this.checkValidity();
+        this.isUiValid = isValid;
+
+        if (this._mdcComponent) {
+            (this._mdcComponent as any).valid = isValid;
+        }
+
+        return isValid;
     }
 
     protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined, enterPressed?: boolean) {
-        let valid = true;
 
-        if (elem && this._mdcComponent) {
-
-            // trigger validation
-            valid = elem.checkValidity();
-            if (this._mdcComponent instanceof MDCTextField) {
-                this._mdcComponent.valid = valid;
-            }
-            if (!valid && this.type !== InputType.CHECKBOX) return;
-        }
+        this.reportValidity();
 
         let previousValue = this.value;
 

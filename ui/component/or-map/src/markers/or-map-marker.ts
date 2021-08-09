@@ -1,4 +1,5 @@
-import {customElement, html, LitElement, property, PropertyValues, query} from "lit-element";
+import {html, LitElement, PropertyValues} from "lit";
+import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {

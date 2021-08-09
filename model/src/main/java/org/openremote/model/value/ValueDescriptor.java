@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.AssetModelUtil;
 
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -66,7 +65,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
         @Override
         public ValueDescriptor<?> convert(String value) {
-            return AssetModelUtil.getValueDescriptor(value).orElse(ValueDescriptor.UNKNOWN);
+            return Values.getValueDescriptor(value).orElse(ValueDescriptor.UNKNOWN);
         }
     }
 

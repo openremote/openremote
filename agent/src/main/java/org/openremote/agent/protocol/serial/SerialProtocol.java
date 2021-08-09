@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.serial;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -44,7 +44,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * handle the communication and all messages are processed as strings; if you require custom message type handling
  * then please sub class the {@link AbstractSerialProtocol}).
  */
-public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, SerialAgent, AgentLink.Default, String, SerialIOClient<String>> {
+public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, SerialAgent, DefaultAgentLink, String, SerialIOClient<String>> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, SerialProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "Serial";
@@ -61,7 +61,7 @@ public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, Seria
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
 
         Consumer<String> messageConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(assetId, attribute, agentLink, timerService::getCurrentTimeMillis, this::updateLinkedAttribute);
 
@@ -74,7 +74,7 @@ public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, Seria
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         protocolMessageConsumers.removeIf(attRefConsumerPair -> attRefConsumerPair.key.equals(attributeRef));
     }
@@ -94,7 +94,7 @@ public class SerialProtocol extends AbstractSerialProtocol<SerialProtocol, Seria
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, AgentLink.Default agentLink, AttributeEvent event, Object processedValue) {
+    protected String createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
             AttributeExecuteStatus status = event.getValue()

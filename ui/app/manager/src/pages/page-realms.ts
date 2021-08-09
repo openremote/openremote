@@ -1,12 +1,11 @@
 import {
   css,
-  customElement,
   html,
-  property,
   PropertyValues,
   TemplateResult,
   unsafeCSS,
-} from "lit-element";
+} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
@@ -285,7 +284,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
   }
   
   private _deleteTenant(tenant) {
-    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteTenantConfirm"))
+    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteTenantConfirm"), i18next.t("delete"))
     .then((ok) => {
         if (ok) {
           this._doDelete(tenant);

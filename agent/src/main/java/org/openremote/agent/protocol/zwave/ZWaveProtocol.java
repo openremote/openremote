@@ -44,7 +44,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 
-public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWaveAgentLink> implements ProtocolAssetDiscovery {
+public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgentLink> implements ProtocolAssetDiscovery {
 
     // Constants ------------------------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWave
     }
 
     @Override
-    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWaveAgentLink agentLink) {
+    protected synchronized void doLinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgentLink agentLink) {
         if (network == null) {
             return;
         }
@@ -113,7 +113,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWave
     }
 
     @Override
-    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgent.ZWaveAgentLink agentLink) {
+    protected synchronized void doUnlinkAttribute(String assetId, Attribute<?> attribute, ZWaveAgentLink agentLink) {
         if (network == null) {
             return;
         }
@@ -123,7 +123,7 @@ public class ZWaveProtocol extends AbstractProtocol<ZWaveAgent, ZWaveAgent.ZWave
     }
 
     @Override
-    protected synchronized void doLinkedAttributeWrite(Attribute<?> attribute, ZWaveAgent.ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected synchronized void doLinkedAttributeWrite(Attribute<?> attribute, ZWaveAgentLink agentLink, AttributeEvent event, Object processedValue) {
         if (network == null) {
             return;
         }

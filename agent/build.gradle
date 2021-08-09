@@ -5,12 +5,10 @@ dependencies {
 
     compile resolveProject(":container")
 
-    compile("io.netty:netty-transport-rxtx:$nettyVersion") {
-        exclude group: "org.rxtx"
-    }
     compile "io.netty:netty-codec:$nettyVersion"
     compile "io.netty:netty-codec-http:$nettyVersion"
-    compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"
+
+    compile "com.fazecast:jSerialComm:$jSerialCommVersion"
 
     compile("com.github.calimero:calimero-core:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!

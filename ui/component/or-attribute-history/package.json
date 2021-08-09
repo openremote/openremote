@@ -19,7 +19,7 @@
     "@openremote/or-translate": "^1.0.3",
     "@openremote/or-chart": "^1.0.4",
     "jsonpath-plus": "^5.0.2",
-    "lit-element": "^2.4.0"
+    "lit": "^2.0.0-rc.2"
   },
   "devDependencies": {
     "@types/chart.js": "^2.9.32",

@@ -1,12 +1,11 @@
 import {
   css,
-  customElement,
   html,
-  property,
   PropertyValues,
   TemplateResult,
   unsafeCSS,
-} from "lit-element";
+} from "lit";
+import {customElement, property, state} from "lit/decorators.js";
 import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
@@ -65,7 +64,6 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
         .panel {
           width: calc(100% - 90px);
-          padding: 0 20px;
           max-width: 1310px;
           background-color: white;
           border: 1px solid #e5e5e5;
@@ -86,7 +84,6 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
             letter-spacing: 0.025em;
         }
 
-
         #table-roles,
         #table-roles table{
           width: 100%;
@@ -94,6 +91,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         }
 
         .mdc-data-table__row {
+          cursor: pointer;
           border-top-color: #D3D3D3;
         }
         
@@ -218,34 +216,22 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
       `,
     ];
   }
-  @property()
+
+  @state()
   protected _compositeRoles: Role[] = [];
 
-  @property()
+  @state()
   protected _roles: Role[] = [];
 
-  @property()
+  @state()
   protected _rolesMapper = {};
 
-  @property()
+  @state()
   public realm?: string;
 
   get name(): string {
     return "role_plural";
   }
-
-  constructor(store: EnhancedStore<S>) {
-    super(store);
-    this.getRoles();
-  }
-
-    protected _onManagerEvent = (event: OREvent) => {
-      switch (event) {
-          case OREvent.DISPLAY_REALM_CHANGED:
-              this.realm = manager.displayRealm;
-              break;
-      }
-    };
 
   public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
@@ -258,37 +244,29 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
 
   public connectedCallback() {
       super.connectedCallback();
-      manager.addListener(this._onManagerEvent);
+      this.realm = this.getState().app.realm;
   }
 
-  public disconnectedCallback() {
-      super.disconnectedCallback();
-      manager.removeListener(this._onManagerEvent);
-  }
-
-
-  private getRoles() {
-    manager.rest.api.UserResource.getRoles(manager.displayRealm).then(roleResponse => {
-      this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];
-      this._roles = [...roleResponse.data.filter(role => !role.composite)];
-      this._roles.map(role => {
+  protected async getRoles() {
+    const roleResponse = await manager.rest.api.UserResource.getRoles(this.realm);
+    this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];
+    this._roles = [...roleResponse.data.filter(role => !role.composite)];
+    this._roles.map(role => {
         this._rolesMapper[role.id] = role.name
-      })
-    })
+    });
   }
 
-  private _updateRoles() {
+  private async _updateRoles() {
     if(this._compositeRoles.some(role => role.compositeRoleIds.length === 0)) {
       return
     }
     const roles = [...this._compositeRoles, ...this._roles];
-    manager.rest.api.UserResource.updateRoles(manager.displayRealm, roles).then(response => {
-      this.getRoles()
-    });
+    await manager.rest.api.UserResource.updateRoles(this.realm, roles);
+    this.getRoles();
   }
 
   private _deleteRole(role) {
-    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"))
+    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"), i18next.t("delete"))
     .then((ok) => {
         if (ok) {
           this.doDelete(role);
@@ -334,6 +312,10 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
       return html`
         <or-translate value="notSupported"></or-translate>
       `;
+    }
+
+    if (!this._roles || this._roles.length === 0) {
+        return html``;
     }
 
     const readonly = !manager.hasRole(ClientRole.WRITE_USER);
@@ -434,7 +416,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
                           </tr>
                         `
                       })}
-                        ${!!this._compositeRoles[this._compositeRoles.length -1].id && !readonly ? html`
+                        ${this._compositeRoles.length > 0 && !!this._compositeRoles[this._compositeRoles.length -1].id && !readonly ? html`
                         <tr class="mdc-data-table__row">
                           <td colspan="100%">
                             <a class="button" @click="${() => this._compositeRoles = [...this._compositeRoles, {composite:true, name:"", compositeRoleIds:[]}]}"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("role")}</a>
@@ -451,5 +433,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         `;
   }
 
-  public stateChanged(state: S) {}
+  public stateChanged(state: S) {
+      this.realm = state.app.realm;
+  }
 }

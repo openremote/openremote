@@ -32,6 +32,7 @@ dependencies {
 
     compile "com.github.victools:jsonschema-generator:$jsonSchemaVersion"
     compile "com.github.victools:jsonschema-module-jackson:$jsonSchemaVersion"
+    compile "com.github.victools:jsonschema-module-swagger-2:$jsonSchemaVersion"
     compile "com.github.victools:jsonschema-module-javax-validation:$jsonSchemaVersion"
 }
 
