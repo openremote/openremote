@@ -405,15 +405,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 if (this.checkboxes) {
                     let parent = node.parent;
                     while (parent) {
+                        parent.allChildrenSelected = false;
+                        parent.someChildrenSelected = false;
                         if (parent.children.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
                             parent.allChildrenSelected = true;
-                            parent.someChildrenSelected = false;
                         } else if (parent.children.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
-                            parent.allChildrenSelected = false;
                             parent.someChildrenSelected = true;
-                        } else {
-                            parent.allChildrenSelected = false;
-                            parent.someChildrenSelected = false;
                         }
                         parent = parent.parent;
                     }
