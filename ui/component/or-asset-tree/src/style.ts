@@ -191,9 +191,30 @@ export const style = css`
         }
     }
     
+    .mdc-list-item__graphic {
+        margin-left: auto;
+        display: flex;   
+    }
+    
+    .mdc-checkbox {
+        display: flex;
+        height: 100%;
+        align-items: center;
+    }
+    
     .mdc-checkbox or-icon {
         height: 15px;
         width: auto;
+        color: var(--internal-or-asset-tree-line-color);
+    }
+    .mdc-checkbox or-icon.mdc-checkbox--parent {
+        height: 17px;
+    }
+
+    .mdc-checkbox or-icon[icon="checkbox-marked"],
+    .mdc-checkbox or-icon[icon="checkbox-multiple-marked"],
+    .mdc-checkbox or-icon[icon="checkbox-multiple-marked-outline"] {
+        color: var(--internal-or-asset-tree-selected-color);
     }
 
 `;
