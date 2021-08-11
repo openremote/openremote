@@ -64,6 +64,8 @@ export interface UiAssetTreeNode extends AssetTreeNode {
     expanded: boolean;
     parent: UiAssetTreeNode;
     children: UiAssetTreeNode[];
+    someChildrenSelected: boolean;
+    allChildrenSelected: boolean;
 }
 
 export interface NodeSelectEventDetail {
@@ -382,11 +384,40 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 // Expand every ancestor
                 let parent = node.parent;
                 while (parent) {
+                    if (this.checkboxes) {
+                        // Handle parent checkboxes selection
+                        if (parent.children.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                            parent.allChildrenSelected = true;
+                            parent.someChildrenSelected = false;
+                        } else if (parent.children.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                            parent.allChildrenSelected = false;
+                            parent.someChildrenSelected = true;
+                        }
+                    }
+
+                    // Expand every ancestor
                     parent.expanded = true;
                     parent = parent.parent;
                 }
             } else {
                 node.selected = false;
+
+                if (this.checkboxes) {
+                    let parent = node.parent;
+                    while (parent) {
+                        if (parent.children.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                            parent.allChildrenSelected = true;
+                            parent.someChildrenSelected = false;
+                        } else if (parent.children.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                            parent.allChildrenSelected = false;
+                            parent.someChildrenSelected = true;
+                        } else {
+                            parent.allChildrenSelected = false;
+                            parent.someChildrenSelected = false;
+                        }
+                        parent = parent.parent;
+                    }
+                }
             }
         });
 
@@ -920,6 +951,15 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(treeNode.asset!.type!);
 
+        let parentCheckboxIcon;
+        if (treeNode.allChildrenSelected) {
+            parentCheckboxIcon = 'checkbox-multiple-marked';
+        } else if (treeNode.someChildrenSelected) {
+            parentCheckboxIcon = 'checkbox-multiple-marked-outline';
+        }else {
+            parentCheckboxIcon = 'checkbox-multiple-blank-outline';
+        }
+
         return html`
             <li ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
                 <div class="node-container" style="padding-left: ${level * 22}px">
@@ -929,11 +969,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         <span>${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic" style="margin-left: auto;display: flex;">
-                                ${treeNode.expandable ? html`
-                                    <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
-                                        ${treeNode.selected ? html`<or-icon icon="checkbox-multiple-marked" style="height: 17px"></or-icon>`: html`<or-icon icon="checkbox-multiple-blank-outline" style="height: 17px"></or-icon>`}
-                                    </div>`
-                                : ``}
+                                ${treeNode.expandable 
+                                    ? html`<div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
+                                            <or-icon icon="${parentCheckboxIcon}" style="height: 17px"></or-icon>
+                                        </div>`
+                                    : ``}
                                 <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
                                     ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>`: html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
                                 </div>
