@@ -962,13 +962,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         ${getAssetDescriptorIconTemplate(descriptor)}
                         <span>${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
-                            <span class="mdc-list-item__graphic" style="margin-left: auto;display: flex;">
+                            <span class="mdc-list-item__graphic">
                                 ${treeNode.expandable 
-                                    ? html`<div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
-                                            <or-icon icon="${parentCheckboxIcon}" style="height: 17px"></or-icon>
+                                    ? html`<div class="mdc-checkbox">
+                                            <or-icon class="mdc-checkbox--parent" icon="${parentCheckboxIcon}"></or-icon>
                                         </div>`
                                     : ``}
-                                <div class="mdc-checkbox" style="display: flex;height: 100%;align-items: center;">
+                                <div class="mdc-checkbox">
                                     ${treeNode.selected ? html`<or-icon icon="checkbox-marked"></or-icon>`: html`<or-icon icon="checkbox-blank-outline"></or-icon>`}
                                 </div>
                             </span>` 
