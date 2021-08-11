@@ -478,15 +478,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 const multiSelect = !this._isReadonly() && (!this.config || !this.config.select || !this.config.select.multiSelect);
 
                 // determine if node was already selected
-                if (isCheckbox || (multiSelect && evt && (evt.ctrlKey || evt.metaKey))) {
+                if (this.checkboxes || (multiSelect && evt && (evt.ctrlKey || evt.metaKey))) {
                     deselectOthers = false;
                     if (index >= 0 && this.selectedIds && this.selectedIds.length > 1) {
-                        select = false;
-                    }
-                }
-                if (isParentCheckbox) {
-                    deselectOthers = false;
-                    if ((evt!.target as OrIcon).icon!.includes('multiple-marked')) {
                         select = false;
                     }
                 }
