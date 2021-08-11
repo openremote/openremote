@@ -21,6 +21,7 @@ package org.openremote.test.protocol.websocket
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.agent.protocol.websocket.WebsocketAgent
+import org.openremote.agent.protocol.websocket.WebsocketAgentLink
 import org.openremote.agent.protocol.websocket.WebsocketAgentProtocol
 import org.openremote.agent.protocol.websocket.WebsocketHTTPSubscription
 import org.openremote.agent.protocol.websocket.WebsocketSubscription
@@ -192,7 +193,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 // write attribute value
                 new Attribute<>("readWriteTargetTemp", NUMBER)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new WebsocketAgent.WebsocketAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new WebsocketAgentLink(agent.id)
                             .setWriteValue(SharedEvent.MESSAGE_PREFIX +
                                 Values.asJSON(new AttributeEvent(
                                     managerTestSetup.apartment1LivingroomId,
@@ -230,7 +231,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     ),
                 new Attribute<>("readCo2Level", NUMBER)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new WebsocketAgent.WebsocketAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new WebsocketAgentLink(agent.id)
                             .setMessageMatchFilters(
                                 [
                                     new SubStringValueFilter(TriggeredEventSubscription.MESSAGE_PREFIX.length()),

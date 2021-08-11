@@ -21,6 +21,7 @@ package org.openremote.test.setup;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
+import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.ManagerSetup;
@@ -28,20 +29,15 @@ import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAsset;
-import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
-import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import org.openremote.model.value.impl.ColourRGB;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.Constants.*;
@@ -172,12 +168,12 @@ public class ManagerTestSetup extends ManagerSetup {
                         ),
                         new MetaItem<>(
                                 AGENT_LINK,
-                                new SimulatorAgent.SimulatorAgentLink(agent.getId()))
+                                new SimulatorAgentLink(agent.getId()))
                     ),
             new Attribute<>("light1Dimmer", POSITIVE_INTEGER)
                     .addOrReplaceMeta(
                         new MetaItem<>(LABEL, "Light 1 Dimmer"),
-                        new MetaItem<>(AGENT_LINK, new SimulatorAgent.SimulatorAgentLink(agent.getId())),
+                        new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId())),
                         new MetaItem<>(UNITS, Constants.units(UNITS_PERCENTAGE)),
                         new MetaItem<>(CONSTRAINTS, ValueConstraint.constraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100)))
                     ),
@@ -188,14 +184,14 @@ public class ManagerTestSetup extends ManagerSetup {
                                 "Light 1 Color"),
                         new MetaItem<>(
                                 AGENT_LINK,
-                                new SimulatorAgent.SimulatorAgentLink(agent.getId()))
+                                new SimulatorAgentLink(agent.getId()))
                     ),
             new Attribute<>("light1PowerConsumption", POSITIVE_NUMBER, 12.345)
                     .addOrReplaceMeta(
                         new MetaItem<>(LABEL, "Light 1 Usage"),
                         new MetaItem<>(READ_ONLY, true),
                         new MetaItem<>(UNITS, Constants.units(UNITS_KILO, UNITS_WATT, UNITS_HOUR)),
-                        new MetaItem<>(AGENT_LINK, new SimulatorAgent.SimulatorAgentLink(agent.getId()))
+                        new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(agent.getId()))
                     )
         );
         thing = assetStorageService.merge(thing);
@@ -305,19 +301,19 @@ public class ManagerTestSetup extends ManagerSetup {
                 )
         );
         addDemoApartmentRoomMotionSensor(apartment1Livingroom, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId)
+            new SimulatorAgentLink(apartment1ServiceAgentId)
         );
         addDemoApartmentRoomCO2Sensor(apartment1Livingroom, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId)
+            new SimulatorAgentLink(apartment1ServiceAgentId)
         );
         addDemoApartmentRoomHumiditySensor(apartment1Livingroom, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId)
+            new SimulatorAgentLink(apartment1ServiceAgentId)
         );
         addDemoApartmentRoomThermometer(apartment1Livingroom, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId)
+            new SimulatorAgentLink(apartment1ServiceAgentId)
         );
         addDemoApartmentTemperatureControl(apartment1Livingroom, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId)
+            new SimulatorAgentLink(apartment1ServiceAgentId)
         );
 
         apartment1Livingroom.setId(apartment1LivingroomId);
@@ -332,7 +328,7 @@ public class ManagerTestSetup extends ManagerSetup {
                             .addMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true))
             );
         addDemoApartmentRoomMotionSensor(apartment1Kitchen, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId)
+            new SimulatorAgentLink(apartment1ServiceAgentId)
         );
 
         for (String switchName : new String[]{"A", "B", "C"}) {
@@ -342,7 +338,7 @@ public class ManagerTestSetup extends ManagerSetup {
                     case 3:
                     case 4:
                         return new MetaItem[]{
-                                new MetaItem<>(AGENT_LINK, new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId))
+                                new MetaItem<>(AGENT_LINK, new SimulatorAgentLink(apartment1ServiceAgentId))
                         };
                 }
                 return null;
@@ -360,7 +356,7 @@ public class ManagerTestSetup extends ManagerSetup {
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true))
                 );
         addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId)
+            new SimulatorAgentLink(apartment1ServiceAgentId)
         );
 
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
@@ -374,13 +370,13 @@ public class ManagerTestSetup extends ManagerSetup {
                                 .addMeta(new MetaItem<>(ACCESS_RESTRICTED_WRITE, true))
                 );
         addDemoApartmentRoomCO2Sensor(apartment1Bedroom1, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId));
+            new SimulatorAgentLink(apartment1ServiceAgentId));
         addDemoApartmentRoomHumiditySensor(apartment1Bedroom1, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId));
+            new SimulatorAgentLink(apartment1ServiceAgentId));
         addDemoApartmentRoomThermometer(apartment1Bedroom1, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId));
+            new SimulatorAgentLink(apartment1ServiceAgentId));
         addDemoApartmentTemperatureControl(apartment1Bedroom1, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId));
+            new SimulatorAgentLink(apartment1ServiceAgentId));
 
         apartment1Bedroom1 = assetStorageService.merge(apartment1Bedroom1);
         apartment1Bedroom1Id = apartment1Bedroom1.getId();
@@ -397,15 +393,15 @@ public class ManagerTestSetup extends ManagerSetup {
                         )
         );
         addDemoApartmentRoomThermometer(apartment1Bathroom, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId));
+            new SimulatorAgentLink(apartment1ServiceAgentId));
         addDemoApartmentTemperatureControl(apartment1Bathroom, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId));
+            new SimulatorAgentLink(apartment1ServiceAgentId));
         apartment1Bathroom = assetStorageService.merge(apartment1Bathroom);
         apartment1BathroomId = apartment1Bathroom.getId();
 
 
         addDemoApartmentVentilation(apartment1, true, () ->
-            new SimulatorAgent.SimulatorAgentLink(apartment1ServiceAgentId));
+            new SimulatorAgentLink(apartment1ServiceAgentId));
 
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
@@ -612,16 +608,16 @@ public class ManagerTestSetup extends ManagerSetup {
         area1Id = assetArea1.getId();
 
         PeopleCounterAsset peopleCounter1Asset = createDemoPeopleCounterAsset("PeopleCounter 1", assetArea1, new GeoJSONPoint(5.477126, 51.439137), () ->
-            new SimulatorAgent.SimulatorAgentLink(smartCityServiceAgentId));
+            new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter1Asset = assetStorageService.merge(peopleCounter1Asset);
 
         Asset<?> microphone1Asset = createDemoMicrophoneAsset("Microphone 1", assetArea1, new GeoJSONPoint(5.478092, 51.438655), () ->
-            new SimulatorAgent.SimulatorAgentLink(smartCityServiceAgentId));
+            new SimulatorAgentLink(smartCityServiceAgentId));
         microphone1Asset = assetStorageService.merge(microphone1Asset);
         microphone1Id = microphone1Asset.getId();
 
         Asset<?> enviroment1Asset = createDemoEnvironmentAsset("Environment 1", assetArea1, new GeoJSONPoint(5.478907, 51.438943),() ->
-            new SimulatorAgent.SimulatorAgentLink(smartCityServiceAgentId));
+            new SimulatorAgentLink(smartCityServiceAgentId));
         enviroment1Asset = assetStorageService.merge(enviroment1Asset);
 
         Asset<?> light1Asset = createDemoLightAsset("Light 1", assetArea1, new GeoJSONPoint(5.476111, 51.438492));
@@ -640,11 +636,11 @@ public class ManagerTestSetup extends ManagerSetup {
         assetArea2 = assetStorageService.merge(assetArea2);
 
         Asset<?> peopleCounter2Asset = createDemoPeopleCounterAsset("PeopleCounter 2", assetArea2, new GeoJSONPoint(5.473686, 51.438603), () ->
-            new SimulatorAgent.SimulatorAgentLink(smartCityServiceAgentId));
+            new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter2Asset = assetStorageService.merge(peopleCounter2Asset);
 
         Asset<?> environment2Asset = createDemoEnvironmentAsset("Environment 2", assetArea2, new GeoJSONPoint(5.473552, 51.438412), () ->
-            new SimulatorAgent.SimulatorAgentLink(smartCityServiceAgentId));
+            new SimulatorAgentLink(smartCityServiceAgentId));
         environment2Asset = assetStorageService.merge(environment2Asset);
 
 
@@ -658,7 +654,7 @@ public class ManagerTestSetup extends ManagerSetup {
         assetArea3 = assetStorageService.merge(assetArea3);
 
         Asset<?> peopleCounter3Asset = createDemoPeopleCounterAsset("PeopleCounter 3", assetArea3, new GeoJSONPoint(5.487234, 51.447065), () ->
-            new SimulatorAgent.SimulatorAgentLink(smartCityServiceAgentId));
+            new SimulatorAgentLink(smartCityServiceAgentId));
         peopleCounter3Asset = assetStorageService.merge(peopleCounter3Asset);
         peopleCounter3AssetId = peopleCounter3Asset.getId();
 

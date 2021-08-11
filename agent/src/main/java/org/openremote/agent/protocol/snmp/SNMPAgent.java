@@ -3,40 +3,14 @@ package org.openremote.agent.protocol.snmp;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import javax.persistence.Entity;
-import javax.validation.constraints.NotNull;
 import java.util.Optional;
 
 @Entity
-public class SNMPAgent extends Agent<SNMPAgent, SNMPProtocol, SNMPAgent.SNMPAgentLink> {
-
-    public static class SNMPAgentLink extends AgentLink<SNMPAgent.SNMPAgentLink> {
-
-        @NotNull
-        protected String oid;
-
-        // For Hydrators
-        protected SNMPAgentLink() {}
-
-        public SNMPAgentLink(String id, String oid) {
-            super(id);
-
-            this.oid = oid;
-        }
-
-        public Optional<String> getOID() {
-            return Optional.ofNullable(oid);
-        }
-
-        public SNMPAgent.SNMPAgentLink setOID(String oid) {
-            this.oid = oid;
-            return this;
-        }
-    }
+public class SNMPAgent extends Agent<SNMPAgent, SNMPProtocol, SNMPAgentLink> {
 
     public enum SNMPVersion
     {

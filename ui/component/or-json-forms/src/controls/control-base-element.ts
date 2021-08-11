@@ -4,11 +4,9 @@ import {
     createId,
     isControl,
     JsonSchema,
-    Labels,
     mapDispatchToControlProps,
     OwnPropsOfControl,
-    removeId,
-    StatePropsOfControl
+    removeId
 } from "@jsonforms/core";
 import {PropertyValues} from "lit";
 import {property} from "lit/decorators.js";
@@ -17,7 +15,7 @@ import {BaseElement} from "../base-element";
 export abstract class ControlBaseElement extends BaseElement<ControlElement, ControlProps> implements OwnPropsOfControl, ControlProps {
 
     @property()
-    public label!: string | Labels;
+    public label!: string;
 
     @property()
     public description?: string | undefined;

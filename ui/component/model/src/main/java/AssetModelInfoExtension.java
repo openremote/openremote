@@ -20,16 +20,13 @@
 
 import cz.habarta.typescript.generator.Extension;
 import cz.habarta.typescript.generator.Settings;
-import cz.habarta.typescript.generator.compiler.ModelCompiler;
-import cz.habarta.typescript.generator.compiler.TsModelTransformer;
 import cz.habarta.typescript.generator.emitter.EmitterExtensionFeatures;
-import cz.habarta.typescript.generator.emitter.TsBeanModel;
 import cz.habarta.typescript.generator.emitter.TsModel;
 import org.openremote.agent.protocol.AgentModelProvider;
 import org.openremote.model.Constants;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.value.MetaItemDescriptor;
+import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,9 +39,9 @@ public class AssetModelInfoExtension extends Extension {
 
     public AssetModelInfoExtension() {
         // Service loader doesn't seem to work so manually load the agent model provider
-        AssetModelUtil.getModelProviders().add(new AgentModelProvider());
+        Values.getModelProviders().add(new AgentModelProvider());
         // Ensure the asset model is initialised
-        AssetModelUtil.initialiseOrThrow();
+        Values.initialise();
     }
 
     @Override
@@ -61,7 +58,7 @@ public class AssetModelInfoExtension extends Extension {
         Map<String, String> assetMap = new HashMap<>();
         Map<String, String> otherMap = new HashMap<>();
 
-        Arrays.stream(AssetModelUtil.getAssetInfos(null)).forEach(assetModelInfo -> {
+        Arrays.stream(Values.getAssetInfos(null)).forEach(assetModelInfo -> {
             String assetDescriptorName = assetModelInfo.getAssetDescriptor().getName();
             assetMap.put(assetDescriptorName.toUpperCase(Locale.ROOT), assetDescriptorName);
 
@@ -78,7 +75,7 @@ public class AssetModelInfoExtension extends Extension {
         emitEnum(writer, "WellknownAttributes", otherMap);
 
         otherMap.clear();
-        Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).forEach(metaItemDescriptor -> {
+        Arrays.stream(Values.getMetaItemDescriptors()).forEach(metaItemDescriptor -> {
             String metaName = metaItemDescriptor.getName();
             otherMap.put(metaName.toUpperCase(Locale.ROOT), metaName);
         });
@@ -86,7 +83,7 @@ public class AssetModelInfoExtension extends Extension {
         emitEnum(writer, "WellknownMetaItems", otherMap);
 
         otherMap.clear();
-        Arrays.stream(AssetModelUtil.getValueDescriptors()).forEach(valueDescriptor -> {
+        Arrays.stream(Values.getValueDescriptors()).forEach(valueDescriptor -> {
             String valueTypeName = valueDescriptor.getName();
             otherMap.put(valueTypeName.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", ""), valueTypeName);
         });

@@ -60,5 +60,9 @@ export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(L
         super.disconnectedCallback();
     }
 
+    protected getState(): S {
+        return this._store.getState();
+    }
+
     abstract stateChanged(state: S): void;
 }

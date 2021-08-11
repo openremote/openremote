@@ -30,10 +30,10 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetTypeInfo;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.value.Values;
 
 // TODO: Implement model client event support
 /**
@@ -101,7 +101,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService 
             return new AssetTypeInfo[0];
         }
 
-        return AssetModelUtil.getAssetInfos(parentType);
+        return Values.getAssetInfos(parentType);
     }
 
     public AssetTypeInfo getAssetInfo(String parentId, String assetType) {
@@ -111,7 +111,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService 
             return null;
         }
 
-        return AssetModelUtil.getAssetInfo(assetType).orElse(null);
+        return Values.getAssetInfo(assetType).orElse(null);
     }
 
     public AssetDescriptor<?>[] getAssetDescriptors(String parentId, String parentType) {
@@ -121,7 +121,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService 
             return new AssetDescriptor[0];
         }
 
-        return AssetModelUtil.getAssetDescriptors(parentType);
+        return Values.getAssetDescriptors(parentType);
     }
 
     public ValueDescriptor<?>[] getValueDescriptors(String parentId) {
@@ -131,7 +131,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService 
             return new ValueDescriptor<?>[0];
         }
 
-        return AssetModelUtil.getValueDescriptors();
+        return Values.getValueDescriptors();
     }
 
     public MetaItemDescriptor<?>[] getMetaItemDescriptors(String parentId) {
@@ -141,6 +141,6 @@ public class AssetModelService extends RouteBuilder implements ContainerService 
             return new MetaItemDescriptor<?>[0];
         }
 
-        return AssetModelUtil.getMetaItemDescriptors();
+        return Values.getMetaItemDescriptors();
     }
 }

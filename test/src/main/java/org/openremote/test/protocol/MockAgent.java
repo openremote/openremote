@@ -21,7 +21,6 @@ package org.openremote.test.protocol;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
@@ -29,28 +28,7 @@ import javax.persistence.Entity;
 import java.util.Optional;
 
 @Entity
-public class MockAgent extends Agent<MockAgent, MockProtocol, MockAgent.MockAgentLink> {
-
-    public static class MockAgentLink extends AgentLink<MockAgentLink> {
-
-        protected String requiredValue;
-
-        // For Hydrators
-        protected MockAgentLink() {}
-
-        protected MockAgentLink(String id) {
-            super(id);
-        }
-
-        public Optional<String> getRequiredValue() {
-            return Optional.ofNullable(requiredValue);
-        }
-
-        public MockAgentLink setRequiredValue(String requiredValue) {
-            this.requiredValue = requiredValue;
-            return this;
-        }
-    }
+public class MockAgent extends Agent<MockAgent, MockProtocol, MockAgentLink> {
 
     public static final AttributeDescriptor<Boolean> REQUIRED = new AttributeDescriptor<>("requiredTest", ValueType.BOOLEAN);
 

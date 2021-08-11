@@ -21,81 +21,16 @@ package org.openremote.agent.protocol.controller;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.util.ModelIgnore;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @ModelIgnore
 @Entity
-public class ControllerAgent extends Agent<ControllerAgent, ControllerProtocol, ControllerAgent.ControllerAgentLink> {
-
-    public static class ControllerAgentLink extends AgentLink<ControllerAgentLink> {
-
-        protected String deviceName;
-        protected String sensorName;
-        protected String commandDeviceName;
-        protected String commandName;
-        protected Map<String, List<String>> commandsMap;
-
-        // For Hydrators
-        protected ControllerAgentLink() {}
-
-        public ControllerAgentLink(String id, String deviceName) {
-            super(id);
-            this.deviceName = deviceName;
-        }
-
-        public Optional<String> getDeviceName() {
-            return Optional.ofNullable(deviceName);
-        }
-
-        public ControllerAgentLink setDeviceName(String deviceName) {
-            this.deviceName = deviceName;
-            return this;
-        }
-
-        public Optional<String> getSensorName() {
-            return Optional.ofNullable(sensorName);
-        }
-
-        public ControllerAgentLink setSensorName(String sensorName) {
-            this.sensorName = sensorName;
-            return this;
-        }
-
-        public Optional<String> getCommandDeviceName() {
-            return Optional.ofNullable(commandDeviceName);
-        }
-
-        public ControllerAgentLink setCommandDeviceName(String commandDeviceName) {
-            this.commandDeviceName = commandDeviceName;
-            return this;
-        }
-
-        public Optional<String> getCommandName() {
-            return Optional.ofNullable(commandName);
-        }
-
-        public ControllerAgentLink setCommandName(String commandName) {
-            this.commandName = commandName;
-            return this;
-        }
-
-        public Optional<Map<String, List<String>>> getCommandsMap() {
-            return Optional.ofNullable(commandsMap);
-        }
-
-        public ControllerAgentLink setCommandsMap(Map<String, List<String>> commandsMap) {
-            this.commandsMap = commandsMap;
-            return this;
-        }
-    }
+public class ControllerAgent extends Agent<ControllerAgent, ControllerProtocol, ControllerAgentLink> {
 
     public static final AttributeDescriptor<String> CONTROLLER_URI = new AttributeDescriptor<>("controllerURI", ValueType.TEXT);
 
