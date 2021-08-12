@@ -445,7 +445,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const isExpander = evt && (evt.target as HTMLElement).className.indexOf("expander") >= 0;
         const isParentCheckbox = evt && (evt.target as OrIcon)?.icon?.includes("checkbox-multiple");
-        const isCheckbox = !isParentCheckbox && evt && (evt.target as OrIcon)?.icon?.includes("checkbox");
 
         if (isExpander) {
             if (node && node.expandable) {
@@ -483,14 +482,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 // handle selected state
                 if (isParentCheckbox) {
                     selectedNodes = [...this.selectedNodes];
+
                     const childNodes: UiAssetTreeNode[] = [];
-                    OrAssetTree._forEachNodeRecursive([node], (childNode) => {
+                    OrAssetTree._forEachNodeRecursive(node.children, (childNode) => {
                         childNodes.push(childNode);
                     });
+
                     // based on multiple-box already selected, remove or add to array of selected nodes
-                    selectedNodes = (select)
+                    selectedNodes = (!node.allChildrenSelected)
                         ? selectedNodes.concat(childNodes)
                         : selectedNodes.filter(n => !childNodes.map(cn => cn.asset!.id).includes(n.asset!.id));
+
                 } else if (deselectOthers) {
                     selectedNodes = [node];
                 } else if (select) {
