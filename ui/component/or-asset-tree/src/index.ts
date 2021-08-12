@@ -384,39 +384,29 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 actuallySelectedIds.push(node.asset!.id!);
                 selectedNodes.push(node);
                 node.selected = true;
+
                 // Expand every ancestor
                 let parent = node.parent;
                 while (parent) {
-                    if (this.checkboxes) {
-                        // Handle parent checkboxes selection
-                        if (parent.children.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
-                            parent.allChildrenSelected = true;
-                            parent.someChildrenSelected = false;
-                        } else if (parent.children.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
-                            parent.allChildrenSelected = false;
-                            parent.someChildrenSelected = true;
-                        }
-                    }
-
-                    // Expand every ancestor
                     parent.expanded = true;
                     parent = parent.parent;
                 }
             } else {
                 node.selected = false;
 
-                if (this.checkboxes) {
-                    let parent = node.parent;
-                    while (parent) {
-                        parent.allChildrenSelected = false;
-                        parent.someChildrenSelected = false;
-                        if (parent.children.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
-                            parent.allChildrenSelected = true;
-                        } else if (parent.children.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
-                            parent.someChildrenSelected = true;
-                        }
-                        parent = parent.parent;
+            }
+
+            if (this.checkboxes) {
+                let parent = node.parent;
+                while (parent) {
+                    parent.allChildrenSelected = false;
+                    parent.someChildrenSelected = false;
+                    if (parent.children.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                        parent.allChildrenSelected = true;
+                    } else if (parent.children.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                        parent.someChildrenSelected = true;
                     }
+                    parent = parent.parent;
                 }
             }
         });
