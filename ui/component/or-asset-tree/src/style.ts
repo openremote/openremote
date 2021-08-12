@@ -193,7 +193,8 @@ export const style = css`
     
     .mdc-list-item__graphic {
         margin-left: auto;
-        display: flex;   
+        display: flex;
+        margin-right: 5px;
     }
     
     .mdc-checkbox {

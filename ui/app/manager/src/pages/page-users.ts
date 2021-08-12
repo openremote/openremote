@@ -12,6 +12,7 @@ import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-com
 import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
+import {UiAssetTreeNode} from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -477,13 +478,27 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
     protected _openAssetSelector() {
         const hostElement = document.body;
+        let selectedAssets: UiAssetTreeNode[] = [];
 
         const dialog = new OrMwcDialog();
         dialog.isOpen = true;
         dialog.dialogTitle = i18next.t("restrictAccess");
         dialog.dialogContent = html`
-            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="" .showSortBtn="${false}" .expandNodes="${true}" .checkboxes="${true}"></or-asset-tree>
+            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="" .showSortBtn="${false}" .expandNodes="${true}" .checkboxes="${true}"
+                @or-asset-tree-selection="${(e) => selectedAssets = e.detail.newNodes}"></or-asset-tree>
         `;
+        dialog.dialogActions = [
+            {
+                default: true,
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            },
+            {
+                actionName: "ok",
+                content: i18next.t("ok"),
+                action: () => console.log(selectedAssets)
+            }
+        ];
         
         hostElement.append(dialog);
         return dialog;
