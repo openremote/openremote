@@ -25,15 +25,14 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.NameHolder;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 
@@ -71,7 +70,7 @@ public class AssetDescriptor<T extends Asset<?>> implements NameHolder {
             } else if (node.isObject()) {
                 name = node.get("name").asText();
             }
-            return AssetModelUtil.getAssetDescriptor(name).orElse(null);
+            return ValueUtil.getAssetDescriptor(name).orElse(null);
         }
     }
 

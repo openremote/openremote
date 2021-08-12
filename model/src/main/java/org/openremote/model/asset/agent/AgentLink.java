@@ -21,19 +21,14 @@ package org.openremote.model.asset.agent;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.DatabindContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
-import org.openremote.model.util.AssetModelUtil;
-import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.ValueFilter;
+import org.openremote.model.util.ValueUtil;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Optional;
 
@@ -42,57 +37,10 @@ import java.util.Optional;
  * own concrete implementation of this class with fields describing each configuration item and standard JSR-380
  * annotations should be used to provide validation logic.
  */
-@JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.CUSTOM, defaultImpl = AgentLink.Default.class)
-@JsonTypeIdResolver(AgentLink.AgentLinkTypeIdResolver.class)
+@JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, defaultImpl = DefaultAgentLink.class)
 public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {
 
-    /**
-     * Resolves agent link type as agent type strings using {@link org.openremote.model.util.AssetModelUtil}
-     */
-    @TsIgnore
-    public static class AgentLinkTypeIdResolver extends TypeIdResolverBase {
-        @Override
-        public String idFromValue(Object value) {
-            if (value == null) {
-                return null;
-            }
-            if (!(value instanceof AgentLink)) {
-                throw new IllegalArgumentException("Type must be an agent link type");
-            }
-            return value.getClass().getSimpleName().replaceAll("\\$", ".");
-        }
-
-        @Override
-        public String idFromValueAndType(Object value, Class<?> suggestedType) {
-            return idFromValue(value);
-        }
-
-        @Override
-        public JsonTypeInfo.Id getMechanism() {
-            return JsonTypeInfo.Id.CUSTOM;
-        }
-
-        @Override
-        public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-            Class<? extends AgentLink<?>> agentLinkClass = AssetModelUtil.getAgentLinkClass(id)
-                .orElse(AgentLink.Default.class);
-            return context.constructType(agentLinkClass);
-        }
-    }
-
-    /**
-     * Does nothing other than hide the generic type parameter which causes problems with inference from class references
-     */
-    @JsonTypeName("Default") // Needed for typescript generator - doesn't seem to use type id resolver
-    public static class Default extends AgentLink<Default> {
-
-        protected Default() {}
-
-        public Default(String id) {
-            super(id);
-        }
-    }
-
+    @Schema(format = "or-agent-id")
     protected String id;
     protected ValueFilter[] valueFilters;
     protected ObjectNode valueConverter;
@@ -100,6 +48,11 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     protected String writeValue;
     protected ValuePredicate messageMatchPredicate;
     protected ValueFilter[] messageMatchFilters;
+
+    @JsonSerialize
+    protected String getType() {
+        return getClass().getSimpleName();
+    }
 
     // For Hydrators
     protected AgentLink() {}
@@ -189,7 +142,7 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     public static <T> T getOrThrowAgentLinkProperty(Optional<T> value, String name) {
         return value.orElseThrow(() -> {
             String msg = "Required agent link property is undefined: " + name;
-            AssetModelUtil.LOG.warning(msg);
+            ValueUtil.LOG.warning(msg);
             return new IllegalStateException("msg");
         });
     }

@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -66,7 +66,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
 
         @Override
         public ValueDescriptor<?> convert(String value) {
-            return AssetModelUtil.getValueDescriptor(value).orElse(ValueDescriptor.UNKNOWN);
+            return ValueUtil.getValueDescriptor(value).orElse(ValueDescriptor.UNKNOWN);
         }
     }
 
@@ -199,19 +199,19 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
     public String getJsonType() {
         Class<?> type = getBaseType();
 
-        if (Values.isBoolean(type)) {
+        if (ValueUtil.isBoolean(type)) {
             return "boolean";
         }
-        if (Values.isNumber(type)) {
+        if (ValueUtil.isNumber(type)) {
             if (BigInteger.class.isAssignableFrom(type)) {
                 return "bigint";
             }
             return "number";
         }
-        if (Values.isString(type) || type.isEnum()) {
+        if (ValueUtil.isString(type) || type.isEnum()) {
             return "string";
         }
-        if (Values.isArray(type)) {
+        if (ValueUtil.isArray(type)) {
             return "array";
         }
         if (Date.class.isAssignableFrom(type)) {
@@ -282,7 +282,7 @@ public class ValueDescriptor<T> implements NameHolder, Serializable {
     @SuppressWarnings("unchecked")
     public ValueDescriptor<T[]> asArray() {
         try {
-            Class<T[]> arrayClass = (Class<T[]>) Values.getArrayClass(type);
+            Class<T[]> arrayClass = (Class<T[]>) ValueUtil.getArrayClass(type);
             return  new ValueDescriptor<>(name + "[]", arrayClass, constraints, format, units, arrayDimensions == null ? 1 : arrayDimensions+1);
         } catch (ClassNotFoundException ignored) {
             // Can't happen as we have the source class already

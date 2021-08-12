@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.HTTPAgent
+import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.http.HTTPMethod
 import org.openremote.agent.protocol.http.HTTPProtocol
 import org.openremote.container.web.OAuthServerResponse
@@ -40,7 +41,7 @@ import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.ValueFilter
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -165,7 +166,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        ObjectNode body = Values.parse(bodyStr).orElse(null)
+                        ObjectNode body = ValueUtil.parse(bodyStr).orElse(null)
                         if (body.has("prop1")
                             && body.get("prop1").get("myProp1").asInt() == 123
                             && body.get("prop1").get("myProp2").asBoolean()
@@ -264,10 +265,10 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             )
         .setFollowRedirects(true)
         .setRequestHeaders(
-            Values.parse(/{"header1": ["header1Value1"], "header2": ["header2Value1","header2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
+            ValueUtil.parse(/{"header1": ["header1Value1"], "header2": ["header2Value1","header2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
         )
         .setRequestQueryParameters(
-            Values.parse(/{"param1": ["param1Value1"], "param2": ["param2Value1","param2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
+            ValueUtil.parse(/{"param1": ["param1Value1"], "param2": ["param2Value1","param2Value2"]}/, MultivaluedStringMap.class).orElseThrow()
         )
 
         and: "the agent is added to the asset service"
@@ -286,7 +287,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
                 new Attribute<>("putRequestWithHeaders", JSON_OBJECT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("put_request_with_headers")
                             .setMethod(HTTPMethod.PUT)
                             .setWriteValue('{"prop1": {$value}, "prop2": "prop2Value"}')
@@ -307,9 +308,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that sends requests to the server using GET with dynamic path
                 new Attribute<>("getRequestWithDynamicPath", BOOLEAN)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath('value/{$value}/set')
-                            .setWriteValueConverter((ObjectNode)Values.parse("{\n" +
+                            .setWriteValueConverter((ObjectNode)ValueUtil.parse("{\n" +
                                 "    \"TRUE\": \"on\",\n" +
                                 "    \"FALSE\": \"off\"\n" +
                                 "}").get())
@@ -318,7 +319,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that polls the server using GET and uses regex filter on response
                 new Attribute<>("getPollSlow", INTEGER)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("get_poll_slow")
                         .setPollingMillis(50)
                             .setValueFilters(
@@ -331,7 +332,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that polls the server using GET and uses regex filter on response
                 new Attribute<>("getPollFast", INTEGER)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("get_poll_fast")
                             .setPollingMillis(40)
                             .setValueFilters(
@@ -368,7 +369,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         when: "a linked attribute value is updated"
         def attributeEvent = new AttributeEvent(asset.id,
             "putRequestWithHeaders",
-            Values.parse('{"myProp1": 123,"myProp2": true}').get())
+                ValueUtil.parse('{"myProp1": 123,"myProp2": true}').get())
         assetProcessingService.sendAttributeEvent(attributeEvent)
 
         then: "the server should have received the request"
@@ -404,9 +405,9 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             .setFollowRedirects(null)
             .setRequestHeaders(null)
             .setRequestQueryParameters(null)
-        def agent3 = Values.clone(agent2)
+        def agent3 = ValueUtil.clone(agent2)
             .setId(null)
-        def agent4 = Values.clone(agent2)
+        def agent4 = ValueUtil.clone(agent2)
             .setId(null)
             .setFollowRedirects(true)
 
@@ -430,38 +431,38 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             .addOrReplaceAttributes(
                 new Attribute<>("getSuccess", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent2.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent2.id)
                             .setPath("get_success_200")
                         )
                     ),
                 new Attribute<>("getFailure", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent2.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent2.id)
                             .setPath("get_failure_401")
                         )
                     ),
                 new Attribute<>("pollFailure", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent3.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent3.id)
                             .setPath("get_failure_401")
                             .setPollingMillis(50)
                         )
                     ),
                 new Attribute<>("getSuccess2", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent4.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent4.id)
                             .setPath("get_success_200")
                         )
                     ),
                 new Attribute<>("getFailure2", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent4.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent4.id)
                             .setPath("get_failure_401")
                         )
                     ),
                 new Attribute<>("getRedirect", TEXT)
                     .addMeta(
-                        new MetaItem<>(AGENT_LINK, new HTTPAgent.HTTPAgentLink(agent4.id)
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent4.id)
                             .setPath("redirect")
                         )
                     )

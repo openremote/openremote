@@ -22,7 +22,6 @@ package org.openremote.model.asset.agent;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import org.openremote.model.asset.Asset;
@@ -30,7 +29,6 @@ import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.protocol.ProtocolAssetDiscovery;
 import org.openremote.model.protocol.ProtocolAssetImport;
 import org.openremote.model.protocol.ProtocolInstanceDiscovery;
-import org.openremote.model.util.AssetModelUtil;
 
 /**
  * Special type of {@link AssetDescriptor} that describes an agent {@link Asset}.
@@ -85,8 +83,8 @@ public class AgentDescriptor<T extends Agent<T, U, V>, U extends Protocol<T>, V 
     }
 
     @JsonProperty
-    public JsonNode getAgentLinkSchema() {
-        return AssetModelUtil.getSchema(agentLinkClass);
+    public String getAgentLinkType() {
+        return agentLinkClass.getSimpleName();
     }
 
     public Class<U> getProtocolClass() {

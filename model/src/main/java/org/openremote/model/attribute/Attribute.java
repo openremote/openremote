@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
 import javax.validation.Valid;
@@ -91,7 +91,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             }
 
             // Get inner attribute type or fallback to primitive/JSON type
-            Optional<ValueDescriptor<?>> valueDescriptor = AssetModelUtil.getValueDescriptor(attributeValueType);
+            Optional<ValueDescriptor<?>> valueDescriptor = ValueUtil.getValueDescriptor(attributeValueType);
             Attribute attribute = new Attribute<>();
 
             while (jp3.nextToken() != JsonToken.END_OBJECT) {
@@ -127,7 +127,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
                     return ValueDescriptor.UNKNOWN;
                 }
                 Object value = attribute.value;
-                return AssetModelUtil.getValueDescriptorForValue(value);
+                return ValueUtil.getValueDescriptorForValue(value);
             });
 
             return (Attribute<?>) attribute;

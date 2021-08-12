@@ -26,8 +26,8 @@ import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
 
-const DefaultLogo = require("../images/logo.png");
-const DefaultMobileLogo = require("../images/logo-mobile.png");
+const DefaultLogo = require("../images/logo.svg");
+const DefaultMobileLogo = require("../images/logo-mobile.svg");
 const DefaultFavIcon = require("../images/favicon.ico");
 
 export * from "./app";
@@ -151,10 +151,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         OrMwcSnackbar.DialogHostElement = this;
     }
 
+    public getState(): S {
+        return this._store.getState();
+    }
+
     connectedCallback() {
         super.connectedCallback();
-        this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this._store.getState()));
-        this.stateChanged(this._store.getState());
+        this._storeUnsubscribe = this._store.subscribe(() => this.stateChanged(this.getState()));
+        this.stateChanged(this.getState());
     }
 
     disconnectedCallback() {

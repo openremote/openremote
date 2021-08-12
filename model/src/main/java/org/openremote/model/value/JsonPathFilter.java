@@ -30,8 +30,7 @@ import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import org.openremote.model.util.TextUtil;
-
-import java.util.Optional;
+import org.openremote.model.util.ValueUtil;
 
 /**
  * This filter works on any type of data; when applying the filter the data should be converted to JSON representation
@@ -74,7 +73,7 @@ public class JsonPathFilter extends ValueFilter {
             return null;
         }
 
-        String valueStr = Values.convert(value, String.class);
+        String valueStr = ValueUtil.convert(value, String.class);
 
         if (valueStr == null) {
             return null;
@@ -82,8 +81,8 @@ public class JsonPathFilter extends ValueFilter {
 
         Object obj = jsonPathParser.parse(valueStr).read(path);
 
-        if ((returnFirst || returnLast) && obj != null && Values.isArray(obj.getClass())) {
-            ArrayNode arrayNode = Values.convert(obj, ArrayNode.class);
+        if ((returnFirst || returnLast) && obj != null && ValueUtil.isArray(obj.getClass())) {
+            ArrayNode arrayNode = ValueUtil.convert(obj, ArrayNode.class);
             obj = arrayNode.get(returnFirst ? 0 : arrayNode.size() - 1);
         }
         return obj;

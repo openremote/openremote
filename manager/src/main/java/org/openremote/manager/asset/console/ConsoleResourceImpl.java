@@ -40,16 +40,11 @@ import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TextUtil;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.value.MetaItemType.*;

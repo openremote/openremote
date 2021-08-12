@@ -21,7 +21,7 @@ package org.openremote.model.query.filter;
 
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.NumberComparator;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -71,7 +71,7 @@ public class NumberPredicate extends ValuePredicate {
     @Override
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
         return obj ->
-            Values.getValueCoerced(obj, Number.class).map(number -> {
+            ValueUtil.getValueCoerced(obj, Number.class).map(number -> {
                 boolean result = operator.compare(comparator, number, value, rangeValue);
                 return negate != result;
             }).orElse(false);

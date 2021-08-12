@@ -1,29 +1,38 @@
 /*
- * Copyright 2020, OpenRemote Inc.
+ * Copyright 2010 Google Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
- * full listing of individual contributors.
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.openremote.model.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
-import com.github.victools.jsonschema.module.javax.validation.JavaxValidationModule;
+import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import org.hibernate.internal.util.SerializationHelper;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.ModelDescriptor;
 import org.openremote.model.ModelDescriptors;
@@ -48,31 +57,37 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
 import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 
 /**
- * Utility class for retrieving asset model descriptors
+ * Utilities for working with values/JSON and asset model
  * <p>
  * Custom descriptors can be added by simply adding new {@link Asset}/{@link Agent} sub types and following the discovery
  * rules described in {@link StandardModelProvider}; alternatively a custom {@link AssetModelProvider} implementation
  * can be created and discovered with the {@link ServiceLoader} or manually added to this class via
- * {@link #getModelProviders()} collection.
+ * {@link ValueUtil#getModelProviders()} collection.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "deprecation"})
 @TsIgnore
-public final class AssetModelUtil {
+public class ValueUtil {
 
     /**
      * Copied from: https://puredanger.github.io/tech.puredanger.com/2006/11/29/writing-a-class-hierarchy-comparator/
@@ -113,9 +128,10 @@ public final class AssetModelUtil {
         }
     }
 
-    public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, AssetModelUtil.class);
     // Preload the Standard model provider so it takes priority over others
-    protected static final List<AssetModelProvider> assetModelProviders = new ArrayList<>(Collections.singletonList(new StandardModelProvider()));
+    public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
+    public static ObjectMapper JSON;
+    protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>(Collections.singletonList(new StandardModelProvider()));
     protected static Map<Class<? extends Asset<?>>, AssetTypeInfo> assetInfoMap;
     protected static Map<String, Class<? extends Asset<?>>> assetTypeMap;
     protected static Map<String, Class<? extends AgentLink<?>>> agentLinkMap;
@@ -126,62 +142,422 @@ public final class AssetModelUtil {
 
     static {
         // Find all service loader registered asset model providers
-        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProviders::add);
+        ServiceLoader.load(AssetModelProvider.class).forEach(ValueUtil.assetModelProviders::add);
+        initialise();
     }
 
-    private AssetModelUtil() {
+    public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
+        objectMapper
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false) // see https://github.com/FasterXML/jackson-databind/issues/1547
+            .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
+            .registerModule(new Jdk8Module())
+            .registerModule(new JavaTimeModule())
+            .registerModule(new ParameterNamesModule(JsonCreator.Mode.PROPERTIES));
+
+        objectMapper.configOverride(Map.class)
+            .setInclude(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
+
+        SimpleFilterProvider filters = new SimpleFilterProvider();
+        filters.setFailOnUnknownId(false);
+
+        objectMapper.setFilterProvider(filters);
+        return objectMapper;
+    }
+
+    public static final String NULL_LITERAL = "null";
+
+    public static Optional<JsonNode> parse(String jsonString) {
+        if (TextUtil.isNullOrEmpty(jsonString) || NULL_LITERAL.equals(jsonString)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(JSON.readTree(jsonString));
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Failed to parse JSON string: " + jsonString, e);
+        }
+        return Optional.empty();
+    }
+
+    public static <T> Optional<T> parse(String jsonString, Type type) {
+        if (NULL_LITERAL.equals(jsonString)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(JSON.readValue(jsonString, JSON.constructType(type)));
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to parse JSON", e);
+        }
+        return Optional.empty();
+    }
+
+    public static <T> Optional<T> parse(String jsonString, TypeReference<T> type) {
+        return parse(jsonString, JSON.getTypeFactory().constructType(type));
+    }
+
+    public static <T> Optional<T> parse(String jsonString, Class<T> type) {
+        return parse(jsonString, JSON.constructType(type));
+    }
+
+    public static Optional<String> asJSON(Object object) {
+        try {
+            return Optional.of(asJSONOrThrow(object));
+        } catch (JsonProcessingException e) {
+            LOG.log(Level.WARNING, "Failed to convert object to JSON string", e);
+            return Optional.empty();
+        }
+    }
+
+    public static String asJSONOrThrow(Object object) throws JsonProcessingException {
+        if (object == null) {
+            return NULL_LITERAL;
+        }
+        return JSON.writeValueAsString(object);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static <T> Optional<T> getValue(Object value, Class<T> type, boolean coerce) {
+        if (value == null) {
+            return Optional.empty();
+        }
+
+        if (value instanceof Optional) {
+            Optional opt = (Optional)value;
+            if (!opt.isPresent()) {
+                return opt;
+            }
+            value = opt.get();
+        }
+
+        if (type.isAssignableFrom(value.getClass())) {
+            return Optional.of((T) value);
+        }
+
+        if (value instanceof String && !coerce) {
+            return Optional.empty();
+        }
+
+        if (value instanceof JsonNode) {
+            JsonNode node = (JsonNode) value;
+            if (Number.class.isAssignableFrom(type)) {
+                if (type == Number.class && !coerce) {
+                    return Optional.ofNullable((T)node.numberValue());
+                } else if (type == Integer.class && (node.isInt() || coerce)) {
+                    return Optional.of((T) Integer.valueOf(node.asInt()));
+                } else if (type == Double.class && (node.isDouble() || coerce)) {
+                    return Optional.of((T) Double.valueOf(node.asDouble()));
+                } else if (type == Long.class && (node.isLong() || coerce)) {
+                    return Optional.of((T) Long.valueOf(node.asLong()));
+                } else if (type == BigDecimal.class && (node.isBigDecimal() || coerce)) {
+                    return Optional.of((T) node.decimalValue());
+                } else if (type == BigInteger.class && (node.isBigInteger() || coerce)) {
+                    return Optional.of((T) node.bigIntegerValue());
+                } else if (type == Short.class && (node.isShort() || coerce)) {
+                    return Optional.of((T) Short.valueOf(node.shortValue()));
+                }
+            }
+            if (String.class == type) {
+                if (node.isTextual()) {
+                    return Optional.of((T) node.asText());
+                }
+                if (coerce) {
+                    return Optional.of((T) node.toString());
+                }
+            }
+            if (Boolean.class == type && (node.isBoolean() || coerce)) {
+                if (!node.isBoolean() && node.isTextual()) {
+                    if ("TRUE".equalsIgnoreCase(node.textValue()) || "1".equalsIgnoreCase(node.textValue()) || "ON".equalsIgnoreCase(node.textValue())) {
+                        return Optional.of((T) Boolean.TRUE);
+                    }
+                    return Optional.of((T) Boolean.FALSE);
+                }
+                return Optional.of((T) Boolean.valueOf(node.asBoolean()));
+            }
+            if ((type.isArray() && node.isArray()) || (!node.isArray() && node.isObject())) {
+                try {
+                    return Optional.of(((JsonNode) value).traverse().readValueAs(type));
+                } catch (Exception ignored) {
+                }
+            }
+        }
+
+        if (coerce) {
+            try {
+                if (value instanceof List && type.isArray()) {
+                    Class<?> innerType = type.getComponentType();
+                    List list = ((List) value);
+
+                    if (list.isEmpty()) {
+                        return Optional.of((T)Array.newInstance(type.getComponentType(), 0));
+                    }
+
+                    Object[] arr = (Object[])Array.newInstance(type.getComponentType(), list.size());
+                    IntStream.range(0, list.size()).forEach(i -> {
+                        Object o = list.get(i);
+                        if (o != null && !innerType.isAssignableFrom(o.getClass())) {
+                            o = getValue(o, innerType, true).orElse(null);
+                        }
+                        arr[i] = o;
+                    });
+                    return Optional.of((T)arr);
+                }
+
+                return Optional.of(JSON.convertValue(value, type));
+            } catch (Exception e) {
+                if (value instanceof String) {
+
+                    if (!((String) value).startsWith("\"")) {}
+
+                    // Try and parse the value
+                    return parse((String)value, type);
+                }
+
+                LOG.log(Level.INFO, "Failed to coerce value to requested type: input=" + value.getClass() + ", output=" + type, e);
+                return Optional.empty();
+            }
+        }
+
+        LOG.info("Failed to get value as requested type: input=" + value.getClass() + ", output=" + type);
+        return Optional.empty();
+    }
+
+    public static <T> Optional<T> getValue(Object value, Class<T> type) {
+        return getValue(value, type, false);
+    }
+
+    /**
+     * Basic type coercion/casting of values; utilises Jackson's underlying type coercion/casting mechanism
+     */
+    public static <T> Optional<T> getValueCoerced(Object value, Class<T> type) {
+        return getValue(value, type, true);
+    }
+
+    public static Optional<String> getString(Object value) {
+        return getValue(value, String.class);
+    }
+
+    public static Optional<String> getStringCoerced(Object value) {
+        return getValueCoerced(value, String.class);
+    }
+
+    public static Optional<Boolean> getBoolean(Object value) {
+        return getValue(value, Boolean.class);
+    }
+
+    public static Optional<Boolean> getBooleanCoerced(Object value) {
+        return getValueCoerced(value, Boolean.class);
+    }
+
+    public static Optional<Integer> getInteger(Object value) {
+        return getValue(value, Integer.class);
+    }
+
+    public static Optional<Integer> getIntegerCoerced(Object value) {
+        return getValueCoerced(value, Integer.class);
+    }
+
+    public static Optional<Double> getDouble(Object value) {
+        return getValue(value, Double.class);
+    }
+
+    public static Optional<Double> getDoubleCoerced(Object value) {
+        return getValueCoerced(value, Double.class);
+    }
+
+    public static Optional<Long> getLong(Object value) {
+        return getValue(value, Long.class);
+    }
+
+    public static Optional<Long> getLongCoerced(Object value) {
+        return getValueCoerced(value, Long.class);
+    }
+
+    public static Optional<ObjectNode> asJSONObject(Object value) {
+        return getValue(value, ObjectNode.class);
+    }
+
+    public static Optional<ArrayNode> asJSONArray(Object value) {
+        return getValue(value, ArrayNode.class);
+    }
+
+    public static ObjectNode createJsonObject() {
+        return ValueUtil.JSON.createObjectNode();
+    }
+
+    public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(keyExtractor.apply(t));
+    }
+
+    public static <T> T convert(Object object, Class<T> targetType) {
+        if (object == null) {
+            return null;
+        }
+        if (targetType == object.getClass()) {
+            return (T)object;
+        }
+        if (targetType == String.class) {
+            if (object instanceof TextNode) {
+                return (T) ((TextNode)object).textValue();
+            }
+            return (T) asJSON(object).orElse(null);
+        }
+        return JSON.convertValue(object, targetType);
+    }
+
+    public static boolean isArray(Class<?> clazz) {
+        return clazz.isArray() || clazz == ArrayNode.class;
+    }
+
+    public static boolean isBoolean(Class<?> clazz) {
+        return clazz == Boolean.class || clazz == BooleanNode.class;
+    }
+
+    public static boolean isNumber(Class<?> clazz) {
+        return Number.class.isAssignableFrom(clazz) || NumericNode.class.isAssignableFrom(clazz);
+    }
+
+    public static boolean isString(Class<?> clazz) {
+        return String.class.isAssignableFrom(clazz) || TextNode.class.isAssignableFrom(clazz) || BinaryNode.class.isAssignableFrom(clazz);
+    }
+
+    public static boolean isObject(Class<?> clazz) {
+        return !isArray(clazz) && !isBoolean(clazz) && !isNumber(clazz) && !isString(clazz);
+    }
+
+    public static Class<?> getArrayClass(Class<?> componentType) throws ClassNotFoundException {
+        ClassLoader classLoader = componentType.getClassLoader();
+        String name;
+        if (componentType.isArray()) {
+            // just add a leading "["
+            name = "[" + componentType.getName();
+        } else if (componentType == boolean.class) {
+            name = "[Z";
+        } else if (componentType == byte.class) {
+            name = "[B";
+        } else if (componentType == char.class) {
+            name = "[C";
+        } else if (componentType == double.class) {
+            name = "[D";
+        } else if (componentType == float.class) {
+            name = "[F";
+        } else if (componentType == int.class) {
+            name = "[I";
+        } else if (componentType == long.class) {
+            name = "[J";
+        } else if (componentType == short.class) {
+            name = "[S";
+        } else {
+            // must be an object non-array class
+            name = "[L" + componentType.getName() + ";";
+        }
+        return Class.forName(name);
+    }
+
+    /**
+     * Apply the specified set of {@link ValueFilter}s to the specified value
+     */
+    public static Object applyValueFilters(Object value, ValueFilter...filters) {
+
+        if (filters == null) {
+            return value;
+        }
+
+        if (value == null) {
+            return null;
+        }
+
+        LOG.finest("Applying value filters to value of type: " + value.getClass().getName());
+
+        for (ValueFilter filter : filters) {
+
+            value = filter.filter(value);
+
+            if (value == null) {
+                break;
+            }
+        }
+
+        return value;
+    }
+
+    public static <T> T clone(T object) {
+        if (object == null) {
+            return null;
+        }
+
+        if (object instanceof Serializable) {
+            try {
+                return (T) SerializationHelper.clone((Serializable) object);
+            } catch (Exception e) {
+                LOG.log(Level.INFO, "Failed to clone using standard java serialisation, falling back to jackson object of type: " + object.getClass(), e);
+            }
+        }
+
+        try {
+            return JSON.readValue(JSON.writeValueAsBytes(object), (Class<T>) object.getClass());
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Failed to clone object of type: " + object.getClass(), e);
+        }
+
+        return null;
+    }
+
+    public static <T> TypeReference<Attribute<T>> getRef(Class<T> clazz) {
+        return new TypeReference<Attribute<T>>() {};
+    }
+
+    public static Object findFirstNonNullElement(Collection<?> collection) {
+        for (java.lang.Object element : collection) {
+            if (element != null) {
+                return element;
+            }
+        }
+        return null;
+    }
+
+    public static Map.Entry<?,?> findFirstNonNullEntry(Map<?,?> map) {
+        for (Map.Entry<?,?> entry : map.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                return entry;
+            }
+        }
+        return null;
     }
 
     public static AssetTypeInfo[] getAssetInfos(String parentType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
         return assetInfoMap.values().toArray(new AssetTypeInfo[0]);
     }
 
     public static Class<? extends Asset<?>>[] getAssetClasses(String parentType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
         return assetTypeMap.values().toArray(new Class[0]);
     }
 
     public static Optional<AssetTypeInfo> getAssetInfo(Class<? extends Asset<?>> assetType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
         return Optional.ofNullable(assetInfoMap.get(assetType));
     }
 
     public static Optional<AssetTypeInfo> getAssetInfo(String assetType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
         Class<? extends Asset<?>> assetClass = assetTypeMap.get(assetType);
         return Optional.ofNullable(assetClass != null ? assetInfoMap.get(assetClass) : null);
     }
 
     // TODO: Implement ability to restrict which asset types are allowed to be added to a given parent type
     public static AssetDescriptor<?>[] getAssetDescriptors(String parentType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
         return Arrays.stream(getAssetInfos(parentType)).map(AssetTypeInfo::getAssetDescriptor).toArray(AssetDescriptor[]::new);
     }
 
     public static <T extends Asset<?>> Optional<AssetDescriptor<T>> getAssetDescriptor(Class<T> assetType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
-
         return getAssetInfo(assetType).map(assetInfo -> (AssetDescriptor<T>)assetInfo.getAssetDescriptor());
     }
 
     public static Optional<AssetDescriptor<?>> getAssetDescriptor(String assetType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
-
         return getAssetInfo(assetType).map(AssetTypeInfo::getAssetDescriptor);
     }
 
@@ -195,21 +571,7 @@ public final class AssetModelUtil {
             .map(assetDescriptor -> assetDescriptor instanceof AgentDescriptor ? (AgentDescriptor<?, ?, ?>)assetDescriptor : null);
     }
 
-    /**
-     * Get {@link AgentLink} class by its' simple class name
-     */
-    public static Optional<Class <? extends AgentLink<?>>> getAgentLinkClass(String agentLinkType) {
-        if (assetTypeMap == null) {
-            initialise();
-        }
-
-        return Optional.ofNullable(agentLinkMap.get(agentLinkType));
-    }
-
     public static MetaItemDescriptor<?>[] getMetaItemDescriptors() {
-        if (assetTypeMap == null) {
-            initialise();
-        }
         return metaItemDescriptors.toArray(new MetaItemDescriptor<?>[0]);
     }
 
@@ -223,16 +585,10 @@ public final class AssetModelUtil {
 
     public static Optional<MetaItemDescriptor<?>> getMetaItemDescriptor(String name) {
         if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
-        if (assetTypeMap == null) {
-            initialise();
-        }
         return metaItemDescriptors.stream().filter(mid -> mid.getName().equals(name)).findFirst();
     }
 
     public static ValueDescriptor<?>[] getValueDescriptors() {
-        if (assetTypeMap == null) {
-            initialise();
-        }
         return valueDescriptors.toArray(new ValueDescriptor<?>[0]);
     }
 
@@ -246,9 +602,6 @@ public final class AssetModelUtil {
 
     public static Optional<ValueDescriptor<?>> getValueDescriptor(String name) {
         if (TextUtil.isNullOrEmpty(name)) return Optional.empty();
-        if (assetTypeMap == null) {
-            initialise();
-        }
 
         int arrayDimensions = 0;
 
@@ -288,7 +641,7 @@ public final class AssetModelUtil {
         else if (valueClass == BigDecimal.class) valueDescriptor = ValueType.BIG_NUMBER;
         else if (valueClass == Byte.class) valueDescriptor = ValueType.BYTE;
         else if (Map.class.isAssignableFrom(valueClass)) {
-            Object firstElem = Values.findFirstNonNullEntry((Map<?,?>)value);
+            Object firstElem = findFirstNonNullEntry((Map<?,?>)value);
 
             if (firstElem == null) valueDescriptor = ValueType.JSON_OBJECT;
             else {
@@ -312,21 +665,13 @@ public final class AssetModelUtil {
         return isArray ? valueDescriptor.asArray() : valueDescriptor;
     }
 
-    public static void refresh() {
-        assetInfoMap = null;
-        assetTypeMap = null;
-        agentLinkMap = null;
-        metaItemDescriptors = null;
-        valueDescriptors = null;
-    }
-
     public static List<AssetModelProvider> getModelProviders() {
         return assetModelProviders;
     }
 
-    protected static void initialise() {
+    public static void initialise() throws IllegalStateException {
         try {
-            initialiseOrThrow();
+            doInitialise();
         } catch (IllegalStateException e) {
             LOG.log(Level.SEVERE, "Failed to initialise the asset model", e);
             throw e;
@@ -335,20 +680,23 @@ public final class AssetModelUtil {
 
     /**
      * Initialise the asset model and throw an {@link IllegalStateException} exception if a problem is detected; this
-     * can be called by applications at startup to fail hard and fast if the {@link AssetModelUtil} is un-usable
+     * can be called by applications at startup to fail hard and fast if the asset model is un-usable
      */
-    public static void initialiseOrThrow() throws IllegalStateException {
-
+    protected static void doInitialise() throws IllegalStateException {
         assetInfoMap = new HashMap<>();
         assetTypeMap = new HashMap<>();
         agentLinkMap = new HashMap<>();
         metaItemDescriptors = new ArrayList<>();
         valueDescriptors = new ArrayList<>();
+        generator = null;
+
+        // Provide basic Object Mapper and enhance once asset model is initialised
+        JSON = configureObjectMapper(new ObjectMapper());
 
         LOG.info("Initialising asset model...");
         Map<Class<? extends Asset<?>>, List<NameHolder>> assetDescriptorProviders = new TreeMap<>(new ClassHierarchyComparator());
         //noinspection RedundantCast
-        assetDescriptorProviders.put((Class<? extends Asset<?>>)(Class)Asset.class, new ArrayList<>(getDescriptorFields(Asset.class)));
+        assetDescriptorProviders.put((Class<? extends Asset<?>>)(Class<?>)Asset.class, new ArrayList<>(getDescriptorFields(Asset.class)));
 
         getModelProviders().forEach(assetModelProvider -> {
             LOG.fine("Processing asset model provider: " + assetModelProvider.getClass().getSimpleName());
@@ -445,7 +793,11 @@ public final class AssetModelUtil {
 
                 if (assetInfo.getAssetDescriptor() instanceof AgentDescriptor) {
                     AgentDescriptor<?,?,?> agentDescriptor = (AgentDescriptor<?,?,?>)assetInfo.getAssetDescriptor();
-                    agentLinkMap.put(agentDescriptor.getAgentLinkClass().getSimpleName().replaceAll("\\$", "."), agentDescriptor.getAgentLinkClass());
+                    String agentLinkName = agentDescriptor.getAgentLinkClass().getSimpleName();
+                    if (agentLinkMap.containsKey(agentLinkName) && agentLinkMap.get(agentLinkName) != agentDescriptor.getAgentLinkClass()) {
+                        throw new IllegalStateException("AgentLink simple class name must be unique, duplicate found for: " + agentDescriptor.getAgentLinkClass());
+                    }
+                    agentLinkMap.put(agentLinkName, agentDescriptor.getAgentLinkClass());
                 }
             }
         });
@@ -465,6 +817,53 @@ public final class AssetModelUtil {
 
         // Call on finished on each provider
         assetModelProviders.forEach(AssetModelProvider::onAssetModelFinished);
+
+        // Add agent link sub types to object mapper (need to avoid circular dependency)
+        NamedType[] agentLinkSubTypes = Arrays.stream(getAgentLinkClasses())
+            .map(agentLinkClass -> new NamedType(
+                agentLinkClass,
+                agentLinkClass.getSimpleName()
+            )).toArray(NamedType[]::new);
+        JSON.registerSubtypes(agentLinkSubTypes);
+
+        doSchemaInit();
+    }
+
+    protected static void doSchemaInit() {
+        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(JSON, SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON)
+            .with(
+                new JacksonModule(
+                    JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
+                )
+            )
+            .with(
+                new Swagger2Module()
+            );
+//                .with(new JavaxValidationModule());
+
+        configBuilder.forTypesInGeneral()
+            .withSubtypeResolver((declaredType, generationContext) -> {
+                if (declaredType.getErasedType() == AgentLink.class) {
+                    TypeContext typeContext = generationContext.getTypeContext();
+                    return Arrays.stream(getAgentLinkClasses())
+                        .map(agentLinkClass -> typeContext.resolveSubtype(declaredType, agentLinkClass))
+                        .collect(Collectors.toList());
+                }
+                return null;
+            });
+
+        SchemaGeneratorConfig config = configBuilder.build();
+        generator = new SchemaGenerator(config);
+    }
+
+    protected static Class<?>[] getAgentLinkClasses() {
+        return Arrays.stream(getAssetDescriptors(null))
+            .filter(descriptor -> descriptor instanceof AgentDescriptor)
+            .map(descriptor ->
+                ((AgentDescriptor<?, ?, ?>) descriptor).getAgentLinkClass()
+            )
+            .distinct()
+            .toArray(Class<?>[]::new);
     }
 
     /**
@@ -493,23 +892,13 @@ public final class AssetModelUtil {
      */
     public static JsonNode getSchema(Class<?> clazz) {
         if (generator == null) {
-            JacksonModule module = new JacksonModule(
-                JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
-            );
-            JavaxValidationModule validationModule = new JavaxValidationModule();
-            SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(Values.JSON, SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON);
-            configBuilder.with(module);
-//                .with(validationModule);
-            SchemaGeneratorConfig config = configBuilder.build();
-
-
-            generator = new SchemaGenerator(config);
+            return JSON.createObjectNode();
         }
         return generator.generateSchema(clazz);
     }
 
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {
-        AssetTypeInfo assetInfo = AssetModelUtil.getAssetInfo(asset.getType()).orElseThrow(() -> new IllegalStateException("Cannot get asset model info for requested asset type: " + asset.getType()));
+        AssetTypeInfo assetInfo = getAssetInfo(asset.getType()).orElseThrow(() -> new IllegalStateException("Cannot get asset model info for requested asset type: " + asset.getType()));
         asset.getAttributes().addOrReplace(
             Arrays.stream(assetInfo.getAttributeDescriptors())
             .filter(attributeDescriptor -> !attributeDescriptor.isOptional())
@@ -624,13 +1013,13 @@ public final class AssetModelUtil {
                             });
                         attributeDescriptors.add((AttributeDescriptor<?>) descriptor);
                     } else if (descriptor instanceof MetaItemDescriptor) {
-                        int index = AssetModelUtil.metaItemDescriptors.indexOf(descriptor);
-                        if (index >= 0 && AssetModelUtil.metaItemDescriptors.get(index) != descriptor) {
+                        int index = ValueUtil.metaItemDescriptors.indexOf(descriptor);
+                        if (index >= 0 && ValueUtil.metaItemDescriptors.get(index) != descriptor) {
                             throw new IllegalStateException("Duplicate meta item descriptor found: asset type=" + assetClass +", descriptor=" + metaItemDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
                         }
                         metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
-                        if (!AssetModelUtil.metaItemDescriptors.contains(descriptor)) {
-                            AssetModelUtil.metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
+                        if (!ValueUtil.metaItemDescriptors.contains(descriptor)) {
+                            ValueUtil.metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
                         }
                     } else if (descriptor instanceof ValueDescriptor) {
                         ValueDescriptor<?> valueDescriptor = (ValueDescriptor<?>)descriptor;
@@ -638,13 +1027,13 @@ public final class AssetModelUtil {
 
                         valueDescriptor = valueDescriptor.asNonArray();
 
-                        int index = AssetModelUtil.valueDescriptors.indexOf(descriptor);
-                        if (index >= 0 && AssetModelUtil.valueDescriptors.get(index).getType() != valueDescriptor.getType()) {
+                        int index = valueDescriptors.indexOf(descriptor);
+                        if (index >= 0 && valueDescriptors.get(index).getType() != valueDescriptor.getType()) {
                             throw new IllegalStateException("Duplicate value descriptor found: asset type=" + assetClass +", descriptor=" + valueDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
                         }
                         valueDescriptors.add(valueDescriptor);
-                        if (!AssetModelUtil.valueDescriptors.contains(descriptor)) {
-                            AssetModelUtil.valueDescriptors.add((ValueDescriptor<?>) descriptor);
+                        if (!ValueUtil.valueDescriptors.contains(descriptor)) {
+                            ValueUtil.valueDescriptors.add((ValueDescriptor<?>) descriptor);
                         }
                     }
                 });

@@ -110,7 +110,7 @@ export class OrTable extends LitElement {
             </thead>`;
         return html`
             <div class="mdc-data-table ${classMap({"has-sticky-first-column": !!this.options!.stickyFirstColumn})}">
-                <table class="mdc-data-table__table" aria-label="Dessert calories">
+                <table class="mdc-data-table__table">
                     ${headerTemplate}
                     <tbody class="mdc-data-table__content">
                         ${!this.rows ? `` : this.rows.map(item => html`

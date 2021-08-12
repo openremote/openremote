@@ -31,8 +31,8 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentResource;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.*;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +85,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             }
         }
 
-        Optional<AgentDescriptor<?, ?, ?>> agentDescriptor = AssetModelUtil.getAgentDescriptor(agentType);
+        Optional<AgentDescriptor<?, ?, ?>> agentDescriptor = ValueUtil.getAgentDescriptor(agentType);
 
         if (!agentDescriptor.isPresent()) {
             throw new IllegalArgumentException("Agent descriptor not found: agent type =" + agentType);

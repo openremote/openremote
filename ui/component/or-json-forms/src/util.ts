@@ -12,19 +12,20 @@ import {
     JsonFormsRendererRegistryEntry,
     JsonFormsState,
     JsonSchema,
+    JsonSchema4,
     mapStateToControlProps,
     mapStateToControlWithDetailProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Resolve,
+    resolveSchema,
     resolveSubSchemas,
     StatePropsOfCombinator,
     StatePropsOfControl,
     StatePropsOfControlWithDetail,
 } from "@jsonforms/core";
-import { ErrorObject } from "ajv";
 import {html, TemplateResult} from "lit";
-import {JsonFormsStateContext} from "./index";
+import {ErrorObject, JsonFormsStateContext} from "./index";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsStateContext | undefined, props: T | undefined): TemplateResult {
     if (!state || !props) {
@@ -146,8 +147,8 @@ function getSchemaObjectProperties(schema: JsonSchema): [string, JsonSchema][] {
 }
 
 /**
- * Copied from eclipse source code as there is a bug (https://github.com/eclipsesource/jsonforms/issues/1787)
- * which means indexOfFittingSchema always returns 0 if there is only a const error
+ * Copied from eclipse source code to inject global definitions into the validating schema otherwise AJV will fail
+ * to compile the schema - not perfect but works for our cases
  */
 export function mapStateToCombinatorRendererProps(
     state: JsonFormsState,
@@ -193,7 +194,11 @@ export function mapStateToCombinatorRendererProps(
     // element
     for (let i = 0; i < _schema[keyword]!.length; i++) {
         try {
-            const valFn = ajv.compile(_schema[keyword]![i]);
+            const schema = {
+                definitions: rootSchema.definitions,
+                ..._schema[keyword]![i]
+            } as JsonSchema;
+            const valFn = ajv.compile(schema);
             valFn(data);
             if (dataIsValid(valFn.errors!)) {
                 indexOfFittingSchema = i;
@@ -215,5 +220,43 @@ export function mapStateToCombinatorRendererProps(
         uischemas: state.jsonforms.uischemas!,
         uischema
     };
+}
+
+export function resolveSubSchemasRecursive(
+    schema: JsonSchema,
+    rootSchema: JsonSchema,
+    keyword?: CombinatorKeyword
+): JsonSchema {
+    const combinators: string[] = keyword ? [keyword] : ["allOf", "anyOf", "oneOf"];
+
+    if (schema.$ref) {
+        return resolveSubSchemasRecursive(resolveSchema(rootSchema, schema.$ref), rootSchema);
+    }
+
+    combinators.forEach((combinator) => {
+        const schemas = (schema as any)[combinator] as JsonSchema[];
+
+        if (schemas) {
+            (schema as any)[combinator] = schemas.map(subSchema =>
+                resolveSubSchemasRecursive(subSchema, rootSchema)
+            );
+        }
+    });
+
+    if (schema.items) {
+        if (Array.isArray(schema.items)) {
+            schema.items = (schema.items as JsonSchema4[]).map((itemSchema) => resolveSubSchemasRecursive(itemSchema, rootSchema) as JsonSchema4);
+        } else {
+            schema.items = resolveSubSchemasRecursive(schema.items as JsonSchema, rootSchema);
+        }
+    }
+
+    if (schema.properties) {
+        Object.keys(schema.properties).forEach((prop) =>
+            schema.properties![prop] = resolveSubSchemasRecursive(schema.properties![prop], rootSchema)
+        );
+    }
+
+    return schema;
 }
 

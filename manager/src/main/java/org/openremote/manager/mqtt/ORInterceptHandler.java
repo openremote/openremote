@@ -40,7 +40,7 @@ import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -248,10 +248,10 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         if (isValueWrite) {
             String assetId = topicTokens.get(1);
             String attributeName = topicTokens.get(2);
-            Object value = Values.parse(payloadContent).orElse(null);
+            Object value = ValueUtil.parse(payloadContent).orElse(null);
             attributeEvent = new AttributeEvent(assetId, attributeName, value);
         } else {
-            attributeEvent = Values.parse(payloadContent, AttributeEvent.class).orElse(null);
+            attributeEvent = ValueUtil.parse(payloadContent, AttributeEvent.class).orElse(null);
         }
 
         if (attributeEvent == null) {

@@ -20,14 +20,14 @@
 package org.openremote.agent.protocol.udp;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <p>
  * To use this protocol create a {@link UDPAgent}.
  */
-public class UDPProtocol extends AbstractUDPProtocol<UDPProtocol, UDPAgent, AgentLink.Default, String, UDPIOClient<String>> {
+public class UDPProtocol extends AbstractUDPProtocol<UDPProtocol, UDPAgent, DefaultAgentLink, String, UDPIOClient<String>> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, UDPProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "UDP Client";
@@ -60,7 +60,7 @@ public class UDPProtocol extends AbstractUDPProtocol<UDPProtocol, UDPAgent, Agen
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
 
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         Consumer<String> messageConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(assetId, attribute, agentLink, timerService::getCurrentTimeMillis, this::updateLinkedAttribute);
@@ -74,7 +74,7 @@ public class UDPProtocol extends AbstractUDPProtocol<UDPProtocol, UDPAgent, Agen
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         protocolMessageConsumers.removeIf(attributeRefConsumerPair -> attributeRefConsumerPair.key.equals(attributeRef));
     }
@@ -91,7 +91,7 @@ public class UDPProtocol extends AbstractUDPProtocol<UDPProtocol, UDPAgent, Agen
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, AgentLink.Default agentLink, AttributeEvent event, Object processedValue) {
-        return Values.convert(processedValue, String.class);
+    protected String createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        return ValueUtil.convert(processedValue, String.class);
     }
 }

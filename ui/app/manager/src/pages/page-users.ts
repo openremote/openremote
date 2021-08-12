@@ -1,6 +1,6 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property} from "lit/decorators.js";
-import manager, {DefaultColor3, OREvent, Util} from "@openremote/core";
+import {customElement, property, state} from "lit/decorators.js";
+import manager, {DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-panel";
 import "@openremote/or-translate";
 import {EnhancedStore} from "@reduxjs/toolkit";
@@ -11,6 +11,8 @@ import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import { AssetTreeConfig } from "@openremote/or-asset-tree";
+import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {GenericAxiosResponse, RestResponse} from "@openremote/rest";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -67,7 +69,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     border: 1px solid #e5e5e5;
                     border-radius: 5px;
                     position: relative;
-                    margin: 20px auto;
+                    margin: 5px auto;
                     padding: 24px;
                 }
 
@@ -76,6 +78,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     font-weight: bolder;
                     line-height: 1em;
                     color: var(--internal-or-asset-viewer-title-text-color);
+                    margin-bottom: 20px;
+                    margin-top: 0;
                     flex: 0 0 auto;
                     letter-spacing: 0.025em;
                 }
@@ -150,9 +154,14 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
                 .button {
                     cursor: pointer;
+                    display: flex;
+                    flex-direction: row;
                     align-content: center;
+                    padding: 16px;
                     align-items: center;
-                    margin: 0;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    color: var(--or-app-color4);
                 }
 
                 @media screen and (max-width: 768px) {
@@ -186,46 +195,21 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     }
 
     @property()
-    protected _users: UserModel[] = [];
-
-    @property()
-    protected _serviceUsers: UserModel[] = [];
-
-    @property()
-    protected _roles: Role[] = [];
-
-    @property()
-    protected _compositeRoles: Role[] = [];
-
-    @property()
-    protected selectedRoleNames: string[] = [];
-
-    @property()
-    public validPassword?: boolean = true;
-
-    @property()
     public realm?: string;
 
-    @property()
-    protected loading: boolean = true;
+    @state()
+    protected _users: UserModel[] = [];
+    @state()
+    protected _serviceUsers: UserModel[] = [];
+    @state()
+    protected _roles: Role[] = [];
+    @state()
+    protected _compositeRoles: Role[] = [];
 
     get name(): string {
         return "user_plural";
     }
-    
-    constructor(store: EnhancedStore<S>) {
-        super(store);
-        this.loadUsers();
-    }
 
-    protected _onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this.realm = manager.displayRealm;
-                break;
-        }
-    };
-    
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
         if (_changedProperties.has("realm")) {
@@ -236,35 +220,62 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     }
 
     public connectedCallback() {
+        this.loadUsers();
         super.connectedCallback();
-        manager.addListener(this._onManagerEvent);
     }
 
     public disconnectedCallback() {
         super.disconnectedCallback();
-        manager.removeListener(this._onManagerEvent);
     }
 
-    private async loadUsers() {
+    protected async loadUsers() {
 
+        this._compositeRoles = [];
+        this._roles = [];
         this._users = [];
         this._serviceUsers = [];
-        this._compositeRoles = [];
-        this.loading = true;
-        const ORClientRoleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
 
-        if (!ORClientRoleResponse.data) {
-            this.loading = false;
+        if (!manager.authenticated || !manager.hasRole(ClientRole.READ_USERS)) {
+            console.warn("Not authenticated or insufficient access");
             return;
         }
 
-        const compositeRoles = ORClientRoleResponse.data.filter(role => role.composite);
-        const roles = ORClientRoleResponse.data.filter(role => !role.composite);
+        const loadedDeferred = new Util.Deferred<TemplateResult>();
+        const realm = this.getState().app.realm;
+        const responseAndStateOK: <T extends GenericAxiosResponse<any[]>>(response: T, errorMsg: string) => boolean = (response, errorMsg) => {
+
+            // After async op check that the response still matches current state and that the component is still loaded in the UI
+            if (this.getState().app.realm !== realm || !this.isConnected) {
+                // Realm change or component disconnected - don't continue
+                return false;
+            }
+
+            if (!response.data) {
+                showSnackbar(undefined, errorMsg, i18next.t("dismiss"));
+                console.error(errorMsg + ": response = " + response.statusText);
+                return false;
+            }
+
+            return true;
+        };
+
+        const roleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
+
+        if (!responseAndStateOK(roleResponse, i18next.t("loadFailedRoles"))) {
+            return;
+        }
+
+        const compositeRoles = roleResponse.data.filter(role => role.composite);
+        const roles = roleResponse.data.filter(role => !role.composite);
         const usersResponse = await manager.rest.api.UserResource.getAll(manager.displayRealm);
+
+        if (!responseAndStateOK(usersResponse, i18next.t("loadFailedUsers"))) {
+            return;
+        }
+
         const serviceUsersResponse = await manager.rest.api.UserResource.getAllService(manager.displayRealm);
 
-        if (!usersResponse.data || !serviceUsersResponse.data) {
-            this.loading = false;
+        if (!responseAndStateOK(serviceUsersResponse, i18next.t("loadFailedServiceUsers"))) {
             return;
         }
 
@@ -278,11 +289,12 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         });
         
         await Promise.all(roleLoaders);
+
+        // Only update state once all promises are fulfilled
+        this._compositeRoles = compositeRoles.sort(Util.sortByString(role => role.name));
+        this._roles = roles.sort(Util.sortByString(role => role.name));
         this._users = users.sort(Util.sortByString(u => u.username));
         this._serviceUsers = serviceUsers.sort(Util.sortByString(u => u.username));
-        this._roles = roles;
-        this._compositeRoles = compositeRoles;
-        this.loading = false;
     }
 
     private async _createUpdateUser(user: UserModel) {
@@ -291,7 +303,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             // Means a validation failure shouldn't get here
             return;
         }
-        this.loading = true;
 
         try {
             const response = await manager.rest.api.UserResource.createUpdate(manager.displayRealm, user);
@@ -317,29 +328,17 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return;
         }
 
-        const compositeRoles = [...this._compositeRoles, ...this._roles].filter(c => user.roles.some(r => r.name === c.name)).map(r => {
-            return {...r, assigned: true}
-        });
-        
-        // if (compositeRoles.length === 0) {
-        //     return;
-        // }
-        
+        const roles = user.roles.filter(role => role.assigned);
+
         if (!user.serviceAccount) {
-            await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, compositeRoles);
+            await manager.rest.api.UserResource.updateUserRoles(manager.displayRealm, user.id, roles);
         } else {
-            await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, user.username, compositeRoles);
+            await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, user.username, roles);
         }
     }
     
-    private setRoleNamesForSelectedCompositeRoles(roles: Role[]) {
-        const separateRoleIds = roles.map(r => r.compositeRoleIds).flat();
-        this.selectedRoleNames = this._roles.filter(r => separateRoleIds.includes(r.id)).map(r => r.name);
-    }
-
-
     private _deleteUser(user) {
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"))
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     this.doDelete(user);
@@ -364,7 +363,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             `;
         }
 
-        if (this.loading) {
+        if (!this._roles || this._roles.length === 0) {
             return html``;
         }
 
@@ -407,10 +406,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     this._users = [...this._users, {enabled: true}];
                                 }}">
                                     <td colspan="100%">
-                                        <or-mwc-input class="button" .type="${InputType.BUTTON}"
-                                                      .label="${i18next.t("add")} ${i18next.t("user")}"
-                                                      icon="plus">
-                                        </or-mwc-input>
+                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("user")}</a>
                                     </td>
                                 </tr>
                             ` : ``}
@@ -450,10 +446,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                         serviceAccount: true}]
                                 }}">
                                     <td colspan="100%">
-                                        <or-mwc-input class="button" .type="${InputType.BUTTON}"
-                                                      .label="${i18next.t("add")} ${i18next.t("user")}"
-                                                      icon="plus">
-                                        </or-mwc-input>
+                                        <a class="button"><or-icon icon="plus"></or-icon>${i18next.t("add")} ${i18next.t("user")}</a>
                                     </td>
                                 </tr>
                             ` : ``}
@@ -466,6 +459,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     }
 
     public stateChanged(state: S) {
+        this.realm = state.app.realm;
     }
 
     protected _toggleUserExpand(ev: MouseEvent) {
@@ -530,11 +524,26 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         secretElem.disabled = false;
     }
 
+    protected _updateUserSelectedRoles(user: UserModel, suffix: string) {
+        const roleCheckboxes = [...((this.shadowRoot!.getElementById("role-list-" + suffix) as HTMLDivElement).children as any)] as OrMwcInput[];
+        const implicitRoleNames = this.getImplicitUserRoles(user);
+        roleCheckboxes.forEach((checkbox) => {
+            const roleName = checkbox.label;
+            const r = this._roles.find(role => roleName === role.name);
+            checkbox.disabled = !!implicitRoleNames.find(name => r.name === name);
+            checkbox.value = !!user.roles.find(userRole => userRole.name === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name);
+        });
+    }
+
+    protected getImplicitUserRoles(user: UserModel) {
+        return this._compositeRoles.filter((role) => user.roles.some(ur => ur.name === role.name)).flatMap((role) => role.compositeRoleIds).map(id => this._roles.find(r => r.id === id).name);
+    }
+
     protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], suffix: string): TemplateResult {
         const isSameUser = user.username === manager.username;
         user.roles = user.roles || [];
-        this.setRoleNamesForSelectedCompositeRoles(this._compositeRoles.filter(cr => user.roles.map(e => e.name).some(rn => cr.name === rn)));
-        
+        const implicitRoleNames = this.getImplicitUserRoles(user);
+
         return html`
             <tr class="mdc-data-table__row" @click="${(ev) => this._toggleUserExpand(ev)}">
                 <td class="padded-cell mdc-data-table__cell">
@@ -631,26 +640,26 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     .label="${i18next.t("role_plural")}"
                                     @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                         const roleNames = e.detail.value as string[];
-                                        user.roles = this._compositeRoles.filter(cr => roleNames.some(rn => cr.name === rn));
-                                        this.setRoleNamesForSelectedCompositeRoles(user.roles);
+                                        user.roles = this._compositeRoles.filter(cr => roleNames.some(name => cr.name === name)).map(r => {return {...r, assigned: true};});
+                                        this._updateUserSelectedRoles(user, suffix);
                                     }}"></or-mwc-input>
 
                                 <!-- roles -->
-                                <div style="display:flex;flex-wrap:wrap;">
+                                <div style="display:flex;flex-wrap:wrap;" id="role-list-${suffix}">
                                     ${this._roles.map(r => {
                                         return html`
                                             <or-mwc-input 
                                                 ?readonly="${readonly}"
-                                                ?disabled="${this.selectedRoleNames.includes(r.name)}"
-                                                .value="${(user.roles && user.roles.map(r => r.name).includes(r.name)) || this.selectedRoleNames.includes(r.name) ? r : undefined}"
+                                                ?disabled="${implicitRoleNames.find(name => r.name === name)}"
+                                                .value="${!!user.roles.find(userRole => userRole.name === r.name) || implicitRoleNames.some(implicitRoleName => implicitRoleName === r.name)}"
                                                 .type="${InputType.CHECKBOX}"
                                                 .label="${r.name}"
                                                 style="width:25%;margin:0"
                                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                                                     if (!!e.detail.value) {
-                                                        user.roles.push(r);
+                                                        user.roles.push({...r, assigned: true});
                                                     } else {
-                                                        user.roles = user.roles.filter(e => e.id !== r.id);
+                                                        user.roles = user.roles.filter(e => e.name !== r.name);
                                                     }
                                                 }}"></or-mwc-input>
                                         `

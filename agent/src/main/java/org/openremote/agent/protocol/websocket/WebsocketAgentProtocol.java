@@ -38,8 +38,8 @@ import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -65,10 +65,10 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <h2>Protocol Specifics</h2>
  * When the websocket connection is established it is possible to subscribe to events by specifying the
  * {@link WebsocketAgent#CONNECT_SUBSCRIPTIONS} on the {@link WebsocketAgent} or
- * {@link WebsocketAgent.WebsocketAgentLink#getConnectSubscriptions()} on linked {@link Attribute}s; a
+ * {@link WebsocketAgentLink#getConnectSubscriptions()} on linked {@link Attribute}s; a
  * subscription can be a message sent over the websocket or a HTTP REST API call.
  */
-public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAgentProtocol, WebsocketAgent, String, WebsocketIOClient<String>, WebsocketAgent.WebsocketAgentLink> {
+public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAgentProtocol, WebsocketAgent, String, WebsocketIOClient<String>, WebsocketAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketAgentProtocol.class);
@@ -117,11 +117,11 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, WebsocketAgent.WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected String createWriteMessage(Attribute<?> attribute, WebsocketAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
             boolean isRequestStart = event.getValue()
-                .flatMap(v -> Values.getValue(v, AttributeExecuteStatus.class))
+                .flatMap(v -> ValueUtil.getValue(v, AttributeExecuteStatus.class))
                 .map(status -> status == AttributeExecuteStatus.REQUEST_START)
                 .orElse(false);
             if (!isRequestStart) {
@@ -130,7 +130,7 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
             }
         }
 
-        return Values.convert(processedValue, String.class);
+        return ValueUtil.convert(processedValue, String.class);
     }
 
     @Override
@@ -181,7 +181,7 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, WebsocketAgent.WebsocketAgentLink agentLink) {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, WebsocketAgentLink agentLink) {
         Optional<WebsocketSubscription[]> subscriptions = agentLink.getWebsocketSubscriptions();
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
@@ -201,7 +201,7 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, WebsocketAgent.WebsocketAgentLink agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, WebsocketAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         protocolMessageConsumers.removeIf((attrRefConsumer) -> attrRefConsumer.key.equals(attributeRef));
         attributeConnectedTasks.remove(attributeRef);
@@ -315,7 +315,7 @@ public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAg
                 LOG.warning("WebsocketHttpSubscription returned an un-successful response code: " + response.getStatus());
             }
         } else {
-            client.ioClient.sendMessage(Values.convert(subscription.body, String.class));
+            client.ioClient.sendMessage(ValueUtil.convert(subscription.body, String.class));
         }
     }
 }

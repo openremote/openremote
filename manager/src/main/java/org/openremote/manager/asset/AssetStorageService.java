@@ -53,10 +53,9 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
@@ -591,7 +590,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             T existingAsset = TextUtil.isNullOrEmpty(asset.getId()) ? null : (T)em.find(Asset.class, asset.getId());
 
             // Do standard JSR-380 validation on the asset (includes custom validation)
-            Set<ConstraintViolation<Asset<?>>> validationFailures = AssetModelUtil.validate(asset, Asset.AssetSave.class);
+            Set<ConstraintViolation<Asset<?>>> validationFailures = ValueUtil.validate(asset, Asset.AssetSave.class);
 
             if (validationFailures.size() > 0) {
                 String msg = "Asset merge failed as asset has failed constraint validation: asset=" + asset;
@@ -1134,7 +1133,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     PGobject pgJsonValue = new PGobject();
                     pgJsonValue.setType("jsonb");
                     // Careful, do not set Java null here! It will erase your whole SQL column!
-                    pgJsonValue.setValue(Values.asJSON(value).orElse(Values.NULL_LITERAL));
+                    pgJsonValue.setValue(ValueUtil.asJSON(value).orElse(ValueUtil.NULL_LITERAL));
                     statement.setObject(2, pgJsonValue);
 
                     // Bind the value timestamp
@@ -1157,7 +1156,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         LOG.finest("Stored asset '" + asset.getId()
                             + "' attribute '" + attributeName
                             + "' (affected rows: " + updatedRows + ") value: "
-                            + (value != null ? Values.asJSON(value).orElse("null") : "null"));
+                            + (value != null ? ValueUtil.asJSON(value).orElse("null") : "null"));
                     }
                     return updatedRows == 1;
                 }
@@ -1591,7 +1590,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected static String[] getResolvedAssetTypes(Class<? extends Asset<?>>[] assetClasses) {
         return Arrays.stream(assetClasses)
             .flatMap(assetClass ->
-                Arrays.stream(AssetModelUtil.getAssetClasses(null)).filter(assetClass::isAssignableFrom))
+                Arrays.stream(ValueUtil.getAssetClasses(null)).filter(assetClass::isAssignableFrom))
             .map(Class::getSimpleName)
             .distinct()
             .toArray(String[]::new);
@@ -1827,7 +1826,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     }
                     final int pos = binders.size() + 1;
                     attributeBuilder.append(" @> ?").append(pos).append(" \\:\\:jsonb");
-                    binders.add((em, st) -> st.setParameter(pos, Values.asJSON(arrayPredicate.value).orElse(Values.NULL_LITERAL)));
+                    binders.add((em, st) -> st.setParameter(pos, ValueUtil.asJSON(arrayPredicate.value).orElse(ValueUtil.NULL_LITERAL)));
                 } else {
                     attributeBuilder.append("true");
                 }

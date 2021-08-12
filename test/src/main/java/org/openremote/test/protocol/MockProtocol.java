@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 /**
  * A mock protocol for testing purposes that records the various method calls and supports protocol discovery
  */
-public class MockProtocol extends AbstractProtocol<MockAgent, MockAgent.MockAgentLink> implements ProtocolAssetDiscovery {
+public class MockProtocol extends AbstractProtocol<MockAgent, MockAgentLink> implements ProtocolAssetDiscovery {
 
     public static final String PROTOCOl_NAME = "Mock protocol";
     public List<AttributeEvent> protocolWriteAttributeEvents = new ArrayList<>();
@@ -68,7 +68,7 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgent.MockAgen
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, MockAgent.MockAgentLink agentLink) throws RuntimeException {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, MockAgentLink agentLink) throws RuntimeException {
         protocolMethodCalls.add("LINK_ATTRIBUTE:" + assetId + ":" + attribute.getName());
 
         if (!agentLink.getRequiredValue().isPresent()) {
@@ -78,12 +78,12 @@ public class MockProtocol extends AbstractProtocol<MockAgent, MockAgent.MockAgen
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, MockAgent.MockAgentLink agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, MockAgentLink agentLink) {
         protocolMethodCalls.add("UNLINK_ATTRIBUTE:" + assetId + ":" + attribute.getName());
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, MockAgent.MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, MockAgentLink agentLink, AttributeEvent event, Object processedValue) {
         protocolMethodCalls.add("WRITE_ATTRIBUTE:" + event.getAssetId() + ":" + attribute.getName());
         protocolWriteAttributeEvents.add(event);
         if (updateSensor) {

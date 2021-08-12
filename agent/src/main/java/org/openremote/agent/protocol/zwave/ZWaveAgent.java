@@ -21,43 +21,12 @@ package org.openremote.agent.protocol.zwave;
 
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.value.AttributeDescriptor;
 
 import javax.persistence.Entity;
-import java.util.Optional;
 
 @Entity
-public class ZWaveAgent extends Agent<ZWaveAgent, ZWaveProtocol, ZWaveAgent.ZWaveAgentLink> {
-
-    public static class ZWaveAgentLink extends AgentLink<ZWaveAgentLink> {
-
-        protected Integer deviceNodeId;
-        protected Integer deviceEndpoint;
-        protected String deviceValue;
-
-        // For Hydrators
-        protected ZWaveAgentLink() {}
-
-        public ZWaveAgentLink(String id, Integer deviceNodeId, Integer deviceEndpoint, String deviceValue) {
-            super(id);
-            this.deviceNodeId = deviceNodeId;
-            this.deviceEndpoint = deviceEndpoint;
-            this.deviceValue = deviceValue;
-        }
-
-        public Optional<Integer> getDeviceNodeId() {
-            return Optional.ofNullable(deviceNodeId);
-        }
-
-        public Optional<Integer> getDeviceEndpoint() {
-            return Optional.ofNullable(deviceEndpoint);
-        }
-
-        public Optional<String> getDeviceValue() {
-            return Optional.ofNullable(deviceValue);
-        }
-    }
+public class ZWaveAgent extends Agent<ZWaveAgent, ZWaveProtocol, ZWaveAgentLink> {
 
     public static final AttributeDescriptor<String> ZWAVE_SERIAL_PORT = SERIAL_PORT.withOptional(false);
 

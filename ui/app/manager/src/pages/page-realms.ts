@@ -284,7 +284,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
   }
   
   private _deleteTenant(tenant) {
-    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteTenantConfirm"))
+    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteTenantConfirm"), i18next.t("delete"))
     .then((ok) => {
         if (ok) {
           this._doDelete(tenant);

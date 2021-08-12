@@ -21,8 +21,6 @@ package org.openremote.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
 import java.util.Arrays;

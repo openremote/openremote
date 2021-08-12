@@ -12,7 +12,7 @@ import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TemporaryFact
 import org.openremote.model.rules.flow.NodeCollection
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -53,7 +53,7 @@ class FlowRulesTest extends Specification implements ManagerContainerTrait {
         String json = getClass().getResource("/org/openremote/test/rules/BasicFlowRules.json").text
         json = json.replaceAll("%LIVING ROOM ID%", managerTestSetup.apartment1LivingroomId)
         json = json.replaceAll("%BEDROOM ID%", managerTestSetup.apartment1Bedroom1Id)
-        NodeCollection realCollection = Values.JSON.readValue(json, NodeCollection.class)
+        NodeCollection realCollection = ValueUtil.JSON.readValue(json, NodeCollection.class)
         def ruleset = (new GlobalRuleset(
                 realCollection.name,
                 Ruleset.Lang.FLOW,

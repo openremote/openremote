@@ -388,5 +388,7 @@
   "assetName": "Asset naam",
   "attributeName": "Attribuut naam",
   "oldestDatapoint": "Oudste datapunt",
-  "latestDatapoint": "Laatste datapunt"
+  "latestDatapoint": "Laatste datapunt",
+  "arrayDimensions": "Array dimensies",
+  "array": "Array"
 }

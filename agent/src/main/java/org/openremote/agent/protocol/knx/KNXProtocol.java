@@ -44,7 +44,7 @@ import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 /**
  * This protocol is used to connect to a KNX bus via an IP interface.
  */
-public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgent.KNXAgentLink> implements ProtocolAssetImport {
+public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgentLink> implements ProtocolAssetImport {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, KNXProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "KNX";
@@ -91,7 +91,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgent.KNXAgentLin
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, KNXAgent.KNXAgentLink agentLink) throws RuntimeException {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, KNXAgentLink agentLink) throws RuntimeException {
         final AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
         // Check there is a META_KNX_DPT
@@ -126,7 +126,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgent.KNXAgentLin
 
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, KNXAgent.KNXAgentLink agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, KNXAgentLink agentLink) {
         final AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
 
         // If this attribute is registered for status updates then un-subscribe it
@@ -137,7 +137,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgent.KNXAgentLin
     }
 
     @Override
-    protected void doLinkedAttributeWrite(Attribute<?> attribute, KNXAgent.KNXAgentLink agentLink, AttributeEvent event, Object processedValue) {
+    protected void doLinkedAttributeWrite(Attribute<?> attribute, KNXAgentLink agentLink, AttributeEvent event, Object processedValue) {
 
         synchronized (attributeActionMap) {
             Datapoint datapoint = attributeActionMap.get(event.getAttributeRef());
@@ -298,7 +298,7 @@ public class KNXProtocol extends AbstractProtocol<KNXAgent, KNXAgent.KNXAgentLin
         String attrName = assetName.replaceAll(" ", "");
         ValueDescriptor<?> type = TypeMapper.toAttributeType(datapoint);
 
-        KNXAgent.KNXAgentLink agentLink = new KNXAgent.KNXAgentLink(
+        KNXAgentLink agentLink = new KNXAgentLink(
             agent.getId(),
             datapoint.getDPT(),
             !isStatusGA ? datapoint.getMainAddress().toString() : null,

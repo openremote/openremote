@@ -1,7 +1,7 @@
 package org.openremote.test.protocol.velbus
 
 import org.apache.commons.io.IOUtils
-import org.openremote.agent.protocol.velbus.VelbusAgent
+import org.openremote.agent.protocol.velbus.VelbusAgentLink
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -11,7 +11,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.file.FileInfo
 import org.openremote.model.util.TextUtil
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -84,7 +84,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
                     .addOrReplaceMeta(
                         new MetaItem<>(
                                 AGENT_LINK,
-                                new VelbusAgent.VelbusAgentLink(agent.id, 48, "CH1")
+                                new VelbusAgentLink(agent.id, 48, "CH1")
                         )
                     )
             )
@@ -163,7 +163,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
                 !it.asset.getAttributes().isEmpty() &&
                 it.asset.getAttributes().values().every {attr ->
                     attr.getMetaValue(AGENT_LINK).map{
-                        Values.getValue(it, VelbusAgent.VelbusAgentLink.class)
+                        ValueUtil.getValue(it, VelbusAgentLink.class)
                                 .map({agentLink -> agentLink.id == agent.id && agentLink.deviceAddress.isPresent() && agentLink.deviceValueLink.isPresent()})
                                 .orElse(false)
                     }.orElse(true)
@@ -174,9 +174,9 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         def asset = assets.find {it.asset.name == "VMBGPOD"}
         assert asset != null
         assert asset.asset.getAttributes().size() == 305
-        def memoTextAttribute = asset.asset.getAttributes().values().find {it.getMetaValue(AGENT_LINK).map{(it as VelbusAgent.VelbusAgentLink).deviceValueLink.orElse(null) == "MEMO_TEXT"}.orElse(false)}
+        def memoTextAttribute = asset.asset.getAttributes().values().find {it.getMetaValue(AGENT_LINK).map{(it as VelbusAgentLink).deviceValueLink.orElse(null) == "MEMO_TEXT"}.orElse(false)}
         assert memoTextAttribute != null
-        assert memoTextAttribute.getMetaValue(AGENT_LINK).flatMap(){(it as VelbusAgent.VelbusAgentLink).deviceAddress}.orElse(null) == 24
+        assert memoTextAttribute.getMetaValue(AGENT_LINK).flatMap(){(it as VelbusAgentLink).deviceAddress}.orElse(null) == 24
 
         and: "all imported assets should be fully linked"
         conditions.eventually {

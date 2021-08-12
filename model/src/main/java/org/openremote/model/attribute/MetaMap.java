@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
 import java.io.IOException;
@@ -62,7 +62,7 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
 
                     // Find the meta descriptor for this meta item as this will give us value type also; fallback to
                     // OBJECT type meta item to allow deserialization of meta that doesn't exist in the current asset model
-                    Optional<ValueDescriptor<?>> valueDescriptor = AssetModelUtil.getMetaItemDescriptor(metaItemName)
+                    Optional<ValueDescriptor<?>> valueDescriptor = ValueUtil.getMetaItemDescriptor(metaItemName)
                         .map(MetaItemDescriptor::getType);
 
                     Class valueType = valueDescriptor.map(ValueDescriptor::getType).orElseGet(() -> (Class) Object.class);
@@ -74,7 +74,7 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
                             return ValueDescriptor.UNKNOWN;
                         }
                         Object value = metaItem.getValue().orElse(null);
-                        return AssetModelUtil.getValueDescriptorForValue(value);
+                        return ValueUtil.getValueDescriptorForValue(value);
                     }));
 
                     list.add(metaItem);

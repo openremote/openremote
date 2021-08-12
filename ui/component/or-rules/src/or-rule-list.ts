@@ -275,7 +275,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
                         
                         ${getContentWithMenuTemplate(
-            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant"></or-mwc-input>`,
+            html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant" ></or-mwc-input>`,
             sortOptions.map((sort) => { return { value: sort, text: i18next.t(sort) } as ListItem; }),
             this.sortBy,
             (v) => this._onSortClicked(v as string))}
@@ -541,7 +541,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         };
 
         // Confirm deletion request
-        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"))
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRulesetsConfirm"), i18next.t("delete"))
             .then((ok) => {
                 if (ok) {
                     doDelete();

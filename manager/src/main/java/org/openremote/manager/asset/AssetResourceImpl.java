@@ -33,7 +33,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.persistence.OptimisticLockException;
 import javax.validation.ConstraintViolationException;
@@ -292,7 +292,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                             return false;
                         });
 
-                        MetaMap existingMetaItems = Values.clone(existingAttribute.getMeta());
+                        MetaMap existingMetaItems = ValueUtil.clone(existingAttribute.getMeta());
 
                         existingMetaItems.addOrReplace(updatedMetaItems);
 
@@ -421,7 +421,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            Asset<?> newAsset = Values.clone(asset);
+            Asset<?> newAsset = ValueUtil.clone(asset);
 
             // Allow client to set identifier
             if (asset.getId() != null) {
@@ -582,7 +582,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public Asset<?>[] getPublicAssets(RequestParams requestParams, String q) {
-        AssetQuery assetQuery = TextUtil.isNullOrEmpty(q) ? null : Values.parse(q, AssetQuery.class)
+        AssetQuery assetQuery = TextUtil.isNullOrEmpty(q) ? null : ValueUtil.parse(q, AssetQuery.class)
             .orElseThrow(() -> new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST));
 
         Asset<?>[] result = queryPublicAssets(requestParams, assetQuery);

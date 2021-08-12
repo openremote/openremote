@@ -22,7 +22,7 @@ package org.openremote.model.query.filter;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TimeUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Date;
 import java.util.function.Predicate;
@@ -79,7 +79,7 @@ public class DateTimePredicate extends ValuePredicate {
     @Override
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
         return obj ->
-            Values.getValueCoerced(obj, Date.class).map(date -> {
+            ValueUtil.getValueCoerced(obj, Date.class).map(date -> {
                 Pair<Long, Long> fromAndTo = asFromAndTo(currentMillisSupplier.get());
                 Long from = fromAndTo.key;
                 Long to = fromAndTo.value;

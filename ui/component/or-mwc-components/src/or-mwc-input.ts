@@ -131,6 +131,8 @@ export interface ValueInputProviderOptions {
     readonly?: boolean;
     disabled?: boolean;
     compact?: boolean;
+    comfortable?: boolean;
+    resizeVertical?: boolean;
     inputType?: InputType;
 }
 
@@ -141,9 +143,9 @@ export interface ValueInputProvider {
     supportsSendButton: boolean;
 }
 
-export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult) | undefined;
+export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
 
-export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | any | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
+export type ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions) => ValueInputProvider;
 
 function inputTypeSupportsButton(inputType: InputType): boolean {
     return inputType === InputType.NUMBER
@@ -376,6 +378,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const supportsLabel = inputTypeSupportsLabel(inputType);
     const supportsSendButton = inputTypeSupportsButton(inputType);
     const readonly = options.readonly;
+    const comfortable = options.comfortable;
+    const resizeVertical = options.resizeVertical;
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
 
@@ -384,8 +388,8 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
 
         return html`<or-mwc-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
-            .options="${selectOptions}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
-            .helperText="${helperText}" .helperPersistent="${true}"
+            .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
+            .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
             @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
                 e.stopPropagation();
                 e.detail.value = valueConverter ? valueConverter(e.detail.value) : e.detail.value;
@@ -447,7 +451,7 @@ const style = css`
         overflow: auto;
     }
 
-    #menu-anchor {
+    .mdc-select__anchor {
         max-width: 100%;
         width: 100%;
     }
@@ -507,11 +511,15 @@ const style = css`
         color: var(--mdc-theme-primary);
     }
 
+    .mdc-text-field__input.resize-vertical {
+        resize: vertical;
+    }
+
     .mdc-text-field, .mdc-text-field-helper-line {
         width: 100%;
     }
     
-    .mdc-text-field.dense-comfortable {
+    .mdc-text-field.dense-comfortable, .mdc-select.dense-comfortable {
         height: 48px;
     }
     
@@ -707,6 +715,8 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public continuous: boolean = false;
 
+    @property({type: Boolean})
+    public resizeVertical: boolean = false;
 
     /* TEXT INPUT STYLES END */
 
@@ -843,6 +853,7 @@ export class OrMwcInput extends LitElement {
                         "mdc-select--disabled": this.disabled || this.readonly,
                         "mdc-select--required": this.required,
                         "mdc-select--dense": false, // this.dense,
+                        "dense-comfortable": this.comfortable,
                         "mdc-select--no-label": !this.label,
                         "mdc-select--with-leading-icon": !!this.icon
                     };
@@ -900,7 +911,7 @@ export class OrMwcInput extends LitElement {
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
                             @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
-                                <div id="menu-anchor" class="mdc-select__anchor" role="button"
+                                <div class="mdc-select__anchor" role="button"
                                      aria-haspopup="listbox"
                                      aria-expanded="false"
                                      aria-labelledby="label selected-text">
@@ -929,28 +940,26 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                
-                                <div class="mdc-select__menu mdc-menu mdc-menu-surface" @MDCMenuSurface:closed="${menuCloseHandler}">
-                                    ${getListTemplate(
-                                        this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                        opts ? html`${opts.map(([optValue, optDisplay], index) => {
-                                            return getItemTemplate(
-                                                {
-                                                    text: optDisplay,
-                                                    value: optValue                                                
-                                                },
-                                                index,
-                                                Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
-                                                this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                                false,    
-                                                itemClickHandler
-                                            )
-                                        })}` : html``,
-                                        false,
-                                        undefined
-                                    )}
-                                </div>
-
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}">
+                                ${getListTemplate(
+                                    this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                    opts ? html`${opts.map(([optValue, optDisplay], index) => {
+                                        return getItemTemplate(
+                                            {
+                                                text: optDisplay,
+                                                value: optValue                                                
+                                            },
+                                            index,
+                                            Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
+                                            this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                            false,    
+                                            itemClickHandler
+                                        )
+                                    })}` : html``,
+                                    false,
+                                    undefined
+                                )}
+                            </div>
                                 ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
                                         ${showValidationMessage ? this.validationMessage : this.helperText}
@@ -1130,7 +1139,7 @@ export class OrMwcInput extends LitElement {
                             "mdc-text-field--textarea": type === InputType.TEXTAREA || type === InputType.JSON,
                             "mdc-text-field--disabled": this.disabled,
                             "mdc-text-field--fullwidth": this.fullWidth && !outlined,
-                            "dense-comfortable": this.comfortable,
+                            "dense-comfortable": this.comfortable && !(type === InputType.TEXTAREA || type === InputType.JSON),
                             "dense-compact": !this.comfortable && this.compact,
                             "mdc-text-field--label-floating": hasValue,
                             "mdc-text-field--no-label": !this.label,
@@ -1140,7 +1149,7 @@ export class OrMwcInput extends LitElement {
 
                         inputElem = type === InputType.TEXTAREA || type === InputType.JSON
                             ? html`
-                                <textarea id="elem" class="mdc-text-field__input" ?required="${this.required}"
+                                <textarea id="elem" class="mdc-text-field__input ${this.resizeVertical ? "resize-vertical" : ""}" ?required="${this.required}"
                                 ?readonly="${this.readonly}" ?disabled="${this.disabled}" minlength="${ifDefined(this.minLength)}"
                                 maxlength="${ifDefined(this.maxLength)}" rows="${this.rows ? this.rows : 5}"
                                 cols="${ifDefined(this.cols)}" aria-label="${ifDefined(label)}"
@@ -1163,10 +1172,10 @@ export class OrMwcInput extends LitElement {
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
                                 ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
-                                <span class="mdc-text-field__ripple"></span>
+                                ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
-                                <span class="mdc-line-ripple"></span>
+                                ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
                                 ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                             </label>
                             ${hasHelper || showValidationMessage ? html`
@@ -1294,11 +1303,15 @@ export class OrMwcInput extends LitElement {
                         }
 
                         mdcSelect.useDefaultValidation = !this.multiple;
-                        mdcSelect.valid = (!this.multiple && mdcSelect.valid) || (this.multiple && this.required && Array.isArray(this.value) && (this.value as []).length > 0);
+                        mdcSelect.valid = !this.required || (!this.multiple && mdcSelect.valid) || (this.multiple && Array.isArray(this.value) && (this.value as []).length > 0);
 
                         const selectedText = this.getSelectedTextValue();
                         (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
                         (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
+
+                        // Set width of fixed select menu to match the component width
+                        this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
+
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {

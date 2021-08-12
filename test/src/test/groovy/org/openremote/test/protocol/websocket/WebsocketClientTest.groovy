@@ -34,7 +34,7 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.event.TriggeredEventSubscription
 import org.openremote.model.event.shared.EventSubscription
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -56,7 +56,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
     protected static <T> T messageFromString(String message, String prefix, Class<T> clazz) {
         try {
             message = message.substring(prefix.length())
-            return Values.JSON.readValue(message, clazz)
+            return ValueUtil.JSON.readValue(message, clazz)
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse message")
         }
@@ -64,7 +64,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
     protected static String messageToString(String prefix, Object message) {
         try {
-            String str = Values.asJSON(message).orElse(null)
+            String str = ValueUtil.asJSON(message).orElse(null)
             return prefix + str;
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to serialise message");

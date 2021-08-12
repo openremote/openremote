@@ -32,7 +32,6 @@ import org.openremote.model.rules.RulesResource
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.MetaItemType
-import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -48,7 +47,7 @@ import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
-import static org.openremote.model.value.Values.parse
+import static org.openremote.model.util.ValueUtil.parse
 
 class ConsoleTest extends Specification implements ManagerContainerTrait {
 

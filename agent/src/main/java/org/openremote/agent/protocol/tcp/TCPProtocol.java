@@ -20,14 +20,14 @@
 package org.openremote.agent.protocol.tcp;
 
 import io.netty.channel.ChannelHandler;
-import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.DefaultAgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <p>
  * To use this protocol create a {@link TCPAgent}.
  */
-public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent, AgentLink.Default, String, TCPIOClient<String>> {
+public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent, DefaultAgentLink, String, TCPIOClient<String>> {
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TCPProtocol.class);
     public static final String PROTOCOL_DISPLAY_NAME = "TCP Client";
@@ -61,7 +61,7 @@ public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent
     }
 
     @Override
-    protected void doLinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+    protected void doLinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
 
         Consumer<String> messageConsumer = ProtocolUtil.createGenericAttributeMessageConsumer(assetId, attribute, agentLink, timerService::getCurrentTimeMillis, this::updateLinkedAttribute);
 
@@ -74,7 +74,7 @@ public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent
     }
 
     @Override
-    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, AgentLink.Default agentLink) {
+    protected void doUnlinkAttribute(String assetId, Attribute<?> attribute, DefaultAgentLink agentLink) {
         AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
         protocolMessageConsumers.removeIf(attRefConsumerPair -> attRefConsumerPair.key.equals(attributeRef));
     }
@@ -94,7 +94,7 @@ public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent
     }
 
     @Override
-    protected String createWriteMessage(Attribute<?> attribute, AgentLink.Default agentLink, AttributeEvent event, Object processedValue) {
-        return Values.convert(processedValue, String.class);
+    protected String createWriteMessage(Attribute<?> attribute, DefaultAgentLink agentLink, AttributeEvent event, Object processedValue) {
+        return ValueUtil.convert(processedValue, String.class);
     }
 }

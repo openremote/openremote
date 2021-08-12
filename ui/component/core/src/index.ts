@@ -473,7 +473,7 @@ export class AssetModelUtil {
     }
 }
 
-export type EventCallback = (event: OREvent) => any;
+export type EventCallback = (event: OREvent) => void;
 
 export class Manager implements EventProviderFactory {
 

@@ -25,7 +25,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.UsernamePassword;
-import org.openremote.model.util.AssetModelUtil;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueType;
@@ -261,12 +261,12 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
         // This is an event for an agent so is it for an attribute that has a descriptor which is defined in an agent class
         // and it's not the status attribute (or we'll end up in a loop)
         return !attributeName.equals(Agent.STATUS.getName())
-            && AssetModelUtil.getAssetInfo(getType())
+            && ValueUtil.getAssetInfo(getType())
             .map(info ->
                 Arrays.stream(info.getAttributeDescriptors())
                     .anyMatch(ad -> ad.getName().equals(attributeName)))
             .orElse(false)
-            && AssetModelUtil.getAssetInfo(UnknownAsset.class)
+            && ValueUtil.getAssetInfo(UnknownAsset.class)
             .map(typeInfo -> Arrays.stream(typeInfo.getAttributeDescriptors()).noneMatch(ad -> ad.getName().equals(attributeName)))
             .orElse(false);
     }

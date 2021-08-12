@@ -32,7 +32,6 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
@@ -45,9 +44,9 @@ import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.MetaItemType;
+import org.openremote.model.util.ValueUtil;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -590,7 +589,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             return false;
         }
 
-        Class<?> assetClass = AssetModelUtil
+        Class<?> assetClass = ValueUtil
             .getAssetDescriptor(((GroupAsset)asset).getChildAssetType().orElse(null))
             .map(AssetDescriptor::getType)
             .orElse(null);

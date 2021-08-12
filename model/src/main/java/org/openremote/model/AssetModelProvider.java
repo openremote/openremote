@@ -21,20 +21,20 @@ package org.openremote.model;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
 /**
- * Provides model descriptors that are processed by {@link AssetModelUtil}; implementations can be discovered using the
+ * Provides model descriptors that are processed by {@link ValueUtil}; implementations can be discovered using the
  * standard {@link ServiceLoader} mechanism or can be manually registered by adding an instance to the {@link
- * AssetModelUtil#getModelProviders}.
+ * ValueUtil#getModelProviders}.
  * <p>
  * If {@link #useAutoScan} is true then the {@link org.reflections.Reflections} library is used to find all classes that
  * extend {@link Asset} in the same JAR as the {@link AssetModelProvider}, these are then searched for all types of
@@ -62,14 +62,14 @@ public interface AssetModelProvider {
     /**
      * Get {@link AttributeDescriptor}s that should be associated with the specified {@link Asset} type; these are
      * combined with any {@link AttributeDescriptor}s already associated with the given {@link Asset} type. Any
-     * duplicate conflicts will generate an {@link IllegalStateException} during {@link AssetModelUtil} initialisation.
+     * duplicate conflicts will generate an {@link IllegalStateException} during {@link ValueUtil} initialisation.
      */
     Map<Class<? extends Asset<?>>, List<AttributeDescriptor<?>>> getAttributeDescriptors();
 
     /**
      * Get {@link MetaItemDescriptor}s that should be associated with the specified {@link Asset} type; these are
      * combined with any {@link MetaItemDescriptor}s already associated with the given {@link Asset} type. Any duplicate
-     * conflicts will generate an {@link IllegalStateException} during {@link AssetModelUtil} initialisation.
+     * conflicts will generate an {@link IllegalStateException} during {@link ValueUtil} initialisation.
      * <p>
      * If {@link #useAutoScan} is true and this is also defined then the results will be combined with those returned by
      * scanning.
@@ -79,7 +79,7 @@ public interface AssetModelProvider {
     /**
      * Get {@link ValueDescriptor}s that should be associated with the specified {@link Asset} type; these are combined
      * with any {@link ValueDescriptor}s already associated with the given {@link Asset} type. Any duplicate conflicts
-     * will generate an {@link IllegalStateException} during {@link AssetModelUtil} initialisation. Shouldn't contain
+     * will generate an {@link IllegalStateException} during {@link ValueUtil} initialisation. Shouldn't contain
      * any {@link ValueDescriptor}s of type array (i.e. ones obtained by calling {@link ValueDescriptor#asArray} or ones
      * where {@link ValueDescriptor#getType} returns a class that {@link Class#isArray} returns true for.
      * <p>

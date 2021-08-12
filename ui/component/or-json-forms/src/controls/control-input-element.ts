@@ -5,7 +5,7 @@ import {ControlBaseElement} from "./control-base-element";
 import {baseStyle} from "../styles";
 import { isBooleanControl,
     isEnumControl, isIntegerControl, isNumberControl, isOneOfEnumControl, isRangeControl, isStringControl, JsonSchema, JsonSchema7 } from "@jsonforms/core";
-import {isEnumArray} from "../renderers";
+import {isEnumArray} from "../standardRenderers";
 
 // language=CSS
 const style = css`

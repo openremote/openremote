@@ -42,10 +42,9 @@ package org.openremote.manager.event;
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConverters;
-import org.openremote.model.Container;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.*;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.logging.Logger;
 
@@ -58,17 +57,17 @@ public class EventTypeConverters implements TypeConverters {
 
     @Converter
     public String writeEvent(SharedEvent event, Exchange exchange) throws Exception {
-        return SharedEvent.MESSAGE_PREFIX + Values.JSON.writeValueAsString(event);
+        return SharedEvent.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(event);
     }
 
     @Converter
     public String writeEventArray(SharedEvent[] event, Exchange exchange) throws Exception {
-        return SharedEvent.MESSAGE_PREFIX + Values.JSON.writeValueAsString(event);
+        return SharedEvent.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(event);
     }
 
     @Converter
     public String writeTriggeredEventSubscription(TriggeredEventSubscription triggeredEventSubscription, Exchange exchange) throws Exception {
-        return TriggeredEventSubscription.MESSAGE_PREFIX + Values.JSON.writeValueAsString(triggeredEventSubscription);
+        return TriggeredEventSubscription.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(triggeredEventSubscription);
     }
 
     @Converter
@@ -76,12 +75,12 @@ public class EventTypeConverters implements TypeConverters {
         if (!string.startsWith(SharedEvent.MESSAGE_PREFIX))
             return null;
         string = string.substring(SharedEvent.MESSAGE_PREFIX.length());
-        return Values.JSON.readValue(string, SharedEvent.class);
+        return ValueUtil.JSON.readValue(string, SharedEvent.class);
     }
 
     @Converter
     public String writeEventSubscription(EventSubscription eventSubscription, Exchange exchange) throws Exception {
-        return (eventSubscription.isSubscribed() ? SUBSCRIBED_MESSAGE_PREFIX : SUBSCRIBE_MESSAGE_PREFIX) + Values.JSON.writeValueAsString(eventSubscription);
+        return (eventSubscription.isSubscribed() ? SUBSCRIBED_MESSAGE_PREFIX : SUBSCRIBE_MESSAGE_PREFIX) + ValueUtil.JSON.writeValueAsString(eventSubscription);
     }
 
     @Converter
@@ -89,7 +88,7 @@ public class EventTypeConverters implements TypeConverters {
         if (!string.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX))
             return null;
         string = string.substring(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX.length());
-        return Values.JSON.readValue(string, EventSubscription.class);
+        return ValueUtil.JSON.readValue(string, EventSubscription.class);
     }
 
     @Converter
@@ -97,12 +96,12 @@ public class EventTypeConverters implements TypeConverters {
         if (!string.startsWith(CancelEventSubscription.MESSAGE_PREFIX))
             return null;
         string = string.substring(CancelEventSubscription.MESSAGE_PREFIX.length());
-        return Values.JSON.readValue(string, CancelEventSubscription.class);
+        return ValueUtil.JSON.readValue(string, CancelEventSubscription.class);
     }
 
     @Converter
     public String writeUnauthorizedEventSubscription(UnauthorizedEventSubscription unauthorizedEventSubscription, Exchange exchange) throws Exception {
-        return UnauthorizedEventSubscription.MESSAGE_PREFIX + Values.JSON.writeValueAsString(unauthorizedEventSubscription);
+        return UnauthorizedEventSubscription.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(unauthorizedEventSubscription);
     }
 
     @Converter
@@ -110,11 +109,11 @@ public class EventTypeConverters implements TypeConverters {
         if (!string.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX))
             return null;
         string = string.substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length());
-        return Values.JSON.readValue(string, EventRequestResponseWrapper.class);
+        return ValueUtil.JSON.readValue(string, EventRequestResponseWrapper.class);
     }
 
     @Converter
     public String writeRequestResponse(EventRequestResponseWrapper requestResponseWrapper, Exchange exchange) throws Exception {
-        return EventRequestResponseWrapper.MESSAGE_PREFIX + Values.JSON.writeValueAsString(requestResponseWrapper);
+        return EventRequestResponseWrapper.MESSAGE_PREFIX + ValueUtil.JSON.writeValueAsString(requestResponseWrapper);
     }
 }

@@ -31,7 +31,7 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.WebApplicationException;
 import java.util.Collections;
@@ -152,7 +152,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
 
         SentNotification sentNotification = notificationService.getSentNotification(notificationId);
         verifyAccess(sentNotification, targetId);
-        notificationService.setNotificationAcknowleged(notificationId, acknowledgement == null ? null : Values.asJSON(acknowledgement).orElse(null));
+        notificationService.setNotificationAcknowleged(notificationId, acknowledgement == null ? null : ValueUtil.asJSON(acknowledgement).orElse(null));
     }
 
     protected void verifyAccess(SentNotification sentNotification, String targetId) {

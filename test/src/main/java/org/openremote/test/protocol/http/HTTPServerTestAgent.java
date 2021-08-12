@@ -21,15 +21,15 @@ package org.openremote.test.protocol.http;
 
 import org.openremote.agent.protocol.http.AbstractHTTPServerAgent;
 import org.openremote.model.asset.agent.AgentDescriptor;
-import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.DefaultAgentLink;
 
 import javax.persistence.Entity;
 
 @Entity
-public class HTTPServerTestAgent extends AbstractHTTPServerAgent<HTTPServerTestAgent, TestHTTPServerProtocol, AgentLink.Default> {
+public class HTTPServerTestAgent extends AbstractHTTPServerAgent<HTTPServerTestAgent, TestHTTPServerProtocol, DefaultAgentLink> {
 
-    public static final AgentDescriptor<HTTPServerTestAgent, TestHTTPServerProtocol, AgentLink.Default> DESCRIPTOR = new AgentDescriptor<>(
-        HTTPServerTestAgent.class, TestHTTPServerProtocol.class, AgentLink.Default.class
+    public static final AgentDescriptor<HTTPServerTestAgent, TestHTTPServerProtocol, DefaultAgentLink> DESCRIPTOR = new AgentDescriptor<>(
+        HTTPServerTestAgent.class, TestHTTPServerProtocol.class, DefaultAgentLink.class
     );
 
     protected HTTPServerTestAgent() {}

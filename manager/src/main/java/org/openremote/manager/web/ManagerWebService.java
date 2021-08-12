@@ -21,11 +21,8 @@ package org.openremote.manager.web;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.core.util.Json;
-import io.swagger.v3.jaxrs2.integration.JaxrsOpenApiContextBuilder;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
-import io.swagger.v3.oas.integration.OpenApiConfigurationException;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
-import io.swagger.v3.oas.integration.api.ObjectMapperProcessor;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
@@ -47,15 +44,12 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
-import org.openremote.model.security.ClientRole;
 
-import javax.servlet.ServletException;
 import javax.ws.rs.WebApplicationException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -70,7 +64,7 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
-import static org.openremote.model.value.Values.configureObjectMapper;
+import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
 

@@ -17,7 +17,6 @@ import {
     isNumberControl,
     isObjectControl,
     isOneOfEnumControl,
-    isPlainLabel,
     isStringControl,
     isTimeControl,
     JsonFormsRendererRegistryEntry,
@@ -31,7 +30,6 @@ import {
     mapStateToLayoutProps,
     or,
     OwnPropsOfRenderer,
-    Paths,
     RankedTester,
     rankWith,
     RendererProps,
@@ -147,7 +145,7 @@ export const objectControlRenderer = (state: JsonFormsStateContext, props: Contr
         rootSchema
     );
 
-    const labelStr = isPlainLabel(label) ? computeLabel(label, !!required, false) : label.default;
+    const labelStr = computeLabel(label, !!required, false);
     const contentProps: OwnPropsOfRenderer & WithTitle & WithRequired & DispatchPropsOfControl = {
         title: labelStr,
         visible: visible,
@@ -183,14 +181,7 @@ export const anyOfControlRenderer = (state: JsonFormsStateContext, props: Contro
         rootSchema
     } = toControlDetailProps(state, props);
 
-    // mapStateToAnyOfProps has issues with $ref in allOfs so resolve them before calling
     const anyOfSchema = resolveSubSchemas(schema, rootSchema, "anyOf");
-
-    for(let i=0; i<anyOfSchema.anyOf!.length; i++) {
-       if (anyOfSchema.anyOf![i].allOf) {
-           anyOfSchema.anyOf![i] = resolveSubSchemas(anyOfSchema.anyOf![i], rootSchema, "allOf");
-       }
-    }
 
     const anyOfProps = mapStateToCombinatorRendererProps({jsonforms: {...state}}, {
         schema: anyOfSchema,
@@ -203,7 +194,7 @@ export const anyOfControlRenderer = (state: JsonFormsStateContext, props: Contro
         uischemas: uischemas
     }, "anyOf");
 
-    if (anyOfProps.indexOfFittingSchema < 0) {
+    if (anyOfProps.indexOfFittingSchema === undefined) {
         console.warn("Cannot match anyOf schema to instance data");
         return html`<or-json-forms-unknown class="item-container"></or-json-forms-unknown>`;
     }
@@ -261,7 +252,7 @@ export const allOfControlRenderer = (state: JsonFormsStateContext, props: Contro
 
     const allOfSchema = resolveSubSchemas(schema, rootSchema, 'allOf');
 
-    const allOfProps = mapStateToAllOfProps({jsonforms: {...state}}, {
+    const allOfProps = mapStateToCombinatorRendererProps({jsonforms: {...state}}, {
         schema: allOfSchema,
         path: path,
         visible: visible,
@@ -270,7 +261,7 @@ export const allOfControlRenderer = (state: JsonFormsStateContext, props: Contro
         renderers: renderers,
         cells: cells,
         uischemas: uischemas
-    });
+    }, "allOf");
 
     const allOfRenderInfos = createCombinatorRenderInfos(
         allOfSchema.allOf!,
@@ -343,8 +334,7 @@ export function getTemplateWrapper(elementTemplate: TemplateResult, state: JsonF
             `;
 }
 
-
-export const renderers: JsonFormsRendererRegistryEntry[] = [
+export const StandardRenderers: JsonFormsRendererRegistryEntry[] = [
 
     {tester: verticalLayoutTester, renderer: verticalLayoutRenderer},
     {tester: inputControlTester, renderer: inputControlRenderer},

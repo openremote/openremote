@@ -205,7 +205,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                 }
             });
 
-            if (!this.isConnected || realm !== this._realmSelector(this._store.getState())) {
+            if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
                 // No longer connected or realm has changed
                 return;
             }
@@ -219,7 +219,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                     this._store.dispatch(assetEventReceived(event));
                 });
 
-                if (!this.isConnected || realm !== this._realmSelector(this._store.getState())) {
+                if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
                     manager.events.unsubscribe(assetSubscriptionId);
                     return;
                 }
@@ -230,7 +230,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                     this._store.dispatch(attributeEventReceived(event));
                 });
 
-                if (!this.isConnected || realm !== this._realmSelector(this._store.getState())) {
+                if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
                     this.assetSubscriptionId = undefined;
                     manager.events.unsubscribe(assetSubscriptionId);
                     manager.events.unsubscribe(attributeSubscriptionId);
@@ -349,7 +349,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
     }
 
     protected getCurrentAsset() {
-        this._getCurrentAsset(this._store.getState());
+        this._getCurrentAsset(this.getState());
     }
 
     protected onLoadAssetEvent(loadAssetEvent: OrMapAssetCardLoadAssetEvent) {

@@ -7,7 +7,7 @@ import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.*
 import org.openremote.model.value.JsonPathFilter
 import org.openremote.model.value.ValueFilter
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -60,13 +60,13 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         assert asset2.id != null
 
         when: "attributes from one asset is linked to attributes on the other"
-        def converterOnOff = Values.createJsonObject()
+        def converterOnOff = ValueUtil.createJsonObject()
         converterOnOff.put("PRESSED", "@TOGGLE")
         converterOnOff.put("RELEASED", "@IGNORE")
         converterOnOff.put("LONG_PRESSED", "@IGNORE")
         def attributeLinkOnOff = new AttributeLink(new AttributeRef(asset2.id, "lightOnOff"), converterOnOff, null)
 
-        def converterCounter = Values.createJsonObject()
+        def converterCounter = ValueUtil.createJsonObject()
         converterCounter.put("PRESSED", "@INCREMENT")
         converterCounter.put("RELEASED", "@DECREMENT")
         converterCounter.put("LONG_PRESSED", "@IGNORE")
@@ -165,10 +165,10 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
 
         /* TODO Test has timing issues, fails in line 182 when run from CLI gradle clean build, works in IDE!
         when: "the linked attribute is linked back to the source attribute (to create circular reference)"
-        def converterLoop = Values.createObjectMap()
+        def converterLoop = ValueUtil.createObjectMap()
         converterLoop.put("TRUE", "PRESSED")
         converterLoop.put("FALSE", "PRESSED")
-        def attributeLinkLoop = Values.createObjectMap()
+        def attributeLinkLoop = ValueUtil.createObjectMap()
         attributeLinkLoop.put("ref", new AttributeRef(asset1.id, "button"))
         attributeLinkLoop.put("converter", converterLoop)
         asset2.getAttribute("lightOnOff").get().addMeta(new MetaItem<>(AssetMeta.ATTRIBUTE_LINK, attributeLinkLoop))
@@ -198,7 +198,7 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         */
 
         when: "the array attribute is written to"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "array", Values.parse("[{\"prop1\": true, \"prop2\": \"a\"},{\"prop1\": false, \"prop2\": \"b\"}]").orElse(null)))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset1.id, "array", ValueUtil.parse("[{\"prop1\": true, \"prop2\": \"a\"},{\"prop1\": false, \"prop2\": \"b\"}]").orElse(null)))
 
         then: "the linked attribute on the other asset should contain the value from the json path"
         conditions.eventually {

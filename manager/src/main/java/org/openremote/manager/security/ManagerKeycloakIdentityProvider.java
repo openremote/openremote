@@ -45,7 +45,7 @@ import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAllowedException;
@@ -73,7 +73,7 @@ import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS_
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK;
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.value.Values.convert;
+import static org.openremote.model.util.ValueUtil.convert;
 
 /**
  * All keycloak interaction is done through the admin-cli client; security is implemented downstream of here; anything
@@ -624,6 +624,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
             ClientRepresentation clientRepresentation = null;
+            ClientResource clientResource = null;
 
             if (client != null) {
                 clientRepresentation = getClient(realm, client);
@@ -631,22 +632,35 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 if (clientRepresentation == null) {
                     throw new IllegalStateException("Invalid client: " + client);
                 }
+                clientResource = realmResource.clients().get(clientRepresentation.getId());
             }
 
-            // Get all role mappings for user on this client and remove any no longer in the roles
-            List<RoleRepresentation> mappedRoles = clientRepresentation != null ? roleMappingResource.clientLevel(clientRepresentation.getId()).listAll() : roleMappingResource.realmLevel().listAll();
-            List<RoleRepresentation> availableRoles = clientRepresentation != null ? roleMappingResource.clientLevel(clientRepresentation.getId()).listAvailable() : roleMappingResource.realmLevel().listAvailable();
+            // Get all roles
+            List<RoleRepresentation> existingRoles = clientRepresentation != null ? roleMappingResource.clientLevel(clientRepresentation.getId()).listAll() : roleMappingResource.realmLevel().listAll();
+            List<RoleRepresentation> availableRoles = clientResource != null ? clientResource.roles().list() : realmResource.roles().list();
+            List<RoleRepresentation> requestedRoles = availableRoles.stream().filter(role -> Arrays.stream(roles).anyMatch(name -> role.getName().equals(name))).collect(Collectors.toList());
+
+            // Strip out requested roles that are already in a requested composite role
+            List<String> removeRequestedRoles = requestedRoles.stream()
+                .filter(RoleRepresentation::isComposite)
+                .flatMap(role ->
+                    realmResource.rolesById().getRoleComposites(role.getId()).stream().map(RoleRepresentation::getId)
+                ).collect(Collectors.toList());
+
+            requestedRoles = requestedRoles.stream()
+                .filter(role -> removeRequestedRoles.stream().noneMatch(id -> id.equals(role.getId())))
+                .collect(Collectors.toList());
+
 
             // Get newly defined roles
-            List<RoleRepresentation> addRoles = roles == null ? Collections.emptyList() : Arrays.stream(roles)
-                .filter(cr -> mappedRoles.stream().noneMatch(r -> r.getName().equals(cr)))
-                .map(cr -> availableRoles.stream().filter(r -> r.getName().equals(cr)).findFirst().orElse(null))
-                .filter(Objects::nonNull)
+            List<RoleRepresentation> addRoles = requestedRoles.isEmpty() ? Collections.emptyList() : requestedRoles.stream()
+                .filter(requestedRole -> existingRoles.stream().noneMatch(r -> r.getId().equals(requestedRole.getId())))
                 .collect(Collectors.toList());
 
             // Remove obsolete roles
-            List<RoleRepresentation> removeRoles = roles == null ? mappedRoles : mappedRoles.stream()
-                .filter(r -> Arrays.stream(roles).noneMatch(cr -> cr.equals(r.getName())))
+            List<RoleRepresentation> finalRequestedRoles = requestedRoles;
+            List<RoleRepresentation> removeRoles = requestedRoles.isEmpty() ? existingRoles : existingRoles.stream()
+                .filter(r -> finalRequestedRoles.stream().noneMatch(requestedRole -> requestedRole.getId().equals(r.getId())))
                 .collect(Collectors.toList());
 
             if (!removeRoles.isEmpty()) {
@@ -790,7 +804,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
             try (InputStream is = Files.newInputStream(grantPath)) {
                 String grantJson = IOUtils.toString(is, StandardCharsets.UTF_8);
-                grant = Values.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
+                grant = ValueUtil.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
                     LOG.info("Failed to load KEYCLOAK_GRANT_FILE: " + grantFile);
                     return null;
                 });
@@ -813,7 +827,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         Path grantPath = Paths.get(grantFile);
 
         try {
-            Files.write(grantPath, Values.asJSON(grant).orElse("null").getBytes(),
+            Files.write(grantPath, ValueUtil.asJSON(grant).orElse("null").getBytes(),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING);

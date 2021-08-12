@@ -33,12 +33,11 @@ import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.attribute.MetaMap;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.jackson.AssetTypeIdResolver;
-import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.validation.AssetValid;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.persistence.*;
 import javax.validation.Valid;
@@ -325,7 +324,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         setName(name);
 
         // Initialise required attributes
-        AssetModelUtil.initialiseAssetAttributes(this);
+        ValueUtil.initialiseAssetAttributes(this);
     }
 
     public String getId() {
@@ -571,7 +570,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
         return "[" +
             meta.entrySet().stream().map(nameAndValue ->
-                "meta=" + nameAndValue.getKey() + ",value=" + Values.asJSON(nameAndValue.getValue().getValue()).orElse(null)).collect(Collectors.joining("; ")) +
+                "meta=" + nameAndValue.getKey() + ",value=" + ValueUtil.asJSON(nameAndValue.getValue().getValue()).orElse(null)).collect(Collectors.joining("; ")) +
         "]";
     }
 
