@@ -644,7 +644,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     }}"></or-mwc-input>
 
                                 <!-- roles -->
-                                <div style="display:flex;flex-wrap:wrap;" id="role-list-${suffix}">
+                                <div style="display:flex;flex-wrap:wrap;margin-bottom: 20px;" id="role-list-${suffix}">
                                     ${this._roles.map(r => {
                                         return html`
                                             <or-mwc-input 
@@ -666,7 +666,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 </div>
 
                                 <!-- restricted access -->
-                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
+                                <or-mwc-input outlined .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
                                               @click="${() => this._openAssetSelector()}"></or-mwc-input>
 
                                 <!-- placeholder -->
