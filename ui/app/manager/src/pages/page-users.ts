@@ -10,9 +10,8 @@ import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import { AssetTreeConfig } from "@openremote/or-asset-tree";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse, RestResponse} from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
