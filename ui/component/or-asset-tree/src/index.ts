@@ -393,19 +393,24 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 }
             } else {
                 node.selected = false;
-
             }
 
             if (this.checkboxes) {
                 let parent = node.parent;
                 while (parent) {
-                    parent.allChildrenSelected = false;
+                    const allChildren: UiAssetTreeNode[] = [];
+                    OrAssetTree._forEachNodeRecursive(parent.children, (child) => {
+                        allChildren.push(child);
+                    });
                     parent.someChildrenSelected = false;
-                    if (parent.children.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                    parent.allChildrenSelected = false;
+
+                    if (allChildren.every(c => actuallySelectedIds.includes(c.asset!.id!))) {
                         parent.allChildrenSelected = true;
-                    } else if (parent.children.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
+                    } else if (allChildren.some(c => actuallySelectedIds.includes(c.asset!.id!))) {
                         parent.someChildrenSelected = true;
                     }
+
                     parent = parent.parent;
                 }
             }
