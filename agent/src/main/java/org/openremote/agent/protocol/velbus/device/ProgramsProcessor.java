@@ -22,8 +22,8 @@ package org.openremote.agent.protocol.velbus.device;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -119,11 +119,11 @@ public class ProgramsProcessor extends ChannelProcessor {
         if (channelNumberAndPropertySuffix.isPresent()) {
             switch (channelNumberAndPropertySuffix.get().value) {
                 case PROGRAM_STEPS_ENABLED_SUFFIX:
-                    return Values.getBooleanCoerced(value)
+                    return ValueUtil.getBooleanCoerced(value)
                         .map(enabled -> getProgramStepsPackets(device, channelNumberAndPropertySuffix.get().key, enabled, 0xFFFFF))
                         .orElse(null);
                 case PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX:
-                    return Values.getIntegerCoerced(value)
+                    return ValueUtil.getIntegerCoerced(value)
                         .map(durationSeconds -> getProgramStepsPackets(device, channelNumberAndPropertySuffix.get().key, false, durationSeconds))
                         .orElse(null);
             }
@@ -131,13 +131,13 @@ public class ProgramsProcessor extends ChannelProcessor {
         }
 
         if (property.equals("ALL" + PROGRAM_STEPS_ENABLED_SUFFIX)) {
-            return Values.getBooleanCoerced(value)
+            return ValueUtil.getBooleanCoerced(value)
                 .map(enabled -> getProgramStepsPackets(device, 0xFF, enabled, 0xFFFFF))
                 .orElse(null);
         }
 
         if (property.equals("ALL" + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX)) {
-            return Values.getIntegerCoerced(value)
+            return ValueUtil.getIntegerCoerced(value)
                 .map(durationSeconds -> getProgramStepsPackets(device, 0xFF, false, durationSeconds))
                 .orElse(null);
         }
@@ -153,7 +153,7 @@ public class ProgramsProcessor extends ChannelProcessor {
         }
 
         if (property.equals("SUNRISE_ENABLED") || property.equals("SUNSET_ENABLED")) {
-            return Values.getBooleanCoerced(value)
+            return ValueUtil.getBooleanCoerced(value)
                 .map(enabled -> {
                     boolean sunriseEnabled = device.getPropertyValue("SUNRISE_ENABLED") != null && ((Boolean)device.getPropertyValue("SUNRISE_ENABLED"));
                     boolean sunsetEnabled = device.getPropertyValue("SUNSET_ENABLED") != null && ((Boolean)device.getPropertyValue("SUNSET_ENABLED"));
@@ -218,7 +218,7 @@ public class ProgramsProcessor extends ChannelProcessor {
                     boolean isGlobal = Optional.ofNullable((Boolean)device.getPropertyValue(alarmMasterProperty)).orElse(false);
 
                     if ("ENABLED".equals(alarmProperty)) {
-                        Optional<Boolean> setEnabled = Values.getBooleanCoerced(value);
+                        Optional<Boolean> setEnabled = ValueUtil.getBooleanCoerced(value);
                         if (!setEnabled.isPresent()) {
                             return null;
                         }

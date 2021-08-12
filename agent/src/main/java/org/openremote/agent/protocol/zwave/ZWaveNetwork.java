@@ -26,8 +26,8 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.Values;
 import org.openremote.model.value.impl.ColourRGB;
 import org.openremote.protocol.zwave.ConnectionException;
 import org.openremote.protocol.zwave.model.Controller;
@@ -167,16 +167,16 @@ public class ZWaveNetwork {
 
         switch(type) {
             case STRING:
-                zwValue = Values.getString(value).map(StringValue::new).orElse(null);
+                zwValue = ValueUtil.getString(value).map(StringValue::new).orElse(null);
                 break;
             case NUMBER:
-                zwValue = Values.getDouble(value).map(NumberValue::new).orElse(null);
+                zwValue = ValueUtil.getDouble(value).map(NumberValue::new).orElse(null);
                 break;
             case INTEGER:
-                zwValue = Values.getInteger(value).map(NumberValue::new).orElse(null);
+                zwValue = ValueUtil.getInteger(value).map(NumberValue::new).orElse(null);
                 break;
             case BOOLEAN:
-                zwValue = Values.getBoolean(value).map(BooleanValue::new).orElse(null);
+                zwValue = ValueUtil.getBoolean(value).map(BooleanValue::new).orElse(null);
                 break;
             case ARRAY:
                 if (value instanceof ColourRGB) {
@@ -188,7 +188,7 @@ public class ZWaveNetwork {
                 }
                 break;
                 /*
-                zwValue = Values.getValue(value, Object[].class).map(arrValue -> {
+                zwValue = ValueUtil.getValue(value, Object[].class).map(arrValue -> {
 
                     ArrayValue zwArray = new ArrayValue();
 
@@ -202,13 +202,13 @@ public class ZWaveNetwork {
                                 // Just assume the item's data type is the desired type - bit strange but no other data
                                 ValueType valueType = null;
                                 Class<?> itemType = arrValueItem.getClass();
-                                if (Values.isArray(itemType)) {
+                                if (ValueUtil.isArray(itemType)) {
                                     valueType = ValueType.ARRAY;
-                                } else if (Values.isNumber(itemType)) {
+                                } else if (ValueUtil.isNumber(itemType)) {
                                     valueType = ValueType.NUMBER;
-                                } else if (Values.isBoolean(itemType)) {
+                                } else if (ValueUtil.isBoolean(itemType)) {
                                     valueType = ValueType.BOOLEAN;
-                                } else if (Values.isString(itemType)) {
+                                } else if (ValueUtil.isString(itemType)) {
                                     valueType = ValueType.STRING;
                                 }
                                 if (valueType == null) {

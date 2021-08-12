@@ -11,8 +11,8 @@ import org.openremote.model.asset.impl.LightAsset;
 import org.openremote.model.asset.impl.PlugAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
-import org.openremote.model.value.Values;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -159,20 +159,20 @@ public class TradfriConnection {
                     Light light = device.toLight();
 
                     if (event.getAttributeName().equals(LightAsset.BRIGHTNESS.getName())) {
-                        int value = Values.getInteger(event.getValue()).orElse(0);
+                        int value = ValueUtil.getInteger(event.getValue()).orElse(0);
                         light.setBrightness(convertBrightness(value, false));
                     } else if (event.getAttributeName().equals(LightAsset.ON_OFF.getName())) {
-                        light.setOn(Values.getBooleanCoerced(event.getValue()).orElse(false));
+                        light.setOn(ValueUtil.getBooleanCoerced(event.getValue()).orElse(false));
                     } else if (event.getAttributeName().equals(LightAsset.COLOUR_RGB.getName())) {
-                        light.setColour(Values.convert(event.getValue(), ColourRGB.class));
+                        light.setColour(ValueUtil.convert(event.getValue(), ColourRGB.class));
                     } else if (event.getAttributeName().equals(LightAsset.COLOUR_TEMPERATURE.getName())) {
-                        light.setColourTemperature(Values.getInteger(event.getValue()).orElse(0));
+                        light.setColourTemperature(ValueUtil.getInteger(event.getValue()).orElse(0));
                     }
                 }
                 else if (device.isPlug()) {
                     Plug plug = device.toPlug();
                     if (event.getAttributeName().equals(PlugAsset.ON_OFF.getName())) {
-                        plug.setOn(Values.getBooleanCoerced(event.getValue()).orElse(false));
+                        plug.setOn(ValueUtil.getBooleanCoerced(event.getValue()).orElse(false));
                     }
                 }
             }

@@ -51,7 +51,7 @@ import org.openremote.model.value.JsonPathFilter
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueFilter
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -102,7 +102,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        AssetQuery assetQuery = Values.JSON.readValue(bodyStr, AssetQuery.class)
+                        AssetQuery assetQuery = ValueUtil.JSON.readValue(bodyStr, AssetQuery.class)
                         if (assetQuery != null && assetQuery.ids != null && assetQuery.ids.size() == 1) {
                             agentSubscriptionDone = true
                             requestContext.abortWith(Response.ok().build())
@@ -152,7 +152,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)))
             .setConnectSubscriptions([
-                new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + Values.asJSON(
+                new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + ValueUtil.asJSON(
                     new EventSubscription(
                         AttributeEvent.class,
                         new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
@@ -167,7 +167,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     ]))
                     .uri("https://mockapi/assets")
                     .body(
-                        Values.asJSON(new AssetQuery().ids(managerTestSetup.apartment1LivingroomId)).orElse(null)
+                        ValueUtil.asJSON(new AssetQuery().ids(managerTestSetup.apartment1LivingroomId)).orElse(null)
                     )
                 ] as WebsocketSubscription[]
             )
@@ -195,11 +195,11 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new WebsocketAgentLink(agent.id)
                             .setWriteValue(SharedEvent.MESSAGE_PREFIX +
-                                Values.asJSON(new AttributeEvent(
+                                ValueUtil.asJSON(new AttributeEvent(
                                     managerTestSetup.apartment1LivingroomId,
                                     "targetTemperature",
                                     0.12345))
-                                    .orElse(Values.NULL_LITERAL)
+                                    .orElse(ValueUtil.NULL_LITERAL)
                                         .replace("0.12345", Protocol.DYNAMIC_VALUE_PLACEHOLDER)
                             )
                         .setMessageMatchFilters(
@@ -219,7 +219,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         )
                         .setWebsocketSubscriptions(
                             [
-                                new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Values.asJSON(
+                                new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(
                                     new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature")
                                 ).orElse(null)),
                                 new WebsocketHTTPSubscription()
@@ -249,7 +249,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             )
                             .setWebsocketSubscriptions(
                                 [
-                                    new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + Values.asJSON(
+                                    new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(
                                         new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level")
                                     ).orElse(null)),
                                     new WebsocketHTTPSubscription()

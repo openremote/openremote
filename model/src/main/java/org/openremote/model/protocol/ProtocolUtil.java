@@ -33,9 +33,9 @@ import org.openremote.model.query.filter.ValuePredicate;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TsIgnore;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFilter;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -45,8 +45,8 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import static org.openremote.model.asset.agent.Protocol.DYNAMIC_VALUE_PLACEHOLDER;
-import static org.openremote.model.value.Values.NULL_LITERAL;
-import static org.openremote.model.value.Values.applyValueFilters;
+import static org.openremote.model.util.ValueUtil.NULL_LITERAL;
+import static org.openremote.model.util.ValueUtil.applyValueFilters;
 
 @TsIgnore
 public final class ProtocolUtil {
@@ -94,7 +94,7 @@ public final class ProtocolUtil {
 
         // Check if attribute type is executable
         if (attribute.getType().equals(ValueType.EXECUTION_STATUS)) {
-            AttributeExecuteStatus status = Values.getValueCoerced(value, AttributeExecuteStatus.class).orElse(null);
+            AttributeExecuteStatus status = ValueUtil.getValueCoerced(value, AttributeExecuteStatus.class).orElse(null);
 
             if (status == AttributeExecuteStatus.REQUEST_START && writeValue != null) {
                 value = writeValue;
@@ -121,7 +121,7 @@ public final class ProtocolUtil {
 
         if (hasWriteValue) {
             if (containsDynamicPlaceholder) {
-                String valueStr = value == null ? NULL_LITERAL : Values.convert(value, String.class);
+                String valueStr = value == null ? NULL_LITERAL : ValueUtil.convert(value, String.class);
                 writeValue = writeValue.replaceAll(Protocol.DYNAMIC_VALUE_PLACEHOLDER_REGEXP, valueStr);
             }
 
@@ -147,7 +147,7 @@ public final class ProtocolUtil {
         // value filtering
         agentLink.getValueFilters().ifPresent(valueFilters -> {
             Protocol.LOG.finer("Applying attribute value filters to attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
-            Object o = Values.applyValueFilters(value, valueFilters);
+            Object o = ValueUtil.applyValueFilters(value, valueFilters);
             if (o == null) {
                 Protocol.LOG.info("Value filters generated a null value for attribute: assetId=" + assetId + ", attribute=" + attribute.getName());
             }
@@ -174,7 +174,7 @@ public final class ProtocolUtil {
 
         if (toType != fromType) {
             Protocol.LOG.finer("Applying built in attribute value conversion: " + fromType + " -> " + toType);
-            valRef.set(Values.getValueCoerced(valRef.get(), toType).orElse(null));
+            valRef.set(ValueUtil.getValueCoerced(valRef.get(), toType).orElse(null));
 
             if (valRef.get() == null) {
                 Protocol.LOG.warning("Failed to convert value: " + fromType + " -> " + toType);
@@ -193,7 +193,7 @@ public final class ProtocolUtil {
             return new Pair<>(false, value);
         }
 
-        String converterKey = Values.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL.toUpperCase());
+        String converterKey = ValueUtil.getValueCoerced(value, String.class).map(str -> str.toUpperCase(Locale.ROOT)).orElse(NULL_LITERAL.toUpperCase());
 
         return Optional.ofNullable(converter.get(converterKey))
             .map(node -> {
@@ -213,11 +213,11 @@ public final class ProtocolUtil {
                 .map(node -> {
                     if (node.getNodeType() == JsonNodeType.STRING) {
                         if (AttributeLink.ConverterType.NEGATE.getValue().equals(node.textValue())) {
-                            if (Values.isNumber(value.getClass())) {
-                                return new Pair<>(false, (Values.getValueCoerced(value, Double.class).orElse(0D) * -1));
+                            if (ValueUtil.isNumber(value.getClass())) {
+                                return new Pair<>(false, (ValueUtil.getValueCoerced(value, Double.class).orElse(0D) * -1));
                             }
-                            if (Values.isBoolean(value.getClass())) {
-                                return new Pair<>(false, !(Values.getValueCoerced(value, Boolean.class).orElse(false)));
+                            if (ValueUtil.isBoolean(value.getClass())) {
+                                return new Pair<>(false, !(ValueUtil.getValueCoerced(value, Boolean.class).orElse(false)));
                             }
                         }
                     }

@@ -3,12 +3,10 @@ package org.openremote.test.model
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.openremote.agent.protocol.http.HTTPAgentLink
 import org.openremote.agent.protocol.simulator.SimulatorAgent
-import org.openremote.agent.protocol.simulator.SimulatorAgentLink
 import org.openremote.agent.protocol.velbus.VelbusTCPAgent
 import org.openremote.manager.asset.AssetModelService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetModelResource
-import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.AgentDescriptor
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.DefaultAgentLink
@@ -24,7 +22,7 @@ import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueConstraint
 import org.openremote.model.value.ValueFilter
 import org.openremote.model.value.ValueType
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.impl.ColourRGB
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.protocol.http.HTTPServerTestAgent
@@ -49,14 +47,14 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
     def "Retrieving all asset model info"() {
 
         when: "an asset info is serialised"
-        def thingAssetInfo = Values.getAssetInfo(ThingAsset.class).orElse(null)
-        def thingAssetInfoStr = Values.asJSON(thingAssetInfo)
+        def thingAssetInfo = ValueUtil.getAssetInfo(ThingAsset.class).orElse(null)
+        def thingAssetInfoStr = ValueUtil.asJSON(thingAssetInfo)
 
         then: "it should contain the right information"
         thingAssetInfoStr.isPresent()
 
         when: "the JSON representation is deserialised"
-        def thingAssetInfo2 = Values.parse(thingAssetInfoStr.get(), AssetTypeInfo.class)
+        def thingAssetInfo2 = ValueUtil.parse(thingAssetInfoStr.get(), AssetTypeInfo.class)
 
         then: "it should have been successfully deserialised"
         thingAssetInfo2.isPresent()
@@ -66,13 +64,13 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         thingAssetInfo2.get().attributeDescriptors.find { (it == Asset.LOCATION) }.type == ValueType.GEO_JSON_POINT
 
         when: "the asset type value descriptor is retrieved"
-        def assetValueType = Values.getValueDescriptor(ValueType.ASSET_TYPE.getName())
+        def assetValueType = ValueUtil.getValueDescriptor(ValueType.ASSET_TYPE.getName())
 
         then: "it should contain an allowed values constraint with all asset types listed"
         assetValueType.isPresent()
         assetValueType.get().constraints != null
         assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues != null
-        (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.length == Values.getAssetInfos().length
+        (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.length == ValueUtil.getAssetInfos().length
         (assetValueType.get().constraints.find {it instanceof ValueConstraint.AllowedValues} as ValueConstraint.AllowedValues).allowedValues.any { (it == GroupAsset.class.getSimpleName()) }
 
         when: "All asset model infos are retrieved"
@@ -80,7 +78,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         then: "the asset model infos should be available"
         assetInfos.size() > 0
-        assetInfos.size() == Values.assetTypeMap.size()
+        assetInfos.size() == ValueUtil.assetTypeMap.size()
         def velbusTcpAgent = assetInfos.find {it.assetDescriptor.type == VelbusTCPAgent.class}
         velbusTcpAgent != null
         velbusTcpAgent.attributeDescriptors.any {it == VelbusTCPAgent.VELBUS_HOST && !it.optional}
@@ -99,20 +97,20 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         thingAssetInfo.valueDescriptors != null
         thingAssetInfo.attributeDescriptors.contains(Asset.LOCATION)
         thingAssetInfo.metaItemDescriptors.contains(MetaItemType.AGENT_LINK)
-        Values.getAssetDescriptor(ThingAsset.class) != null
-        Values.getAgentDescriptor(SimulatorAgent.class) != null
+        ValueUtil.getAssetDescriptor(ThingAsset.class) != null
+        ValueUtil.getAgentDescriptor(SimulatorAgent.class) != null
 
         when: "the http test server agent descriptor is retrieved (the test asset model provider should have registered test agents and assets)"
-        def testAgentDescriptor = Values.getAgentDescriptor(HTTPServerTestAgent.DESCRIPTOR.name).orElse(null)
+        def testAgentDescriptor = ValueUtil.getAgentDescriptor(HTTPServerTestAgent.DESCRIPTOR.name).orElse(null)
 
         then: "the descriptor should have been found"
         assert testAgentDescriptor != null
 
         and: "the descriptor should contain an agent link schema"
-        def schema = Values.getSchema(AgentLink.class)
+        def schema = ValueUtil.getSchema(AgentLink.class)
         assert schema != null
         assert schema.get("anyOf") != null
-        assert schema.get("anyOf").size() == Values.getAssetDescriptors(null).findAll {it instanceof AgentDescriptor}.collect {(it as AgentDescriptor).getAgentLinkClass()}.unique {it.getSimpleName()}.size()
+        assert schema.get("anyOf").size() == ValueUtil.getAssetDescriptors(null).findAll {it instanceof AgentDescriptor}.collect {(it as AgentDescriptor).getAgentLinkClass()}.unique {it.getSimpleName()}.size()
     }
 
     def "Serialize/Deserialize asset model"() {
@@ -147,10 +145,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         asset.getColourRGB().map{it.getB()}.orElse(null) == 200I
 
         when: "the asset is serialised using default object mapper"
-        def assetStr = Values.asJSON(asset).orElse(null)
+        def assetStr = ValueUtil.asJSON(asset).orElse(null)
 
         then: "the string should be valid JSON"
-        def assetObjectNode = Values.parse(assetStr, ObjectNode.class).get()
+        def assetObjectNode = ValueUtil.parse(assetStr, ObjectNode.class).get()
         assetObjectNode.get("name").asText() == "Test light"
         assetObjectNode.get("attributes").get("colourRGB").get("timestamp") == null
         assetObjectNode.get("attributes").get("colourRGB").get("meta").get(MetaItemType.AGENT_LINK.name).isObject()
@@ -162,7 +160,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assetObjectNode.get("attributes").get("testAttribute").get("meta").get(MetaItemType.AGENT_LINK.name).get("type").asText() == HTTPAgentLink.class.getSimpleName()
 
         when: "the asset is deserialized"
-        def asset2 = Values.parse(assetStr, LightAsset.class).orElse(null)
+        def asset2 = ValueUtil.parse(assetStr, LightAsset.class).orElse(null)
 
         then: "it should match the original"
         asset.getName() == asset2.getName()
@@ -177,7 +175,7 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         when: "an attribute is cloned"
         def attribute = asset2.getAttribute(LightAsset.COLOUR_RGB).get()
-        def clonedAttribute = Values.clone(attribute)
+        def clonedAttribute = ValueUtil.clone(attribute)
 
         then: "the cloned attribute should match the source"
         clonedAttribute.getName() == attribute.getName()
@@ -186,10 +184,10 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         when: "an asset state is serialized"
         def assetState = new AssetState(asset2, attribute, null)
-        def assetStateStr = Values.asJSON(assetState).orElse(null)
+        def assetStateStr = ValueUtil.asJSON(assetState).orElse(null)
 
         then: "it should look as expected"
-        def assetStateObjectNode = Values.parse(assetStateStr, ObjectNode.class).get()
+        def assetStateObjectNode = ValueUtil.parse(assetStateStr, ObjectNode.class).get()
         assetStateObjectNode.get("name").asText() == LightAsset.COLOUR_RGB.name
         assetStateObjectNode.get("value").isTextual()
         assetStateObjectNode.get("value").asText() == "#3264c8"

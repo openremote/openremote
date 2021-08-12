@@ -21,7 +21,6 @@ package org.openremote.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.Values;
 
 /**
  * Represents an action button that can be shown on push alerts (dependent on console support)

@@ -25,7 +25,7 @@ import org.openremote.model.flow.Slot;
 import org.openremote.model.flow.catalog.CatalogCategory;
 import org.openremote.model.flow.catalog.ConsoleNodeDescriptor;
 import org.openremote.model.flow.catalog.WidgetNodeDescriptor;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -38,7 +38,7 @@ public class ScreenNodeDescriptor extends ConsoleNodeDescriptor {
     public static final String WIDGET_COMPONENT = "or-console-widget-screen";
     public static final String EDITOR_COMPONENT = "or-node-editor-screen";
 
-    public static final ObjectNode SCREEN_INITIAL_PROPERTIES = Values.JSON.createObjectNode()
+    public static final ObjectNode SCREEN_INITIAL_PROPERTIES = ValueUtil.JSON.createObjectNode()
         .put(WidgetNodeDescriptor.PROPERTY_COMPONENT, WIDGET_COMPONENT)
         .put("backgroundColor", "#aaa")
         .put("textColor", "white");

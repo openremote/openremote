@@ -21,7 +21,7 @@ package org.openremote.container.persistence;
 
 import com.vladmihalcea.hibernate.type.util.ObjectMapperWrapper;
 import org.hibernate.internal.util.SerializationHelper;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -30,7 +30,7 @@ import java.util.Map;
 public class CustomObjectMapperJsonSerializer extends com.vladmihalcea.hibernate.type.util.ObjectMapperJsonSerializer {
 
     // super class field is private
-    protected static ObjectMapperWrapper objectMapperWrapper = new ObjectMapperWrapper(Values.JSON);
+    protected static ObjectMapperWrapper objectMapperWrapper = new ObjectMapperWrapper(ValueUtil.JSON);
 
     public CustomObjectMapperJsonSerializer() {
         super(objectMapperWrapper);
@@ -44,7 +44,7 @@ public class CustomObjectMapperJsonSerializer extends com.vladmihalcea.hibernate
 
         // Bug in default implementation means it cannot cope with subclasses of parameterized types that don't have type params
         if (object instanceof Collection && object.getClass().getTypeParameters().length == 0) {
-            Object firstElement = Values.findFirstNonNullElement((Collection<?>) object);
+            Object firstElement = ValueUtil.findFirstNonNullElement((Collection<?>) object);
 
             if (firstElement != null && !(firstElement instanceof Serializable)) {
                 return objectMapperWrapper.fromBytes(objectMapperWrapper.toBytes(object), (Class<T>)object.getClass());
@@ -54,7 +54,7 @@ public class CustomObjectMapperJsonSerializer extends com.vladmihalcea.hibernate
         }
 
         if (object instanceof Map && object.getClass().getTypeParameters().length == 0) {
-            Map.Entry<?,?> firstEntry = Values.findFirstNonNullEntry((Map<?,?>) object);
+            Map.Entry<?,?> firstEntry = ValueUtil.findFirstNonNullEntry((Map<?,?>) object);
             if (firstEntry != null) {
                 Object key = firstEntry.getKey();
                 Object value = firstEntry.getValue();

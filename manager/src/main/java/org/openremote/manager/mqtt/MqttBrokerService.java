@@ -44,7 +44,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.nio.charset.Charset;
 import java.util.*;
@@ -167,7 +167,7 @@ public class MqttBrokerService implements ContainerService {
 
     public void sendToSession(String sessionId, String topic, Object data) {
         try {
-            ByteBuf payload = Unpooled.copiedBuffer(Values.asJSON(data).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)), Charset.defaultCharset());
+            ByteBuf payload = Unpooled.copiedBuffer(ValueUtil.asJSON(data).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)), Charset.defaultCharset());
 
             MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
                 .qos(MqttQoS.AT_MOST_ONCE)

@@ -34,7 +34,7 @@ import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -290,7 +290,7 @@ public class RulesetStorageService implements ContainerService {
         ruleset.setLastModified(rs.getTimestamp("LAST_MODIFIED"));
         ruleset.setCreatedOn(rs.getTimestamp("CREATED_ON"));
         if (rs.getString("META") != null) {
-            ruleset.setMeta(Values.parse(rs.getString("META"), MetaMap.class).orElse(null));
+            ruleset.setMeta(ValueUtil.parse(rs.getString("META"), MetaMap.class).orElse(null));
         }
         if (query.fullyPopulate) {
             ruleset.setRules(rs.getString("RULES"));

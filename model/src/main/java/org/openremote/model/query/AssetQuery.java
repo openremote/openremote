@@ -26,7 +26,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.query.filter.*;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -248,7 +248,7 @@ public class AssetQuery {
                 return (Class<? extends Asset<?>>)(Class<?>) Asset.class;
             }
 
-            return Values.getAssetDescriptor(value).map(AssetDescriptor::getType).orElse(null);
+            return ValueUtil.getAssetDescriptor(value).map(AssetDescriptor::getType).orElse(null);
         }
     }
 

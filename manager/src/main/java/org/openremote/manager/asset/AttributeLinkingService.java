@@ -29,8 +29,8 @@ import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.protocol.ProtocolUtil;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
 import java.util.Arrays;
@@ -163,7 +163,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
 
                 // Do basic value conversion
                 if (!attribute.getType().getType().isAssignableFrom(value[0].getClass())) {
-                    Object val = Values.convert(value[0], attribute.getType().getType());
+                    Object val = ValueUtil.convert(value[0], attribute.getType().getType());
 
                     if (val == null) {
                         LOG.warning("Failed to convert value: " + value[0].getClass() + " -> " + attribute.getType().getType());
@@ -186,7 +186,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
 
         // Filter the value first
         if (attributeLink.getFilters() != null) {
-            originalValue = Values.applyValueFilters(originalValue, attributeLink.getFilters());
+            originalValue = ValueUtil.applyValueFilters(originalValue, attributeLink.getFilters());
         }
         Object finalOriginalValue = originalValue;
 
@@ -214,8 +214,8 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
     }
 
     protected static Optional<AttributeLink.ConverterType> getSpecialConverter(Object value) {
-        if (value != null && Values.isString(value.getClass())) {
-            return AttributeLink.ConverterType.fromValue(Values.getValue(value, String.class).orElse(""));
+        if (value != null && ValueUtil.isString(value.getClass())) {
+            return AttributeLink.ConverterType.fromValue(ValueUtil.getValue(value, String.class).orElse(""));
         }
         return Optional.empty();
     }
@@ -234,7 +234,7 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                             "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
                         )
                     );
-                    if (!Values.isBoolean(currentAttribute.getType().getType())) {
+                    if (!ValueUtil.isBoolean(currentAttribute.getType().getType())) {
                         throw new AssetProcessingException(
                             AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
                             "cannot toggle value as attribute is not of type BOOLEAN: " + linkedAttributeRef
@@ -255,14 +255,14 @@ public class AttributeLinkingService implements ContainerService, AssetUpdatePro
                             "cannot toggle value as attribute cannot be found: " + linkedAttributeRef
                         )
                     );
-                    if (!Values.isNumber(currentAttribute.getType().getType())) {
+                    if (!ValueUtil.isNumber(currentAttribute.getType().getType())) {
                         throw new AssetProcessingException(
                             AttributeWriteFailure.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
                             "cannot increment/decrement value as attribute is not of type NUMBER: " + linkedAttributeRef
                         );
                     }
                     int change = converter == AttributeLink.ConverterType.INCREMENT ? +1 : -1;
-                    return new Pair<>(false, (Values.getValueCoerced(currentAttribute.getValue().orElse(null), Double.class).orElse(0D) + change));
+                    return new Pair<>(false, (ValueUtil.getValueCoerced(currentAttribute.getValue().orElse(null), Double.class).orElse(0D) + change));
                 } catch (NoSuchElementException e) {
                     LOG.fine("The attribute doesn't exist so ignoring increment/decrement value request: " + linkedAttributeRef);
                     return new Pair<>(true, null);

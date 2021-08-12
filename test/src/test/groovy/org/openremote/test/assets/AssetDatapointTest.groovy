@@ -9,7 +9,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -120,18 +120,18 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             // Note that the "No value" sensor update should not have created a datapoint, the first
             // datapoint is the last sensor update with an actual value
 
-            assert Values.getValue(datapoints.get(0).value, Double.class).orElse(null) == 15.5d
+            assert ValueUtil.getValue(datapoints.get(0).value, Double.class).orElse(null) == 15.5d
             assert datapoints.get(0).timestamp == datapoint3ExpectedTimestamp
 
-            assert Values.getValue(datapoints.get(1).value, Double.class).orElse(null) == 14.4d
+            assert ValueUtil.getValue(datapoints.get(1).value, Double.class).orElse(null) == 14.4d
             assert datapoints.get(1).timestamp == datapoint2ExpectedTimestamp
 
-            assert Values.getValue(datapoints.get(2).value, Double.class).orElse(null) == 13.5d
+            assert ValueUtil.getValue(datapoints.get(2).value, Double.class).orElse(null) == 13.5d
             assert datapoints.get(2).timestamp == datapoint1ExpectedTimestamp
 
-            assert Values.getValue(datapoints.get(3).value, Double.class).orElse(null) == 13.3d
+            assert ValueUtil.getValue(datapoints.get(3).value, Double.class).orElse(null) == 13.3d
 
-            assert Values.getValue(datapoints.get(4).value, Double.class).orElse(null) == 13.3d
+            assert ValueUtil.getValue(datapoints.get(4).value, Double.class).orElse(null) == 13.3d
         }
 
         and: "the aggregated datapoints should match"
@@ -214,13 +214,13 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 3
 
-            assert !Values.getBoolean(datapoints.get(0).value).orElse(null)
+            assert !ValueUtil.getBoolean(datapoints.get(0).value).orElse(null)
             assert datapoints.get(0).timestamp == datapoint3ExpectedTimestamp
 
-            assert Values.getBoolean(datapoints.get(1).value).orElse(null)
+            assert ValueUtil.getBoolean(datapoints.get(1).value).orElse(null)
             assert datapoints.get(1).timestamp == datapoint2ExpectedTimestamp
 
-            assert !Values.getBoolean(datapoints.get(2).value).orElse(null)
+            assert !ValueUtil.getBoolean(datapoints.get(2).value).orElse(null)
             assert datapoints.get(2).timestamp == datapoint1ExpectedTimestamp
         }
 
@@ -261,11 +261,11 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             def toggleDatapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
 
             assert powerDatapoints.size() == 6
-            assert Values.getValue(powerDatapoints.get(0).value, Double.class).orElse(null) == 17.5d
+            assert ValueUtil.getValue(powerDatapoints.get(0).value, Double.class).orElse(null) == 17.5d
             assert powerDatapoints.get(0).timestamp == datapoint4ExpectedTimestamp
 
             assert toggleDatapoints.size() == 4
-            assert Values.getBoolean(toggleDatapoints.get(0).value).orElse(false)
+            assert ValueUtil.getBoolean(toggleDatapoints.get(0).value).orElse(false)
             assert toggleDatapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
@@ -279,7 +279,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, "light1PowerConsumption"))
             assert datapoints.size() == 1
-            assert Values.getValue(datapoints.get(0).value, Double.class).orElse(null) == 17.5d
+            assert ValueUtil.getValue(datapoints.get(0).value, Double.class).orElse(null) == 17.5d
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
@@ -287,7 +287,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 4
-            assert Values.getBoolean(datapoints.get(0).value).orElse(false)
+            assert ValueUtil.getBoolean(datapoints.get(0).value).orElse(false)
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
@@ -307,7 +307,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 4
-            assert Values.getBoolean(datapoints.get(0).value).orElse(false)
+            assert ValueUtil.getBoolean(datapoints.get(0).value).orElse(false)
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 
@@ -321,7 +321,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerTestSetup.thingId, thingLightToggleAttributeName))
             assert datapoints.size() == 1
-            assert Values.getBoolean(datapoints.get(0).value).orElse(false)
+            assert ValueUtil.getBoolean(datapoints.get(0).value).orElse(false)
             assert datapoints.get(0).timestamp == datapoint4ExpectedTimestamp
         }
 

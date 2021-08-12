@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.openremote.model.value;
+package org.openremote.model.util;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -31,7 +31,6 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.github.victools.jsonschema.generator.*;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
-import com.github.victools.jsonschema.module.javax.validation.JavaxValidationModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.hibernate.internal.util.SerializationHelper;
 import org.openremote.model.AssetModelProvider;
@@ -46,9 +45,7 @@ import org.openremote.model.asset.agent.AgentDescriptor;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.ModelIgnore;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TsIgnore;
+import org.openremote.model.value.*;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -86,11 +83,11 @@ import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
  * Custom descriptors can be added by simply adding new {@link Asset}/{@link Agent} sub types and following the discovery
  * rules described in {@link StandardModelProvider}; alternatively a custom {@link AssetModelProvider} implementation
  * can be created and discovered with the {@link ServiceLoader} or manually added to this class via
- * {@link Values#getModelProviders()} collection.
+ * {@link ValueUtil#getModelProviders()} collection.
  */
 @SuppressWarnings({"unchecked", "deprecation"})
 @TsIgnore
-public class Values {
+public class ValueUtil {
 
     /**
      * Copied from: https://puredanger.github.io/tech.puredanger.com/2006/11/29/writing-a-class-hierarchy-comparator/
@@ -132,7 +129,7 @@ public class Values {
     }
 
     // Preload the Standard model provider so it takes priority over others
-    public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, Values.class);
+    public static Logger LOG = SyslogCategory.getLogger(MODEL_AND_VALUES, ValueUtil.class);
     public static ObjectMapper JSON;
     protected static List<AssetModelProvider> assetModelProviders = new ArrayList<>(Collections.singletonList(new StandardModelProvider()));
     protected static Map<Class<? extends Asset<?>>, AssetTypeInfo> assetInfoMap;
@@ -145,7 +142,7 @@ public class Values {
 
     static {
         // Find all service loader registered asset model providers
-        ServiceLoader.load(AssetModelProvider.class).forEach(Values.assetModelProviders::add);
+        ServiceLoader.load(AssetModelProvider.class).forEach(ValueUtil.assetModelProviders::add);
         initialise();
     }
 
@@ -225,7 +222,7 @@ public class Values {
     }
 
     @SuppressWarnings("rawtypes")
-    protected static <T> Optional<T> getValue(Object value, Class<T> type, boolean coerce) {
+    public static <T> Optional<T> getValue(Object value, Class<T> type, boolean coerce) {
         if (value == null) {
             return Optional.empty();
         }
@@ -390,7 +387,7 @@ public class Values {
     }
 
     public static ObjectNode createJsonObject() {
-        return Values.JSON.createObjectNode();
+        return ValueUtil.JSON.createObjectNode();
     }
 
     public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
@@ -1016,13 +1013,13 @@ public class Values {
                             });
                         attributeDescriptors.add((AttributeDescriptor<?>) descriptor);
                     } else if (descriptor instanceof MetaItemDescriptor) {
-                        int index = Values.metaItemDescriptors.indexOf(descriptor);
-                        if (index >= 0 && Values.metaItemDescriptors.get(index) != descriptor) {
+                        int index = ValueUtil.metaItemDescriptors.indexOf(descriptor);
+                        if (index >= 0 && ValueUtil.metaItemDescriptors.get(index) != descriptor) {
                             throw new IllegalStateException("Duplicate meta item descriptor found: asset type=" + assetClass +", descriptor=" + metaItemDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
                         }
                         metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
-                        if (!Values.metaItemDescriptors.contains(descriptor)) {
-                            Values.metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
+                        if (!ValueUtil.metaItemDescriptors.contains(descriptor)) {
+                            ValueUtil.metaItemDescriptors.add((MetaItemDescriptor<?>) descriptor);
                         }
                     } else if (descriptor instanceof ValueDescriptor) {
                         ValueDescriptor<?> valueDescriptor = (ValueDescriptor<?>)descriptor;
@@ -1035,8 +1032,8 @@ public class Values {
                             throw new IllegalStateException("Duplicate value descriptor found: asset type=" + assetClass +", descriptor=" + valueDescriptors.get(index) + ", duplicate descriptor=" + descriptor);
                         }
                         valueDescriptors.add(valueDescriptor);
-                        if (!Values.valueDescriptors.contains(descriptor)) {
-                            Values.valueDescriptors.add((ValueDescriptor<?>) descriptor);
+                        if (!ValueUtil.valueDescriptors.contains(descriptor)) {
+                            ValueUtil.valueDescriptors.add((ValueDescriptor<?>) descriptor);
                         }
                     }
                 });

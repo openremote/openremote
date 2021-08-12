@@ -25,7 +25,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 public class RulesHealthStatusProvider implements HealthStatusProvider, ContainerService {
 
@@ -80,7 +80,7 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
             }
         }
 
-        ObjectNode tenantEngines = Values.createJsonObject();
+        ObjectNode tenantEngines = ValueUtil.createJsonObject();
 
         for (RulesEngine<TenantRuleset> tenantEngine : rulesService.tenantEngines.values()) {
             if (!tenantEngine.isRunning()) {
@@ -93,7 +93,7 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
             tenantEngines.set(tenantEngine.getId().getRealm().orElse(""), getEngineHealthStatus(tenantEngine));
         }
 
-        ObjectNode assetEngines = Values.createJsonObject();
+        ObjectNode assetEngines = ValueUtil.createJsonObject();
 
         for (RulesEngine<AssetRuleset> assetEngine : rulesService.assetEngines.values()) {
             if (!assetEngine.isRunning()) {
@@ -107,7 +107,7 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
             assetEngines.set(assetEngine.getId().getAssetId().orElse(""), getEngineHealthStatus(assetEngine));
         }
 
-        ObjectNode objectValue = Values.createJsonObject();
+        ObjectNode objectValue = ValueUtil.createJsonObject();
         objectValue.put("totalEngines", totalEngines);
         objectValue.put("stoppedEngines", stoppedEngines);
         objectValue.put("errorEngines", errorEngines);
@@ -124,18 +124,18 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
         int totalDeployments = rulesEngine.deployments.size();
         int executionErrorDeployments = rulesEngine.getExecutionErrorDeploymentCount();
         int compilationErrorDeployments = rulesEngine.getExecutionErrorDeploymentCount();
-        ObjectNode val = Values.createJsonObject();
+        ObjectNode val = ValueUtil.createJsonObject();
         val.put("isRunning", rulesEngine.isRunning());
         val.put("isError", isError);
         val.put("totalDeployments", totalDeployments);
         val.put("executionErrorDeployments", executionErrorDeployments);
         val.put("compilationErrorDeployments", compilationErrorDeployments);
 
-        ObjectNode deployments = Values.createJsonObject();
+        ObjectNode deployments = ValueUtil.createJsonObject();
 
         for (Object obj : rulesEngine.deployments.values()) {
             RulesetDeployment deployment = (RulesetDeployment)obj;
-            ObjectNode dVal = Values.createJsonObject();
+            ObjectNode dVal = ValueUtil.createJsonObject();
             dVal.put("name", deployment.getName());
             dVal.put("status", deployment.getStatus().name());
             dVal.put("error", deployment.getError() != null ? deployment.getError().getMessage() : null);

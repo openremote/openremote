@@ -37,7 +37,7 @@ import org.openremote.model.auth.OAuthGrant
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
 import org.openremote.model.geo.GeoJSONPoint
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -181,7 +181,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
                             || requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_XML)) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        ObjectNode body = Values.parse(bodyStr).orElse(null)
+                        ObjectNode body = ValueUtil.parse(bodyStr).orElse(null)
                         if (body.get("prop1").isPresent() && body.get("prop2").isPresent()) {
                             pingCount++
                             requestContext.abortWith(Response.ok().build())
@@ -206,7 +206,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
                         && requestContext.getHeaderString("Content-type") == MediaType.APPLICATION_JSON) {
 
                         String bodyStr = (String)requestContext.getEntity()
-                        ObjectNode body = Values.parse(bodyStr).orElse(null)
+                        ObjectNode body = ValueUtil.parse(bodyStr).orElse(null)
                         if (body.get("prop1").isPresent()
                             && body.get("prop1").get().toString() == /{"myProp1":123,"myProp2":true}/
                             && body.get("prop2").isPresent() && body.get("prop2").get().toString() == "prop2Value") {

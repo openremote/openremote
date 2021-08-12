@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.util.Pair;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import java.util.Date;
 import java.util.function.Predicate;
@@ -52,7 +52,7 @@ public class CalendarEventPredicate extends ValuePredicate {
                 return true;
             }
 
-            return Values.getValueCoerced(obj, CalendarEvent.class).map(calendarEvent -> {
+            return ValueUtil.getValueCoerced(obj, CalendarEvent.class).map(calendarEvent -> {
                 Date when = timestamp;
 
                 Pair<Long, Long> nextOrActive = calendarEvent.getNextOrActiveFromTo(when);

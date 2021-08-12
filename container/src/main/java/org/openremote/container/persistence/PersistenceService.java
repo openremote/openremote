@@ -44,7 +44,7 @@ import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogEvent;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.persistence.*;
 import javax.persistence.spi.ClassTransformer;
@@ -288,7 +288,7 @@ public class PersistenceService implements ContainerService {
         entityClasses.add("org.openremote.container.util");
 
         // Get asset sub type entities from asset model
-        Arrays.stream(Values.getAssetDescriptors(null))
+        Arrays.stream(ValueUtil.getAssetDescriptors(null))
             .map(AssetDescriptor::getType)
             .filter(assetClass -> assetClass.getAnnotation(Entity.class) != null)
             .map(Class::getName)

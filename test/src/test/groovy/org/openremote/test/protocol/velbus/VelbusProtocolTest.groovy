@@ -11,7 +11,7 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.file.FileInfo
 import org.openremote.model.util.TextUtil
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -163,7 +163,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
                 !it.asset.getAttributes().isEmpty() &&
                 it.asset.getAttributes().values().every {attr ->
                     attr.getMetaValue(AGENT_LINK).map{
-                        Values.getValue(it, VelbusAgentLink.class)
+                        ValueUtil.getValue(it, VelbusAgentLink.class)
                                 .map({agentLink -> agentLink.id == agent.id && agentLink.deviceAddress.isPresent() && agentLink.deviceValueLink.isPresent()})
                                 .orElse(false)
                     }.orElse(true)

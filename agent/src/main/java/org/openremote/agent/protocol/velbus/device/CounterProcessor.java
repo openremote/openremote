@@ -22,7 +22,7 @@ package org.openremote.agent.protocol.velbus.device;
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -113,7 +113,7 @@ public class CounterProcessor extends FeatureProcessor {
             return null;
         }
 
-        return Values.getValueCoerced(value, AttributeExecuteStatus.class).map(attributeExecuteStatus -> {
+        return ValueUtil.getValueCoerced(value, AttributeExecuteStatus.class).map(attributeExecuteStatus -> {
 
             if (attributeExecuteStatus != AttributeExecuteStatus.REQUEST_START) {
                 return null;

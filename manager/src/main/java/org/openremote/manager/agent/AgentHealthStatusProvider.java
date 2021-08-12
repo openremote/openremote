@@ -25,7 +25,7 @@ import org.openremote.model.ContainerService;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -72,7 +72,7 @@ public class AgentHealthStatusProvider implements HealthStatusProvider, Containe
         AtomicInteger errorCount = new AtomicInteger(0);
         AtomicInteger otherCount = new AtomicInteger(0);
 
-        ObjectNode objectValue = Values.JSON.createObjectNode();
+        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
         objectValue.put("agents", agentService.getAgents().size());
         objectValue.put("protocols", agentService.protocolInstanceMap.size());
 
@@ -102,7 +102,7 @@ public class AgentHealthStatusProvider implements HealthStatusProvider, Containe
                 otherCount.incrementAndGet();
             }
 
-            ObjectNode agentValue = Values.JSON.createObjectNode();
+            ObjectNode agentValue = ValueUtil.JSON.createObjectNode();
             agentValue.put("name", agent.getName());
             agentValue.put("status", status != null ? status.name() : "null");
             agentValue.put("type", agent.getType());

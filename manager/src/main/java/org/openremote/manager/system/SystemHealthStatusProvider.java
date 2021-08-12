@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
@@ -65,7 +65,7 @@ public class SystemHealthStatusProvider implements HealthStatusProvider, Contain
 
     @Override
     public Object getHealthStatus() {
-        ObjectNode objectValue = Values.JSON.createObjectNode();
+        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
         com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         File[] roots = File.listRoots();
 
@@ -76,10 +76,10 @@ public class SystemHealthStatusProvider implements HealthStatusProvider, Contain
         objectValue.put("totalSwapSpaceMB", operatingSystemMXBean.getTotalSwapSpaceSize() / (1024F*1024F));
         objectValue.put("freeSwapSpaceMB", operatingSystemMXBean.getFreeSwapSpaceSize() / (1024F*1024F));
 
-        ObjectNode rootsObj = Values.JSON.createObjectNode();
+        ObjectNode rootsObj = ValueUtil.JSON.createObjectNode();
 
         for (File root : roots) {
-            ObjectNode rootObj = Values.JSON.createObjectNode();
+            ObjectNode rootObj = ValueUtil.JSON.createObjectNode();
             rootObj.put("totalSpaceMB", root.getTotalSpace() / (1024F*1024F));
             rootObj.put("freeSpaceMB", root.getFreeSpace() / (1024F*1024F));
             String name = root.getAbsolutePath();

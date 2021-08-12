@@ -13,7 +13,7 @@ import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.value.Values
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.RawClient
 import org.openremote.test.setup.KeycloakTestSetup
@@ -227,7 +227,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a mqtt client publishes to an asset attribute which is readonly"
         topic = "attribute/" + managerTestSetup.apartment1HallwayId
-        def payload = Values.asJSON(Values.createJsonObject().put("motionSensor", 70)).orElse(null)
+        def payload = ValueUtil.asJSON(ValueUtil.createJsonObject().put("motionSensor", 70)).orElse(null)
         remainingLength = 2 + topic.size() + payload.length()
 
         //PUBLISH
@@ -246,7 +246,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a mqtt client publishes to an asset attribute"
         topic = "attributevalue/" + managerTestSetup.apartment1HallwayId + "/lights"
-        payload = Values.asJSON(false).orElse(null)
+        payload = ValueUtil.asJSON(false).orElse(null)
         remainingLength = 2 + topic.size() + payload.length()
 
         //PUBLISH

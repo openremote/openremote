@@ -20,8 +20,7 @@
 package org.openremote.container.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.openremote.model.Container;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
@@ -34,6 +33,6 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
     @Override
     public ObjectMapper getContext(Class<?> type) {
-        return Values.JSON;
+        return ValueUtil.JSON;
     }
 }

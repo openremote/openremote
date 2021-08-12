@@ -13,7 +13,7 @@ import org.eclipse.californium.core.network.EndpointManager;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
 import org.eclipse.californium.scandium.dtls.pskstore.InMemoryPskStore;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
  */
 public class CoapClient {
 
-    private final ObjectMapper objectMapper = Values.JSON;
+    private final ObjectMapper objectMapper = ValueUtil.JSON;
 
     /**
      * The credentials used to authenticate the CoAP client to the IKEA TRÅDFRI gateway

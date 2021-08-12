@@ -22,6 +22,7 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -73,7 +74,7 @@ public class RegexValueFilter extends ValueFilter {
             return null;
         }
 
-        Optional<String> valueStr = Values.getValue(value, String.class, true);
+        Optional<String> valueStr = ValueUtil.getValue(value, String.class, true);
         if (!valueStr.isPresent()) {
             return null;
         }

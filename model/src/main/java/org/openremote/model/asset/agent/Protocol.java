@@ -29,7 +29,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.value.MetaItemType;
 import org.openremote.model.value.ValueFilter;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Map;
 import java.util.logging.Logger;
@@ -92,7 +92,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * way before being written to the linked attribute (see {@link AgentLink#getValueConverter})</li>
  * <li>Automatic basic value conversion should be performed when the type of the value produced by the
  * protocol and any configured value conversion does not match the linked attributes underlying value type; this
- * basic conversion should use the {@link Values#convert} method</li>
+ * basic conversion should use the {@link ValueUtil#convert} method</li>
  * </ol>
  * <h1>Outbound value conversion (Linked Attribute -> Protocol)</h1>
  * Standard value conversion should be performed in the following order:

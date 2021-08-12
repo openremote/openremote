@@ -1,10 +1,10 @@
 package org.openremote.agent.protocol.knx;
 
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.impl.ColourRGB;
-import org.openremote.model.value.Values;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.dptxlator.*;
 
@@ -148,12 +148,12 @@ public class TypeMapper {
             return translator;
         }
 
-        if (translator instanceof DPTXlatorBoolean && Values.isBoolean(value.getClass())) {
-            ((DPTXlatorBoolean) translator).setValue(Values.getBoolean(value).orElse(false));
-        } else if (translator instanceof DPTXlator8BitUnsigned && Values.isNumber(value.getClass())) {
-            ((DPTXlator8BitUnsigned) translator).setValue(Values.getIntegerCoerced(value).orElse(0));
+        if (translator instanceof DPTXlatorBoolean && ValueUtil.isBoolean(value.getClass())) {
+            ((DPTXlatorBoolean) translator).setValue(ValueUtil.getBoolean(value).orElse(false));
+        } else if (translator instanceof DPTXlator8BitUnsigned && ValueUtil.isNumber(value.getClass())) {
+            ((DPTXlator8BitUnsigned) translator).setValue(ValueUtil.getIntegerCoerced(value).orElse(0));
         } else if (translator instanceof DPTXlatorRGB) {
-            ColourRGB colorRGB = Values.convert(value, ColourRGB.class);
+            ColourRGB colorRGB = ValueUtil.convert(value, ColourRGB.class);
             if (colorRGB != null) {
                 ((DPTXlatorRGB) translator).setValue(colorRGB.getR(), colorRGB.getG(), colorRGB.getB());
             }

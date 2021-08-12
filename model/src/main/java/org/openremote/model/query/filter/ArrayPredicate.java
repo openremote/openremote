@@ -21,7 +21,7 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -98,12 +98,12 @@ public class ArrayPredicate extends ValuePredicate {
     @Override
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
         return obj -> {
-            if (obj == null || !Values.isArray(obj.getClass())) {
+            if (obj == null || !ValueUtil.isArray(obj.getClass())) {
                 return false;
             }
 
             @SuppressWarnings("OptionalGetWithoutIsPresent")
-            Object[] arrayValue = Values.getValueCoerced(obj, Object[].class).get();
+            Object[] arrayValue = ValueUtil.getValueCoerced(obj, Object[].class).get();
             boolean result = true;
 
             if (value != null) {

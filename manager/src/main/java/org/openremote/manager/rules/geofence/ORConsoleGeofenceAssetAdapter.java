@@ -39,7 +39,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -260,7 +260,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         }
 
         List<String> ids = new ArrayList<>(assetIds);
-        ObjectNode data = Values.JSON.createObjectNode();
+        ObjectNode data = ValueUtil.JSON.createObjectNode();
         data.put("action", "GEOFENCE_REFRESH");
 
         // Break into batches of 10 sent every 10s to avoid consoles bombarding the backend

@@ -21,12 +21,12 @@ package org.openremote.container.persistence;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.util.ObjectMapperSupplier;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.ValueUtil;
 
 public class CustomObjectMapperSupplier implements ObjectMapperSupplier {
 
     @Override
     public ObjectMapper get() {
-        return Values.JSON;
+        return ValueUtil.JSON;
     }
 }

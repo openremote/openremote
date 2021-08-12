@@ -451,7 +451,7 @@ const style = css`
         overflow: auto;
     }
 
-    #menu-anchor {
+    .mdc-select__anchor {
         max-width: 100%;
         width: 100%;
     }
@@ -911,7 +911,7 @@ export class OrMwcInput extends LitElement {
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
                             @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
-                                <div id="menu-anchor" class="mdc-select__anchor" role="button"
+                                <div class="mdc-select__anchor" role="button"
                                      aria-haspopup="listbox"
                                      aria-expanded="false"
                                      aria-labelledby="label selected-text">
@@ -940,28 +940,26 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                
-                                <div class="mdc-select__menu mdc-menu mdc-menu-surface" @MDCMenuSurface:closed="${menuCloseHandler}">
-                                    ${getListTemplate(
-                                        this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                        opts ? html`${opts.map(([optValue, optDisplay], index) => {
-                                            return getItemTemplate(
-                                                {
-                                                    text: optDisplay,
-                                                    value: optValue                                                
-                                                },
-                                                index,
-                                                Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
-                                                this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                                false,    
-                                                itemClickHandler
-                                            )
-                                        })}` : html``,
-                                        false,
-                                        undefined
-                                    )}
-                                </div>
-
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}">
+                                ${getListTemplate(
+                                    this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                    opts ? html`${opts.map(([optValue, optDisplay], index) => {
+                                        return getItemTemplate(
+                                            {
+                                                text: optDisplay,
+                                                value: optValue                                                
+                                            },
+                                            index,
+                                            Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
+                                            this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                            false,    
+                                            itemClickHandler
+                                        )
+                                    })}` : html``,
+                                    false,
+                                    undefined
+                                )}
+                            </div>
                                 ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
                                         ${showValidationMessage ? this.validationMessage : this.helperText}
@@ -1305,11 +1303,15 @@ export class OrMwcInput extends LitElement {
                         }
 
                         mdcSelect.useDefaultValidation = !this.multiple;
-                        mdcSelect.valid = (!this.multiple && mdcSelect.valid) || (this.multiple && this.required && Array.isArray(this.value) && (this.value as []).length > 0);
+                        mdcSelect.valid = !this.required || (!this.multiple && mdcSelect.valid) || (this.multiple && Array.isArray(this.value) && (this.value as []).length > 0);
 
                         const selectedText = this.getSelectedTextValue();
                         (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
                         (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);
+
+                        // Set width of fixed select menu to match the component width
+                        this.shadowRoot!.getElementById("mdc-select-menu")!.style.width = component.getBoundingClientRect().width + "px";
+
 
                         // This overrides the standard mdc menu body click capture handler as it doesn't work with webcomponents
                         (mdcSelect as any).menu.menuSurface_.foundation.handleBodyClick = function (evt: MouseEvent) {
