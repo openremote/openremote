@@ -122,6 +122,16 @@ export class OrAddAssetDialog extends LitElement {
                 border-width: 1px 0;
             }
 
+            .msg {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                height: 100%;
+                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+                font-size: 14px;
+            }
+
             #asset-type-option-container {
                 padding: 15px;
                 flex: 1 1 auto;
@@ -196,7 +206,6 @@ export class OrAddAssetDialog extends LitElement {
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
         const lists: ListGroupItem[] = [];
-
         if (agentItems.length > 0) {
             lists.push(
                 {
@@ -218,19 +227,13 @@ export class OrAddAssetDialog extends LitElement {
 
         return html`
             <div class="col">
-                <div id="name-wrapper">
-                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
-                    <or-mwc-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
-                    <or-mwc-input id="toggle-parent-selector" icon="pencil" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}" title="Edit parent"></or-mwc-input>
-                    <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}" title="Remove parent"></or-mwc-input>
-                </div>
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}
                     </div>
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
-                        ? html`` 
+                        ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
                         : this.getTypeTemplate(this.selectedType, parentStr)}
                     </div>
                     ${!this.showParentAssetSelector
@@ -261,8 +264,8 @@ export class OrAddAssetDialog extends LitElement {
                 <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
                 <div id="parent-wrapper">
                     <or-mwc-input id="parent" .type="${InputType.TEXT}" readonly .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
-                    <or-mwc-input id="toggle-parent-selector" icon="pencil" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
                     <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-mwc-input>
+                    <or-mwc-input id="toggle-parent-selector" icon="${this.showParentAssetSelector ? "pencil-off" : "pencil"}" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
                 </div>
             </div>
             
