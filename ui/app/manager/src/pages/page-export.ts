@@ -279,8 +279,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             });
 
             Promise.all(assetInfoPromises).then(assetInfos => {
-                const allAssets = assetInfos.map(attr => attr.data),
-                    allDatapoints = datapointPeriod.map(datapoints => datapoints.data);
+                const allAssets = assetInfos.map(attr => attr.data);
+                const allDatapoints = datapointPeriod.map(datapoints => datapoints.data);
 
                 if (allDatapoints.length > 0) {
                     this.tableRows = allDatapoints.map(dataInfo => {
@@ -292,7 +292,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                             oldestTimestamp: dataInfo.oldestTimestamp,
                             latestTimestamp: dataInfo.latestTimestamp
                         };
-                    });
+                    }).sort((a, b) => b.latestTimestamp - a.latestTimestamp);
                     this.renderTableRows();
                     this.isClearExportBtnDisabled = false;
                     this.isExportBtnDisabled = false;
