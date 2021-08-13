@@ -890,7 +890,7 @@ export class OrMwcInput extends LitElement {
                     };
 
                     const menuCloseHandler = () => {
-
+                        Util.enableScroll();
                         const v = (this._tempValue ?? this.value);
                         window.setTimeout(() => {
                             if (this._mdcComponent) {
@@ -905,6 +905,10 @@ export class OrMwcInput extends LitElement {
                         const val = [...this._tempValue];
                         this._tempValue = undefined;
                         this.onValueChange(undefined, val);
+                    };
+
+                    const menuOpenedHandler = () => {
+                        Util.disableScroll();
                     };
 
                     return html`
@@ -940,7 +944,7 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}">
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:opened="${menuOpenedHandler}" @MDCMenuSurface:closed="${menuCloseHandler}">
                                 ${getListTemplate(
                                     this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
                                     opts ? html`${opts.map(([optValue, optDisplay], index) => {
@@ -1449,19 +1453,13 @@ export class OrMwcInput extends LitElement {
 
         let previousValue = this.value;
 
-        if (previousValue === undefined) {
-            previousValue = null;
-        }
-
         if (newValue === "undefined") {
+            previousValue = null;
             newValue = undefined;
         }
 
-        if (newValue === undefined) {
-            newValue = null;
-        }
-
         if (newValue === "null") {
+            previousValue = undefined;
             newValue = null;
         }
 

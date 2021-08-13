@@ -22,6 +22,7 @@ package org.openremote.model.value;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.Optional;
@@ -33,6 +34,7 @@ public class RegexValueFilter extends ValueFilter {
 
     public static final String NAME = "regex";
 
+    @JsonSerialize(as=String.class)
     public Pattern pattern;
     public Integer matchGroup;
     public Integer matchIndex;

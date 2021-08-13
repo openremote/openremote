@@ -11,7 +11,7 @@ import {
 } from "@jsonforms/core";
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement} from "lit/decorators.js";
-import {AnyOfInfo, getAnyOfInfos, getTemplateFromProps} from "../util";
+import {CombinatorInfo, getCombinatorInfos, getTemplateFromProps} from "../util";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -22,16 +22,30 @@ import {DefaultColor4, DefaultColor5} from "@openremote/core";
 import "../json-editor";
 import {JsonEditor} from "../json-editor";
 import {ControlBaseElement} from "./control-base-element";
-import {WithRequired} from "..";
+import {getTemplateWrapper} from "../index";
+import {WithLabelAndRequired} from "../base-element";
 
 // language=CSS
 const style = css`
-    :host, .drag-wrapper {
-        position: relative;
+    :host, .item-border, .drag-handle {
         border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
         border-radius: 4px;
         border-width: 1px;
         border-style: solid;
+    }
+
+    .item-wrapper {
+        display: flex;
+    }
+    
+    .item-container {
+        flex: 1;
+    }
+
+    .item-border {
+        flex: 1;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
     }
     
     #expander {
@@ -69,32 +83,22 @@ const style = css`
     :host, .padded {
         padding: 10px 16px;
     }
+    
+    .item-border > .item-container {
+        margin: 0;
+    }
+    
+    .item-border > .item-container > .delete-container {
+        display: none;
+    }
 
-    .element-container {
-        flex: 1;
-        border-left-width: 1px;
-        border-left-style: solid;
-        border-left-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-    }
-    
-    .element-container > .item-container > or-json-forms-array-control, .element-container > .item-container > or-json-forms-vertical-layout {
-        border: none;
-    }
-    
-    .element-container > .item-container {
+    .item-border > .item-container :first-child {
+        border: 0;
+        padding: 0;
         margin: 0;
         flex: 1;
     }
 
-    .element-container > .item-container > .delete-container {
-        display: none;
-    }
-
-    .drag-wrapper {
-        flex: 1 1 auto;
-        display: flex;
-    }
-    
     .draggable.dragging {
         opacity: 0.5;
     }
@@ -112,11 +116,18 @@ const style = css`
     }
     
     .drag-handle {
-        margin: 3px;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: 0;
         cursor: grab;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cg%3E%3Cellipse fill='%23cecece' cx='5' cy='5' rx='2.5' ry='2.5'/%3E%3C/g%3E%3C/svg%3E");
         flex: 0 0 auto;
         width: 20px;
+        padding: 3px;
+    }
+    
+    .drag-handle > div {
+        height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cg%3E%3Cellipse fill='%23cecece' cx='5' cy='5' rx='2.5' ry='2.5'/%3E%3C/g%3E%3C/svg%3E");
     }
 `;
 
@@ -130,7 +141,7 @@ const controlWithoutLabel = (scope: string): ControlElement => ({
 export class ControlArrayElement extends ControlBaseElement {
 
     protected resolvedSchema!: JsonSchema;
-    protected itemInfos: AnyOfInfo[] | undefined;
+    protected itemInfos: CombinatorInfo[] | undefined;
     protected addItem!: (value: any) => void;
     protected removeItem!: (index: number) => void;
     protected moveItem!: (fromIndex: number, toIndex: number) => void;
@@ -148,7 +159,7 @@ export class ControlArrayElement extends ControlBaseElement {
             this.resolvedSchema = Resolve.schema(this.schema, 'items', this.rootSchema);
 
             if (Array.isArray(this.resolvedSchema.anyOf)) {
-                this.itemInfos = getAnyOfInfos(this.resolvedSchema.anyOf, this.rootSchema);
+                this.itemInfos = getCombinatorInfos(this.resolvedSchema.anyOf, this.rootSchema);
             }
         }
 
@@ -186,7 +197,7 @@ export class ControlArrayElement extends ControlBaseElement {
         return html`
             <div id="panel">
                 <div id="header">
-                    <div id="expander"><or-icon icon="chevron-right"></or-icon><span>${this.title || this.label}</span></div>
+                    <div id="expander"><or-icon icon="chevron-right"></or-icon><span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span></div>
                     <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${() => this._showJson()}"></or-mwc-input></div>
                 </div>
                 <div id="content" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
@@ -194,14 +205,19 @@ export class ControlArrayElement extends ControlBaseElement {
                     ${!Array.isArray(this.data) ? `` : (this.data as any[]).map((item, index) => {
     
                         const childPath = Paths.compose(this.path, `${index}`);
+                        const constProp = this.itemInfos && this.itemInfos.length > 0 ? this.itemInfos[0].constProperty : undefined;
+                        const childConstValue = constProp ? item[constProp] : undefined;
+                        const childMatchedItemInfo = childConstValue ? this.itemInfos?.find(itemInfo => itemInfo.constValue === childConstValue) : undefined;
+                        const childLabel = childMatchedItemInfo ? childMatchedItemInfo.title : "";
                         
-                        const props: RendererProps & WithRequired = {
+                        const props: RendererProps & WithLabelAndRequired = {
                             renderers: this.renderers,
                             uischema: controlWithoutLabel("#"),
                             enabled: this.enabled,
                             visible: this.visible,
                             path: childPath,
                             schema: this.resolvedSchema,
+                            label: childLabel,
                             required: false
                         };
                         
@@ -218,17 +234,19 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     protected getArrayItemWrapper(elementTemplate: TemplateResult, index: number) {
+
+        elementTemplate = html`
+            <div class="drag-handle">
+                <div></div>
+            </div>
+            <div class="item-border padded">
+                ${elementTemplate}
+            </div>
+        `;
+
         return html`
-            <div class="item-container draggable" data-index="${index}" draggable="true" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}">
-                <div class="drag-wrapper">
-                    <div class="drag-handle"></div>
-                    <div class="element-container">
-                        ${elementTemplate}
-                    </div>
-                </div>
-                <div class="delete-container">
-                    <button class="button-clear" @click="${() => this.removeItem(index)}"><or-icon icon="close-circle"></or-icon></input>
-                </div>
+            <div class="item-wrapper draggable" data-index="${index}" draggable="true" @dragstart="${(ev: DragEvent) => this._onDragStart(ev)}" @dragend="${(ev: DragEvent) => this._onDragEnd(ev)}">
+                ${getTemplateWrapper(elementTemplate, () => this.removeItem(index))}
             </div>
         `;
     }
@@ -359,7 +377,7 @@ export class ControlArrayElement extends ControlBaseElement {
 
     protected showAddDialog() {
 
-        let selectedItemInfo: AnyOfInfo | undefined;
+        let selectedItemInfo: CombinatorInfo | undefined;
 
         const listItems: ListItem[] = this.itemInfos!.map((itemInfo, index) => {
             const labelStr = itemInfo.title ? computeLabel(itemInfo.title, false, true) : "";
@@ -370,7 +388,7 @@ export class ControlArrayElement extends ControlBaseElement {
             }
         });
 
-        const onParamChanged = (itemInfo: AnyOfInfo) => {
+        const onParamChanged = (itemInfo: CombinatorInfo) => {
             selectedItemInfo = itemInfo;
             const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
             descElem.innerHTML = itemInfo.description || "";
@@ -382,7 +400,7 @@ export class ControlArrayElement extends ControlBaseElement {
                 <div class="col">
                     <form id="mdc-dialog-form-add" class="row">
                         <div id="type-list" class="col">
-                            <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as AnyOfInfo); }}" .listItems="${listItems.sort((a,b) => a.text!.localeCompare(b.text!))}" id="parameter-list"></or-mwc-list>
+                            <or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) onParamChanged((evt.detail[0] as ListItem).data as CombinatorInfo); }}" .listItems="${listItems.sort((a, b) => a.text!.localeCompare(b.text!))}" id="parameter-list"></or-mwc-list>
                         </div>
                         <div id="parameter-desc" class="col"></div>
                     </form>

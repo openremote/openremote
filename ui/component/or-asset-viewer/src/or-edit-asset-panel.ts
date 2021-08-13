@@ -83,15 +83,36 @@ const style = css`
         padding-right: 5px;
     }
     .meta-item-container {
+        display: flex;
         overflow: hidden;
-        max-height: 0;
-        transition: max-height 0.25s ease-out;
         padding: 0 16px 0 36px;
     }
-    .attribute-meta-row.expanded .meta-item-container {
-        max-height: 1000px;
-        transition: max-height 1s ease-in;
+    .meta-item-container:after {
+        content: '';
+        height: 50px;
+        transition: height 1s linear, max-height 0s 1s linear;
+        max-height: 0;
     }
+    .meta-item-container .collapsible {
+        flex: 1;
+        transition: margin-bottom 1s cubic-bezier(0, 0, 0, 1);
+        margin-bottom: 0;
+        max-height: 1000000px;
+    }
+    .meta-item-container.collapsed > .collapsible {
+        margin-bottom: -2000px;
+        transition: margin-bottom 1s cubic-bezier(1, 0, 1, 1),
+        visibility 0s 1s, max-height 0s 1s;
+        visibility: hidden;
+        max-height: 0;
+    }
+    .meta-item-container.collapsed:after
+    {
+        height: 0;
+        transition: height 1s linear;
+        max-height: 50px;
+    }
+    
     .meta-item-container or-mwc-input {
         width: 100%;
     }
@@ -191,15 +212,14 @@ export class OrEditAssetPanel extends LitElement {
                 return;
             }
             const expanderIcon = tdElem.getElementsByTagName("or-icon")[0] as OrIcon;
-            const headerRow = tdElem.parentElement! as HTMLTableRowElement;
-            const metaRow = (headerRow.parentElement! as HTMLTableElement).rows[headerRow.rowIndex];
+            const metaExpander = this.shadowRoot!.getElementById("attribute-meta-"+tdElem.getAttribute("data-name")) as HTMLElement;
 
             if (expanderIcon.icon === "chevron-right") {
                 expanderIcon.icon = "chevron-down";
-                metaRow.classList.add("expanded");
+                metaExpander.classList.remove("collapsed");
             } else {
                 expanderIcon.icon = "chevron-right";
-                metaRow.classList.remove("expanded");
+                metaExpander.classList.add("collapsed");
             }
         };
 
@@ -248,7 +268,7 @@ export class OrEditAssetPanel extends LitElement {
 
         return html`
             <tr class="mdc-data-table__row">
-                <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
+                <td class="padded-cell mdc-data-table__cell expander-cell" data-name="${attribute.name}"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
@@ -257,12 +277,14 @@ export class OrEditAssetPanel extends LitElement {
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
-                    <div class="meta-item-container">
-                        <div>
-                            ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
-                        </div>
-                        <div class="item-add">
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                    <div id="attribute-meta-${attribute.name!}" class="meta-item-container collapsed">
+                        <div class="collapsible">
+                            <div>
+                                ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
+                            </div>
+                            <div class="item-add">
+                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                            </div>
                         </div>
                     </div>                     
                 </td>

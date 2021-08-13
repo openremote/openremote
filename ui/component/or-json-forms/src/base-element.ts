@@ -8,10 +8,17 @@ import {
     OwnPropsOfRenderer,
     UISchemaElement
 } from '@jsonforms/core';
-import "./unknown-element";
 import {JsonFormsStateContext} from "./index";
 
-export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer> extends LitElement implements OwnPropsOfRenderer {
+/**
+ * Adds label and required fields to layouts as well as controls
+ */
+export interface WithLabelAndRequired {
+    label: string;
+    required: boolean;
+}
+
+export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer> extends LitElement implements OwnPropsOfRenderer, WithLabelAndRequired {
 
     @property({type: Object})
     public state!: JsonFormsStateContext;
@@ -47,7 +54,10 @@ export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsO
     public path!: string;
 
     @property({type: String})
-    public title!: string;
+    public label!: string;
+
+    @property({type: Boolean})
+    public required!: boolean;
 
     public set props(props: P) {
         delete (props as any).id;

@@ -13,20 +13,23 @@ import {
     generateDefaultUISchema,
     generateJsonSchema,
     JsonFormsCellRendererRegistryEntry,
+    JsonFormsProps,
     JsonFormsRendererRegistryEntry,
     JsonFormsSubStates,
     JsonFormsUISchemaRegistryEntry,
     JsonSchema,
+    mapDispatchToControlProps,
     mapStateToJsonFormsRendererProps,
     OwnPropsOfJsonFormsRenderer,
     StatePropsOfJsonFormsRenderer,
     UISchemaElement
 } from "@jsonforms/core";
-import {getTemplateWrapper, StandardRenderers} from "./standardRenderers";
-import {getTemplateFromProps} from "./util";
+import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
+import {getLabel, getTemplateFromProps} from "./util";
 import {useEffect, useMemo, useReducer, useRef} from "haunted";
 import {baseStyle} from "./styles";
-import { Util } from "@openremote/core";
+import {Util} from "@openremote/core";
+import {WithLabelAndRequired} from "./base-element";
 
 declare global {
     interface SymbolConstructor {
@@ -44,14 +47,6 @@ export {
 
 export interface JsonFormsStateContext extends JsonFormsSubStates {
     dispatch: Dispatch<CoreActions>;
-}
-
-export interface WithTitle {
-    title?: string;
-}
-
-export interface WithRequired {
-    required?: boolean;
 }
 
 // language=CSS
@@ -84,7 +79,7 @@ const useEffectAfterFirstRender = (
 };
 
 @customElement("or-json-forms")
-export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonFormsRenderer {
+export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonFormsRenderer, WithLabelAndRequired {
 
     @property({type: Object})
     public uischema?: UISchemaElement;
@@ -112,6 +107,12 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
 
     @property({type: Boolean})
     public readonly: boolean = false;
+
+    @property({type: String})
+    public label!: string;
+
+    @property({type: Boolean})
+    public required: boolean = false;
 
     public static get styles() {
         return [
@@ -162,15 +163,13 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
             configDispatch(Actions.setConfig(this.config));
         }, [this.config]);
 
-        // @ts-ignore
-        const contextValue: JsonFormsStateContext = useMemo(() => ({
+        const contextValue: JsonFormsSubStates = useMemo(() => ({
             core,
             renderers: this.renderers,
             cells: this.cells,
             config: config,
             uischemas: this.uischemas,
             readonly: this.readonly,
-            // only core dispatch available
             dispatch: coreDispatch
         }), [core, this.renderers, this.cells, config, this.readonly]);
 
@@ -181,11 +180,11 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
         }, [core.data, core.errors]);
     
         return html`${guard([contextValue], () => {
-            let props: StatePropsOfJsonFormsRenderer & WithTitle = mapStateToJsonFormsRendererProps({jsonforms: {...contextValue}}, this);
-            props = {
-                ...props,
-                title: this.title
-            }
+            const props: JsonFormsProps & WithLabelAndRequired = {
+                ...mapStateToJsonFormsRendererProps({jsonforms: {...contextValue}}, this),
+                label: getLabel(schemaToUse, schemaToUse, this.label, undefined) || "",
+                required: this.required
+            };
             return getTemplateFromProps(contextValue, props);
         })}`;
     }

@@ -1,11 +1,18 @@
-import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {css, html, PropertyValues } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {css, html} from "lit";
+import {customElement} from "lit/decorators.js";
 import {ControlBaseElement} from "./control-base-element";
 import {baseStyle} from "../styles";
-import { isBooleanControl,
-    isEnumControl, isIntegerControl, isNumberControl, isOneOfEnumControl, isRangeControl, isStringControl, JsonSchema, JsonSchema7 } from "@jsonforms/core";
-import {isEnumArray} from "../standardRenderers";
+import {
+    isBooleanControl,
+    isEnumControl,
+    isIntegerControl,
+    isNumberControl,
+    isOneOfEnumControl,
+    isStringControl,
+    JsonSchema
+} from "@jsonforms/core";
+import {isEnumArray} from "../standard-renderers";
 
 // language=CSS
 const style = css`

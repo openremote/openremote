@@ -1,6 +1,7 @@
 import {
     CombinatorKeyword,
     composeWithUi,
+    createCleanLabel,
     createDefaultValue,
     deriveTypes,
     getAjv,
@@ -11,6 +12,7 @@ import {
     isVisible,
     JsonFormsRendererRegistryEntry,
     JsonFormsState,
+    JsonFormsSubStates,
     JsonSchema,
     JsonSchema4,
     mapStateToControlProps,
@@ -23,11 +25,14 @@ import {
     StatePropsOfCombinator,
     StatePropsOfControl,
     StatePropsOfControlWithDetail,
+    UISchemaElement,
 } from "@jsonforms/core";
+import { Util } from "@openremote/core";
 import {html, TemplateResult} from "lit";
 import {ErrorObject, JsonFormsStateContext} from "./index";
+import { unknownTemplate } from "./standard-renderers";
 
-export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsStateContext | undefined, props: T | undefined): TemplateResult {
+export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult {
     if (!state || !props) {
         return html``;
     }
@@ -44,24 +49,18 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
         if (renderer && renderer[1] !== -1) {
             template = renderer[0].renderer(state, props) as TemplateResult;
         } else {
-            template = html`<or-json-forms-unknown class="item-container"></or-json-forms-unknown>`;
+            template = unknownTemplate();
         }
     }
 
     return template || html``;
 }
 
-export function toControlDetailProps(context: JsonFormsStateContext, props: OwnPropsOfControl): StatePropsOfControlWithDetail {
-    return mapStateToControlWithDetailProps({ jsonforms: { ...context } }, props);
-}
-
-export function toControlProps(context: JsonFormsStateContext, props: OwnPropsOfControl): StatePropsOfControl {
-    return mapStateToControlProps({ jsonforms: { ...context } }, props)
-}
-
-export interface AnyOfInfo {
+export interface CombinatorInfo {
     title: string;
     description: string;
+    constProperty?: string;
+    constValue?: any;
     defaultValueCreator: () => any;
 }
 
@@ -69,12 +68,13 @@ export interface AnyOfInfo {
  * For a given anyOf schema array this will try and extract a common const property which can be used as a discriminator
  * when creating instances
  */
-export function getAnyOfInfos(anyOfSchemas: JsonSchema[], rootSchema: JsonSchema): AnyOfInfo[] {
-    // Find const properties of first schema
+export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema): CombinatorInfo[] {
 
-    return anyOfSchemas.map(schema => {
-        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
+    return schemas.map(schema => {
+        let constProperty: string | undefined;
+        let constValue: any | undefined;
         let creator: () => any;
+        const titleAndDescription = findSchemaTitleAndDescription(schema, rootSchema);
 
         if (schema.$ref) {
             schema = Resolve.schema(rootSchema, schema.$ref);
@@ -88,10 +88,17 @@ export function getAnyOfInfos(anyOfSchemas: JsonSchema[], rootSchema: JsonSchema
             const props = getSchemaObjectProperties(schema);
             const constProp = props.find(([propName, propSchema]) => propSchema.const !== undefined);
             if (constProp) {
+                constProperty = constProp[0];
+                constValue = constProp[1].const;
+
                 creator = () => {
                     const obj: any = {};
                     obj[constProp[0]] = constProp[1].const;
                     return obj;
+                }
+
+                if (!titleAndDescription[0]) {
+                    titleAndDescription[0] = constProp[1].const;
                 }
             } else {
                 creator = () => createDefaultValue(schema);
@@ -104,16 +111,18 @@ export function getAnyOfInfos(anyOfSchemas: JsonSchema[], rootSchema: JsonSchema
         return {
             title: titleAndDescription[0],
             description: titleAndDescription[1],
-            defaultValueCreator: creator
-        } as AnyOfInfo;
+            defaultValueCreator: creator,
+            constProperty: constProperty,
+            constValue: constValue
+        } as CombinatorInfo;
     });
 }
 
 export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
-    let refTitle: string | undefined;
+    let title: string | undefined;
 
     if (schema.$ref) {
-        refTitle = schema.$ref.substr(schema.$ref.lastIndexOf("/")+1);
+        title = getLabelFromScopeOrRef(schema.$ref);
         schema = Resolve.schema(rootSchema, schema.$ref);
     }
 
@@ -129,9 +138,15 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
         if (titledSchema) {
             return [titledSchema.title, titledSchema.description];
         }
+
+
     }
 
-    return [refTitle, undefined];
+    return [title, undefined];
+}
+
+function getLabelFromScopeOrRef(scopeOrRef: string) {
+    return scopeOrRef.substr(scopeOrRef.lastIndexOf("/")+1);
 }
 
 function getSchemaObjectProperties(schema: JsonSchema): [string, JsonSchema][] {
@@ -220,6 +235,24 @@ export function mapStateToCombinatorRendererProps(
         uischemas: state.jsonforms.uischemas!,
         uischema
     };
+}
+
+export function getLabel(schema: JsonSchema, rootSchema: JsonSchema, uiElementLabel?: string, uiElementScope?: string): string | undefined {
+    if (uiElementLabel) {
+        return uiElementLabel;
+    }
+
+    const titleAndDesc = findSchemaTitleAndDescription(schema, rootSchema);
+
+    if (titleAndDesc[0]) {
+        return titleAndDesc[0];
+    }
+
+    if (uiElementScope) {
+        return Util.camelCaseToSentenceCase(getLabelFromScopeOrRef(uiElementScope));
+    }
+
+    return undefined;
 }
 
 export function resolveSubSchemasRecursive(
