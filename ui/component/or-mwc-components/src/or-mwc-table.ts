@@ -74,8 +74,8 @@ const style = css`
     }
 `;
 
-@customElement("or-table")
-export class OrTable extends LitElement {
+@customElement("or-mwc-table")
+export class OrMwcTable extends LitElement {
 
     static get styles() {
         return [

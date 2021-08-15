@@ -1,14 +1,14 @@
-# @openremote/or-panel  \<or-panel\>
+# @openremote/or-components
 [![NPM Version][npm-image]][npm-url]
 [![Linux Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-Web Component for displaying a scrollable panel based on simplebar.
+Contains basic UI components
 
 ## Install
 ```bash
-npm i @openremote/or-panel
-yarn add @openremote/or-panel
+npm i @openremote/or-components
+yarn add @openremote/or-components
 ```
 
 ## Usage
@@ -24,7 +24,7 @@ Internet Explorer 11 is also supported.
 [GNU AGPL](https://www.gnu.org/licenses/agpl-3.0.en.html)
 
 [npm-image]: https://img.shields.io/npm/v/live-xxx.svg
-[npm-url]: https://npmjs.org/package/@openremote/or-panel
+[npm-url]: https://npmjs.org/package/@openremote/or-components
 [travis-image]: https://img.shields.io/travis/live-js/live-xxx/master.svg
 [travis-url]: https://travis-ci.org/live-js/live-xxx
 [coveralls-image]: https://img.shields.io/coveralls/live-js/live-xxx/master.svg

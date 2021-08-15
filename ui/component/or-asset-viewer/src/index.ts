@@ -10,15 +10,15 @@ import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
 import "@openremote/or-survey";
 import "@openremote/or-survey-results";
-import "@openremote/or-table";
-import "@openremote/or-panel";
+import "@openremote/or-mwc-components/or-mwc-table";
+import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
-import {OrTable} from "@openremote/or-table";
+import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
 import {
@@ -680,7 +680,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         const updateTable = () => {
 
             const loadingMsg: OrTranslate = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table-msg") as OrTranslate;
-            const attributeTable: OrTable = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table") as OrTable;
+            const attributeTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName + "-attribute-table") as OrMwcTable;
             const addRemoveButton: OrIcon = hostElement.shadowRoot!.getElementById(panelName + "-add-remove-columns") as OrIcon;
 
             if (!loadingMsg || !attributeTable || !addRemoveButton) {
@@ -763,7 +763,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     }
                 </style>
                 <or-icon class="asset-group-add-remove-button" .id="${panelName}-add-remove-columns" icon="pencil" @click="${() => attributePickerModalOpen()}"></or-icon>
-                <or-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-table>
+                <or-mwc-table hidden .id="${panelName}-attribute-table" .options="{stickyFirstColumn:true}"></or-mwc-table>
                 <span><or-translate id="${panelName}-attribute-table-msg" value="loading"></or-translate></span>
             `;
     }

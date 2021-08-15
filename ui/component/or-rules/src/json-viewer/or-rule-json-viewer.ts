@@ -24,7 +24,7 @@ import {
 import {Util} from "@openremote/core";
 import "./or-rule-when";
 import "./or-rule-then-otherwise";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
 

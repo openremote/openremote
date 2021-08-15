@@ -20,7 +20,6 @@
     { "path": "../../component/or-data-viewer" },
     { "path": "../../component/or-log-viewer" },
     { "path": "../../component/or-chart" },
-    { "path": "../../component/or-table" },
     { "path": "../../component/or-rules" }
   ]
 }

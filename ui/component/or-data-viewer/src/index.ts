@@ -3,7 +3,7 @@ import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-chart";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {Asset, Attribute} from "@openremote/model";
 import {style} from "./style";

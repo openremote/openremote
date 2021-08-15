@@ -12,7 +12,7 @@
     { "path": "../core" },
     { "path": "../or-translate" },
     { "path": "../or-icon" },
-    { "path": "../or-panel" },
+    { "path": "../or-components" },
     { "path": "../or-mwc-components" },
     { "path": "../or-attribute-input" },
     { "path": "../or-asset-tree" }

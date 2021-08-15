@@ -83,36 +83,14 @@ const style = css`
         padding-right: 5px;
     }
     .meta-item-container {
-        display: flex;
-        overflow: hidden;
         padding: 0 16px 0 36px;
-    }
-    .meta-item-container:after {
-        content: '';
-        height: 50px;
-        transition: height 1s linear, max-height 0s 1s linear;
+        overflow: hidden;
         max-height: 0;
+        transition: max-height 0.25s ease-out;
     }
-    .meta-item-container .collapsible {
-        flex: 1;
-        transition: margin-bottom 1s cubic-bezier(0, 0, 0, 1);
-        margin-bottom: 0;
-        max-height: 1000000px;
+    .attribute-meta-row.expanded  .meta-item-container {
+        transition: max-height 1s ease-in;
     }
-    .meta-item-container.collapsed > .collapsible {
-        margin-bottom: -2000px;
-        transition: margin-bottom 1s cubic-bezier(1, 0, 1, 1),
-        visibility 0s 1s, max-height 0s 1s;
-        visibility: hidden;
-        max-height: 0;
-    }
-    .meta-item-container.collapsed:after
-    {
-        height: 0;
-        transition: height 1s linear;
-        max-height: 50px;
-    }
-    
     .meta-item-container or-mwc-input {
         width: 100%;
     }
@@ -208,18 +186,34 @@ export class OrEditAssetPanel extends LitElement {
 
         const expanderToggle = (ev: MouseEvent) => {
             const tdElem = ev.target as HTMLElement;
-            if (tdElem.className.indexOf("expander-cell") < 0) {
+            if (tdElem.className.indexOf("expander-cell") < 0 || tdElem.className.indexOf("expanding") >= 0) {
                 return;
             }
             const expanderIcon = tdElem.getElementsByTagName("or-icon")[0] as OrIcon;
-            const metaExpander = this.shadowRoot!.getElementById("attribute-meta-"+tdElem.getAttribute("data-name")) as HTMLElement;
+            const headerRow = tdElem.parentElement! as HTMLTableRowElement;
+            const metaRow = (headerRow.parentElement! as HTMLTableElement).rows[headerRow.rowIndex];
+            const metaContainer = metaRow.firstElementChild!.firstElementChild as HTMLElement;
+            const contentHeight = Math.max(500, metaContainer.firstElementChild!.getBoundingClientRect().height);
 
             if (expanderIcon.icon === "chevron-right") {
                 expanderIcon.icon = "chevron-down";
-                metaExpander.classList.remove("collapsed");
+                metaRow.classList.add("expanded");
+                metaContainer.style.maxHeight = contentHeight + "px";
+                tdElem.classList.add("expanding");
+                // Allow container to grow when expanded once animation has finished
+                window.setTimeout(() => {
+                    tdElem.classList.remove("expanding");
+                    metaContainer.style.maxHeight = "unset";
+                }, 1100);
             } else {
                 expanderIcon.icon = "chevron-right";
-                metaExpander.classList.add("collapsed");
+                metaRow.classList.remove("expanded");
+                metaContainer.style.transition = "none";
+                metaContainer.style.maxHeight = Math.max(500, metaContainer.firstElementChild!.getBoundingClientRect().height) + "px";
+                window.setTimeout(() => {
+                    metaContainer.style.transition = "";
+                    metaContainer.style.maxHeight = "";
+                });
             }
         };
 
@@ -268,7 +262,7 @@ export class OrEditAssetPanel extends LitElement {
 
         return html`
             <tr class="mdc-data-table__row">
-                <td class="padded-cell mdc-data-table__cell expander-cell" data-name="${attribute.name}"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
+                <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
                     <or-attribute-input compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
@@ -277,8 +271,8 @@ export class OrEditAssetPanel extends LitElement {
             </tr>
             <tr class="attribute-meta-row">
                 <td colspan="4">
-                    <div id="attribute-meta-${attribute.name!}" class="meta-item-container collapsed">
-                        <div class="collapsible">
+                    <div class="meta-item-container">
+                        <div>
                             <div>
                                 ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
                             </div>

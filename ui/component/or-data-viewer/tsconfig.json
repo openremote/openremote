@@ -13,7 +13,7 @@
     { "path": "../rest" },
     { "path": "../model" },
     { "path": "../or-chart" },
-    { "path": "../or-panel" },
+    { "path": "../or-components" },
     { "path": "../or-translate" },
     { "path": "../or-attribute-card" }
   ]

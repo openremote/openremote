@@ -1,13 +1,16 @@
 {
-  "name": "@openremote/or-panel",
+  "name": "@openremote/or-components",
   "version": "1.0.3",
-  "description": "OpenRemote simple panel with heading",
+  "description": "OpenRemote basic UI components",
   "main": "dist/umd/index.bundle.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx tsc -b && npx webpack"
+  },
+  "exports": {
+    "./*": "./dist/*.js"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",

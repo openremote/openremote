@@ -7,7 +7,7 @@ import {
 } from "lit";
 import {customElement, property} from "lit/decorators.js";
 import manager, { OREvent, DefaultColor3 } from "@openremote/core";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import { EnhancedStore } from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
