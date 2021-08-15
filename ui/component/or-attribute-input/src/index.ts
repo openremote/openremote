@@ -185,7 +185,9 @@ export const jsonFormsInputTemplateProvider: (assetDescriptor: AssetDescriptor |
                 }
 
                 // Remove disabled class from container
-                containerDiv.value!.classList.remove("disabled");
+                if (containerDiv.value) {
+                    containerDiv.value!.classList.remove("disabled");
+                }
 
                 return html`
                     <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)} .config="${config}"

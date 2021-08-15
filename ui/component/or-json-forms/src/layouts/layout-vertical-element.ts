@@ -24,7 +24,7 @@ import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-
 import {DefaultColor5} from "@openremote/core";
 import "../json-editor";
 import {JsonEditor} from "../json-editor";
-import {WithLabelAndRequired} from "../base-element";
+import {AdditionalProps} from "../base-element";
 
 // language=CSS
 const style = css`
@@ -48,6 +48,15 @@ const style = css`
         vertical-align: middle;
         margin-right: 6px;
         margin-left: -5px;
+    }
+    
+    #errors {
+        color: red;
+        margin-right: 10px;
+    }
+    
+    #errors > or-icon {
+        margin-right: 10px;
     }
     
     #header {
@@ -143,17 +152,21 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         return html`
             <div id="panel">
                 <div id="header">
-                    <div id="expander"><or-icon icon="chevron-right"></or-icon><span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span></div>
+                    <div id="expander">
+                        <or-icon icon="chevron-right"></or-icon>
+                        <span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+                    </div>
+                    ${!this.errors ? `` : html`<div id="errors"><or-icon icon="alert"></or-icon><span>${this.errors}</span></div>`}
                     <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${() => this._showJson()}"></or-mwc-input></div>
                 </div>
                 <div id="content">
                     
-                    
-                    ${dynamic ? 
+                    ${this.errors ? ``
+                    : dynamic ? 
                         this._getDynamicContentTemplate(dynamicValueType)   
-                        : this.getChildProps().map((props: OwnPropsOfRenderer) => {
+                    : this.getChildProps().map((props: OwnPropsOfRenderer) => {
                         
-                        const contentProps: OwnPropsOfRenderer & WithLabelAndRequired = {
+                        const contentProps: OwnPropsOfRenderer & AdditionalProps = {
                             ...props,
                             label: "",
                             required: false
@@ -177,9 +190,10 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     })}
                 </div>
                 
+                ${this.errors ? `` : html`
                 <div id="add-parameter">
                     <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" .disabled="${!dynamic && optionalProps.length === 0}" @click="${() => this._addParameter(optionalProps, dynamicValueType)}"></or-mwc-input>
-                </div>
+                </div>`}
             </div>
         `;
     }

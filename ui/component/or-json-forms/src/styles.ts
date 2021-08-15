@@ -40,4 +40,9 @@ export const baseStyle = css`
     .button-clear.hidden {
         visibility: hidden;
     }
+    
+    .any-of-picker {
+        width: 100%;
+        min-width: 200px;
+    }
 `;

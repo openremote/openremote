@@ -36,6 +36,7 @@ import org.openremote.model.jackson.AssetTypeIdResolver;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.validation.AssetValid;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.util.ValueUtil;
 
@@ -258,7 +259,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
     public static final AttributeDescriptor<String[]> TAGS = new AttributeDescriptor<>("tags", ValueType.TEXT.asArray()).withOptional(true);
 
-    public static final AttributeDescriptor<String> NOTES = new AttributeDescriptor<>("notes", ValueType.TEXT);
+    public static final AttributeDescriptor<String> NOTES = new AttributeDescriptor<>("notes", ValueType.TEXT).withFormat(ValueFormat.TEXT_MULTILINE());
     public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer", ValueType.TEXT).withOptional(true);
     public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT).withOptional(true);
 

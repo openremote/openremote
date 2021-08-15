@@ -11,14 +11,15 @@ import {
 import {JsonFormsStateContext} from "./index";
 
 /**
- * Adds label and required fields to layouts as well as controls
+ * Adds additional props for layouts which are normally only available for controls
  */
-export interface WithLabelAndRequired {
+export interface AdditionalProps {
     label: string;
     required: boolean;
+    errors?: string;
 }
 
-export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer> extends LitElement implements OwnPropsOfRenderer, WithLabelAndRequired {
+export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer> extends LitElement implements OwnPropsOfRenderer, AdditionalProps {
 
     @property({type: Object})
     public state!: JsonFormsStateContext;
@@ -58,6 +59,9 @@ export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsO
 
     @property({type: Boolean})
     public required!: boolean;
+
+    @property()
+    public errors!: string;
 
     public set props(props: P) {
         delete (props as any).id;

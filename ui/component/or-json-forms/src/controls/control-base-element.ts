@@ -18,9 +18,6 @@ export abstract class ControlBaseElement extends BaseElement<ControlElement, Con
     public description?: string | undefined;
 
     @property()
-    public errors!: string;
-
-    @property()
     public rootSchema!: JsonSchema;
 
     public handleChange!: (path: string, data: any) => void;

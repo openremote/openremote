@@ -29,7 +29,7 @@ import {getLabel, getTemplateFromProps} from "./util";
 import {useEffect, useMemo, useReducer, useRef} from "haunted";
 import {baseStyle} from "./styles";
 import {Util} from "@openremote/core";
-import {WithLabelAndRequired} from "./base-element";
+import {AdditionalProps} from "./base-element";
 
 declare global {
     interface SymbolConstructor {
@@ -79,7 +79,7 @@ const useEffectAfterFirstRender = (
 };
 
 @customElement("or-json-forms")
-export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonFormsRenderer, WithLabelAndRequired {
+export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
 
     @property({type: Object})
     public uischema?: UISchemaElement;
@@ -180,7 +180,7 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
         }, [core.data, core.errors]);
     
         return html`${guard([contextValue], () => {
-            const props: JsonFormsProps & WithLabelAndRequired = {
+            const props: JsonFormsProps & AdditionalProps = {
                 ...mapStateToJsonFormsRendererProps({jsonforms: {...contextValue}}, this),
                 label: getLabel(schemaToUse, schemaToUse, this.label, undefined) || "",
                 required: this.required

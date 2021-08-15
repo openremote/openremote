@@ -23,7 +23,7 @@ import "../json-editor";
 import {JsonEditor} from "../json-editor";
 import {ControlBaseElement} from "./control-base-element";
 import {getTemplateWrapper} from "../index";
-import {WithLabelAndRequired} from "../base-element";
+import {AdditionalProps} from "../base-element";
 
 // language=CSS
 const style = css`
@@ -210,7 +210,7 @@ export class ControlArrayElement extends ControlBaseElement {
                         const childMatchedItemInfo = childConstValue ? this.itemInfos?.find(itemInfo => itemInfo.constValue === childConstValue) : undefined;
                         const childLabel = childMatchedItemInfo ? childMatchedItemInfo.title : "";
                         
-                        const props: RendererProps & WithLabelAndRequired = {
+                        const props: RendererProps & AdditionalProps = {
                             renderers: this.renderers,
                             uischema: controlWithoutLabel("#"),
                             enabled: this.enabled,

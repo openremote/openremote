@@ -45,7 +45,7 @@ import "./controls/control-input-element";
 import "./controls/control-array-element";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
-import {WithLabelAndRequired} from "./base-element";
+import {AdditionalProps} from "./base-element";
 import {Util} from "@openremote/core";
 
 const hasOneOfItems = (schema: JsonSchema): boolean =>
@@ -81,12 +81,13 @@ export const verticalOrGroupLayoutTester: RankedTester = rankWith(
     )
 );
 
-export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJsonFormsRenderer & WithLabelAndRequired) => {
-    const contentProps: RendererProps & DispatchPropsOfControl & WithLabelAndRequired = {
+export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJsonFormsRenderer & AdditionalProps) => {
+    const contentProps: RendererProps & DispatchPropsOfControl & AdditionalProps = {
         ...mapStateToLayoutProps({jsonforms: {...state}}, props),
         ...mapDispatchToControlProps(state.dispatch),
         label: props.label,
-        required: props.required
+        required: props.required,
+        errors: props.errors
     };
 
     const template = html`<or-json-forms-vertical-layout .state="${state}" .props="${contentProps}"></or-json-forms-vertical-layout>`;
@@ -145,6 +146,7 @@ export const objectControlRenderer = (state: JsonFormsStateContext, props: Contr
         uischemas,
         schema,
         label,
+        errors,
         path,
         visible,
         enabled,
@@ -162,7 +164,7 @@ export const objectControlRenderer = (state: JsonFormsStateContext, props: Contr
         rootSchema
     );
 
-    const contentProps: OwnPropsOfRenderer & WithLabelAndRequired = {
+    const contentProps: OwnPropsOfRenderer & AdditionalProps = {
         visible: visible,
         enabled: enabled,
         schema: schema,
@@ -171,7 +173,8 @@ export const objectControlRenderer = (state: JsonFormsStateContext, props: Contr
         renderers: renderers,
         cells: cells,
         label: props.label || getLabel(schema, rootSchema, label) || "",
-        required: !!props.required || !!required
+        required: !!props.required || !!required,
+        errors: errors
     };
     return getTemplateFromProps(state, contentProps);
 }
@@ -189,14 +192,15 @@ export const anyOfControlRenderer = (state: JsonFormsStateContext, props: Contro
         required,
         renderers,
         cells,
-        uischemas,
         schema,
         label,
         path,
+        errors,
         visible,
         enabled,
         uischema,
-        rootSchema
+        rootSchema,
+        data
     } = mapStateToControlWithDetailProps(jsonFormsContext, props);
 
     const anyOfSchema = resolveSubSchemas(schema, rootSchema, "anyOf");
@@ -211,22 +215,34 @@ export const anyOfControlRenderer = (state: JsonFormsStateContext, props: Contro
         anyOfProps.uischemas
     );
 
+    if (data !== undefined && (anyOfProps.indexOfFittingSchema === undefined || anyOfProps.indexOfFittingSchema < 0)) {
+        // Try and match the data using our own combinator info objects
+        const combinatorInfos = getCombinatorInfos(anyOfSchema.anyOf!, rootSchema);
+
+        const constProp = combinatorInfos.length > 0 ? combinatorInfos[0].constProperty : undefined;
+        if (constProp && typeof data === "object" && data[constProp]) {
+            const dataType = data[constProp];
+            anyOfProps.indexOfFittingSchema = combinatorInfos.findIndex((combinatorInfo) => combinatorInfo.constValue === dataType);
+        }
+    }
+
     if (anyOfProps.indexOfFittingSchema === undefined || anyOfProps.indexOfFittingSchema < 0) {
-        if (props.data !== undefined) {
+        if (data !== undefined) {
             // We have data that doesn't match a schema so show invalid template
             console.warn("Cannot match anyOf schema to instance data");
-            return invalidTemplate();
+            return invalidTemplate(props.label || label);
         } else {
             // We have no data so show a schema picker
             const { handleChange } = mapDispatchToControlProps(state.dispatch);
             const combinatorInfos = getCombinatorInfos(anyOfSchema.anyOf!, rootSchema);
-            const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", combinatorInfo.title || i18next.t("Item ") + (index+1)]);
+            const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", Util.camelCaseToSentenceCase(combinatorInfo.title) || i18next.t("Item ") + (index+1)]);
             const pickerUpdater = (index: number) => {
                 const matchedInfo = combinatorInfos[index];
                 handleChange(path, matchedInfo.defaultValueCreator());
             };
-            return html`
-                <or-mwc-input .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
+            const pickerLabel = (props.label || label) ? i18next.t("anyOfPickerLabel", {label: (props.label || label)}) : i18next.t("type");
+            return html`                
+                <or-mwc-input class="any-of-picker" .label="${pickerLabel}" .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
             `;
         }
     }
@@ -244,14 +260,15 @@ export const anyOfControlRenderer = (state: JsonFormsStateContext, props: Contro
         } as ControlElement;
     }
 
-    const contentProps: OwnPropsOfRenderer & WithLabelAndRequired = {
+    const contentProps: OwnPropsOfRenderer & AdditionalProps = {
         schema: matchedSchema,
         uischema: matchedUischema,
         path: path,
         renderers: renderers,
         cells: cells,
         label: props.label || getLabel(matchedSchema, rootSchema, label) || "",
-        required: props.required || !!required
+        required: props.required || !!required,
+        errors: errors
     }
 
     return getTemplateFromProps(state, contentProps);
@@ -261,7 +278,7 @@ export const allOfControlTester: RankedTester = rankWith(
     4,
     isAllOfControl
 );
-export const allOfControlRenderer = (state: JsonFormsStateContext, props: ControlProps & WithLabelAndRequired) => {
+export const allOfControlRenderer = (state: JsonFormsStateContext, props: ControlProps & AdditionalProps) => {
     const jsonFormsContext = {jsonforms: {...state}};
     const contentProps = {
         ...mapStateToControlWithDetailProps(jsonFormsContext, props)
@@ -321,8 +338,8 @@ export function getTemplateWrapper(elementTemplate: TemplateResult, deleteHandle
             `;
 }
 
-export function invalidTemplate() {
-    return html`<span>No applicable renderer found!</span>`;
+export function invalidTemplate(label: string | undefined) {
+    return html`<span style="padding-right: 5px;">${label}:</span><span><b>Data is invalid!</b></span>`;
 }
 
 export function unknownTemplate() {

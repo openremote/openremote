@@ -408,5 +408,6 @@
   "loadFailedRoles": "Failed to load roles",
   "loadFailedUsers": "Failed to load users",
   "loadFailedServiceUsers": "Failed to load service users",
-  "key": "Key"
+  "key": "Key",
+  "anyOfPickerLabel": "{{label}} type"
 }
