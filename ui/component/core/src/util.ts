@@ -270,12 +270,21 @@ export function arrayRemove<T>(arr: T[], item: T) {
     }
 }
 
-export function camelCaseToSentenceCase(str: string): string {
+export function camelCaseToSentenceCase(str: string | undefined): string {
+    if (str === undefined) {
+        return "";
+    }
+    let startDone = false;
     return str.split(/([A-Z]|\d)/).map((v, i, arr) => {
-        // If first block then capitalise 1st letter regardless
-        if (!i) return v.charAt(0).toUpperCase() + v.slice(1);
         // Skip empty blocks
         if (!v) return v;
+
+        // If first block then capitalise 1st letter regardless
+        if (!startDone){
+            startDone = true;
+            return v.charAt(0).toUpperCase() + v.slice(1);
+        }
+
         // Underscore substitution
         if (v === '_') return " ";
         // We have a capital or number
