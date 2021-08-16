@@ -87,7 +87,6 @@ export const style = css`
 
     #view-container, #edit-container {
         flex: 0 1 auto;
-        padding-top: 10px;
         overflow: auto;
         min-height: calc(100vh - 88px - var(--internal-or-header-height));
     }
@@ -106,6 +105,10 @@ export const style = css`
         -ms-animation: fadein 0.3s; /* Internet Explorer */
         -o-animation: fadein 0.3s; /* Opera < 12.1 */
         animation: fadein 0.3s;
+    }
+
+    #edit-container {
+        padding: 10px 20px 0;
     }
     
     #name-input {
@@ -156,7 +159,7 @@ export const style = css`
     }
 
     #title {
-        flex: 1 1 0%;
+        flex: 1 1 auto;
         font-size: 18px;
         font-weight: bold;
     }
@@ -170,7 +173,7 @@ export const style = css`
     }
     
     #right-wrapper {
-        flex: 1 1 0%;
+        flex: 1 1 auto;
         text-align: right;
     }
     
@@ -212,6 +215,10 @@ export const style = css`
     }
 
     @media screen and (max-width: 1200px) {
+        #name-input {
+            width: 150px;
+        }
+
         #chart-panel {
             grid-row-start: 1;
         }
@@ -256,7 +263,7 @@ export const style = css`
         
         #asset-header {
             grid-area: auto!important;
-            padding: 20px 15px 0;
+            padding: 15px;
         }
 
         .panel {
@@ -264,7 +271,12 @@ export const style = css`
             border-right: none;
             border-left: none;
         }
+
         #view-container {
+            padding: 0;
+        }
+
+        #edit-container {
             padding: 10px 0;
         }
     }

@@ -1169,7 +1169,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     <div id="right-wrapper" class="mobileHidden">
                         ${this.asset!.createdOn ? html`<or-translate id="created-time" class="tabletHidden" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``}
                         ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
-                        ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("view") : i18next.t("modify")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
+                        ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("viewAsset") : i18next.t("editAsset")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
                         `: ``}
                     </div>
                 </div>

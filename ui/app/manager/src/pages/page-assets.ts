@@ -112,6 +112,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
                 or-asset-viewer,
                 or-asset-viewer.hideMobile {
                     display: initial;
+                    max-width: calc(100vw - 300px);
                 }
             }
         `;
