@@ -1,7 +1,7 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import i18next from "i18next";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
 import manager, {DefaultColor1, OREvent} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";

@@ -15,7 +15,7 @@ import {translate} from "@openremote/or-translate";
 import {Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
 import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import "@openremote/or-chart";
 import {Chart, ScatterDataPoint, ChartConfiguration, TimeUnit, TimeScaleOptions} from "chart.js";

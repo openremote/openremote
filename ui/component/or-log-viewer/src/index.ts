@@ -12,7 +12,7 @@ import {translate} from "@openremote/or-translate";
 import * as Model from "@openremote/model";
 import manager, {DefaultColor2, DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {MDCDataTable} from "@material/data-table";

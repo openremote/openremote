@@ -1,7 +1,7 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import manager, {DefaultColor3, Util} from "@openremote/core";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";

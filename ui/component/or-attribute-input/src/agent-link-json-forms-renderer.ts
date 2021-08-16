@@ -1,7 +1,6 @@
 import {
     RankedTester,
     rankWith,
-    isStringControl,
     and,
     ControlProps,
     mapStateToControlProps,
@@ -95,16 +94,30 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
         const options: [string, string][] = agents.map(agent => [agent.id!, agent.name + " (" + agent.id + ")"]);
 
         return html`
-            <or-mwc-input .label="${i18next.t("agentId")}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onAgentChanged(agents.find((agent) => agent.id === ev.detail.value))}" type="${InputType.SELECT}" .value="${props.data}" .placeholder="${i18next.t("selectAgent")}" .options="${options}"></or-mwc-input>
+            <or-mwc-input .label="${i18next.t("agentId")}" class="agent-id-picker" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onAgentChanged(agents.find((agent) => agent.id === ev.detail.value))}" type="${InputType.SELECT}" .value="${props.data}" .placeholder="${i18next.t("selectAgent")}" .options="${options}"></or-mwc-input>
         `;
     });
 
     const template = html`
-        <div>
-            ${until(loadedTemplatePromise, html`<or-mwc-input .type="${InputType.SELECT}"></or-mwc-input>`)}
-        </div>`;
+        <style>
+            .agent-id-picker {
+                min-width: 300px;
+                max-width: 600px;
+                width: 100%;
+            }
+        </style>
+        ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
+        `;
 
-    return getTemplateWrapper(template, state, props);
+    let deleteHandler: undefined | (() => void);
+    if (!props.required && props.path) {
+        const { handleChange } = mapDispatchToControlProps(state.dispatch);
+        deleteHandler = () => {
+            handleChange(props.path, undefined);
+        }
+    }
+
+    return getTemplateWrapper(template, deleteHandler);
 };
 
 export const agentIdRendererRegistryEntry: JsonFormsRendererRegistryEntry = {

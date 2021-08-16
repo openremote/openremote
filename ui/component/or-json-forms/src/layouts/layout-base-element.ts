@@ -5,7 +5,7 @@ import {BaseElement} from "../base-element";
 export abstract class LayoutBaseElement<T extends Layout> extends BaseElement<T, LayoutProps> implements OwnPropsOfLayout {
 
     @property({type: String})
-    public direction: 'row' | 'column' = "column";
+    public direction: "row" | "column" = "column";
 
     protected getChildProps(): OwnPropsOfRenderer[]  {
         return (this.uischema && this.uischema.elements ? this.uischema.elements : []).map(

@@ -1,6 +1,5 @@
 import {css, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import SimpleBar from "simplebar";
 import {DefaultColor2} from "@openremote/core";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -53,12 +52,6 @@ export class OrPanel extends LitElement {
             style
         ];
     }
-
-    @property({type: Boolean})
-    autoHide = true;
-
-    @property({type: Boolean})
-    forceVisible?: boolean;
 
     @property({type: Number})
     zLevel?: number;

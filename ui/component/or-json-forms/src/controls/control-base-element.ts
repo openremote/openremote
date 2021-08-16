@@ -15,16 +15,7 @@ import {BaseElement} from "../base-element";
 export abstract class ControlBaseElement extends BaseElement<ControlElement, ControlProps> implements OwnPropsOfControl, ControlProps {
 
     @property()
-    public label!: string;
-
-    @property()
     public description?: string | undefined;
-
-    @property()
-    public required?: boolean | undefined;
-
-    @property()
-    public errors!: string;
 
     @property()
     public rootSchema!: JsonSchema;

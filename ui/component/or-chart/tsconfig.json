@@ -10,7 +10,7 @@
   ],
   "references": [
     { "path": "../core" },
-    { "path": "../or-panel" },
+    { "path": "../or-components" },
     { "path": "../or-icon" },
     { "path": "../or-asset-tree" },
     { "path": "../or-mwc-components" },

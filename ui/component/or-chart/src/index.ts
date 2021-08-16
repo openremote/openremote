@@ -20,7 +20,7 @@ import manager, {
 } from "@openremote/core";
 import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
 import {Chart, ChartDataset, TimeUnit, ScatterDataPoint, ScatterController, LineController, LineElement, PointElement, LinearScale, TimeScale,

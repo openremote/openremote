@@ -1,7 +1,7 @@
 import {css, html, TemplateResult} from "lit";
 import {customElement} from "lit/decorators.js";
 import manager from "@openremote/core";
-import "@openremote/or-panel";
+import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";

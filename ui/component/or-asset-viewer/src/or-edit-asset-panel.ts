@@ -83,13 +83,12 @@ const style = css`
         padding-right: 5px;
     }
     .meta-item-container {
+        padding: 0 16px 0 36px;
         overflow: hidden;
         max-height: 0;
         transition: max-height 0.25s ease-out;
-        padding: 0 16px 0 36px;
     }
-    .attribute-meta-row.expanded .meta-item-container {
-        max-height: 1000px;
+    .attribute-meta-row.expanded  .meta-item-container {
         transition: max-height 1s ease-in;
     }
     .meta-item-container or-mwc-input {
@@ -187,19 +186,34 @@ export class OrEditAssetPanel extends LitElement {
 
         const expanderToggle = (ev: MouseEvent) => {
             const tdElem = ev.target as HTMLElement;
-            if (tdElem.className.indexOf("expander-cell") < 0) {
+            if (tdElem.className.indexOf("expander-cell") < 0 || tdElem.className.indexOf("expanding") >= 0) {
                 return;
             }
             const expanderIcon = tdElem.getElementsByTagName("or-icon")[0] as OrIcon;
             const headerRow = tdElem.parentElement! as HTMLTableRowElement;
             const metaRow = (headerRow.parentElement! as HTMLTableElement).rows[headerRow.rowIndex];
+            const metaContainer = metaRow.firstElementChild!.firstElementChild as HTMLElement;
+            const contentHeight = Math.max(500, metaContainer.firstElementChild!.getBoundingClientRect().height);
 
             if (expanderIcon.icon === "chevron-right") {
                 expanderIcon.icon = "chevron-down";
                 metaRow.classList.add("expanded");
+                metaContainer.style.maxHeight = contentHeight + "px";
+                tdElem.classList.add("expanding");
+                // Allow container to grow when expanded once animation has finished
+                window.setTimeout(() => {
+                    tdElem.classList.remove("expanding");
+                    metaContainer.style.maxHeight = "unset";
+                }, 1100);
             } else {
                 expanderIcon.icon = "chevron-right";
                 metaRow.classList.remove("expanded");
+                metaContainer.style.transition = "none";
+                metaContainer.style.maxHeight = Math.max(500, metaContainer.firstElementChild!.getBoundingClientRect().height) + "px";
+                window.setTimeout(() => {
+                    metaContainer.style.transition = "";
+                    metaContainer.style.maxHeight = "";
+                });
             }
         };
 
@@ -259,10 +273,12 @@ export class OrEditAssetPanel extends LitElement {
                 <td colspan="4">
                     <div class="meta-item-container">
                         <div>
-                            ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
-                        </div>
-                        <div class="item-add">
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                            <div>
+                                ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
+                            </div>
+                            <div class="item-add">
+                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                            </div>
                         </div>
                     </div>                     
                 </td>
