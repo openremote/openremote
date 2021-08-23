@@ -116,7 +116,7 @@ export function getHelperText(sending: boolean, error: boolean, timestamp: numbe
 const jsonFormsAttributeRenderers = [...StandardRenderers, agentIdRendererRegistryEntry];
 type ErrorMessage = "agentNotFound" | "agentTypeMismatch";
 
-export const jsonFormsInputTemplateProvider: (assetDescriptor: AssetDescriptor | string, valueHolder: NameHolder & ValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: OrInputChangedEventDetail | undefined) => void, options: ValueInputProviderOptions, fallback: ValueInputProvider) => ValueInputProvider = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options, fallback) => {
+export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => ValueInputProviderGenerator = (fallback) => (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
     const disabled = !!(options && options.disabled);
     const readonly = !!(options && options.readonly);
@@ -124,8 +124,6 @@ export const jsonFormsInputTemplateProvider: (assetDescriptor: AssetDescriptor |
 
     // Agent link needs some special handling as we need an agent picker no matter what
     if (valueDescriptor.name === WellknownValueTypes.AGENTLINK) {
-
-
 
         const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
             const jsonForms: Ref<OrJSONForms> = createRef();
@@ -191,6 +189,7 @@ export const jsonFormsInputTemplateProvider: (assetDescriptor: AssetDescriptor |
 
                 return html`
                     <or-json-forms .renderers="${jsonFormsAttributeRenderers}" ${ref(jsonForms)} .config="${config}"
+                                   .disabled="${disabled}" .readonly="${readonly}" .label="${label}"
                                    .schema="${schema}" label="Agent link" .uischema="${uiSchema}" .onChange="${onAgentLinkChanged}"
                                    .data="${agentLink}"></or-json-forms>
                 `;
@@ -672,28 +671,27 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             inputType: this.inputType
         };
 
+
+        // Use json forms with fallback to simple input provider
+        const valueChangeHandler = (detail: OrInputChangedEventDetail | undefined) => {
+            const value = detail ? detail.value : undefined;
+            const updateImmediately = (detail && detail.enterPressed) || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton;
+            this._onInputValueChanged(value, updateImmediately);
+        };
+
         if (this.customProvider) {
-            this._templateProvider = this.customProvider ? this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (v) => this._onInputValueChanged(v), options) : undefined;
+            this._templateProvider = this.customProvider ? this.customProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options) : undefined;
             return;
         }
 
         // Handle special value types
         if (valueDescriptor.name === WellknownValueTypes.GEOJSONPOINT) {
-            this._templateProvider = geoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (v: any) => this._onInputValueChanged(v), options);
+            this._templateProvider = geoJsonPointInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
             return;
         }
 
-        // Use json forms with fallback to simple input provider
-        const valueChangeHandler = (detail: OrInputChangedEventDetail | undefined) => {
-            if (detail && (detail.enterPressed || !this._templateProvider || !this.showButton || !this._templateProvider.supportsSendButton)) {
-                this._onInputValueChanged(detail.value);
-            } else {
-                this._newValue = detail ? detail.value : undefined;
-            }
-        };
-
-        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (e) => valueChangeHandler(e), options);
-        this._templateProvider = jsonFormsInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor,  (v: any) => this._onInputValueChanged(v), options, standardInputProvider);
+        const standardInputProvider = getValueHolderInputTemplateProvider(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
+        this._templateProvider = jsonFormsInputTemplateProvider(standardInputProvider)(this.assetType, this.attribute, this._attributeDescriptor, valueDescriptor, (detail) => valueChangeHandler(detail), options);
 
         if (!this._templateProvider) {
             this._templateProvider = standardInputProvider;
@@ -796,9 +794,12 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         this.dispatchEvent(new OrAttributeInputChangedEvent(newValue, oldValue));
     }
 
-    protected _onInputValueChanged(value: any) {
+    protected _onInputValueChanged(value: any, updateImmediately: boolean) {
         this._newValue = value;
-        this._updateValue();
+
+        if (updateImmediately) {
+            this._updateValue();
+        }
     }
 
     protected _updateValue() {

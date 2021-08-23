@@ -192,7 +192,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         }
         if (value) {
             valueChangeNotifier({
-                value: value
+                value: Util.getGeoJSONPoint(value)
             });
         } else {
             valueChangeNotifier(undefined);
