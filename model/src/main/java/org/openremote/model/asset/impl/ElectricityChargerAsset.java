@@ -38,7 +38,8 @@ public class ElectricityChargerAsset extends ElectricityStorageAsset {
         LE_GRAND,
         CHADEMO,
         COMBO,
-        SCHUKO
+        SCHUKO,
+        ENERGYLOCK
     }
 
     public static final ValueDescriptor<ConnectorType> CONNECTOR_TYPE_VALUE = new ValueDescriptor<>("connectorType", ConnectorType.class);
