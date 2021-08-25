@@ -200,6 +200,7 @@ public class MqttBrokerService implements ContainerService {
         String realm = connection.getRealm();
         List<String> assetIds = new ArrayList<>();
         List<String> parentIds = new ArrayList<>();
+        List<String> paths = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
 
         String assetId = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(1)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(1)) ? null : topicTokens.get(1);
@@ -225,8 +226,7 @@ public class MqttBrokerService implements ContainerService {
             if (isAssetTopic) {
                 if (multiLevelIndex == 2) {
                     //asset/assetId/#
-                    // TODO: Implement this once asset filter supports it
-                    parentIds.add(assetId);
+                    paths.add(assetId);
                 } else if (singleLevelIndex == 2) {
                     //asset/assetId/+
                     parentIds.add(assetId);
@@ -237,8 +237,7 @@ public class MqttBrokerService implements ContainerService {
                 if (assetId != null) {
                     if (multiLevelIndex == 2) {
                         //attribute/assetId/#
-                        // TODO: Implement this once asset filter supports it
-                        parentIds.add(assetId);
+                        paths.add(assetId);
                     } else if (singleLevelIndex == 2) {
                         //attribute/assetId/+
                         parentIds.add(assetId);
@@ -258,8 +257,7 @@ public class MqttBrokerService implements ContainerService {
                     if (attributeName != null) {
                         attributeNames.add(attributeName);
                         if (multiLevelIndex == 2) {
-                            //attribute/#/attributeName
-                            // No asset filtering required
+                           return null; //no topic allowed after multilevel wildcard
                         } else if (singleLevelIndex == 2) {
                             //attribute/+/attributeName
                             parentIds.add(null);
@@ -279,8 +277,7 @@ public class MqttBrokerService implements ContainerService {
             if (attributeName != null) {
                 attributeNames.add(attributeName);
                 if (multiLevelIndex == 2) {
-                    //attribute/#/attributeName
-                    // No asset filtering required
+                    return null; //no topic allowed after multilevel wildcard
                 } else if (singleLevelIndex == 2) {
                     //attribute/assetId/+/attributeName
                     parentIds.add(assetId);
@@ -301,6 +298,9 @@ public class MqttBrokerService implements ContainerService {
         if (!parentIds.isEmpty()) {
             assetFilter.setParentIds(parentIds.toArray(new String[0]));
         }
+        if(!paths.isEmpty()) {
+            assetFilter.setPath(paths.toArray(new String[0]));
+        }
         if (!attributeNames.isEmpty()) {
             assetFilter.setAttributeNames(attributeNames.toArray(new String[0]));
         }
@@ -316,7 +316,6 @@ public class MqttBrokerService implements ContainerService {
                 }
             });
     }
-
     protected Consumer<SharedEvent> getEventConsumer(MqttConnection connection, String topic, boolean isValueSubscription) {
         return ev -> {
             List<String> topicTokens = Arrays.asList(topic.split("/"));

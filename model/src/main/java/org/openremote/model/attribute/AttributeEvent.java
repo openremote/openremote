@@ -72,6 +72,7 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
     protected AttributeState attributeState;
     protected String realm;
     protected String parentId;
+    protected String[] path;
 
     public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value) {
         this(assetId, attributeDescriptor.getName(), value);
@@ -140,6 +141,16 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
 
     public AttributeEvent setParentId(String parentId) {
         this.parentId = parentId;
+        return this;
+    }
+
+    @Override
+    public String[] getPath() {
+        return path;
+    }
+
+    public AttributeEvent setPath(String[] path) {
+        this.path = path;
         return this;
     }
 

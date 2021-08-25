@@ -124,7 +124,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
-        MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
+        MqttConnection connection = sessionIdConnectionMap.remove(msg.getClientID());
 
         if (connection != null) {
             Map<String, Object> headers = prepareHeaders(connection);
