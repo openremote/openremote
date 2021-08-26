@@ -92,9 +92,10 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     const loadedTemplatePromise = loadAgents().then(agents => {
 
         const options: [string, string][] = agents.map(agent => [agent.id!, agent.name + " (" + agent.id + ")"]);
+        const readonly = !!props.data;
 
         return html`
-            <or-mwc-input .label="${i18next.t("agentId")}" class="agent-id-picker" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onAgentChanged(agents.find((agent) => agent.id === ev.detail.value))}" type="${InputType.SELECT}" .value="${props.data}" .placeholder="${i18next.t("selectAgent")}" .options="${options}"></or-mwc-input>
+            <or-mwc-input .readonly="${readonly}" .label="${i18next.t("agentId")}" required class="agent-id-picker" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onAgentChanged(agents.find((agent) => agent.id === ev.detail.value))}" type="${InputType.SELECT}" .value="${props.data}" .placeholder="${i18next.t("selectAgent")}" .options="${options}"></or-mwc-input>
         `;
     });
 

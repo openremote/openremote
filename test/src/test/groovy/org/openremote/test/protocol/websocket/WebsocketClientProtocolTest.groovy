@@ -47,6 +47,7 @@ import org.openremote.model.value.JsonPathFilter
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueFilter
+import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Shared
@@ -157,7 +158,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 new WebsocketHTTPSubscription()
                     .contentType(MediaType.APPLICATION_JSON)
                     .method(WebsocketHTTPSubscription.Method.POST)
-                    .headers(new HashMap<String, List<String>>([
+                    .headers(new ValueType.MultivaluedStringMap([
                         "header1" : ["header1Value1"],
                         "header2" : ["header2Value1", "header2Value2"]
                     ]))

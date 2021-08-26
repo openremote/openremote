@@ -38,7 +38,7 @@ public class WebsocketHTTPSubscription extends WebsocketSubscription {
 
     public Method method;
     public String contentType;
-    public Map<String, List<String>> headers;
+    public ValueType.MultivaluedStringMap headers;
     public String uri;
 
     public WebsocketHTTPSubscription() {

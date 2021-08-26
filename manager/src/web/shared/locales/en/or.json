@@ -413,6 +413,7 @@
   "validation": {
     "invalidNumber": "Invalid number",
     "invalidJSON": "Invalid JSON",
-    "invalidDate": "Invalid date"
+    "invalidDate": "Invalid date",
+    "keyAlreadyExists": "Key already exists"
   }
 }

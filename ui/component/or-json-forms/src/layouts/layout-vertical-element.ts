@@ -233,6 +233,12 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                 return;
             }
 
+            if (this.data[newKey] !== undefined) {
+                orInput.setCustomValidity(i18next.t("validation.keyAlreadyExists"));
+                return;
+            } else {
+                orInput.setCustomValidity(undefined);
+            }
             const data = {...this.data};
             const value = data[oldKey];
             delete data[oldKey];
@@ -363,7 +369,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
             if (this.data[keyValue] !== undefined) {
                 valid = false;
-                keyInput.setCustomValidity(i18next.t("keyAlreadyExists"));
+                keyInput.setCustomValidity(i18next.t("validation.keyAlreadyExists"));
             }
             (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !valid;
         };

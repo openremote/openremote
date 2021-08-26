@@ -113,8 +113,9 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         assert schema.get("oneOf") != null
         assert schema.get("oneOf").size() == ValueUtil.getAssetDescriptors(null).findAll {it instanceof AgentDescriptor}.collect {(it as AgentDescriptor).getAgentLinkClass()}.unique {it.getSimpleName()}.size()
         assert schema2 != null
+        assert schema2.get("type").asText() == "object"
         assert schema2.get("additionalProperties") != null
-        assert schema2.get("additionalProperties").get(".+") != null
+        assert schema2.get("additionalProperties").get("type").asText() == "integer"
     }
 
     def "Serialize/Deserialize asset model"() {

@@ -44,13 +44,27 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
 
     @JsonSchemaFormat("or-agent-id")
     protected String id;
+    @JsonPropertyDescription("Defines ValueFilters to apply to an incoming value before it is written to a" +
+        " protocol linked attribute; this is particularly useful for generic protocols. The message should pass through" +
+        " the filters in array order")
     protected ValueFilter[] valueFilters;
+    @JsonPropertyDescription("Defines a value converter map to allow for basic value type conversion; the incoming value" +
+        " will be converted to JSON and if this string matches a key in the converter then the value of that key will be" +
+        " pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but" +
+        " you want to connect this to a Boolean attribute")
     @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected ObjectNode valueConverter;
     @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
+    @JsonPropertyDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
     protected ObjectNode writeValueConverter;
+    @JsonPropertyDescription("String to be used for attribute writes and can contain '" + Protocol.DYNAMIC_VALUE_PLACEHOLDER +
+        "' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the" +
+        " protocol (particularly useful for executable attributes)")
     protected String writeValue;
+    @JsonPropertyDescription("The predicate to apply to incoming messages to determine if the message is intended for the" +
+        " linked attribute; the value used in the predicate can be filtered using the message match filters")
     protected ValuePredicate messageMatchPredicate;
+    @JsonPropertyDescription("ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate")
     protected ValueFilter[] messageMatchFilters;
 
     @JsonSerialize
@@ -69,40 +83,27 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         return id;
     }
 
-    @JsonPropertyDescription("Defines ValueFilters to apply to an incoming value before it is written to a" +
-        " protocol linked attribute; this is particularly useful for generic protocols. The message should pass through" +
-        " the filters in array order")
+
     public Optional<ValueFilter[]> getValueFilters() {
         return Optional.ofNullable(valueFilters);
     }
 
-    @JsonPropertyDescription("Defines a value converter map to allow for basic value type conversion; the incoming value" +
-        " will be converted to JSON and if this string matches a key in the converter then the value of that key will be" +
-        " pushed through to the attribute. An example use case is an API that returns 'ACTIVE'/'DISABLED' strings but" +
-        " you want to connect this to a Boolean attribute")
     public Optional<ObjectNode> getValueConverter() {
         return Optional.ofNullable(valueConverter);
     }
 
-    @JsonPropertyDescription("Similar to valueConverter but will be applied to outgoing values allowing for the opposite conversion")
     public Optional<ObjectNode> getWriteValueConverter() {
         return Optional.ofNullable(writeValueConverter);
     }
 
-    @JsonPropertyDescription("String to be used for attribute writes and can contain '" + Protocol.DYNAMIC_VALUE_PLACEHOLDER +
-        "' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the" +
-        " protocol")
     public Optional<String> getWriteValue() {
         return Optional.ofNullable(writeValue);
     }
 
-    @JsonPropertyDescription("The predicate to apply to incoming messages to determine if the message is intended for the" +
-        " linked attribute")
     public Optional<ValuePredicate> getMessageMatchPredicate() {
         return Optional.ofNullable(messageMatchPredicate);
     }
 
-    @JsonPropertyDescription("ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate")
     public Optional<ValueFilter[]> getMessageMatchFilters() {
         return Optional.ofNullable(messageMatchFilters);
     }
