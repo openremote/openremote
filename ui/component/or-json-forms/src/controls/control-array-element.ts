@@ -1,6 +1,5 @@
 import {
     computeLabel,
-    ControlElement,
     createDefaultValue,
     JsonSchema,
     mapDispatchToArrayControlProps,
@@ -10,13 +9,13 @@ import {
     update
 } from "@jsonforms/core";
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement} from "lit/decorators.js";
-import {CombinatorInfo, getCombinatorInfos, getTemplateFromProps} from "../util";
+import {customElement, property} from "lit/decorators.js";
+import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps} from "../util";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {baseStyle} from "../styles";
+import {addItemOrParameterDialogStyle, baseStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {DefaultColor4, DefaultColor5} from "@openremote/core";
 import "../json-editor";
@@ -75,6 +74,10 @@ const style = css`
         display: flex;
         flex-direction: column;
     }
+
+    #content .item-container:first-child {
+        margin-top: 0;
+    }
     
     #add-parameter {
         margin: 10px 0 0 4px;
@@ -131,15 +134,11 @@ const style = css`
     }
 `;
 
-const controlWithoutLabel = (scope: string): ControlElement => ({
-    type: 'Control',
-    scope: scope,
-    label: false
-});
-
 @customElement("or-json-forms-array-control")
 export class ControlArrayElement extends ControlBaseElement {
 
+    @property()
+    protected minimal?: boolean;
     protected resolvedSchema!: JsonSchema;
     protected itemInfos: CombinatorInfo[] | undefined;
     protected addItem!: (value: any) => void;
@@ -160,6 +159,8 @@ export class ControlArrayElement extends ControlBaseElement {
 
             if (Array.isArray(this.resolvedSchema.anyOf)) {
                 this.itemInfos = getCombinatorInfos(this.resolvedSchema.anyOf, this.rootSchema);
+            } else if (Array.isArray(this.resolvedSchema.oneOf)) {
+                this.itemInfos = getCombinatorInfos(this.resolvedSchema.oneOf, this.rootSchema);
             }
         }
 
@@ -196,15 +197,17 @@ export class ControlArrayElement extends ControlBaseElement {
 
         return html`
             <div id="panel">
-                <div id="header">
-                    <div id="expander"><or-icon icon="chevron-right"></or-icon><span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span></div>
-                    <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${() => this._showJson()}"></or-mwc-input></div>
-                </div>
+                ${this.minimal ? html`` : html`
+                    <div id="header">
+                        <div id="expander"><or-icon icon="chevron-right"></or-icon><span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span></div>
+                        <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${() => this._showJson()}"></or-mwc-input></div>
+                    </div>
+                `}
                 <div id="content" @dragover="${(ev: DragEvent) => this._onDragOver(ev)}">
                     
                     ${!Array.isArray(this.data) ? `` : (this.data as any[]).map((item, index) => {
     
-                        const childPath = Paths.compose(this.path, `${index}`);
+                        const childPath = Paths.compose(this.path, "" + index);
                         const constProp = this.itemInfos && this.itemInfos.length > 0 ? this.itemInfos[0].constProperty : undefined;
                         const childConstValue = constProp ? item[constProp] : undefined;
                         const childMatchedItemInfo = childConstValue ? this.itemInfos?.find(itemInfo => itemInfo.constValue === childConstValue) : undefined;
@@ -274,8 +277,13 @@ export class ControlArrayElement extends ControlBaseElement {
     }
 
     protected _onDragOver(ev: DragEvent) {
-        ev.preventDefault();
+        const dragging = this.shadowRoot!.querySelector(".dragging") as HTMLDivElement;
 
+        if (!dragging) {
+            return;
+        }
+
+        ev.preventDefault();
         const container = ev.currentTarget as HTMLDivElement;
         const draggables = [...((this.shadowRoot!.querySelectorAll(".draggable:not(.dragging)") as any) as HTMLDivElement[])];
         const initial = {offset: Number.NEGATIVE_INFINITY, element: null} as {
@@ -293,7 +301,6 @@ export class ControlArrayElement extends ControlBaseElement {
             }
         }, initial).element;
 
-        const dragging = this.shadowRoot!.querySelector(".dragging") as HTMLDivElement;
         draggables.forEach(draggable => draggable.classList.remove("indicator-before", "indicator-after"));
 
         if (afterItem === null) {
@@ -406,41 +413,8 @@ export class ControlArrayElement extends ControlBaseElement {
                     </form>
                 </div>
             `,
-            styles: html`
-                <style>
-                    .mdc-dialog__surface {
-                        width: 800px;
-                        overflow-x: visible !important;
-                        overflow-y: visible !important;
-                    }
-                    #dialog-content {
-                        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                        border-top-width: 1px;
-                        border-top-style: solid;
-                        border-bottom-width: 1px;
-                        border-bottom-style: solid;
-                        padding: 0;
-                        overflow: visible;
-                    }
-                    form {
-                        display: flex;
-                    }
-                    #type-list {
-                        overflow: auto;
-                        min-width: 150px;
-                        max-width: 300px;
-                        flex: 0 0 40%;
-                        border-right: 1px solid var(--or-app-color5, #CCC);
-                    }
-                    #parameter-list {
-                        display: flex;
-                    }
-                    #parameter-desc {
-                        padding: 5px;
-                    }
-                </style>
-            `,
-            title: i18next.t("addItem"),
+            styles: addItemOrParameterDialogStyle,
+            title: (this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addItem"),
             actions: [
                 {
                     actionName: "cancel",

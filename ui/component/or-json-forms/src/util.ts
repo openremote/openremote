@@ -1,7 +1,7 @@
 import {
     CombinatorKeyword,
     composeWithUi,
-    createCleanLabel,
+    ControlElement,
     createDefaultValue,
     deriveTypes,
     getAjv,
@@ -15,22 +15,17 @@ import {
     JsonFormsSubStates,
     JsonSchema,
     JsonSchema4,
-    mapStateToControlProps,
-    mapStateToControlWithDetailProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Resolve,
     resolveSchema,
     resolveSubSchemas,
     StatePropsOfCombinator,
-    StatePropsOfControl,
-    StatePropsOfControlWithDetail,
-    UISchemaElement,
 } from "@jsonforms/core";
-import { Util } from "@openremote/core";
+import {Util} from "@openremote/core";
 import {html, TemplateResult} from "lit";
-import {ErrorObject, JsonFormsStateContext} from "./index";
-import { unknownTemplate } from "./standard-renderers";
+import {ErrorObject} from "./index";
+import {unknownTemplate} from "./standard-renderers";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult {
     if (!state || !props) {
@@ -86,19 +81,19 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
 
         if (deriveTypes(schema).every(type => type === "object")) {
             const props = getSchemaObjectProperties(schema);
-            const constProp = props.find(([propName, propSchema]) => propSchema.const !== undefined);
+            const constProp = props.find(([propName, propSchema]) => getSchemaConst(propSchema) !== undefined);
             if (constProp) {
                 constProperty = constProp[0];
-                constValue = constProp[1].const;
+                constValue = getSchemaConst(constProp[1]);
 
                 creator = () => {
                     const obj: any = {};
-                    obj[constProp[0]] = constProp[1].const;
+                    obj[constProp[0]] = getSchemaConst(constProp[1]);
                     return obj;
                 }
 
                 if (!titleAndDescription[0]) {
-                    titleAndDescription[0] = constProp[1].const;
+                    titleAndDescription[0] = getSchemaConst(constProp[1]);
                 }
             } else {
                 creator = () => createDefaultValue(schema);
@@ -109,13 +104,27 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         }
 
         return {
-            title: titleAndDescription[0],
+            title: Util.camelCaseToSentenceCase(titleAndDescription[0]),
             description: titleAndDescription[1],
             defaultValueCreator: creator,
             constProperty: constProperty,
             constValue: constValue
         } as CombinatorInfo;
     });
+}
+
+export function getSchemaConst(schema: JsonSchema): any {
+    if (!schema) {
+        return;
+    }
+
+    if (schema.const !== undefined) {
+        return schema.const;
+    }
+
+    if (Array.isArray(schema.enum) && schema.enum!.length === 1) {
+        return schema.enum[0];
+    }
 }
 
 export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
@@ -138,8 +147,6 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
         if (titledSchema) {
             return [titledSchema.title, titledSchema.description];
         }
-
-
     }
 
     return [title, undefined];
@@ -293,3 +300,8 @@ export function resolveSubSchemasRecursive(
     return schema;
 }
 
+export const controlWithoutLabel = (scope: string): ControlElement => ({
+    type: 'Control',
+    scope: scope,
+    label: false
+});

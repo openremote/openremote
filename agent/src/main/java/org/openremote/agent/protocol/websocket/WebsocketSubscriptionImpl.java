@@ -19,26 +19,19 @@
  */
 package org.openremote.agent.protocol.websocket;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
-import java.io.Serializable;
+// This is just here because json schema doesn't support self references for types
+@JsonTypeName(WebsocketSubscriptionImpl.TYPE)
+public class WebsocketSubscriptionImpl extends WebsocketSubscription {
 
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = WebsocketSubscriptionImpl.class, name = WebsocketSubscriptionImpl.TYPE),
-    @JsonSubTypes.Type(value = WebsocketHTTPSubscription.class, name = WebsocketHTTPSubscription.TYPE)
-})
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "type",
-    defaultImpl = WebsocketSubscriptionImpl.class
-)
-public abstract class WebsocketSubscription implements Serializable {
+    public static final String TYPE = "websocket";
 
-    public Object body;
+    public WebsocketSubscriptionImpl() {
+    }
 
-    public WebsocketSubscription body(Object body) {
-        this.body = body;
+    public WebsocketSubscriptionImpl body(Object body) {
+        super.body(body);
         return this;
     }
 }

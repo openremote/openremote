@@ -14,9 +14,10 @@ import {JsonFormsStateContext} from "./index";
  * Adds additional props for layouts which are normally only available for controls
  */
 export interface AdditionalProps {
-    label: string;
-    required: boolean;
+    label?: string;
+    required?: boolean;
     errors?: string;
+    minimal?: boolean;
 }
 
 export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer> extends LitElement implements OwnPropsOfRenderer, AdditionalProps {

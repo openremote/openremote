@@ -23,11 +23,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaFormat;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.query.filter.ValuePredicate;
-import org.openremote.model.value.ValueFilter;
+import org.openremote.model.util.JSONSchemaUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.ValueFilter;
 
 import java.io.Serializable;
 import java.util.Optional;
@@ -40,10 +42,12 @@ import java.util.Optional;
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, defaultImpl = DefaultAgentLink.class)
 public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {
 
-    @Schema(format = "or-agent-id")
+    @JsonSchemaFormat("or-agent-id")
     protected String id;
     protected ValueFilter[] valueFilters;
+    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected ObjectNode valueConverter;
+    @JsonSchemaInject(merge = false, jsonSupplierViaLookup = JSONSchemaUtil.SCHEMA_SUPPLIER_NAME_PATTERN_PROPERTIES_ANY_KEY_ANY_TYPE)
     protected ObjectNode writeValueConverter;
     protected String writeValue;
     protected ValuePredicate messageMatchPredicate;

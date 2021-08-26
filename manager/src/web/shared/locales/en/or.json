@@ -409,5 +409,10 @@
   "loadFailedUsers": "Failed to load users",
   "loadFailedServiceUsers": "Failed to load service users",
   "key": "Key",
-  "anyOfPickerLabel": "{{label}} type"
+  "anyOfPickerLabel": "{{label}} type",
+  "validation": {
+    "invalidNumber": "Invalid number",
+    "invalidJSON": "Invalid JSON",
+    "invalidDate": "Invalid date"
+  }
 }

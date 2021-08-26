@@ -13,6 +13,7 @@ import {
     JsonSchema
 } from "@jsonforms/core";
 import {isEnumArray} from "../standard-renderers";
+import {getSchemaConst} from "../util";
 
 // language=CSS
 const style = css`
@@ -50,7 +51,9 @@ export class ControlInputElement extends ControlBaseElement {
         let multiple = false;
         let value: any = this.data ?? schema.default;
 
-        if (isBooleanControl(uischema, schema)) {
+        if (Array.isArray(schema.type)) {
+            this.inputType = InputType.JSON;
+        } else if (isBooleanControl(uischema, schema)) {
             this.inputType = InputType.CHECKBOX;
         } else if (isNumberControl(uischema, schema) || isIntegerControl(uischema, schema)) {
             step = isNumberControl(uischema, schema) ? 0.1 : 1;
@@ -75,7 +78,7 @@ export class ControlInputElement extends ControlBaseElement {
             this.inputType = InputType.SELECT;
 
             if (isEnumControl(uischema, schema)) {
-                if (schema.const) {
+                if (getSchemaConst(schema) !== undefined) {
                     // Don't show const
                     return html``;
                 }

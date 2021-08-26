@@ -1,5 +1,5 @@
 import {DefaultColor4, DefaultColor5 } from "@openremote/core";
-import { css, unsafeCSS } from "lit";
+import { css, html, unsafeCSS } from "lit";
 
 // language=CSS
 export const baseStyle = css`
@@ -45,4 +45,41 @@ export const baseStyle = css`
         width: 100%;
         min-width: 200px;
     }
+`;
+
+// language=HTML
+export const addItemOrParameterDialogStyle = html`
+    <style>
+        .mdc-dialog__surface {
+            width: 800px;
+            overflow-x: visible !important;
+            overflow-y: visible !important;
+        }
+        #dialog-content {
+            border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+            border-top-width: 1px;
+            border-top-style: solid;
+            border-bottom-width: 1px;
+            border-bottom-style: solid;
+            padding: 0;
+            overflow: visible;
+        }
+        form {
+            display: flex;
+        }
+        #type-list {
+            overflow: auto;
+            min-width: 150px;
+            max-width: 300px;
+            flex: 0 0 40%;
+            border-right: 1px solid var(--or-app-color5, #CCC);
+        }
+        #parameter-list {
+            display: block;
+        }
+        #parameter-desc {
+            padding: 5px;
+            flex: 1;
+        }
+    </style>
 `;

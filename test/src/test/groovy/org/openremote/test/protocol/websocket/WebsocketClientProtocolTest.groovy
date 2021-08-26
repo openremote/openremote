@@ -20,17 +20,12 @@
 package org.openremote.test.protocol.websocket
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.agent.protocol.websocket.WebsocketAgent
-import org.openremote.agent.protocol.websocket.WebsocketAgentLink
-import org.openremote.agent.protocol.websocket.WebsocketAgentProtocol
-import org.openremote.agent.protocol.websocket.WebsocketHTTPSubscription
-import org.openremote.agent.protocol.websocket.WebsocketSubscription
+import org.openremote.agent.protocol.websocket.*
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
-import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetFilter
 import org.openremote.model.asset.ReadAttributeEvent
@@ -47,12 +42,13 @@ import org.openremote.model.event.shared.EventSubscription
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.StringPredicate
+import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.JsonPathFilter
 import org.openremote.model.value.RegexValueFilter
 import org.openremote.model.value.SubStringValueFilter
 import org.openremote.model.value.ValueFilter
-import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -152,7 +148,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)))
             .setConnectSubscriptions([
-                new WebsocketSubscription().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + ValueUtil.asJSON(
+                new WebsocketSubscriptionImpl().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + ValueUtil.asJSON(
                     new EventSubscription(
                         AttributeEvent.class,
                         new AssetFilter<AttributeEvent>().setAssetIds(managerTestSetup.apartment1LivingroomId),
@@ -219,7 +215,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                         )
                         .setWebsocketSubscriptions(
                             [
-                                new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(
+                                new WebsocketSubscriptionImpl().body(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(
                                     new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "targetTemperature")
                                 ).orElse(null)),
                                 new WebsocketHTTPSubscription()
@@ -249,7 +245,7 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
                             )
                             .setWebsocketSubscriptions(
                                 [
-                                    new WebsocketSubscription().body(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(
+                                    new WebsocketSubscriptionImpl().body(SharedEvent.MESSAGE_PREFIX + ValueUtil.asJSON(
                                         new ReadAttributeEvent(managerTestSetup.apartment1LivingroomId, "co2Level")
                                     ).orElse(null)),
                                     new WebsocketHTTPSubscription()

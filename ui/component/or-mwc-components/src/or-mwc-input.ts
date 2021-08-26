@@ -1080,7 +1080,18 @@ export class OrMwcInput extends LitElement {
                     if (valMinMax.some((v) => typeof (v) !== "string")) {
 
                         if (this.type === InputType.JSON) {
-                            valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? (typeof valMinMax[0] === "string" ? valMinMax[0] : JSON.stringify(valMinMax[0], null, 2)) : "";
+                            if (valMinMax[0] !== undefined) {
+                                if (typeof valMinMax[0] !== "string" || valMinMax[0] === null) {
+                                    try {
+                                        valMinMax[0] = JSON.stringify(valMinMax[0], null, 2);
+                                    } catch (e) {
+                                        console.warn("Failed to parse JSON expression for input control");
+                                        valMinMax[0] = "";
+                                    }
+                                }
+                            } else {
+                                valMinMax[0] = "";
+                            }
                         } else {
 
                             const format = this.format ? {...this.format} : {};
@@ -1165,7 +1176,7 @@ export class OrMwcInput extends LitElement {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
-                            @blur="${(e: Event) => this.reportValidity()}" 
+                            @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}" 
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
@@ -1257,10 +1268,6 @@ export class OrMwcInput extends LitElement {
 
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
-
-        if (this.autoValidate) {
-            this.reportValidity();
-        }
 
         if (_changedProperties.has("type")) {
             const component = this.shadowRoot!.getElementById("component");
@@ -1397,6 +1404,10 @@ export class OrMwcInput extends LitElement {
 
             (this._mdcComponent as any).required = this.required;
         }
+
+        if (this.autoValidate) {
+            this.reportValidity();
+        }
     }
 
     protected renderOutlined(labelTemplate: TemplateResult | undefined) {
@@ -1424,11 +1435,20 @@ export class OrMwcInput extends LitElement {
 
     public checkValidity(): boolean {
         const elem = this.shadowRoot!.getElementById("elem") as any;
+        let valid = true;
         if (elem && elem.validity) {
             const nativeValidity = elem.validity as ValidityState;
-            return nativeValidity.valid;
+            valid = nativeValidity.valid;
         }
-        return true;
+
+        if (valid && this.type === InputType.JSON) {
+            // JSON needs special validation - if no text value but this.value then parsing failed
+            if (this.value !== undefined && (this._mdcComponent as MDCTextField).value === "") {
+                valid = false;
+            }
+        }
+
+        return valid;
     }
 
     public reportValidity(): boolean {
@@ -1444,9 +1464,8 @@ export class OrMwcInput extends LitElement {
 
     protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined, enterPressed?: boolean) {
 
-        this.reportValidity();
-
         let previousValue = this.value;
+        let errorMsg: string | undefined;
 
         if (newValue === "undefined") {
             previousValue = null;
@@ -1467,21 +1486,37 @@ export class OrMwcInput extends LitElement {
                 case InputType.JSON:
                 case InputType.NUMBER:
                 case InputType.RANGE:
-                    newValue = newValue !== "" ? JSON.parse(newValue) : null;
+                    if (newValue === "") {
+                        newValue = null;
+                    } else {
+                        try {
+                            newValue = JSON.parse(newValue);
+                        } catch (e) {
+                            newValue = this.value;
+                            errorMsg = this.type === InputType.JSON ? i18next.t("validation.invalidJSON") : i18next.t("validation.invalidNumber");
+                        }
+                    }
                     break;
                 case InputType.DATETIME:
                     if (newValue === "") {
                         newValue = null;
                     } else {
-                        const date = Date.parse(newValue);
-                        const offset = (new Date()).getTimezoneOffset() * 60000;
-                        newValue = date + offset;
+                        try {
+                            const date = Date.parse(newValue);
+                            const offset = (new Date()).getTimezoneOffset() * 60000;
+                            newValue = date + offset;
+                        } catch (e) {
+                            newValue = this.value;
+                            errorMsg = i18next.t("validation.invalidDate");
+                        }
                     }
                     break;
             }
         }
 
         this.value = newValue;
+        this.setCustomValidity(errorMsg);
+        this.reportValidity();
 
         if (newValue !== previousValue) {
             if (this.type === InputType.RANGE) {

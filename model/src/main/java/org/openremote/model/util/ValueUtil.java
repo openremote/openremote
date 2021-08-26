@@ -28,10 +28,11 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.github.victools.jsonschema.generator.*;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
-import com.github.victools.jsonschema.module.jackson.JacksonOption;
-import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import com.kjetland.jackson.jsonSchema.JsonSchemaConfig;
+import com.kjetland.jackson.jsonSchema.JsonSchemaDraft;
+import com.kjetland.jackson.jsonSchema.JsonSchemaGenerator;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaString;
 import org.hibernate.internal.util.SerializationHelper;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.ModelDescriptor;
@@ -138,7 +139,7 @@ public class ValueUtil {
     protected static List<MetaItemDescriptor<?>> metaItemDescriptors;
     protected static List<ValueDescriptor<?>> valueDescriptors;
     protected static Validator validator;
-    protected static SchemaGenerator generator;
+    protected static JsonSchemaGenerator generator;
 
     static {
         // Find all service loader registered asset model providers
@@ -830,31 +831,9 @@ public class ValueUtil {
     }
 
     protected static void doSchemaInit() {
-        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(JSON, SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON)
-            .with(
-                new JacksonModule(
-                    JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE
-                )
-            )
-            .with(
-                new Swagger2Module()
-            );
-//                .with(new JavaxValidationModule());
-
-        configBuilder.forTypesInGeneral()
-            .withSubtypeResolver((declaredType, generationContext) -> {
-                if (declaredType.getErasedType() == AgentLink.class) {
-                    TypeContext typeContext = generationContext.getTypeContext();
-                    return Arrays.stream(getAgentLinkClasses())
-                        .map(agentLinkClass -> typeContext.resolveSubtype(declaredType, agentLinkClass))
-                        .collect(Collectors.toList());
-                }
-                return null;
-            });
-
-        SchemaGeneratorConfig config = configBuilder.build();
-        generator = new SchemaGenerator(config);
+        generator = new JsonSchemaGenerator(JSON, JSONSchemaUtil.getJsonSchemaConfig());
     }
+
 
     protected static Class<?>[] getAgentLinkClasses() {
         return Arrays.stream(getAssetDescriptors(null))
@@ -894,7 +873,7 @@ public class ValueUtil {
         if (generator == null) {
             return JSON.createObjectNode();
         }
-        return generator.generateSchema(clazz);
+        return generator.generateJsonSchema(clazz);
     }
 
     public static void initialiseAssetAttributes(Asset<?> asset) throws IllegalStateException {

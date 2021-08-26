@@ -20,6 +20,8 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaString;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -52,7 +54,6 @@ public final class ValueType {
     public static class IntegerMap extends HashMap<String, Integer> {}
     public static class DoubleMap extends HashMap<String, Double> {}
     public static class BooleanMap extends HashMap<String, Double> {}
-
     public static class MultivaluedStringMap extends HashMap<String, List<String>> {}
 
     public static final ValueDescriptor<Boolean> BOOLEAN = new ValueDescriptor<>("boolean", Boolean.class);
