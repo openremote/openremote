@@ -447,7 +447,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                     <div style="display: grid">
                         <or-mwc-list 
                                 id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}"
-                                .values="${this.selectedAttributes.map(e => e.name!)}"
+                                .values="${this.selectedAttributes.map(e => e.id === this.selectedAsset!.id && e.name!)}"
                                 @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._addRemoveAttrs(ev)}"></or-mwc-list>
                     </div>
                 ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
@@ -499,14 +499,12 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         }
 
         this._getAttributeOptions();
-        this.reRenderDialog();
     }
     
     protected _onAssetSelectionDeleted() {
         this.selectedAsset = undefined;
         this.assetAttributes = [];
         this._getAttributeOptions();
-        this.reRenderDialog();
     }
 
 }
