@@ -392,9 +392,12 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     protected async loadConfig() {
 
         const configStr = await manager.console.retrieveData("OrExportConfig") || "[]";
-        manager.console.storeData("OrExportConfig", configStr);
 
         const parsedConfig = JSON.parse(configStr);
+        if (!parsedConfig.length || !Object.getOwnPropertyNames(parsedConfig[0]).includes("realm")) {
+            manager.console.storeData("OrExportConfig", "[]");
+        }
+            
         this.config = parsedConfig.find(e => e.realm === this.realm) || {realm:this.realm,selectedAttributes:[]};
 
         this.renderTable(this.config.selectedAttributes);
