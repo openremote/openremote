@@ -792,9 +792,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         const dialog = this.shadowRoot!.getElementById("attribute-selector-dialog") as OrMwcAttributeSelector;
         if(dialog){
             dialog.showOnlyDatapointAttrs = true;
-            dialog.selectedAttributes = this.assetAttributes.map(([assetIndex, attr]) => {
-                return {id: this.assets[assetIndex].id, name: attr.name};
-            });
+            dialog.selectedAttributes = this._getSelectedAttributes();
             dialog.open();
         }
     }
@@ -806,21 +804,27 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (!selectedAttrs) return;
         
         if (this.activeAsset) {
+            this.assetAttributes = [];
             selectedAttrs?.forEach(attr => {
 
                 if (this.activeAsset) {
                     let assetIndex = this.assets.findIndex((asset) => asset.id === attr.id);
-                    console.log(assetIndex); // -1 nog niet geselecteerd, 0 wel al geselecteerd
                     if (assetIndex < 0) {
                         assetIndex = this.assets.length;
                         this.assets = [...this.assets, this.activeAsset];
                     }
 
-                    this.assetAttributes = [...this.assetAttributes, [assetIndex, attr]];
+                    this.assetAttributes.push([assetIndex, attr]);
                     this.saveSettings();
                 }
             });
         }
+    }
+
+    protected _getSelectedAttributes() {
+        return this.assetAttributes.map(([assetIndex, attr]) => {
+            return {id: this.assets[assetIndex].id, name: attr.name};
+        });
     }
 
     async onCompleted() {
