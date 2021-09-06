@@ -93,6 +93,11 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
 
+        if(!connection.realm.equals(topicTokens.get(0))) {
+            LOG.warning("Topic should start with the realm of the connection: " + connection);
+            return false;
+        }
+
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
 
@@ -101,8 +106,8 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if(topicTokens.size() > 1) {
-            String assetId = topicTokens.get(1);
+        if(topicTokens.size() > 2) {
+            String assetId = topicTokens.get(2);
 
             if (!SINGLE_LEVEL_WILDCARD.equals(assetId) && !MULTI_LEVEL_WILDCARD.equals(assetId)) {
                 Asset<?> asset = assetStorageService.find(assetId);
@@ -112,9 +117,9 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
                     return false;
                 }
 
-                if (isAttributeTopic && topicTokens.size() > 2
-                        && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)))) {
-                    String attributeName = topicTokens.get(2);
+                if (isAttributeTopic && topicTokens.size() > 3
+                        && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(3)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(3)))) {
+                    String attributeName = topicTokens.get(3);
 
                     if (!asset.hasAttribute(attributeName)) {
                         LOG.fine("Asset attribute not found for topic '" + topic + "': " + connection);
@@ -140,12 +145,12 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             }
 
 
-            if (topicTokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC) && topicTokens.size() != 3) {
+            if (topicTokens.get(1).equals(ATTRIBUTE_VALUE_TOPIC) && topicTokens.size() != 4) {
                 LOG.info("Write request to attribute value topic should contain asset ID and attribute name only, topic '" + topic + "': " + connection);
                 return false;
             }
 
-            if (topicTokens.get(0).equals(ATTRIBUTE_TOPIC) && topicTokens.size() != 1) {
+            if (topicTokens.get(1).equals(ATTRIBUTE_TOPIC) && topicTokens.size() != 2) {
                 LOG.info("Write request to attribute topic should not contain any other tokens, topic '" + topic + "': " + connection);
                 return false;
             }

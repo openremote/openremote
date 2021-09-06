@@ -162,7 +162,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
-        boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(0));
+        boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(1));
         String subscriptionId = msg.getTopicFilter(); // Use topic as subscription ID
 
         AssetFilter filter = buildAssetFilter(connection, topicTokens);
@@ -241,13 +241,13 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         }
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
-        boolean isValueWrite = topicTokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC);
+        boolean isValueWrite = topicTokens.get(1).equals(ATTRIBUTE_VALUE_TOPIC);
         String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
         AttributeEvent attributeEvent = null;
 
         if (isValueWrite) {
-            String assetId = topicTokens.get(1);
-            String attributeName = topicTokens.get(2);
+            String assetId = topicTokens.get(2);
+            String attributeName = topicTokens.get(3);
             Object value = ValueUtil.parse(payloadContent).orElse(null);
             attributeEvent = new AttributeEvent(assetId, attributeName, value);
         } else {

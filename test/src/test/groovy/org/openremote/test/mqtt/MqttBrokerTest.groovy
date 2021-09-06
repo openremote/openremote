@@ -145,7 +145,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
-        def topic = "attribute/" + managerTestSetup.thingId
+        def topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.thingId
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -166,7 +166,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an non existing asset"
-        topic = "attribute/dhajkdasjfgh"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/dhajkdasjfgh"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -187,7 +187,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.apartment1HallwayId
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -226,7 +226,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client publishes to an asset attribute which is readonly"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.apartment1HallwayId
         def payload = ValueUtil.asJSON(ValueUtil.createJsonObject().put("motionSensor", 70)).orElse(null)
         remainingLength = 2 + topic.size() + payload.length()
 
@@ -245,7 +245,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client publishes to an asset attribute"
-        topic = "attributevalue/" + managerTestSetup.apartment1HallwayId + "/lights"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attributevalue/" + managerTestSetup.apartment1HallwayId + "/lights"
         payload = ValueUtil.asJSON(false).orElse(null)
         remainingLength = 2 + topic.size() + payload.length()
 
@@ -265,7 +265,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client unsubscribes to an asset"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.apartment1HallwayId
         remainingLength = 4 + topic.size()
 
         client
@@ -295,7 +295,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset attribute"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -334,7 +334,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client unsubscribes to an asset attribute"
-        topic = "attribute/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
         remainingLength = 4 + topic.size()
 
         client
@@ -355,7 +355,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes with multilevel on asset"
-        topic = "attribute/" + managerTestSetup.apartment1Id + "/" + MULTI_LEVEL_WILDCARD
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.apartment1Id + "/" + MULTI_LEVEL_WILDCARD
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -385,7 +385,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset attribute value"
-        topic = "attributevalue/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attributevalue/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -425,7 +425,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client unsubscribes to an asset attribute value"
-        topic = "attributevalue/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attributevalue/" + managerTestSetup.apartment1HallwayId + "/motionSensor"
         remainingLength = 4 + topic.size()
 
         client
@@ -494,7 +494,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
-        topic = "asset/" + managerTestSetup.thingId
+        topic = keycloakTestSetup.tenantBuilding.realm + "/asset/" + managerTestSetup.thingId
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -515,7 +515,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an non existing asset"
-        topic = "asset/dhajkdasjfgh"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/asset/dhajkdasjfgh"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -536,7 +536,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset"
-        topic = "asset/" + managerTestSetup.apartment1HallwayId
+        topic = keycloakTestSetup.tenantBuilding.realm + "/asset/" + managerTestSetup.apartment1HallwayId
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -567,7 +567,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes for child assets of an asset"
-        topic = "asset/" + managerTestSetup.apartment1Id +  "/" + MULTI_LEVEL_WILDCARD
+        topic = keycloakTestSetup.tenantBuilding.realm + "/asset/" + managerTestSetup.apartment1Id +  "/" + MULTI_LEVEL_WILDCARD
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -599,7 +599,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client unsubscribes to an asset"
-        topic = "asset/" + managerTestSetup.apartment1HallwayId
+        topic = keycloakTestSetup.tenantBuilding.realm + "/asset/" + managerTestSetup.apartment1HallwayId
         remainingLength = 4 + topic.size()
 
         client

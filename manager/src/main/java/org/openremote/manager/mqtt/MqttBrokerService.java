@@ -182,11 +182,11 @@ public class MqttBrokerService implements ContainerService {
     }
 
     public static boolean isAttributeTopic(List<String> tokens) {
-        return tokens.get(0).equals(ATTRIBUTE_TOPIC) || tokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC);
+        return tokens.get(1).equals(ATTRIBUTE_TOPIC) || tokens.get(1).equals(ATTRIBUTE_VALUE_TOPIC);
     }
 
     public static boolean isAssetTopic(List<String> tokens) {
-        return tokens.get(0).equals(ASSET_TOPIC);
+        return tokens.get(1).equals(ASSET_TOPIC);
     }
 
     public static AssetFilter<?> buildAssetFilter(MqttConnection connection, List<String> topicTokens) {
@@ -203,7 +203,7 @@ public class MqttBrokerService implements ContainerService {
         List<String> paths = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
 
-        String assetId = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(1)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(1)) ? null : topicTokens.get(1);
+        String assetId = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)) ? null : topicTokens.get(2);
         int multiLevelIndex = topicTokens.indexOf(MULTI_LEVEL_WILDCARD);
         int singleLevelIndex = topicTokens.indexOf(SINGLE_LEVEL_WILDCARD);
 
@@ -211,55 +211,55 @@ public class MqttBrokerService implements ContainerService {
             return null;
         }
 
-        if (topicTokens.size() == 2) {
-            if (multiLevelIndex == 1) {
-                //.../#
+        if (topicTokens.size() == 3) {
+            if (multiLevelIndex == 2) {
+                //realm/.../#
                 // No asset filtering required
-            } else if (singleLevelIndex == 1) {
-                //.../+
+            } else if (singleLevelIndex == 2) {
+                //realm/.../+
                 parentIds.add(null);
             } else {
-                //.../assetId
+                //realm/.../assetId
                 assetIds.add(assetId);
             }
-        } else if (topicTokens.size() == 3) {
+        } else if (topicTokens.size() == 4) {
             if (isAssetTopic) {
-                if (multiLevelIndex == 2) {
-                    //asset/assetId/#
+                if (multiLevelIndex == 3) {
+                    //realm/asset/assetId/#
                     paths.add(assetId);
-                } else if (singleLevelIndex == 2) {
-                    //asset/assetId/+
+                } else if (singleLevelIndex == 3) {
+                    //realm/asset/assetId/+
                     parentIds.add(assetId);
                 } else {
                     return null;
                 }
             } else {
                 if (assetId != null) {
-                    if (multiLevelIndex == 2) {
-                        //attribute/assetId/#
+                    if (multiLevelIndex == 3) {
+                        //realm/attribute/assetId/#
                         paths.add(assetId);
-                    } else if (singleLevelIndex == 2) {
-                        //attribute/assetId/+
+                    } else if (singleLevelIndex == 3) {
+                        //realm/attribute/assetId/+
                         parentIds.add(assetId);
                     } else {
                         assetIds.add(assetId);
 
-                        String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)) ? null : topicTokens.get(2);
+                        String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(3)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(3)) ? null : topicTokens.get(3);
                         if (attributeName != null) {
-                            //attribute/assetId/attributeName
-                            attributeNames.add(topicTokens.get(2));
+                            //realm/attribute/assetId/attributeName
+                            attributeNames.add(topicTokens.get(3));
                         } else {
                             return null;
                         }
                     }
                 } else {
-                    String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)) ? null : topicTokens.get(2);
+                    String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(3)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(3)) ? null : topicTokens.get(3);
                     if (attributeName != null) {
                         attributeNames.add(attributeName);
-                        if (multiLevelIndex == 2) {
+                        if (multiLevelIndex == 3) {
                            return null; //no topic allowed after multilevel wildcard
-                        } else if (singleLevelIndex == 2) {
-                            //attribute/+/attributeName
+                        } else if (singleLevelIndex == 3) {
+                            //realm/attribute/+/attributeName
                             parentIds.add(null);
                         } else {
                             return null;
@@ -269,17 +269,17 @@ public class MqttBrokerService implements ContainerService {
                     }
                 }
             }
-        } else if (topicTokens.size() == 4) {
+        } else if (topicTokens.size() == 5) {
             if (isAssetTopic || assetId == null) {
                 return null;
             }
-            String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(3)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(3)) ? null : topicTokens.get(3);
+            String attributeName = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(4)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(4)) ? null : topicTokens.get(4);
             if (attributeName != null) {
                 attributeNames.add(attributeName);
-                if (multiLevelIndex == 2) {
+                if (multiLevelIndex == 3) {
                     return null; //no topic allowed after multilevel wildcard
-                } else if (singleLevelIndex == 2) {
-                    //attribute/assetId/+/attributeName
+                } else if (singleLevelIndex == 3) {
+                    //realm/attribute/assetId/+/attributeName
                     parentIds.add(assetId);
                 } else {
                     return null;
