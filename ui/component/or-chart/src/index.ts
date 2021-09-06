@@ -787,36 +787,34 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
     
     _openDialog() {
-        const dialog = this.shadowRoot!.getElementById("attribute-selector-dialog") as OrMwcAttributeSelector;
-        if(dialog){
-            dialog.showOnlyDatapointAttrs = true;
-            dialog.selectedAttributes = this._getSelectedAttributes();
-            dialog.open();
-        }
+        const hostElement = document.body;
+        const dialog = new OrMwcAttributeSelector();
+        dialog.showOnlyDatapointAttrs = true;
+        dialog.selectedAttributes = this._getSelectedAttributes();
+        dialog.isOpen = true;
+        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, (ev: any) => this._addAttribute(ev.detail.selectedAttributes));
+
+        hostElement.append(dialog);
+        return dialog;
     }
 
-    protected _addAttribute(selectedAttrs?: AttributeRef[]) {
-        const dialog = this.shadowRoot!.getElementById("attribute-selector-dialog") as OrMwcAttributeSelector;
-        dialog.close();
-
+    protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
         if (!selectedAttrs) return;
-        
-        if (this.activeAsset) {
-            this.assetAttributes = [];
-            selectedAttrs?.forEach(attr => {
 
-                if (this.activeAsset) {
-                    let assetIndex = this.assets.findIndex((asset) => asset.id === attr.id);
-                    if (assetIndex < 0) {
-                        assetIndex = this.assets.length;
-                        this.assets = [...this.assets, this.activeAsset];
-                    }
-
-                    this.assetAttributes.push([assetIndex, attr]);
-                    this.saveSettings();
+        this.assetAttributes = [];
+        for (const attrRef of selectedAttrs) {
+            const response = await manager.rest.api.AssetResource.get(attrRef.id!);
+            this.activeAsset = response.data;
+            if (this.activeAsset) {
+                let assetIndex = this.assets.findIndex((asset) => asset.id === attrRef.id);
+                if (assetIndex < 0) {
+                    assetIndex = this.assets.length;
+                    this.assets = [...this.assets, this.activeAsset];
                 }
-            });
+                this.assetAttributes.push([assetIndex, attrRef]);
+            }
         }
+        this.saveSettings();
     }
 
     protected _getSelectedAttributes() {
