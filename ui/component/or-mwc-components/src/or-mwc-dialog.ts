@@ -363,7 +363,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     private assetAttributes: Attribute<any>[] = []; // to display attributes that belong to selected asset
     
     @property({type: Boolean})
-    public showOnlyDatapointAttrs: boolean = false;
+    public showOnlyDatapointAttrs?: boolean = false;
 
     @property({type: Array, attribute: false})
     public selectedAttributes: AttributeRef[] = [];

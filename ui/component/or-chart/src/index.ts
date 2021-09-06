@@ -21,7 +21,6 @@ import manager, {
 import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
-import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
 import {Chart, ChartDataset, TimeUnit, ScatterDataPoint, ScatterController, LineController, LineElement, PointElement, LinearScale, TimeScale,
     Filler,
@@ -30,7 +29,7 @@ import {Chart, ChartDataset, TimeUnit, ScatterDataPoint, ScatterController, Line
     Tooltip,
     ChartConfiguration,
     TimeScaleOptions} from "chart.js";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -38,6 +37,7 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import ChartAnnotation, { AnnotationOptions } from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
 import {GenericAxiosResponse } from "@openremote/rest";
+import {OrMwcAttributeSelector, OrAddAttributeRefsEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -366,11 +366,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     @query("#chart")
     protected _chartElem!: HTMLCanvasElement;
 
-    @query("#mdc-dialog")
     protected _dialogElem!: HTMLElement;
 
     protected _chart?: Chart;
-    protected _dialog!: MDCDialog;
     protected _style!: CSSStyleDeclaration;
     protected _startOfPeriod?: number;
     protected _endOfPeriod?: number;
@@ -572,7 +570,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <div id="attribute-list">
                         ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                             const colourIndex = index % this.colors.length;
-                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attr.name!, this.assets[assetIndex]!.type!);
                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
                             const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
                             const bgColor = this.colors[colourIndex] || "";
@@ -589,48 +586,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                         })}
                     </div>
                     <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
-
-                </div>
-            </div>
-            <div id="mdc-dialog"
-                class="mdc-dialog"
-                role="alertdialog"
-                aria-modal="true"
-                aria-labelledby="my-dialog-title"
-                aria-describedby="my-dialog-content">
-                <div class="mdc-dialog__container">
-                    <div class="mdc-dialog__surface">
-                    <h2 class="mdc-dialog__title" id="my-dialog-title">${i18next.t("addAttribute")}</h2>
-                    <div class="dialog-container mdc-dialog__content" id="my-dialog-content">
-                        <or-asset-tree id="chart-asset-tree" readonly .selectedIds="${this.activeAsset ? [this.activeAsset.id] : undefined}"></or-asset-tree>
-                            ${this.activeAsset && this.activeAsset.attributes ? html`
-                                <or-mwc-input id="chart-attribute-picker" 
-                                        style="display:flex;"
-                                        .label="${i18next.t("attribute")}" 
-                                        .type="${InputType.LIST}"
-                                        .options="${this._getAttributeOptions()}"></or-mwc-input>
-                            `:``}
-                    </div>
-                    <footer class="mdc-dialog__actions">
-                        <or-mwc-input class="button" 
-                                slot="secondaryAction"
-                                .type="${InputType.BUTTON}" 
-                                label="${i18next.t("cancel")}" 
-                                class="mdc-button mdc-dialog__button" 
-                                data-mdc-dialog-action="no"></or-mwc-input>
-
-                        <or-mwc-input class="button" 
-                            slot="primaryAction"
-                            .type="${InputType.BUTTON}" 
-                            label="${i18next.t("add")}" 
-                            class="mdc-button mdc-dialog__button" 
-                            data-mdc-dialog-action="yes"
-                            @click="${this.addAttribute}"></or-mwc-input>
-
-                    </footer>
+                    <div id="mdc-dialog">
+                        <or-mwc-attribute-selector id="attribute-selector-dialog" @or-attribute-refs-add="${(ev: OrAddAttributeRefsEvent) => this._addAttribute(ev.detail.selectedAttributes)}"></or-mwc-attribute-selector>
                     </div>
                 </div>
-                <div class="mdc-dialog__scrim"></div>
             </div>
         `;
     }
@@ -828,32 +787,40 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
     
     _openDialog() {
-        const component = this.shadowRoot!.getElementById("mdc-dialog");
-        if(component){
-            const dialog = new MDCDialog(component);
-            if(dialog){
-                dialog.open();
-            }
-        }
+        const hostElement = document.body;
+        const dialog = new OrMwcAttributeSelector();
+        dialog.showOnlyDatapointAttrs = true;
+        dialog.selectedAttributes = this._getSelectedAttributes();
+        dialog.isOpen = true;
+        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, (ev: any) => this._addAttribute(ev.detail.selectedAttributes));
+
+        hostElement.append(dialog);
+        return dialog;
     }
 
-    addAttribute() {
-        if (this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
-            const elm = this.shadowRoot.getElementById('chart-attribute-picker') as OrMwcInput;
-            if (this.activeAsset) {
-                const attr = this.activeAsset.attributes ? this.activeAsset.attributes[elm.value] : undefined;
-                if (attr) {
-                    let index = this.assets.findIndex((asset) => asset.id === this.activeAsset!.id);
-                    if (index < 0) {
-                        index = this.assets.length;
-                        this.assets = [...this.assets, this.activeAsset];
-                    }
+    protected async _addAttribute(selectedAttrs?: AttributeRef[]) {
+        if (!selectedAttrs) return;
 
-                    this.assetAttributes = [...this.assetAttributes, [index, attr]];
-                    this.saveSettings();
+        this.assetAttributes = [];
+        for (const attrRef of selectedAttrs) {
+            const response = await manager.rest.api.AssetResource.get(attrRef.id!);
+            this.activeAsset = response.data;
+            if (this.activeAsset) {
+                let assetIndex = this.assets.findIndex((asset) => asset.id === attrRef.id);
+                if (assetIndex < 0) {
+                    assetIndex = this.assets.length;
+                    this.assets = [...this.assets, this.activeAsset];
                 }
+                this.assetAttributes.push([assetIndex, attrRef]);
             }
         }
+        this.saveSettings();
+    }
+
+    protected _getSelectedAttributes() {
+        return this.assetAttributes.map(([assetIndex, attr]) => {
+            return {id: this.assets[assetIndex].id, name: attr.name};
+        });
     }
 
     async onCompleted() {
@@ -864,9 +831,6 @@ export class OrChart extends translate(i18next)(LitElement) {
         if (this._chart) {
             this._chart.destroy();
             this._chart = undefined;
-        }
-        if (this._dialog) {
-            this._dialog.destroy();
         }
     }
 
@@ -884,6 +848,29 @@ export class OrChart extends translate(i18next)(LitElement) {
             });
         }
         this.saveSettings();
+    }
+
+    protected _getAttributeOptionsOld(): [string, string][] | undefined {
+        if(!this.activeAsset || !this.activeAsset.attributes) {
+            return;
+        }
+
+        if(this.shadowRoot && this.shadowRoot.getElementById('chart-attribute-picker')) {
+            const elm = this.shadowRoot.getElementById('chart-attribute-picker') as HTMLInputElement;
+            elm.value = '';
+        }
+
+        const attributes = Object.values(this.activeAsset.attributes);
+        if (attributes && attributes.length > 0) {
+            return attributes
+                .filter((attribute) => attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.STOREDATAPOINTS) ? attribute.meta[WellknownMetaItems.STOREDATAPOINTS] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK)))
+                .filter((attr) => (this.assetAttributes && !this.assetAttributes.some(([index, assetAttr]) => (assetAttr.name === attr.name) && this.assets[index].id === this.activeAsset!.id)))
+                .map((attr) => {
+                    const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.activeAsset!.type, attr.name, attr);
+                    const label = Util.getAttributeLabel(attr, descriptors[0], this.activeAsset!.type, false);
+                    return [attr.name!, label];
+                });
+        }
     }
 
     protected _getAttributeOptions(): [string, string][] | undefined {
