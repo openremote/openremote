@@ -21,7 +21,6 @@ import manager, {
 import "@openremote/or-asset-tree";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
-import {MDCDialog} from '@material/dialog';
 import "@openremote/or-translate";
 import {Chart, ChartDataset, TimeUnit, ScatterDataPoint, ScatterController, LineController, LineElement, PointElement, LinearScale, TimeScale,
     Filler,
@@ -30,7 +29,7 @@ import {Chart, ChartDataset, TimeUnit, ScatterDataPoint, ScatterController, Line
     Tooltip,
     ChartConfiguration,
     TimeScaleOptions} from "chart.js";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
