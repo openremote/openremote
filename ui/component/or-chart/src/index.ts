@@ -89,6 +89,9 @@ export interface OrChartConfig {
     }};
 }
 
+// Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+declare function require(name: string): any;
+
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
