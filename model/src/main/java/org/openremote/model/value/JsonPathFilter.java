@@ -29,6 +29,7 @@ import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ParseContext;
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -38,6 +39,7 @@ import javax.validation.constraints.NotNull;
  * This filter works on any type of data; when applying the filter the data should be converted to JSON representation
  * using a tool like Jackson and then the JSON path expression should be applied to this JSON string.
  */
+@JsonSchemaTitle("JSON Path")
 @JsonTypeName(JsonPathFilter.NAME)
 public class JsonPathFilter extends ValueFilter {
 

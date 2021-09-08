@@ -65,13 +65,13 @@ const style = css`
         opacity: 0.5;
     }
 
-    .item-wrapper.dragging.indicator-after {
+    .item-wrapper.indicator-after {
         border-bottom-width: 3px;
         border-bottom-style: solid;
         border-bottom-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
     }
 
-    .item-wrapper.dragging.indicator-before {
+    .item-wrapper.indicator-before {
         border-top-width: 3px;
         border-top-style: solid;
         border-top-color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});

@@ -85,16 +85,7 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     };
 
     const onAgentChanged = (agent: Agent | undefined) => {
-        if (!!props.data) {
-            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueAssetModified"), i18next.t("discard"))
-                .then((ok) => {
-                    if (ok) {
-                        props.handleChange(props.path, agent ? agent.id : undefined);
-                    }
-                });
-        } else {
-            props.handleChange(props.path, agent ? agent.id : undefined);
-        }
+        props.handleChange(props.path, agent ? agent.id : undefined);
         return;
     };
 

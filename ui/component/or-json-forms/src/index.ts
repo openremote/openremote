@@ -1,6 +1,5 @@
 import {css, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
-import {guard} from "lit/directives/guard";
 import {ErrorObject} from "ajv";
 import {
     Actions,
@@ -18,16 +17,13 @@ import {
     JsonFormsSubStates,
     JsonFormsUISchemaRegistryEntry,
     JsonSchema,
-    mapDispatchToControlProps,
     mapStateToJsonFormsRendererProps,
     OwnPropsOfJsonFormsRenderer,
     setConfig,
-    StatePropsOfJsonFormsRenderer,
     UISchemaElement
 } from "@jsonforms/core";
 import {getTemplateWrapper, StandardRenderers} from "./standard-renderers";
 import {getLabel, getTemplateFromProps} from "./util";
-import {useEffect, useMemo, useReducer, useRef} from "haunted";
 import {baseStyle} from "./styles";
 import {Util} from "@openremote/core";
 import {AdditionalProps} from "./base-element";
@@ -60,24 +56,6 @@ const styles = css`
         margin: 0; /* Remove inherited margin */
     }
 `;
-
-/**
- * Hook similar to `useEffect` with the difference that the effect
- * is only executed from the second call onwards.
- */
-const useEffectAfterFirstRender = (
-    effect: () => void,
-    dependencies: Array<any>
-) => {
-    const firstExecution = useRef(true);
-    useEffect(() => {
-        if (firstExecution.current) {
-            firstExecution.current = false;
-            return;
-        }
-        effect();
-    }, dependencies);
-};
 
 @customElement("or-json-forms")
 export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
