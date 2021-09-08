@@ -109,9 +109,19 @@ export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnP
     return getTemplateWrapper(template, deleteHandler);
 };
 
+export const constTester: RankedTester = rankWith(
+    6,
+    schemaMatches(schema => getSchemaConst(schema) !== undefined)
+);
+export const constRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJsonFormsRenderer) => {
+    // Don't render const
+    return html``;
+};
+
 export const inputControlTester: RankedTester = rankWith(
     3,
     or(
+        schemaMatches(schema => Array.isArray(schema.type) && schema.type.length === 7),
         isStringControl,
         isBooleanControl,
         isNumberControl,
@@ -366,6 +376,7 @@ export function unknownTemplate() {
 export const StandardRenderers: JsonFormsRendererRegistryEntry[] = [
 
     {tester: verticalOrGroupLayoutTester, renderer: verticalLayoutRenderer},
+    {tester: constTester, renderer: constRenderer},
     {tester: inputControlTester, renderer: inputControlRenderer},
     {tester: objectControlTester, renderer: objectControlRenderer},
     {tester: arrayControlTester, renderer: arrayControlRenderer},

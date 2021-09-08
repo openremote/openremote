@@ -7,6 +7,8 @@ import {
     isControl,
     JsonSchema,
     mapStateToControlProps,
+    mapStateToControlWithDetailProps,
+    mapStateToJsonFormsRendererProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Paths,
@@ -22,7 +24,8 @@ import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-com
 import {i18next} from "@openremote/or-translate";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
-import {addItemOrParameterDialogStyle, baseStyle} from "../styles";
+import "@openremote/or-components/or-collapsible-panel";
+import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {DefaultColor5} from "@openremote/core";
 import "../json-editor";
@@ -31,55 +34,6 @@ import {AdditionalProps} from "../base-element";
 
 // language=CSS
 const style = css`
-    :host {
-        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-        border-radius: 4px;
-        border-width: 1px;
-        border-style: solid;
-    }
-    
-    #expander {
-        --or-icon-width: 20px;
-        --or-icon-height: 20px;
-        cursor: pointer;
-        flex: 1 1 auto;
-    }
-    #expander > * {
-        pointer-events: none;
-    }
-    #expander > or-icon {
-        vertical-align: middle;
-        margin-right: 6px;
-        margin-left: -5px;
-    }
-    
-    #errors {
-        color: red;
-        margin-right: 10px;
-    }
-    
-    #errors > or-icon {
-        margin-right: 10px;
-    }
-    
-    #header {
-        display: flex;
-        align-items: center;
-        height: 50px;
-    }
-    
-    #content {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    #add-parameter {
-        margin: 10px 0 0 4px;
-    }
-    
-    :host, .padded {
-        padding: 10px 16px;
-    }
     
     #dynamic-wrapper {
         display: table;
@@ -104,10 +58,6 @@ const style = css`
 
     .key-container or-mwc-input, .value-container or-mwc-input {
         display: block;
-    }
-    
-    .delete-container {
-        vertical-align: middle;
     }
 
     .value-container > .item-container {
@@ -140,6 +90,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
     public static get styles() {
         return [
             baseStyle,
+            panelStyle,
             style
         ];
     }
@@ -165,55 +116,55 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             }
         }
 
-        return html`
-            <div id="panel">
-                ${this.minimal ? html`` : html`
-                    <div id="header">
-                        <div id="expander">
-                            <or-icon icon="chevron-right"></or-icon>
-                            <span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
-                        </div>
-                        ${!this.errors ? `` : html`<div id="errors"><or-icon icon="alert"></or-icon><span>${this.errors}</span></div>`}
-                        <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${() => this._showJson()}"></or-mwc-input></div>
-                    </div>
-                `}
-                <div id="content">
-                    
-                    ${this.errors ? ``
-                    : dynamic && dynamicValueSchema ? 
-                        this._getDynamicContentTemplate(dynamicPropertyRegex, dynamicValueSchema)   
-                    : this.getChildProps().map((props: OwnPropsOfRenderer) => {
-                        
-                        const contentProps: OwnPropsOfRenderer & AdditionalProps = {
-                            ...props,
-                            label: "",
-                            required: false
-                        };
-                        
-                        if (isControl(props.uischema)) {
-                            
-                            const controlProps = props as OwnPropsOfControl;
-                            const stateControlProps = mapStateToControlProps(jsonFormsState, controlProps);
-                            stateControlProps.label = stateControlProps.label || getLabel(this.schema, rootSchema, undefined, (props.uischema as ControlElement).scope) || "";
-                            contentProps.label = stateControlProps.label;
-                            contentProps.required = !!stateControlProps.required;
-                            if (!stateControlProps.required && stateControlProps.data === undefined) {
-                                // Optional property with no data so show this in the add parameter dialog
-                                optionalProps.push(stateControlProps);
-                                return html``;
-                            }
-                        }
-                        
-                        return getTemplateFromProps(this.state, contentProps);
-                    })}
+        const header = this.minimal ? `` : html`
+            <span slot="header">${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+            <div id="header-description" slot="header-description">
+                <div id="errors">
+                    ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
                 </div>
-                
-                ${this.errors ? `` : html`
-                <div id="add-parameter">
-                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" .disabled="${!dynamic && optionalProps.length === 0}" @click="${() => this._addParameter(optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
-                </div>`}
+                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${(ev: MouseEvent) => this._showJson(ev)}"></or-mwc-input></div>
             </div>
         `;
+
+        const content = html`
+            ${header}
+            <div id="content-wrapper" slot="content">
+                <div id="content">
+                    ${dynamic && dynamicValueSchema ?
+                        this._getDynamicContentTemplate(dynamicPropertyRegex, dynamicValueSchema)
+                        : this.getChildProps().map((childProps: OwnPropsOfRenderer & AdditionalProps) => {
+
+                            if (childProps.schema) {
+                                // Make root schema definitions available to this schema
+                                childProps.schema.definitions = rootSchema.definitions;
+                            }
+
+                            if (isControl(childProps.uischema)) {
+
+                                const controlProps = childProps as OwnPropsOfControl;
+                                const stateControlProps = mapStateToControlProps(jsonFormsState, controlProps);
+                                stateControlProps.label = stateControlProps.label || getLabel(this.schema, rootSchema, undefined, (childProps.uischema as ControlElement).scope) || "";
+                                childProps.label = stateControlProps.label;
+                                childProps.required = !!stateControlProps.required;
+                                if (!stateControlProps.required && stateControlProps.data === undefined) {
+                                    // Optional property with no data so show this in the add parameter dialog
+                                    optionalProps.push(stateControlProps);
+                                    return html``;
+                                }
+                            }
+
+                            return getTemplateFromProps(this.state, childProps);
+                        })}
+                </div>
+
+                ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
+                        <div id="footer">
+                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" @click="${() => this._addParameter(optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
+                        </div>`}
+            </div>
+        `;
+
+        return this.minimal ? html`<div>${content}</div>` : html`<or-collapsible-panel>${content}</or-collapsible-panel>`;
     }
 
     protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema): TemplateResult {
@@ -284,7 +235,9 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         `;
     }
 
-    protected _showJson() {
+    protected _showJson(ev: MouseEvent) {
+        ev.stopPropagation();
+
         const dialog = showDialog(
             {
                 content: html`

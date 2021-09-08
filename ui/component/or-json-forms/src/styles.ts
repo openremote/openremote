@@ -9,16 +9,16 @@ export const baseStyle = css`
     
     .item-container {
         display: flex;
-        margin: 10px 0 10px 10px;
     }
     
-    .delete-container {
+    .delete-container, .drag-container {
         width: 30px;
         display: flex;
+        vertical-align: middle;
     }
     
-    .item-container:hover .button-clear {
-        visibility: visible;                    
+    .item-container:hover .button-clear, .item-wrapper:hover .button-clear {
+        visibility: visible;
     }
     
     .button-clear {
@@ -45,6 +45,54 @@ export const baseStyle = css`
         width: 100%;
         min-width: 200px;
     }
+
+    #errors {
+        color: red;
+        margin-right: 10px;
+        flex: 1;
+        display: flex;
+        align-items: center;
+    }
+
+    #errors > or-icon {
+        margin-right: 5px;
+    }
+`;
+
+// language=CSS
+export const panelStyle = css`
+    #header-description {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+    }
+
+    #header-buttons {
+        flex: 0;
+    }
+
+    #content-wrapper {
+        flex: 1;
+        padding: 0 10px 10px 10px;
+    }
+
+    #content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #content > * {
+        flex: 1;
+    }
+
+    .item-container + .item-container {
+        padding-top: 10px;
+    }
+
+    #footer {
+        margin-top: 10px;
+    }
+
 `;
 
 // language=HTML

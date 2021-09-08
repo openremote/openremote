@@ -98,7 +98,7 @@ public class JSONSchemaUtil {
             typesNode = arrNode;
         }
 
-        return wrapped ? ValueUtil.JSON.createObjectNode().set("types", typesNode) : typesNode;
+        return wrapped ? ValueUtil.JSON.createObjectNode().set("type", typesNode) : typesNode;
     }
 
     public static JsonSchemaConfig getJsonSchemaConfig() {
@@ -116,7 +116,7 @@ public class JSONSchemaUtil {
             false,
             Collections.emptySet(),
             new HashMap<Class<?>, Class<?>>(){{
-                put(Object.class, PatternPropertiesSimpleKeyAnyType.class);
+                put(Object.class, AnyType.class);
                 put(ObjectNode.class, PatternPropertiesSimpleKeyAnyType.class);
             }},
             new HashMap<String, Supplier<JsonNode>>() {{

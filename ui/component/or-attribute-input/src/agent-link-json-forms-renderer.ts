@@ -16,7 +16,7 @@ import { html } from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { until } from "lit/directives/until";
-
+import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 /**
  * This function creates a short lived cache for loading the list of agents; this is useful when multiple instances
@@ -85,17 +85,25 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
     };
 
     const onAgentChanged = (agent: Agent | undefined) => {
-        props.handleChange(props.path, agent ? agent.id : undefined);
+        if (!!props.data) {
+            showOkCancelDialog(i18next.t("loseChanges"), i18next.t("confirmContinueAssetModified"), i18next.t("discard"))
+                .then((ok) => {
+                    if (ok) {
+                        props.handleChange(props.path, agent ? agent.id : undefined);
+                    }
+                });
+        } else {
+            props.handleChange(props.path, agent ? agent.id : undefined);
+        }
         return;
     };
 
     const loadedTemplatePromise = loadAgents().then(agents => {
 
         const options: [string, string][] = agents.map(agent => [agent.id!, agent.name + " (" + agent.id + ")"]);
-        const readonly = !!props.data;
 
         return html`
-            <or-mwc-input .readonly="${readonly}" .label="${i18next.t("agentId")}" required class="agent-id-picker" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onAgentChanged(agents.find((agent) => agent.id === ev.detail.value))}" type="${InputType.SELECT}" .value="${props.data}" .placeholder="${i18next.t("selectAgent")}" .options="${options}"></or-mwc-input>
+            <or-mwc-input .label="${i18next.t("agentId")}" required class="agent-id-picker" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => onAgentChanged(agents.find((agent) => agent.id === ev.detail.value))}" type="${InputType.SELECT}" .value="${props.data}" .placeholder="${i18next.t("selectAgent")}" .options="${options}"></or-mwc-input>
         `;
     });
 
@@ -110,15 +118,7 @@ const agentIdRenderer = (state: JsonFormsStateContext, props: ControlProps) => {
         ${until(loadedTemplatePromise, html`<or-mwc-input class="agent-id-picker" .type="${InputType.SELECT}"></or-mwc-input>`)}
         `;
 
-    let deleteHandler: undefined | (() => void);
-    if (!props.required && props.path) {
-        const { handleChange } = mapDispatchToControlProps(state.dispatch);
-        deleteHandler = () => {
-            handleChange(props.path, undefined);
-        }
-    }
-
-    return getTemplateWrapper(template, deleteHandler);
+    return getTemplateWrapper(template, undefined);
 };
 
 export const agentIdRendererRegistryEntry: JsonFormsRendererRegistryEntry = {

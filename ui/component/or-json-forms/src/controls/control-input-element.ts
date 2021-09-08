@@ -78,11 +78,6 @@ export class ControlInputElement extends ControlBaseElement {
             this.inputType = InputType.SELECT;
 
             if (isEnumControl(uischema, schema)) {
-                if (getSchemaConst(schema) !== undefined) {
-                    // Don't show const
-                    return html``;
-                }
-
                 options = schema.enum!.map(enm => {
                     return [JSON.stringify(enm), String(enm)];
                 });

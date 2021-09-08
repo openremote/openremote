@@ -1,8 +1,7 @@
-import {css, html} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {css, html, LitElement, PropertyValues} from "lit";
+import {customElement, property, state} from "lit/decorators.js";
 import {guard} from "lit/directives/guard";
 import {ErrorObject} from "ajv";
-import {HauntedLitElement} from "./haunted-element";
 import {
     Actions,
     configReducer,
@@ -13,6 +12,7 @@ import {
     generateDefaultUISchema,
     generateJsonSchema,
     JsonFormsCellRendererRegistryEntry,
+    JsonFormsCore,
     JsonFormsProps,
     JsonFormsRendererRegistryEntry,
     JsonFormsSubStates,
@@ -21,6 +21,7 @@ import {
     mapDispatchToControlProps,
     mapStateToJsonFormsRendererProps,
     OwnPropsOfJsonFormsRenderer,
+    setConfig,
     StatePropsOfJsonFormsRenderer,
     UISchemaElement
 } from "@jsonforms/core";
@@ -79,7 +80,7 @@ const useEffectAfterFirstRender = (
 };
 
 @customElement("or-json-forms")
-export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
+export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRenderer, AdditionalProps {
 
     @property({type: Object})
     public uischema?: UISchemaElement;
@@ -87,7 +88,7 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
     @property({type: Object})
     public schema?: JsonSchema;
 
-    @property({type: String, attribute: false})
+    @property({type: Object, attribute: false})
     public data: any;
 
     @property({type: Array})
@@ -121,71 +122,86 @@ export class OrJSONForms extends HauntedLitElement implements OwnPropsOfJsonForm
         ];
     }
 
+    @state()
+    protected core?: JsonFormsCore;
+    @state()
+    protected contextValue?: JsonFormsSubStates;
+    protected previousData: any;
+    protected previousErrors: ErrorObject[] = [];
+
+    shouldUpdate(_changedProperties: PropertyValues) {
+        super.shouldUpdate(_changedProperties);
+
+        if (!this.schema) {
+            this.schema = this.data !== undefined ? generateJsonSchema(this.data) : {};
+        }
+
+        if (!this.uischema) {
+            this.uischema = generateDefaultUISchema(this.schema!);
+        }
+
+        if (!this.core) {
+            this.core = {
+                ajv: createAjv({useDefaults: true, format: false}),
+                data: {},
+                schema: this.schema!,
+                uischema: this.uischema!
+            };
+            this.updateCore(Actions.init(this.data, this.schema, this.uischema));
+            this.config = configReducer(undefined, setConfig(this.config));
+        }
+
+        if (_changedProperties.has("data") || _changedProperties.has("schema") || _changedProperties.has("uischema")) {
+            this.updateCore(
+                Actions.updateCore(this.data, this.schema, this.uischema)
+            );
+        }
+
+        if (!this.contextValue || _changedProperties.has("core") || _changedProperties.has("renderers") || _changedProperties.has("cells") || _changedProperties.has("config") || _changedProperties.has("readonly")) {
+            this.contextValue = {
+                core: this.core,
+                renderers: this.renderers,
+                cells: this.cells,
+                config: this.config,
+                uischemas: this.uischemas,
+                readonly: this.readonly,
+                dispatch: (action: CoreActions) => this.updateCore(action)
+            }
+        }
+
+        if (_changedProperties.has("core")) {
+            const data = this.core!.data;
+            const errors = this.core!.errors;
+
+            if (this.onChange && (!Util.objectsEqual(data, this.previousData, true) || (errors && !Util.objectsEqual(errors, this.previousErrors, true)))) {
+                this.previousErrors = errors || [];
+                this.previousData = data;
+                this.onChange({data: data, errors: errors});
+            }
+        }
+
+        return true;
+    }
+
+    updateCore<T extends CoreActions>(coreAction: T): T {
+        const coreState = coreReducer(this.core, coreAction);
+        if(coreState !== this.core) {
+            this.core = coreState;
+        }
+        return coreAction;
+    }
+
     render() {
 
-        const schemaToUse = useMemo(
-            () => (this.schema !== undefined ? this.schema : this.data !== undefined ? generateJsonSchema(this.data) : {}),
-            [this.schema, this.data]
-        );
+        if (!this.contextValue) {
+            return html``;
+        }
 
-        const uischemaToUse = useMemo(
-            () => typeof this.uischema === "object" ? this.uischema : generateDefaultUISchema(schemaToUse),
-            [this.uischema, schemaToUse]
-        );
-
-        const [core, coreDispatch] = useReducer(
-            coreReducer,
-            undefined,
-            () => coreReducer(
-                 {
-                    ajv: createAjv({useDefaults: true, format: false}),
-                    data: {},
-                    schema: schemaToUse,
-                    uischema: uischemaToUse
-                },
-                Actions.init(this.data, schemaToUse, uischemaToUse)
-            )
-        );
-
-        useEffect(() => {
-            coreDispatch(
-                Actions.updateCore(this.data, schemaToUse, uischemaToUse)
-            );
-        }, [this.data, schemaToUse, uischemaToUse]);
-
-        const [config, configDispatch] = useReducer(
-            configReducer,
-            undefined,
-            () => configReducer(undefined, Actions.setConfig(this.config))
-        );
-
-        useEffectAfterFirstRender(() => {
-            configDispatch(Actions.setConfig(this.config));
-        }, [this.config]);
-
-        const contextValue: JsonFormsSubStates = useMemo(() => ({
-            core,
-            renderers: this.renderers,
-            cells: this.cells,
-            config: config,
-            uischemas: this.uischemas,
-            readonly: this.readonly,
-            dispatch: coreDispatch
-        }), [core, this.renderers, this.cells, config, this.readonly]);
-
-        useEffect(() => {
-            if (this.onChange && !Util.objectsEqual(core.data, this.data, true)) {
-                this.onChange({data: core.data, errors: core.errors});
-            }
-        }, [core.data, core.errors]);
-    
-        return html`${guard([contextValue], () => {
-            const props: JsonFormsProps & AdditionalProps = {
-                ...mapStateToJsonFormsRendererProps({jsonforms: {...contextValue}}, this),
-                label: getLabel(schemaToUse, schemaToUse, this.label, undefined) || "",
-                required: this.required
-            };
-            return getTemplateFromProps(contextValue, props);
-        })}`;
+        const props: JsonFormsProps & AdditionalProps = {
+            ...mapStateToJsonFormsRendererProps({jsonforms: {...this.contextValue}}, this),
+            label: getLabel(this.schema!, this.uischema!, this.label, undefined) || "",
+            required: this.required
+        };
+        return getTemplateFromProps(this.contextValue, props);
     }
 }
