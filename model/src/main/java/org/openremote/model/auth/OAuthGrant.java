@@ -46,7 +46,6 @@ public abstract class OAuthGrant implements Serializable {
     public static final String VALUE_KEY_CLIENT_SECRET = "client_secret";
     public static final String VALUE_KEY_SCOPE = "scope";
     protected String tokenEndpointUri;
-    @JsonIgnore
     protected boolean basicAuthHeader;
     @JsonProperty(VALUE_KEY_GRANT_TYPE)
     protected String grantType;
