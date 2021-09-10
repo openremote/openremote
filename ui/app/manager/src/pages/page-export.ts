@@ -401,6 +401,15 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             
         this.config = parsedConfig.find(e => e.realm === this.realm) || {realm:this.realm,selectedAttributes:[]};
 
+
+        // prune removed assets that still exist in localstorage
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            ids: this.config.selectedAttributes.map(e => e.id)
+        });
+        const assetsIds = response.data.map(e => e.id) || [];
+        this.config.selectedAttributes = this.config.selectedAttributes.filter(e => assetsIds.includes(e.id));
+
+        this.saveConfig();
         this.renderTable(this.config.selectedAttributes);
 
     }
