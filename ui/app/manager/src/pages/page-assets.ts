@@ -141,10 +141,11 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected getRealmState = createSelector(
         [this._realmSelector],
-        async (realm) => {
-            if (this._tree) {
-                this._tree.refresh();
-            }
+        async () => {
+            this._assetIds = undefined;
+            this._viewer.assetId = undefined;
+            this._tree.refresh();
+            this._updateRoute(true);
         }
     )
 
@@ -199,8 +200,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
         const nodes = event.detail.newNodes;
-        const newIds = event.detail.newNodes.map((node) => node.asset.id!);
-        this._assetIds = newIds;
+        this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
         this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
         this._updateRoute(true);
     }
