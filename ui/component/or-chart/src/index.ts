@@ -590,7 +590,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     </div>
                     <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
                     <div id="mdc-dialog">
-                        <or-mwc-attribute-selector id="attribute-selector-dialog" @or-attribute-refs-add="${(ev: OrAddAttributeRefsEvent) => this._addAttribute(ev.detail.selectedAttributes)}"></or-mwc-attribute-selector>
+                        <or-mwc-attribute-selector id="attribute-selector-dialog"></or-mwc-attribute-selector>
                     </div>
                 </div>
             </div>
@@ -817,6 +817,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 this.assetAttributes.push([assetIndex, attrRef]);
             }
         }
+        this.assetAttributes = [...this.assetAttributes];
         this.saveSettings();
     }
 

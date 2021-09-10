@@ -5942,11 +5942,6 @@ lit-element@^3.0.0-rc.2:
     "@lit/reactive-element" "^1.0.0-rc.2"
     lit-html "^2.0.0-rc.3"
 
-lit-html@^1.0.0:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/lit-html/-/lit-html-1.4.1.tgz#0c6f3ee4ad4eb610a49831787f0478ad8e9ae5e0"
-  integrity sha512-B9btcSgPYb1q4oSOb/PrOT6Z/H+r6xuNzfH4lFli/AWhYwdtrgQkQWBbIc6mdnf6E2IL3gDXdkkqNktpU0OZQA==
-
 lit-html@^2.0.0-rc.3:
   version "2.0.0-rc.3"
   resolved "https://registry.yarnpkg.com/lit-html/-/lit-html-2.0.0-rc.3.tgz#1c216e548630e18d3093d97f4e29563abce659af"

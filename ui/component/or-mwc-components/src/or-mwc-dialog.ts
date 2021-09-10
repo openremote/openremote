@@ -6,7 +6,7 @@ import "./or-mwc-input";
 import {InputType} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor4, DefaultColor5, Util } from "@openremote/core";
-import { Asset, AssetEvent, Attribute, AttributeRef } from "@openremote/model";
+import { Asset, AssetEvent, Attribute, AttributeRef, WellknownMetaItems } from "@openremote/model";
 import manager from "@openremote/core";
 import {ListItem, ListType, OrMwcListChangedEvent} from "./or-mwc-list";
 
@@ -388,6 +388,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             #header {
                 background-color: ${unsafeCSS(DefaultColor4)} !important;
             }
+            #dialog-content {
+                padding: 0;
+            }
         `;
         
         this.reRenderDialog();
@@ -478,7 +481,8 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             .then(result => {
                 this.assetAttributes = Object.values(result.data.attributes!) as Attribute<any>[];
                 if (this.showOnlyDatapointAttrs) {
-                    this.assetAttributes = this.assetAttributes.filter(e => e.meta && e.meta.storeDataPoints);
+                    this.assetAttributes = this.assetAttributes
+                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]));
                 }
                 this.reRenderDialog();
             });
