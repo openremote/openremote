@@ -143,8 +143,8 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         [this._realmSelector],
         async () => {
             this._assetIds = undefined;
-            this._viewer.assetId = undefined;
-            this._tree.refresh();
+            if (this._viewer && this._viewer.assetId) this._viewer.assetId = undefined;
+            if (this._tree) this._tree.refresh();
             this._updateRoute(true);
         }
     )

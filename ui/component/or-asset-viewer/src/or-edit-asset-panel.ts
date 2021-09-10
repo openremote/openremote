@@ -446,7 +446,7 @@ export class OrEditAssetPanel extends LitElement {
                             selectedItems.forEach((item) => {
                                 const descriptor = AssetModelUtil.getMetaItemDescriptors().find((descriptor) => descriptor.name === item.value);
                                 if (descriptor) {
-                                    attribute.meta![descriptor.name!] = null;
+                                    attribute.meta![descriptor.name!] = (descriptor.type === 'boolean') ? true : null;
                                     this._onModified();
                                 }
                             });
