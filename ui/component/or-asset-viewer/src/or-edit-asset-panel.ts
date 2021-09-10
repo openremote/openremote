@@ -1,7 +1,7 @@
-import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {until} from "lit/directives/until";
-import {customElement, property} from "lit/decorators.js";
-import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail} from "@openremote/or-mwc-components/or-mwc-input";
+import {customElement, property, state} from "lit/decorators.js";
+import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
 import {Asset, Attribute, NameValueHolder} from "@openremote/model";
 import {AssetModelUtil, DefaultColor5, DefaultColor3, Util} from "@openremote/core";
@@ -16,7 +16,8 @@ import {
 } from "./or-add-attribute-panel";
 import {panelStyles} from "./style";
 import { OrAssetTree, UiAssetTreeNode } from "@openremote/or-asset-tree";
-import {jsonFormsInputTemplateProvider, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
+import {jsonFormsInputTemplateProvider, OrAttributeInput, OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
+import {createRef, ref, Ref } from "lit/directives/ref.js";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
@@ -134,14 +135,15 @@ const style = css`
     }
 `;
 
-export class OrEditAssetModifiedEvent extends CustomEvent<void> {
+export class OrEditAssetModifiedEvent extends CustomEvent<ValidatorResult[]> {
 
     public static readonly NAME = "or-edit-asset-modified";
 
-    constructor() {
+    constructor(validatorResults: ValidatorResult[]) {
         super(OrEditAssetModifiedEvent.NAME, {
             bubbles: true,
-            composed: true
+            composed: true,
+            detail: validatorResults
         });
     }
 }
@@ -154,11 +156,24 @@ declare global {
 
 const AssetNameRegex = /^\w+$/;
 
+export interface ValidatorResult {
+    name: string;
+    valid: boolean;
+    metaResults?: ValidatorResult[]; // For meta items
+}
+
+interface TemplateAndValidator {
+    template: TemplateResult;
+    validator: () => ValidatorResult;
+}
+
 @customElement("or-edit-asset-panel")
 export class OrEditAssetPanel extends LitElement {
 
     @property({attribute: false})
     protected asset!: Asset;
+
+    protected attributeTemplatesAndValidators: TemplateAndValidator[] = [];
 
     public static get styles() {
         return [
@@ -217,6 +232,8 @@ export class OrEditAssetPanel extends LitElement {
             }
         };
 
+        this.attributeTemplatesAndValidators = !this.asset.attributes ? [] : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getAttributeTemplate(this.asset.type!, attribute as Attribute<any>);})
+
         const attributes = html`
             <div id="attribute-table" class="mdc-data-table">
                 <table class="mdc-data-table__table" aria-label="attribute list" @click="${expanderToggle}">
@@ -229,7 +246,7 @@ export class OrEditAssetPanel extends LitElement {
                         </tr>
                     </thead>
                     <tbody class="mdc-data-table__content">
-                        ${!this.asset.attributes ? `` : Object.entries(this.asset.attributes!).sort(Util.sortByString(([name, attribute]) => name.toUpperCase())).map(([name, attribute]) => {attribute.name = name; return this._getEditAttributeTemplate(this.asset.type!, attribute as Attribute<any>);})}
+                        ${this.attributeTemplatesAndValidators.map((attrTemplateAndValidator) => attrTemplateAndValidator.template)}
                         <tr class="mdc-data-table__row">
                             <td colspan="4">
                                 <div class="item-add-attribute">
@@ -250,7 +267,7 @@ export class OrEditAssetPanel extends LitElement {
         `;
     }
 
-    protected _getEditAttributeTemplate(assetType: string, attribute: Attribute<any>): TemplateResult {
+    protected _getAttributeTemplate(assetType: string, attribute: Attribute<any>): TemplateAndValidator {
 
         const deleteAttribute = () => {
             delete this.asset.attributes![attribute.name!];
@@ -259,13 +276,29 @@ export class OrEditAssetPanel extends LitElement {
 
         const descriptor = AssetModelUtil.getAttributeDescriptor(attribute.name!, assetType);
         const canDelete = !descriptor || descriptor.optional;
+        const attributeInputRef: Ref<OrAttributeInput> = createRef();
+        const metaTemplatesAndValidators = !attribute.meta ? [] : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)));
 
-        return html`
+        const validator = (): ValidatorResult => {
+            let valid = false;
+
+            if (attributeInputRef.value) {
+                valid = attributeInputRef.value.checkValidity();
+            }
+
+            return {
+                name: attribute.name!,
+                valid: valid,
+                metaResults: metaTemplatesAndValidators.map((metaTemplateAndValidator) => metaTemplateAndValidator.validator())
+            };
+        };
+
+        const template = html`
             <tr class="mdc-data-table__row">
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
-                    <or-attribute-input compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
+                    <or-attribute-input ${ref(attributeInputRef)} compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>
@@ -274,7 +307,7 @@ export class OrEditAssetPanel extends LitElement {
                     <div class="meta-item-container">
                         <div>
                             <div>
-                                ${!attribute.meta ? `` : Object.entries(attribute.meta).sort(Util.sortByString(([name, value]) => name!)).map(([name, value]) => this._getMetaItemTemplate(attribute, Util.getMetaItemNameValueHolder(name, value)))}
+                                ${metaTemplatesAndValidators.map((metaTemplateAndValidator) => metaTemplateAndValidator.template)}
                             </div>
                             <div class="item-add">
                                 <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
@@ -284,11 +317,20 @@ export class OrEditAssetPanel extends LitElement {
                 </td>
             </tr>
         `;
+
+        return {
+            template: template,
+            validator: validator
+        };
     };
 
     protected _onModified() {
-        this.dispatchEvent(new OrEditAssetModifiedEvent());
+        this.dispatchEvent(new OrEditAssetModifiedEvent(this.validate()));
         this.requestUpdate();
+    }
+
+    public validate(): ValidatorResult[] {
+        return this.attributeTemplatesAndValidators.map((attrTemplateAndValidator) => attrTemplateAndValidator.validator());
     }
 
     protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {
@@ -303,25 +345,25 @@ export class OrEditAssetPanel extends LitElement {
         this._onModified();
     }
 
-    protected _getMetaItemTemplate(attribute: Attribute<any>, metaItem: NameValueHolder<any>): TemplateResult {
-
-        const removeMetaItem = () => {
-            delete attribute.meta![metaItem.name!];
-            this._onModified();
-        };
-
+    protected _getMetaItemTemplate(attribute: Attribute<any>, metaItem: NameValueHolder<any>): TemplateAndValidator {
         const descriptor = AssetModelUtil.getMetaItemDescriptor(metaItem.name);
         const valueDescriptor = descriptor ? AssetModelUtil.getValueDescriptor(descriptor.type) : undefined;
         let content: TemplateResult = html``;
+        let validator: () => ValidatorResult = () => {
+            return {
+                name: metaItem.name!,
+                valid: true
+            };
+        };
 
         if (!valueDescriptor) {
-            content = html`<p>NOT SUPPORTED</p>`;
+            console.log("Couldn't find value descriptor for meta item so falling back to simple JSON input: " + metaItem.name);
+            content = html`<or-mwc-input @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onMetaItemModified(attribute, metaItem, ev.detail)}" .type="${InputType.JSON}" .value="${metaItem.value}"></or-mwc-input>`;
         } else {
             const options: ValueInputProviderOptions = {
                 label: Util.getMetaLabel(metaItem, descriptor!, this.asset.type!, true),
                 resizeVertical: true
             };
-
             const standardInputProvider = getValueHolderInputTemplateProvider(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
             let provider = jsonFormsInputTemplateProvider(standardInputProvider)(this.asset.type!, metaItem, descriptor, valueDescriptor, (detail) => this._onMetaItemModified(attribute, metaItem, detail), options);
 
@@ -329,17 +371,37 @@ export class OrEditAssetPanel extends LitElement {
                 provider = standardInputProvider;
             }
 
-            if (provider.templateFunction) {
+            if (provider && provider.templateFunction) {
                 content = html`${until(provider.templateFunction(metaItem.value, false, false, false, false, undefined), ``)}`;
+            }
+            if (provider.validator) {
+                validator = () => {
+                    return {
+                        name: metaItem.name!,
+                        valid: provider.validator!()
+                    };
+                };
             }
         }
 
-        return html`
-                <div class="meta-item-wrapper">
-                    ${content}
-                    <button class="button-clear" @click="${removeMetaItem}"><or-icon icon="close-circle"></or-icon></input>
-                </div>
-            `;
+        const removeMetaItem = () => {
+            delete attribute.meta![metaItem.name!];
+            this._onModified();
+        };
+
+        const template = html`
+            <div class="meta-item-wrapper">
+                ${content}
+                <button class="button-clear" @click="${removeMetaItem}">
+                    <or-icon icon="close-circle"></or-icon>
+                    </input>
+            </div>
+        `;
+
+        return {
+            template: template,
+            validator: validator
+        };
     }
 
     protected _addAttribute() {

@@ -107,6 +107,10 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
     protected previousData: any;
     protected previousErrors: ErrorObject[] = [];
 
+    public checkValidity() {
+        return this.previousErrors.length === 0;
+    }
+
     shouldUpdate(_changedProperties: PropertyValues) {
         super.shouldUpdate(_changedProperties);
 

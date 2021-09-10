@@ -415,6 +415,9 @@
   "key": "Key",
   "anyOfPickerLabel": "{{label}} type",
   "validation": {
+    "invalidAsset": "Asset is not valid",
+    "invalidAttributeValue": "Invalid attribute value for attribute '{{attrName}}'",
+    "invalidMetaItemValue": "Invalid configuration item value for `{{metaName}}` on attribute '{{attrName}}'",
     "invalidNumber": "Invalid number",
     "invalidJSON": "Invalid JSON",
     "invalidDate": "Invalid date",

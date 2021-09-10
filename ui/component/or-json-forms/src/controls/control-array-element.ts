@@ -5,13 +5,12 @@ import {
     mapDispatchToArrayControlProps,
     OwnPropsOfRenderer,
     Paths,
-    RendererProps,
     Resolve,
     update
 } from "@jsonforms/core";
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps} from "../util";
+import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, showJsonEditor} from "../util";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -19,8 +18,6 @@ import "@openremote/or-mwc-components/or-mwc-list";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {DefaultColor4, DefaultColor5} from "@openremote/core";
-import "../json-editor";
-import {JsonEditor} from "../json-editor";
 import {ControlBaseElement} from "./control-base-element";
 import {getTemplateWrapper} from "../index";
 import {AdditionalProps} from "../base-element";
@@ -262,56 +259,9 @@ export class ControlArrayElement extends ControlBaseElement {
     protected _showJson(ev: MouseEvent) {
         ev.stopPropagation();
 
-        const dialog = showDialog(
-            {
-                content: html`
-                    <or-json-forms-json-editor id="json-editor" .json="${this.data === undefined ? "" : JSON.stringify(this.data, null, 2)}"></or-json-forms-json-editor>
-                `,
-                actions: [
-                    {
-                        actionName: "cancel",
-                        content: i18next.t("cancel")
-                    },
-                    {
-                        default: true,
-                        actionName: "update",
-                        action: () => {
-                            const editor = dialog.shadowRoot!.getElementById("json-editor") as JsonEditor;
-                            if (editor.validate()) {
-                                const data = !!editor.getValue() ? JSON.parse(editor.getValue()!) : undefined;
-                                this.state.dispatch(
-                                    update(this.path || "", (d) => {
-                                        return data;
-                                    })
-                                )
-                            }
-                        },
-                        content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" .label="${i18next.t("update")}"></or-mwc-input>`
-                    }
-                ],
-                title: this.title || this.schema.title,
-                dismissAction: null,
-                styles: html`
-                <style>
-                    .mdc-dialog__surface {
-                        width: 1024px;
-                        overflow-x: visible !important;
-                        overflow-y: visible !important;
-                    }
-                    #dialog-content {
-                        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                        border-top-width: 1px;
-                        border-top-style: solid;
-                        border-bottom-width: 1px;
-                        border-bottom-style: solid;
-                        padding: 0;
-                        overflow: visible;
-                        height: 60vh;
-                    }
-                </style>
-            `
-            }
-        )
+        showJsonEditor(this.title || this.schema.title || "", this.data, ((newValue) => {
+            this.handleChange(this.path || "", newValue);
+        }));
     }
 
     protected doAddItem() {

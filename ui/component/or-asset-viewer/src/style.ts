@@ -167,10 +167,28 @@ export const style = css`
         flex: 1 1 0%;
         font-size: 18px;
         font-weight: bold;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
     }
 
     #title > or-icon {
         margin-right: 10px;
+    }
+
+    #error-wrapper {
+        color: red;
+        flex: 1;
+        display: flex;
+        align-items: center;
+    }
+    
+    #error-wrapper > span {
+        margin: auto;
+    }
+
+    #error-wrapper or-icon {
+        margin-right: 5px;
     }
    
     #created-time {
@@ -218,7 +236,7 @@ export const style = css`
         display: none;
         cursor: pointer;
     }
-
+    
     @media screen and (max-width: 769px) {
         #wrapper {
             position: absolute;

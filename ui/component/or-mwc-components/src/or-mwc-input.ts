@@ -1,5 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
+import {Ref, ref, createRef} from "lit/directives/ref.js";
 import {classMap} from "lit/directives/class-map";
 import {ifDefined} from "lit/directives/if-defined";
 import {MDCTextField} from "@material/textfield";
@@ -141,6 +142,7 @@ export interface ValueInputProvider {
     supportsHelperText: boolean;
     supportsLabel: boolean;
     supportsSendButton: boolean;
+    validator?: () => boolean;
 }
 
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
@@ -380,13 +382,14 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const readonly = options.readonly;
     const comfortable = options.comfortable;
     const resizeVertical = options.resizeVertical;
+    const inputRef: Ref<OrMwcInput> = createRef();
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
 
-        return html`<or-mwc-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
+        return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
@@ -401,7 +404,13 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         templateFunction: templateFunction,
         supportsHelperText: supportsHelperText,
         supportsSendButton: supportsSendButton,
-        supportsLabel: supportsLabel
+        supportsLabel: supportsLabel,
+        validator: () => {
+            if (!inputRef.value) {
+                return false;
+            }
+            return inputRef.value.checkValidity();
+        }
     };
 }
 

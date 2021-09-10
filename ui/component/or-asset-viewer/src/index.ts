@@ -2,7 +2,7 @@
 declare function require(name: string): any;
 
 import {html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
@@ -41,7 +41,7 @@ import {classMap} from "lit/directives/class-map";
 import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
-import {OrEditAssetModifiedEvent} from "./or-edit-asset-panel";
+import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
@@ -815,10 +815,7 @@ export function getPropertyTemplate(asset: Asset, property: string, hostElement:
     switch (property) {
         case "parentId":
             // Display the path instead
-            value = (asset as { [index: string]: any })["path"];
-            if (!value || !(Array.isArray(value))) {
-                return;
-            }
+            value = asset.path || ["", asset.parentId];
 
             // Populate value when we get the response
             const ancestors = [...value];
@@ -1027,6 +1024,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property()
     protected _loading: boolean = false;
 
+    @state()
+    protected _validationResults: ValidatorResult[] = [];
     protected _assetModified = false;
     protected _viewerConfig?: AssetViewerConfig;
     protected _attributes?: { [index: string]: Attribute<any> };
@@ -1041,12 +1040,15 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @query("#edit-btn")
     protected editBtnElem!: OrMwcInput;
 
+    @query("#editor")
+    protected editor!: OrEditAssetPanel;
+
     constructor() {
         super();
         this.addEventListener(OrAssetViewerComputeGridEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
-        this.addEventListener(OrEditAssetModifiedEvent.NAME, () => this._onAssetModified());
+        this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
     }
 
     public isModified() {
@@ -1105,6 +1107,18 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         return super.shouldUpdate(changedProperties);
     }
 
+    updated(_changedProperties: PropertyValues) {
+        if (_changedProperties.has("asset")) {
+            this._doValidation();
+        }
+    }
+
+    protected _doValidation() {
+        if (this.editMode && this.editor) {
+            this._validationResults = this.editor.validate();
+        }
+    }
+
     protected render(): TemplateResult | void {
 
         if (this._loading) {
@@ -1137,7 +1151,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (editMode) {
             content = html`
                 <div id="edit-container">
-                    <or-edit-asset-panel .asset="${this.asset}"></or-edit-asset-panel>
+                    <or-edit-asset-panel id="editor" .asset="${this.asset}"></or-edit-asset-panel>
                 </div>
             `;
         } else {
@@ -1156,6 +1170,23 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             }
         }
 
+        const validationErrors: string[] = this.editMode
+            ? this._validationResults
+                .filter((validationResult) => !validationResult.valid || validationResult.metaResults && validationResult.metaResults.some((r) => !r.valid))
+                .flatMap((validationResult) => {
+                    const errors: string[] = [];
+                    if (!validationResult.valid) {
+                        errors.push(i18next.t("validation.invalidAttributeValue", {attrName: validationResult.name}));
+                    }
+                    if (validationResult.metaResults) {
+                        validationResult.metaResults.filter((result) => !result.valid).forEach((metaResult) => {
+                            errors.push(i18next.t("validation.invalidMetaItemValue", {attrName: validationResult.name, metaName: metaResult.name}));
+                        });
+                    }
+                    return errors;
+                })
+            : [];
+
         return html`
             <div id="wrapper">
                 <div id="asset-header" class=${editMode ? "editmode" : ""}>
@@ -1164,11 +1195,16 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     </a>
                     <div id="title">
                         <or-icon title="${descriptor && descriptor.name ? descriptor.name : "unset"}" style="--or-icon-fill: ${descriptor && descriptor.colour ? "#" + descriptor.colour : "unset"}" icon="${descriptor && descriptor.icon ? descriptor.icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET)}"></or-icon>
-                        ${editMode ? html`<or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._onAssetModified();}}"></or-mwc-input>` : html`<span>${this.asset.name}</span>`}
+                        ${editMode 
+                                ? html`
+                                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.asset.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => {this.asset!.name = e.detail.value; this._assetModified = true; this._doValidation();}}"></or-mwc-input>
+                                `
+                                : html`<span>${this.asset.name}</span>`}
                     </div>
+                    <div id="error-wrapper">${validationErrors.length === 0 ? `` : html`<span .title="${validationErrors.join("\n")}"><or-icon icon="alert"></or-icon><or-translate value="validation.invalidAsset"></or-translate></span>`}</div>
                     <div id="right-wrapper" class="mobileHidden">
                         ${this.asset!.createdOn ? html`<or-translate id="created-time" value="createdOnWithDate" .options="${{ date: new Date(this.asset!.createdOn!) } as TOptions<InitOptions>}"></or-translate>` : ``}
-                        ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified()}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
+                        ${editMode ? html`<or-mwc-input id="save-btn" .disabled="${!this.isModified() || validationErrors.length > 0}" raised .type="${InputType.BUTTON}" .label="${i18next.t("save")}" @or-mwc-input-changed="${() => this._onSaveClicked()}"></or-mwc-input>` : ``}
                         ${!this._isReadonly() ? html`<or-mwc-input id="edit-btn" class="mobileHidden" outlined .type="${InputType.BUTTON}" .value="${this.editMode}" .label="${this.editMode ? i18next.t("view") : i18next.t("modify")}" icon="${this.editMode ? "eye" : "pencil"}" @or-mwc-input-changed="${() => this._onEditToggleClicked(!this.editMode!)}"></or-mwc-input>
                         `: ``}
                     </div>
@@ -1227,7 +1263,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     }
 
     protected async _doSave() {
-        let asset = this.asset;
+        const asset = this.asset;
 
         if (!asset) {
             return;
@@ -1250,9 +1286,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.dispatchEvent(new OrAssetViewerSaveEvent(result));
     }
 
-    protected _onAssetModified() {
+    protected _onAssetModified(validationResults: ValidatorResult[]) {
         this._assetModified = true;
-        this.requestUpdate();
+        this._validationResults = validationResults;
     }
 
     public static generateGrid(shadowRoot: ShadowRoot | null) {

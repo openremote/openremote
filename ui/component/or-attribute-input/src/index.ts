@@ -20,7 +20,7 @@ import {
 import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-wrapper";
-import {OrLoadingWrapper} from "@openremote/or-components/src/or-loading-wrapper";
+import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";
 import {
     getValueHolderInputTemplateProvider,
     InputType,
@@ -251,7 +251,13 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
             templateFunction: templateFunction,
             supportsHelperText: false,
             supportsLabel: false,
-            supportsSendButton: false
+            supportsSendButton: false,
+            validator: () => {
+                if (!jsonForms.value) {
+                    return false;
+                }
+                return jsonForms.value.checkValidity();
+            }
         };
     }
 
@@ -775,6 +781,16 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
         const oldValue = this.getValue();
         this._attributeEvent = event as AttributeEvent;
         this._onAttributeValueChanged(oldValue, this._attributeEvent.attributeState!.value, event.timestamp);
+    }
+
+    public checkValidity(): boolean {
+        if (!this._templateProvider) {
+            return false;
+        }
+        if (!this._templateProvider.validator) {
+            return true;
+        }
+        return this._templateProvider.validator();
     }
 
     protected _onAttributeValueChanged(oldValue: any, newValue: any, timestamp?: number) {
