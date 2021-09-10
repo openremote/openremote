@@ -358,8 +358,8 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         dialog.isOpen = true;
         dialog.showOnlyDatapointAttrs = true;
         dialog.selectedAttributes = this.config.selectedAttributes;
-        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAttributeRefsAddRequestEvent) => {
-            const selectedAttributes = ev.detail.detail.selectedAttributes;
+        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
+            const selectedAttributes = ev.detail.selectedAttributes;
             await this.renderTable(selectedAttributes);
             this.config = {
                 realm: this.realm,
