@@ -11,17 +11,22 @@ import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.RegexValueFilter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.mqtt.MqttBrokerService.*;
@@ -108,9 +113,15 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         if(topicTokens.size() > 2) {
             String assetId = topicTokens.get(2);
+            if (Pattern.matches(Constants.ASSET_ID_REGEXP, assetId)) {
 
-            if (!SINGLE_LEVEL_WILDCARD.equals(assetId) && !MULTI_LEVEL_WILDCARD.equals(assetId)) {
-                Asset<?> asset = assetStorageService.find(assetId);
+                Asset<?> asset;
+                if(identityProvider.isRestrictedUser(authContext.getUserId())) {
+                    Optional<UserAsset> userAsset = assetStorageService.findUserAssets(connection.realm, authContext.getUserId(), assetId).stream().findFirst();
+                    asset = userAsset.map(value -> assetStorageService.find(value.getId().getAssetId())).orElse(null);
+                } else {
+                    asset = assetStorageService.find(assetId);
+                }
 
                 if (asset == null) {
                     LOG.fine("Asset not found for topic '" + topic + "': " + connection);
@@ -128,7 +139,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
                 }
             }
         } else if(!isWrite) {
-            LOG.fine("Topic must contain at least two tokens '" + topic + "': " + connection);
+            LOG.fine("Topic must contain at least three tokens '" + topic + "': " + connection);
             return false;
         }
 

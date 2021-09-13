@@ -36,6 +36,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.AssetEvent;
@@ -53,6 +54,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
@@ -203,7 +205,7 @@ public class MqttBrokerService implements ContainerService {
         List<String> paths = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
 
-        String assetId = SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)) ? null : topicTokens.get(2);
+        String assetId = Pattern.matches(Constants.ASSET_ID_REGEXP, topicTokens.get(2)) ?  topicTokens.get(2) : null;
         int multiLevelIndex = topicTokens.indexOf(MULTI_LEVEL_WILDCARD);
         int singleLevelIndex = topicTokens.indexOf(SINGLE_LEVEL_WILDCARD);
 
@@ -212,15 +214,24 @@ public class MqttBrokerService implements ContainerService {
         }
 
         if (topicTokens.size() == 3) {
-            if (multiLevelIndex == 2) {
-                //realm/.../#
-                // No asset filtering required
-            } else if (singleLevelIndex == 2) {
-                //realm/.../+
-                parentIds.add(null);
+            if (isAssetTopic) {
+                if (multiLevelIndex == 2) {
+                    //realm/.../#
+                    // No asset filtering required
+                } else if (singleLevelIndex == 2) {
+                    //realm/.../+
+                    parentIds.add(null);
+                } else {
+                    //realm/.../assetId
+                    assetIds.add(assetId);
+                }
             } else {
-                //realm/.../assetId
-                assetIds.add(assetId);
+                //realm/attribute/attributeName
+                if(assetId != null) {
+                    assetIds.add(assetId);
+                } else {
+                    attributeNames.add(topicTokens.get(2));
+                }
             }
         } else if (topicTokens.size() == 4) {
             if (isAssetTopic) {

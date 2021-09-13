@@ -54,7 +54,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             }
         }
 
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 0.2)
         def services = Lists.newArrayList(defaultServices())
         services.replaceAll { it instanceof MqttBrokerService ? spyMqttBrokerService : it }
         def container = startContainer(defaultConfig(), services)
@@ -145,7 +145,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an asset in another realm"
-        def topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/" + managerTestSetup.thingId
+        def topic = keycloakTestSetup.tenantCity.realm + "/attribute/" + managerTestSetup.thingId
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -166,7 +166,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an non existing asset"
-        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/dhajkdasjfgh"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/attribute/2F6uvhLm8w110jug2caukV"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
@@ -515,7 +515,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a mqtt client subscribes to an non existing asset"
-        topic = keycloakTestSetup.tenantBuilding.realm + "/asset/dhajkdasjfgh"
+        topic = keycloakTestSetup.tenantBuilding.realm + "/asset/2F6uvhLm8w110jug2caukV"
         remainingLength = 4 + topic.size() + 1 //plus one for the QoS byte
 
         client
