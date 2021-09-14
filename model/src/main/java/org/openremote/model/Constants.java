@@ -34,7 +34,6 @@ public interface Constants {
     String READ_MAP_ROLE = "read:map";
     String READ_ASSETS_ROLE = "read:assets";
     String READ_RULES_ROLE = "read:rules";
-    String READ_APPS_ROLE = "read:apps";
     String WRITE_USER_ROLE = "write:user";
     String WRITE_ADMIN_ROLE = "write:admin";
     String WRITE_LOGS_ROLE = "write:logs";
