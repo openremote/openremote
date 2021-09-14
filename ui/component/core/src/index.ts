@@ -47,11 +47,11 @@ export declare type Keycloak = {
     resourceAccess: any;
     onAuthSuccess: () => void;
     onAuthError: () => void;
-    init(options?: any): KeycloakPromise<boolean>;
+    init(options?: any): PromiseLike<boolean>;
     login(options?: any): void;
     hasRealmRole(role: string): boolean;
     logout(options?: any): void;
-    updateToken(expiry: number): KeycloakPromise<boolean>;
+    updateToken(expiry: number): PromiseLike<boolean>;
     clearToken(): void;
 }
 
@@ -1152,18 +1152,11 @@ export class Manager implements EventProviderFactory {
                 // Try to use a stored offline refresh token if defined
                 const offlineToken = await this._getNativeOfflineRefreshToken();
 
-                const authenticated = await new Promise<boolean>(((resolve, reject) => {
-                    keycloakPromise = resolve;
-                    this._keycloak!.init({
-                        checkLoginIframe: false, // Doesn't work well with offline tokens or periodic token updates
-                        onLoad: this._config.autoLogin ? "login-required" : "check-sso",
-                        refreshToken: offlineToken
-                    }).success((auth: boolean) => {
-                        resolve(auth);
-                    }).error(() => {
-                        reject();
-                    });
-                }));
+                const authenticated = await this._keycloak!.init({
+                    checkLoginIframe: false, // Doesn't work well with offline tokens or periodic token updates
+                    onLoad: this._config.autoLogin ? "login-required" : "check-sso",
+                    refreshToken: offlineToken
+                });
 
                 keycloakPromise = null;
 
@@ -1198,23 +1191,19 @@ export class Manager implements EventProviderFactory {
         }
     }
 
-    protected updateKeycloakAccessToken(): Promise<boolean> {
-        // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
-        return new Promise<boolean>(() => {
-            this._keycloak!.updateToken(30)
-                .success((tokenRefreshed: boolean) => {
-                    // If refreshed from server, it means the refresh token was still good for another access token
-                    console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
-                    return tokenRefreshed;
-                })
-                .error(() => {
-                    // Refresh token expired (either SSO max session duration or offline idle timeout), see
-                    // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
-                    console.info("Access token update failed, refresh token expired, login required");
-                    this._keycloak!.clearToken();
-                    this._keycloak!.login();
-                });
-        });
+    protected async updateKeycloakAccessToken() {
+        try {
+            // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
+            const tokenRefreshed = await this._keycloak!.updateToken(30);
+            // If refreshed from server, it means the refresh token was still good for another access token
+            console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
+        } catch (e) {
+            // Refresh token expired (either SSO max session duration or offline idle timeout), see
+            // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
+            console.info("Access token update failed, refresh token expired, login required");
+            this._keycloak!.clearToken();
+            this._keycloak!.login();
+        }
     }
 
     protected async _getNativeOfflineRefreshToken(): Promise<string | undefined> {
