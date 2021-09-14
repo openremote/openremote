@@ -103,6 +103,11 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
+        if (!connection.sessionId.equals(topicTokens.get(1))) {
+            LOG.warning("Second topic level should match clientId: " + connection);
+            return false;
+        }
+
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
 
@@ -111,8 +116,8 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if(topicTokens.size() > 2) {
-            String assetId = topicTokens.get(2);
+        if(topicTokens.size() > 3) {
+            String assetId = topicTokens.get(3);
             if (Pattern.matches(Constants.ASSET_ID_REGEXP, assetId)) {
 
                 Asset<?> asset;
@@ -128,9 +133,9 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
                     return false;
                 }
 
-                if (isAttributeTopic && topicTokens.size() > 3
-                        && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(3)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(3)))) {
-                    String attributeName = topicTokens.get(3);
+                if (isAttributeTopic && topicTokens.size() > 4
+                        && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(4)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(4)))) {
+                    String attributeName = topicTokens.get(4);
 
                     if (!asset.hasAttribute(attributeName)) {
                         LOG.fine("Asset attribute not found for topic '" + topic + "': " + connection);
@@ -156,12 +161,12 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             }
 
 
-            if (topicTokens.get(1).equals(ATTRIBUTE_VALUE_TOPIC) && topicTokens.size() != 4) {
-                LOG.info("Write request to attribute value topic should contain asset ID and attribute name only, topic '" + topic + "': " + connection);
+            if (topicTokens.get(2).equals(ATTRIBUTE_VALUE_TOPIC) && topicTokens.size() != 5) {
+                LOG.info("Write request to attribute value topic should contain clientId, asset ID and attribute name only, topic '" + topic + "': " + connection);
                 return false;
             }
 
-            if (topicTokens.get(1).equals(ATTRIBUTE_TOPIC) && topicTokens.size() != 2) {
+            if (topicTokens.get(2).equals(ATTRIBUTE_TOPIC) && topicTokens.size() != 3) {
                 LOG.info("Write request to attribute topic should not contain any other tokens, topic '" + topic + "': " + connection);
                 return false;
             }
