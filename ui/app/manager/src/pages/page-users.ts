@@ -163,6 +163,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     color: var(--or-app-color4);
                 }
 
+                .hidden {
+                    display: none;
+                }
+                
                 @media screen and (max-width: 768px) {
                     #title {
                         padding: 0;
@@ -525,6 +529,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     }
 
     protected _getUserTemplate(addCancel: () => void, user: UserModel, readonly: boolean, compositeRoleOptions: string[], suffix: string): TemplateResult {
+        const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         user.roles = user.roles || [];
         const implicitRoleNames = this.getImplicitUserRoles(user);
@@ -558,16 +563,19 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               .value="${user.username}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.username = e.detail.value}"></or-mwc-input>
                                 <or-mwc-input ?readonly="${readonly}"
+                                              class="${isServiceUser ? "hidden" : ""}"
                                               .label="${i18next.t("email")}"
                                               .type="${InputType.EMAIL}" min="1"
                                               .value="${user.email}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.email = e.detail.value}"></or-mwc-input>
                                 <or-mwc-input ?readonly="${readonly}"
+                                              class="${isServiceUser ? "hidden" : ""}"
                                               .label="${i18next.t("firstName")}"
                                               .type="${InputType.TEXT}" min="1"
                                               .value="${user.firstName}"
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.firstName = e.detail.value}"></or-mwc-input>
                                 <or-mwc-input ?readonly="${readonly}"
+                                              class="${isServiceUser ? "hidden" : ""}"
                                               .label="${i18next.t("surname")}"
                                               .type="${InputType.TEXT}" min="1"
                                               .value="${user.lastName}"
@@ -618,6 +626,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 <!-- composite roles -->
                                 <or-mwc-input
                                     ?readonly="${readonly}"
+                                    class="${isServiceUser ? "hidden" : ""}"
                                     ?disabled="${isSameUser}"
                                     .value="${user.roles && user.roles.length > 0 ? user.roles.filter(r => r.composite).map(r => r.name) : undefined}"
                                     .type="${InputType.SELECT}" multiple
