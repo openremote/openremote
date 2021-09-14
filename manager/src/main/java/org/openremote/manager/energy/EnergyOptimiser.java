@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -360,6 +361,7 @@ public class EnergyOptimiser {
      * updated as a result.
      */
     public void applyEarningOpportunities(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] energyLevelMaxs, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator) {
+        LOG.finer("Applying earning opportunities");
 
         // Look for import and export earning opportunities
         double[][] primary = importCostAndPower != null ? importCostAndPower : exportCostAndPower; // Never null
@@ -379,6 +381,14 @@ public class EnergyOptimiser {
             .sorted(Comparator.comparingDouble(optimisedInterval -> optimisedInterval.value[0]))
             .collect(Collectors.toList());
 
+        if (earningOpportunities.isEmpty()) {
+            LOG.finest("No earning opportunities found");
+        }
+
+        if (LOG.isLoggable(Level.FINEST)) {
+            earningOpportunities.forEach(op -> LOG.finest("Earning opportunity: interval=" + op.key + ", cost=" + op.value[0] + ", powerMin=" + op.value[1] + ", powerMax=" + op.value[2]));
+        }
+
         // Go through each earning opportunity and determine if it can be utilised without breaching the energy min
         // levels
         for (Pair<Integer, double[]> earningOpportunity : earningOpportunities) {
@@ -388,18 +398,11 @@ public class EnergyOptimiser {
             assert exportCostAndPower != null;
 
             if (isImportOpportunity(costAndPower, powerSetpoints[interval], interval, powerImportMaxCalculator)) {
-
                 // import opportunity and interval still available to import power
-                LOG.finest("Applying import earning opportunity: interval=" + interval);
                 applyImportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval);
-                LOG.finest("Applied import earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
-
             } else if (isExportOpportunity(costAndPower, powerSetpoints[interval], interval, powerExportMaxCalculator)) {
-
                 // export opportunity and interval still available to export power
-                LOG.finest("Applying export earning opportunity: interval=" + interval);
                 applyExportOpportunity(importCostAndPower, exportCostAndPower, energyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator, interval);
-                LOG.finest("Applied export earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval]);
             }
         }
     }
@@ -419,6 +422,7 @@ public class EnergyOptimiser {
      * powerSetpoints will be updated as a result.
      */
     public void applyImportOpportunity(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] energyLevelMaxs, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator, int interval) {
+        LOG.finest("Applying import earning opportunity: interval=" + interval);
         double[] costAndPower = importCostAndPower[interval];
         double impPowerMin = costAndPower[1];
         double impPowerMax = Math.min(powerImportMaxCalculator.apply(interval), costAndPower[2]);
@@ -436,11 +440,9 @@ public class EnergyOptimiser {
 
         int k = interval;
         while (k < powerSetpoints.length && energySpace > 0 && energySpace >= energySpaceMin) {
-
             double futureEnergySpace = energyLevelMaxs[k] - energyLevelCalculator.apply(k);
             energySpace = Math.min(energySpace, futureEnergySpace);
             k++;
-
         }
 
         if (energySpace < energySpaceMax && exportCostAndPower != null) {
@@ -451,17 +453,19 @@ public class EnergyOptimiser {
             List<Pair<Integer, Double>> pastOpportunities = new ArrayList<>();
 
             while (i >= 0) {
-
                 if (costAndPower[0] + exportCostAndPower[i][0] < 0 && powerSetpoints[i] <= 0) {
                     // We can afford to export earlier and still earn from this import
                     pastOpportunities.add(new Pair<>(i, exportCostAndPower[i][0]));
                 }
-
                 i--;
             }
 
             pastOpportunities.sort(Comparator.comparingDouble(op -> op.value));
             int j = 0;
+
+            if (pastOpportunities.isEmpty()) {
+                LOG.finest("No earlier export opportunities identified");
+            }
 
             while (energySpace < energySpaceMax && j < pastOpportunities.size()) {
                 // Energy level at this interval must be above energy min to consider exporting
@@ -486,11 +490,12 @@ public class EnergyOptimiser {
                 // We have spare energy capacity and power check if we don't violate energy min for any future exports
                 k = pastInterval;
                 while (k < powerSetpoints.length && energySurplus < 0 && energySurplus <= energySurplusMin) {
-
                     double futureEnergySurplus = energyLevelCalculator.apply(k) - energyLevelMins[k];
                     energySurplus = Math.max(energySurplus, -futureEnergySurplus);
+                    if (energySurplus <= 0) {
+                        LOG.finest("Earlier export opportunity would violate future energy min level: interval=" + j + ", futureInterval=" + k);
+                    }
                     k++;
-
                 }
 
                 expPowerCapacity = Math.max(expPowerCapacity, energySurplus / intervalSize);
@@ -515,8 +520,7 @@ public class EnergyOptimiser {
             energySpaceMax = Math.min(energySpaceMax, energySpace);
             powerCapacity = Math.min(impPowerMax - powerSetpoints[interval], (energySpaceMax / intervalSize));
             powerSetpoints[interval] = powerSetpoints[interval] + powerCapacity;
-        } else {
-            LOG.finest("Unable to utilise import opportunity: min=" + energySpaceMin + ", available=" + energySpace);
+            LOG.finer("Applied import earning opportunity: set point=" + powerSetpoints[interval] + " (delta: " + powerCapacity + ")");
         }
     }
 
@@ -527,6 +531,7 @@ public class EnergyOptimiser {
      * powerSetpoints will be updated as a result.
      */
     public void applyExportOpportunity(double[][] importCostAndPower, double[][] exportCostAndPower, double[] energyLevelMins, double[] energyLevelMaxs, double[] powerSetpoints, Function<Integer, Double> energyLevelCalculator, Function<Integer, Double> powerImportMaxCalculator, Function<Integer, Double> powerExportMaxCalculator, int interval) {
+        LOG.finest("Applying export earning opportunity: interval=" + interval);
         double[] costAndPower = exportCostAndPower[interval];
         double expPowerMin = costAndPower[2];
         double expPowerMax = Math.max(powerExportMaxCalculator.apply(interval), costAndPower[1]);
@@ -580,7 +585,7 @@ public class EnergyOptimiser {
         if (energySurplus < energySurplusMax && importCostAndPower != null) {
             // Can't maximise on opportunity without importing earlier on so can this be done
             // in a cost effective way
-            LOG.finest("Looking for earlier export opportunities to maximise on this import opportunity: surplus=" + energySurplus + ", max=" + energySurplusMax);
+            LOG.finest("Looking for earlier import opportunities to maximise on this export opportunity: surplus=" + energySurplus + ", max=" + energySurplusMax);
             int i = interval - 1;
             List<Pair<Integer, Double>> pastOpportunities = new ArrayList<>();
 
@@ -596,6 +601,10 @@ public class EnergyOptimiser {
 
             pastOpportunities.sort(Comparator.comparingDouble(op -> op.value));
             int j = 0;
+
+            if (pastOpportunities.isEmpty()) {
+                LOG.finest("No earlier import opportunities identified");
+            }
 
             while (energySurplus < energySurplusMax && j < pastOpportunities.size()) {
                 Pair<Integer, Double> opportunity = pastOpportunities.get(j);
@@ -622,6 +631,9 @@ public class EnergyOptimiser {
 
                     double futureEnergySpace = energyLevelMaxs[k] - energyLevelCalculator.apply(k);
                     energySpace = Math.min(energySpace, futureEnergySpace);
+                    if (energySpace <= 0) {
+                        LOG.finest("Earlier import opportunity would violate future energy max level: interval=" + j + ", futureInterval=" + k);
+                    }
                     k++;
 
                 }
@@ -648,8 +660,7 @@ public class EnergyOptimiser {
             energySurplusMax = Math.min(energySurplusMax, energySurplus);
             powerCapacity = Math.max(expPowerMax - powerSetpoints[interval], -1d * (energySurplusMax / intervalSize));
             powerSetpoints[interval] = powerSetpoints[interval] + powerCapacity;
-        } else {
-            LOG.finest("Unable to utilise export opportunity: min=" + energySurplusMin + ", available=" + energySurplus);
+            LOG.finer("Applied export earning opportunity: interval=" + interval + ", set point=" + powerSetpoints[interval] + " (delta: " + powerCapacity + ")");
         }
     }
 

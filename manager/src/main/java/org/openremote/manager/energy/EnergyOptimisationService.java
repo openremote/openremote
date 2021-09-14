@@ -407,7 +407,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(getLogPrefix(optimisationAssetId) + "Found plain consumer and producer child assets count=" + count.get());
             LOG.finer("Calculated net power of consumers and producers: " + Arrays.toString(powerNets));
-            LOG.finer("Getting supply costs for each interval");
         }
 
         // Get supplier costs for each interval
@@ -459,16 +458,12 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         Arrays.fill(exportPowerMaxes, exportPowerMax);
         long periodSeconds = (long)(optimiser.getIntervalSize()*60*60);
 
-        LOG.finer(getLogPrefix(optimisationAssetId) + "Optimising each storage asset");
-
         for (ElectricityStorageAsset storageAsset : optimisableStorageAssets) {
             boolean hasSetpoint = storageAsset.hasAttribute(ElectricityStorageAsset.POWER_SETPOINT);
             boolean supportsExport = storageAsset.isSupportsExport().orElse(false);
             boolean supportsImport = storageAsset.isSupportsImport().orElse(false);
 
-            if (LOG.isLoggable(Level.FINEST)) {
-                LOG.finest("Optimising power set points for storage asset: " + storageAsset);
-            }
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Optimising power set points for storage asset: " + storageAsset);
 
             if (!supportsExport && !supportsImport) {
                 LOG.finest(getLogPrefix(optimisationAssetId) + "Storage asset doesn't support import or export: " + storageAsset.getId());
@@ -517,6 +512,9 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             if (hasEnergyMinRequirement) {
                 LOG.finer(getLogPrefix(optimisationAssetId) + "Normalising min energy requirements for storage asset: " + storageAsset.getId());
                 optimiser.normaliseEnergyMinRequirements(energyLevelMins, powerImportMaxCalculator, powerExportMaxCalculator, energyLevel);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest(getLogPrefix(optimisationAssetId) + "Min energy requirements for storage asset '" + storageAsset.getId() + "': " + Arrays.toString(energyLevelMins));
+                }
             }
 
             // Calculate the power setpoints for this asset and update power net values for each interval
@@ -651,8 +649,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     }
                 });
             }
-        } else {
-            LOG.finest("Electricity asset doesn't have any predicted data for attribute: Ref=" + ref);
         }
 
         values[0] = attribute.getValue().orElse(0d);
@@ -726,14 +722,16 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             if (hasEnergyMinRequirement) {
                 LOG.finer(getLogPrefix(optimisationAssetId) + "Applying imports to achieve min energy level requirements for storage asset: " + storageAsset.getId());
                 optimiser.applyEnergyMinImports(importCostAndPower, normalisedEnergyLevelMins, powerSetpoints, energyLevelCalculator, importOptimiser, powerImportMaxCalculator);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest(getLogPrefix(optimisationAssetId) + "Setpoints to achieve min energy level requirements for storage asset '" + storageAsset.getId() + "': " + Arrays.toString(powerSetpoints));
+                }
             }
         }
 
-        LOG.finer(getLogPrefix(optimisationAssetId) + "Applying earning opportunities for storage asset: " + storageAsset.getId());
-
         optimiser.applyEarningOpportunities(importCostAndPower, exportCostAndPower, normalisedEnergyLevelMins, energyLevelMaxs, powerSetpoints, energyLevelCalculator, powerImportMaxCalculator, powerExportMaxCalculator);
+
         if (LOG.isLoggable(Level.FINER)) {
-            LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity power set points for storage asset: " + storageAsset.getId() + " = " + Arrays.toString(powerSetpoints));
+            LOG.finer(getLogPrefix(optimisationAssetId) + "Calculated earning opportunity power set points for storage asset '" + storageAsset.getId() + "': " + Arrays.toString(powerSetpoints));
         }
 
         return powerSetpoints;
