@@ -1325,16 +1325,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
 
         if (event.eventType === "attribute") {
             const attributeEvent = event as AttributeEvent;
-            if (attributeEvent.attributeState!.ref!.id !== this.assetId) {
-                return;
-            }
             const attrName = attributeEvent.attributeState!.ref!.name!;
 
-            if (this.asset && this.asset.attributes && this.asset.attributes.hasOwnProperty(attrName)) {
-                if (attributeEvent.attributeState!.deleted) {
-                    delete this.asset.attributes[attrName];
-                    this.asset = {...this.asset};
-                }
+            if (attributeEvent.attributeState!.deleted && this.asset && this.asset.attributes) {
+                delete this.asset.attributes[attrName];
+                this.asset = {...this.asset};
             }
         }
     }
