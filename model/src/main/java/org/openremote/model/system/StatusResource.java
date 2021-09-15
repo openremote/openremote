@@ -43,6 +43,5 @@ public interface StatusResource {
     @Path("info")
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
     ObjectNode getInfo();
 }
