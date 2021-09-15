@@ -8,7 +8,7 @@ import {
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {unsafeHTML} from "lit/directives/unsafe-html";
-import {AppConfig, RealmAppConfig, router} from "./types";
+import {AppConfig, Page, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
@@ -323,9 +323,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         }
 
         if (changedProps.has("_page")) {
-            const appTitle = this._config.appTitle || "";
-            let pageTitle = (i18next.isInitialized ? i18next.t(appTitle) : appTitle);
-
             if (this._mainElem) {
                 if (this._mainElem.firstElementChild) {
                     this._mainElem.firstElementChild.remove();
@@ -335,16 +332,30 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     if (pageProvider) {
                         const pageElem = pageProvider.pageCreator();
                         this._mainElem.appendChild(pageElem);
-                        pageTitle += (i18next.isInitialized ? " - " + i18next.t(pageElem.name) : " - " + pageElem.name);
                     }
                 }
             }
 
-            updateMetadata({
-                title: pageTitle,
-                description: pageTitle
-            });
+            this.updateWindowTitle();
         }
+    }
+
+    protected updateWindowTitle() {
+        if (!this._initialised) {
+            return;
+        }
+        
+        const appTitle = this._config.appTitle || "";
+        let pageTitle = (i18next.isInitialized ? i18next.t(appTitle) : appTitle);
+        const pageElem = (this._mainElem ? this._mainElem.firstElementChild : undefined) as Page<any>;
+        if (pageElem) {
+            pageTitle += (i18next.isInitialized ? " - " + i18next.t(pageElem.name) : " - " + pageElem.name);
+        }
+
+        updateMetadata({
+            title: pageTitle,
+            description: pageTitle
+        });
     }
 
     protected shouldUpdate(changedProps: PropertyValues): boolean {
@@ -369,6 +380,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             link.href = favIcon;
         }
 
+        this.updateWindowTitle();
         return super.shouldUpdate(changedProps);
     }
 
