@@ -1411,7 +1411,7 @@ export class OrMwcInput extends LitElement {
                 checkbox.disabled = this.disabled || this.readonly;
             }
 
-            (this._mdcComponent as any).required = this.required;
+            (this._mdcComponent as any).required = !!this.required;
         }
 
         if (this.autoValidate) {

@@ -169,9 +169,9 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     stateChanged(state: S) {
         // State is only utilised for initial loading
+        this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
         this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
-        this.getRealmState(state);
     }
 
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {
