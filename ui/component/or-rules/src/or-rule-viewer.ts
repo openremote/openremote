@@ -6,7 +6,7 @@ import {
     OrRulesSaveEvent,
     OrRulesRequestSaveEvent,
     RulesConfig,
-    RuleView, AddEventDetail, OrRulesAddEvent
+    RuleView
 } from "./index";
 import {ClientRole, RulesetLang, RulesetUnion} from "@openremote/model";
 import manager, { Util } from "@openremote/core";

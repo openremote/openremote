@@ -1,13 +1,12 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset, WellknownMetaItems, WellknownRulesetMetaItems} from "@openremote/model";
+import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset, WellknownRulesetMetaItems} from "@openremote/model";
 import "@openremote/or-translate";
-import manager, {OREvent, Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {style as OrAssetTreeStyle} from "@openremote/or-asset-tree";
 import {
-    AddEventDetail,
     OrRules,
     OrRulesAddEvent,
     OrRulesRequestAddEvent,
