@@ -108,6 +108,7 @@ export class FlowEditor extends translate(i18next)(LitElement) implements RuleVi
         await integration.refreshNodes();
         this.requestUpdate();
         await this.updateComplete;
+        project.emit("fitview");
         project.addListener("changed", () => {
             this.serialiseRule();
             this.dispatchEvent(new OrRulesRuleChangedEvent(this.validate()));

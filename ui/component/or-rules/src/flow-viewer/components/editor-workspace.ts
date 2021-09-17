@@ -76,6 +76,10 @@ export class EditorWorkspace extends translate(i18next)(LitElement) {
             this.removeEventListener("mousemove", project.connectionDragging);
         });
 
+        project.addListener("fitview", () => {
+            this.fitCamera(project.nodes);
+        });
+
         window.addEventListener("resize", () => {
             this.cachedClientRect = this.getBoundingClientRect();
             this.dispatchEvent(new CustomEvent("pan"));
