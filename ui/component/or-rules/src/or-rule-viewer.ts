@@ -20,6 +20,7 @@ import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-com
 import i18next from "i18next";
 import { GenericAxiosResponse } from "@openremote/rest";
 import { showErrorDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {project} from "./flow-viewer/components/flow-editor";
 
 // language=CSS
 export const style = css`
@@ -231,6 +232,8 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
         if (!this.ruleset || !this.view) {
             return;
         }
+
+        project.emit("fitview");
 
         if (this.config && this.config.rulesetSaveHandler && !this.config.rulesetSaveHandler(this.ruleset)) {
             return;

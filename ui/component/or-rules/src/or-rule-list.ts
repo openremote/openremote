@@ -413,6 +413,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         })).then((detail) => {
             if (detail.allow) {
                 this.selectedIds = detail.detail.newNodes.map((node) => node.ruleset.id!);
+                this.refresh();
             }
         });
     }
