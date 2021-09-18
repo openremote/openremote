@@ -90,7 +90,7 @@ export function getAttributeInputWrapper(content: TemplateResult, value: any, lo
     }
 
     return html`
-            <div id="wrapper" class="${(buttonIcon === undefined || buttonIcon || fullWidth) ? "no-padding" : "right-padding"}">
+            <div id="wrapper" class="${buttonIcon || fullWidth ? "no-padding" : "right-padding"}">
                 ${content}
                 <div id="scrim" class="${ifDefined(loading ? undefined : "hidden")}"><progress class="pure-material-progress-circular"></progress></div>
             </div>
@@ -276,6 +276,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             :host {
                 display: inline-block;
             }
+            
+            :host(.force-btn-padding) #wrapper.no-padding {
+                /*padding-right: 52px;*/
+            }   
             
             #wrapper or-mwc-input, #wrapper or-map {
                 width: 100%;
