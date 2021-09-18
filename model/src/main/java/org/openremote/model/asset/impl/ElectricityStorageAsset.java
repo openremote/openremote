@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset.impl;
 
+import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
@@ -48,6 +49,7 @@ public abstract class ElectricityStorageAsset extends ElectricityAsset<Electrici
         .withUnits(UNITS_PERCENTAGE).withConstraints(new ValueConstraint.Min(0), new ValueConstraint.Max(100));
     public static final AttributeDescriptor<Integer[][]> ENERGY_LEVEL_SCHEDULE = new AttributeDescriptor<>("energyLevelSchedule", ValueType.POSITIVE_INTEGER.asArray().asArray())
         .withOptional(true);
+    public static final AttributeDescriptor<AttributeExecuteStatus> FORCE_CHARGE = new AttributeDescriptor<>("forceCharge", ValueType.EXECUTION_STATUS);
 
     public static final AttributeDescriptor<Double> POWER_SETPOINT = ElectricityAsset.POWER_SETPOINT.withOptional(false);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = ElectricityAsset.POWER_IMPORT_MIN.withOptional(true);
