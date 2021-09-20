@@ -31,7 +31,7 @@ import org.openremote.model.util.ValueUtil;
 import java.io.IOException;
 
 /**
- * Resolves asset type strings using {@link org.openremote.model.util.AssetModelUtil}
+ * Resolves asset type strings using {@link org.openremote.model.util.ValueUtil}
  */
 public class AssetTypeIdResolver extends TypeIdResolverBase {
     @SuppressWarnings("unchecked")

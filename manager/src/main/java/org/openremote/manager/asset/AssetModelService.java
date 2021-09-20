@@ -37,7 +37,7 @@ import org.openremote.model.value.ValueDescriptor;
 
 // TODO: Implement model client event support
 /**
- * A service for abstracting {@link org.openremote.model.util.AssetModelUtil} and handling local model requests vs
+ * A service for abstracting {@link org.openremote.model.util.ValueUtil} and handling local model requests vs
  * {@link org.openremote.model.asset.impl.GatewayAsset} model requests. It also manages the {@link
  * org.openremote.model.asset.AssetModelResource} and provides support for model requests via the client event bus.
  */

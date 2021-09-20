@@ -138,7 +138,7 @@ public final class ValueType {
     );
 
     /**
-     * Allowed values constraint is added at runtime based on {@link org.openremote.model.util.AssetModelUtil}
+     * Allowed values constraint is added at runtime based on {@link org.openremote.model.util.ValueUtil}
      */
     public static final ValueDescriptor<String> ASSET_TYPE = new ValueDescriptor<>("assetType", String.class);
 

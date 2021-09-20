@@ -63,7 +63,7 @@ public @interface AssetValid {
     }
 
     /**
-     * A JSR-380 validator that uses {@link org.openremote.model.util.AssetModelUtil} to ensure that the
+     * A JSR-380 validator that uses {@link org.openremote.model.util.ValueUtil} to ensure that the
      * {@link Asset#getAttributes} are valid based on the {@link org.openremote.model.value.AttributeDescriptor}s
      * for the given {@link Asset} type.
      */
