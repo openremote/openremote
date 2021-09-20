@@ -143,7 +143,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
         String[] realmAndUsername = msg.getUsername().split(":");
         String realm = realmAndUsername[0];
-        String username = realmAndUsername[1]; 
+        String username = realmAndUsername[1];
         MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
 
         if (connection == null) {
@@ -179,7 +179,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             subscriptionId
         );
 
-        Consumer<SharedEvent> eventConsumer = brokerService.getEventConsumer(connection, subscriptionId, isValueSubscription);
+        Consumer<SharedEvent> eventConsumer = brokerService.getEventConsumer(connection, subscriptionId, isValueSubscription, msg.getRequestedQos());
         connection.subscriptionHandlerMap.put(subscriptionId, eventConsumer);
         Map<String, Object> headers = prepareHeaders(connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);

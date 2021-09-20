@@ -2,6 +2,7 @@ package org.openremote.test.mqtt
 
 import com.google.common.collect.Lists
 import io.moquette.BrokerConstants
+import io.netty.handler.codec.mqtt.MqttQoS
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
@@ -36,8 +37,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def mqttBrokerServiceAttributeValueCalls = 0
 
         def spyMqttBrokerService = Spy(MqttBrokerService) {
-            getEventConsumer(_ as MqttConnection, _ as String, _ as Boolean) >> {
-                connection, topic, isValueSubscription ->
+            getEventConsumer(_ as MqttConnection, _ as String, _ as Boolean, _ as MqttQoS) >> {
+                connection, topic, isValueSubscription, qos ->
                     return {
                         if (isValueSubscription) {
                             if (it instanceof AttributeEvent) {

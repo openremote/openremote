@@ -167,12 +167,12 @@ public class MqttBrokerService implements ContainerService {
         topicCustomHandlerMap.values().removeIf(h -> h == customHandler);
     }
 
-    public void sendToSession(String sessionId, String topic, Object data) {
+    public void sendToSession(String sessionId, String topic, Object data, MqttQoS qoS) {
         try {
             ByteBuf payload = Unpooled.copiedBuffer(ValueUtil.asJSON(data).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)), Charset.defaultCharset());
 
             MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
-                .qos(MqttQoS.AT_MOST_ONCE)
+                .qos(qoS)
                 .topicName(topic)
                 .payload(payload)
                 .build();
@@ -328,7 +328,7 @@ public class MqttBrokerService implements ContainerService {
                 }
             });
     }
-    protected Consumer<SharedEvent> getEventConsumer(MqttConnection connection, String topic, boolean isValueSubscription) {
+    protected Consumer<SharedEvent> getEventConsumer(MqttConnection connection, String topic, boolean isValueSubscription, MqttQoS mqttQoS) {
         return ev -> {
             List<String> topicTokens = Arrays.asList(topic.split("/"));
             int wildCardIndex = Math.max(topicTokens.indexOf(MULTI_LEVEL_WILDCARD), topicTokens.indexOf(SINGLE_LEVEL_WILDCARD));
@@ -338,7 +338,7 @@ public class MqttBrokerService implements ContainerService {
                 if (wildCardIndex > 0) {
                     topicTokens.set(wildCardIndex, assetEvent.getAssetId());
                 }
-                sendToSession(connection.getSessionId(), String.join("/", topicTokens), ev);
+                sendToSession(connection.getSessionId(), String.join("/", topicTokens), ev, mqttQoS);
             }
 
             if (ev instanceof AttributeEvent) {
@@ -357,9 +357,9 @@ public class MqttBrokerService implements ContainerService {
                     }
                 }
                 if(isValueSubscription) {
-                    sendToSession(connection.getSessionId(), String.join("/", topicTokens), attributeEvent.getValue().orElse(null));
+                    sendToSession(connection.getSessionId(), String.join("/", topicTokens), attributeEvent.getValue().orElse(null), mqttQoS);
                 } else {
-                    sendToSession(connection.getSessionId(), String.join("/", topicTokens), ev);
+                    sendToSession(connection.getSessionId(), String.join("/", topicTokens), ev, mqttQoS);
                 }
             }
         };
