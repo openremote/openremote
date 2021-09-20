@@ -50,6 +50,8 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     public static final AttributeDescriptor<Integer> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_INTEGER
     ).withUnits(UNITS_DEGREE);
 
+    public static final AttributeDescriptor<Double> POWER_FORECAST = ElectricityProducerAsset.POWER_FORECAST.withOptional(true);
+
     public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "EABB4D", ElectricityProducerSolarAsset.class);
 
     /**

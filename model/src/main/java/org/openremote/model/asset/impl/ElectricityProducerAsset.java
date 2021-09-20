@@ -21,8 +21,11 @@ package org.openremote.model.asset.impl;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.value.AttributeDescriptor;
+import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
+
+import static org.openremote.model.Constants.*;
 
 @Entity
 public class ElectricityProducerAsset extends ElectricityAsset<ElectricityProducerAsset> {
@@ -37,6 +40,9 @@ public class ElectricityProducerAsset extends ElectricityAsset<ElectricityProduc
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricitySupplierAsset.TARIFF_IMPORT.withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = ElectricitySupplierAsset.TARIFF_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricitySupplierAsset.CARBON_IMPORT.withOptional(true);
+
+    public static final AttributeDescriptor<Double> POWER_FORECAST = new AttributeDescriptor<>("powerForecast", ValueType.NUMBER
+    ).withUnits(UNITS_KILO, UNITS_WATT);
 
     public static final AssetDescriptor<ElectricityProducerAsset> DESCRIPTOR = new AssetDescriptor<>("flash", "EABB4D", ElectricityProducerAsset.class);
 
