@@ -189,7 +189,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             && attributeEvent.<Boolean>getValue().orElse(false)) {
             // Look for forced charge asset
             if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
-                LOG.fine("Previously force charged asset has now been removed: " + attributeEvent.getAssetId());
+                LOG.info("Previously force charged asset has now been removed: " + attributeEvent.getAssetId());
             }
             return;
         }
@@ -200,7 +200,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             if (storageAsset instanceof ElectricityStorageAsset) {
                 forceChargeAssetIds.add(attributeEvent.getAssetId());
                 double powerImportMax = ((ElectricityStorageAsset) storageAsset).getPowerImportMax().orElse(Double.MAX_VALUE);
-                LOG.fine("Request to force charge asset '" + attributeEvent.getAssetId() + "': attempting to set powerSetpoint=" + powerImportMax);
+                LOG.info("Request to force charge asset '" + attributeEvent.getAssetId() + "': attempting to set powerSetpoint=" + powerImportMax);
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, powerImportMax));
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED));
             }
@@ -393,6 +393,17 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     Attribute<Double> powerAttribute = asset.getAttribute(ElectricityAsset.POWER).get();
                     double[] powerLevels = get24HAttributeValues(asset.getId(), powerAttribute, optimiser.getIntervalSize(), intervalCount, optimisationTime);
                     IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
+
+                    double currentEnergyLevel = asset.getEnergyLevel().orElse(0d);
+                    double energyCapacity = asset.getEnergyCapacity().orElse(0d);
+                    int maxEnergyLevelPercentage = asset.getEnergyLevelPercentageMax().orElse(100);
+                    double maxEnergyLevel = energyCapacity * ((1d*maxEnergyLevelPercentage)/100d);
+                    if (currentEnergyLevel >= maxEnergyLevel) {
+                        LOG.info("Force charged asset has reached maxEnergyLevelPercentage so stopping charging: " + asset.getId());
+                        assetProcessingService.sendAttributeEvent(
+                            new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d)
+                        );
+                    }
                     return false;
                 }
 
@@ -400,7 +411,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     // Check if it has a child vehicle asset
                     return finalOptimisableStorageAssets.stream()
                         .noneMatch(a -> {
-                            if (a.getParentId().equals(asset.getId())) {
+                                if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
                                 // Take the lowest power max from vehicle or charger
                                 double vehiclePowerImportMax = a.getPowerImportMax().orElse(Double.MAX_VALUE);
                                 double vehiclePowerExportMax = a.getPowerExportMax().orElse(Double.MAX_VALUE);
@@ -483,14 +494,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     // Check if it has a child vehicle asset also check optimisable assets as child vehicle could be in there
                     return plainStorageAssets.stream()
                         .noneMatch(a -> {
-                            if (a.getParentId().equals(asset.getId())) {
+                            if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
                                 LOG.finest("Excluding charger from plain consumer/producer calculations to avoid double counting power: " + asset.getId());
                                 return true;
                             }
                             return false;
                         }) && finalOptimisableStorageAssets.stream()
                         .noneMatch(a -> {
-                            if (a.getParentId().equals(asset.getId())) {
+                            if (a instanceof ElectricVehicleAsset && a.getParentId().equals(asset.getId())) {
                                 LOG.finest("Excluding charger from plain consumer/producer calculations to avoid double counting power: " + asset.getId());
                                 return true;
                             }
