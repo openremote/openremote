@@ -43,8 +43,6 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
     public static final AttributeDescriptor<Double> WIND_SPEED_MAX = new AttributeDescriptor<>("windSpeedMax", ValueType.POSITIVE_NUMBER
     ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
 
-    public static final AttributeDescriptor<Double> POWER_FORECAST = ElectricityProducerAsset.POWER_FORECAST.withOptional(true);
-
     public static final AssetDescriptor<ElectricityProducerWindAsset> DESCRIPTOR = new AssetDescriptor<>("wind-turbine", "4B87EA", ElectricityProducerWindAsset.class);
 
     /**
