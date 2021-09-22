@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk8:ubi-minimal-jre-nightly
+FROM adoptopenjdk/openjdk8:ubi-minimal-jre
 
 ### S6 installation
 ENV S6_OVERLAY_VERSION=v2.2.0.3
