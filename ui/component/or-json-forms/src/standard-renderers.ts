@@ -46,7 +46,8 @@ import {
     getLabel,
     getSchemaConst,
     getTemplateFromProps,
-    mapStateToCombinatorRendererProps
+    mapStateToCombinatorRendererProps,
+    showJsonEditor
 } from "./util";
 import "./layouts/layout-vertical-element";
 import "./controls/control-input-element";
@@ -251,13 +252,25 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     }
 
     if (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0) {
+        const { handleChange } = mapDispatchToControlProps(state.dispatch);
+
         if (data !== undefined) {
             // We have data that doesn't match a schema so show invalid template
             console.warn("Cannot match " + keyword + " schema to instance data");
-            return invalidTemplate(props.label || label);
+
+            const showJson = (ev: MouseEvent) => {
+                ev.stopPropagation();
+
+                showJsonEditor(label, data, ((newValue) => {
+                    handleChange(path || "", newValue);
+                }));
+            };
+
+            return html`
+                <span style="padding-right: 5px;">${label}:</span><span style="padding-right: 5px;"><b><or-translate value="validation.noSchemaMatchFound"></b></span><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${(ev: MouseEvent) => showJson(ev)}"></or-mwc-input>
+            `;
         } else {
             // We have no data so show a schema picker
-            const { handleChange } = mapDispatchToControlProps(state.dispatch);
             const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
             const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", Util.camelCaseToSentenceCase(combinatorInfo.title) || i18next.t("Item ") + (index+1)]);
             const pickerUpdater = (index: number) => {
@@ -363,10 +376,6 @@ export function getTemplateWrapper(elementTemplate: TemplateResult, deleteHandle
                     </div>
                 </div>
             `;
-}
-
-export function invalidTemplate(label: string | undefined) {
-    return html`<span style="padding-right: 5px;">${label}:</span><span><b>Data is invalid!</b></span>`;
 }
 
 export function unknownTemplate() {
