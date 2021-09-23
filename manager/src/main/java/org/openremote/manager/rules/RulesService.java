@@ -301,10 +301,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         tenantEngines.values().forEach(RulesEngine::start);
         assetEngines.values().forEach(RulesEngine::start);
 
+        startDone = true;
+
         preInitassetStates.forEach(this::doProcessAssetUpdate);
         preInitassetStates.clear();
-
-        startDone = true;
     }
 
     @Override
