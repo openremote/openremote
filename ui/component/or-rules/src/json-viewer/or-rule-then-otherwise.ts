@@ -235,11 +235,13 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
         }
         if(readonly) {
             recurrenceTemplate = html`
-             <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>
+                <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
+                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>
+                </div>
             `;
         } else {
         recurrenceTemplate = html`
-                <div style="--or-mwc-input-color: #${buttonColor}; margin-right: 6px;">
+                <div style="--or-mwc-input-color: ${buttonColor}; margin-right: 6px;">
                     ${getContentWithMenuTemplate(
                         html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t(value)}"></or-mwc-input>`,
                         getRecurrenceMenu(this.config),
@@ -299,7 +301,9 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
 
             if(readonly) {
                 typeTemplate = html`
-                  <or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
+                    <div id="type" style="--or-mwc-input-color: #${buttonColor}">
+                        <or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
+                    </div>
                 `;
             } else {
                 typeTemplate = html`
