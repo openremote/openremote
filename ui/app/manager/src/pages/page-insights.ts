@@ -1,5 +1,5 @@
 import {css, html, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig} from "@openremote/or-data-viewer";
 import {Page, PageProvider} from "@openremote/or-app";
@@ -86,6 +86,9 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
     @property()
     protected _assetId;
 
+    @state()
+    public realm?: string;
+
     get name(): string {
         return "insights";
     }
@@ -94,17 +97,23 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
         super(store);
     }
 
+    public connectedCallback() {
+        super.connectedCallback();
+        this.realm = this.getState().app.realm;
+    }
+
     protected render(): TemplateResult | void {
         return html`
             <div id="wrapper">
                 <div id="title">
                     <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
                 </div>
-                <or-data-viewer .config="${this.config?.dataViewer}"></or-data-viewer>
+                <or-data-viewer .realm="${this.realm}" .config="${this.config?.dataViewer}"></or-data-viewer>
             </div>
         `;
     }
 
     public stateChanged(state: S) {
+        this.realm = state.app.realm;
     }
 }

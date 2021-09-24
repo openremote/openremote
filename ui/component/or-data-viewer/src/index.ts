@@ -163,6 +163,9 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
     @property()
     protected _loading: boolean = false;
 
+    @property()
+    public realm?: string;
+
     protected _resizeHandler = () => {
         OrDataViewer.generateGrid(this.shadowRoot)
     };
@@ -194,6 +197,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
 
         return html`
+            <pre>${this.realm}</pre>
             <div class=${classMap({panel: true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     ${(panelConfig && panelConfig.type === "chart") ? html`
