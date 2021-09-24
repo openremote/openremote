@@ -4,13 +4,14 @@ import "@openremote/or-chart";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
 import "@openremote/or-components/or-panel";
-import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
+import {OrChartConfig, OrChartConfigNew, OrChartEvent} from "@openremote/or-chart";
 import {Asset, Attribute} from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
 import {styleMap} from "lit/directives/style-map";
 import {classMap} from "lit/directives/class-map";
 import "@openremote/or-attribute-card";
+import manager from "@openremote/core";
 
 export type PanelType = "chart" | "kpi";
 
@@ -37,7 +38,7 @@ export interface DataViewerConfig {
     propertyViewProvider?: (property: string, value: any, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     attributeViewProvider?: (attribute: Attribute<any>, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     panelViewProvider?: (attributes: Attribute<any>[], panelName: string, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
-    chartConfig?: OrChartConfig;
+    chartConfig?: OrChartConfigNew;
 }
 
 class EventHandler {
@@ -190,6 +191,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
     }
 
     public getPanel(name: string, panelConfig: PanelConfig) {
+
         const content = this.getPanelContent(name, panelConfig);
 
         if (!content) {
@@ -197,7 +199,6 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
 
         return html`
-            <pre>${this.realm}</pre>
             <div class=${classMap({panel: true, mobileHidden: panelConfig.hideOnMobile === true})} id="${name}-panel" style="${panelConfig && panelConfig.panelStyles ? styleMap(panelConfig.panelStyles) : ""}">
                 <div class="panel-content-wrapper">
                     ${(panelConfig && panelConfig.type === "chart") ? html`
@@ -217,6 +218,18 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
     public getPanelContent(panelName: string,  panelConfig: PanelConfig): TemplateResult | undefined {
         if (panelConfig.hide || !this.config) {
             return;
+        }
+
+        if (!this.realm) {
+            this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
+        }
+
+        if (!this.config.chartConfig) {
+            this.config.chartConfig = {
+                [this.realm!]: {
+                    views: {}
+                }
+            }
         }
 
         let content: TemplateResult | undefined;
