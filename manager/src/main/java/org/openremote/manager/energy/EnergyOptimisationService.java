@@ -189,22 +189,57 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             && attributeEvent.<Boolean>getValue().orElse(false)) {
             // Look for forced charge asset
             if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
-                LOG.info("Previously force charged asset has now been removed: " + attributeEvent.getAssetId());
+                LOG.info("Previously force charged asset has now been disconnected so clearing force charge flag: " + attributeEvent.getAssetId());
             }
             return;
         }
 
         // Check for request to force charge
-        if (attributeName.equals(ElectricityStorageAsset.FORCE_CHARGE.getName()) && attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_START) {
-            Asset<?> storageAsset = assetStorageService.find(attributeEvent.getAssetId());
-            if (storageAsset instanceof ElectricityStorageAsset) {
-                forceChargeAssetIds.add(attributeEvent.getAssetId());
-                double powerImportMax = ((ElectricityStorageAsset) storageAsset).getPowerImportMax().orElse(Double.MAX_VALUE);
+        if (attributeName.equals(ElectricityStorageAsset.FORCE_CHARGE.getName())) {
+            Asset<?> asset = assetStorageService.find(attributeEvent.getAssetId());
+            if (!(asset instanceof ElectricityStorageAsset)) {
+                LOG.fine("Request to force charge asset will be ignored as asset not found or is not of type '" + ElectricityStorageAsset.class.getSimpleName() + "': " + attributeEvent.getAssetId());
+                return;
+            }
+
+            ElectricityStorageAsset storageAsset = (ElectricityStorageAsset) asset;
+
+            if (attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_START) {
+
+                double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
+                double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(storageAsset);
+                double currentEnergyLevel = storageAsset.getEnergyLevel().orElse(0d);
                 LOG.info("Request to force charge asset '" + attributeEvent.getAssetId() + "': attempting to set powerSetpoint=" + powerImportMax);
+
+                if (forceChargeAssetIds.contains(attributeEvent.getAssetId())) {
+                    LOG.info("Request to force charge asset will be ignored as force charge already requested for asset: " + storageAsset);
+                    return;
+                }
+
+                if (currentEnergyLevel >= maxEnergyLevel) {
+                    LOG.info("Request to force charge asset will be ignored as asset is already at or above maxEnergyLevel: " + storageAsset);
+                    return;
+                }
+
+                forceChargeAssetIds.add(attributeEvent.getAssetId());
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, powerImportMax));
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.RUNNING));
+
+            } else if (attributeEvent.<AttributeExecuteStatus>getValue().orElse(null) == AttributeExecuteStatus.REQUEST_CANCEL) {
+
+                if (forceChargeAssetIds.remove(attributeEvent.getAssetId())) {
+                    LOG.info("Request to cancel force charge asset: " + storageAsset.getId());
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityAsset.POWER_SETPOINT, 0d));
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(storageAsset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.CANCELLED));
+                }
             }
         }
+    }
+
+    protected double getElectricityStorageAssetEnergyLevelMax(ElectricityStorageAsset asset) {
+        double energyCapacity = asset.getEnergyCapacity().orElse(0d);
+        int maxEnergyLevelPercentage = asset.getEnergyLevelPercentageMax().orElse(100);
+        return energyCapacity * ((1d*maxEnergyLevelPercentage)/100d);
     }
 
     protected void processOptimisationAssetAttributeEvent(OptimisationInstance optimisationInstance, AttributeEvent attributeEvent) {
@@ -395,14 +430,14 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
                     IntStream.range(0, intervalCount).forEach(i -> powerNets[i] += powerLevels[i]);
 
                     double currentEnergyLevel = asset.getEnergyLevel().orElse(0d);
-                    double energyCapacity = asset.getEnergyCapacity().orElse(0d);
-                    int maxEnergyLevelPercentage = asset.getEnergyLevelPercentageMax().orElse(100);
-                    double maxEnergyLevel = energyCapacity * ((1d*maxEnergyLevelPercentage)/100d);
+                    double maxEnergyLevel = getElectricityStorageAssetEnergyLevelMax(asset);
                     if (currentEnergyLevel >= maxEnergyLevel) {
                         LOG.info("Force charged asset has reached maxEnergyLevelPercentage so stopping charging: " + asset.getId());
+                        forceChargeAssetIds.remove(asset.getId());
                         assetProcessingService.sendAttributeEvent(
                             new AttributeEvent(asset.getId(), ElectricityStorageAsset.POWER_SETPOINT, 0d)
                         );
+                        assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityStorageAsset.FORCE_CHARGE, AttributeExecuteStatus.COMPLETED));
                     }
                     return false;
                 }
