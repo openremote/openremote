@@ -4,7 +4,7 @@ import "@openremote/or-chart";
 import "@openremote/or-translate";
 import {translate} from "@openremote/or-translate";
 import "@openremote/or-components/or-panel";
-import {OrChartConfig, OrChartConfigNew, OrChartEvent} from "@openremote/or-chart";
+import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {Asset, Attribute} from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
@@ -38,7 +38,7 @@ export interface DataViewerConfig {
     propertyViewProvider?: (property: string, value: any, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     attributeViewProvider?: (attribute: Attribute<any>, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
     panelViewProvider?: (attributes: Attribute<any>[], panelName: string, viewerConfig: DataViewerConfig, panelConfig: PanelConfig) => TemplateResult | undefined;
-    chartConfig?: OrChartConfigNew;
+    chartConfig?: OrChartConfig;
 }
 
 class EventHandler {
@@ -226,9 +226,8 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
 
         if (!this.config.chartConfig) {
             this.config.chartConfig = {
-                [this.realm!]: {
-                    views: {}
-                }
+                realm: this.realm,
+                views: {}
             }
         }
 
