@@ -51,9 +51,14 @@ public enum AttributeExecuteStatus {
     /**
      * Execution is currently running
      */
-    RUNNING(false);
+    RUNNING(false),
 
-    private boolean write;
+    /**
+     * Execution has been cancelled
+     */
+    CANCELLED(false);
+
+    private final boolean write;
     // Prevents cloning of values each time fromString is called
     private static final AttributeExecuteStatus[] copyOfValues = values();
 
