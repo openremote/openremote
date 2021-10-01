@@ -165,6 +165,16 @@ export class MapWidget {
         // Load options for current realm or fallback to default if exist
         const realmName = manager.displayRealm || "default";
         this._viewSettings = settings.options ? settings.options[realmName] ? settings.options[realmName] : settings.options.default : null;
+
+        if (this._viewSettings) {
+            if (this._mapGl) {
+                this._mapGl.setMinZoom(this._viewSettings.minZoom);
+                this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
+                this._mapGl.setMaxBounds(this._viewSettings.bounds);
+            }
+            this.setCenter(this._viewSettings.center);
+        }
+
         return settings;
     }
 
@@ -251,13 +261,10 @@ export class MapWidget {
                 options.zoom = this._viewSettings.zoom;
                 options.center = this._viewSettings.center;
             }
-            if (this._center) {
-                options.center = this._center;
-            } else {
-                if(this._viewSettings) {
-                    this._center = this._viewSettings.center;
-                }
-            }
+
+            this._center = this._center || (this._viewSettings ? this._viewSettings.center : undefined);
+            options.center = this._center;
+
             if (this._zoom) {
                 options.zoom = this._zoom;
             }

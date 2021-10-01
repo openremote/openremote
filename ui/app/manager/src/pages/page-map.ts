@@ -115,8 +115,8 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
            or-map-asset-card {
                 height: 166px;
                 position: absolute;
-                bottom: 0px;
-                right: 0px;
+                bottom: 0;
+                right: 0;
                 width: calc(100vw - 10px);
                 margin: 5px;
                 z-index: 99;
@@ -132,7 +132,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                 or-map-asset-card {
                     position: absolute;
                     top: 20px;
-                    right: 20px;
+                    right: 50px;
                     width: 320px;
                     margin: 0;
                     height: 400px; /* fallback for IE */

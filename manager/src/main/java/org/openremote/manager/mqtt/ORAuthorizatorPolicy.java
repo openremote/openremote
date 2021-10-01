@@ -11,17 +11,22 @@ import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.value.RegexValueFilter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.mqtt.MqttBrokerService.*;
@@ -93,6 +98,16 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
 
+        if(!connection.realm.equals(topicTokens.get(0))) {
+            LOG.warning("Topic should start with the realm of the connection: " + connection);
+            return false;
+        }
+
+        if (!connection.sessionId.equals(topicTokens.get(1))) {
+            LOG.warning("Second topic level should match clientId: " + connection);
+            return false;
+        }
+
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
 
@@ -101,20 +116,26 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if(topicTokens.size() > 1) {
-            String assetId = topicTokens.get(1);
+        if(topicTokens.size() > 3) {
+            String assetId = topicTokens.get(3);
+            if (Pattern.matches(Constants.ASSET_ID_REGEXP, assetId)) {
 
-            if (!SINGLE_LEVEL_WILDCARD.equals(assetId) && !MULTI_LEVEL_WILDCARD.equals(assetId)) {
-                Asset<?> asset = assetStorageService.find(assetId);
+                Asset<?> asset;
+                if(identityProvider.isRestrictedUser(authContext.getUserId())) {
+                    Optional<UserAsset> userAsset = assetStorageService.findUserAssets(connection.realm, authContext.getUserId(), assetId).stream().findFirst();
+                    asset = userAsset.map(value -> assetStorageService.find(value.getId().getAssetId())).orElse(null);
+                } else {
+                    asset = assetStorageService.find(assetId);
+                }
 
                 if (asset == null) {
                     LOG.fine("Asset not found for topic '" + topic + "': " + connection);
                     return false;
                 }
 
-                if (isAttributeTopic && topicTokens.size() > 2
-                        && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(2)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(2)))) {
-                    String attributeName = topicTokens.get(2);
+                if (isAttributeTopic && topicTokens.size() > 4
+                        && !(SINGLE_LEVEL_WILDCARD.equals(topicTokens.get(4)) || MULTI_LEVEL_WILDCARD.equals(topicTokens.get(4)))) {
+                    String attributeName = topicTokens.get(4);
 
                     if (!asset.hasAttribute(attributeName)) {
                         LOG.fine("Asset attribute not found for topic '" + topic + "': " + connection);
@@ -123,7 +144,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
                 }
             }
         } else if(!isWrite) {
-            LOG.fine("Topic must contain at least two tokens '" + topic + "': " + connection);
+            LOG.fine("Topic must contain at least three tokens '" + topic + "': " + connection);
             return false;
         }
 
@@ -140,12 +161,12 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             }
 
 
-            if (topicTokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC) && topicTokens.size() != 3) {
-                LOG.info("Write request to attribute value topic should contain asset ID and attribute name only, topic '" + topic + "': " + connection);
+            if (topicTokens.get(2).equals(ATTRIBUTE_VALUE_TOPIC) && topicTokens.size() != 5) {
+                LOG.info("Write request to attribute value topic should contain clientId, asset ID and attribute name only, topic '" + topic + "': " + connection);
                 return false;
             }
 
-            if (topicTokens.get(0).equals(ATTRIBUTE_TOPIC) && topicTokens.size() != 1) {
+            if (topicTokens.get(2).equals(ATTRIBUTE_TOPIC) && topicTokens.size() != 3) {
                 LOG.info("Write request to attribute topic should not contain any other tokens, topic '" + topic + "': " + connection);
                 return false;
             }

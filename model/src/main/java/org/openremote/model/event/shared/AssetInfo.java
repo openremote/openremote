@@ -27,5 +27,7 @@ public interface AssetInfo {
 
     String getParentId();
 
+    String[] getPath();
+
     String[] getAttributeNames();
 }

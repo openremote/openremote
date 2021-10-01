@@ -15,8 +15,7 @@
   "dependencies": {
     "@openremote/or-mwc-components": "^1.0.3",
     "@polymer/polymer": "^3.3.1",
-    "lit": "^2.0.0-rc.2",
-    "haunted": "^4.8.1"
+    "lit": "^2.0.0-rc.2"
   },
   "devDependencies": {
     "@jsonforms/core": "^3.0.0-alpha.1",

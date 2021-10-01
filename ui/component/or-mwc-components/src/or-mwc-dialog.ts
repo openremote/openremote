@@ -6,7 +6,7 @@ import "./or-mwc-input";
 import {InputType} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor4, DefaultColor5, Util } from "@openremote/core";
-import { Asset, AssetEvent, Attribute, AttributeRef } from "@openremote/model";
+import { Asset, AssetEvent, Attribute, AttributeRef, WellknownMetaItems } from "@openremote/model";
 import manager from "@openremote/core";
 import {ListItem, ListType, OrMwcListChangedEvent} from "./or-mwc-list";
 
@@ -363,7 +363,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     private assetAttributes: Attribute<any>[] = []; // to display attributes that belong to selected asset
     
     @property({type: Boolean})
-    public showOnlyDatapointAttrs: boolean = false;
+    public showOnlyDatapointAttrs?: boolean = false;
 
     @property({type: Array, attribute: false})
     public selectedAttributes: AttributeRef[] = [];
@@ -387,6 +387,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             }
             #header {
                 background-color: ${unsafeCSS(DefaultColor4)} !important;
+            }
+            #dialog-content {
+                padding: 0;
             }
         `;
         
@@ -447,7 +450,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                     <div style="display: grid">
                         <or-mwc-list 
                                 id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}"
-                                .values="${this.selectedAttributes.map(e => e.name!)}"
+                                .values="${this.selectedAttributes.map(e => e.id === this.selectedAsset!.id && e.name!)}"
                                 @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._addRemoveAttrs(ev)}"></or-mwc-list>
                     </div>
                 ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
@@ -478,7 +481,8 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             .then(result => {
                 this.assetAttributes = Object.values(result.data.attributes!) as Attribute<any>[];
                 if (this.showOnlyDatapointAttrs) {
-                    this.assetAttributes = this.assetAttributes.filter(e => e.meta && e.meta.storeDataPoints);
+                    this.assetAttributes = this.assetAttributes
+                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]));
                 }
                 this.reRenderDialog();
             });
@@ -499,14 +503,12 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         }
 
         this._getAttributeOptions();
-        this.reRenderDialog();
     }
     
     protected _onAssetSelectionDeleted() {
         this.selectedAsset = undefined;
         this.assetAttributes = [];
         this._getAttributeOptions();
-        this.reRenderDialog();
     }
 
 }

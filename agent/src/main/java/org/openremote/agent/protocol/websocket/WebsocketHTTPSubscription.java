@@ -19,9 +19,13 @@
  */
 package org.openremote.agent.protocol.websocket;
 
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import org.openremote.model.value.ValueType;
+
 import java.util.List;
 import java.util.Map;
 
+@JsonTypeName(WebsocketHTTPSubscription.TYPE)
 public class WebsocketHTTPSubscription extends WebsocketSubscription {
 
     public enum Method {
@@ -34,11 +38,10 @@ public class WebsocketHTTPSubscription extends WebsocketSubscription {
 
     public Method method;
     public String contentType;
-    public Map<String, List<String>> headers;
+    public ValueType.MultivaluedStringMap headers;
     public String uri;
 
     public WebsocketHTTPSubscription() {
-        super(TYPE);
     }
 
     public WebsocketHTTPSubscription method(Method method) {
@@ -51,13 +54,18 @@ public class WebsocketHTTPSubscription extends WebsocketSubscription {
         return this;
     }
 
-    public WebsocketHTTPSubscription headers(Map<String, List<String>> headers) {
+    public WebsocketHTTPSubscription headers(ValueType.MultivaluedStringMap headers) {
         this.headers = headers;
         return this;
     }
 
     public WebsocketHTTPSubscription uri(String uri) {
         this.uri = uri;
+        return this;
+    }
+
+    public WebsocketHTTPSubscription body(Object body) {
+        super.body(body);
         return this;
     }
 

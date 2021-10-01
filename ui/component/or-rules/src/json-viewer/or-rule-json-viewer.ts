@@ -153,7 +153,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             } else {
                 this._rule = {
                     recurrence: {
-                        mins: 0 //always
+                        mins: 0 // always
                     }
                 };
             }
@@ -262,7 +262,7 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
     }
 
     protected _onJsonRuleChanged() {
-        let valid = this.validate();
+        const valid = this.validate();
         this.dispatchEvent(new OrRulesRuleChangedEvent(valid));
     }
 

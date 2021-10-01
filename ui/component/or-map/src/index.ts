@@ -106,7 +106,7 @@ function getCoordinatesInputKeyHandler(valueChangedHandler: (value: LngLat | und
     return (e: KeyboardEvent) => {
         if (e.code === "Enter" || e.code === "NumpadEnter") {
             const valStr = (e.target as OrMwcInput).value as string;
-            let value: LngLat | undefined;
+            let value: LngLat | undefined = !valStr ? undefined : {} as LngLat;
 
             if (valStr) {
                 const lngLatArr = valStr.split(/[ ,]/).filter(v => !!v);
@@ -192,7 +192,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         }
         if (value) {
             valueChangeNotifier({
-                value: value
+                value: Util.getGeoJSONPoint(value)
             });
         } else {
             valueChangeNotifier(undefined);
@@ -200,9 +200,9 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     };
 
     const coordinatesControl = new CoordinatesControl(disabled, valueChangeHandler);
+    let pos: { lng: number, lat: number } | undefined;
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
-        let pos: { lng: number, lat: number } | undefined;
         let center: number[] | undefined;
 
         if (value) {
@@ -314,7 +314,8 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         templateFunction: templateFunction,
         supportsHelperText: false,
         supportsLabel: false,
-        supportsSendButton: false
+        supportsSendButton: false,
+        validator: () => !pos || (pos.lat !== undefined && pos.lat !== null && pos.lng !== undefined && pos.lng !== null)
     };
 }
 

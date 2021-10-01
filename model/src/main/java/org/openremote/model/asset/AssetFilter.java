@@ -34,6 +34,7 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     protected String[] assetIds;
     protected String realm;
     protected String[] parentIds;
+    protected String[] path;
     protected String[] attributeNames;
 
     public AssetFilter() {
@@ -70,6 +71,11 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return this;
     }
 
+    public AssetFilter<T> setPath(String[] path) {
+        this.path = path;
+        return this;
+    }
+
     public String[] getAttributeNames() {
         return attributeNames;
     }
@@ -95,6 +101,13 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
         if (parentIds != null && parentIds.length > 0) {
             if (!Arrays.asList(parentIds).contains(event.getParentId())) {
+                return false;
+            }
+        }
+
+        if(path != null && path.length > 0) {
+            List<String> pathList = Arrays.asList(event.getPath());
+            if (Arrays.stream(path).noneMatch(pathList::contains)) {
                 return false;
             }
         }

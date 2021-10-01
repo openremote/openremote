@@ -290,7 +290,22 @@ abstract class EventProviderImpl implements EventProvider {
             });
         }
 
-        this._assetEventCallbackMap.set(subscriptionId, callback);
+        const eventFilter = (e: AssetEvent) => {
+            const assetId = e.asset!.id!;
+
+            if (assetIds) {
+                if (assetIds.find((id => assetId === id))) {
+                    callback(e);
+                }
+            } else {
+                const realm = e.asset!.realm!;
+                if (realm === manager.displayRealm) {
+                    callback(e);
+                }
+            }
+        };
+
+        this._assetEventCallbackMap.set(subscriptionId, eventFilter);
 
         return this._assetEventPromise.then(() => {
 
@@ -343,7 +358,7 @@ abstract class EventProviderImpl implements EventProvider {
         const attributes = isAttributeRef ? ids as AttributeRef[] : undefined;
         const subscriptionId = "AttributeEvent" + EventProviderImpl._subscriptionCounter++;
 
-        // If not already done then create a single global subscription for asset events and filter for each callback
+        // If not already done then create a single global subscription for attribute events and filter for each callback
         if (!this._attributeEventPromise) {
 
             const subscription: EventSubscription<AttributeEvent> = {
@@ -356,15 +371,23 @@ abstract class EventProviderImpl implements EventProvider {
 
         // Build a filter to only respond to the callback for the requested attributes
         const eventFilter = (e: AttributeEvent) => {
+            const eventRef = e.attributeState!.ref!;
+
             if (isAttributeRef) {
                 (ids as AttributeRef[]).forEach((ref: AttributeRef) => {
-                    const eventRef = e.attributeState!.ref!;
                     if (eventRef.id === ref.id && eventRef.name === ref.name) {
                         callback(e);
                     }
                 });
+            } else if (assetIds) {
+                if (assetIds.find((id => eventRef.id === id))) {
+                    callback(e);
+                }
             } else {
-                callback(e);
+                const realm = e.realm!;
+                if (realm === manager.displayRealm) {
+                    callback(e);
+                }
             }
         };
 

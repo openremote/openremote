@@ -1,5 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
+import {Ref, ref, createRef} from "lit/directives/ref.js";
 import {classMap} from "lit/directives/class-map";
 import {ifDefined} from "lit/directives/if-defined";
 import {MDCTextField} from "@material/textfield";
@@ -141,6 +142,7 @@ export interface ValueInputProvider {
     supportsHelperText: boolean;
     supportsLabel: boolean;
     supportsSendButton: boolean;
+    validator?: () => boolean;
 }
 
 export type ValueInputTemplateFunction = ((value: any, focused: boolean, loading: boolean, sending: boolean, error: boolean, helperText: string | undefined) => TemplateResult | PromiseLike<TemplateResult>) | undefined;
@@ -172,7 +174,7 @@ function inputTypeSupportsLabel(inputType: InputType) {
     return inputTypeSupportsHelperText(inputType) || inputType === InputType.CHECKBOX;
 }
 
-export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor: AssetDescriptor | string, valueHolder: NameValueHolder<any> | undefined, valueHolderDescriptor: ValueDescriptorHolder | undefined, valueDescriptor: ValueDescriptor, valueChangeNotifier: (value: any | undefined) => void, options: ValueInputProviderOptions) => {
+export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = (assetDescriptor, valueHolder, valueHolderDescriptor, valueDescriptor, valueChangeNotifier, options) => {
 
     let inputType: InputType | undefined = options.inputType;
     let step: number | undefined;
@@ -380,13 +382,14 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     const readonly = options.readonly;
     const comfortable = options.comfortable;
     const resizeVertical = options.resizeVertical;
+    const inputRef: Ref<OrMwcInput> = createRef();
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
 
         const disabled = options.disabled || loading || sending;
         const label = supportsLabel ? options.label : undefined;
 
-        return html`<or-mwc-input id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
+        return html`<or-mwc-input ${ref(inputRef)} id="input" .type="${inputType}" .label="${label}" .value="${value}" .pattern="${pattern}"
             .min="${min}" .max="${max}" .format="${format}" .focused="${focused}" .required="${required}" .multiple="${multiple}"
             .options="${selectOptions}" .comfortable="${comfortable}" .readonly="${readonly}" .disabled="${disabled}" .step="${step}"
             .helperText="${helperText}" .helperPersistent="${true}" .resizeVertical="${resizeVertical}"
@@ -401,7 +404,13 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
         templateFunction: templateFunction,
         supportsHelperText: supportsHelperText,
         supportsSendButton: supportsSendButton,
-        supportsLabel: supportsLabel
+        supportsLabel: supportsLabel,
+        validator: () => {
+            if (!inputRef.value) {
+                return false;
+            }
+            return inputRef.value.checkValidity();
+        }
     };
 }
 
@@ -890,7 +899,6 @@ export class OrMwcInput extends LitElement {
                     };
 
                     const menuCloseHandler = () => {
-                        Util.enableScroll();
                         const v = (this._tempValue ?? this.value);
                         window.setTimeout(() => {
                             if (this._mdcComponent) {
@@ -905,10 +913,6 @@ export class OrMwcInput extends LitElement {
                         const val = [...this._tempValue];
                         this._tempValue = undefined;
                         this.onValueChange(undefined, val);
-                    };
-
-                    const menuOpenedHandler = () => {
-                        Util.disableScroll();
                     };
 
                     return html`
@@ -944,7 +948,7 @@ export class OrMwcInput extends LitElement {
                                     </span>
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
-                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:opened="${menuOpenedHandler}" @MDCMenuSurface:closed="${menuCloseHandler}">
+                                <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}">
                                 ${getListTemplate(
                                     this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
                                     opts ? html`${opts.map(([optValue, optDisplay], index) => {
@@ -1085,7 +1089,18 @@ export class OrMwcInput extends LitElement {
                     if (valMinMax.some((v) => typeof (v) !== "string")) {
 
                         if (this.type === InputType.JSON) {
-                            valMinMax[0] = valMinMax[0] !== undefined && valMinMax[0] !== null ? (typeof valMinMax[0] === "string" ? valMinMax[0] : JSON.stringify(valMinMax[0], null, 2)) : "";
+                            if (valMinMax[0] !== undefined) {
+                                if (typeof valMinMax[0] !== "string" || valMinMax[0] === null) {
+                                    try {
+                                        valMinMax[0] = JSON.stringify(valMinMax[0], null, 2);
+                                    } catch (e) {
+                                        console.warn("Failed to parse JSON expression for input control");
+                                        valMinMax[0] = "";
+                                    }
+                                }
+                            } else {
+                                valMinMax[0] = "";
+                            }
                         } else {
 
                             const format = this.format ? {...this.format} : {};
@@ -1170,7 +1185,7 @@ export class OrMwcInput extends LitElement {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
-                            @blur="${(e: Event) => this.reportValidity()}" 
+                            @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}" 
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
@@ -1262,10 +1277,6 @@ export class OrMwcInput extends LitElement {
 
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
-
-        if (this.autoValidate) {
-            this.reportValidity();
-        }
 
         if (_changedProperties.has("type")) {
             const component = this.shadowRoot!.getElementById("component");
@@ -1400,7 +1411,11 @@ export class OrMwcInput extends LitElement {
                 checkbox.disabled = this.disabled || this.readonly;
             }
 
-            (this._mdcComponent as any).required = this.required;
+            (this._mdcComponent as any).required = !!this.required;
+        }
+
+        if (this.autoValidate) {
+            this.reportValidity();
         }
     }
 
@@ -1429,11 +1444,20 @@ export class OrMwcInput extends LitElement {
 
     public checkValidity(): boolean {
         const elem = this.shadowRoot!.getElementById("elem") as any;
+        let valid = true;
         if (elem && elem.validity) {
             const nativeValidity = elem.validity as ValidityState;
-            return nativeValidity.valid;
+            valid = nativeValidity.valid;
         }
-        return true;
+
+        if (valid && this.type === InputType.JSON) {
+            // JSON needs special validation - if no text value but this.value then parsing failed
+            if (this.value !== undefined && (this._mdcComponent as MDCTextField).value === "") {
+                valid = false;
+            }
+        }
+
+        return valid;
     }
 
     public reportValidity(): boolean {
@@ -1449,9 +1473,8 @@ export class OrMwcInput extends LitElement {
 
     protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined, enterPressed?: boolean) {
 
-        this.reportValidity();
-
         let previousValue = this.value;
+        let errorMsg: string | undefined;
 
         if (newValue === "undefined") {
             previousValue = null;
@@ -1472,21 +1495,37 @@ export class OrMwcInput extends LitElement {
                 case InputType.JSON:
                 case InputType.NUMBER:
                 case InputType.RANGE:
-                    newValue = newValue !== "" ? JSON.parse(newValue) : null;
+                    if (newValue === "") {
+                        newValue = null;
+                    } else {
+                        try {
+                            newValue = JSON.parse(newValue);
+                        } catch (e) {
+                            newValue = this.value;
+                            errorMsg = this.type === InputType.JSON ? i18next.t("validation.invalidJSON") : i18next.t("validation.invalidNumber");
+                        }
+                    }
                     break;
                 case InputType.DATETIME:
                     if (newValue === "") {
                         newValue = null;
                     } else {
-                        const date = Date.parse(newValue);
-                        const offset = (new Date()).getTimezoneOffset() * 60000;
-                        newValue = date + offset;
+                        try {
+                            const date = Date.parse(newValue);
+                            const offset = (new Date()).getTimezoneOffset() * 60000;
+                            newValue = date + offset;
+                        } catch (e) {
+                            newValue = this.value;
+                            errorMsg = i18next.t("validation.invalidDate");
+                        }
                     }
                     break;
             }
         }
 
         this.value = newValue;
+        this.setCustomValidity(errorMsg);
+        this.reportValidity();
 
         if (newValue !== previousValue) {
             if (this.type === InputType.RANGE) {

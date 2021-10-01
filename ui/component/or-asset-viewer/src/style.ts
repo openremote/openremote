@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit";
-import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor4, DefaultHeaderHeight} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor4, DefaultColor6, DefaultHeaderHeight} from "@openremote/core";
 
 // language=CSS
 export const panelStyles = css`
@@ -48,6 +48,14 @@ export const panelStyles = css`
     .panel-content > :last-child {
         margin-bottom: 0;
     }
+
+    @media screen and (max-width: 767px) {
+        .panel {
+            border-radius: 0;
+            border-right: none;
+            border-left: none;
+        }
+    }
 `;
 
 // language=CSS
@@ -62,6 +70,7 @@ export const style = css`
         --internal-or-asset-viewer-panel-color: var(--or-asset-viewer-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-viewer-line-color: var(--or-asset-viewer-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
         --internal-or-asset-viewer-button-color: var(--or-asset-viewer-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-asset-viewer-error-color: var(--or-asset-viewer-error-color, var(--or-app-color6, ${unsafeCSS(DefaultColor6)}));
         --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
                 
         height: 100%;
@@ -162,10 +171,25 @@ export const style = css`
         flex: 1 1 auto;
         font-size: 18px;
         font-weight: bold;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
     }
 
     #title > or-icon {
         margin-right: 10px;
+    }
+
+    #error-wrapper {
+        color: var(--internal-or-asset-viewer-error-color);
+    }
+
+    #error-wrapper > * {
+        vertical-align: middle;
+    }
+
+    #error-wrapper or-translate {
+        margin-left: 5px;
     }
    
     #created-time {
@@ -213,7 +237,7 @@ export const style = css`
         display: none;
         cursor: pointer;
     }
-
+    
     @media screen and (max-width: 1200px) {
         #name-input {
             width: 150px;
@@ -263,13 +287,11 @@ export const style = css`
         
         #asset-header {
             grid-area: auto!important;
-            padding: 15px;
+            padding: 15px 15px 5px;
         }
 
-        .panel {
-            border-radius: 0;
-            border-right: none;
-            border-left: none;
+        #name-input {
+            width: auto;
         }
 
         #view-container {

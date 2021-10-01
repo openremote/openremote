@@ -142,10 +142,11 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected getRealmState = createSelector(
         [this._realmSelector],
-        async (realm) => {
-            if (this._tree) {
-                this._tree.refresh();
-            }
+        async () => {
+            this._assetIds = undefined;
+            if (this._viewer && this._viewer.assetId) this._viewer.assetId = undefined;
+            if (this._tree) this._tree.refresh();
+            this._updateRoute(true);
         }
     )
 
@@ -169,9 +170,9 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     stateChanged(state: S) {
         // State is only utilised for initial loading
+        this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");
         this._assetIds = state.app.params && state.app.params.id ? [state.app.params.id as string] : undefined;
-        this.getRealmState(state);
     }
 
     protected _onAssetSelectionRequested(event: OrAssetTreeRequestSelectionEvent) {
@@ -200,8 +201,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
         const nodes = event.detail.newNodes;
-        const newIds = event.detail.newNodes.map((node) => node.asset.id!);
-        this._assetIds = newIds;
+        this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
         this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
         this._updateRoute(true);
     }

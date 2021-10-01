@@ -387,7 +387,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         Asset<?> asset = find(
                             new AssetQuery()
                                 .ids(assetId)
-                                .select(new Select().excludePath(true).excludeParentInfo(true))
+                                .select(new Select().excludePath(false).excludeParentInfo(true))
                                 .access(access));
 
                         if (asset != null) {

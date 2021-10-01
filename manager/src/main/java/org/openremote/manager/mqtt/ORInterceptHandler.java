@@ -124,7 +124,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
-        MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
+        MqttConnection connection = sessionIdConnectionMap.remove(msg.getClientID());
 
         if (connection != null) {
             Map<String, Object> headers = prepareHeaders(connection);
@@ -143,7 +143,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
         String[] realmAndUsername = msg.getUsername().split(":");
         String realm = realmAndUsername[0];
-        String username = realmAndUsername[1]; 
+        String username = realmAndUsername[1];
         MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
 
         if (connection == null) {
@@ -162,7 +162,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
         boolean isAttributeTopic = MqttBrokerService.isAttributeTopic(topicTokens);
         boolean isAssetTopic = MqttBrokerService.isAssetTopic(topicTokens);
-        boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(0));
+        boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equals(topicTokens.get(2));
         String subscriptionId = msg.getTopicFilter(); // Use topic as subscription ID
 
         AssetFilter filter = buildAssetFilter(connection, topicTokens);
@@ -179,7 +179,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             subscriptionId
         );
 
-        Consumer<SharedEvent> eventConsumer = brokerService.getEventConsumer(connection, subscriptionId, isValueSubscription);
+        Consumer<SharedEvent> eventConsumer = brokerService.getEventConsumer(connection, subscriptionId, isValueSubscription, msg.getRequestedQos());
         connection.subscriptionHandlerMap.put(subscriptionId, eventConsumer);
         Map<String, Object> headers = prepareHeaders(connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
@@ -241,13 +241,13 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
         }
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
-        boolean isValueWrite = topicTokens.get(0).equals(ATTRIBUTE_VALUE_TOPIC);
+        boolean isValueWrite = topicTokens.get(2).equals(ATTRIBUTE_VALUE_TOPIC);
         String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
         AttributeEvent attributeEvent = null;
 
         if (isValueWrite) {
-            String assetId = topicTokens.get(1);
-            String attributeName = topicTokens.get(2);
+            String assetId = topicTokens.get(3);
+            String attributeName = topicTokens.get(4);
             Object value = ValueUtil.parse(payloadContent).orElse(null);
             attributeEvent = new AttributeEvent(assetId, attributeName, value);
         } else {

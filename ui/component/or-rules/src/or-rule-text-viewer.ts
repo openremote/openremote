@@ -1,12 +1,14 @@
 import {OrRulesRuleChangedEvent, RulesConfig, RuleView} from "./index";
-import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {css, html, LitElement, TemplateResult} from "lit";
+import {customElement, property} from "lit/decorators.js";
 import {RulesetLang, RulesetUnion} from "@openremote/model";
-import ace, {Ace} from "ace-builds";
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/mode-groovy";
 import "ace-builds/webpack-resolver";
+import "@openremote/or-components/or-ace-editor";
+import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
+import {createRef, ref, Ref} from "lit/directives/ref.js";
 
 // language=CSS
 const style = css`
@@ -49,19 +51,8 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
     @property({attribute: false})
     protected _ruleset!: RulesetUnion;
 
-    @query("#ace-editor")
-    protected _aceElem?: HTMLElement;
     protected _rules?: string;
-    protected _aceEditor?: Ace.Editor;
-    protected _changeTimer?: number;
-
-    disconnectedCallback(): void {
-        if (this._aceEditor) {
-            this._aceEditor.destroy();
-            this._aceEditor = undefined;
-        }
-        super.disconnectedCallback();
-    }
+    protected _aceEditor: Ref<OrAceEditor> = createRef();
 
     public set ruleset(ruleset: RulesetUnion) {
         if (this._ruleset === ruleset) {
@@ -84,49 +75,8 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
 
     protected render(): TemplateResult | void {
         return html`
-            <div id="ace-editor"></div>
+            <or-ace-editor ${ref(this._aceEditor)} @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => this._onEditorChanged(ev)}" .mode="${this._getMode()}" .value="${this._getRulesString()}"></or-ace-editor>
         `;
-    }
-
-    protected refresh() {
-        this.destroyEditor()
-        this.initEditor();
-    }
-
-    protected destroyEditor() {
-        if (this._aceEditor) {
-            this._aceEditor.destroy();
-            this._aceEditor = undefined;
-        }
-    }
-
-    protected initEditor() {
-        if (this._aceElem) {
-            this._aceEditor = ace.edit(this._aceElem, {
-                mode: this._getMode(),
-                value: this._getRulesString(),
-                useSoftTabs: true,
-                tabSize: 2,
-                readOnly: this.readonly,
-                showPrintMargin: false
-            });
-            this._aceEditor.on("change", () => this._onEditorChanged());
-            this._aceEditor.renderer.attachToShadowRoot();
-        }
-    }
-
-    protected updated(_changedProperties: PropertyValues): void {
-        if(_changedProperties.has('_ruleset')){
-            this.refresh();
-        }
-        
-        if (!this._aceElem) {
-            this.destroyEditor();
-        } else {
-            if (!this._aceEditor) {
-              this.initEditor();
-            }
-        }
     }
 
     protected _getMode() {
@@ -154,33 +104,20 @@ export class OrRuleTextViewer extends LitElement implements RuleView {
         }
     }
 
-    protected _onEditorChanged() {
-        if (this._changeTimer) {
-            window.clearTimeout(this._changeTimer);
-        }
-        this._changeTimer = window.setTimeout(() => this._onEdit(), 1000);
-    }
-
-    protected _onEdit() {
-        this.dispatchEvent(new OrRulesRuleChangedEvent(this.validate()));
-        this._changeTimer = undefined;
+    protected _onEditorChanged(ev: OrAceEditorChangedEvent) {
+        const valid = ev.detail.valid;
+        this.dispatchEvent(new OrRulesRuleChangedEvent(valid));
     }
 
     public beforeSave() {
-        if (!this._aceEditor) {
+        if (!this._aceEditor.value) {
             return;
         }
 
-        this._ruleset.rules = this._aceEditor.getValue();
+        this._ruleset.rules = this._aceEditor.value.getValue();
     }
 
     public validate(): boolean {
-
-        if (!this._aceEditor) {
-            return false;
-        }
-
-        const annotations = this._aceEditor.getSession().getAnnotations();
-        return !annotations || annotations.length === 0;
+        return this._aceEditor.value ? this._aceEditor.value.validate() : false;
     }
 }

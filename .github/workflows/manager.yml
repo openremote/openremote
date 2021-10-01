@@ -35,6 +35,24 @@ jobs:
           or-test-http-rest --dnsname localhost --password secret -vv
         timeout-minutes: 30
 
+
+  test_staging_demo:
+    runs-on: ubuntu-latest
+    needs: [image_manager]
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: install openremote-cli
+        run: |
+          pip3 install openremote-cli
+          openremote-cli -V -t
+      - name: wait 10m for staging.demo new image update
+        run: sleep 600
+      - name: login staging.demo.openremote.io and wait for map
+        run: openremote-cli manager --open -t --quit --quiet -v --dnsname staging.demo.openremote.io --password "${{ secrets.STAGING_DEMO_PASSWORD }}"
+
+
   image_manager:
     runs-on: ubuntu-latest
     needs: [build]

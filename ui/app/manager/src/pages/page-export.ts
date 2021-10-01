@@ -7,10 +7,11 @@ import {AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
 import manager, { DefaultColor3, Util } from "@openremote/core";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {OrAddAttributeRefsEvent, OrMwcAttributeSelector } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrAddAttributeRefsEvent, OrMwcAttributeSelector, OrAttributeRefsAddRequestEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
 import { AttributeRef } from "@openremote/model";
 import moment from "moment";
 import { buttonStyle } from "@openremote/or-rules/dist/style";
+import {createSelector} from "reselect";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
@@ -26,10 +27,11 @@ export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore
 }
 
 export interface OrExportConfig {
+    realm: string;
     selectedAttributes: AttributeRef[];
 }
 
-interface tableRow {
+interface TableRow {
     assetName: string,
     assetId: string,
     attributeName: string,
@@ -193,13 +195,22 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     @property({type: Number})
     private latestTimestamp: number = moment().valueOf();
 
-    private config: OrExportConfig = {
-        selectedAttributes: []
-    };
+    private config?: OrExportConfig;
+    private realm: string;
     private isClearExportBtnDisabled: boolean = true;
     private isExportBtnDisabled: boolean = true;
     
-    private tableRows: tableRow[] = [];
+    private tableRows: TableRow[] = [];
+
+    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+
+    protected getRealmState = createSelector(
+        [this._realmSelector],
+        async (realm) => {
+            this.realm = realm;
+            this.loadConfig();
+        }
+    );
 
     get name(): string {
         return "export";
@@ -207,7 +218,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
 
     constructor(store: EnhancedStore<S>) {
         super(store);
-        this.loadConfig();
     }
     
     protected render() {
@@ -264,6 +274,11 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     }
     
     protected async renderTable(attributeRefs: AttributeRef[]) {
+
+        if (!attributeRefs || attributeRefs.length < 1) {
+            this.clearSelection();
+            return;
+        }
         
         const dataPointInfoPromises = attributeRefs.map((attrRef: AttributeRef) => {
             return manager.rest.api.AssetDatapointResource.getDatapointPeriod({
@@ -344,9 +359,11 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         dialog.showOnlyDatapointAttrs = true;
         dialog.selectedAttributes = this.config.selectedAttributes;
         dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
-            await this.renderTable(ev.detail.selectedAttributes);
+            const selectedAttributes = ev.detail.selectedAttributes;
+            await this.renderTable(selectedAttributes);
             this.config = {
-                selectedAttributes: ev.detail.selectedAttributes
+                realm: this.realm,
+                selectedAttributes: selectedAttributes
             }
             this.saveConfig();
         });
@@ -375,26 +392,45 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     protected async loadConfig() {
 
-        const configStr = await manager.console.retrieveData("OrExportConfig") || JSON.stringify({"selectedAttributes":[]});
-        manager.console.storeData("OrExportConfig", configStr);
+        const configStr = await manager.console.retrieveData("OrExportConfig") || "[]";
 
-        try {
-            this.config = JSON.parse(configStr) as OrExportConfig;
-        } catch (e) {
-            console.error("Failed to load export config", e);
-            return;
+        const parsedConfig = JSON.parse(configStr);
+        if (!parsedConfig.length || !Object.getOwnPropertyNames(parsedConfig[0]).includes("realm")) {
+            manager.console.storeData("OrExportConfig", "[]");
         }
-        
+            
+        this.config = parsedConfig.find(e => e.realm === this.realm) || {realm:this.realm,selectedAttributes:[]};
+
+
+        // prune removed assets that still exist in localstorage
+        const response = await manager.rest.api.AssetResource.queryAssets({
+            ids: this.config.selectedAttributes.map(e => e.id)
+        });
+        const assetsIds = response.data.map(e => e.id) || [];
+        this.config.selectedAttributes = this.config.selectedAttributes.filter(e => assetsIds.includes(e.id));
+
+        this.saveConfig();
         this.renderTable(this.config.selectedAttributes);
 
     }
     
-    protected saveConfig() {
-        manager.console.storeData("OrExportConfig", JSON.stringify(this.config));
+    protected async saveConfig() {
+        const configStr = await manager.console.retrieveData("OrExportConfig");
+        let config = JSON.parse(configStr);
+
+        try {
+            config.find(c => c.realm === this.realm).selectedAttributes = this.config.selectedAttributes;
+        } catch (e) {
+            config = [...config, this.config];
+        }
+        manager.console.storeData("OrExportConfig", JSON.stringify(config));
     }
     
     protected clearSelection = () => {
-        this.config.selectedAttributes = [];
+        this.config = {
+            realm: this.realm,
+            selectedAttributes: []
+        };
         this.saveConfig();
         this.tableRows = [];
         this.renderTableRows();
@@ -403,6 +439,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     }
 
     public stateChanged(state: S) {
+        this.getRealmState(state);
     }
     
 }

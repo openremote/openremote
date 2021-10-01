@@ -55,7 +55,7 @@ export class NodePanel extends translate(i18next)(LitElement)  {
     @property({ attribute: false }) public application!: FlowEditor;
 
     protected firstUpdated() {
-        this.drawer.open = true;
+        if (this.drawer) this.drawer.open = true;
     }
 
     protected render() {

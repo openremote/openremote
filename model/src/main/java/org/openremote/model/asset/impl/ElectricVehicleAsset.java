@@ -27,6 +27,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.MetaItemType;
+import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
@@ -38,6 +39,14 @@ import static org.openremote.model.Constants.*;
 @Entity
 public class ElectricVehicleAsset extends ElectricityBatteryAsset {
 
+    public enum EnergyType {
+        EV,
+        PHEV
+    }
+
+    public static final ValueDescriptor<EnergyType> ENERGY_TYPE_VALUE = new ValueDescriptor<>("energyType", EnergyType.class);
+
+    public static final AttributeDescriptor<EnergyType> ENERGY_TYPE = new AttributeDescriptor<>("energyType", ENERGY_TYPE_VALUE);
     public static final AttributeDescriptor<ElectricityChargerAsset.ConnectorType> CONNECTOR_TYPE = new AttributeDescriptor<>("connectorType", ElectricityChargerAsset.CONNECTOR_TYPE_VALUE);
     public static final AttributeDescriptor<Integer> ODOMETER = new AttributeDescriptor<>("odometer", ValueType.POSITIVE_INTEGER,
         new MetaItem<>(MetaItemType.READ_ONLY))
@@ -65,6 +74,15 @@ public class ElectricVehicleAsset extends ElectricityBatteryAsset {
 
     public ElectricVehicleAsset(String name) {
         super(name);
+    }
+
+    public Optional<EnergyType> getEnergyType() {
+        return getAttributes().getValue(ENERGY_TYPE);
+    }
+
+    public ElectricVehicleAsset setEnergyType(EnergyType value) {
+        getAttributes().getOrCreate(ENERGY_TYPE).setValue(value);
+        return this;
     }
 
     public Optional<ElectricityChargerAsset.ConnectorType> getConnectorType() {

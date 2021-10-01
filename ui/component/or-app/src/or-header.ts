@@ -40,9 +40,12 @@ export interface Languages {
 
 export const DEFAULT_LANGUAGES: Languages = {
     en: "english",
+    cn: "chinese",
     nl: "dutch",
     fr: "french",
     de: "german",
+    it: "italian",
+    pt: "portuguese",
     es: "spanish"
 };
 

@@ -108,9 +108,14 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
 
         and: "the descriptor should contain an agent link schema"
         def schema = ValueUtil.getSchema(AgentLink.class)
+        def schema2 = ValueUtil.getSchema(ValueType.IntegerMap.class)
         assert schema != null
-        assert schema.get("anyOf") != null
-        assert schema.get("anyOf").size() == ValueUtil.getAssetDescriptors(null).findAll {it instanceof AgentDescriptor}.collect {(it as AgentDescriptor).getAgentLinkClass()}.unique {it.getSimpleName()}.size()
+        assert schema.get("oneOf") != null
+        assert schema.get("oneOf").size() == ValueUtil.getAssetDescriptors(null).findAll {it instanceof AgentDescriptor}.collect {(it as AgentDescriptor).getAgentLinkClass()}.unique {it.getSimpleName()}.size()
+        assert schema2 != null
+        assert schema2.get("type").asText() == "object"
+        assert schema2.get("additionalProperties") != null
+        assert schema2.get("additionalProperties").get("type").asText() == "integer"
     }
 
     def "Serialize/Deserialize asset model"() {

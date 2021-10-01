@@ -68,6 +68,11 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
     }
 
     @Override
+    public String[] getPath() {
+        return asset.getPath();
+    }
+
+    @Override
     public String[] getAttributeNames() {
         return updatedProperties;
     }

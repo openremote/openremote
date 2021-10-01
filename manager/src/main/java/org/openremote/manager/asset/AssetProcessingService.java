@@ -513,7 +513,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 attribute.getName(),
                 attribute.getValue().orElse(null),
                 timerService.getCurrentTimeMillis()
-            ).setParentId(asset.getParentId()).setRealm(asset.getRealm())
+            ).setParentId(asset.getParentId()).setRealm(asset.getRealm()).setPath(asset.getPath())
         );
     }
 

@@ -107,7 +107,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             false, // Value is ignored on update
             [
                 roles.find {it.name == ClientRole.READ_LOGS.value}.id,
-                roles.find {it.name == ClientRole.READ_APPS.value}.id
+                roles.find {it.name == ClientRole.READ_MAP.value}.id
             ] as String[]
         ).setDescription("This is a test"))
         adminUserResource.updateRoles(null, keycloakTestSetup.tenantBuilding.realm, updatedRoles as Role[])
@@ -119,7 +119,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         testRole.description == "This is a test"
         testRole.compositeRoleIds.length == 2
         testRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_LOGS.value}.id)
-        testRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_APPS.value}.id)
+        testRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_MAP.value}.id)
 
         when: "an existing composite role is updated by the admin user"
         def writeRole = roles.find {it.name == ClientRole.WRITE.value}

@@ -51,22 +51,7 @@ public enum AttributeExecuteStatus {
     /**
      * Execution is currently running
      */
-    RUNNING(false),
-
-    /**
-     * Execution was cancelled
-     */
-    CANCELLED(false),
-
-    /**
-     * Command produced an error
-     */
-    ERROR(false),
-
-    /**
-     * Execution has been disabled
-     */
-    DISABLED(false);
+    RUNNING(false);
 
     private boolean write;
     // Prevents cloning of values each time fromString is called

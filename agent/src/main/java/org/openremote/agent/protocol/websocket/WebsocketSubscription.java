@@ -25,27 +25,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = WebsocketSubscription.class, name = WebsocketSubscription.TYPE),
+    @JsonSubTypes.Type(value = WebsocketSubscriptionImpl.class, name = WebsocketSubscriptionImpl.TYPE),
     @JsonSubTypes.Type(value = WebsocketHTTPSubscription.class, name = WebsocketHTTPSubscription.TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     property = "type",
-    defaultImpl = WebsocketSubscription.class
+    defaultImpl = WebsocketSubscriptionImpl.class
 )
-public class WebsocketSubscription implements Serializable {
+public abstract class WebsocketSubscription implements Serializable {
 
-    public static final String TYPE = "websocket";
-
-    public String type = TYPE;
     public Object body;
-
-    public WebsocketSubscription() {
-    }
-
-    protected WebsocketSubscription(String type) {
-        this.type = type;
-    }
 
     public WebsocketSubscription body(Object body) {
         this.body = body;

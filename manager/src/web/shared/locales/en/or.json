@@ -144,9 +144,13 @@
   "flowEditor": "Flow editor",
   "else": "else",
   "english": "English",
+  "arabic": "Arabic",
+  "chinese": "Chinese",
   "dutch": "Dutch",
   "french": "French",
   "german": "German",
+  "italian": "Italian",
+  "portuguese": "Portuguese",
   "spanish": "Spanish",
   "noRuleSelected": "Please select a rule on the left",
   "anyOfThisType": "Any of this type",
@@ -409,5 +413,15 @@
   "loadFailedUsers": "Failed to load users",
   "loadFailedServiceUsers": "Failed to load service users",
   "key": "Key",
-  "anyOfPickerLabel": "{{label}} type"
+  "anyOfPickerLabel": "{{label}} type",
+  "validation": {
+    "noSchemaMatchFound": "No schema match found",
+    "invalidAsset": "Asset is not valid",
+    "invalidAttributeValue": "Invalid attribute value for attribute '{{attrName}}'",
+    "invalidMetaItemValue": "Invalid configuration item value for `{{metaName}}` on attribute '{{attrName}}'",
+    "invalidNumber": "Invalid number",
+    "invalidJSON": "Invalid JSON",
+    "invalidDate": "Invalid date",
+    "keyAlreadyExists": "Key already exists"
+  }
 }

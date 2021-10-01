@@ -1,7 +1,7 @@
 import {
     CombinatorKeyword,
     composeWithUi,
-    createCleanLabel,
+    ControlElement,
     createDefaultValue,
     deriveTypes,
     getAjv,
@@ -15,22 +15,23 @@ import {
     JsonFormsSubStates,
     JsonSchema,
     JsonSchema4,
-    mapStateToControlProps,
-    mapStateToControlWithDetailProps,
     OwnPropsOfControl,
     OwnPropsOfRenderer,
     Resolve,
     resolveSchema,
     resolveSubSchemas,
     StatePropsOfCombinator,
-    StatePropsOfControl,
-    StatePropsOfControlWithDetail,
-    UISchemaElement,
 } from "@jsonforms/core";
-import { Util } from "@openremote/core";
-import {html, TemplateResult} from "lit";
-import {ErrorObject, JsonFormsStateContext} from "./index";
-import { unknownTemplate } from "./standard-renderers";
+import {DefaultColor5, Util} from "@openremote/core";
+import { InputType, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { i18next } from "@openremote/or-translate";
+import "@openremote/or-components/or-ace-editor";
+import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
+import {html, TemplateResult, unsafeCSS} from "lit";
+import {createRef, Ref, ref} from 'lit/directives/ref.js';
+import {ErrorObject} from "./index";
+import {unknownTemplate} from "./standard-renderers";
+import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult {
     if (!state || !props) {
@@ -86,19 +87,19 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
 
         if (deriveTypes(schema).every(type => type === "object")) {
             const props = getSchemaObjectProperties(schema);
-            const constProp = props.find(([propName, propSchema]) => propSchema.const !== undefined);
+            const constProp = props.find(([propName, propSchema]) => getSchemaConst(propSchema) !== undefined);
             if (constProp) {
                 constProperty = constProp[0];
-                constValue = constProp[1].const;
+                constValue = getSchemaConst(constProp[1]);
 
                 creator = () => {
                     const obj: any = {};
-                    obj[constProp[0]] = constProp[1].const;
+                    obj[constProp[0]] = getSchemaConst(constProp[1]);
                     return obj;
                 }
 
                 if (!titleAndDescription[0]) {
-                    titleAndDescription[0] = constProp[1].const;
+                    titleAndDescription[0] = getSchemaConst(constProp[1]);
                 }
             } else {
                 creator = () => createDefaultValue(schema);
@@ -109,13 +110,27 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         }
 
         return {
-            title: titleAndDescription[0],
+            title: Util.camelCaseToSentenceCase(titleAndDescription[0]),
             description: titleAndDescription[1],
             defaultValueCreator: creator,
             constProperty: constProperty,
             constValue: constValue
         } as CombinatorInfo;
     });
+}
+
+export function getSchemaConst(schema: JsonSchema): any {
+    if (!schema) {
+        return;
+    }
+
+    if (schema.const !== undefined) {
+        return schema.const;
+    }
+
+    if (Array.isArray(schema.enum) && schema.enum!.length === 1) {
+        return schema.enum[0];
+    }
 }
 
 export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {
@@ -138,8 +153,6 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
         if (titledSchema) {
             return [titledSchema.title, titledSchema.description];
         }
-
-
     }
 
     return [title, undefined];
@@ -293,3 +306,69 @@ export function resolveSubSchemasRecursive(
     return schema;
 }
 
+export const controlWithoutLabel = (scope: string): ControlElement => ({
+    type: 'Control',
+    scope: scope,
+    label: false
+});
+
+export const showJsonEditor = (title: string, value: any, updateCallback: (newValue: string) => void): void => {
+
+    const editorRef: Ref<OrAceEditor> = createRef();
+    const updateBtnRef: Ref<OrMwcInput> = createRef();
+    const onEditorEdit = () => {
+        // Disable update button whilst edit in progress
+        updateBtnRef.value!.disabled = true;
+    };
+    const onEditorChanged = (ev: OrAceEditorChangedEvent) => {
+        const valid = ev.detail.valid;
+        updateBtnRef.value!.disabled = !valid;
+    };
+
+    const dialog = showDialog(
+        {
+            content: html`
+                <or-ace-editor ${ref(editorRef)} @or-ace-editor-edit="${() => onEditorEdit()}" @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => onEditorChanged(ev)}" .value="${value}"></or-ace-editor>
+            `,
+            actions: [
+                {
+                    actionName: "cancel",
+                    content: i18next.t("cancel")
+                },
+                {
+                    default: true,
+                    actionName: "update",
+                    action: () => {
+                        const editor = editorRef.value!;
+                        if (editor.validate()) {
+                            const data = !!editor.getValue() ? JSON.parse(editor.getValue()!) : undefined;
+                            updateCallback(data);
+                        }
+                    },
+                    content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" .label="${i18next.t("update")}"></or-mwc-input>`
+                }
+            ],
+            title: title,
+            dismissAction: null,
+            styles: html`
+                <style>
+                    .mdc-dialog__surface {
+                        width: 1024px;
+                        overflow-x: visible !important;
+                        overflow-y: visible !important;
+                    }
+                    #dialog-content {
+                        border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                        border-top-width: 1px;
+                        border-top-style: solid;
+                        border-bottom-width: 1px;
+                        border-bottom-style: solid;
+                        padding: 0;
+                        overflow: visible;
+                        height: 60vh;
+                    }
+                </style>
+            `
+        }
+    )
+};
