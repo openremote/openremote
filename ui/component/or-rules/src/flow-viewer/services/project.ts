@@ -78,7 +78,7 @@ export class Project extends EventEmitter {
 
     public async fromNodeCollection(collection: NodeCollection) {
         await this.clear();
-        console.log(collection.nodes)
+        
         collection.nodes!.forEach((node) => {
             this.addNode(node);
         });
