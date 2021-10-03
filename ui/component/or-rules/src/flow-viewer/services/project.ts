@@ -78,13 +78,15 @@ export class Project extends EventEmitter {
 
     public async fromNodeCollection(collection: NodeCollection) {
         await this.clear();
+        console.log(collection.nodes)
         collection.nodes!.forEach((node) => {
             this.addNode(node);
         });
-        if(this.workspace) await this.workspace.updateComplete;
+
         collection.connections!.forEach((conn) => {
             this.createConnection(conn.from!, conn.to!);
         });
+
         this.emit("nodecollectionloaded", collection);
         this.unsavedState = false;
     }
@@ -103,9 +105,6 @@ export class Project extends EventEmitter {
         this.nodes.forEach((n) => {
             this.removeNode(n);
         });
-        if (this.workspace) {
-            await this.workspace.updateComplete;
-        }
         this.nodes = [];
         this.connections = [];
         this.unsavedState = !alsoResetProject;
