@@ -242,7 +242,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         });
     }
 
-    final synchronized protected <T> T getRealms(Function<RealmsResource, T> consumer) {
+    final synchronized public <T> T getRealms(Function<RealmsResource, T> consumer) {
         RealmsResource realmsResource;
         ResteasyWebTarget target = keycloakTarget; // Track this in case active credentials updated
         if ((realmsResource = realmsResourcePool.poll()) == null) {

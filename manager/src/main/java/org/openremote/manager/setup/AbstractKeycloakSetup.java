@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.setup;
 
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.RoleResource;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
@@ -27,6 +30,7 @@ import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
@@ -91,5 +95,25 @@ public abstract class AbstractKeycloakSetup implements Setup {
             keycloakProvider.updateUserRoles(realm, user.getId(), KEYCLOAK_CLIENT_ID, Arrays.stream(roles).map(ClientRole::getValue).toArray(String[]::new));
         }
         return user;
+    }
+
+    /**
+     * Default realm roles will assign manage-account role to account client so we have to remove this role from the composite default roles
+     * This is a temporary thing and when/if we move to groups we should look at explicit default roles on realm creation
+     */
+    protected void removeManageAccount(String realm) {
+        keycloakProvider.<Void>getRealms(
+            realmsResource -> {
+                RealmResource realmResource = realmsResource.realm(realm);
+                ClientRepresentation clientRepresentation = keycloakProvider.getClient(realm, "account");
+                RoleResource roleResource = realmResource.roles().get("default-roles-" + realm);
+                roleResource.getClientRoleComposites(clientRepresentation.getId())
+                    .stream()
+                    .filter(role -> role.getName().equals("manage-account"))
+                    .findFirst()
+                    .ifPresent(manageAccountRole -> roleResource.deleteComposites(Collections.singletonList(manageAccountRole)));
+                return null;
+            }
+        );
     }
 }
