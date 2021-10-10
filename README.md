@@ -34,7 +34,7 @@ Username: admin
 Password: secret
 
 ### Changing host and/or port
-The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `EXTERNAL_URL` environmnet variable and if changing ports you'll need to update your docker compose profile, so if for example you will be accessing using `https://192.168.1.1:8443` then update your `docker-compose.yml` file:
+The URL you use to access the system is important, the default is configured as `https://localhost` if you are using a VM or want to run on a different port then you will need to set the `EXTERNAL_URL` environment variable and if changing ports you'll need to update your docker compose profile, so if for example you will be accessing using `https://192.168.1.1:8443` then update your `docker-compose.yml` file:
 
 ```
   proxy:
