@@ -4,22 +4,29 @@ platform :ios, '13.0'
 use_frameworks!
 
 def shared_pods
-  pod 'Firebase/Messaging'
-  pod 'Firebase/Crashlytics'
-  pod 'Firebase/Analytics'
+  pod 'Popover'
+  pod 'MaterialComponents/TextFields'
+  pod 'MaterialComponents/Buttons'
 end
 
 
 target 'GenericApp' do
   project 'GenericApp'
   shared_pods
-  pod 'MaterialComponents/TextFields'
-  pod 'MaterialComponents/Buttons'
-  pod 'Popover'
+  pod 'Firebase/Messaging'
+  pod 'Firebase/Crashlytics'
+  pod 'Firebase/Analytics'
   pod 'IQKeyboardManagerSwift'
 end
 
 target 'NotificationService' do
+  pod 'Firebase/Messaging'
+  pod 'Firebase/Crashlytics'
+  pod 'Firebase/Analytics'
   project 'GenericApp'
+end
+
+target 'ORLib' do
   shared_pods
+  project '../ORLib/ORLib'
 end

@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import ORLib
 
 class SplashViewController: UIViewController {
 

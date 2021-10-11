@@ -8,7 +8,7 @@
 
 import UIKit
 
-struct ORLinkConfig: Codable {
+public struct ORLinkConfig: Codable {
     let displayText: String
     let pageLink: String
 }

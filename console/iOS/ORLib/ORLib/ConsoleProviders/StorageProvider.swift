@@ -7,7 +7,7 @@
 
 import UIKit
 
-class StorageProvider: NSObject {
+public class StorageProvider: NSObject {
 
     let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
 

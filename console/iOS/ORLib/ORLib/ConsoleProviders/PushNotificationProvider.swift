@@ -11,10 +11,10 @@ import UserNotifications
 
 public class PushNotificationProvider: NSObject {
 
-    let userdefaults = UserDefaults(suiteName: ORAppGroup.entitlement)
+    let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
     let version = "fcm"
     public var consoleId: String = ""
-    static let pushDisabledKey = "pushDisabled"
+    public static let pushDisabledKey = "pushDisabled"
     
     public override init() {
         super.init()

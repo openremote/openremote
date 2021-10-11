@@ -3,10 +3,10 @@ import CoreLocation
 
 public class GeofenceProvider: NSObject, URLSessionDelegate {
 
-    static let baseUrlKey = "baseUrl"
-    static let consoleIdKey = "consoleId"
-    static let geoPostUrlsKey = "geoPostUrls"
-    static let geoDisabledKey = "geoDisabled"
+    public static let baseUrlKey = "baseUrl"
+    public static let consoleIdKey = "consoleId"
+    public static let geoPostUrlsKey = "geoPostUrls"
+    public static let geoDisabledKey = "geoDisabled"
 
     let version = "ORConsole"
     let geofenceFetchEndpoint = "rules/geofences/"
@@ -335,5 +335,9 @@ extension GeofenceProvider: CLLocationManagerDelegate {
                 ])
             locationManager.stopUpdatingLocation()
         }
+    }
+
+    public func startMonitoringSignificantLocationChanges() {
+        locationManager.startMonitoringSignificantLocationChanges()
     }
 }

@@ -10,7 +10,7 @@ import UIKit
 import MaterialComponents.MaterialTextFields
 
 @IBDesignable  // Lets you change a UIView instance in storyboard to this class, so you can visualize it and add constraints to it
-class ORTextInput: UIView {
+public class ORTextInput: UIView {
 
     private var textInput: MDCTextField!
     private var controller: MDCTextInputControllerFilled!
@@ -27,13 +27,13 @@ class ORTextInput: UIView {
         }
     }
 
-    var textField: UITextField? {
+    public var textField: UITextField? {
         get {
             return textInput
         }
     }
 
-    override func layoutSubviews() {
+    public override func layoutSubviews() {
         setupInputView()
         setupContoller()
     }

@@ -8,7 +8,7 @@
 
 import UIKit
 
-struct ORAppConfig: Codable {
+public struct ORAppConfig: Codable {
     let id: Int32
     let realm: String
     let initialUrl: String

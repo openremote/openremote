@@ -21,19 +21,25 @@
 import Foundation
 import UIKit
 import WebKit
+import MaterialComponents.MaterialButtons
+import Popover
 
 open class ORViewcontroller : UIViewController {
     
-    public var data : Data?
-    public var myWebView : WKWebView?
-    public var webProgressBar: UIProgressView?
-    public var defaults : UserDefaults?
-    public var webCfg : WKWebViewConfiguration?
-    public var isLoading = false
+    var data : Data?
+    var menuButton: MDCFloatingButton?
+    var menuList: UIView?
+    var myWebView : WKWebView?
+    var webProgressBar: UIProgressView?
+    var defaults : UserDefaults?
+    var webCfg : WKWebViewConfiguration?
+    public var appConfig: ORAppConfig?
+    var popover: Popover?
+    public var geofenceProvider: GeofenceProvider?
+    public var pushProvider: PushNotificationProvider?
+    public var storageProvider: StorageProvider?
 
-    var geofenceProvider: GeofenceProvider?
-    var pushProvider: PushNotificationProvider?
-    var storageProvider: StorageProvider?
+    var popoverOptions: [PopoverOption]?
     
     open override func viewDidLoad() {
         super.viewDidLoad()
@@ -45,14 +51,14 @@ open class ORViewcontroller : UIViewController {
         self.configureAccess()
     }
 
-    open func login() {
-        guard let request = URL(string: String(format:"\(ORServer.scheme)://%@/%@", ORServer.hostURL, ORServer.initialPath)) else { return }
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
-        _ = self.myWebView?.load(URLRequest(url: request))
-        isLoading = true
+    open override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        if let applicationConfig = appConfig {
+            loadURL(url: URL(string: applicationConfig.initialUrl.stringByURLEncoding()!)!)
+        }
     }
 
-    open func sendData(data: [String: Any?]) {
+    func sendData(data: [String: Any?]) {
         if let theJSONData = try? JSONSerialization.data(
             withJSONObject: data,
             options: []) {
@@ -67,7 +73,7 @@ open class ORViewcontroller : UIViewController {
         }
     }
     
-    open func configureAccess() {
+    func configureAccess() {
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         let userController:WKUserContentController = WKUserContentController()
         
@@ -92,7 +98,7 @@ open class ORViewcontroller : UIViewController {
         myWebView?.addObserver(self, forKeyPath: "estimatedProgress", options: .new, context: nil);
 
         webProgressBar = UIProgressView(progressViewStyle: .bar)
-        webProgressBar?.progressTintColor = UIColor.mainColorAccent
+        webProgressBar?.progressTintColor = UIColor(named: "or_green")
 
         view.addSubview(myWebView!)
         view.addSubview(webProgressBar!)
@@ -103,9 +109,80 @@ open class ORViewcontroller : UIViewController {
         webProgressBar?.trailingAnchor.constraint(equalTo: myWebView!.trailingAnchor).isActive = true
         webProgressBar?.topAnchor.constraint(equalTo: myWebView!.topAnchor, constant: -2).isActive = true
         webProgressBar?.heightAnchor.constraint(equalToConstant: 2).isActive = true
+
+        if appConfig?.menuEnabled ?? false {
+
+            menuButton = MDCFloatingButton(shape: .default)
+            menuButton?.backgroundColor = UIColor(hexaRGB: appConfig?.primaryColor ?? "#43A047")
+            menuButton?.translatesAutoresizingMaskIntoConstraints = false
+            menuButton?.addTarget(self, action: #selector(self.pressed(sender:)), for: .touchUpInside)
+            menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .normal)
+            menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .selected)
+            menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .highlighted)
+            menuButton?.isHidden = true
+
+            if let secondColor = appConfig?.secondaryColor {
+                menuButton?.tintColor = UIColor(hexaRGB: secondColor)
+            }
+
+            view.addSubview(menuButton!)
+            view.bringSubviewToFront(menuButton!)
+
+            let constraints: Array<NSLayoutConstraint> = {
+                if appConfig!.menuPosition == "BOTTOM_RIGHT" {
+                    self.popoverOptions = [
+                        .type(.up),
+                        .arrowSize(.zero),
+                    ]
+                    return [
+                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20),
+                        menuButton!.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -20)
+                    ]
+                } else if appConfig!.menuPosition == "TOP_RIGHT" {
+                    self.popoverOptions = [
+                        .type(.down),
+                        .arrowSize(.zero),
+                    ]
+                    return [
+                        menuButton!.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -20),
+                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: sbHeight)
+                    ]
+                } else if appConfig!.menuPosition == "TOP_LEFT" {
+                    self.popoverOptions = [
+                        .type(.down),
+                        .arrowSize(.zero),
+                    ]
+                    return [
+                        menuButton!.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
+                        menuButton!.topAnchor.constraint(equalTo: self.view.topAnchor, constant: sbHeight)
+                    ]
+                }
+                self.popoverOptions = [
+                    .type(.up),
+                    .arrowSize(.zero),
+
+                ]
+                return [
+                    menuButton!.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: 20),
+                    menuButton!.bottomAnchor.constraint(equalTo: self.view.bottomAnchor, constant: -20)
+                ]
+            }()
+
+            NSLayoutConstraint.activate(constraints)
+        }
     }
 
-    override open func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    @objc func pressed(sender: UIButton!) {
+        let linkCount = appConfig?.links?.count ?? 0
+        let tableView = UITableView(frame: CGRect(x: 0, y: 0, width: self.view.frame.width / 2, height: CGFloat(linkCount * 60)))
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.isScrollEnabled = false
+        self.popover = Popover(options: self.popoverOptions)
+        self.popover!.show(tableView, fromView: self.menuButton!)
+    }
+
+    public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "estimatedProgress" {
             if let webView = myWebView {
                 webProgressBar?.progress = Float(webView.estimatedProgress);
@@ -129,86 +206,50 @@ open class ORViewcontroller : UIViewController {
         }
     }
     
-    open func loadURL(url : URL) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
+    public func loadURL(url : URL) {
         _ = self.myWebView?.load(URLRequest(url:url))
-        isLoading = true
     }
 
     internal func handleError(errorCode: Int, description: String, failingUrl: String, isForMainFrame: Bool) {
-        NSLog("%@", "Error requesting '\(failingUrl)': \(errorCode) (\(description))")
+        print("Error requesting '\(failingUrl)': \(errorCode) (\(description))")
 
-        // This will be the URL loaded into the webview itself (false for images etc. of the main page)
-        if isForMainFrame {
+        let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
+        alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
 
-            // Check page load error URL
-            let errorUrl = ORServer.errorUrl
-            if let errorURL = URL(string: errorUrl), ORServer.errorUrl != failingUrl {
-                NSLog("%@", "Loading error URL: \(errorUrl)")
-                loadURL(url: errorURL)
-            }
-        } else {
+        self.present(alertView, animated: true, completion: nil)
 
-            if ORServer.ignorePageErrors {
-                return;
-            }
-
-            let error = NSError(domain: "", code: 0, userInfo:  [
-                NSLocalizedDescriptionKey :  NSLocalizedString("HTTPErrorReturned", value: "Connection Error", comment: "Error requesting '\(failingUrl)': \(errorCode) (\(description))")
-                ])
-            if let vc = self.presentingViewController as? ORLoginViewController {
-                vc.isInError = true
-            }
-            self.dismiss(animated: true) {
-                ErrorManager.showError(error:error)
-            }
-        }
+        self.myWebView?.load(URLRequest(url: URL(string: self.appConfig!.url.stringByURLEncoding()!)!))
     }
-    
-    open func updateAttribute(assetId : String, attributeName : String, rawJson : String) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
-        TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
-            switch accessTokenResult {
-            case .Failure(let error) :
-                UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                self.handleError(errorCode: 0, description: error!.localizedDescription, failingUrl: "", isForMainFrame: false)
-            case .Success(let accessToken) :
-                guard let urlRequest = URL(string: String(String(format: "\(ORServer.scheme)://%@/%@/asset/%@/attribute/%@", ORServer.hostURL, ORServer.realm, assetId, attributeName))) else { return }
-                let request = NSMutableURLRequest(url: urlRequest)
-                request.httpMethod = "PUT"
-                request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                request.httpBody = rawJson.data(using: .utf8)
-                request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
-                let sessionConfiguration = URLSessionConfiguration.default
-                let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
-                let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-                    DispatchQueue.main.async {
-                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                        if (error != nil) {
-                            self.handleError(errorCode: 0, description: error!.localizedDescription, failingUrl: "", isForMainFrame: false)
-                        }
-                    }
-                })
-                reqDataTask.resume()
-            }
-        }
+
+}
+
+extension ORViewcontroller: UITableViewDelegate {
+
+    public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        self.popover?.dismiss()
+        loadURL(url: URL(string: appConfig!.links![indexPath.row].pageLink.stringByURLEncoding()!)!)
+    }
+
+    public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 60
     }
 }
 
-extension ORViewcontroller: URLSessionDelegate {
-    open func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
-            if challenge.protectionSpace.host == ORServer.hostURL {
-                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
-            } else {
-                completionHandler(.performDefaultHandling, nil)
-            }
-        }
+extension ORViewcontroller: UITableViewDataSource {
+
+    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int{
+        return appConfig?.links?.count ?? 0
+    }
+
+    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = UITableViewCell(style: .default, reuseIdentifier: nil)
+        cell.textLabel?.text = appConfig!.links![indexPath.row].displayText
+        return cell
     }
 }
 
 extension ORViewcontroller: WKScriptMessageHandler {
-    open func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let jsonDictionnary = message.body as? [String : Any]
         if let type = jsonDictionnary?["type"] as? String {
             switch (type) {
@@ -245,12 +286,16 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                     sendData(data: initializeData)
                                 case Actions.providerEnable:
                                     if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
-                                        geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)api/\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
-                                            self.sendData(data: enableData)
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
-                                                self.geofenceProvider?.fetchGeofences()
-                                            }
-                                        })
+                                        if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
+                                           let project = userdefaults.string(forKey: DefaultsKey.projectKey),
+                                           let realm = userdefaults.string(forKey: DefaultsKey.realmKey) {
+                                            geofenceProvider?.enable(baseUrl: "https://\(project).openremote.io/api/\(realm)", consoleId: consoleId,  callback: { enableData in
+                                                self.sendData(data: enableData)
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
+                                                    self.geofenceProvider?.fetchGeofences()
+                                                }
+                                            })
+                                        }
                                     }
                                 case Actions.providerDisable:
                                     if let disableData = geofenceProvider?.disable() {
@@ -261,8 +306,8 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                 case Actions.getLocation:
                                     geofenceProvider?.getLocation(callback: { locationData in
                                         if (locationData["data"] as? [String:Any]) == nil {
-                                            let alertController = UIAlertController(title: NSLocalizedString(LocalizableString.LocationPermissionTitle, comment: ""),
-                                                                                    message: NSLocalizedString(LocalizableString.LocationPermissionMessage, comment: ""),
+                                            let alertController = UIAlertController(title: "Location permission denied",
+                                                                                    message: "In order to get the location it's necessary to give permissions to the app. Do you want to open the settings?",
                                                                                     preferredStyle: .alert)
                                             if let settingsUrl = URL(string: UIApplication.openSettingsURLString), UIApplication.shared.canOpenURL(settingsUrl) {
                                                 alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { alertAction in
@@ -272,7 +317,7 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                                         })
                                                     }
                                                 }))
-                                                alertController.addAction(UIAlertAction(title: NSLocalizedString(LocalizableString.LocationPermissionNotNow, comment: ""), style: .cancel, handler: nil))
+                                                alertController.addAction(UIAlertAction(title: "Not now", style: .cancel, handler: nil))
                                             } else {
                                                 alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                                             }
@@ -324,23 +369,13 @@ extension ORViewcontroller: WKScriptMessageHandler {
 }
 
 extension ORViewcontroller: WKNavigationDelegate {
-    open func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-        NSLog("error %@", message)
-        TokenManager.sharedInstance.resetTokenAndAuthenticate()
-        self.dismiss(animated: true, completion: nil)
-        completionHandler()
-    }
 
     public func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         showProgressView()
     }
 
-    open func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        if (navigationAction.request.url?.absoluteString.contains("logout"))! {
-            TokenManager.sharedInstance.logout()
-            decisionHandler(.cancel)
-            self.dismiss(animated: false, completion: nil)
-        } else if (navigationAction.request.url?.absoluteString.starts(with: "webbrowser"))! {
+    public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if (navigationAction.request.url?.absoluteString.starts(with: "webbrowser"))! {
             if let url = navigationAction.request.url, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
                 components.scheme = "https"
                 if let newUrl = components.url {
@@ -356,33 +391,31 @@ extension ORViewcontroller: WKNavigationDelegate {
                     decisionHandler(.cancel)
                 }
             } else {
+                if let config = appConfig, let button = menuButton {
+                    if config.url.stringByURLEncoding() == navigationAction.request.url?.absoluteString {
+                        button.isHidden = false
+                    }
+                }
+
                 decisionHandler(.allow)
             }
         }
-        isLoading = false
     }
 
-    open func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+    public func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
         if let response = navigationResponse.response as? HTTPURLResponse {
             if response.statusCode != 200 && response.statusCode != 204 {
                 decisionHandler(.cancel)
 
-                if response.url?.lastPathComponent == "token" && response.statusCode == 400 {
-                    TokenManager.sharedInstance.resetToken()
-                }
-
-                isLoading = false
                 handleError(errorCode: response.statusCode, description: "Error in request", failingUrl: response.url?.absoluteString ?? "", isForMainFrame: true)
                 return
             }
         }
-        isLoading = false
         decisionHandler(.allow)
     }
 
-    open func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+    public func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
-        UIApplication.shared.isNetworkActivityIndicatorVisible = false
         if let err = error as? URLError {
 
             let httpCode: Int
@@ -399,24 +432,12 @@ extension ORViewcontroller: WKNavigationDelegate {
         }
     }
 
-    open func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
-            if challenge.protectionSpace.host == ORServer.hostURL {
-                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
-            } else {
-                completionHandler(.performDefaultHandling, nil)
-            }
-        }
-    }
-
-    open func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+    public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         hideProgressView()
     }
 
     public func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
-        UIApplication.shared.isNetworkActivityIndicatorVisible = false
         if let err = error as? URLError {
 
             let httpCode: Int

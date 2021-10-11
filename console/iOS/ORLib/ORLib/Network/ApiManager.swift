@@ -8,7 +8,7 @@
 
 import UIKit
 
-typealias ResponseBlock<T: Codable> = (_ statusCode: Int, _ object: T?, _ error: Error?) -> ()
+public typealias ResponseBlock<T: Codable> = (_ statusCode: Int, _ object: T?, _ error: Error?) -> ()
 
 enum HttpMethod: String {
     case get = "GET"
@@ -18,16 +18,16 @@ enum HttpMethod: String {
     case batch = "BATCH"
 }
 
-class ApiManager: NSObject {
+public class ApiManager: NSObject {
 
     private let baseUrl: URL;
 
-    init(baseUrl: String) {
+    public init(baseUrl: String) {
         self.baseUrl = URL(string: baseUrl)!
         super.init()
     }
 
-    static var accessToken: String?
+    public static var accessToken: String?
 
     let session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -47,7 +47,7 @@ class ApiManager: NSObject {
         return decoder
     }()
 
-    func getAppConfig(callback: ResponseBlock<ORAppConfig>?) {
+    public func getAppConfig(callback: ResponseBlock<ORAppConfig>?) {
         self.get(pathComponents: ["app", "config"], callback: callback)
     }
 

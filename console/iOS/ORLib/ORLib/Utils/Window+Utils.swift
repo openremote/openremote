@@ -11,7 +11,7 @@ import UIKit
 
 extension UIWindow {
 
-    var topController : UIViewController? {
+    public var topController : UIViewController? {
 
         guard let rootViewController = self.rootViewController else {
             return nil
