@@ -29,7 +29,7 @@ The quickest way to get your own environment with full access is to make use of 
 If all goes well then you should now be able to access the OpenRemote Manager UI at [https://localhost](https://localhost). You will need to accept the self-signed 
 certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-connection-is-not-private-message) for details how to do this in Chrome (similar for other browsers).
 
-### Updating to latest manager
+### Updating to latest version of manager
 
 If you have already installed OpenRemote earlier and want to update to the latest version of the manager, make sure you first run:
 
