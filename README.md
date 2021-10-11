@@ -33,7 +33,9 @@ certificate, see [here](https://www.technipages.com/google-chrome-bypass-your-co
 
 If you have already installed OpenRemote earlier and want to update to the latest version of the manager, make sure you first run:
 
-    `docker pull openremote/manager` and then run:
+    `docker pull openremote/manager` 
+    
+and then run:
 
     `docker-compose -p openremote up`
 
