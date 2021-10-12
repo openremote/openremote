@@ -260,9 +260,9 @@ class OrHeader extends LitElement {
                 margin-right: 2px;
             }
           
-            /* Wide layout: when the viewport width is bigger than 780px, layout
+            /* Wide layout: when the viewport width is bigger than 768px, layout
             changes to a wide layout. */
-            @media (min-width: 780px) {
+            @media (min-width: 768px) {
                 #menu-btn-desktop {
                     display: block;
                 }          

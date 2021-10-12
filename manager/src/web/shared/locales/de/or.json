@@ -333,42 +333,31 @@
   "hertz": "Hz",
   "rpm": "rpm",
   "carbon": "CO2",
-  "meta": {
-  },
-  "attribute": {
-  }
+  "meta": {},
+  "attribute": {}
 },
 "format": {
-  "meta": {
-  },
-  "attribute": {
-  }
+  "meta": {},
+  "attribute": {}
 },
 "constraints": {
-  "meta": {
-  },
-  "attribute": {
-  }
+  "meta": {},
+  "attribute": {}
 },
 "label": {
   "asset": {
     "ElectricityProducerSolarAsset": "PV-Solaranlage",
     "ElectricityProducerWindAsset": "Windturbinenanlage"
   },
-  "meta": {
-  },
-  "attribute": {
-  },
-  "value": {
-  }
+  "meta": {},
+  "attribute": {},
+  "value": {}
 },
 "metaOverrides": {
-  "label": {
-  }
+  "label": {}
 },
 "attributeOverrides": {
-  "label": {
-  }
+  "label": {}
 },
 "addMetaItems": "Konfigurationselemente hinzufügen",
 "loseChanges": "Änderungen verwerfen?",

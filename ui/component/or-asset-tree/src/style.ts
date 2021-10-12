@@ -185,7 +185,7 @@ export const style = css`
         font-size: 14px;        
     }    
     
-     @media only screen and (min-width: 769px){
+     @media only screen and (min-width: 768px){
         .expander {
             width: 26px;
         }
