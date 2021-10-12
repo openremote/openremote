@@ -40,7 +40,7 @@ import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
 
-class OrMainActivity : Activity() {
+open class OrMainActivity : Activity() {
 
     private lateinit var binding: ActivityOrMainBinding
 
@@ -497,7 +497,7 @@ class OrMainActivity : Activity() {
         }
     }
 
-    private fun loadUrl(url: String?) {
+    public fun loadUrl(url: String?) {
         webViewLoaded = false
         val temp = url!!.replace(" ", "%20")
         binding.webView.loadUrl(temp)
