@@ -34,6 +34,7 @@ jobs:
           # Login to manager and add weather agent asset
           or-test-http-rest --dnsname localhost --password secret -vv
         timeout-minutes: 30
+        continue-on-error: true
 
 
   test_staging_demo:
