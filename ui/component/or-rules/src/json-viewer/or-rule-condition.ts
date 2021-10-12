@@ -149,7 +149,9 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
             }
             if(this.readonly) {
                 typeTemplate = html`
+                <div id="type" style="--or-mwc-input-color: #${buttonColor}">
                     <or-mwc-input readonly type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>
+                </div>
                 `;
             } else {
                 typeTemplate = html`

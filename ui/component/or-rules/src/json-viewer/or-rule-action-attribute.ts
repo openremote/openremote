@@ -31,6 +31,10 @@ const style = css`
     :host > * {
         margin: 0 3px 6px;
     }
+
+    .min-width {
+        min-width: 200px;
+    }
 `;
 
 @customElement("or-rule-action-attribute")
@@ -127,19 +131,21 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
                     });
         }
 
+        attributes.sort(Util.sortByString((attr) => attr[1]));
+
         let attributeInput: TemplateResult | undefined;
 
         if (this.action.attributeName) {
             const label = descriptors[1] && (descriptors[1].name === WellknownValueTypes.BOOLEAN) ? "" : i18next.t("value");
             let inputType;
             if(descriptors[0]?.format?.asSlider) inputType = InputType.NUMBER;
-            attributeInput = html`<or-attribute-input .inputType="${ifDefined(inputType)}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setActionAttributeValue(ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${label}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${this.action.value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
+            attributeInput = html`<or-attribute-input ?compact=${descriptors[1] && (descriptors[1].name === WellknownValueTypes.GEOJSONPOINT)} .inputType="${ifDefined(inputType)}" @or-attribute-input-changed="${(ev: OrAttributeInputChangedEvent) => this.setActionAttributeValue(ev.detail.value)}" .customProvider="${this.config?.inputProvider}" .label="${label}" .assetType="${assetType}" .attributeDescriptor="${descriptors[0]}" .attributeValueDescriptor="${descriptors[1]}" .value="${this.action.value}" .readonly="${this.readonly || false}"></or-attribute-input>`;
         }
 
         return html`
-            <or-mwc-input id="matchSelect" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}"></or-mwc-input>
+            <or-mwc-input id="matchSelect" class="min-width" .label="${i18next.t("asset")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this._assetId = (e.detail.value)}" .readonly="${this.readonly || false}" .options="${idOptions}" .value="${idValue}"></or-mwc-input>
             ${attributes.length > 0 ? html`
-                <or-mwc-input id="attributeSelect" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
+                <or-mwc-input id="attributeSelect" class="min-width" .label="${i18next.t("attribute")}" .type="${InputType.SELECT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setActionAttributeName(e.detail.value)}" .readonly="${this.readonly || false}" .options="${attributes}" .value="${this.action.attributeName}"></or-mwc-input>
                 ${attributeInput}
             ` : html`
                 <or-translate value="No attributes with write permission"></or-translate>
