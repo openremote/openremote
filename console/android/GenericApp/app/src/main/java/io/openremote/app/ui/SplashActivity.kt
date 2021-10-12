@@ -7,8 +7,10 @@ import android.os.Bundle
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.openremote.app.databinding.ActivitySplashBinding
-import io.openremote.app.network.ApiManager
-import io.openremote.app.ui.MainActivity.Companion.APP_CONFIG_KEY
+import io.openremote.orlib.network.ApiManager
+import io.openremote.orlib.ui.OrMainActivity
+import io.openremote.orlib.ui.OrMainActivity.Companion.APP_CONFIG_KEY
+import io.openremote.orlib.ui.OrPrivacyPolicyActivity
 
 class SplashActivity : Activity() {
 
@@ -29,7 +31,7 @@ class SplashActivity : Activity() {
         val privacyPolicyAccepted = sharedPreferences!!.getBoolean("privacyPolicyAccepted", false)
 
         if (!privacyPolicyAccepted) {
-            val intent = Intent(this@SplashActivity, PrivacyPolicyActivity::class.java)
+            val intent = Intent(this@SplashActivity, OrPrivacyPolicyActivity::class.java)
             startActivityForResult(intent, SHOW_CONDITIONS_REQUEST)
         } else {
             startNextActivity()
@@ -44,7 +46,7 @@ class SplashActivity : Activity() {
             val apiManager = ApiManager("https://${project}.openremote.io/api/$realm")
             apiManager.getAppConfig { statusCode, appConfig, error ->
                 if (statusCode in 200..299) {
-                    val intent = Intent(this@SplashActivity, MainActivity::class.java)
+                    val intent = Intent(this@SplashActivity, OrMainActivity::class.java)
                     intent.putExtra(
                         APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(
                             appConfig

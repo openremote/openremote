@@ -1,23 +1,18 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'com.google.gms.google-services'
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+}
 
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        applicationId "io.openremote.app"
         minSdkVersion 25
         targetSdkVersion 30
-        versionCode 24
-        versionName "1.0.4"
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-        resValue "string", "NOTIFICATION_CHANNEL_ID", applicationId + ".ORAppMessage"
+        consumerProguardFiles "consumer-rules.pro"
     }
-
 
     buildTypes {
         release {
@@ -25,28 +20,27 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-
     buildFeatures {
         viewBinding true
     }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
 }
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.core:core-ktx:1.6.0'
     implementation 'androidx.appcompat:appcompat:1.3.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
     implementation 'androidx.preference:preference-ktx:1.1.1'
     implementation "com.google.android.gms:play-services-location:18.0.0"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.8"
+    implementation 'com.google.android.material:material:1.4.0'
     implementation platform('com.google.firebase:firebase-bom:26.0.0')
     implementation 'com.google.firebase:firebase-messaging-ktx'
-    implementation 'com.google.android.material:material:1.4.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation project(':ORLib')
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:2.9.8"
 }

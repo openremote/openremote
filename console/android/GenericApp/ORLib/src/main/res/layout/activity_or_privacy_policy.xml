@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="io.openremote.orlib.ui.OrPrivacyPolicyActivity">
+    tools:context=".ui.OrPrivacyPolicyActivity">
 
     <WebView
         android:id="@+id/webView"

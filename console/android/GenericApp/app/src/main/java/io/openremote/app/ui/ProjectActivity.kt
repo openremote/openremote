@@ -10,7 +10,8 @@ import android.widget.Toast
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.openremote.app.databinding.ActivityProjectBinding
-import io.openremote.app.network.ApiManager
+import io.openremote.orlib.network.ApiManager
+import io.openremote.orlib.ui.OrMainActivity
 
 class ProjectActivity : Activity() {
 
@@ -53,8 +54,8 @@ class ProjectActivity : Activity() {
             if (statusCode in 200..299) {
                 sharedPreferences?.edit()?.putString("project", project)?.apply()
                 sharedPreferences?.edit()?.putString("realm", realm)?.apply()
-                val intent = Intent(this@ProjectActivity, MainActivity::class.java)
-                intent.putExtra(MainActivity.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
+                val intent = Intent(this@ProjectActivity, OrMainActivity::class.java)
+                intent.putExtra(OrMainActivity.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
                 startActivity(intent)
                 finish()
             } else {

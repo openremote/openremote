@@ -48,23 +48,23 @@
             android:name=".ui.ProjectActivity"
             android:exported="true"
             android:label="@string/title_activity_project" />
-        <activity android:name=".ui.MainActivity" />
-        <activity android:name=".ui.PrivacyPolicyActivity" />
+        <activity android:name="io.openremote.orlib.ui.OrMainActivity" />
+        <activity android:name="io.openremote.orlib.ui.OrPrivacyPolicyActivity" />
 
-        <service android:name=".service.ORFirebaseMessagingService">
+        <service android:name="io.openremote.orlib.service.ORFirebaseMessagingService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        <service android:name=".service.ORMessagingActionService"></service>
+        <service android:name="io.openremote.orlib.service.ORMessagingActionService"></service>
 
-        <receiver android:name=".service.GeofenceBootCompleteReceiver">
+        <receiver android:name="io.openremote.orlib.service.GeofenceBootCompleteReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".service.GeofenceTransitionsIntentService"
+            android:name="io.openremote.orlib.service.GeofenceTransitionsIntentService"
             android:enabled="true"
             android:exported="true" />
     </application>
