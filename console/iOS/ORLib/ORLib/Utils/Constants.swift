@@ -19,14 +19,12 @@
  */
 
 import Foundation
-
-public enum AccesTokenResult<String>
-{
-    case Success(String?)
-    case Failure(NSError?)
-}
+import UIKit
 
 public enum DefaultsKey {
+    public static var groupEntitlement = "group.io.openremote.app"
+    public static let projectKey = "PROJECT"
+    public static let realmKey = "REALM"
     public static let refreshTokenKey = "REFRESH_TOKEN"
     public static let fcmTokenKey = "FCM_TOKEN_KEY"
     public static let fcmDeviceIdKey = "FCM_DEVICE_ID_KEY"
@@ -59,15 +57,15 @@ public enum Providers {
 }
 
 public enum NotificationsNames {
-    static let isAuthenticated = "isAuthenticated"
-    static let isdeviceIdSent = "isdeviceIdSent"
+    public static let isAuthenticated = "isAuthenticated"
+    public static let isdeviceIdSent = "isdeviceIdSent"
 }
 
 public enum Notifications {
-    static let needsReachabilityCheck = Notification.Name("NeedsReachabilityCheck")
-    static let fullScreenShown = Notification.Name("fullScreenShown")
-    static let fullScreenHidden = Notification.Name("fullScreenHidden")
-    static let idleTimerFired = Notification.Name("idleTimerFired")
+    public static let needsReachabilityCheck = Notification.Name("NeedsReachabilityCheck")
+    public static let fullScreenShown = Notification.Name("fullScreenShown")
+    public static let fullScreenHidden = Notification.Name("fullScreenHidden")
+    public static let idleTimerFired = Notification.Name("idleTimerFired")
 }
 
 public enum ActionType {
