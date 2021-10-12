@@ -95,6 +95,7 @@
   "path": "Path",
   "showOnMap": "Show on map",
   "noAssetSelected": "Please select an asset on the left",
+  "noAssetTypeSelected": "Please select an asset type on the left",
   "loading": "Loading...",
   "location": "Location",
   "hour": "Hour",
