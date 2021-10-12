@@ -29,6 +29,7 @@ import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import java.util.List;
 
 /**
  * This can be used (among other things) to query the REALM table in JPA queries.
@@ -61,6 +62,12 @@ public class Tenant {
 
     @Transient
     protected Boolean rememberMe;
+
+    @Transient
+    protected Boolean registrationAllowed;
+
+    @Transient
+    protected Boolean registrationEmailAsUsername;
 
     @Transient
     protected String loginTheme;
@@ -161,6 +168,24 @@ public class Tenant {
 
     public Tenant setRememberMe(Boolean rememberMe) {
         this.rememberMe = rememberMe;
+        return this;
+    }
+
+    public Boolean getRegistrationAllowed() {
+        return registrationAllowed;
+    }
+
+    public Tenant setRegistrationAllowed(Boolean registrationAllowed) {
+        this.registrationAllowed = registrationAllowed;
+        return this;
+    }
+
+    public Boolean getRegistrationEmailAsUsername() {
+        return registrationEmailAsUsername;
+    }
+
+    public Tenant setRegistrationEmailAsUsername(Boolean registrationEmailAsUsername) {
+        this.registrationEmailAsUsername = registrationEmailAsUsername;
         return this;
     }
 

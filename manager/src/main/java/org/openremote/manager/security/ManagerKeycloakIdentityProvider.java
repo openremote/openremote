@@ -735,6 +735,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             existing.setEmailTheme(tenant.getEmailTheme());
             existing.setLoginTheme(tenant.getLoginTheme());
             existing.setRememberMe(tenant.getRememberMe());
+            existing.setRegistrationAllowed(tenant.getRegistrationAllowed());
+            existing.setRegistrationEmailAsUsername(tenant.getRegistrationEmailAsUsername());
             existing.setEnabled(tenant.getEnabled());
             existing.setDuplicateEmailsAllowed(tenant.getDuplicateEmailsAllowed());
             existing.setResetPasswordAllowed(tenant.getResetPasswordAllowed());
