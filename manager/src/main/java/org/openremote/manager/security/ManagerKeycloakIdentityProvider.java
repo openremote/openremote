@@ -684,18 +684,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isMasterRealmAdmin(String userId) {
-        List<UserRepresentation> adminUsers = getRealms(realmsResource ->
+        Optional<UserRepresentation> adminUser = getRealms(realmsResource ->
             realmsResource.realm(MASTER_REALM)
                 .users()
-                .search(MASTER_REALM_ADMIN_USER, null, null));
+                .search(MASTER_REALM_ADMIN_USER, null, null))
+            .stream()
+            .filter(user -> user.getUsername().equals(MASTER_REALM_ADMIN_USER))
+            .findFirst();
 
-
-        if (adminUsers.size() == 0) {
+        if (!adminUser.isPresent()) {
             throw new IllegalStateException("Can't load master realm admin user");
-        } else if (adminUsers.size() > 1) {
-            throw new IllegalStateException("Several master realm admin users, this should not be possible.");
         }
-        return adminUsers.get(0).getId().equals(userId);
+        return adminUser.map(UserRepresentation::getId).map(id -> id.equals(userId)).orElse(false);
     }
 
     @Override

@@ -91,20 +91,26 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onConnect(InterceptConnectMessage msg) {
-        String[] realmAndUsername = msg.getUsername().split(":");
-        String realm = realmAndUsername[0];
-        String username = realmAndUsername[1];
+        String realm = null;
+        String username = null;
         String password = msg.getPassword() != null ? new String(msg.getPassword(), Charsets.UTF_8) : null;
+
+        if (msg.getUsername() != null) {
+            String[] realmAndUsername = msg.getUsername().split(":");
+            realm = realmAndUsername[0];
+            username = realmAndUsername[1];
+        }
+
         MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password);
 
-        sessionIdConnectionMap.put(connection.getSessionId(), connection);
+        sessionIdConnectionMap.put(connection.getClientId(), connection);
         Map<String, Object> headers = prepareHeaders(connection);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         LOG.fine("Connected: " + connection);
 
-        // No topic info here (not sure what willTopic is??) so just notify all custom handlers
-        brokerService.customHandlers.forEach(customHandler -> customHandler.onConnect(connection, msg));
+        // Notify all custom handlers
+        brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onConnect(connection, msg));
     }
 
     @Override
@@ -118,7 +124,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             LOG.fine("Connection closed: " + connection);
 
             // No topic info here so just notify all custom handlers
-            brokerService.customHandlers.forEach(customHandler -> customHandler.onDisconnect(connection, msg));
+            brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onDisconnect(connection, msg));
         }
     }
 
@@ -133,7 +139,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             LOG.fine("Connection lost: " + connection);
 
             // No topic info here so just notify all custom handlers
-            brokerService.customHandlers.forEach(customHandler -> customHandler.onConnectionLost(connection, msg));
+            brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onConnectionLost(connection, msg));
         }
     }
 
@@ -141,22 +147,20 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
     @Override
     public void onSubscribe(InterceptSubscribeMessage msg) {
 
-        String[] realmAndUsername = msg.getUsername().split(":");
-        String realm = realmAndUsername[0];
-        String username = realmAndUsername[1];
         MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
 
         if (connection == null) {
-            LOG.info("No connection found: realm=" + realm + ", username=" + username + ", clientID=" + msg.getClientID());
+            LOG.info("No connection found: clientID=" + msg.getClientID());
             return;
         }
 
         Topic topic = Topic.asTopic(msg.getTopicFilter());
 
-        MQTTCustomHandler customHandler;
-        if ((customHandler = brokerService.getCustomInterceptHandler(msg.getTopicFilter())) != null) {
-            customHandler.onSubscribe(connection, topic, msg);
-            return;
+        for (MQTTCustomHandler handler : brokerService.getCustomHandlers()) {
+            if (handler.onSubscribe(connection, topic, msg)) {
+                LOG.info("Custom handler has handled subscribe: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                return;
+            }
         }
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
@@ -189,23 +193,17 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
     @Override
     public void onUnsubscribe(InterceptUnsubscribeMessage msg) {
 
-        String[] realmAndUsername = msg.getUsername().split(":");
-        String realm = realmAndUsername[0];
-        String username = realmAndUsername[1];
         MqttConnection connection = sessionIdConnectionMap.get(msg.getClientID());
 
         if (connection == null) {
-            LOG.warning("No connection found: realm=" + realm + ", username=" + username + ", clientID=" + msg.getClientID());
+            LOG.info("No connection found: clientID=" + msg.getClientID());
             return;
         }
 
         Topic topic = Topic.asTopic(msg.getTopicFilter());
 
-        MQTTCustomHandler customHandler;
-        if ((customHandler = brokerService.getCustomInterceptHandler(topic.toString())) != null) {
-            customHandler.onUnsubscribe(connection, topic, msg);
-            return;
-        }
+        // Notify all custom handlers
+        brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onUnsubscribe(connection, topic, msg));
 
         String subscriptionId = topic.toString();
         Consumer<? extends SharedEvent> eventConsumer = connection.subscriptionHandlerMap.remove(subscriptionId);
@@ -234,16 +232,17 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
         Topic topic = Topic.asTopic(msg.getTopicName());
 
-        MQTTCustomHandler customHandler;
-        if ((customHandler = brokerService.getCustomInterceptHandler(topic.toString())) != null) {
-            customHandler.onPublish(connection, topic, msg);
-            return;
+        for (MQTTCustomHandler handler : brokerService.getCustomHandlers()) {
+            if (handler.onPublish(connection, topic, msg)) {
+                LOG.info("Custom handler has handled publish: handler=" + handler.getName() + ", topic=" + topic + ", connection=" + connection);
+                return;
+            }
         }
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
         boolean isValueWrite = topicTokens.get(2).equals(ATTRIBUTE_VALUE_TOPIC);
         String payloadContent = msg.getPayload().toString(StandardCharsets.UTF_8);
-        AttributeEvent attributeEvent = null;
+        AttributeEvent attributeEvent;
 
         if (isValueWrite) {
             String assetId = topicTokens.get(3);
@@ -265,7 +264,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     protected Map<String, Object> prepareHeaders(MqttConnection connection) {
         Map<String, Object> headers = new HashMap<>();
-        headers.put(ConnectionConstants.SESSION_KEY, connection.getSessionId());
+        headers.put(ConnectionConstants.SESSION_KEY, connection.getClientId());
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
 
         try {

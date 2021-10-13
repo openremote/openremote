@@ -20,7 +20,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.value.RegexValueFilter;
 
 import java.util.List;
 import java.util.Optional;
@@ -70,7 +69,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     protected boolean verifyRights(Topic topic, String sessionId, String realm, String username, boolean isWrite) {
-        MqttConnection connection = brokerService.sessionIdConnectionMap.get(sessionId);
+        MqttConnection connection = brokerService.clientIdConnectionMap.get(sessionId);
         AuthContext authContext;
 
         if (connection == null) {
@@ -91,9 +90,24 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        Boolean result = brokerService.customHandlerAuthorises(authContext, connection, topic, isWrite);
-        if (result != null) {
-            return result;
+        boolean handled = false;
+
+        // See if a custom handler wants to handle this topic pub/sub
+        for (MQTTCustomHandler handler : brokerService.getCustomHandlers()) {
+            if (isWrite) {
+                handled = handler.canPublish(authContext, connection, topic);
+            } else {
+                handled = handler.canSubscribe(authContext, connection, topic);
+            }
+
+            if (handled) {
+                LOG.info("Custom handler has allowed pub/sub: handler=" + handler.getName() + ", topic=" + topic + ", publish=" + isWrite + ", connection=" + connection);
+                break;
+            }
+        }
+
+        if (handled) {
+            return true;
         }
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
@@ -103,7 +117,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if (!connection.sessionId.equals(topicTokens.get(1))) {
+        if (!connection.clientId.equals(topicTokens.get(1))) {
             LOG.warning("Second topic level should match clientId: " + connection);
             return false;
         }
@@ -116,7 +130,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             return false;
         }
 
-        if(topicTokens.size() > 3) {
+        if (topicTokens.size() > 3) {
             String assetId = topicTokens.get(3);
             if (Pattern.matches(Constants.ASSET_ID_REGEXP, assetId)) {
 
@@ -143,7 +157,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
                     }
                 }
             }
-        } else if(!isWrite) {
+        } else if (!isWrite) {
             LOG.fine("Topic must contain at least three tokens '" + topic + "': " + connection);
             return false;
         }

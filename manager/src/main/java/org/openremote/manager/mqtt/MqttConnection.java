@@ -21,25 +21,27 @@ public class MqttConnection {
     protected final String realm;
     protected final String username; // This is OAuth clientId
     protected final String password;
+    protected final boolean credentials;
     protected final Map<String, Consumer<SharedEvent>> subscriptionHandlerMap = new HashMap<>();
-    protected final String sessionId;
+    protected final String clientId;
     protected Supplier<String> tokenSupplier;
 
-    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String sessionId, String realm, String username, String password) {
+    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password) {
         this.realm = realm;
         this.username = username;
         this.password = password;
-        this.sessionId = sessionId;
+        this.clientId = clientId;
         String tokenEndpointUri = identityProvider.getTokenUri(realm).toString();
 
-        if (!TextUtil.isNullOrEmpty(realm)
+        credentials = !TextUtil.isNullOrEmpty(realm)
             && !TextUtil.isNullOrEmpty(username)
-            && !TextUtil.isNullOrEmpty(password)) {
+            && !TextUtil.isNullOrEmpty(password);
 
+        if (credentials) {
             OAuthGrant grant = new OAuthClientCredentialsGrant(tokenEndpointUri, username, password, null);
             tokenSupplier = identityProvider.getAccessTokenSupplier(grant);
         } else {
-            LOG.info("Invalid credentials provided, MQTT connection is not valid: " + this);
+            LOG.fine("MQTT connection with no credentials so will have limited capabilities: " + this);
         }
     }
 
@@ -59,23 +61,23 @@ public class MqttConnection {
         return this.subscriptionHandlerMap;
     }
 
-    /**
-     * Doesn't mean that credentials are valid just that correct info is set
-     */
-    public boolean isValid() {
-        return tokenSupplier != null;
-    }
-
     public String getAccessToken() {
-        if (!isValid()) {
+        if (tokenSupplier == null) {
             return null;
         }
 
         return tokenSupplier.get();
     }
 
-    public String getSessionId() {
-        return sessionId;
+    /**
+     * This is MQTT client ID not to be confused with OAuth client ID
+     */
+    public String getClientId() {
+        return clientId;
+    }
+
+    public boolean hasCredentials() {
+        return credentials;
     }
 
     @Override
@@ -83,7 +85,7 @@ public class MqttConnection {
         return this.getClass().getSimpleName() + "{" +
             "realm='" + realm + '\'' +
             ", username='" + username + '\'' +
-            ", sessionId='" + sessionId + '\'' +
+            ", sessionId='" + clientId + '\'' +
             '}';
     }
 }

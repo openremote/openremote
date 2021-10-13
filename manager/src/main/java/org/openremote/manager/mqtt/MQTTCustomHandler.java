@@ -22,12 +22,22 @@ package org.openremote.manager.mqtt;
 import io.moquette.broker.subscriptions.Topic;
 import io.moquette.interception.messages.*;
 import org.openremote.container.security.AuthContext;
+import org.openremote.model.Container;
 
 /**
- * This allows custom handlers to be injected into the {@link MqttBrokerService} so a topic(s) can be handled in a
- * custom way.
+ * This allows custom handlers to be discovered by the {@link MqttBrokerService} during system startup using the
+ * {@link java.util.ServiceLoader} mechanism. This allows topic(s) can be handled in a custom way. Any instances must
+ * have a no-arg constructor.
  */
 public interface MQTTCustomHandler {
+
+    /**
+     * Gets the priority of this handler which is used to determine the call order; handlers with a lower priority are
+     * initialised and started first.
+     */
+    default int getPriority() {
+        return 0;
+    }
 
     /**
      * Provides a name to identify this custom handler for logging purposes etc.
@@ -35,11 +45,23 @@ public interface MQTTCustomHandler {
     String getName();
 
     /**
+     * Called when the system starts to allow for initialisation.
+     */
+    void start(Container container) throws Exception;
+
+    /**
+     * Called when the system stops to allow for any cleanup.
+     */
+    void stop() throws Exception;
+
+    /**
      * Should this handler be called to handle this topic; general security checks are performed before this handler
      * is called so this handler can focus on the required custom business logic. This handler should return null
      * if it doesn't want to allow/prevent the pub/sub.
      */
-    Boolean shouldIntercept(AuthContext authContext, MqttConnection connection, Topic topic, boolean isWrite);
+    boolean canSubscribe(AuthContext authContext, MqttConnection connection, Topic topic);
+
+    boolean canPublish(AuthContext authContext, MqttConnection connection, Topic topic);
 
     /**
      * Will be called when any client connects
@@ -57,17 +79,14 @@ public interface MQTTCustomHandler {
     void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg);
 
     /**
-     * Will be called for a specific topic if {@link #shouldIntercept} returned true.
+     * Should return true if this handler handles the subscribe.
      */
-    void onSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg);
+    boolean onSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg);
 
-    /**
-     * Will be called for a specific topic if {@link #shouldIntercept} returned true.
-     */
     void onUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg);
 
     /**
-     * Will be called for a specific topic if {@link #shouldIntercept} returned true.
+     * Should return true if this handler handles the publish.
      */
-    void onPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg);
+    boolean onPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg);
 }
