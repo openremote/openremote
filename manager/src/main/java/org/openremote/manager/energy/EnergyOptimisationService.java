@@ -101,7 +101,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected ClientEventService clientEventService;
     protected GatewayService gatewayService;
     protected ScheduledExecutorService executorService;
-    protected Map<String, OptimisationInstance> assetOptimisationInstanceMap = new HashMap<>();
+    protected final Map<String, OptimisationInstance> assetOptimisationInstanceMap = new HashMap<>();
     protected List<String> forceChargeAssetIds = new ArrayList<>();
 
     @Override
@@ -242,7 +242,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         return energyCapacity * ((1d*maxEnergyLevelPercentage)/100d);
     }
 
-    protected void processOptimisationAssetAttributeEvent(OptimisationInstance optimisationInstance, AttributeEvent attributeEvent) {
+    protected synchronized void processOptimisationAssetAttributeEvent(OptimisationInstance optimisationInstance, AttributeEvent attributeEvent) {
 
         if (EnergyOptimisationAsset.FINANCIAL_SAVING.getName().equals(attributeEvent.getAttributeName())
             || EnergyOptimisationAsset.CARBON_SAVING.getName().equals(attributeEvent.getAttributeName())) {
@@ -250,18 +250,30 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             return;
         }
 
+
+        if (attributeEvent.getAttributeName().equals(EnergyOptimisationAsset.OPTIMISATION_DISABLED.getName())) {
+            boolean disabled = attributeEvent.<Boolean>getValue().orElse(false);
+            if (!disabled && assetOptimisationInstanceMap.containsKey(optimisationInstance.optimisationAsset.getId())) {
+                // Nothing to do here
+                return;
+            } else if (disabled && !assetOptimisationInstanceMap.containsKey(optimisationInstance.optimisationAsset.getId())) {
+                // Nothing to do here
+                return;
+            }
+        }
+
         LOG.info("Processing optimisation asset attribute event: " + attributeEvent);
         stopOptimisation(attributeEvent.getAssetId());
 
         // Get latest asset from storage
-        EnergyOptimisationAsset asset = (EnergyOptimisationAsset)assetStorageService.find(attributeEvent.getAssetId());
+        EnergyOptimisationAsset asset = (EnergyOptimisationAsset) assetStorageService.find(attributeEvent.getAssetId());
 
         if (asset != null && !asset.isOptimisationDisabled().orElse(false)) {
             startOptimisation(asset);
         }
     }
 
-    protected void startOptimisation(EnergyOptimisationAsset optimisationAsset) {
+    protected synchronized void startOptimisation(EnergyOptimisationAsset optimisationAsset) {
         LOG.fine("Initialising optimiser for optimisation asset: " + optimisationAsset);
         double intervalSize = optimisationAsset.getIntervalSize().orElse(0.25d);
         int financialWeighting = optimisationAsset.getFinancialWeighting().orElse(100);
@@ -288,12 +300,12 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             // Execute first optimisation at the period that started previous to now
             LOG.finer(getLogPrefix(optimisationAsset.getId()) + "Running first optimisation for time '" + formatter.format(optimisationStartTime));
             runOptimisation(optimisationAsset.getId(), optimisationStartTime);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to start energy optimiser for asset: " + optimisationAsset, e);
         }
     }
 
-    protected void stopOptimisation(String optimisationAssetId) {
+    protected synchronized void stopOptimisation(String optimisationAssetId) {
         OptimisationInstance optimisationInstance = assetOptimisationInstanceMap.remove(optimisationAssetId);
 
         if (optimisationInstance == null || optimisationInstance.optimiserFuture == null) {
@@ -318,8 +330,13 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             throw new IllegalStateException("Optimiser instance not found for asset: " + optimisationAssetId);
         }
 
-        return executorService.scheduleAtFixedRate(() ->
-            runOptimisation(optimisationAssetId, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.MINUTES)),
+        return executorService.scheduleAtFixedRate(() -> {
+                try {
+                    runOptimisation(optimisationAssetId, Instant.ofEpochMilli(timerService.getCurrentTimeMillis()).truncatedTo(ChronoUnit.MINUTES));
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Failed to run energy optimiser for asset: " + optimisationAssetId, e);
+                }
+            },
             startDuration.getSeconds(),
             periodSeconds,
             TimeUnit.SECONDS);
@@ -644,7 +661,7 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
             boolean hasEnergyMinRequirement = energyLevelMin > 0 || energyLevelScheduleOptional.isPresent();
             double powerExportMax = storageAsset.getPowerExportMax().map(power -> -1*power).orElse(Double.MIN_VALUE);
             double powerImportMax = storageAsset.getPowerImportMax().orElse(Double.MAX_VALUE);
-            int[][] energySchedule = energyLevelScheduleOptional.map(dayArr -> Arrays.stream(dayArr).map(hourArr -> Arrays.stream(hourArr).mapToInt(Integer::intValue).toArray()).toArray(int[][]::new)).orElse(null);
+            int[][] energySchedule = energyLevelScheduleOptional.map(dayArr -> Arrays.stream(dayArr).map(hourArr -> Arrays.stream(hourArr).mapToInt(i -> i != null ? i : 0).toArray()).toArray(int[][]::new)).orElse(null);
 
             if (energySchedule != null) {
                 LOG.finer(getLogPrefix(optimisationAssetId) + "Applying energy schedule for storage asset: " + storageAsset.getId());
