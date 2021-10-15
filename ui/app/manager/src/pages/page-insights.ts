@@ -8,7 +8,6 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
-import {OrAssetTree} from "@openremote/or-asset-tree";
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -111,7 +110,6 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
 
     public connectedCallback() {
         super.connectedCallback();
-        // this.realm = this.getState().app.realm;
     }
 
     protected render(): TemplateResult | void {
