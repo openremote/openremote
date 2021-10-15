@@ -156,6 +156,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
     }
 
+    @property()
     public config?: DataViewerConfig;
 
     @property({type: Array, attribute: false})
@@ -190,6 +191,10 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         await this.updateComplete;
     }
 
+    public refresh() {
+        this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
+    }
+
     public getPanel(name: string, panelConfig: PanelConfig) {
 
         const content = this.getPanelContent(name, panelConfig);
@@ -220,21 +225,12 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
             return;
         }
 
-        if (!this.realm) {
-            this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
-        }
-
-        if (!this.config.chartConfig) {
-            this.config.chartConfig = {
-                realm: this.realm,
-                views: {}
-            }
-        }
+        this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
 
         let content: TemplateResult | undefined;
 
         if (panelConfig && panelConfig.type === "chart") {
-            content = html`<or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}"></or-chart>`;
+            content = html`<or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}" .realm="${this.realm}"></or-chart>`;
         }
 
         if (panelConfig && panelConfig.type === "kpi") {
@@ -268,6 +264,10 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
 
     protected updated(_changedProperties: PropertyValues) {
         super.updated(_changedProperties);
+
+        if (_changedProperties.has("realm")) {
+            this.refresh();
+        }
 
         this.onCompleted().then(() => {
             onRenderComplete.startCallbacks().then(() => {
