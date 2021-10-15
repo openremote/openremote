@@ -1,11 +1,14 @@
 import {css, html, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-data-viewer";
-import {DataViewerConfig} from "@openremote/or-data-viewer";
+import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
+import {createSelector} from "reselect";
+import { manager } from "@openremote/core";
+import {OrAssetTree} from "@openremote/or-asset-tree";
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -86,12 +89,29 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
     @property()
     protected _assetId;
 
+    @query("#data-viewer")
+    protected _dataviewer!: OrDataViewer;
+
+    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+
     get name(): string {
         return "insights";
     }
 
+    protected getRealmState = createSelector(
+        [this._realmSelector],
+        async () => {
+            if (this._dataviewer) this._dataviewer.refresh();
+        }
+    )
+
     constructor(store: EnhancedStore<S>) {
         super(store);
+    }
+
+    public connectedCallback() {
+        super.connectedCallback();
+        // this.realm = this.getState().app.realm;
     }
 
     protected render(): TemplateResult | void {
@@ -100,11 +120,13 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
                 <div id="title">
                     <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
                 </div>
-                <or-data-viewer .config="${this.config?.dataViewer}"></or-data-viewer>
+                <or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>
             </div>
         `;
     }
 
-    public stateChanged(state: S) {
+    stateChanged(state: S) {
+        // State is only utilised for initial loading
+        this.getRealmState(state); // Order is important here!
     }
 }
