@@ -34,7 +34,7 @@ public abstract class ElectricityAsset<T extends ElectricityAsset<?>> extends As
         new MetaItem<>(MetaItemType.READ_ONLY)
     ).withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_SETPOINT = new AttributeDescriptor<>("powerSetpoint", ValueType.NUMBER)
-        .withUnits(UNITS_KILO, UNITS_WATT).withFormat(ValueFormat.NUMBER_1_DP()).withOptional(true);
+        .withUnits(UNITS_KILO, UNITS_WATT).withOptional(true);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MIN = new AttributeDescriptor<>("powerImportMin", ValueType.POSITIVE_NUMBER)
         .withUnits(UNITS_KILO, UNITS_WATT);
     public static final AttributeDescriptor<Double> POWER_IMPORT_MAX = new AttributeDescriptor<>("powerImportMax", ValueType.POSITIVE_NUMBER)
