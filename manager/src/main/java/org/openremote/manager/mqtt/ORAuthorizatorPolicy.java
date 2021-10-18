@@ -112,7 +112,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
 
         List<String> topicTokens = topic.getTokens().stream().map(Token::toString).collect(Collectors.toList());
 
-        if(!connection.realm.equals(topicTokens.get(0))) {
+        if (!connection.realm.equals(topicTokens.get(0))) {
             LOG.warning("Topic should start with the realm of the connection: " + connection);
             return false;
         }

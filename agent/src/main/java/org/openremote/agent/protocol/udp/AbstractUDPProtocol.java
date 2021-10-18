@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.udp;
 
-import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
+import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.model.asset.agent.AgentLink;
 
@@ -27,7 +27,7 @@ import org.openremote.model.asset.agent.AgentLink;
  * This is an abstract UDP client protocol for communicating with UDP servers; concrete implementations must implement
  * {@link #getEncoderDecoderProvider} to provide encoders/decoders for messages of type &lt;T&gt;.
  */
-public abstract class AbstractUDPProtocol<T extends AbstractIOClientProtocol<T, U, W, X, V>, U extends IOAgent<U, T, V>, V extends AgentLink<?>, W, X extends UDPIOClient<W>> extends AbstractIOClientProtocol<T, U, W, X, V> {
+public abstract class AbstractUDPProtocol<T extends AbstractNettyIOClientProtocol<T, U, W, X, V>, U extends IOAgent<U, T, V>, V extends AgentLink<?>, W, X extends UDPIOClient<W>> extends AbstractNettyIOClientProtocol<T, U, W, X, V> {
 
     protected AbstractUDPProtocol(U agent) {
         super(agent);

@@ -35,17 +35,13 @@ public class ProtocolIOClient<W, X extends IOClient<W>> {
     }
 
     public void connect() {
-        ioClient.addConnectionStatusConsumer(status -> {
-            if (connectionStatusConsumer != null) {
-                connectionStatusConsumer.accept(status);
-            }
-        });
+        if (connectionStatusConsumer != null) {
+            ioClient.addConnectionStatusConsumer(status -> connectionStatusConsumer.accept(status));
+        }
 
-        ioClient.addMessageConsumer(msg -> {
-            if (messageConsumer != null) {
-                messageConsumer.accept(msg);
-            }
-        });
+        if (messageConsumer != null) {
+            ioClient.addMessageConsumer(msg -> messageConsumer.accept(msg));
+        }
 
         AbstractIOClientProtocol.LOG.info("Connecting IO client");
         ioClient.connect();

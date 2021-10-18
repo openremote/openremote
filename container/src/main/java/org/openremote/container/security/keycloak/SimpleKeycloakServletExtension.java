@@ -47,16 +47,17 @@ public class SimpleKeycloakServletExtension implements ServletExtension {
     protected static Logger log = Logger.getLogger(KeycloakServletExtension.class);
 
     final protected KeycloakConfigResolver configResolver;
+    final protected AdapterDeploymentContext deploymentContext;
 
     public SimpleKeycloakServletExtension(KeycloakConfigResolver configResolver) {
         this.configResolver = configResolver;
+        deploymentContext = new AdapterDeploymentContext(configResolver);
     }
 
     @Override
     @SuppressWarnings("UseSpecificCatch")
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
 
-        AdapterDeploymentContext deploymentContext = new AdapterDeploymentContext(configResolver);
         servletContext.setAttribute(AdapterDeploymentContext.class.getName(), deploymentContext);
         UndertowUserSessionManagement userSessionManagement = new UndertowUserSessionManagement();
         final NodesRegistrationManagement nodesRegistrationManagement = new NodesRegistrationManagement();

@@ -72,7 +72,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <b>NOTE: Care must be taken when working with Netty {@link ByteBuf} as Netty uses reference counting to manage their
  * lifecycle. Refer to the Netty documentation for more information.</b>
  */
-public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implements IOClient<T> {
+public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implements NettyIOClient<T> {
 
     /**
      * This is intended to be used at the end of a decoder chain where the previous decoder outputs a {@link ByteBuf};

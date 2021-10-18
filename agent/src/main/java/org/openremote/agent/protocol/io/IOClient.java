@@ -19,15 +19,12 @@
  */
 package org.openremote.agent.protocol.io;
 
-import io.netty.channel.ChannelHandler;
 import org.openremote.model.asset.agent.ConnectionStatus;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
- * Represents an IO client that communicates with a server; this is heavily tied to netty and uses the concept of
- * {@link io.netty.channel.ChannelHandler}s for encoding/decoding messages of type &lt;T&gt.
+ * Represents an IO client that communicates with a server
  *
  * @param <T> Defines the message type that the instance will encode/decode
  */
@@ -87,10 +84,4 @@ public interface IOClient<T> {
      * Should return a URI that uniquely identifies this client instance
      */
     String getClientUri();
-
-    /**
-     * Allows appropriate encoders and decoders to be added to the message pipeline; if an {@link IOClient} doesn't
-     * support this then an {@link UnsupportedOperationException} will be thrown, consult the {@link IOClient}'s documentation.
-     */
-    void setEncoderDecoderProvider(Supplier<ChannelHandler[]> encoderDecoderProvider) throws UnsupportedOperationException;
 }
