@@ -324,7 +324,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                 }
 
                                 // Check restricted user
-                                if (identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId())) {
+                                if (identityService.getIdentityProvider().isRestrictedUser(authContext)) {
                                     // Must be asset linked to user
                                     if (!assetStorageService.isUserAsset(authContext.getUserId(),
                                         event.getAssetId())) {

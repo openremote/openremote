@@ -203,7 +203,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public boolean isRestrictedUser(String userId) {
+    public boolean isRestrictedUser(AuthContext authContext) {
         return false;
     }
 

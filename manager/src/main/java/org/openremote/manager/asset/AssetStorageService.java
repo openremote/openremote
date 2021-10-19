@@ -164,7 +164,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                  return false;
              }
 
-             boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
+             boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth);
 
              if (filter == null) {
                  filter = new AssetFilter<>();
@@ -382,7 +382,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             return;
                         }
 
-                        Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? PRIVATE : PROTECTED;
+                        Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext) ? PRIVATE : PROTECTED;
 
                         Asset<?> asset = find(
                             new AssetQuery()
@@ -424,7 +424,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             return;
                         }
 
-                        Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? PRIVATE : PROTECTED;
+                        Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext) ? PRIVATE : PROTECTED;
 
                         if (!authContext.isSuperUser()) {
                             // Force realm to match users

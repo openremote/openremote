@@ -245,7 +245,7 @@ public class ClientEventService implements ContainerService {
                             EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                             if (authorizeEventSubscription(authContext, subscription)) {
-                                boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
+                                boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
                                 eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, subscription);
                                 subscription.setSubscribed(true);
                                 sendToSession(sessionKey, subscription);

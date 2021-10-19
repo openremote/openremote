@@ -135,7 +135,7 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
             if (Pattern.matches(Constants.ASSET_ID_REGEXP, assetId)) {
 
                 Asset<?> asset;
-                if(identityProvider.isRestrictedUser(authContext.getUserId())) {
+                if(identityProvider.isRestrictedUser(authContext)) {
                     Optional<UserAsset> userAsset = assetStorageService.findUserAssets(connection.realm, authContext.getUserId(), assetId).stream().findFirst();
                     asset = userAsset.map(value -> assetStorageService.find(value.getId().getAssetId())).orElse(null);
                 } else {

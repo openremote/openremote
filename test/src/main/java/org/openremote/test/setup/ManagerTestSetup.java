@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
 import org.openremote.container.util.UniqueIdentifierGenerator;
-import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -573,13 +572,8 @@ public class ManagerTestSetup extends ManagerSetup {
 
         // ################################ Make users restricted ###################################
 
-        UserConfiguration testuser3Config = identityService.getUserConfiguration(keycloakTestSetup.testuser3Id);
-        testuser3Config.setRestricted(true);
-        testuser3Config = identityService.mergeUserConfiguration(testuser3Config);
-
-        UserConfiguration buildingUserConfig = identityService.getUserConfiguration(keycloakTestSetup.buildingUserId);
-        testuser3Config.setRestricted(true);
-        buildingUserConfig = identityService.mergeUserConfiguration(buildingUserConfig);
+        identityService.getIdentityProvider().updateUserRoles(tenantBuilding.getRealm(), keycloakTestSetup.testuser3Id, null, RESTRICTED_USER_REALM_ROLE);
+        identityService.getIdentityProvider().updateUserRoles(tenantBuilding.getRealm(), keycloakTestSetup.buildingUserId, null, RESTRICTED_USER_REALM_ROLE);
 
         // ################################ Realm smartcity ###################################
 

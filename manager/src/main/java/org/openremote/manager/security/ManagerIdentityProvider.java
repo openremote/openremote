@@ -77,7 +77,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     boolean isMasterRealmAdmin(String userId);
 
-    boolean isRestrictedUser(String userId);
+    boolean isRestrictedUser(AuthContext authContext);
 
     boolean isUserInTenant(String userId, String realm);
 

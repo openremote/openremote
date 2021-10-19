@@ -1,5 +1,7 @@
 package org.openremote.test.assets
 
+import org.keycloak.adapters.rotation.AdapterTokenVerifier
+import org.openremote.container.security.keycloak.AccessTokenAuthContext
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
@@ -28,7 +30,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
 
         and: "an authenticated admin user"
-        def accessToken = authenticate(
+        def accessTokenString = authenticate(
                 container,
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
@@ -37,14 +39,26 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         ).token
 
         and: "the asset resource"
-        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
-
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessTokenString).proxy(AssetResource.class)
         /* ############################################## READ ####################################### */
 
+        and: "user access tokens"
+        def testUserAccessToken = authenticate(container, MASTER_REALM, KEYCLOAK_CLIENT_ID, "testuser1", "testuser1").token
+        def accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(MASTER_REALM, KEYCLOAK_CLIENT_ID))
+        def testUser1Token = new AccessTokenAuthContext(MASTER_REALM, accessToken)
+
+        testUserAccessToken = authenticate(container, keycloakTestSetup.tenantBuilding.realm, KEYCLOAK_CLIENT_ID, "testuser2", "testuser2").token
+        accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(keycloakTestSetup.tenantBuilding.realm, KEYCLOAK_CLIENT_ID))
+        def testUser2Token = new AccessTokenAuthContext(keycloakTestSetup.tenantBuilding.realm, accessToken)
+
+        testUserAccessToken = authenticate(container, keycloakTestSetup.tenantBuilding.realm, KEYCLOAK_CLIENT_ID, "testuser3", "testuser3").token
+        accessToken = AdapterTokenVerifier.verifyToken(testUserAccessToken, keycloakTestSetup.getKeycloakProvider().getKeycloakDeployment(keycloakTestSetup.tenantBuilding.realm, KEYCLOAK_CLIENT_ID))
+        def testUser3Token = new AccessTokenAuthContext(keycloakTestSetup.tenantBuilding.realm, accessToken)
+
         expect: "some users to be restricted"
-        !identityService.getIdentityProvider().isRestrictedUser(keycloakTestSetup.testuser1Id)
-        !identityService.getIdentityProvider().isRestrictedUser(keycloakTestSetup.testuser2Id)
-        identityService.getIdentityProvider().isRestrictedUser(keycloakTestSetup.testuser3Id)
+        !identityService.getIdentityProvider().isRestrictedUser(testUser1Token)
+        !identityService.getIdentityProvider().isRestrictedUser(testUser2Token)
+        identityService.getIdentityProvider().isRestrictedUser(testUser3Token)
 
         when: "all user assets are retrieved of a realm"
         def userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, null, null)

@@ -87,6 +87,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String DEFAULT_REALM_KEYCLOAK_THEME_DEFAULT = "openremote";
     public static final String KEYCLOAK_GRANT_FILE = "KEYCLOAK_GRANT_FILE";
     public static final String KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
+    public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
 
     protected PersistenceService persistenceService;
     protected TimerService timerService;
@@ -768,6 +769,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
                 createUpdateClient(tenant.getRealm(), clientRepresentation);
 
+                // Add restricted realm role
+                realmResource.roles().create(new RoleRepresentation(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets", false));
+
                 Tenant createdTenant = convert(realmRepresentation, Tenant.class);
                 publishModification(PersistenceEvent.Cause.CREATE, createdTenant);
                 return createdTenant;
@@ -962,9 +966,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public boolean isRestrictedUser(String userId) {
-        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
-        return userConfiguration != null && userConfiguration.isRestricted();
+    public boolean isRestrictedUser(AuthContext authContext) {
+
+        return authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
     }
 
     @Override
@@ -979,7 +983,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             return true;
 
         // Restricted users get nothing
-        if (isRestrictedUser(auth.getUserId()))
+        if (isRestrictedUser(auth))
             return false;
 
         // User must have role
