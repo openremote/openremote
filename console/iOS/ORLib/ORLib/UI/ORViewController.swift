@@ -218,7 +218,9 @@ open class ORViewcontroller : UIViewController {
 
         self.present(alertView, animated: true, completion: nil)
 
-        self.myWebView?.load(URLRequest(url: URL(string: self.appConfig!.url.stringByURLEncoding()!)!))
+        if let applicationConfig = appConfig {
+            self.myWebView?.load(URLRequest(url: URL(string: applicationConfig.url.stringByURLEncoding()!)!))
+        }
     }
 
 }
