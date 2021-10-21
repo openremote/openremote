@@ -157,9 +157,6 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     }
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyIOClient.class);
-    protected final static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
-    protected final static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
-    protected final static long RECONNECT_DELAY_JITTER_MILLIS = 10000L;
     protected final List<Consumer<T>> messageConsumers = new ArrayList<>();
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;

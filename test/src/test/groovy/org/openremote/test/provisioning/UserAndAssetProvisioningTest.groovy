@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.test.protocol.mqtt
+package org.openremote.test.provisioning
 
 import io.moquette.BrokerConstants
+import org.junit.Ignore
 import org.openremote.agent.protocol.mqtt.MQTTAgent
 import org.openremote.agent.protocol.mqtt.MQTTAgentLink
 import org.openremote.agent.protocol.mqtt.MQTTProtocol
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.agent.protocol.websocket.WebsocketAgentLink
-import org.openremote.agent.protocol.websocket.WebsocketHTTPSubscription
-import org.openremote.agent.protocol.websocket.WebsocketSubscription
-import org.openremote.agent.protocol.websocket.WebsocketSubscriptionImpl
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
@@ -35,7 +32,6 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
-import org.openremote.model.asset.ReadAttributeEvent
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.agent.Protocol
@@ -44,21 +40,11 @@ import org.openremote.model.attribute.Attribute
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.UsernamePassword
-import org.openremote.model.event.TriggeredEventSubscription
-import org.openremote.model.event.shared.SharedEvent
-import org.openremote.model.query.filter.StringPredicate
-import org.openremote.model.util.ValueUtil
-import org.openremote.model.value.JsonPathFilter
-import org.openremote.model.value.RegexValueFilter
-import org.openremote.model.value.SubStringValueFilter
-import org.openremote.model.value.ValueFilter
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-
-import javax.ws.rs.core.MediaType
 
 import static org.openremote.container.util.MapAccess.getInteger
 import static org.openremote.container.util.MapAccess.getString
@@ -67,7 +53,8 @@ import static org.openremote.manager.mqtt.MqttBrokerService.MQTT_SERVER_LISTEN_P
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
 import static org.openremote.model.value.ValueType.NUMBER
 
-class MQTTClientProtocolTest extends Specification implements ManagerContainerTrait {
+@Ignore
+class UserAndAssetProvisioningTest extends Specification implements ManagerContainerTrait {
 
     @SuppressWarnings("GroovyAccessibility")
     def "Check websocket client protocol and linked attribute deployment"() {
@@ -112,8 +99,8 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
                 new Attribute<>("readWriteTargetTemp", NUMBER)
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new MQTTAgentLink(agent.id)
-                            .setSubscriptionTopic("${keycloakTestSetup.tenantBuilding.realm}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
-                            .setPublishTopic("${keycloakTestSetup.tenantBuilding.realm}/$clientId/attributevalue/targetTemperature/${managerTestSetup.apartment1LivingroomId}")
+                            .setSubscriptionTopic("${keycloakTestSetup.tenantBuilding.realm}/$clientId/attributevalue/${managerTestSetup.apartment1LivingroomId}/targetTemperature")
+                            .setPublishTopic("${keycloakTestSetup.tenantBuilding.realm}/$clientId/attributevalue/${managerTestSetup.apartment1LivingroomId}/targetTemperature")
                             .setWriteValue("${Protocol.DYNAMIC_VALUE_PLACEHOLDER}")
                     ))
         )

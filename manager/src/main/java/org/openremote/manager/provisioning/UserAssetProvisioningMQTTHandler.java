@@ -17,56 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.mqtt;
+package org.openremote.manager.provisioning;
 
 import io.moquette.broker.subscriptions.Topic;
-import io.moquette.interception.messages.*;
-import org.openremote.container.security.AuthContext;
-import org.openremote.model.Container;
+import io.moquette.interception.messages.InterceptPublishMessage;
+import io.moquette.interception.messages.InterceptSubscribeMessage;
+import io.moquette.interception.messages.InterceptUnsubscribeMessage;
+import org.openremote.manager.mqtt.MQTTHandler;
+import org.openremote.manager.mqtt.MqttConnection;
 import org.openremote.model.syslog.SyslogCategory;
 
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.API;
 
-public class ClientProvisioningCustomHandler implements MQTTCustomHandler {
+/**
+ * This {@link MQTTHandler} is responsible for provisioning service users and assets
+ */
+public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
-    private static final Logger LOG = SyslogCategory.getLogger(API, ClientProvisioningCustomHandler.class);
-    public static final String TOP_LEVEL_TOPIC = "client";
+    private static final Logger LOG = SyslogCategory.getLogger(API, UserAssetProvisioningMQTTHandler.class);
+    public static final String TOP_LEVEL_TOPIC = "provisioning";
 
     @Override
-    public String getName() {
-        return this.getClass().getSimpleName();
+    public boolean topicMatches(Topic topic) {
+        return false;
     }
 
     @Override
-    public void start(Container container) throws Exception {
-
+    protected Logger getLogger() {
+        return LOG;
     }
 
     @Override
-    public void stop() throws Exception {
-
-    }
-
-    @Override
-    public void onConnect(MqttConnection connection, InterceptConnectMessage msg) {
-
-    }
-
-    @Override
-    public void onDisconnect(MqttConnection connection, InterceptDisconnectMessage msg) {
-
-    }
-
-    @Override
-    public void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg) {
-
-    }
-
-    @Override
-    public boolean canSubscribe(AuthContext authContext, MqttConnection connection, Topic topic) {
+    public boolean canSubscribe(MqttConnection connection, Topic topic) {
         if (!TOP_LEVEL_TOPIC.equals(topic.headToken().toString())) {
             return false;
         }
@@ -84,22 +68,22 @@ public class ClientProvisioningCustomHandler implements MQTTCustomHandler {
     }
 
     @Override
-    public boolean canPublish(AuthContext authContext, MqttConnection connection, Topic topic) {
-        return false;
-    }
-
-    @Override
-    public boolean onSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg) {
-        return false;
-    }
-
-    @Override
-    public void onUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg) {
+    public void doSubscribe(MqttConnection connection, Topic topic, InterceptSubscribeMessage msg) {
 
     }
 
     @Override
-    public boolean onPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg) {
+    public void doUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg) {
+
+    }
+
+    @Override
+    public boolean canPublish(MqttConnection connection, Topic topic) {
         return false;
+    }
+
+    @Override
+    public void doPublish(MqttConnection connection, Topic topic, InterceptPublishMessage msg) {
+
     }
 }

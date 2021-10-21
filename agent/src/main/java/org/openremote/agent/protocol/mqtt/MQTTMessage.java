@@ -28,4 +28,12 @@ public class MQTTMessage<T> {
         this.topic = topic;
         this.payload = payload;
     }
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public T getPayload() {
+        return payload;
+    }
 }

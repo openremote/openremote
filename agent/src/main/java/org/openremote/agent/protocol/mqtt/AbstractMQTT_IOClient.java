@@ -20,14 +20,18 @@
 package org.openremote.agent.protocol.mqtt;
 
 import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.MqttClientState;
-import com.hivemq.client.mqtt.MqttWebSocketConfig;
-import com.hivemq.client.mqtt.MqttWebSocketConfigBuilder;
+import com.hivemq.client.mqtt.exceptions.ConnectionClosedException;
+import com.hivemq.client.mqtt.exceptions.ConnectionFailedException;
+import com.hivemq.client.mqtt.lifecycle.MqttDisconnectSource;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3ClientBuilder;
+import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3ConnAckException;
+import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3DisconnectException;
+import com.hivemq.client.mqtt.mqtt3.lifecycle.Mqtt3ClientDisconnectedContext;
 import com.hivemq.client.mqtt.mqtt3.message.connect.Mqtt3ConnectBuilder;
 import com.hivemq.client.mqtt.mqtt3.message.connect.connack.Mqtt3ConnAck;
 import org.openremote.agent.protocol.io.IOClient;
+import org.openremote.container.Container;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.auth.UsernamePassword;
@@ -39,6 +43,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,6 +53,7 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S>> {
 
+    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMQTT_IOClient.class);
     protected String clientId;
     protected String host;
     protected int port;
@@ -56,13 +63,14 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     protected Mqtt3AsyncClient client;
     protected final Set<Consumer<ConnectionStatus>> connectionStatusConsumers = new HashSet<>();
     protected final Map<String, Set<Consumer<MQTTMessage<S>>>> topicConsumerMap = new HashMap<>();
-    public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractMQTT_IOClient.class);
+    protected ScheduledExecutorService executorService;
+    protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
+    protected boolean disconnected = true; // Need to use this flag to cancel client reconnect task
 
     protected AbstractMQTT_IOClient(String host, int port, boolean secure, UsernamePassword usernamePassword, URI websocketURI) {
         this(UniqueIdentifierGenerator.generateId(), host, port, secure, usernamePassword, websocketURI);
     }
 
-    @SuppressWarnings("unchecked")
     protected AbstractMQTT_IOClient(String clientId, String host, int port, boolean secure, UsernamePassword usernamePassword, URI websocketURI) {
         this.clientId = clientId;
         this.host = host;
@@ -70,10 +78,44 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         this.secure = secure;
         this.usernamePassword = usernamePassword;
         this.websocketURI = websocketURI;
+        this.executorService = Container.EXECUTOR_SERVICE;
 
         Mqtt3ClientBuilder builder = MqttClient.builder()
             .useMqttVersion3()
-            .identifier(clientId);
+            .identifier(clientId)
+            .addConnectedListener(context -> {
+                LOG.info("Client is connected from the broker '" + getClientUri() + "'");
+                onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+            })
+            .addDisconnectedListener(context -> {
+                boolean userClosed = context.getSource() == MqttDisconnectSource.USER;
+                if (disconnected) {
+                    context.getReconnector().reconnect(false);
+                } else {
+                    if (this.usernamePassword != null) {
+                        ((Mqtt3ClientDisconnectedContext) context).getReconnector().connectWith()
+                            .simpleAuth()
+                            .username(usernamePassword.getUsername())
+                            .password(usernamePassword.getPassword().getBytes())
+                            .applySimpleAuth()
+                            .applyConnect();
+                    }
+                }
+                if (context.getCause() instanceof Mqtt3DisconnectException) {
+                    LOG.info("Client disconnect '" + getClientUri() + "': initiator=" + context.getSource());
+                } else if (context.getCause() instanceof Mqtt3ConnAckException) {
+                    LOG.info("Connection rejected by the broker '" + getClientUri() + "': reasonCode=" + ((Mqtt3ConnAckException)context.getCause()).getMqttMessage().getReturnCode() + ", initiator=" + context.getSource());
+                } else if (context.getCause() instanceof ConnectionClosedException) {
+                    LOG.info("Connection closed by " + context.getSource() + " '" + getClientUri() + "': initiator=" + context.getSource());
+                } else if (context.getCause() instanceof ConnectionFailedException) {
+                    LOG.log(Level.INFO, "Connection failed '" + getClientUri() + "': initiator=" + context.getSource(), context.getCause());
+                }
+                onConnectionStatusChanged(userClosed ? ConnectionStatus.DISCONNECTED : ConnectionStatus.WAITING);
+            })
+            .automaticReconnect()
+            .initialDelay(RECONNECT_DELAY_INITIAL_MILLIS, TimeUnit.MILLISECONDS)
+            .maxDelay(RECONNECT_DELAY_MAX_MILLIS, TimeUnit.MILLISECONDS)
+            .applyAutomaticReconnect();
 
         if (secure) {
             builder = builder.sslWithDefaultConfig();
@@ -82,12 +124,11 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         if (websocketURI != null) {
             builder = builder
                 .serverHost(websocketURI.getHost())
-                .serverPort(websocketURI.getPort());
-
-            MqttWebSocketConfigBuilder webSocketConfigBuilder = MqttWebSocketConfig.builder()
-                .serverPath(websocketURI.getPath())
-                .queryString(websocketURI.getQuery());
-            builder = builder.webSocketConfig(webSocketConfigBuilder.build());
+                .serverPort(websocketURI.getPort())
+                .webSocketConfig()
+                    .serverPath(websocketURI.getPath())
+                    .queryString(websocketURI.getQuery())
+                .applyWebSocketConfig();
         } else {
             builder = builder
                 .serverHost(host)
@@ -99,6 +140,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Invalid MQTT client config for client '" + getClientUri() + "'", e);
             client = null;
+            connectionStatus = ConnectionStatus.ERROR;
         }
     }
 
@@ -134,9 +176,16 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             return;
         }
 
-        Set<Consumer<MQTTMessage<S>>> consumers = topicConsumerMap.computeIfAbsent(topic, (t) -> new HashSet<>());
-        boolean initialise = consumers.isEmpty();
-        consumers.add(messageConsumer);
+        boolean initialise;
+        Set<Consumer<MQTTMessage<S>>> consumers;
+
+        synchronized (topicConsumerMap) {
+            consumers = topicConsumerMap.computeIfAbsent(topic, (t) -> new HashSet<>());
+            synchronized (consumers) {
+                initialise = consumers.isEmpty();
+                consumers.add(messageConsumer);
+            }
+        }
 
         if (initialise) {
             addSubscription(
@@ -145,16 +194,26 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                     if (!topicConsumerMap.containsKey(topic)) {
                         return;
                     }
-
-                    consumers.forEach(consumer -> {
-                        try {
-                            consumer.accept(message);
-                        } catch (Exception e) {
-                            LOG.log(Level.WARNING, "Message consumer threw an exception", e);
-                        }
-                    });
+                    synchronized (consumers) {
+                        consumers.forEach(consumer -> {
+                            try {
+                                consumer.accept(message);
+                            } catch (Exception e) {
+                                LOG.log(Level.WARNING, "Message consumer threw an exception", e);
+                            }
+                        });
+                    }
                 },
-                () -> consumers.remove(messageConsumer));
+                () -> {
+                    synchronized (consumers) {
+                        consumers.remove(messageConsumer);
+                        if (consumers.isEmpty()) {
+                            synchronized (topicConsumerMap) {
+                                topicConsumerMap.remove(topic);
+                            }
+                        }
+                    }
+                });
         }
     }
 
@@ -164,20 +223,27 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     public void removeMessageConsumer(String topic, Consumer<MQTTMessage<S>> messageConsumer) {
-        topicConsumerMap.computeIfPresent(topic, (t, consumers) -> {
-            if (consumers.remove(messageConsumer) && consumers.isEmpty()) {
-                removeSubscription(topic);
-                return null;
-            }
-            return consumers;
-        });
+        synchronized (topicConsumerMap) {
+            topicConsumerMap.computeIfPresent(topic, (t, consumers) -> {
+                //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized (consumers) {
+                    if (consumers.remove(messageConsumer) && consumers.isEmpty()) {
+                        removeSubscription(topic);
+                        return null;
+                    }
+                    return consumers;
+                }
+            });
+        }
     }
 
     @Override
     public void removeAllMessageConsumers() {
-        Set<String> topics = new HashSet<>(topicConsumerMap.keySet());
-        topicConsumerMap.clear();
-        topics.forEach(this::removeSubscription);
+        synchronized (topicConsumerMap) {
+            Set<String> topics = new HashSet<>(topicConsumerMap.keySet());
+            topicConsumerMap.clear();
+            topics.forEach(this::removeSubscription);
+        }
     }
 
     protected void addSubscription(String topic, Consumer<MQTTMessage<S>> onPublish, Runnable onFailure) {
@@ -236,38 +302,26 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
 
     @Override
     public ConnectionStatus getConnectionStatus() {
-        if (client != null) {
-            MqttClientState state = client.getState();
-            switch (state) {
-
-                case DISCONNECTED:
-                    return ConnectionStatus.DISCONNECTED;
-                case CONNECTING:
-                case CONNECTING_RECONNECT:
-                    return ConnectionStatus.CONNECTING;
-                case CONNECTED:
-                    return ConnectionStatus.CONNECTED;
-                case DISCONNECTED_RECONNECT:
-                    return ConnectionStatus.WAITING;
-            }
-        }
-
-        return ConnectionStatus.ERROR;
+        return connectionStatus;
     }
 
     @Override
     public void connect() {
-        if (client == null) {
-            LOG.info("Cannot connect as client is invalid  '" + getClientUri() + "'");
-            return;
+        synchronized (this) {
+            if (getConnectionStatus() != ConnectionStatus.DISCONNECTED) {
+                LOG.finer("Must be disconnected and not in error before calling connect: " + getClientUri());
+                return;
+            }
+
+            LOG.fine("Connecting MQTT Client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
-        if (getConnectionStatus() != ConnectionStatus.DISCONNECTED) {
-            LOG.info("Client must be disconnected before calling connect '" + getClientUri() + "'");
-            return;
-        }
+        this.disconnected = false;
 
-        Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith();
+        LOG.info("Establishing connection: " + getClientUri());
+
+        Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith().keepAlive(5);
 
         if (usernamePassword != null) {
             completableFutureSend = completableFutureSend.simpleAuth()
@@ -276,21 +330,22 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
                 .applySimpleAuth();
         }
 
-        completableFutureSend.send()
-        .whenComplete((connAck, throwable) -> {
-            if (throwable != null) {
-                // Failure
-                LOG.log(Level.WARNING, "Failed to connect to MQTT broker '" + getClientUri() + "'", throwable);
-            } else {
-                // Connected
-                LOG.log(Level.INFO, "Connected to MQTT broker '" + getClientUri() + "'");
-                connectionStatusConsumers.forEach(consumer -> {
-                    try {
-                        consumer.accept(ConnectionStatus.CONNECTED);
-                    } catch (Exception e) {
-                        LOG.log(Level.WARNING, "Connection status consumer threw an exception", e);
-                    }
-                });
+        completableFutureSend.send();
+    }
+
+    protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        this.connectionStatus = connectionStatus;
+
+        executorService.submit(() -> {
+            synchronized (connectionStatusConsumers) {
+                connectionStatusConsumers.forEach(
+                    consumer -> {
+                        try {
+                            consumer.accept(connectionStatus);
+                        } catch (Exception e) {
+                            LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
+                        }
+                    });
             }
         });
     }
@@ -298,25 +353,25 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     @Override
     public void disconnect() {
         if (client == null) {
-            LOG.info("Cannot disconnect as client is invalid  '" + getClientUri() + "'");
             return;
         }
 
-        client.disconnect()
-            .whenComplete((status, throwable) -> {
+        synchronized (this) {
+            if (connectionStatus == ConnectionStatus.DISCONNECTED) {
+                LOG.finest("Already disconnected: " + getClientUri());
+                return;
+            }
+
+            LOG.finest("Disconnecting IO client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+        }
+
+        this.disconnected = true;
+
+        client.disconnect().whenComplete((unused, throwable) -> {
+
             if (throwable != null) {
-                // Failure
-                LOG.log(Level.WARNING, "Failed to disconnect from MQTT broker '" + getClientUri() + "'", throwable);
-            } else {
-                // Disconnected
-                LOG.log(Level.INFO, "Disconnected from MQTT broker '" + getClientUri() + "'");
-                connectionStatusConsumers.forEach(consumer -> {
-                    try {
-                        consumer.accept(ConnectionStatus.DISCONNECTED);
-                    } catch (Exception e) {
-                        LOG.log(Level.WARNING, "Connection status consumer threw an exception", e);
-                    }
-                });
+                LOG.info("Failed to disconnect");
             }
         });
     }
