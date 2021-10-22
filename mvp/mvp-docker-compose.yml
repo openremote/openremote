@@ -15,11 +15,12 @@ networks:
     driver: overlay
     driver_opts:
       encrypted: "true"
+    attachable: true
   private:
     driver: overlay
     driver_opts:
       encrypted: "true"
-    attachable: false
+    attachable: true
 
 volumes:
   proxy-data:
