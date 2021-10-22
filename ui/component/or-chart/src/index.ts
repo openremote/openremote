@@ -819,6 +819,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         const hostElement = document.body;
         const dialog = new OrMwcAttributeSelector();
         dialog.showOnlyDatapointAttrs = true;
+        dialog.multiSelect = true;
         dialog.selectedAttributes = this._getSelectedAttributes();
         dialog.isOpen = true;
         dialog.addEventListener(OrAddAttributeRefsEvent.NAME, (ev: any) => this._addAttribute(ev.detail.selectedAttributes));

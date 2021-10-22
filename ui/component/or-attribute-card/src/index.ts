@@ -17,12 +17,12 @@ import {AssetModelUtil, DefaultColor3, DefaultColor4, manager, Util} from "@open
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
 import "chartjs-adapter-moment";
 import {OrChartConfig} from "@openremote/or-chart";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
-import {OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrAddAttributeRefsEvent, OrMwcAttributeSelector, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 
 export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
@@ -337,7 +337,7 @@ export class OrAttributeCard extends LitElement {
                 <div class="panel panel-empty">
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openAttributePicker()}"></or-mwc-input>
                         </div>
                     </div>
                 </div>
@@ -351,7 +351,7 @@ export class OrAttributeCard extends LitElement {
                     <div class="panel-content-wrapper">
                         <div class="panel-content">
                             <span>${i18next.t("couldNotRetrieveAttribute")}</span>
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openAttributePicker()}"></or-mwc-input>
                         </div>
                     </div>
                 </div>
@@ -454,6 +454,7 @@ export class OrAttributeCard extends LitElement {
                 `;
 
                 this._dialog.dismissAction = null;
+                this._dialog.open();
             }
             else if (dialogContent === "editCurrentValue") {
 
@@ -491,47 +492,10 @@ export class OrAttributeCard extends LitElement {
                 `;
 
                 this._dialog.dismissAction = null;
+                this._dialog.open();
             }
             else {
-
-                this._dialog.dialogTitle = i18next.t("addAttribute");
-
-                this._dialog.dialogActions = [
-                    {
-                        actionName: "cancel",
-                        content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
-                        action: () => {
-                            // Nothing to do here
-                        }
-                    },
-                    {
-                        actionName: "yes",
-                        default: true,
-                        content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" data-mdc-dialog-action="yes"></or-mwc-input>`,
-                        action: () => {
-                            const dialog: OrMwcDialog = this.shadowRoot!.getElementById("mdc-dialog") as OrMwcDialog;
-                            if (dialog.shadowRoot && dialog.shadowRoot.getElementById("attribute-picker")) {
-                                const elm = dialog.shadowRoot.getElementById("attribute-picker") as OrMwcInput;
-                                this._setAttribute(elm.value as string);
-                            }
-                        }
-                    }
-                ];
-
-                this._dialog.dialogContent = html`
-                    <or-asset-tree id="chart-asset-tree"  readonly
-                        .selectedIds="${this.asset ? [this.asset.id] : null}"></or-asset-tree>
-                    ${this.asset && this.asset.attributes ? html`
-                        <or-mwc-input id="attribute-picker" 
-                            style="display:flex;"
-                            .label="${i18next.t("attribute")}" 
-                            .type="${InputType.LIST}"
-                            .options="${this._getAttributeOptions()}"
-                            .value="${this.assetAttributes && this.assetAttributes.length > 0 ? this.assetAttributes[0][1].name : undefined}"></or-mwc-input>
-                    ` : ``}
-                `;
-
-                this._dialog.dismissAction = null;
+                this._openAttributePicker();
             }
         }
     }
@@ -539,8 +503,27 @@ export class OrAttributeCard extends LitElement {
     protected _openDialog(dialogContent?: ContextMenuOptions) {
         if (this._dialog) {
             this._refreshDialog(dialogContent);
-            this._dialog.open();
         }
+    }
+
+    protected _openAttributePicker() {
+        const hostElement = document.body;
+
+        const dialog = new OrMwcAttributeSelector();
+        dialog.isOpen = true;
+        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: any) => {
+            // handle selected attrs
+            const attrRef = ev.detail.selectedAttributes[0];
+            try {
+                const response = await manager.rest.api.AssetResource.get(attrRef.id);
+                this.asset = response.data;
+                this._setAttribute(attrRef.name as string);
+            } catch (e) {
+                console.error("Failed to get assets requested in settings", e);
+            }
+        });
+        hostElement.append(dialog);
+        return dialog;
     }
 
     protected async _onTreeSelectionChanged(event: OrAssetTreeSelectionEvent) {

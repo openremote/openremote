@@ -357,6 +357,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         const dialog = new OrMwcAttributeSelector();
         dialog.isOpen = true;
         dialog.showOnlyDatapointAttrs = true;
+        dialog.multiSelect = true;
         dialog.selectedAttributes = this.config.selectedAttributes;
         dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
             const selectedAttributes = ev.detail.selectedAttributes;

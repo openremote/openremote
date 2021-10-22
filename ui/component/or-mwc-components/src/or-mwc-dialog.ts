@@ -3,7 +3,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType} from "./or-mwc-input";
+import {InputType, OrInputChangedEvent} from "./or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import {DefaultColor2, DefaultColor4, DefaultColor5, Util } from "@openremote/core";
 import { Asset, AssetEvent, Attribute, AttributeRef, WellknownMetaItems } from "@openremote/model";
@@ -367,6 +367,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
 
     @property({type: Array, attribute: false})
     public selectedAttributes: AttributeRef[] = [];
+
+    @property({type: Boolean})
+    public multiSelect?: boolean = false;
     
     constructor() {
         super();
@@ -447,12 +450,25 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                     <div class="attributes-header">
                         <or-translate value="attribute_plural"></or-translate>
                     </div>
-                    <div style="display: grid">
-                        <or-mwc-list 
-                                id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}"
-                                .values="${this.selectedAttributes.map(e => e.id === this.selectedAsset!.id && e.name!)}"
-                                @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._addRemoveAttrs(ev)}"></or-mwc-list>
-                    </div>
+                    ${this.multiSelect
+                        ?
+                            html`<div style="display: grid">
+                                <or-mwc-list 
+                                        id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}"
+                                        .values="${this.selectedAttributes.map(e => e.id === this.selectedAsset!.id && e.name!)}"
+                                        @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._addRemoveAttrs(ev)}"></or-mwc-list>
+                            </div>`
+                        :
+                            html`<or-mwc-input id="attribute-selector"
+                                    style="display:flex;"
+                                    .label="${i18next.t("attribute")}"
+                                    .type="${InputType.LIST}"
+                                    .options="${listItems.map(item => ([item.value, item.text]))}"
+                                    @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                        this.selectedAttributes = [{id: this.selectedAsset!.id, name: ev.detail.value}]; 
+                                        this.reRenderDialog()}
+                                    }"></or-mwc-input>`
+                    }
                 ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
                 </div>
         `;
