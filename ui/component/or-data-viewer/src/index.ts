@@ -235,7 +235,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
 
         if (panelConfig && panelConfig.type === "kpi") {
             content = html`
-                <or-attribute-card panelName="${panelName}" .config="${this.config.chartConfig}"></or-attribute-card>
+                <or-attribute-card panelName="${panelName}" .config="${this.config.chartConfig}" .realm="${this.realm}"></or-attribute-card>
             `;
         }
         return content;

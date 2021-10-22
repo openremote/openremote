@@ -402,12 +402,12 @@ export class OrChart extends translate(i18next)(LitElement) {
         this.loadSettings();
     }
 
-    async updated(changedProperties: PropertyValues) {
+    updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
 
         if (changedProperties.has("realm")) {
             this.assets = [];
-            await this.loadSettings();
+            this.loadSettings();
         }
 
         const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp")

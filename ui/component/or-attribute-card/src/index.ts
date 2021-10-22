@@ -185,6 +185,9 @@ export class OrAttributeCard extends LitElement {
     @property()
     private data?: ValueDatapoint<any>[] = undefined;
 
+    @property({type: String})
+    public realm?: string;
+
     @property()
     private mainValue?: number;
     @property()
@@ -240,13 +243,14 @@ export class OrAttributeCard extends LitElement {
     }
 
     updated(changedProperties: PropertyValues) {
-        // if (changedProperties.has("assetAttributes")) {
-        //     if (this._dialog && this._dialog.isOpen) {
-        //         this._refreshDialog();
-        //     }
-        // }
 
-        const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp") || changedProperties.has("timestamp") || changedProperties.has("assetAttributes");
+        if (changedProperties.has("realm")) {
+            this.assets = [];
+            this.loadSettings();
+        }
+
+        const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp")
+            || changedProperties.has("timestamp") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
 
         if (reloadData) {
             this.data = undefined;
@@ -603,6 +607,10 @@ export class OrAttributeCard extends LitElement {
         this.deltaFormat = "absolute";
         this.mainValueDecimals = 0;
 
+        if (!this.realm) {
+            this.realm = manager.getRealm();
+        }
+
         const configStr = await manager.console.retrieveData("OrChartConfig");
 
         if (!configStr || !this.panelName) {
@@ -610,10 +618,15 @@ export class OrAttributeCard extends LitElement {
         }
 
         const viewSelector = window.location.hash;
+        let allConfigs: OrChartConfig[] = [];
         let config: OrChartConfig;
 
         try {
-            config = JSON.parse(configStr) as OrChartConfig;
+            allConfigs = JSON.parse(configStr);
+            if (!Array.isArray(allConfigs)) {
+                manager.console.storeData("OrChartConfig", JSON.stringify([allConfigs]));
+            }
+            config = allConfigs.find(e => e.realm === this.realm) as OrChartConfig;
         } catch (e) {
             console.error("Failed to load chart config", e);
             manager.console.storeData("OrChartConfig", null);
@@ -629,7 +642,8 @@ export class OrAttributeCard extends LitElement {
         if (!view.attributeRefs) {
             // Old/invalid config format remove it
             delete config.views[viewSelector][this.panelName];
-            manager.console.storeData("OrChartConfig", JSON.stringify(config));
+            const cleanData = [...allConfigs.filter(e => e.realm !== this.realm), config];
+            manager.console.storeData("OrChartConfig", JSON.stringify(cleanData));
             return;
         }
 
@@ -654,7 +668,9 @@ export class OrAttributeCard extends LitElement {
                 const response = await manager.rest.api.AssetResource.queryAssets(query);
                 const assets = response.data || [];
                 view.attributeRefs = view.attributeRefs.filter((attrRef) => !!assets.find((asset) => asset.id === attrRef.id && asset.attributes && asset.attributes.hasOwnProperty(attrRef.name!)));
-                manager.console.storeData("OrChartConfig", JSON.stringify(config));
+
+                allConfigs = [...allConfigs.filter(e => e.realm !== this.realm), config];
+                manager.console.storeData("OrChartConfig", JSON.stringify(allConfigs));
                 this.assets = assets.filter((asset) => view.attributeRefs!.find((attrRef) => attrRef.id === asset.id));
             } catch (e) {
                 console.error("Failed to get assets requested in settings", e);
@@ -683,11 +699,13 @@ export class OrAttributeCard extends LitElement {
 
         const viewSelector = window.location.hash;
         const configStr = await manager.console.retrieveData("OrChartConfig");
+        let allConfigs: OrChartConfig[] = [];
         let config: OrChartConfig | undefined;
 
         if (configStr) {
             try {
-                config = JSON.parse(configStr) as OrChartConfig;
+                allConfigs = JSON.parse(configStr);
+                config = allConfigs.find(e => e.realm === this.realm);
             } catch (e) {
                 console.error("Failed to load chart config", e);
             }
@@ -695,9 +713,9 @@ export class OrAttributeCard extends LitElement {
 
         if (!config) {
             config = {
+                realm: this.realm,
                 views: {
-                    [viewSelector]: {
-                    }
+                    [viewSelector]: {}
                 }
             }
         }
@@ -705,6 +723,7 @@ export class OrAttributeCard extends LitElement {
         if (!this.assets || !this.assetAttributes || this.assets.length === 0 || this.assetAttributes.length === 0) {
             delete config.views[viewSelector][this.panelName];
         } else {
+            config.realm = this.realm;
             config.views[viewSelector][this.panelName] = {
                 attributeRefs: this.assetAttributes.map(([index, attr]) => {
                     const asset = this.assets[index];
@@ -716,7 +735,8 @@ export class OrAttributeCard extends LitElement {
             };
         }
 
-        manager.console.storeData("OrChartConfig", JSON.stringify(config));
+        allConfigs = [...allConfigs.filter(e => e.realm !== this.realm), config];
+        manager.console.storeData("OrChartConfig", JSON.stringify(allConfigs));
     }
 
     protected async loadData() {
