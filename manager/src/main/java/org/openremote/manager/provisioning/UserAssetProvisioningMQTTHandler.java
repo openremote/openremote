@@ -32,12 +32,14 @@ import java.util.logging.Logger;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 /**
- * This {@link MQTTHandler} is responsible for provisioning service users and assets
+ * This {@link MQTTHandler} is responsible for provisioning service users and assets and authenticating the client
+ * against the configured {@link org.openremote.model.provisioning.ProvisioningConfig}s.
  */
 public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
-    private static final Logger LOG = SyslogCategory.getLogger(API, UserAssetProvisioningMQTTHandler.class);
+    protected static final Logger LOG = SyslogCategory.getLogger(API, UserAssetProvisioningMQTTHandler.class);
     public static final String TOP_LEVEL_TOPIC = "provisioning";
+    protected ProvisioningService provisioningService;
 
     @Override
     public boolean topicMatches(Topic topic) {

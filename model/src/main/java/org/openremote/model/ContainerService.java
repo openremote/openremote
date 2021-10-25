@@ -51,7 +51,9 @@ public interface ContainerService {
      * Gets the priority of this service which is used to determine initialization order when services are auto
      * discovered; services with a lower priority are initialized and started first.
      */
-    int getPriority();
+    default int getPriority() {
+        return DEFAULT_PRIORITY;
+    }
 
     /**
      * All services are initialized in the order they have been added to the container (if container started with

@@ -105,11 +105,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
     protected List<String> forceChargeAssetIds = new ArrayList<>();
 
     @Override
-    public int getPriority() {
-        return DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);

@@ -80,11 +80,6 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
     protected final Map<String, WebsocketIOClient<String>> clientRealmMap = new HashMap<>();
 
     @Override
-    public int getPriority() {
-        return DEFAULT_PRIORITY;
-    }
-
-    @Override
     public void init(Container container) throws Exception {
         executorService = container.getExecutorService();
         assetStorageService = container.getService(AssetStorageService.class);
