@@ -13,8 +13,8 @@ services:
       file: deploy.yml
       service: keycloak
     volumes:
-      # Map custom themes
-      #- ../deployment/keycloak/themes:/deployment/keycloak/themes
+    #   Map custom themes
+    #  - ../deployment:/deployment
       - ./disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
     # Access directly if needed on localhost
     ports:
