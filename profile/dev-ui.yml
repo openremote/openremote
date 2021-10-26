@@ -1,0 +1,56 @@
+# OpenRemote v3
+#
+# Profile for doing UI development work.
+#
+# Please see profile/deploy.yml for configuration details for each service.
+#
+version: '2.4'
+
+volumes:
+  temp-data:
+
+services:
+
+  keycloak:
+    extends:
+      file: deploy.yml
+      service: keycloak
+    volumes:
+      # Map custom themes
+      #- ../deployment/keycloak/themes:/deployment/keycloak/themes
+      - ./disable-theme-cache.cli:/opt/jboss/startup-scripts/disable-theme-cache.cli
+    # Access directly if needed on localhost
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-http://localhost:8080}/auth
+
+  postgresql:
+    extends:
+      file: deploy.yml
+      service: postgresql
+    volumes:
+      - temp-data:/tmp
+    # Access directly if needed on localhost
+    ports:
+      - "5432:5432"
+
+  manager:
+    extends:
+      file: deploy.yml
+      service: manager
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    volumes:
+      - temp-data:/tmp
+    environment:
+      SETUP_WIPE_CLEAN_INSTALL: true
+      EXTERNAL_URL: http://localhost:8080
+      DEV_MODE: true
+    ports:
+      - "8080:8080"
