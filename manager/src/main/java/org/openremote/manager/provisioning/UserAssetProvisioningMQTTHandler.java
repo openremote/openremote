@@ -39,7 +39,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, UserAssetProvisioningMQTTHandler.class);
     public static final String TOP_LEVEL_TOPIC = "provisioning";
-    protected ProvisioningService provisioningService;
+    //protected ProvisioningService provisioningService;
 
     @Override
     public boolean topicMatches(Topic topic) {
