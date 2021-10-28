@@ -24,28 +24,28 @@ import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
 import io.moquette.broker.security.IAuthenticator;
 import io.moquette.interception.InterceptHandler;
-import org.apache.camel.builder.RouteBuilder;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.mqtt.MqttMessageBuilders;
+import io.netty.handler.codec.mqtt.MqttPublishMessage;
+import io.netty.handler.codec.mqtt.MqttQoS;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
-import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.event.TriggeredEventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.ValueUtil;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -53,12 +53,12 @@ import java.util.stream.Collectors;
 import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.manager.event.ClientEventService.getSessionKey;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
 public class MqttBrokerService implements ContainerService, IAuthenticator {
 
     public static final int PRIORITY = MED_PRIORITY;
+    public static final String INTERNAL_CLIENT_ID = "ManagerInternal";
     private static final Logger LOG = SyslogCategory.getLogger(API, MqttBrokerService.class);
 
     public static final String MQTT_CLIENT_QUEUE = "seda://MqttClientQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
@@ -99,32 +99,6 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
             active = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
-
-        mqttBroker = new Server();
-
-        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-
-                from(MQTT_CLIENT_QUEUE)
-                        .routeId("MqttClientEvents")
-                        .choice()
-                        .when(body().isInstanceOf(TriggeredEventSubscription.class))
-                        .process(exchange -> {
-                            String clientId = getSessionKey(exchange);
-                            @SuppressWarnings("unchecked")
-                            TriggeredEventSubscription<SharedEvent> triggeredEventSubscription = exchange.getIn().getBody(TriggeredEventSubscription.class);
-                            MqttConnection connection = clientIdConnectionMap.get(clientId);
-
-                            if (connection == null) {
-                                return;
-                            }
-
-                            onSubscriptionTriggered(connection, triggeredEventSubscription);
-                        })
-                        .end();
-            }
-        });
     }
 
     @Override
@@ -151,6 +125,7 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
             }
         }
 
+        mqttBroker = new Server();
         mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, this, new ORAuthorizatorPolicy(identityProvider, this, assetStorageService, clientEventService));
         LOG.fine("Started MQTT broker");
     }
@@ -233,21 +208,19 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
         }
     }
 
-    public static Map<String, Object> prepareHeaders(MqttConnection connection) {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(ConnectionConstants.SESSION_KEY, connection.getClientId());
-        headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
-        headers.put(Constants.AUTH_CONTEXT, connection.getAuthContext());
-        return headers;
-    }
+    public void publishMessage(String topic, Object data, MqttQoS qoS) {
+        try {
+            ByteBuf payload = Unpooled.copiedBuffer(ValueUtil.asJSON(data).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)), Charset.defaultCharset());
 
-    protected void onSubscriptionTriggered(MqttConnection connection, TriggeredEventSubscription<SharedEvent> triggeredEventSubscription) {
-        triggeredEventSubscription.getEvents()
-            .forEach(event -> {
-                Consumer<SharedEvent> eventConsumer = connection.subscriptionHandlerMap.get(triggeredEventSubscription.getSubscriptionId());
-                if (eventConsumer != null) {
-                    eventConsumer.accept(event);
-                }
-            });
+            MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
+                .qos(qoS)
+                .topicName(topic)
+                .payload(payload)
+                .build();
+
+            mqttBroker.internalPublish(publishMessage, INTERNAL_CLIENT_ID);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Couldn't send AttributeEvent to MQTT client", e);
+        }
     }
 }

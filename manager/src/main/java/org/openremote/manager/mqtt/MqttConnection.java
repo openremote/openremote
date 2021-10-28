@@ -27,32 +27,18 @@ public class MqttConnection {
 
     protected static final Logger LOG = Logger.getLogger(MqttConnection.class.getSimpleName());
     protected final String realm;
-    protected final String username; // This is OAuth clientId
-    protected final String password;
-    protected final boolean credentials;
-    protected final Map<String, Consumer<SharedEvent>> subscriptionHandlerMap = new HashMap<>();
+    protected String username; // This is OAuth clientId
+    protected String password;
+    protected boolean credentials;
     protected final String clientId;
     protected Supplier<String> tokenSupplier;
     protected ManagerKeycloakIdentityProvider identityProvider;
 
     public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password) {
         this.realm = realm;
-        this.username = username;
-        this.password = password;
         this.clientId = clientId;
         this.identityProvider = identityProvider;
-
-        credentials = !TextUtil.isNullOrEmpty(realm)
-            && !TextUtil.isNullOrEmpty(username)
-            && !TextUtil.isNullOrEmpty(password);
-
-        if (credentials) {
-            String tokenEndpointUri = identityProvider.getTokenUri(realm).toString();
-            OAuthGrant grant = new OAuthClientCredentialsGrant(tokenEndpointUri, username, password, null);
-            tokenSupplier = identityProvider.getAccessTokenSupplier(grant);
-        } else {
-            LOG.fine("MQTT connection with no credentials so will have limited capabilities: " + this);
-        }
+        setCredentials(username, password);
     }
 
     public String getRealm() {
@@ -65,10 +51,6 @@ public class MqttConnection {
 
     public String getPassword() {
         return this.password;
-    }
-
-    public Map<String, Consumer<SharedEvent>> getSubscriptionHandlerMap() {
-        return this.subscriptionHandlerMap;
     }
 
     public String getAccessToken() {
@@ -106,6 +88,24 @@ public class MqttConnection {
 
     public boolean hasCredentials() {
         return credentials;
+    }
+
+    public void setCredentials(String username, String password) {
+
+        this.username = username;
+        this.password = password;
+
+        credentials = !TextUtil.isNullOrEmpty(realm)
+            && !TextUtil.isNullOrEmpty(username)
+            && !TextUtil.isNullOrEmpty(password);
+
+        if (credentials) {
+            String tokenEndpointUri = identityProvider.getTokenUri(realm).toString();
+            OAuthGrant grant = new OAuthClientCredentialsGrant(tokenEndpointUri, username, password, null);
+            tokenSupplier = identityProvider.getAccessTokenSupplier(grant);
+        } else {
+            LOG.fine("MQTT connection with no credentials so will have limited capabilities: " + this);
+        }
     }
 
     @Override

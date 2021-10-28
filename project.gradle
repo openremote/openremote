@@ -1,12 +1,48 @@
 // Common configuration applied to all projects
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
+import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
+import org.jetbrains.gradle.ext.Application
+import org.jetbrains.gradle.ext.JUnit
 
 // Build plugins
 buildscript {
     repositories {
         maven {
             url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.1"
+    }
+}
+
+if (project == rootProject) {
+    try {
+        apply plugin: "org.jetbrains.gradle.plugin.idea-ext"
+    } catch(Exception e) {
+
+    }
+
+    if (project.hasProperty("idea") && idea.project) {
+        // IDEA settings
+        idea.project.settings {
+            compiler {
+                javac {
+                    javacAdditionalOptions "-parameters"
+                }
+            }
+            runConfigurations {
+                defaults(JUnit) {
+                    shortenCommandLine = MANIFEST
+                    workingDirectory = (isCustomProject() ? project(":openremote").projectDir.toString() : projectDir.toString())
+                }
+                defaults(Application) {
+                    mainClass = 'org.openremote.manager.Main'
+                    shortenCommandLine = MANIFEST
+                    workingDirectory = (isCustomProject() ? project(":openremote").projectDir.toString() : projectDir.toString())
+                }
+            }
         }
     }
 }
@@ -49,6 +85,8 @@ idea {
         excludeDirs += file("build")
     }
 }
+
+
 
 // Helper functions for project/task resolution when the main 
 // repo is checked out as a git submodule and therefore a subproject

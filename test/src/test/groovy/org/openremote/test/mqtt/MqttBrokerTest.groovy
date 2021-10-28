@@ -1,6 +1,6 @@
 package org.openremote.test.mqtt
 
-import com.google.common.collect.Lists
+
 import io.moquette.BrokerConstants
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
@@ -8,6 +8,7 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MQTTHandler
 import org.openremote.manager.mqtt.MqttBrokerService
@@ -47,6 +48,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def mqttBrokerService = container.getService(MqttBrokerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def clientEventService = container.getService(ClientEventService.class)
         def agentService = container.getService(AgentService.class)
         def mqttClientId = UniqueIdentifierGenerator.generateId()
         def username = keycloakTestSetup.tenantBuilding.realm + ":" + KeycloakTestSetup.serviceUserId // realm and OAuth client id
@@ -84,7 +86,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "No subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
         }
 
         when: "a mqtt client subscribes with clientId missing"
@@ -94,7 +96,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "No subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
         }
 
         when: "a mqtt client subscribes with different clientId"
@@ -106,7 +108,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null // Consumer added and removed on failure
             assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId) != null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.isEmpty()
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
         }
 
         when: "a mqtt client subscribes to all attributes of an asset"
@@ -122,7 +124,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
             assert client.topicConsumerMap.get(topic) != null
             assert client.topicConsumerMap.get(topic).size() == 1
             assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId) != null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }
 
         when: "An attribute event occurs for a subscribed attribute"
@@ -204,7 +207,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "No subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
         }
 
         when: "another asset attribute changed without any subscriptions"
@@ -224,7 +227,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
             assert client.topicConsumerMap.get(topic).size() == 1
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.containsKey(topic)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }
 
         when: "that attribute changes"
@@ -256,7 +260,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "No subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 0
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
         }
 
         when: "a mqtt client subscribes to attributes for descendants of an asset"
@@ -267,7 +271,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
             assert client.topicConsumerMap.get(topic).size() == 1
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }
 
         when: "a child asset of the subscription attribute event occurs"
@@ -295,8 +300,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
             assert client.topicConsumerMap.get(topic).size() == 1
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 2
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.containsKey(topic)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 2
         }
 
         when: "a subscribed attribute changes"
@@ -337,7 +342,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
             assert client.topicConsumerMap.size() == 1
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }
 
         when: "a client disconnects"
@@ -365,7 +371,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         then: "A subscription should exist"
         conditions.eventually {
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.containsKey(topic)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }
 
         when: "an asset is updated with a new attribute"
@@ -390,8 +397,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "the subscription should exist"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) != null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 2
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.containsKey(topic)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 2
         }
 
         when: "an asset is added as a descendant to the subscribed asset"
@@ -415,7 +422,8 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         then: "only one subscription should be left"
         conditions.eventually {
             assert client.topicConsumerMap.get(topic) == null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttClientId).subscriptionHandlerMap.size() == 1
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttClientId)
+            assert clientEventService.eventSubscriptions.sessionSubscriptionIdMap.get(mqttClientId).size() == 1
         }
 
         when: "the descendant asset is modified"

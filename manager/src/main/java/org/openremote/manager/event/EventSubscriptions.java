@@ -132,6 +132,9 @@ public class EventSubscriptions {
             } else {
                 sessionSubscriptions.cancelByType(subscription.getEventType());
             }
+            if (sessionSubscriptions.isEmpty()) {
+                this.sessionSubscriptionIdMap.remove(sessionKey);
+            }
         }
     }
 

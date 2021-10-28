@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.cfg.ConstructorDetector;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.node.*;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -149,6 +150,7 @@ public class ValueUtil {
 
     public static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
         objectMapper
+            .setConstructorDetector(ConstructorDetector.USE_PROPERTIES_BASED)
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false) // see https://github.com/FasterXML/jackson-databind/issues/1547
             .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)

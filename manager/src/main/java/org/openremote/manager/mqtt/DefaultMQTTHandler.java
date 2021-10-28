@@ -21,20 +21,16 @@ package org.openremote.manager.mqtt;
 
 import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
-import io.moquette.interception.messages.InterceptPublishMessage;
-import io.moquette.interception.messages.InterceptSubscribeMessage;
-import io.moquette.interception.messages.InterceptUnsubscribeMessage;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.mqtt.MqttMessageBuilders;
-import io.netty.handler.codec.mqtt.MqttPublishMessage;
+import io.moquette.interception.messages.*;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetFilter;
@@ -45,20 +41,24 @@ import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.ValueUtil;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.openremote.manager.mqtt.MqttBrokerService.prepareHeaders;
 import static org.openremote.model.Constants.ASSET_ID_REGEXP;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
+/**
+ * This handler uses the {@link ClientEventService} to publish and subscribe to asset and attribute events; converting
+ * subscription topics into {@link AssetFilter}s to ensure only the correct events are returned for the subscription.
+ */
 public class DefaultMQTTHandler extends MQTTHandler {
 
     public static final int PRIORITY = 1000;
@@ -113,6 +113,35 @@ public class DefaultMQTTHandler extends MQTTHandler {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
         }
+    }
+
+    @Override
+    public void onConnect(MqttConnection connection, InterceptConnectMessage msg) {
+        super.onConnect(connection, msg);
+
+        Map<String, Object> headers = prepareHeaders(connection);
+        headers.put(ConnectionConstants.SESSION_OPEN, true);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        LOG.fine("Connected: " + connection);
+    }
+
+    @Override
+    public void onDisconnect(MqttConnection connection, InterceptDisconnectMessage msg) {
+        super.onDisconnect(connection, msg);
+
+        Map<String, Object> headers = prepareHeaders(connection);
+        headers.put(ConnectionConstants.SESSION_CLOSE, true);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        LOG.fine("Connection closed: " + connection);
+    }
+
+    @Override
+    public void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg) {
+        super.onConnectionLost(connection, msg);
+        Map<String, Object> headers = prepareHeaders(connection);
+        headers.put(ConnectionConstants.SESSION_CLOSE_ERROR, true);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+        LOG.fine("Connection lost: " + connection);
     }
 
     @Override
@@ -290,14 +319,15 @@ public class DefaultMQTTHandler extends MQTTHandler {
             return;
         }
 
+        Consumer<SharedEvent> eventConsumer = getSubscriptionEventConsumer(connection, topic, msg.getRequestedQos());
+
         EventSubscription subscription = new EventSubscription(
             subscriptionClass,
             filter,
-            subscriptionId
+            subscriptionId,
+            eventConsumer
         );
 
-        Consumer<SharedEvent> eventConsumer = getSubscriptionEventConsumer(connection, topic, msg.getRequestedQos());
-        connection.subscriptionHandlerMap.put(subscriptionId, eventConsumer);
         Map<String, Object> headers = prepareHeaders(connection);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, subscription, headers);
     }
@@ -306,16 +336,11 @@ public class DefaultMQTTHandler extends MQTTHandler {
     @Override
     public void doUnsubscribe(MqttConnection connection, Topic topic, InterceptUnsubscribeMessage msg) {
         String subscriptionId = topic.toString();
-        Consumer<? extends SharedEvent> eventConsumer = connection.subscriptionHandlerMap.remove(subscriptionId);
-
-        if (eventConsumer != null) {
-            boolean isAssetTopic = subscriptionId.startsWith(ASSET_TOPIC);
-
-            Map<String, Object> headers = prepareHeaders(connection);
-            Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
-            CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
-            messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
-        }
+        boolean isAssetTopic = subscriptionId.startsWith(ASSET_TOPIC);
+        Map<String, Object> headers = prepareHeaders(connection);
+        Class<SharedEvent> subscriptionClass = (Class) (isAssetTopic ? AssetEvent.class : AttributeEvent.class);
+        CancelEventSubscription cancelEventSubscription = new CancelEventSubscription(subscriptionClass, subscriptionId);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, cancelEventSubscription, headers);
     }
 
     @Override
@@ -426,22 +451,6 @@ public class DefaultMQTTHandler extends MQTTHandler {
         return assetFilter;
     }
 
-    public void sendToSession(String sessionId, String topic, Object data, MqttQoS qoS) {
-        try {
-            ByteBuf payload = Unpooled.copiedBuffer(ValueUtil.asJSON(data).orElseThrow(() -> new IllegalStateException("Failed to convert payload to JSON string: " + data)), Charset.defaultCharset());
-
-            MqttPublishMessage publishMessage = MqttMessageBuilders.publish()
-                .qos(qoS)
-                .topicName(topic)
-                .payload(payload)
-                .build();
-
-            mqttBrokerService.mqttBroker.internalPublish(publishMessage, sessionId);
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Couldn't send AttributeEvent to MQTT client", e);
-        }
-    }
-
     protected Consumer<SharedEvent> getSubscriptionEventConsumer(MqttConnection connection, Topic topic, MqttQoS mqttQoS) {
         boolean isValueSubscription = ATTRIBUTE_VALUE_TOPIC.equalsIgnoreCase(topicTokenIndexToString(topic, 2));
         boolean isAssetTopic = isAssetTopic(topic);
@@ -477,19 +486,27 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
             if (isAssetTopic) {
                 if (ev instanceof AssetEvent) {
-                    sendToSession(connection.getClientId(), topicExpander.apply(ev), ev, mqttQoS);
+                    mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                 }
             } else {
                 if (ev instanceof AttributeEvent) {
                     AttributeEvent attributeEvent = (AttributeEvent) ev;
 
                     if (isValueSubscription) {
-                        sendToSession(connection.getClientId(), topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
+                        mqttBrokerService.publishMessage(topicExpander.apply(ev), attributeEvent.getValue().orElse(null), mqttQoS);
                     } else {
-                        sendToSession(connection.getClientId(), topicExpander.apply(ev), ev, mqttQoS);
+                        mqttBrokerService.publishMessage(topicExpander.apply(ev), ev, mqttQoS);
                     }
                 }
             }
         };
+    }
+
+    public static Map<String, Object> prepareHeaders(MqttConnection connection) {
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(ConnectionConstants.SESSION_KEY, connection.getClientId());
+        headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
+        headers.put(Constants.AUTH_CONTEXT, connection.getAuthContext());
+        return headers;
     }
 }

@@ -1,3 +1,15 @@
+// Build plugins
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.1"
+    }
+}
+
 allprojects {
     apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"
 }
