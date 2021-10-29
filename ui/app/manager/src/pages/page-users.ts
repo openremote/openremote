@@ -9,9 +9,10 @@ import {ClientRole, Role, User} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse, RestResponse} from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
+import {UiAssetTreeNode} from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -290,7 +291,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             const userRolesResponse = await (user.serviceAccount ? manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, user.username) : manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
             user.roles = userRolesResponse.data.filter(r => r.assigned);
         });
-
+        
         await Promise.all(roleLoaders);
 
         // Only update state once all promises are fulfilled
@@ -339,7 +340,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, user.username, roles);
         }
     }
-
+    
     private _deleteUser(user) {
         showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
             .then((ok) => {
@@ -477,6 +478,34 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             expanderIcon.icon = "chevron-right";
             userRow.classList.remove("expanded");
         }
+    }
+
+    protected _openAssetSelector() {
+        const hostElement = document.body;
+        let selectedAssets: UiAssetTreeNode[] = [];
+
+        const dialog = new OrMwcDialog();
+        dialog.isOpen = true;
+        dialog.dialogTitle = i18next.t("restrictAccess");
+        dialog.dialogContent = html`
+            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="" .showSortBtn="${false}" .expandNodes="${true}" .checkboxes="${true}"
+                @or-asset-tree-selection="${(e) => selectedAssets = e.detail.newNodes}"></or-asset-tree>
+        `;
+        dialog.dialogActions = [
+            {
+                default: true,
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            },
+            {
+                actionName: "ok",
+                content: i18next.t("ok"),
+                action: () => console.log(selectedAssets)
+            }
+        ];
+        
+        hostElement.append(dialog);
+        return dialog;
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
@@ -617,11 +646,11 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               style="height: 56px;"></or-mwc-input>
 
                                 <!-- is admin -->
-                                <or-mwc-input ?readonly="${true}"
+                                <!--<or-mwc-input ?readonly="${true}"
                                               .label="${i18next.t("fullAccessLabel")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${user.enabled}"
-                                              style="height: 56px;"></or-mwc-input>
+                                              style="height: 56px;"></or-mwc-input>-->
                                 
                                 <!-- composite roles -->
                                 <or-mwc-input
@@ -639,7 +668,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     }}"></or-mwc-input>
 
                                 <!-- roles -->
-                                <div style="display:flex;flex-wrap:wrap;" id="role-list-${suffix}">
+                                <div style="display:flex;flex-wrap:wrap;margin-bottom: 20px;" id="role-list-${suffix}">
                                     ${this._roles.map(r => {
                                         return html`
                                             <or-mwc-input 
@@ -661,6 +690,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 </div>
 
                                 <!-- restricted access -->
+                                <or-mwc-input outlined .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
+                                              @click="${() => this._openAssetSelector()}"></or-mwc-input>
+
                                 <!-- placeholder -->
                             </div>
                         </div>
