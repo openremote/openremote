@@ -19,6 +19,7 @@
  */
 package org.openremote.test.users
 
+import org.junit.Ignore
 import org.openremote.manager.setup.SetupService
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.model.security.ClientRole
@@ -39,6 +40,7 @@ import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE
 
+@Ignore
 class UserResourceTest extends Specification implements ManagerContainerTrait {
 
     @Shared
