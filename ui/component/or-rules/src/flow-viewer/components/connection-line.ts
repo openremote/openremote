@@ -38,7 +38,9 @@ export class ConnectionLine extends SelectableElement {
 
     protected firstUpdated() {
         super.firstUpdated();
-        this.setHandle(this.shadowRoot!.getElementById(this.polylineId)!);
+        const elem = this.shadowRoot!.getElementById(this.polylineId)!;
+        if (elem)
+            this.setHandle(elem);
     }
 
     protected render() {
