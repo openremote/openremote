@@ -107,6 +107,9 @@ export class EditorWorkspace extends translate(i18next)(LitElement) {
     public fitCamera(nodes: Node[], padding = 25) {
         const enumerable = new List<Node>();
         enumerable.AddRange(nodes);
+        if (enumerable.Count() == 0)
+            return;
+            
         const XouterleastNode = enumerable.OrderBy((a: Node) => a!.position!.x!).First() as Node;
         const YouterleastNode = enumerable.OrderBy((a: Node) => a!.position!.y!).First() as Node;
 

@@ -1,26 +1,25 @@
 import { LitElement, html, css, TemplateResult } from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { Node, PickerType, AttributeInternalValue, AssetState, WellknownMetaItems, Asset, NodeDataType } from "@openremote/model";
+import { Node, PickerType, AttributeInternalValue, AssetState, WellknownMetaItems, Asset, NodeDataType, AttributeRef } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
-import { OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import rest from "@openremote/rest";
 import "@openremote/or-asset-tree";
-import { OrAssetTreeRequestSelectionEvent } from "@openremote/or-asset-tree";
 import { ResizeObserver } from "resize-observer";
-import { project, modal } from "./flow-editor";
+import { project } from "./flow-editor";
 import { NodeUtilities } from "../node-structure";
 import { translate, i18next } from "@openremote/or-translate";
 import { PickerStyle } from "../styles/picker-styles";
-import { Util, AssetModelUtil } from "@openremote/core";
+import { AssetModelUtil, Util } from "@openremote/core";
+import { OrMwcAttributeSelector } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrAddAttributeRefsEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
     @property({ converter: nodeConverter, reflect: true }) public node!: Node;
     @property({ type: Number, reflect: true }) public internalIndex!: number;
 
-    @property({ type: Array }) private attributeNames: { name: string, label: string }[] = [];
     @property({ type: Object }) private selectedAsset!: Asset;
-    @property({ type: Boolean }) private assetIntialised = false;
 
     private resizeObserver!: ResizeObserver;
 
@@ -59,7 +58,10 @@ export class InternalPicker extends translate(i18next)(LitElement) {
     protected render() {
         switch (this.internal.picker!.type) {
             case PickerType.ASSET_ATTRIBUTE:
-                if (this.internal.value && !this.assetIntialised) { this.readAssetOnCreation(); }
+                if (this.internal.value && !this.selectedAsset)
+                {
+                    this.setSelectedAssetFromInternalValue();
+                }
                 return this.assetAttributeInput;
             case PickerType.COLOR:
                 return this.colorInput;
@@ -78,70 +80,6 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             default:
                 return html`unimplemented picker`;
         }
-    }
-
-    private async readAssetOnCreation() {
-        await this.populateAttributeNames();
-    }
-
-    private get assetTreeTemplate() {
-        return html`<or-asset-tree readonly @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
-            if (!e.detail.detail || e.detail.detail.newNodes.length !== 1) {
-                e.detail.allow = false;
-                return;
-            }
-            const value: AttributeInternalValue = {
-                assetId: e.detail.detail.newNodes[0].asset!.id,
-                attributeName: "nothing yet"
-            };
-            this.setValue(value);
-            this.populateAttributeNames();
-            modal.element.close();
-        }}"
-        style="width: auto; height: 80vh;"
-        ></or-asset-tree>`;
-    }
-
-    private async populateAttributeNames() {
-        const response = await rest.api.AssetResource.queryAssets({
-            ids: [this.internal.value.assetId],
-            select: {
-                excludeParentInfo: true,
-                excludePath: true
-            }
-        });
-
-        if (response.data.length === 0) {
-            this.assetIntialised = true;
-            console.warn(`Asset with id ${this.internal.value.assetId} is missing`);
-            return;
-        }
-        this.selectedAsset = response.data[0];
-        if (this.selectedAsset.attributes) {
-            this.attributeNames = [];
-            Object.values(this.selectedAsset.attributes).forEach((attribute) => {
-                if (attribute.meta && (attribute.meta.hasOwnProperty(WellknownMetaItems.RULESTATE) ? attribute.meta[WellknownMetaItems.RULESTATE] : attribute.meta.hasOwnProperty(WellknownMetaItems.AGENTLINK))) {
-                    const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attribute.name!, this.selectedAsset.type!);
-                    const label = Util.getAttributeLabel(attribute, attributeDescriptor, this.selectedAsset.type!, true);
-                    this.attributeNames.push({
-                        name: attribute.name!,
-                        label
-                    });
-                }
-            });
-            if (this.attributeNames.length !== 0) {
-                if (this.internal.value && this.internal.value.attributeName) {
-                    this.assetIntialised = true;
-                    await this.updateComplete;
-                    (this.shadowRoot!.getElementById("attribute-select") as HTMLSelectElement).value = this.internal.value.attributeName;
-                    return;
-                }
-                this.internal.value.attributeName = this.attributeNames[0].name;
-            }
-        } else {
-            this.attributeNames = [];
-        }
-        this.assetIntialised = true;
     }
 
     private async setSocketTypeDynamically(value: AttributeInternalValue) {
@@ -171,33 +109,67 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         }
     }
 
-    private get assetAttributeInput(): TemplateResult {
-        const hasAssetSelected = this.selectedAsset;
-        return html`
-        <or-mwc-input type="button" fullwidth label="${hasAssetSelected ? this.selectedAsset.name! : (i18next.t("selectAsset", "Select asset")!)}" 
-        icon="format-list-bulleted-square" 
-        @click="${() => {
-                modal.element.content = this.assetTreeTemplate;
-                modal.element.header = i18next.t("assets", "Assets");
-                modal.element.open();
-            }}"></or-mwc-input>
-            ${
-            hasAssetSelected ? (
-                this.attributeNames.length === 0 ?
-                    html`<span>${i18next.t("noRuleStateAttributes", "No rule state attributes")}</span>` :
-                    html`        
-                <select id="attribute-select" style="margin-top: 10px" @input="${async (e: any) => {
-                            const value: AttributeInternalValue = {
-                                assetId: this.selectedAsset.id,
-                                attributeName: e.target.value
-                            };
-                            await this.setSocketTypeDynamically(value);
-                            return this.setValue(value);
-                        }}">
-                    ${this.attributeNames.map((a) => html`<option value="${a.name}" title="${a.name}">${a.label}</option>`)}
-                </select>`) :
-                null
+    private async setSelectedAssetFromInternalValue(){
+        const response = await rest.api.AssetResource.queryAssets({
+            ids: [this.internal.value.assetId],
+            select: {
+                excludeParentInfo: true,
+                excludePath: true
             }
+        });
+
+        if (response.data.length === 0) {
+            console.warn(`Asset with id ${this.internal.value.assetId} is missing`);
+            return;
+        }
+        this.selectedAsset = response.data[0];
+    }
+
+    private get assetAttributeInput(): TemplateResult {
+
+        const openDialog = () => {
+            let _selectedAttributes : AttributeRef[] = [];
+            let val = this.node.internals![this.internalIndex].value;
+            if (val){
+                _selectedAttributes = [{
+                    id: val.assetId,
+                    name: val.attributeName
+                }];
+            }
+
+            const hostElement = document.body;
+            const dialog = new OrMwcAttributeSelector();
+            dialog.showOnlyRuleStateAttrs = true;
+            dialog.showOnlyDatapointAttrs = false;
+            dialog.multiSelect = false;
+            dialog.selectedAttributes = _selectedAttributes;
+            dialog.isOpen = true;
+            dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: any) => {
+                const value: AttributeInternalValue = {
+                    assetId: ev.detail.selectedAttributes[0].id,
+                    attributeName: ev.detail.selectedAttributes[0].name
+                };
+                await this.setSocketTypeDynamically(value);
+                this.setValue(value);
+                await this.setSelectedAssetFromInternalValue();
+            });
+    
+            hostElement.append(dialog);
+        };
+
+        let selectedAttrLabel = '?';
+        if (this.selectedAsset && this.selectedAsset.attributes && this.internal?.value?.attributeName)
+        {
+            const attrName = this.internal?.value?.attributeName;
+            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, this.selectedAsset.type!);
+            let attr = this.selectedAsset.attributes[attrName];
+            if (attr)
+                selectedAttrLabel = Util.getAttributeLabel(attr, attributeDescriptor, this.selectedAsset.type!, true)
+        }
+
+        return html`
+        ${(this.selectedAsset ? html`<span class="attribute-label">${selectedAttrLabel}</span>` : null)}
+        <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="format-list-bulleted-square" @click="${() => openDialog()}"></or-mwc-input>
         `;
     }
 

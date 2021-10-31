@@ -364,6 +364,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     
     @property({type: Boolean})
     public showOnlyDatapointAttrs?: boolean = false;
+    
+    @property({type: Boolean})
+    public showOnlyRuleStateAttrs?: boolean = false;
 
     @property({type: Array, attribute: false})
     public selectedAttributes: AttributeRef[] = [];
@@ -499,6 +502,9 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                 if (this.showOnlyDatapointAttrs) {
                     this.assetAttributes = this.assetAttributes
                         .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]));
+                }else if (this.showOnlyRuleStateAttrs) {
+                    this.assetAttributes = this.assetAttributes
+                        .filter(e => e.meta && (e.meta[WellknownMetaItems.RULESTATE]));
                 }
                 this.reRenderDialog();
             });
