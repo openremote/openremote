@@ -168,7 +168,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     return false;
                 }
 
-                boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
+                boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth);
 
                 return !isRestrictedUser;
             }

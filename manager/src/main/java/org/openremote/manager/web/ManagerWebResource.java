@@ -35,7 +35,7 @@ public class ManagerWebResource extends WebResource {
     }
 
     public boolean isRestrictedUser() {
-        return isAuthenticated() && identityService.getIdentityProvider().isRestrictedUser(getUserId());
+        return isAuthenticated() && identityService.getIdentityProvider().isRestrictedUser(getAuthContext());
     }
 
     public Tenant getAuthenticatedTenant() {

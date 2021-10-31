@@ -196,7 +196,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
-                            isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
+                            isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
                             break;
 
                         case GLOBAL_RULESET:

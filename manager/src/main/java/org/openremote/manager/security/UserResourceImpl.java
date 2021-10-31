@@ -170,6 +170,15 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
+    public Role[] getCurrentUserRealmRoles(RequestParams requestParams) {
+        if (!isAuthenticated()) {
+            throw new ForbiddenException("Must be authenticated");
+        }
+
+        return getUserRealmRoles(requestParams, getRequestRealm(), getUserId());
+    }
+
+    @Override
     public Role[] getUserRoles(RequestParams requestParams, String realm, String userId) {
         return getUserClientRoles(requestParams, realm, userId, KEYCLOAK_CLIENT_ID);
     }
@@ -183,6 +192,23 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         try {
             return identityService.getIdentityProvider().getUserRoles(
                 realm, userId, clientId
+            );
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public Role[] getUserRealmRoles(RequestParams requestParams, String realm, String userId) {
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
+        }
+
+        try {
+            return identityService.getIdentityProvider().getUserRealmRoles(
+                    realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -216,6 +242,24 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
+    public void updateUserRealmRoles(RequestParams requestParams, String realm, String userId, Role[] roles) {
+        try {
+            identityService.getIdentityProvider().updateUserRealmRoles(
+                    realm,
+                    userId,
+                    Arrays.stream(roles)
+                            .filter(Role::isAssigned)
+                            .map(Role::getName)
+                            .toArray(String[]::new));
+        } catch (ClientErrorException ex) {
+            ex.printStackTrace(System.out);
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
     public Role[] getRoles(RequestParams requestParams, String realm) {
         return getClientRoles(requestParams, realm, KEYCLOAK_CLIENT_ID);
     }
@@ -226,6 +270,19 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
             return identityService.getIdentityProvider().getRoles(
                 realm,
                 clientId);
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public Role[] getRealmRoles(RequestParams requestParams, String realm) {
+        try {
+            return identityService.getIdentityProvider().getRoles(
+                    realm,
+                    null);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -245,6 +302,20 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
                 realm,
                 clientId,
                 roles);
+        } catch (ClientErrorException ex) {
+            ex.printStackTrace(System.out);
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new NotFoundException(ex);
+        }
+    }
+
+    @Override
+    public void updateRealmRoles(RequestParams requestParams, String realm, Role[] roles) {
+        try {
+            identityService.getIdentityProvider().updateRealmRoles(
+                    realm,
+                    roles);
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());

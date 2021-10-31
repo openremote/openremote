@@ -3,6 +3,7 @@ package org.openremote.agent.protocol.artnet;
 import io.netty.channel.ChannelHandler;
 import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
+import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.agent.protocol.udp.UDPIOClient;
 import org.openremote.model.asset.AssetTreeNode;
 import org.openremote.model.asset.agent.DefaultAgentLink;
@@ -18,7 +19,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class ArtnetProtocol extends AbstractIOClientProtocol<ArtnetProtocol, ArtnetAgent, ArtnetPacket, UDPIOClient<ArtnetPacket>, DefaultAgentLink> implements ProtocolAssetImport {
+public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol, ArtnetAgent, ArtnetPacket, UDPIOClient<ArtnetPacket>, DefaultAgentLink> implements ProtocolAssetImport {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Artnet";
     protected final Map<AttributeRef, Consumer<ArtnetPacket>> protocolMessageConsumers = new HashMap<>();

@@ -247,6 +247,10 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
       this.realm = this.getState().app.realm;
   }
 
+  protected getState(): S {
+      return this._store.getState();
+  }
+
   protected async getRoles() {
     const roleResponse = await manager.rest.api.UserResource.getRoles(this.realm);
     this._compositeRoles = [...roleResponse.data.filter(role => role.composite)];

@@ -29,6 +29,7 @@ import Qs from "qs";
 import {AssetModelUtil} from "./index";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
+import { WellknownValueTypes } from "@openremote/model";
 
 export class Deferred<T> {
 
@@ -433,12 +434,21 @@ export function getAllowedValueLabel(allowedValue: string, fallback?: string): s
 export function getMetaItemNameValueHolder(metaNameOrDescriptor: MetaItemDescriptor | string, value: any): NameValueHolder<any> {
     const descriptor = typeof metaNameOrDescriptor === "string" ? AssetModelUtil.getMetaItemDescriptor(metaNameOrDescriptor)! : metaNameOrDescriptor;
 
+    if (descriptor) {
+        return {
+            name: descriptor.name,
+            type: descriptor.type,
+            value: value
+        };
+    }
+
     return {
-        name: descriptor.name,
-        type: descriptor.type,
+        name: typeof metaNameOrDescriptor,
+        type: AssetModelUtil.resolveValueTypeFromValue(value),
         value: value
-    };
+    }
 }
+
 
 export function getAttributeLabel(attribute: Attribute<any> | undefined, descriptor: AttributeDescriptor | undefined, assetType: string | undefined, showUnits: boolean, fallback?: string): string {
     return getValueHolderLabel(attribute, descriptor, assetType, showUnits, true, fallback);
@@ -645,7 +655,7 @@ export function mergeObjects(a: object | undefined, b: object | undefined, merge
         return {...b};
     }
     const merged = {...a};
-    let path: string[] = [];
+    const path: string[] = [];
     Object.entries(b!).forEach(([k, v]) => {
         mergeObjectKey(merged, path, k, v,mergeArrays)
     });

@@ -72,30 +72,6 @@ public class ManagerIdentityService extends IdentityService {
         return identityProvider;
     }
 
-    public UserConfiguration getUserConfiguration(String userId) {
-        return persistenceService.doReturningTransaction(entityManager -> getUserConfiguration(entityManager, userId));
-    }
-
-    protected UserConfiguration getUserConfiguration(EntityManager em, String userId) {
-        UserConfiguration userConfiguration = em.find(UserConfiguration.class, userId);
-        if (userConfiguration == null) {
-            userConfiguration = new UserConfiguration(userId);
-            userConfiguration = mergeUserConfiguration(em, userConfiguration);
-        }
-        return userConfiguration;
-    }
-
-    public UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
-        return persistenceService.doReturningTransaction(entityManager -> mergeUserConfiguration(entityManager, userConfiguration));
-    }
-
-    protected UserConfiguration mergeUserConfiguration(EntityManager em, UserConfiguration userConfiguration) {
-        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
-            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
-        }
-        return em.merge(userConfiguration);
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +

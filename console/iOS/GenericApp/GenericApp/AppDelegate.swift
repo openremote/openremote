@@ -10,6 +10,7 @@ import UIKit
 import Firebase
 import CoreLocation
 import IQKeyboardManagerSwift
+import ORLib
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
@@ -40,7 +41,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
             // create new GeofenceProvider which creates a CLLocationManager that will receive the location update
             geofenceProvider = GeofenceProvider()
             if CLLocationManager.authorizationStatus() == .authorizedAlways {
-                geofenceProvider?.locationManager.startMonitoringSignificantLocationChanges()
+                geofenceProvider?.startMonitoringSignificantLocationChanges()
             }
         } else if let remoteNotifcation = launchOptions?[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any] {
             NSLog("%@", "App started from remote notification")
@@ -49,7 +50,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
                     geofenceProvider = GeofenceProvider()
                     geofenceProvider?.refreshGeofences()
                     if CLLocationManager.authorizationStatus() == .authorizedAlways {
-                        geofenceProvider?.locationManager.startMonitoringSignificantLocationChanges()
+                        geofenceProvider?.startMonitoringSignificantLocationChanges()
                     }
                 }
             }

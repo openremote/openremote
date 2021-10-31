@@ -29,6 +29,8 @@ dependencies {
     compile("org.openremote:or-zwave:$zwaveVersion") {
         exclude group: "org.bidib.com.neuronrobotics"
     }
+
+    compile "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 }
 
 jar {

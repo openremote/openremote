@@ -29,7 +29,11 @@ const style = css`
     }
 
     :host > * {
-        margin-right: 10px;
+        margin: 0 3px 6px;
+    }
+
+    .min-width {
+        min-width: 200px;
     }
 `;
 
@@ -104,7 +108,7 @@ export class OrRuleActionNotification extends LitElement {
         if (targetType === ActionTargetType.CUSTOM) {
 
             const template = html`
-                <or-mwc-input .type="${InputType.TEXT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" ?readonly="${readonly}" .value="${action.target!.custom}" ></or-mwc-input>            
+                <or-mwc-input class="min-width" .type="${InputType.TEXT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" ?readonly="${readonly}" .value="${action.target!.custom}" ></or-mwc-input>            
             `;
             targetValueTemplate = Promise.resolve(template);
 
@@ -193,6 +197,7 @@ export class OrRuleActionNotification extends LitElement {
 
                 return html`
                     <or-mwc-input type="${InputType.SELECT}" 
+                        class="min-width"
                         .options="${values}"
                         .label="${label}"
                         .value="${value}"
@@ -205,11 +210,12 @@ export class OrRuleActionNotification extends LitElement {
         targetValueTemplate = targetValueTemplate.then((valueTemplate) => {
             return html`
                 <or-mwc-input type="${InputType.SELECT}" 
-                            .options="${allowedTargetTypes}"
-                            .value="${targetType}"
-                            .label="${i18next.t("recipients")}"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as ActionTargetType)}" 
-                            ?readonly="${readonly}"></or-mwc-input>
+                    class="min-width"
+                    .options="${allowedTargetTypes}"
+                    .value="${targetType}"
+                    .label="${i18next.t("recipients")}"
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as ActionTargetType)}" 
+                    ?readonly="${readonly}"></or-mwc-input>
                 ${valueTemplate}
             `;
         });

@@ -52,6 +52,12 @@ public interface UserResource {
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     Role[] getClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
+    @GET
+    @Path("{realm}/realm-roles")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @Produces(APPLICATION_JSON)
+    Role[] getRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+
     @PUT
     @Path("{realm}/roles")
     @Consumes(APPLICATION_JSON)
@@ -63,6 +69,12 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     void updateClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, Role[] roles, @PathParam("clientId") String clientId);
+
+    @PUT
+    @Path("{realm}/realm-roles")
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    void updateRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, Role[] roles);
 
     @GET
     @Produces(APPLICATION_JSON)
@@ -123,6 +135,11 @@ public interface UserResource {
     Role[] getUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, @PathParam("clientId") String clientId);
 
     @GET
+    @Path("{realm}/userRealmRoles/{userId}")
+    @Produces(APPLICATION_JSON)
+    Role[] getUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @GET
     @Path("userRoles")
     @Produces(APPLICATION_JSON)
     Role[] getCurrentUserRoles(@BeanParam RequestParams requestParams);
@@ -131,6 +148,11 @@ public interface UserResource {
     @Path("userRoles/{clientId}")
     @Produces(APPLICATION_JSON)
     Role[] getCurrentUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("clientId") String clientId);
+
+    @GET
+    @Path("userRealmRoles")
+    @Produces(APPLICATION_JSON)
+    Role[] getCurrentUserRealmRoles(@BeanParam RequestParams requestParams);
 
     @PUT
     @Path("{realm}/userRoles/{userId}")
@@ -143,4 +165,10 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     void updateUserClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles, @PathParam("clientId") String clientId);
+
+    @PUT
+    @Path("{realm}/userRealmRoles/{userId}")
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    void updateUserRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
 }

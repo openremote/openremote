@@ -87,6 +87,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String DEFAULT_REALM_KEYCLOAK_THEME_DEFAULT = "openremote";
     public static final String KEYCLOAK_GRANT_FILE = "KEYCLOAK_GRANT_FILE";
     public static final String KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
+    public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
 
     protected PersistenceService persistenceService;
     protected TimerService timerService;
@@ -562,6 +563,83 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         });
     }
 
+    @Override
+    public void updateRealmRoles(String realm, Role[] roles) {
+
+        getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            List<RoleRepresentation> existingRoles = new ArrayList<>(realmResource.roles().list());
+
+            List<RoleRepresentation> removedRoles = existingRoles.stream()
+                    .filter(existingRole -> Arrays.stream(roles).noneMatch(r -> existingRole.getId().equals(r.getId())))
+                    .collect(Collectors.toList());
+
+            removedRoles.forEach(removedRole -> {
+                realmResource.rolesById().deleteRole(removedRole.getId());
+                existingRoles.remove(removedRole);
+            });
+
+            Arrays.stream(roles).forEach(role -> {
+
+                RoleRepresentation existingRole;
+                boolean compositesModified = false;
+                Set<RoleRepresentation> existingComposites = new HashSet<>();
+                Set<RoleRepresentation> requestedComposites = new HashSet<>();
+
+                if (role.getId() == null) {
+                    existingRole = saveRealmRole(realmResource, role, null);
+                    existingRoles.add(existingRole);
+                    compositesModified = role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
+                    if (compositesModified) {
+                        requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
+                                .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()));
+                    }
+                } else {
+                    existingRole = existingRoles.stream().filter(r -> r.getId().equals(role.getId())).findFirst().orElseThrow(() -> new IllegalStateException("One or more supplied roles have an ID that doesn't exist"));
+
+                    boolean isComposite = role.isComposite() && role.getCompositeRoleIds() != null && role.getCompositeRoleIds().length > 0;
+
+                    boolean rolePropertiesModified = !Objects.equals(existingRole.getName(), role.getName())
+                            || !Objects.equals(existingRole.getDescription(), role.getDescription());
+
+                    if (isComposite || existingRole.isComposite()) {
+                        existingComposites.addAll(Optional.ofNullable(realmResource.rolesById().getRoleComposites(existingRole.getId())).orElse(new HashSet<>()));
+                        requestedComposites.addAll(Arrays.stream(role.getCompositeRoleIds())
+                                .map(id -> existingRoles.stream().filter(er -> er.getId().equals(id)).findFirst().orElse(null))
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet()));
+
+                        if (requestedComposites.size() != role.getCompositeRoleIds().length) {
+                            throw new IllegalStateException("One or more composite roles contain an invalid role ID");
+                        }
+
+                        compositesModified = !Objects.equals(existingComposites, requestedComposites);
+                    }
+
+                    if (rolePropertiesModified) {
+                        // Merge the role property changes
+                        saveRealmRole(realmResource, role, existingRole);
+                    }
+                }
+
+                if (compositesModified) {
+                    List<RoleRepresentation> removed = existingComposites.stream().filter(existing -> !requestedComposites.contains(existing)).collect(Collectors.toList());
+                    List<RoleRepresentation> added = requestedComposites.stream().filter(existing -> !existingComposites.contains(existing)).collect(Collectors.toList());
+                    if (!removed.isEmpty()) {
+                        realmResource.rolesById().deleteComposites(existingRole.getId(), removed);
+                    }
+                    if (!added.isEmpty()) {
+                        realmResource.rolesById().addComposites(existingRole.getId(), added);
+                    }
+                }
+            });
+
+            return null;
+        });
+    }
+
     protected RoleRepresentation saveClientRole(RealmResource realmResource, ClientResource clientResource, Role role, RoleRepresentation representation) {
         if (representation == null) {
             representation = new RoleRepresentation();
@@ -576,6 +654,22 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         return clientResource.roles().get(representation.getName()).toRepresentation();
+    }
+
+    protected RoleRepresentation saveRealmRole(RealmResource realmResource, Role role, RoleRepresentation representation) {
+        if (representation == null) {
+            representation = new RoleRepresentation();
+        }
+        representation.setName(role.getName());
+        representation.setDescription(role.getDescription());
+        representation.setClientRole(true);
+        if (representation.getId() == null) {
+            realmResource.roles().create(representation);
+        } else {
+            realmResource.rolesById().updateRole(representation.getId(), representation);
+        }
+
+        return realmResource.roles().get(representation.getName()).toRepresentation();
     }
 
     @Override
@@ -609,6 +703,38 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 return roles.toArray(new Role[0]);
             }, null);
+        });
+    }
+
+    @Override
+    public Role[] getUserRealmRoles(String realm, String userId) {
+        return getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            RoleMappingResource roleMappingResource = realmResource.users().get(userId).roles();
+
+                RolesResource rolesResource = realmResource.roles();
+                List<RoleRepresentation> allRoles = rolesResource.list();
+                List<RoleRepresentation> effectiveRoles = roleMappingResource.realmLevel().listEffective();
+
+                List<Role> roles = new ArrayList<>();
+                for (RoleRepresentation roleRepresentation : allRoles) {
+                    boolean isAssigned = false;
+
+                    for (RoleRepresentation effectiveRole : effectiveRoles) {
+                        if (effectiveRole.getId().equals(roleRepresentation.getId()))
+                            isAssigned = true;
+                    }
+
+                    roles.add(new Role(
+                            roleRepresentation.getId(),
+                            roleRepresentation.getName(),
+                            roleRepresentation.isComposite(),
+                            isAssigned,
+                            null)
+                            .setDescription(roleRepresentation.getDescription()));
+                }
+
+                return roles.toArray(new Role[0]);
         });
     }
 
@@ -683,19 +809,70 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
+    public void updateUserRealmRoles(String realm, String userId, String... roles) {
+        getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(realm);
+            UserRepresentation user = realmResource.users().get(userId).toRepresentation();
+
+            if (user == null) {
+                throw new IllegalStateException("Multiple users with the same username found");
+            }
+
+            RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
+
+            // Get all roles
+            List<RoleRepresentation> existingRoles = roleMappingResource.realmLevel().listAll();
+            List<RoleRepresentation> availableRoles = realmResource.roles().list();
+            List<RoleRepresentation> requestedRoles = availableRoles.stream().filter(role -> Arrays.stream(roles).anyMatch(name -> role.getName().equals(name))).collect(Collectors.toList());
+
+            // Strip out requested roles that are already in a requested composite role
+            List<String> removeRequestedRoles = requestedRoles.stream()
+                    .filter(RoleRepresentation::isComposite)
+                    .flatMap(role ->
+                            realmResource.rolesById().getRoleComposites(role.getId()).stream().map(RoleRepresentation::getId)
+                    ).collect(Collectors.toList());
+
+            requestedRoles = requestedRoles.stream()
+                    .filter(role -> removeRequestedRoles.stream().noneMatch(id -> id.equals(role.getId())))
+                    .collect(Collectors.toList());
+
+
+            // Get newly defined roles
+            List<RoleRepresentation> addRoles = requestedRoles.isEmpty() ? Collections.emptyList() : requestedRoles.stream()
+                    .filter(requestedRole -> existingRoles.stream().noneMatch(r -> r.getId().equals(requestedRole.getId())))
+                    .collect(Collectors.toList());
+
+            // Remove obsolete roles
+            List<RoleRepresentation> finalRequestedRoles = requestedRoles;
+            List<RoleRepresentation> removeRoles = requestedRoles.isEmpty() ? existingRoles : existingRoles.stream()
+                    .filter(r -> finalRequestedRoles.stream().noneMatch(requestedRole -> requestedRole.getId().equals(r.getId())))
+                    .collect(Collectors.toList());
+
+            if (!removeRoles.isEmpty()) {
+                roleMappingResource.realmLevel().remove(removeRoles);
+            }
+            if (!addRoles.isEmpty()) {
+                roleMappingResource.realmLevel().add(addRoles);
+            }
+
+            return null;
+        });
+    }
+
+    @Override
     public boolean isMasterRealmAdmin(String userId) {
-        List<UserRepresentation> adminUsers = getRealms(realmsResource ->
+        Optional<UserRepresentation> adminUser = getRealms(realmsResource ->
             realmsResource.realm(MASTER_REALM)
                 .users()
-                .search(MASTER_REALM_ADMIN_USER, null, null));
+                .search(MASTER_REALM_ADMIN_USER, null, null))
+            .stream()
+            .filter(user -> user.getUsername().equals(MASTER_REALM_ADMIN_USER))
+            .findFirst();
 
-
-        if (adminUsers.size() == 0) {
+        if (!adminUser.isPresent()) {
             throw new IllegalStateException("Can't load master realm admin user");
-        } else if (adminUsers.size() > 1) {
-            throw new IllegalStateException("Several master realm admin users, this should not be possible.");
         }
-        return adminUsers.get(0).getId().equals(userId);
+        return adminUser.map(UserRepresentation::getId).map(id -> id.equals(userId)).orElse(false);
     }
 
     @Override
@@ -735,6 +912,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             existing.setEmailTheme(tenant.getEmailTheme());
             existing.setLoginTheme(tenant.getLoginTheme());
             existing.setRememberMe(tenant.getRememberMe());
+            existing.setRegistrationAllowed(tenant.getRegistrationAllowed());
+            existing.setRegistrationEmailAsUsername(tenant.getRegistrationEmailAsUsername());
             existing.setEnabled(tenant.getEnabled());
             existing.setDuplicateEmailsAllowed(tenant.getDuplicateEmailsAllowed());
             existing.setResetPasswordAllowed(tenant.getResetPasswordAllowed());
@@ -765,6 +944,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 // Auto create the standard openremote client
                 ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
                 createUpdateClient(tenant.getRealm(), clientRepresentation);
+
+                // Add restricted realm role
+                realmResource.roles().create(new RoleRepresentation(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets", false));
 
                 Tenant createdTenant = convert(realmRepresentation, Tenant.class);
                 publishModification(PersistenceEvent.Cause.CREATE, createdTenant);
@@ -960,9 +1142,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public boolean isRestrictedUser(String userId) {
-        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
-        return userConfiguration != null && userConfiguration.isRestricted();
+    public boolean isRestrictedUser(AuthContext authContext) {
+
+        return authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
     }
 
     @Override
@@ -977,7 +1159,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             return true;
 
         // Restricted users get nothing
-        if (isRestrictedUser(auth.getUserId()))
+        if (isRestrictedUser(auth))
             return false;
 
         // User must have role

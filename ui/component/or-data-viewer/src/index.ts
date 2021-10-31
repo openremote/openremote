@@ -11,6 +11,7 @@ import i18next from "i18next";
 import {styleMap} from "lit/directives/style-map";
 import {classMap} from "lit/directives/class-map";
 import "@openremote/or-attribute-card";
+import manager from "@openremote/core";
 
 export type PanelType = "chart" | "kpi";
 
@@ -155,6 +156,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         }
     }
 
+    @property()
     public config?: DataViewerConfig;
 
     @property({type: Array, attribute: false})
@@ -162,6 +164,9 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
 
     @property()
     protected _loading: boolean = false;
+
+    @property()
+    public realm?: string;
 
     protected _resizeHandler = () => {
         OrDataViewer.generateGrid(this.shadowRoot)
@@ -186,7 +191,12 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         await this.updateComplete;
     }
 
+    public refresh() {
+        this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
+    }
+
     public getPanel(name: string, panelConfig: PanelConfig) {
+
         const content = this.getPanelContent(name, panelConfig);
 
         if (!content) {
@@ -215,15 +225,17 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
             return;
         }
 
+        this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
+
         let content: TemplateResult | undefined;
 
         if (panelConfig && panelConfig.type === "chart") {
-            content = html`<or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}"></or-chart>`;
+            content = html`<or-chart id="chart" panelName="${panelName}" .config="${this.config.chartConfig}" .realm="${this.realm}"></or-chart>`;
         }
 
         if (panelConfig && panelConfig.type === "kpi") {
             content = html`
-                <or-attribute-card panelName="${panelName}" .config="${this.config.chartConfig}"></or-attribute-card>
+                <or-attribute-card panelName="${panelName}" .config="${this.config.chartConfig}" .realm="${this.realm}"></or-attribute-card>
             `;
         }
         return content;
@@ -252,6 +264,10 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
 
     protected updated(_changedProperties: PropertyValues) {
         super.updated(_changedProperties);
+
+        if (_changedProperties.has("realm")) {
+            this.refresh();
+        }
 
         this.onCompleted().then(() => {
             onRenderComplete.startCallbacks().then(() => {

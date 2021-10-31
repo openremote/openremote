@@ -71,13 +71,19 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void updateClientRoles(String realm, String client, Role[] roles);
 
+    void updateRealmRoles(String realm, Role[] roles);
+
     Role[] getUserRoles(String realm, String userId, String client);
+
+    Role[] getUserRealmRoles(String realm, String userId);
 
     void updateUserRoles(String realm, String userId, String client, String...roles);
 
+    void updateUserRealmRoles(String realm, String userId, String...roles);
+
     boolean isMasterRealmAdmin(String userId);
 
-    boolean isRestrictedUser(String userId);
+    boolean isRestrictedUser(AuthContext authContext);
 
     boolean isUserInTenant(String userId, String realm);
 

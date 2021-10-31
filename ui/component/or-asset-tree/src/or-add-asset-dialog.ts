@@ -11,7 +11,8 @@ import {
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {AssetModelUtil, DefaultColor2, DefaultColor5, Util} from "@openremote/core";
+import {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
+
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 
 export type OrAddAssetDetail = {
@@ -84,16 +85,27 @@ export class OrAddAssetDialog extends LitElement {
         return css`
             #name-wrapper {
                 display: flex;
-                padding: 10px;
+                flex-direction: column;
+                margin-top: 12px;
             }
-            
-            #name-wrapper > * {
-                margin: 0 5px;
-                flex: 1;
-            }
+
             #toggle-parent-selector,
             #remove-parent {
                 flex: 0 0 50px;
+                margin: 4px 0 0 5px;
+            }
+
+            #name-input,
+            #parent-wrapper {
+                margin: 10px 0;
+            }
+
+            #parent-wrapper {
+                display: flex;
+            }
+
+            #parent {
+                flex: 1 1 auto;
             }
             
             #parent-selector {
@@ -104,27 +116,67 @@ export class OrAddAssetDialog extends LitElement {
             #mdc-dialog-form-add {
                 display: flex;
                 height: 600px;
-                width: 800px;
+                width: 1000px;
                 border-style: solid;
                 border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
                 border-width: 1px 0;
             }
+
+            .msg {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                height: 100%;
+                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+                font-size: 14px;
+            }
+
             #asset-type-option-container {
                 padding: 15px;
                 flex: 1 1 auto;
                 overflow: auto;
                 max-width: 100%;
                 font-size: 16px;
-                background-color: var(--or-app-color2, ${unsafeCSS(DefaultColor2)});
             }
+
             #type-list {
-                padding-left: 10px;
                 width: 260px;
                 overflow: auto;
                 text-transform: capitalize;
                 border-right: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
             }
-            
+
+            #type-title {
+                display: flex;
+                align-items: center;
+                margin: 9px 4px;
+            }
+
+            #type-description {
+                text-transform: capitalize;
+                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                margin-left: 10px;
+                font-size: 18px;
+                font-weight: bold;
+                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+            }
+
+            .heading,
+            .mdc-list-group__subheader {
+                text-transform: uppercase;
+                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+                font-weight: bolder;
+                line-height: 1em;
+                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                letter-spacing: 0.025em;
+                font-size: 14px;
+                margin: 20px 0 10px;
+            }
+
+            .mdc-list-group__subheader {
+                margin: 20px 0 0 16px;
+            }
         `;
     }
     
@@ -154,7 +206,6 @@ export class OrAddAssetDialog extends LitElement {
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
         const lists: ListGroupItem[] = [];
-
         if (agentItems.length > 0) {
             lists.push(
                 {
@@ -176,20 +227,14 @@ export class OrAddAssetDialog extends LitElement {
 
         return html`
             <div class="col">
-                <div id="name-wrapper">
-                    <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
-                    <or-mwc-input id="parent" .type="${InputType.TEXT}" comfortable readonly outlined .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
-                    <or-mwc-input id="toggle-parent-selector" icon="pencil" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}" title="Edit parent"></or-mwc-input>
-                    <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}" title="Remove parent"></or-mwc-input>
-                </div>
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}
                     </div>
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
-                        ? html`` 
-                        : this.getTypeTemplate(this.selectedType)}
+                        ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
+                        : this.getTypeTemplate(this.selectedType, parentStr)}
                     </div>
                     ${!this.showParentAssetSelector
                         ? html``
@@ -200,7 +245,7 @@ export class OrAddAssetDialog extends LitElement {
         `;
     }
 
-    protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor) {
+    protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor, parentStr: string) {
 
         if (!descriptor.name) {
             return false;
@@ -211,18 +256,29 @@ export class OrAddAssetDialog extends LitElement {
             optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
 
         return html`
-            <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
-            <or-translate style="text-transform: capitalize; margin-bottom: 1.5em" id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            <div id="type-title">
+                <or-icon style="--or-icon-fill: ${descriptor.colour ? "#" + descriptor.colour : "unset"}" id="type-icon" .icon="${descriptor.icon}"></or-icon>
+                <or-translate id="type-description" .value="${Util.getAssetTypeLabel(descriptor)}"></or-translate>
+            </div>
+            <div id="name-wrapper">
+                <or-mwc-input id="name-input" .type="${InputType.TEXT}" min="1" max="1023" required .label="${i18next.t("name")}" .value="${this.name}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onNameChanged(e.detail.value)}"></or-mwc-input>
+                <div id="parent-wrapper">
+                    <or-mwc-input id="parent" .type="${InputType.TEXT}" readonly .label="${i18next.t("parent")}" .value="${parentStr}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
+                    <or-mwc-input id="remove-parent" ?disabled="${!this.parent}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-mwc-input>
+                    <or-mwc-input id="toggle-parent-selector" icon="${this.showParentAssetSelector ? "pencil-off" : "pencil"}" type="${InputType.BUTTON}" @click="${() => this._onToggleParentAssetSelector()}"></or-mwc-input>
+                </div>
+            </div>
             
             ${!attributes
                 ? html``
                 : html`
-                    <div style="margin-top: 0.5em">
-                        <strong>${i18next.t("attribute_plural")}</strong>
+                    <div>
+                        <div class="heading">${i18next.t("attribute_plural")}</div>
                         <div style="display: grid">
-                            ${attributes.map(attribute => html`
-                                <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
-                                              .disabled="${true}" .value="${true}"></or-mwc-input>
+                            ${attributes.sort(Util.sortByString((attribute) => attribute.name!))
+                                .map(attribute => html`
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
+                                                  .disabled="${true}" .value="${true}"></or-mwc-input>
                             `)}
                         </div>
                     `}
@@ -230,13 +286,14 @@ export class OrAddAssetDialog extends LitElement {
             ${!optionalAttributes
                 ? html``
                 : html`
-                    <div style="margin-top: 1.5em">
-                        <strong>${i18next.t("optional_attributes")}</strong>
+                    <div>
+                        <div class="heading">${i18next.t("optional_attributes")}</div>
                         <div style="display: grid">
-                            ${optionalAttributes.map(attribute => html`
-                                <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}" 
-                                              .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
-                                              @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
+                            ${optionalAttributes.sort(Util.sortByString((attribute) => attribute.name!))
+                                .map(attribute => html`
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${Util.getAttributeLabel(undefined, attribute, undefined, true)}"
+                                                  .value="${this.selectedAttributes.find((selected) => selected === attribute)}"
+                                                  @or-mwc-input-changed="${(evt: OrInputChangedEvent) => evt.detail.value ? this.selectedAttributes.push(attribute) : this.selectedAttributes.splice(this.selectedAttributes.findIndex((s) => s === attribute), 1)}"></or-mwc-input>
                             `)}
                         </div>
                     </div>

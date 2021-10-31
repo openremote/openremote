@@ -57,6 +57,10 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
         return asset.id;
     }
 
+    public String getAssetName() {
+        return asset.name;
+    }
+
     @Override
     public String getRealm() {
         return asset.realm;

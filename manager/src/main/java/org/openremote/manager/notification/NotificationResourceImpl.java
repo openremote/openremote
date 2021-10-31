@@ -193,7 +193,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         } else {
             // Regular users can only update notifications sent to them or assets in their realm
             // Restricted users can only update notifications sent to them or assets linked to them
-            boolean isRestrictedUser = managerIdentityService.getIdentityProvider().isRestrictedUser(getUserId());
+            boolean isRestrictedUser = managerIdentityService.getIdentityProvider().isRestrictedUser(getAuthContext());
             switch (sentNotification.getTarget()) {
 
                 case TENANT:

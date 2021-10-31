@@ -19,6 +19,7 @@
  */
 package org.openremote.test.users
 
+import org.junit.Ignore
 import org.openremote.manager.setup.SetupService
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.model.security.ClientRole
@@ -32,11 +33,14 @@ import javax.ws.rs.ForbiddenException
 
 import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD
 import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_DEFAULT_ROLES_PREFIX
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE
 
+@Ignore
 class UserResourceTest extends Specification implements ManagerContainerTrait {
 
     @Shared
@@ -73,7 +77,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 
     def "Get and update roles"() {
 
-        when: "a request is made for the roles in the smart city realm by the admin user"
+        when: "a request is made for the roles in the building realm by the admin user"
         def roles = adminUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
 
         then: "the standard client roles should have been returned"
@@ -134,5 +138,57 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         writeRole != null
         writeRole.compositeRoleIds.length == 1
         writeRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_ASSETS.value}.id)
+    }
+
+    def "Get and update realm roles"() {
+
+        when: "a request is made for the realm roles in the building realm by the admin user"
+        def roles = adminUserResource.getRealmRoles(null, keycloakTestSetup.tenantBuilding.realm)
+
+        then: "the standard realm roles should have been returned"
+        roles.size() == 4
+        def restrictedUser = roles.find {it.name == RESTRICTED_USER_REALM_ROLE}
+        restrictedUser != null
+
+        when: "a request is made for the realm roles in the building realm by a regular user"
+        regularUserResource.getRealmRoles(null, keycloakTestSetup.tenantBuilding.realm)
+
+        then: "a not allowed exception should be thrown"
+        thrown(ForbiddenException.class)
+
+        when: "a new realm role is created by the admin user"
+        List<Role> updatedRoles = new ArrayList<>(Arrays.asList(roles))
+        updatedRoles.add(new Role(
+                null,
+                "realmTest",
+                false, // Value is ignored on update
+                false, // Value is ignored on update
+                null
+        ).setDescription("This is a realm role"))
+        adminUserResource.updateRealmRoles(null, keycloakTestSetup.tenantBuilding.realm, updatedRoles as Role[])
+        roles = adminUserResource.getRealmRoles(null, keycloakTestSetup.tenantBuilding.realm)
+        def realmRole = roles.find {it.name == "realmTest"}
+
+        then: "the new realm role should have been saved"
+        realmRole != null
+        realmRole.description == "This is a realm role"
+//TODO: finish this test
+//
+//        when: "an existing realm role is updated by the admin user"
+//        def defaultRole = roles.find {it.name == KEYCLOAK_DEFAULT_ROLES_PREFIX + keycloakTestSetup.tenantBuilding.realm}
+//        def clientRoles = adminUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
+//        defaultRole.compositeRoleIds = [
+//                roles.find {it.name == RESTRICTED_USER_REALM_ROLE}.id,
+//                clientRoles.find { it.name == ClientRole.READ_ASSETS.value}
+//        ]
+//        adminUserResource.updateRoles(null, keycloakTestSetup.tenantBuilding.realm, roles)
+//        roles = adminUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
+//        defaultRole = roles.find {it.name == KEYCLOAK_DEFAULT_ROLES_PREFIX + keycloakTestSetup.tenantBuilding.realm}
+//
+//        then: "the write role should have been updated"
+//        defaultRole != null
+//        defaultRole.compositeRoleIds.length == 2
+//        defaultRole.compositeRoleIds.contains(roles.find {it.name == RESTRICTED_USER_REALM_ROLE}.id)
+//        defaultRole.compositeRoleIds.contains(clientRoles.find {it.name == ClientRole.READ_ASSETS.value}.id)
     }
 }

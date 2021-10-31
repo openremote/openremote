@@ -1,5 +1,5 @@
 import {css, unsafeCSS} from "lit";
-import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor4, DefaultHeaderHeight} from "@openremote/core";
+import {DefaultColor1, DefaultColor2, DefaultColor3, DefaultColor5, DefaultColor4, DefaultColor6, DefaultHeaderHeight} from "@openremote/core";
 
 // language=CSS
 export const panelStyles = css`
@@ -48,6 +48,14 @@ export const panelStyles = css`
     .panel-content > :last-child {
         margin-bottom: 0;
     }
+
+    @media screen and (max-width: 767px) {
+        .panel {
+            border-radius: 0;
+            border-right: none;
+            border-left: none;
+        }
+    }
 `;
 
 // language=CSS
@@ -62,6 +70,7 @@ export const style = css`
         --internal-or-asset-viewer-panel-color: var(--or-asset-viewer-panel-color, var(--or-app-color1, ${unsafeCSS(DefaultColor1)}));
         --internal-or-asset-viewer-line-color: var(--or-asset-viewer-line-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
         --internal-or-asset-viewer-button-color: var(--or-asset-viewer-button-color, var(--or-app-color4, ${unsafeCSS(DefaultColor4)}));
+        --internal-or-asset-viewer-error-color: var(--or-asset-viewer-error-color, var(--or-app-color6, ${unsafeCSS(DefaultColor6)}));
         --internal-or-header-height: var(--or-header-height, ${unsafeCSS(DefaultHeaderHeight)});
                 
         height: 100%;
@@ -87,7 +96,6 @@ export const style = css`
 
     #view-container, #edit-container {
         flex: 0 1 auto;
-        padding-top: 10px;
         overflow: auto;
         min-height: calc(100vh - 88px - var(--internal-or-header-height));
     }
@@ -107,19 +115,15 @@ export const style = css`
         -o-animation: fadein 0.3s; /* Opera < 12.1 */
         animation: fadein 0.3s;
     }
+
+    #edit-container {
+        padding: 10px 20px 0;
+    }
     
     #name-input {
         width: 300px;
     }
-    
-    @media only screen and (max-width: 767px) {
-        #wrapper {
-            position: absolute;
-            left: 0;
-            right: 0;
-        }
-    }
-    
+
     @keyframes fadein {
         from { opacity: 0; }
         to   { opacity: 1; }
@@ -164,7 +168,7 @@ export const style = css`
     }
 
     #title {
-        flex: 1 1 0%;
+        flex: 1 1 auto;
         font-size: 18px;
         font-weight: bold;
         display: flex;
@@ -177,18 +181,15 @@ export const style = css`
     }
 
     #error-wrapper {
-        color: red;
-        flex: 1;
-        display: flex;
-        align-items: center;
-    }
-    
-    #error-wrapper > span {
-        margin: auto;
+        color: var(--internal-or-asset-viewer-error-color);
     }
 
-    #error-wrapper or-icon {
-        margin-right: 5px;
+    #error-wrapper > * {
+        vertical-align: middle;
+    }
+
+    #error-wrapper or-translate {
+        margin-left: 5px;
     }
    
     #created-time {
@@ -196,7 +197,7 @@ export const style = css`
     }
     
     #right-wrapper {
-        flex: 1 1 0%;
+        flex: 1 1 auto;
         text-align: right;
     }
     
@@ -237,7 +238,39 @@ export const style = css`
         cursor: pointer;
     }
     
-    @media screen and (max-width: 769px) {
+    @media screen and (max-width: 1200px) {
+        #name-input {
+            width: 150px;
+        }
+
+        #chart-panel {
+            grid-row-start: 1;
+        }
+
+        #attributes-panel {
+            grid-row-start: 2;
+        }
+
+        #location-panel {
+            grid-row-start: 3;
+        }
+
+        #history-panel {
+            grid-row-start: 4;
+        }
+
+        .tabletHidden {
+            display: none;
+        }
+
+        #view-container {
+            grid-auto-rows: auto;
+            grid-template-columns: 100% !important;
+            min-height: unset;
+        }
+    }
+
+    @media screen and (max-width: 767px) {
         #wrapper {
             position: absolute;
             left: 0;
@@ -254,36 +287,19 @@ export const style = css`
         
         #asset-header {
             grid-area: auto!important;
-            padding: 20px 15px 0;
+            padding: 15px 15px 5px;
         }
 
-        .panel {
-            border-radius: 0;
-            border-right: none;
-            border-left: none;
+        #name-input {
+            width: auto;
         }
 
-        #chart-panel {
-            grid-row-start: 1;
+        #view-container {
+            padding: 0;
         }
 
-        #attributes-panel {
-            grid-row-start: 2;
-        }
-        
-        #location-panel {         
-            grid-row-start: 3;
-        }
-        
-        #history-panel {
-            grid-row-start: 4;
-        }
-        
-        #view-container { 
-            grid-auto-rows: auto;
-            grid-template-columns: 100% !important;
+        #edit-container {
             padding: 10px 0;
-            min-height: unset;
         }
     }
 `;

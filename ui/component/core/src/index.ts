@@ -390,34 +390,48 @@ export class AssetModelUtil {
         return valueDescriptor;
     }
 
-    public static resolveValueDescriptorFromValue(value: any): ValueDescriptor | undefined {
-        let valueDescriptor: ValueDescriptor | undefined;
-
+    public static resolveValueTypeFromValue(value: any): string {
         if (value === null || value === undefined) {
-            return;
+            return WellknownValueTypes.JSON;
         }
 
         if (typeof value === "number") {
-            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.NUMBER);
-        } else if (typeof value === "string") {
-            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.TEXT);
-        } else if (typeof value === "boolean") {
-            valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.BOOLEAN);
-        } else {
-            if (Array.isArray(value)) {
-                const v = (value as any[]).find(v => v !== undefined && v !== null);
-                const innerValueDescriptor = this.resolveValueDescriptorFromValue(v);
-                if (innerValueDescriptor) {
-                    valueDescriptor = {...innerValueDescriptor, arrayDimensions: 1};
-                }
-            } else if (value instanceof Date) {
-                valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.DATEANDTIME);
-            } else {
-                valueDescriptor = AssetModelUtil.getValueDescriptor(WellknownValueTypes.JSONOBJECT);
-            }
+            return WellknownValueTypes.NUMBER;
         }
+        if (typeof value === "string") {
+            return WellknownValueTypes.TEXT;
+        }
+        if (typeof value === "boolean") {
+            return WellknownValueTypes.BOOLEAN;
+        }
+        if (Array.isArray(value)) {
+            let dimensions = 1;
+            let v = (value as any[]).find(v => v !== undefined && v !== null);
 
-        return valueDescriptor;
+            while (Array.isArray(v)) {
+                v = (v as any[]).find(v => v !== undefined && v !== null);
+                dimensions++;
+            }
+
+            let valueType = this.resolveValueTypeFromValue(v);
+
+            while (dimensions > 0) {
+                valueType += "[]";
+                dimensions--;
+            }
+
+            return valueType;
+        }
+        if (value instanceof Date) {
+            return WellknownValueTypes.DATEANDTIME;
+        } else {
+            return WellknownValueTypes.JSONOBJECT;
+        }
+    }
+
+    public static resolveValueDescriptorFromValue(value: any): ValueDescriptor | undefined {
+        const valueType = AssetModelUtil.resolveValueTypeFromValue(value);
+        return AssetModelUtil.getValueDescriptor(valueType);
     }
 
     public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeNameOrDescriptor: string | AttributeDescriptor | undefined, attribute?: Attribute<any>): [AttributeDescriptor | undefined, ValueDescriptor | undefined] {

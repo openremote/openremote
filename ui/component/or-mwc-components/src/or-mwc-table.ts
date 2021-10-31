@@ -4,7 +4,7 @@ import {classMap} from "lit/directives/class-map";
 import {ifDefined} from "lit/directives/if-defined";
 import {MDCDataTable} from "@material/data-table";
 
-import {DefaultColor1, DefaultColor4, DefaultColor8} from "@openremote/core";
+import {DefaultColor3, DefaultColor2, DefaultColor1} from "@openremote/core";
 
 const dataTableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -36,7 +36,7 @@ const style = css`
         z-index: 1;
         position: sticky;
         left: 0;
-        background-color: var(--internal-or-asset-viewer-panel-color);
+        background-color: ${unsafeCSS(DefaultColor2)};
     }
     .mdc-data-table.has-sticky-first-column tr th:first-of-type {
         z-index: 2;
@@ -55,7 +55,7 @@ const style = css`
     th {
         position: sticky;
         top: 0;
-        background-color: var(--internal-or-asset-viewer-panel-color);
+        background-color: ${unsafeCSS(DefaultColor1)};
     }
 
     th, td {
@@ -69,7 +69,7 @@ const style = css`
 
     .mdc-data-table__header-cell {
         font-weight: 700;
-        color: #aaa;
+        color: ${unsafeCSS(DefaultColor3)};
         font-size: 12px;
     }
 `;

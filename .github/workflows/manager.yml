@@ -34,6 +34,7 @@ jobs:
           # Login to manager and add weather agent asset
           or-test-http-rest --dnsname localhost --password secret -vv
         timeout-minutes: 30
+        continue-on-error: true
 
 
   test_staging_demo:
@@ -82,7 +83,7 @@ jobs:
           name: dist-build
       - name: build and push images
         run: |
-          docker build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
+          #docker build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
 
   build:
     runs-on: ubuntu-latest

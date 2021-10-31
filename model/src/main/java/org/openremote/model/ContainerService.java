@@ -51,25 +51,24 @@ public interface ContainerService {
      * Gets the priority of this service which is used to determine initialization order when services are auto
      * discovered; services with a lower priority are initialized and started first.
      */
-    int getPriority();
+    default int getPriority() {
+        return DEFAULT_PRIORITY;
+    }
 
     /**
      * All services are initialized in the order they have been added to the container (if container started with
      * explicit list of services) otherwise they are initialized in order of {@link #getPriority}.
-     * @param container
      */
     void init(Container container) throws Exception;
 
     /**
      * After initialization, services are started in the order they have been added to the container (if container
      * started with explicit list of services) otherwise they are started in order of {@link #getPriority}.
-     * @param container
      */
     void start(Container container) throws Exception;
 
     /**
      * When the container is shutting down, it stops all services in the reverse order they were started.
-     * @param container
      */
     void stop(Container container) throws Exception;
 }

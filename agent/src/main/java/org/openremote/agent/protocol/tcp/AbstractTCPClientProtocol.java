@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.protocol.tcp;
 
-import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
+import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.agent.protocol.io.IOAgent;
 import org.openremote.agent.protocol.io.IOClient;
 import org.openremote.model.asset.agent.Agent;
@@ -29,7 +29,7 @@ import org.openremote.model.asset.agent.AgentLink;
  * This is an abstract TCP client protocol for communicating with TCP servers; concrete implementations must provide
  * an {@link IOClient <T> for handling over the wire communication}.
  */
-public abstract class AbstractTCPClientProtocol<T extends AbstractIOClientProtocol<T, U, W, X, V>, U extends IOAgent<U, T, V>, V extends AgentLink<?>, W, X extends TCPIOClient<W>> extends AbstractIOClientProtocol<T, U, W, X, V> {
+public abstract class AbstractTCPClientProtocol<T extends AbstractNettyIOClientProtocol<T, U, W, X, V>, U extends IOAgent<U, T, V>, V extends AgentLink<?>, W, X extends TCPIOClient<W>> extends AbstractNettyIOClientProtocol<T, U, W, X, V> {
 
     protected AbstractTCPClientProtocol(U agent) {
         super(agent);

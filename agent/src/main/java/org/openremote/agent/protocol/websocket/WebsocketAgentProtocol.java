@@ -24,7 +24,7 @@ import org.apache.http.HttpHeaders;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.jboss.resteasy.util.BasicAuthHelper;
-import org.openremote.agent.protocol.io.AbstractIOClientProtocol;
+import org.openremote.agent.protocol.io.AbstractNettyIOClientProtocol;
 import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -65,10 +65,10 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  * <h2>Protocol Specifics</h2>
  * When the websocket connection is established it is possible to subscribe to events by specifying the
  * {@link WebsocketAgent#CONNECT_SUBSCRIPTIONS} on the {@link WebsocketAgent} or
- * {@link WebsocketAgentLink#getConnectSubscriptions()} on linked {@link Attribute}s; a
+ * {@link WebsocketAgentLink#getWebsocketSubscriptions()} on linked {@link Attribute}s; a
  * subscription can be a message sent over the websocket or a HTTP REST API call.
  */
-public class WebsocketAgentProtocol extends AbstractIOClientProtocol<WebsocketAgentProtocol, WebsocketAgent, String, WebsocketIOClient<String>, WebsocketAgentLink> {
+public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<WebsocketAgentProtocol, WebsocketAgent, String, WebsocketIOClient<String>, WebsocketAgentLink> {
 
     public static final String PROTOCOL_DISPLAY_NAME = "Websocket Client";
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, WebsocketAgentProtocol.class);

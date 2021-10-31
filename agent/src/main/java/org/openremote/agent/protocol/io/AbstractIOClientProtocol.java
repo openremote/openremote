@@ -172,8 +172,6 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
         W client = doCreateIoClient();
         ProtocolIOClient<V, W> protocolIoClient = new ProtocolIOClient<>(client, this::onConnectionStatusChanged, this::onMessageReceived);
         this.client = protocolIoClient;
-        Supplier<ChannelHandler[]> encoderDecoderProvider = getEncoderDecoderProvider();
-        client.setEncoderDecoderProvider(encoderDecoderProvider);
         return protocolIoClient;
     }
 
@@ -185,12 +183,9 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     }
 
     /**
-     * Should return an instance of {@link IOClient} for the linked {@link Agent}; the configuration of
-     * encoders/decoders is handled by the separate call to {@link #getEncoderDecoderProvider}
+     * Should return an instance of {@link IOClient} for the linked {@link Agent}.
      */
     protected abstract W doCreateIoClient() throws Exception;
-
-    protected abstract Supplier<ChannelHandler[]> getEncoderDecoderProvider();
 
     /**
      * Called when the {@link IOClient} receives a message from the server

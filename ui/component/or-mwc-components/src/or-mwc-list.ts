@@ -191,7 +191,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
             if (type === ListType.RADIO) {
                 textTemplate = html`<label class="mdc-list-item__text" for="radio-item-${index+1}">${translate && !!text ? i18next.t(text) : text}</label>`;
             } else {
-                textTemplate = html`<span class="mdc-list-item__text">${translate && !!text ? i18next.t(text) : text}</span>`;
+                textTemplate = html`<span class="mdc-list-item__text" title="${translate && !!text ? i18next.t(text) : text}">${translate && !!text ? i18next.t(text) : text}</span>`;
             }
         }
     }
