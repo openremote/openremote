@@ -16,4 +16,12 @@ textarea, input[type=text], input[type=number], select
     width: auto;
     border: none;
 }
+.attribute-label{
+    padding: 5px;
+    background: rgba(0,0,0,0.2);
+    color: white;
+    border-radius: var(--roundness);
+    font-size: 110%;
+    font-weight: 400;
+}
 `;
