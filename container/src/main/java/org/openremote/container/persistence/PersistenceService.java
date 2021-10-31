@@ -38,6 +38,8 @@ import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
+import org.openremote.model.provisioning.ProvisioningConfig;
+import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.TenantRuleset;
@@ -282,6 +284,8 @@ public class PersistenceService implements ContainerService {
         entityClasses.add(SyslogEvent.class.getName());
         entityClasses.add(GatewayConnection.class.getName());
         entityClasses.add(ConsoleAppConfig.class.getName());
+        entityClasses.add(ProvisioningConfig.class.getName());
+        entityClasses.add(X509ProvisioningConfig.class.getName());
 
         // Add packages with package-info (don't think this is JPA spec but hibernate specific)
         entityClasses.add("org.openremote.container.persistence");

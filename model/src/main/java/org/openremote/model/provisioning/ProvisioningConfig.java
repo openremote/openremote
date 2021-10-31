@@ -21,34 +21,20 @@ package org.openremote.model.provisioning;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.vladmihalcea.hibernate.type.array.EnumArrayType;
-import org.hibernate.annotations.Parameter;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
+import org.openremote.model.Constants;
 import org.openremote.model.security.ClientRole;
 
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.Arrays;
 import java.util.Date;
 
 import static javax.persistence.DiscriminatorType.STRING;
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
-@TypeDefs({
-    @TypeDef(
-        typeClass = EnumArrayType.class,
-        defaultForType = ClientRole[].class,
-        parameters = {
-            @Parameter(
-                name = EnumArrayType.SQL_ARRAY_TYPE,
-                value = "client_role"
-            )
-        }
-    )
-})
+@Entity
 @Table(name = "provisioning_config")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", discriminatorType = STRING)
@@ -74,13 +60,15 @@ public abstract class ProvisioningConfig<T> {
     protected Date lastModified;
 
     @NotNull
-    @Column(name = "NAME", nullable = false, columnDefinition = "text")
+    @Column(name = "NAME", nullable = false)
+    @Size(min = 3, max = 255, message = "{ProvisioningConfig.name.Size}")
     protected String name;
 
-    @Column(name = "TYPE", columnDefinition = "text")
+    @Column(name = "TYPE", nullable = false, updatable = false, insertable = false, length = 100, columnDefinition = "char(100)")
+    @Size(min = 3, max = 100, message = "{ProvisioningConfig.type.Size}")
     protected String type;
 
-    @Column(name = "REALM", columnDefinition = "text")
+    @Column(name = "REALM")
     protected String realm;
 
     @Column(name = "ASSET_TEMPLATE", columnDefinition = "text")
@@ -90,17 +78,18 @@ public abstract class ProvisioningConfig<T> {
     protected boolean restrictedUser;
 
     @Column(name = "ROLES", columnDefinition = "client_role[]")
+    @org.hibernate.annotations.Type(type = Constants.PERSISTENCE_STRING_ARRAY_TYPE)
+    @Enumerated(EnumType.STRING)
     protected ClientRole[] userRoles;
 
     @Column(name = "DISABLED", nullable = false)
-    protected boolean disabled;
+    protected boolean disabled = false;
 
-    /**
-     * JSON serialisable data for a specific implementation
-     */
-    @Column(name = "DATA", columnDefinition = "jsonb")
-    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
-    protected T data;
+    protected ProvisioningConfig() {}
+
+    protected ProvisioningConfig(String name) {
+        this.name = name;
+    }
 
     public Long getId() {
         return id;
@@ -112,6 +101,12 @@ public abstract class ProvisioningConfig<T> {
 
     public Date getLastModified() {
         return lastModified;
+    }
+
+    @PreUpdate
+    @PrePersist
+    protected void updateLastModified() {
+        lastModified = new Date();
     }
 
     public String getName() {
@@ -163,14 +158,11 @@ public abstract class ProvisioningConfig<T> {
         return this;
     }
 
-    public T getData() {
-        return data;
-    }
-
-    public ProvisioningConfig<T> setData(T data) {
-        this.data = data;
-        return this;
-    }
+    /**
+     * Implementors must annotate the data field with @Column as JPA (Hibernate) doesn't work with generic fields
+     */
+    public abstract T getData();
+    public abstract ProvisioningConfig<T> setData(T data);
 
     public String getRealm() {
         return realm;
@@ -190,11 +182,11 @@ public abstract class ProvisioningConfig<T> {
             ", name='" + name + '\'' +
             ", type='" + type + '\'' +
             ", realm='" + realm + '\'' +
-            ", assetTemplate='" + assetTemplate + '\'' +
+            ", assetTemplateSet='" + (assetTemplate != null) + '\'' +
             ", restrictedUser=" + restrictedUser +
             ", userRoles=" + Arrays.toString(userRoles) +
             ", disabled=" + disabled +
-            ", data=" + data +
+            ", data=" + getData() +
             '}';
     }
 }

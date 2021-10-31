@@ -21,6 +21,7 @@ package org.openremote.manager.mqtt;
 
 import io.moquette.BrokerConstants;
 import io.moquette.broker.Server;
+import io.moquette.broker.SessionRegistry;
 import io.moquette.broker.config.MemoryConfig;
 import io.moquette.broker.security.IAuthenticator;
 import io.moquette.interception.InterceptHandler;
@@ -42,9 +43,11 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -198,7 +201,34 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
 
     public MqttConnection removeConnection(String clientId) {
         synchronized (clientIdConnectionMap) {
-            return clientIdConnectionMap.remove(clientId);
+            MqttConnection connection = clientIdConnectionMap.remove(clientId);
+            if (connection != null && !connection.isCleanSession()) {
+                forceClearSession(clientId);
+            }
+            return connection;
+        }
+    }
+
+    /**
+     * We have this as there's no way to configure expiry time of sessions in Moquette so to make things simple we
+     * clear the session whenever the client disconnects; the client can then re-subscribe as needed
+     */
+    public void forceClearSession(String clientId) {
+        if (mqttBroker == null) {
+            return;
+        }
+
+        try {
+            Field sessionsField = Server.class.getDeclaredField("sessions");
+            Field poolField = SessionRegistry.class.getDeclaredField("pool");
+            sessionsField.setAccessible(true);
+            poolField.setAccessible(true);
+            SessionRegistry sessions = (SessionRegistry) sessionsField.get(mqttBroker);
+            ConcurrentMap<?,?> pool = (ConcurrentMap<?, ?>) poolField.get(sessions);
+            Object session = pool.get(clientId);
+            pool.remove(clientId, session);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to clear session using reflection", e);
         }
     }
 

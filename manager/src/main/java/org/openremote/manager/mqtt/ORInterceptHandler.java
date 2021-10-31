@@ -75,7 +75,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             username = realmAndUsername[1];
         }
 
-        MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password);
+        MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password, msg.isCleanSession());
         brokerService.addConnection(connection.getClientId(), connection);
 
         // Notify all custom handlers

@@ -751,16 +751,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else {
                 updatedAsset = em.merge(asset);
                 if (existingAsset == null) {
-                    if (LOG.isLoggable(Level.FINE)) {
-                        LOG.fine("Asset created: " + updatedAsset.toStringAll());
+                    if (LOG.isLoggable(Level.FINER)) {
+                        LOG.finer("Asset created: " + updatedAsset.toStringAll());
                     } else {
-                        LOG.info("Asset created: " + updatedAsset);
+                        LOG.fine("Asset created: " + updatedAsset);
                     }
                 } else {
-                    if (LOG.isLoggable(Level.FINE)) {
-                        LOG.fine("Asset updated: new = " + updatedAsset.toStringAll() + ", old = " + existingAsset.toStringAll());
+                    if (LOG.isLoggable(Level.FINER)) {
+                        LOG.finer("Asset updated: new = " + updatedAsset.toStringAll() + ", old = " + existingAsset.toStringAll());
                     } else {
-                        LOG.info("Asset updated: " + updatedAsset);
+                        LOG.fine("Asset updated: " + updatedAsset);
                     }
                 }
             }
@@ -1198,7 +1198,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String[] updatedProperties = Arrays.stream(persistenceEvent.getPropertyNames()).filter(propertyName -> {
                     Object oldValue = persistenceEvent.getPreviousState(propertyName);
                     Object newValue = persistenceEvent.getCurrentState(propertyName);
-                    return !Objects.equals(oldValue, newValue);
+                    return !Objects.deepEquals(oldValue, newValue);
                 }).toArray(String[]::new);
 
                 // Fully load the asset

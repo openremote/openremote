@@ -116,7 +116,7 @@ services:
       - deployment-data:/deployment
     environment:
       KEYCLOAK_PASSWORD: ${PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: "${EXTERNAL_URL:-https://localhost}/auth"
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
 
   postgresql:
     image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}

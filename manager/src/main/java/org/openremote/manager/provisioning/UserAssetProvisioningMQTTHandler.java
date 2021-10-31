@@ -217,6 +217,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return;
         }
 
+        // Check if config is disabled
+        if (matchingConfig.isDisabled()) {
+            LOG.fine("Matching provisioning config is disabled for client certificate: topic=" + topic + ", connection=" + connection);
+            brokerService.publishMessage(getResponseTopic(topic), new ErrorResponseMessage(ErrorResponseMessage.Error.CONFIG_DISABLED), MqttQoS.AT_MOST_ONCE);
+            return;
+        }
+
         // Validate unique ID
         String certUniqueId = ProvisioningUtil.getSubjectCN(clientCertificate.getSubjectX500Principal());
         String uniqueId = topicTokenIndexToString(topic, 1);
@@ -236,7 +243,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String realm = matchingConfig.getRealm();
 
         // Get/create service user
-        String serviceUsername = "PS-" + uniqueId;
+        String serviceUsername = ("ps-" + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
         User serviceUser;
 
         try {
@@ -287,7 +294,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection);
 
         // Update connection with service user credentials
-        connection.setCredentials(serviceUser.getUsername(), serviceUser.getSecret());
+        connection.setCredentials(realm, serviceUser.getUsername(), serviceUser.getSecret());
         brokerService.publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
     }
 
@@ -301,7 +308,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
                 try {
                     X509Certificate caCertificate = config.getCertificate();
                     if (caCertificate != null) {
-                        if (!caCertificate.getSubjectX500Principal().getName().equals(clientCertificate.getIssuerX500Principal().getName())) {
+                        if (caCertificate.getSubjectX500Principal().getName().equals(clientCertificate.getIssuerX500Principal().getName())) {
                             LOG.fine("Client certificate issuer matches provisioning config CA certificate subject: connection=" + connection + ", config=" + config);
                             Date now = Date.from(timerService.getNow());
 
@@ -339,7 +346,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .setEnabled(true)
             .setUsername(username);
 
-        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, null);
+        String secret = UniqueIdentifierGenerator.generateId();
+        serviceUser = identityProvider.createUpdateUser(realm, serviceUser, secret);
 
         if (provisioningConfig.getUserRoles() != null && provisioningConfig.getUserRoles().length > 0) {
             LOG.finer("Setting user roles: realm=" + realm + ", username=" + username + ", roles=" + Arrays.toString(provisioningConfig.getUserRoles()));
@@ -358,6 +366,8 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             identityProvider.updateUserRoles(realm, serviceUser.getId(), null, RESTRICTED_USER_REALM_ROLE);
         }
 
+        // Inject secret
+        serviceUser.setSecret(secret);
         return serviceUser;
     }
 

@@ -39,7 +39,7 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth}
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
   manager:

@@ -19,29 +19,20 @@
  */
 package org.openremote.manager.provisioning;
 
-import org.apache.commons.io.IOUtils;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.asset.impl.WeatherAsset;
 import org.openremote.model.provisioning.ProvisioningConfig;
-import org.openremote.model.provisioning.X509ProvisioningConfig;
-import org.openremote.model.provisioning.X509ProvisioningData;
-import org.openremote.model.provisioning.X509ProvisioningMessage;
-import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.ValueUtil;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.cert.CertificateException;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ProvisioningService implements ContainerService {
@@ -77,34 +68,44 @@ public class ProvisioningService implements ContainerService {
 
     }
 
-    public List<ProvisioningConfig<?>> getProvisioningConfigs() {
-        String caPemStr = null;
-        try {
-            caPemStr = IOUtils.toString(getClass().getResource("/org/openremote/test/provisioning/ca_long.pem"), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return Collections.singletonList(
-            new X509ProvisioningConfig().setData(
-                new X509ProvisioningData()
-                    .setCACertPEM(caPemStr)
-            ).setAssetTemplate(
-                ValueUtil.asJSON(
-                    new WeatherAsset("Weather Asset")
-                ).orElse("")
-            ).setRealm("building")
-            .setRestrictedUser(true)
-            .setUserRoles(new ClientRole[] {
-                ClientRole.WRITE_ASSETS,
-                ClientRole.READ_ASSETS
-            })
-        );
-//
-//        return persistenceService.doReturningTransaction(entityManager ->
-//            entityManager.createQuery(
-//                "select pc from " + ProvisioningConfig.class + " pc " +
-//                    "order by pc.name desc",
-//                ProvisioningConfig.class)
-//                .getResultList());
+    public <T extends ProvisioningConfig<?>> T merge(T provisioningConfig) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+
+            // Do standard JSR-380 validation on the config
+            Set<ConstraintViolation<ProvisioningConfig<?>>> validationFailures = ValueUtil.validate(provisioningConfig);
+
+            if (validationFailures.size() > 0) {
+                String msg = "Provisioning config merge failed as failed constraint validation: config=" + provisioningConfig;
+                ConstraintViolationException ex = new ConstraintViolationException(validationFailures);
+                LOG.log(Level.WARNING, msg + ", exception=" + ex.getMessage(), ex);
+                throw ex;
+            }
+
+            T mergedConfig = entityManager.merge(provisioningConfig);
+            if (provisioningConfig.getId() != null) {
+                LOG.fine("Provisioning config updated: " + provisioningConfig);
+            } else {
+                LOG.fine("Provisioning config created: " + provisioningConfig);
+            }
+
+            return mergedConfig;
+        });
+    }
+
+    public void delete(Long id) {
+        persistenceService.doTransaction(entityManager -> {
+            ProvisioningConfig<?> provisioningConfig = entityManager.find(ProvisioningConfig.class, id);
+            if (provisioningConfig != null)
+                entityManager.remove(provisioningConfig);
+        });
+    }
+
+    public List<ProvisioningConfig> getProvisioningConfigs() {
+            return persistenceService.doReturningTransaction(entityManager ->
+                entityManager.createQuery(
+                    "select pc from " + ProvisioningConfig.class.getSimpleName() + " pc " +
+                        "order by pc.name desc",
+                    ProvisioningConfig.class)
+                    .getResultList());
     }
 }
