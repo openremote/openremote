@@ -584,7 +584,7 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
 
 
     public T setLocation(GeoJSONPoint location) {
-        getAttributes().addOrReplace(new Attribute<>(LOCATION, location));
+        getAttributes().getOrCreate(LOCATION).setValue(location);
         return (T) this;
     }
 
@@ -622,7 +622,6 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return getAttributes().getValue(MANUFACTURER);
     }
 
-
     public T setManufacturer(String manufacturer) {
         getAttributes().getOrCreate(MANUFACTURER).setValue(manufacturer);
         return (T) this;
@@ -631,7 +630,6 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public Optional<String> getModel() {
         return getAttributes().getValue(MODEL);
     }
-
 
     public T setModel(String model) {
         getAttributes().getOrCreate(MODEL).setValue(model);

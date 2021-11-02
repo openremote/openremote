@@ -157,7 +157,7 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
 
     @SuppressWarnings("unchecked")
     public T setDisabled(boolean disabled) {
-        getAttributes().addOrReplace(new Attribute<>(DISABLED, disabled));
+        getAttributes().getOrCreate(DISABLED).setValue(disabled);
         return (T) this;
     }
 

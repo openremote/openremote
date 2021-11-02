@@ -65,7 +65,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setClientId(String clientId) {
-        getAttributes().addOrReplace(new Attribute<>(CLIENT_ID, clientId));
+        getAttributes().getOrCreate(CLIENT_ID).setValue(clientId);
         return this;
     }
 
@@ -74,7 +74,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setSecureMode(boolean secureMode) {
-        getAttributes().addOrReplace(new Attribute<>(SECURE_MODE, secureMode));
+        getAttributes().getOrCreate(SECURE_MODE).setValue(secureMode);
         return this;
     }
 
@@ -83,7 +83,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setWebsocketMode(boolean websocketMode) {
-        getAttributes().addOrReplace(new Attribute<>(WEBSOCKET_MODE, websocketMode));
+        getAttributes().getOrCreate(WEBSOCKET_MODE).setValue(websocketMode);
         return this;
     }
 
@@ -92,7 +92,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setResumeSession(boolean resumeSession) {
-        getAttributes().addOrReplace(new Attribute<>(RESUME_SESSION, resumeSession));
+        getAttributes().getOrCreate(RESUME_SESSION).setValue(resumeSession);
         return this;
     }
 
@@ -101,7 +101,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setWebsocketPath(String websocketPath) {
-        getAttributes().addOrReplace(new Attribute<>(WEBSOCKET_PATH, websocketPath));
+        getAttributes().getOrCreate(WEBSOCKET_PATH).setValue(websocketPath);
         return this;
     }
 
@@ -110,7 +110,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setWebsocketQuery(String websocketQuery) {
-        getAttributes().addOrReplace(new Attribute<>(WEBSOCKET_QUERY, websocketQuery));
+        getAttributes().getOrCreate(WEBSOCKET_QUERY).setValue(websocketQuery);
         return this;
     }
 }
