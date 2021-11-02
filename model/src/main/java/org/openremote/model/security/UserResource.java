@@ -54,8 +54,9 @@ public interface UserResource {
 
     @GET
     @Path("{realm}/realm-roles")
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Produces(APPLICATION_JSON)
+    @SuppressWarnings("unusable-by-js")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     Role[] getRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @PUT
