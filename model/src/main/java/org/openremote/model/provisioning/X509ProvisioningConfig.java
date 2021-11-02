@@ -32,7 +32,7 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 
 @Entity
 @DiscriminatorValue("x509")
-public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningData> {
+public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningData, X509ProvisioningConfig> {
 
     @Transient
     protected X509Certificate certificate;
@@ -51,7 +51,7 @@ public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningD
     }
 
     @Override
-    public ProvisioningConfig<X509ProvisioningData> setData(X509ProvisioningData data) {
+    public X509ProvisioningConfig setData(X509ProvisioningData data) {
         this.data = data;
         return this;
     }

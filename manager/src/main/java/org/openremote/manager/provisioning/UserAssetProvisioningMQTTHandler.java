@@ -338,7 +338,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             .orElse(null);
     }
 
-    protected User createClientServiceUser(String realm, String username, ProvisioningConfig<?> provisioningConfig) {
+    protected User createClientServiceUser(String realm, String username, ProvisioningConfig<?, ?> provisioningConfig) {
         LOG.fine("Creating client service user: realm=" + realm + ", username=" + username);
 
         User serviceUser = new User()
@@ -371,7 +371,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         return serviceUser;
     }
 
-    protected Asset<?> createClientAsset(String realm, String assetId, String uniqueId, User serviceUser, ProvisioningConfig<?> provisioningConfig) throws RuntimeException {
+    protected Asset<?> createClientAsset(String realm, String assetId, String uniqueId, User serviceUser, ProvisioningConfig<?, ?> provisioningConfig) throws RuntimeException {
         LOG.fine("Creating client asset: realm=" + realm + ", username=" + serviceUser.getUsername());
 
         if (TextUtil.isNullOrEmpty(provisioningConfig.getAssetTemplate())) {

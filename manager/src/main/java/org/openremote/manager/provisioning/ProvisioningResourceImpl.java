@@ -35,17 +35,17 @@ public class ProvisioningResourceImpl implements ProvisioningResource {
     }
 
     @Override
-    public ProvisioningConfig<?> getProvisioningConfigs() {
+    public ProvisioningConfig<?, ?> getProvisioningConfigs() {
         return null;
     }
 
     @Override
-    public long createProvisioningConfig(ProvisioningConfig<?> provisioningConfig) {
+    public long createProvisioningConfig(ProvisioningConfig<?, ?> provisioningConfig) {
         return 0;
     }
 
     @Override
-    public void updateProvisioningConfig(RequestParams requestParams, Long id, ProvisioningConfig<?> provisioningConfig) {
+    public void updateProvisioningConfig(RequestParams requestParams, Long id, ProvisioningConfig<?, ?> provisioningConfig) {
 
     }
 

@@ -34,6 +34,7 @@ import java.util.Date;
 import static javax.persistence.DiscriminatorType.STRING;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
+@SuppressWarnings("unchecked")
 @Entity
 @Table(name = "provisioning_config")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -42,7 +43,7 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @JsonSubTypes(
     @JsonSubTypes.Type(name = "x509", value = X509ProvisioningConfig.class)
 )
-public abstract class ProvisioningConfig<T> {
+public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> {
 
     @Id
     @Column(name = "ID")
@@ -113,9 +114,9 @@ public abstract class ProvisioningConfig<T> {
         return name;
     }
 
-    public ProvisioningConfig<T> setName(String name) {
+    public U setName(String name) {
         this.name = name;
-        return this;
+        return (U)this;
     }
 
     public String getType() {
@@ -126,51 +127,51 @@ public abstract class ProvisioningConfig<T> {
         return assetTemplate;
     }
 
-    public ProvisioningConfig<T> setAssetTemplate(String assetTemplate) {
+    public U setAssetTemplate(String assetTemplate) {
         this.assetTemplate = assetTemplate;
-        return this;
+        return (U)this;
     }
 
     public boolean isRestrictedUser() {
         return restrictedUser;
     }
 
-    public ProvisioningConfig<T> setRestrictedUser(boolean restrictedUser) {
+    public U setRestrictedUser(boolean restrictedUser) {
         this.restrictedUser = restrictedUser;
-        return this;
+        return (U)this;
     }
 
     public ClientRole[] getUserRoles() {
         return userRoles;
     }
 
-    public ProvisioningConfig<T> setUserRoles(ClientRole[] userRoles) {
+    public U setUserRoles(ClientRole[] userRoles) {
         this.userRoles = userRoles;
-        return this;
+        return (U)this;
     }
 
     public boolean isDisabled() {
         return disabled;
     }
 
-    public ProvisioningConfig<T> setDisabled(boolean disabled) {
+    public U setDisabled(boolean disabled) {
         this.disabled = disabled;
-        return this;
+        return (U)this;
     }
 
     /**
      * Implementors must annotate the data field with @Column as JPA (Hibernate) doesn't work with generic fields
      */
     public abstract T getData();
-    public abstract ProvisioningConfig<T> setData(T data);
+    public abstract U setData(T data);
 
     public String getRealm() {
         return realm;
     }
 
-    public ProvisioningConfig<T> setRealm(String realm) {
+    public U setRealm(String realm) {
         this.realm = realm;
-        return this;
+        return (U)this;
     }
 
     @Override

@@ -68,11 +68,11 @@ public class ProvisioningService implements ContainerService {
 
     }
 
-    public <T extends ProvisioningConfig<?>> T merge(T provisioningConfig) {
+    public <T extends ProvisioningConfig<?, ?>> T merge(T provisioningConfig) {
         return persistenceService.doReturningTransaction(entityManager -> {
 
             // Do standard JSR-380 validation on the config
-            Set<ConstraintViolation<ProvisioningConfig<?>>> validationFailures = ValueUtil.validate(provisioningConfig);
+            Set<ConstraintViolation<ProvisioningConfig<?, ?>>> validationFailures = ValueUtil.validate(provisioningConfig);
 
             if (validationFailures.size() > 0) {
                 String msg = "Provisioning config merge failed as failed constraint validation: config=" + provisioningConfig;
@@ -94,7 +94,7 @@ public class ProvisioningService implements ContainerService {
 
     public void delete(Long id) {
         persistenceService.doTransaction(entityManager -> {
-            ProvisioningConfig<?> provisioningConfig = entityManager.find(ProvisioningConfig.class, id);
+            ProvisioningConfig<?, ?> provisioningConfig = entityManager.find(ProvisioningConfig.class, id);
             if (provisioningConfig != null)
                 entityManager.remove(provisioningConfig);
         });
