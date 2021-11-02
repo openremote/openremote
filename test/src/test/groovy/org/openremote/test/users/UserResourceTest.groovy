@@ -181,8 +181,8 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
 //                roles.find {it.name == RESTRICTED_USER_REALM_ROLE}.id,
 //                clientRoles.find { it.name == ClientRole.READ_ASSETS.value}
 //        ]
-//        adminUserResource.updateRoles(null, keycloakTestSetup.tenantBuilding.realm, roles)
-//        roles = adminUserResource.getRoles(null, keycloakTestSetup.tenantBuilding.realm)
+//        adminUserResource.updateRealmRoles(null, keycloakTestSetup.tenantBuilding.realm, roles)
+//        roles = adminUserResource.getRealmRoles(null, keycloakTestSetup.tenantBuilding.realm)
 //        defaultRole = roles.find {it.name == KEYCLOAK_DEFAULT_ROLES_PREFIX + keycloakTestSetup.tenantBuilding.realm}
 //
 //        then: "the write role should have been updated"

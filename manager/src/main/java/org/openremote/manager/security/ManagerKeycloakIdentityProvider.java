@@ -662,7 +662,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
         representation.setName(role.getName());
         representation.setDescription(role.getDescription());
-        representation.setClientRole(true);
+        representation.setClientRole(false);
         if (representation.getId() == null) {
             realmResource.roles().create(representation);
         } else {
