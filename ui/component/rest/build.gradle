@@ -12,6 +12,12 @@ buildscript {
 }
 
 dependencies {
+    if (isCustomProject()) {
+        def customModel = findProject(":model")
+        if (customModel != null) {
+            compile customModel
+        }
+    }
     compile resolveProject(":model")
     compile resolveProject(":ui:component:model")
     compile "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
