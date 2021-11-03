@@ -310,20 +310,6 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
         }
     }
 
-    @Override
-    public void updateRealmRoles(RequestParams requestParams, String realm, Role[] roles) {
-        try {
-            identityService.getIdentityProvider().updateRealmRoles(
-                    realm,
-                    roles);
-        } catch (ClientErrorException ex) {
-            ex.printStackTrace(System.out);
-            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
-        } catch (Exception ex) {
-            throw new NotFoundException(ex);
-        }
-    }
-
     protected void throwIfIllegalMasterAdminUserDeletion(RequestParams requestParams, String realm, String userId) throws WebApplicationException {
         if (!realm.equals(MASTER_REALM)) {
             return;

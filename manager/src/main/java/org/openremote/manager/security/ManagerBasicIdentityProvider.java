@@ -185,11 +185,6 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void updateRealmRoles(String realm, Role[] roles) {
-        throw new UnsupportedOperationException("This provider does not support updating realm roles");
-    }
-
-    @Override
     public Role[] getUserRoles(String realm, String userId, String client) {
         return ClientRole.ALL_ROLES.stream()
             .map(role -> new Role(UUID.randomUUID().toString(), role, false, true, null))

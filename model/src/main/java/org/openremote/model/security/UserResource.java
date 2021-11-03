@@ -71,12 +71,6 @@ public interface UserResource {
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     void updateClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, Role[] roles, @PathParam("clientId") String clientId);
 
-    @PUT
-    @Path("{realm}/realm-roles")
-    @Consumes(APPLICATION_JSON)
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    void updateRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, Role[] roles);
-
     @GET
     @Produces(APPLICATION_JSON)
     @Path("{realm}/users")
