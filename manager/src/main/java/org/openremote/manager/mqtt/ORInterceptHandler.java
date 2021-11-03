@@ -84,7 +84,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage msg) {
-        MqttConnection connection = brokerService.removeConnection(msg.getClientID());
+        MqttConnection connection = brokerService.clearConnectionSession(msg.getClientID());
 
         if (connection != null) {
             // No topic info here so just notify all custom handlers
@@ -94,7 +94,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
-        MqttConnection connection = brokerService.removeConnection(msg.getClientID());
+        MqttConnection connection = brokerService.clearConnectionSession(msg.getClientID());
 
         if (connection != null) {
             // No topic info here so just notify all custom handlers

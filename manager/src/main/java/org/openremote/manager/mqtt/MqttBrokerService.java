@@ -44,6 +44,7 @@ import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -79,6 +80,7 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
     protected String host;
     protected int port;
     protected Server mqttBroker;
+    protected SessionRegistry sessionRegistry;
 
     @Override
     public int getPriority() {
@@ -199,36 +201,86 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
         }
     }
 
-    public MqttConnection removeConnection(String clientId) {
+    /**
+     * We have this as there's no way to configure expiry time of sessions in Moquette so to make things simple we
+     * clear the session whenever the client disconnects; the client can then re-subscribe as needed
+     */
+    public MqttConnection clearConnectionSession(String clientId) {
+        if (mqttBroker == null) {
+            return null;
+        }
+
         synchronized (clientIdConnectionMap) {
             MqttConnection connection = clientIdConnectionMap.remove(clientId);
             if (connection != null && !connection.isCleanSession()) {
-                forceClearSession(clientId);
+                try {
+                    SessionRegistry sessionRegistry = getSessionRegistry();
+                    Object session = getSession(clientId);
+                    if (sessionRegistry == null || session == null) {
+                        throw new IllegalStateException("Couldn't get session registry and/or session for client: " + clientId);
+                    }
+                    Method removeMethod = sessionRegistry.getClass().getDeclaredMethod("remove", session.getClass());
+                    removeMethod.setAccessible(true);
+                    removeMethod.invoke(sessionRegistry, session);
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Failed to remove Moquette session using reflection", e);
+                }
             }
             return connection;
         }
     }
 
-    /**
-     * We have this as there's no way to configure expiry time of sessions in Moquette so to make things simple we
-     * clear the session whenever the client disconnects; the client can then re-subscribe as needed
-     */
-    public void forceClearSession(String clientId) {
+    protected SessionRegistry getSessionRegistry() {
         if (mqttBroker == null) {
+            return null;
+        }
+        if (sessionRegistry == null) {
+            try {
+                Field sessionsField = mqttBroker.getClass().getDeclaredField("sessions");
+                sessionsField.setAccessible(true);
+                sessionRegistry = (SessionRegistry) sessionsField.get(mqttBroker);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to get Moquette session registry using reflection", e);
+            }
+        }
+
+        return sessionRegistry;
+    }
+
+    protected Object getSession(String clientId) {
+        if (mqttBroker == null) {
+            return null;
+        }
+
+        try {
+            SessionRegistry sessionRegistry = getSessionRegistry();
+            Method retrieveSessionMethod = SessionRegistry.class.getDeclaredMethod("retrieve", String.class);
+            retrieveSessionMethod.setAccessible(true);
+            return retrieveSessionMethod.invoke(sessionRegistry, clientId);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed to get Moquette session using reflection", e);
+        }
+
+        return null;
+    }
+
+    public void forceDisconnect(String clientId) {
+        MqttConnection connection = getConnection(clientId);
+        Object session = getSession(clientId);
+
+        if (connection == null || session == null) {
             return;
         }
 
         try {
-            Field sessionsField = Server.class.getDeclaredField("sessions");
-            Field poolField = SessionRegistry.class.getDeclaredField("pool");
-            sessionsField.setAccessible(true);
-            poolField.setAccessible(true);
-            SessionRegistry sessions = (SessionRegistry) sessionsField.get(mqttBroker);
-            ConcurrentMap<?,?> pool = (ConcurrentMap<?, ?>) poolField.get(sessions);
-            Object session = pool.get(clientId);
-            pool.remove(clientId, session);
+            Method closeMethod = session.getClass().getDeclaredMethod("closeImmediately");
+            closeMethod.setAccessible(true);
+            Method disconnectMethod = session.getClass().getDeclaredMethod("disconnect");
+            disconnectMethod.setAccessible(true);
+            closeMethod.invoke(session);
+            disconnectMethod.invoke(session);
         } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to clear session using reflection", e);
+            LOG.log(Level.WARNING, "Failed to force disconnect Moquette session using reflection", e);
         }
     }
 

@@ -45,6 +45,9 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 )
 public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> {
 
+    public static final String DISABLED_PROPERTY_NAME = "disabled";
+    public static final String DATA_PROPERTY_NAME = "data";
+
     @Id
     @Column(name = "ID")
     @Min(1)
@@ -69,7 +72,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Size(min = 3, max = 100, message = "{ProvisioningConfig.type.Size}")
     protected String type;
 
-    @Column(name = "REALM")
+    @Column(name = "REALM", nullable = false, updatable = false)
     protected String realm;
 
     @Column(name = "ASSET_TEMPLATE", columnDefinition = "text")
@@ -83,7 +86,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     @Enumerated(EnumType.STRING)
     protected ClientRole[] userRoles;
 
-    @Column(name = "DISABLED", nullable = false)
+    @Column(name = DISABLED_PROPERTY_NAME, nullable = false)
     protected boolean disabled = false;
 
     protected ProvisioningConfig() {}

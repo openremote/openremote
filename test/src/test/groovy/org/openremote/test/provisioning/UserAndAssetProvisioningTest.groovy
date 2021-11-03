@@ -61,7 +61,7 @@ import static org.openremote.model.value.ValueType.NUMBER
 class UserAndAssetProvisioningTest extends Specification implements ManagerContainerTrait {
 
     @SuppressWarnings("GroovyAccessibility")
-    def "Check user and asset provisioning functionality"() {
+    def "Check basic functionality"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
@@ -236,10 +236,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         then: "the internal consumer should have been notified"
         conditions.eventually {
-            assert internalAttributeEvents.size() == 2
-            assert internalAttributeEvents.get(1).assetId == managerTestSetup.apartment2LivingroomId
-            assert internalAttributeEvents.get(1).attributeName == "lightSwitch"
-            assert internalAttributeEvents.get(1).value.orElse(false)
+            assert internalAttributeEvents.find{it.assetId == managerTestSetup.apartment2LivingroomId && it.attributeName == "lightSwitch" && it.value.orElse(false)} != null
         }
 
         and: "the client should not have been notified"
@@ -459,10 +456,19 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the provisioning config is updated to disabled"
+        def existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
+        subscribeFailures.clear()
         provisioningConfig.setDisabled(true)
         provisioningConfig = provisioningService.merge(provisioningConfig)
 
-        and: "a device re-connects"
+        then: "already connected client that was authenticated should be disconnected, then reconnect and should fail to re-subscribe to asset and attribute events"
+        conditions.eventually {
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != existingConnection
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttDevice1ClientId)
+        }
+
+        when: "a device re-connects"
         deviceNResponses.clear()
         deviceNClient.connect()
 

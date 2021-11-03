@@ -88,7 +88,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             .useMqttVersion3()
             .identifier(clientId)
             .addConnectedListener(context -> {
-                LOG.info("Client is connected from the broker '" + getClientUri() + "'");
+                LOG.info("Client is connected to the broker '" + getClientUri() + "'");
                 onConnectionStatusChanged(ConnectionStatus.CONNECTED);
             })
             .addDisconnectedListener(context -> {
@@ -349,6 +349,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             if (throwable != null) {
                 LOG.log(Level.INFO, "Connection failed:" + getClientUri(), throwable);
             } else {
+
                 if (!this.cleanSession && !connAck.isSessionPresent()) {
                     // Need to re-instate the subscriptions as HiveMQ client doesn't do it
                     executorService.execute(() -> {

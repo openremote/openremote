@@ -39,7 +39,7 @@ public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningD
 
     @Transient boolean valid = true;
 
-    @Column(name = "DATA", columnDefinition = "jsonb")
+    @Column(name = DATA_PROPERTY_NAME, columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
     protected X509ProvisioningData data;
 

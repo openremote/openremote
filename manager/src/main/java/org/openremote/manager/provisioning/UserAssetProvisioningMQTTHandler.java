@@ -20,10 +20,14 @@
 package org.openremote.manager.provisioning;
 
 import io.moquette.broker.subscriptions.Topic;
+import io.moquette.interception.messages.InterceptConnectionLostMessage;
 import io.moquette.interception.messages.InterceptPublishMessage;
 import io.moquette.interception.messages.InterceptSubscribeMessage;
 import io.moquette.interception.messages.InterceptUnsubscribeMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.camel.builder.RouteBuilder;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
@@ -47,11 +51,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
@@ -60,6 +65,40 @@ import static org.openremote.model.syslog.SyslogCategory.API;
  * against the configured {@link org.openremote.model.provisioning.ProvisioningConfig}s.
  */
 public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
+
+    protected static class ProvisioningPersistenceRouteBuilder extends RouteBuilder {
+
+        UserAssetProvisioningMQTTHandler mqttHandler;
+
+        public ProvisioningPersistenceRouteBuilder(UserAssetProvisioningMQTTHandler mqttHandler) {
+            this.mqttHandler = mqttHandler;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void configure() throws Exception {
+            from(PERSISTENCE_TOPIC)
+                .routeId("ProvisioningConfigPersistenceChanges")
+                .filter(isPersistenceEventForEntityType(ProvisioningConfig.class))
+                .process(exchange -> {
+                    PersistenceEvent<ProvisioningConfig<?,?>> persistenceEvent = (PersistenceEvent<ProvisioningConfig<?,?>>)exchange.getIn().getBody(PersistenceEvent.class);
+
+                    boolean forceDisconnect = persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE;
+
+                    if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
+                        // Force disconnect if the certain properties have changed
+                        forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
+                            propertyName.equals(ProvisioningConfig.DISABLED_PROPERTY_NAME)
+                                || propertyName.equals(ProvisioningConfig.DATA_PROPERTY_NAME));
+                    }
+
+                    if (forceDisconnect) {
+                        LOG.info("Provisioning config modified or deleted so forcing connected clients to disconnect: " + persistenceEvent.getEntity());
+                        mqttHandler.forceClientDisconnects(persistenceEvent.getEntity().getId());
+                    }
+                });
+        }
+    }
 
     protected static final Logger LOG = SyslogCategory.getLogger(API, UserAssetProvisioningMQTTHandler.class);
     public static final String PROVISIONING_TOKEN = "provisioning";
@@ -72,6 +111,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     protected AssetStorageService assetStorageService;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected boolean isKeycloak;
+    protected final Map<Long, Set<MqttConnection>> provisioningConfigAuthenticatedConnectionMap = new HashMap<>();
 
     @Override
     public void start(Container container) throws Exception {
@@ -88,6 +128,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         } else {
             isKeycloak = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
+            container.getService(MessageBrokerService.class).getContext().addRoutes(new ProvisioningPersistenceRouteBuilder(this));
         }
     }
 
@@ -172,6 +213,13 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         if (provisioningMessage instanceof X509ProvisioningMessage) {
             processX509ProvisioningMessage(connection, topic, (X509ProvisioningMessage)provisioningMessage);
+        }
+    }
+
+    @Override
+    public void onConnectionLost(MqttConnection connection, InterceptConnectionLostMessage msg) {
+        synchronized (provisioningConfigAuthenticatedConnectionMap) {
+            provisioningConfigAuthenticatedConnectionMap.values().forEach(connections -> connections.remove(connection));
         }
     }
 
@@ -291,11 +339,20 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
             return;
         }
 
-        LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection);
+        LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig);
 
-        // Update connection with service user credentials
-        connection.setCredentials(realm, serviceUser.getUsername(), serviceUser.getSecret());
-        brokerService.publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
+        synchronized (provisioningConfigAuthenticatedConnectionMap) {
+            provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
+                if (connections == null) {
+                    connections = new HashSet<>();
+                    connections.add(connection);
+                }
+                return connections;
+            });
+            // Update connection with service user credentials
+            connection.setCredentials(realm, serviceUser.getUsername(), serviceUser.getSecret());
+            brokerService.publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
+        }
     }
 
     protected X509ProvisioningConfig getMatchingX509ProvisioningConfig(MqttConnection connection, X509Certificate clientCertificate) {
@@ -398,5 +455,15 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         }
 
         return asset;
+    }
+
+    protected void forceClientDisconnects(long provisioningConfigId) {
+        synchronized (provisioningConfigAuthenticatedConnectionMap) {
+            provisioningConfigAuthenticatedConnectionMap.computeIfPresent(provisioningConfigId, (id, connections) -> {
+                // Force disconnect of each connection and the disconnect handler will remove the connection from the map
+                connections.forEach(connection -> brokerService.forceDisconnect(connection.getClientId()));
+                return connections;
+            });
+        }
     }
 }
