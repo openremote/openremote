@@ -1143,7 +1143,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isRestrictedUser(AuthContext authContext) {
-
         return authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
     }
 
