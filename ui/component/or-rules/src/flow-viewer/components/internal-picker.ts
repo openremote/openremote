@@ -139,7 +139,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
 
             const hostElement = document.body;
             const dialog = new OrMwcAttributeSelector();
-            dialog.showOnlyRuleStateAttrs = true;
+            dialog.showOnlyRuleStateAttrs = false;
             dialog.showOnlyDatapointAttrs = false;
             dialog.multiSelect = false;
             dialog.selectedAttributes = _selectedAttributes;
