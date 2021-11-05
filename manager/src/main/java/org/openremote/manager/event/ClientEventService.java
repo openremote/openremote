@@ -419,7 +419,6 @@ public class ClientEventService implements ContainerService {
             '}';
     }
 
-    // TODO: Implement MQTT close once supported by Moquette (https://github.com/moquette-io/moquette/issues/469)
     protected static SessionInfo createSessionInfo(String sessionKey, Exchange exchange) {
 
         String connectionType = (String) exchange.getIn().getHeader(HEADER_CONNECTION_TYPE);
@@ -434,6 +433,8 @@ public class ClientEventService implements ContainerService {
                     LOG.log(Level.INFO, "Failed to close client session: " + sessionKey);
                 }
             };
+        } else if (HEADER_CONNECTION_TYPE_MQTT.equals(connectionType)) {
+            closeRunnable = exchange.getIn().getHeader(SESSION, Runnable.class);
         }
 
         return new SessionInfo(connectionType, closeRunnable);

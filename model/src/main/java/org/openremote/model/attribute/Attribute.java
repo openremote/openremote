@@ -323,7 +323,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             "name='" + name + '\'' +
             ", value='" + value + '\'' +
             ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
-            ", meta='" + getMeta().values().stream().map(MetaItem::toString).collect(Collectors.joining(",")) + '\'' +
+            ", meta='" + (meta == null ? "" : getMeta().values().stream().map(MetaItem::toString).collect(Collectors.joining(","))) + '\'' +
             "} ";
     }
 
@@ -366,9 +366,11 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             return false;
         Attribute<?> that = (Attribute<?>) obj;
 
-        return Objects.equals(timestamp, that.timestamp)
-            && Objects.equals(meta, that.meta)
-            && super.equals(obj);
+        boolean timestampMatches = Objects.equals(timestamp, that.timestamp);
+        boolean metaMatches = (meta == null && that.meta != null && that.meta.isEmpty()) || (that.meta == null && meta != null && meta.isEmpty()) || Objects.equals(meta, that.meta);
+        boolean superMatches = super.equals(obj);
+        boolean result = timestampMatches && metaMatches && superMatches;
+        return result;
     }
 
     public boolean equals(Object obj, Comparator<Attribute<?>> comparator) {

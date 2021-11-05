@@ -19,9 +19,12 @@
  */
 package org.openremote.model.provisioning;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class X509ProvisioningMessage extends ProvisioningMessage {
     protected String cert;
 
+    @JsonCreator
     public X509ProvisioningMessage(String cert) {
         this.cert = cert;
     }

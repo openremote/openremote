@@ -54,8 +54,9 @@ public interface UserResource {
 
     @GET
     @Path("{realm}/realm-roles")
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     @Produces(APPLICATION_JSON)
+    @SuppressWarnings("unusable-by-js")
+    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     Role[] getRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @PUT
@@ -69,12 +70,6 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     void updateClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, Role[] roles, @PathParam("clientId") String clientId);
-
-    @PUT
-    @Path("{realm}/realm-roles")
-    @Consumes(APPLICATION_JSON)
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    void updateRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, Role[] roles);
 
     @GET
     @Produces(APPLICATION_JSON)

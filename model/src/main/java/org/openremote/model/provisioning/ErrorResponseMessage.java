@@ -19,6 +19,8 @@
  */
 package org.openremote.model.provisioning;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class ErrorResponseMessage extends ProvisioningMessage {
 
     public enum Error {
@@ -35,6 +37,7 @@ public class ErrorResponseMessage extends ProvisioningMessage {
 
     protected Error error;
 
+    @JsonCreator
     public ErrorResponseMessage(Error error) {
         this.error = error;
     }

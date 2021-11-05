@@ -59,7 +59,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
 
         when: "a mqtt client connects with invalid credentials"
         def wrongUsername = "master:" + KeycloakTestSetup.serviceUserId
-        MQTT_IOClient client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, new UsernamePassword(wrongUsername, password), null)
+        MQTT_IOClient client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(wrongUsername, password), null)
         client.connect()
 
         then: "the client connection status should be in error"
@@ -70,7 +70,7 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         when: "a mqtt client connects with valid credentials"
         client.disconnect()
         mqttClientId = UniqueIdentifierGenerator.generateId()
-        client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, new UsernamePassword(username, password), null)
+        client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(username, password), null)
         client.connect()
 
         then: "mqtt connection should exist"

@@ -36,6 +36,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     public static final AttributeDescriptor<Integer> MQTT_PORT = PORT.withOptional(false);
     public static final AttributeDescriptor<String> CLIENT_ID = new AttributeDescriptor<>("clientId", ValueType.TEXT);
     public static final AttributeDescriptor<Boolean> SECURE_MODE = new AttributeDescriptor<>("secureMode", ValueType.BOOLEAN);
+    public static final AttributeDescriptor<Boolean> RESUME_SESSION = new AttributeDescriptor<>("resumeSession", ValueType.BOOLEAN);
     public static final AttributeDescriptor<Boolean> WEBSOCKET_MODE = new AttributeDescriptor<>("websocketMode", ValueType.BOOLEAN);
     public static final AttributeDescriptor<String> WEBSOCKET_PATH = new AttributeDescriptor<>("websocketPath", ValueType.TEXT);
     public static final AttributeDescriptor<String> WEBSOCKET_QUERY = new AttributeDescriptor<>("websocketQuery", ValueType.TEXT);
@@ -64,7 +65,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setClientId(String clientId) {
-        getAttributes().addOrReplace(new Attribute<>(CLIENT_ID, clientId));
+        getAttributes().getOrCreate(CLIENT_ID).setValue(clientId);
         return this;
     }
 
@@ -73,7 +74,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setSecureMode(boolean secureMode) {
-        getAttributes().addOrReplace(new Attribute<>(SECURE_MODE, secureMode));
+        getAttributes().getOrCreate(SECURE_MODE).setValue(secureMode);
         return this;
     }
 
@@ -82,7 +83,16 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setWebsocketMode(boolean websocketMode) {
-        getAttributes().addOrReplace(new Attribute<>(WEBSOCKET_MODE, websocketMode));
+        getAttributes().getOrCreate(WEBSOCKET_MODE).setValue(websocketMode);
+        return this;
+    }
+
+    public Optional<Boolean> isResumeSession() {
+        return getAttributes().getValue(RESUME_SESSION);
+    }
+
+    public MQTTAgent setResumeSession(boolean resumeSession) {
+        getAttributes().getOrCreate(RESUME_SESSION).setValue(resumeSession);
         return this;
     }
 
@@ -91,7 +101,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setWebsocketPath(String websocketPath) {
-        getAttributes().addOrReplace(new Attribute<>(WEBSOCKET_PATH, websocketPath));
+        getAttributes().getOrCreate(WEBSOCKET_PATH).setValue(websocketPath);
         return this;
     }
 
@@ -100,7 +110,7 @@ public class MQTTAgent extends IOAgent<MQTTAgent, MQTTProtocol, MQTTAgentLink> {
     }
 
     public MQTTAgent setWebsocketQuery(String websocketQuery) {
-        getAttributes().addOrReplace(new Attribute<>(WEBSOCKET_QUERY, websocketQuery));
+        getAttributes().getOrCreate(WEBSOCKET_QUERY).setValue(websocketQuery);
         return this;
     }
 }

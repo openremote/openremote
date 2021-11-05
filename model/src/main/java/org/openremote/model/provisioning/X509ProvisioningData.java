@@ -23,7 +23,6 @@ public class X509ProvisioningData {
 
     protected String CACertPEM;
     protected boolean ignoreExpiryDate;
-    protected String overrideUniqueIdAttribute;
 
     public String getCACertPEM() {
         return CACertPEM;
@@ -43,21 +42,11 @@ public class X509ProvisioningData {
         return this;
     }
 
-    public String getOverrideUniqueIdAttribute() {
-        return overrideUniqueIdAttribute;
-    }
-
-    public X509ProvisioningData setOverrideUniqueIdAttribute(String overrideUniqueIdAttribute) {
-        this.overrideUniqueIdAttribute = overrideUniqueIdAttribute;
-        return this;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() +"{" +
-            "CACertPEM='" + CACertPEM + '\'' +
+            "CACertPEM='" + (CACertPEM != null ? CACertPEM.substring(0, 20) + "..." : null) + '\'' +
             ", ignoreExpiryDate=" + ignoreExpiryDate +
-            ", overrideUniqueIdAttribute='" + overrideUniqueIdAttribute + '\'' +
             '}';
     }
 }

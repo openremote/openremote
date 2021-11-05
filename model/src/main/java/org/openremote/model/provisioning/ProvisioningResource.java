@@ -33,19 +33,19 @@ public interface ProvisioningResource {
     @GET
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.REALM_ADMIN_ROLE})
-    ProvisioningConfig<?> getProvisioningConfigs();
+    ProvisioningConfig<?, ?> getProvisioningConfigs();
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.REALM_ADMIN_ROLE})
-    long createProvisioningConfig(ProvisioningConfig<?> provisioningConfig);
+    long createProvisioningConfig(ProvisioningConfig<?, ?> provisioningConfig);
 
     @PUT
     @Path("{id}")
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({Constants.REALM_ADMIN_ROLE})
-    void updateProvisioningConfig(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid ProvisioningConfig<?> provisioningConfig);
+    void updateProvisioningConfig(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid ProvisioningConfig<?, ?> provisioningConfig);
 
     @DELETE
     @Path("{id}")

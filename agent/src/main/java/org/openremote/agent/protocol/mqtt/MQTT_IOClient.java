@@ -26,12 +26,12 @@ import java.nio.charset.StandardCharsets;
 
 public class MQTT_IOClient extends AbstractMQTT_IOClient<String> {
 
-    protected MQTT_IOClient(String host, int port, boolean secure, UsernamePassword usernamePassword, URI websocketURI) {
-        super(host, port, secure, usernamePassword, websocketURI);
+    public MQTT_IOClient(String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI) {
+        super(host, port, secure, cleanSession, usernamePassword, websocketURI);
     }
 
-    protected MQTT_IOClient(String clientId, String host, int port, boolean secure, UsernamePassword usernamePassword, URI websocketURI) {
-        super(clientId, host, port, secure, usernamePassword, websocketURI);
+    public MQTT_IOClient(String clientId, String host, int port, boolean secure, boolean cleanSession, UsernamePassword usernamePassword, URI websocketURI) {
+        super(clientId, host, port, secure, cleanSession, usernamePassword, websocketURI);
     }
 
     @Override

@@ -55,11 +55,11 @@ public class ORAuthorizatorPolicy implements IAuthorizatorPolicy {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    protected boolean verifyRights(Topic topic, String sessionId, String realm, String username, boolean isWrite) {
-        MqttConnection connection = brokerService.clientIdConnectionMap.get(sessionId);
+    protected boolean verifyRights(Topic topic, String clientId, String realm, String username, boolean isWrite) {
+        MqttConnection connection = brokerService.clientIdConnectionMap.get(clientId);
 
         if (connection == null) {
-            LOG.warning("No connection found: sessionId=" + sessionId);
+            LOG.warning("No connection found: clientId=" + clientId);
             return false;
         }
 

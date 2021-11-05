@@ -8,12 +8,8 @@ import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,19 +22,20 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 public class MqttConnection {
 
     protected static final Logger LOG = Logger.getLogger(MqttConnection.class.getSimpleName());
-    protected final String realm;
+    protected String realm;
     protected String username; // This is OAuth clientId
     protected String password;
     protected boolean credentials;
     protected final String clientId;
+    protected final boolean cleanSession;
     protected Supplier<String> tokenSupplier;
     protected ManagerKeycloakIdentityProvider identityProvider;
 
-    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password) {
-        this.realm = realm;
+    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password, boolean cleanSession) {
+        this.cleanSession = cleanSession;
         this.clientId = clientId;
         this.identityProvider = identityProvider;
-        setCredentials(username, password);
+        setCredentials(realm, username, password);
     }
 
     public String getRealm() {
@@ -51,6 +48,10 @@ public class MqttConnection {
 
     public String getPassword() {
         return this.password;
+    }
+
+    public boolean isCleanSession() {
+        return cleanSession;
     }
 
     public String getAccessToken() {
@@ -90,8 +91,9 @@ public class MqttConnection {
         return credentials;
     }
 
-    public void setCredentials(String username, String password) {
+    public void setCredentials(String realm, String username, String password) {
 
+        this.realm = realm;
         this.username = username;
         this.password = password;
 

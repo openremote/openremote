@@ -201,7 +201,7 @@ services:
       # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Configure how Keycloak connects to the database
-      KEYCLOAK_FRONTEND_URL: '${EXTERNAL_URL:-https://localhost}/auth'
+      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
 
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}

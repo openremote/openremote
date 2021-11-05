@@ -75,7 +75,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             username = realmAndUsername[1];
         }
 
-        MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password);
+        MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password, msg.isCleanSession());
         brokerService.addConnection(connection.getClientId(), connection);
 
         // Notify all custom handlers
@@ -84,7 +84,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage msg) {
-        MqttConnection connection = brokerService.removeConnection(msg.getClientID());
+        MqttConnection connection = brokerService.clearConnectionSession(msg.getClientID());
 
         if (connection != null) {
             // No topic info here so just notify all custom handlers
@@ -94,7 +94,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
-        MqttConnection connection = brokerService.removeConnection(msg.getClientID());
+        MqttConnection connection = brokerService.clearConnectionSession(msg.getClientID());
 
         if (connection != null) {
             // No topic info here so just notify all custom handlers

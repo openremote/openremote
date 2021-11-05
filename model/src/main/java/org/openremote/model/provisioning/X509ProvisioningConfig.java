@@ -21,20 +21,45 @@ package org.openremote.model.provisioning;
 
 import org.openremote.model.util.TextUtil;
 
+import javax.persistence.Column;
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.Transient;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
+
 @Entity
 @DiscriminatorValue("x509")
-public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningData> {
+public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningData, X509ProvisioningConfig> {
 
     @Transient
     protected X509Certificate certificate;
 
     @Transient boolean valid = true;
+
+    @Column(name = DATA_PROPERTY_NAME, columnDefinition = "jsonb")
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
+    protected X509ProvisioningData data;
+
+    protected X509ProvisioningConfig() {}
+
+    @Override
+    public X509ProvisioningData getData() {
+        return data;
+    }
+
+    @Override
+    public X509ProvisioningConfig setData(X509ProvisioningData data) {
+        this.data = data;
+        return this;
+    }
+
+    public X509ProvisioningConfig(String name, X509ProvisioningData data) {
+        super(name);
+        this.data = data;
+    }
 
     public synchronized X509Certificate getCertificate() throws IllegalStateException, CertificateException {
         if (!valid) {
