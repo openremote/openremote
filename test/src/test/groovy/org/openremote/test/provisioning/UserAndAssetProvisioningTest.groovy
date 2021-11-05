@@ -29,6 +29,7 @@ import org.openremote.manager.event.ClientEventService
 import org.openremote.manager.mqtt.DefaultMQTTHandler
 import org.openremote.manager.mqtt.MqttBrokerService
 import org.openremote.manager.provisioning.ProvisioningService
+import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.AssetEvent
@@ -121,7 +122,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "a mqtt client connects"
         def device1UniqueId = "device1"
-        def mqttDevice1ClientId = UniqueIdentifierGenerator.generateId()
+        def mqttDevice1ClientId = UniqueIdentifierGenerator.generateId("device1")
         List<String> subscribeFailures = []
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
         MQTT_IOClient device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null)
@@ -311,7 +312,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def deviceNUniqueId = "device2"
         def deviceNRequestTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$REQUEST_TOKEN".toString()
         def deviceNResponseTopic = "$PROVISIONING_TOKEN/$deviceNUniqueId/$RESPONSE_TOKEN".toString()
-        def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId()
+        def mqttDeviceNClientId = UniqueIdentifierGenerator.generateId("deviceN")
         MQTT_IOClient deviceNClient = new MQTT_IOClient(mqttDeviceNClientId, mqttHost, mqttPort, false, false, null, null)
         deviceNClient.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
         deviceNClient.connect()
@@ -457,7 +458,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
 
         when: "the provisioning config is updated to disabled"
         def existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
-        subscribeFailures.clear()
+        device1Responses.clear()
         provisioningConfig.setDisabled(true)
         provisioningConfig = provisioningService.merge(provisioningConfig)
 
@@ -468,7 +469,22 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttDevice1ClientId)
         }
 
-        when: "a device re-connects"
+        when: "the re-connected client re-authenticates"
+        device1Responses.clear()
+        device1Client.sendMessage(
+                new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
+                        new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
+                ).orElse(null))
+        )
+        
+        then: "the broker should have published to the response topic an error message"
+        conditions.eventually {
+            assert device1Responses.size() == 1
+            assert device1Responses.get(0) instanceof ErrorResponseMessage
+            assert ((ErrorResponseMessage)device1Responses.get(0)).error == ErrorResponseMessage.Error.CONFIG_DISABLED
+        }
+
+        when: "another device re-connects"
         deviceNResponses.clear()
         deviceNClient.connect()
 
@@ -512,15 +528,68 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the provisioning config is updated to enabled"
+        existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
         provisioningConfig.setDisabled(false)
         provisioningConfig = provisioningService.merge(provisioningConfig)
 
-        and: "a device user is disabled"
-        def user = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingTenant, User.SERVICE_ACCOUNT_PREFIX + "ps-" + deviceNUniqueId)
-        user.setEnabled(false)
-        user = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingTenant, user, null)
+        then: "already connected client that was authenticated should be disconnected, then reconnect"
+        conditions.eventually {
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != existingConnection
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttDevice1ClientId)
+        }
 
-        and: "a device with disabled user account re-connects"
+        when: "the re-connected device publishes its' valid client certificate"
+        device1Responses.clear()
+        device1Client.sendMessage(
+                new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
+                        new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
+                ).orElse(null))
+        )
+
+        then: "the broker should have published to the response topic a success message containing the provisioned asset"
+        conditions.eventually {
+            assert device1Responses.size() == 1
+            assert device1Responses.get(0) instanceof SuccessResponseMessage
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert asset != null
+            assert asset instanceof WeatherAsset
+            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+        }
+
+        when: "a connected device user is disabled and an un-connected device user is disabled"
+        existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
+        def device1User = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingTenant, User.SERVICE_ACCOUNT_PREFIX + PROVISIONING_USER_PREFIX + device1UniqueId)
+        def deviceNUser = identityService.getIdentityProvider().getUserByUsername(managerTestSetup.realmBuildingTenant, User.SERVICE_ACCOUNT_PREFIX + PROVISIONING_USER_PREFIX + deviceNUniqueId)
+        device1User.setEnabled(false)
+        deviceNUser.setEnabled(false)
+        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingTenant, device1User, null)
+        deviceNUser = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingTenant, deviceNUser, null)
+
+        then: "already connected client that was authenticated should be disconnected, then reconnect"
+        conditions.eventually {
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != existingConnection
+            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttDevice1ClientId)
+        }
+
+        when: "the re-connected client re-authenticates"
+        device1Responses.clear()
+        device1Client.sendMessage(
+                new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
+                        new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
+                ).orElse(null))
+        )
+
+        then: "the broker should have published to the response topic an error message"
+        conditions.eventually {
+            assert device1Responses.size() == 1
+            assert device1Responses.get(0) instanceof ErrorResponseMessage
+            assert ((ErrorResponseMessage)device1Responses.get(0)).error == ErrorResponseMessage.Error.USER_DISABLED
+        }
+
+        when: "a device with disabled user account connects"
         deviceNResponses.clear()
         deviceNClient.connect()
 
@@ -552,6 +621,31 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert deviceNResponses.size() == 1
             assert deviceNResponses.get(0) instanceof ErrorResponseMessage
             assert ((ErrorResponseMessage)deviceNResponses.get(0)).error == ErrorResponseMessage.Error.USER_DISABLED
+        }
+
+        when: "a client user is re-enabled"
+        existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
+        def existingNConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDeviceNClientId)
+        device1User.setEnabled(true)
+        device1User = identityService.getIdentityProvider().createUpdateUser(managerTestSetup.realmBuildingTenant, device1User, null)
+
+        and: "the re-enabled client device publishes its' valid client certificate"
+        device1Responses.clear()
+        device1Client.sendMessage(
+                new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
+                        new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
+                ).orElse(null))
+        )
+
+        then: "the broker should have published to the response topic a success message containing the provisioned asset"
+        conditions.eventually {
+            assert device1Responses.size() == 1
+            assert device1Responses.get(0) instanceof SuccessResponseMessage
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert asset != null
+            assert asset instanceof WeatherAsset
+            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
         cleanup: "disconnect the clients"

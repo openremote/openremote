@@ -30,9 +30,12 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.MqttMessageBuilders;
 import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
@@ -48,18 +51,19 @@ import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static java.util.stream.StreamSupport.stream;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.syslog.SyslogCategory.API;
 
-public class MqttBrokerService implements ContainerService, IAuthenticator {
+public class MqttBrokerService extends RouteBuilder implements ContainerService, IAuthenticator {
 
     public static final int PRIORITY = MED_PRIORITY;
     public static final String INTERNAL_CLIENT_ID = "ManagerInternal";
@@ -103,6 +107,7 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
         } else {
             active = true;
             identityProvider = (ManagerKeycloakIdentityProvider) identityService.getIdentityProvider();
+            container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         }
     }
 
@@ -133,6 +138,43 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
         mqttBroker = new Server();
         mqttBroker.startServer(new MemoryConfig(properties), interceptHandlers, null, this, new ORAuthorizatorPolicy(identityProvider, this, assetStorageService, clientEventService));
         LOG.fine("Started MQTT broker");
+    }
+
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void configure() throws Exception {
+        from(PERSISTENCE_TOPIC)
+            .routeId("UserPersistenceChanges")
+            .filter(isPersistenceEventForEntityType(User.class))
+            .process(exchange -> {
+                PersistenceEvent<User> persistenceEvent = (PersistenceEvent<User>)exchange.getIn().getBody(PersistenceEvent.class);
+                User user = persistenceEvent.getEntity();
+
+                if (!user.isServiceAccount()) {
+                    return;
+                }
+
+                boolean forceDisconnect = persistenceEvent.getCause() == PersistenceEvent.Cause.DELETE;
+
+                if (persistenceEvent.getCause() == PersistenceEvent.Cause.UPDATE) {
+                    // Force disconnect if certain properties have changed
+                    forceDisconnect = Arrays.stream(persistenceEvent.getPropertyNames()).anyMatch((propertyName) ->
+                        (propertyName.equals("enabled") && !user.getEnabled())
+                            || propertyName.equals("username"));
+                }
+
+                if (forceDisconnect) {
+                    // Find existing connection for this user
+                    Arrays.stream(getConnections())
+                        .filter(connection -> user.getUsername().equals(connection.getUsername()))
+                        .findFirst()
+                        .ifPresent(connection -> {
+                            LOG.info("User modified or deleted so forcing connected client to disconnect: connection=" + connection);
+                            forceDisconnect(connection.getClientId());
+                        });
+                }
+            });
     }
 
     @Override
@@ -198,6 +240,12 @@ public class MqttBrokerService implements ContainerService, IAuthenticator {
     public MqttConnection getConnection(String clientId) {
         synchronized (clientIdConnectionMap) {
             return clientIdConnectionMap.get(clientId);
+        }
+    }
+
+    public MqttConnection[] getConnections() {
+        synchronized (clientIdConnectionMap) {
+            return clientIdConnectionMap.values().toArray(new MqttConnection[0]);
         }
     }
 

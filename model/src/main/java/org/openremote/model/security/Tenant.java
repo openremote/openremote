@@ -29,7 +29,8 @@ import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-import java.util.List;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /**
  * This can be used (among other things) to query the REALM table in JPA queries.
@@ -37,6 +38,8 @@ import java.util.List;
 @Entity
 @Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class Tenant {
+
+    protected static Field[] propertyFields;
 
     @Id
     protected String id;
@@ -228,6 +231,15 @@ public class Tenant {
     public Tenant setEmailTheme(String emailTheme) {
         this.emailTheme = emailTheme;
         return this;
+    }
+
+    public static Field[] getPropertyFields() {
+        if (propertyFields == null) {
+            propertyFields = Arrays.stream(Tenant.class.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Column.class))
+                .toArray(Field[]::new);
+        }
+        return propertyFields;
     }
 
     @Override

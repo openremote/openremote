@@ -33,21 +33,19 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.openremote.model.Constants.MASTER_REALM;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
  */
+// TODO: Add user roles as a transient property
 @Entity
 @Subselect("select * from PUBLIC.USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
 public class User {
     public static final String SERVICE_ACCOUNT_PREFIX = "service-account-";
     public static final String SYSTEM_ACCOUNT_ATTRIBUTE = "systemAccount";
+    protected static Field[] propertyFields;
 
     @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
     protected String realm;
@@ -139,6 +137,11 @@ public class User {
         return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
     }
 
+    public User setAttributes(Map<String, List<String>> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
     public Map<String, List<String>> getAttributes() {
         return attributes;
     }
@@ -222,6 +225,16 @@ public class User {
 
     public String getSecret() {
         return secret;
+    }
+
+    public static Field[] getPropertyFields() {
+        if (propertyFields == null) {
+            propertyFields = Arrays.stream(User.class.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Column.class)
+                    || field.getName().equals("attributes"))
+                .toArray(Field[]::new);
+        }
+        return propertyFields;
     }
 
     @Override

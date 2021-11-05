@@ -77,6 +77,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         @SuppressWarnings("unchecked")
         @Override
         public void configure() throws Exception {
+
             from(PERSISTENCE_TOPIC)
                 .routeId("ProvisioningConfigPersistenceChanges")
                 .filter(isPersistenceEventForEntityType(ProvisioningConfig.class))
@@ -105,6 +106,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
     public static final String REQUEST_TOKEN = "request";
     public static final String RESPONSE_TOKEN = "response";
     public static final String UNIQUE_ID_PLACEHOLDER = "%UNIQUE_ID%";
+    public static final String PROVISIONING_USER_PREFIX = "ps-";
     protected ProvisioningService provisioningService;
     protected TimerService timerService;
     protected MqttBrokerService brokerService;
@@ -291,7 +293,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         String realm = matchingConfig.getRealm();
 
         // Get/create service user
-        String serviceUsername = ("ps-" + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
+        String serviceUsername = (PROVISIONING_USER_PREFIX + uniqueId).toLowerCase(); // Keycloak clients are case sensitive but pretends not to be so always force lowercase
         User serviceUser;
 
         try {

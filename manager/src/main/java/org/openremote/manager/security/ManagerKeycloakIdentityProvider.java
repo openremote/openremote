@@ -20,7 +20,6 @@
 package org.openremote.manager.security;
 
 import io.undertow.util.Headers;
-import org.apache.camel.ExchangePattern;
 import org.apache.commons.io.IOUtils;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
@@ -361,6 +360,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             if (user.getAttributes() != null) {
+                if (existingUser != null) {
+                    // Populate attributes for persistence event
+                    existingUser.setAttributes(getUserAttributes(realm, existingUser.getId()));
+                }
                 updateUserAttributes(realm, userRepresentation.getId(), user.getAttributes());
             }
 
@@ -370,7 +373,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 if (updatedUser.isServiceAccount()) {
                     updatedUser.setSecret(passwordSecret);
                 }
+
+                if (existingUser != null) {
+                    // Push realm ID into updated user
+                    updatedUser.setRealmId(existingUser.getRealmId());
+                }
             }
+
+            persistenceService.publishPersistenceEvent(
+                (isUpdate ? PersistenceEvent.Cause.UPDATE : PersistenceEvent.Cause.CREATE),
+                updatedUser,
+                existingUser,
+                User.getPropertyFields());
             return updatedUser;
         });
     }
@@ -398,6 +412,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
             return null;
         });
+
+        persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, user, User.getPropertyFields());
     }
 
     @Override
@@ -449,6 +465,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             userRepresentation.setAttributes(attributes);
             userResource.update(userRepresentation);
             return null;
+        });
+    }
+
+    @Override
+    public Map<String, List<String>> getUserAttributes(String realm, String userId) {
+        return getRealms(realmsResource -> {
+            UserRepresentation userRepresentation = realmsResource.realm(realm).users().get(userId).toRepresentation();
+            return userRepresentation.getAttributes();
         });
     }
 
@@ -810,6 +834,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             String realm = existing.getRealm();
+            Tenant existingTenant = convert(existing, Tenant.class);
 
             // Tenant only has a subset of realm representation so overlay on actual realm representation
             existing.setRealm(tenant.getRealm());
@@ -828,7 +853,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             configureRealm(existing);
 
             realmsResource.realm(realm).update(existing);
-            publishModification(PersistenceEvent.Cause.UPDATE, tenant);
+            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.UPDATE, convert(existing, Tenant.class), existingTenant, Tenant.getPropertyFields());
             return null;
         });
     }
@@ -856,7 +881,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 realmResource.roles().create(new RoleRepresentation(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets", false));
 
                 Tenant createdTenant = convert(realmRepresentation, Tenant.class);
-                publishModification(PersistenceEvent.Cause.CREATE, createdTenant);
+                persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.CREATE, tenant, null, Tenant.getPropertyFields());
                 return createdTenant;
             } catch (Exception e) {
                 LOG.log(Level.INFO, "Failed to create tenant: " + tenant, e);
@@ -875,7 +900,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 realmsResource.realm(realm).remove();
                 return null;
             });
-            publishModification(PersistenceEvent.Cause.DELETE, tenant);
+            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, tenant, Tenant.getPropertyFields());
         }
     }
 
@@ -1167,21 +1192,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 composites.add(rolesResource.get(composite.getValue()).toRepresentation());
             }
             rolesResource.get(clientRole.getValue()).addComposites(composites);
-        }
-    }
-
-    protected void publishModification(PersistenceEvent.Cause cause, Tenant tenant) {
-        // Fire persistence event although we don't use database for Tenant CUD but call Keycloak API
-        PersistenceEvent<?> persistenceEvent = new PersistenceEvent<>(cause, tenant, new String[0], null);
-
-        if (messageBrokerService.getProducerTemplate() != null) {
-            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                PersistenceEvent.PERSISTENCE_TOPIC,
-                ExchangePattern.InOnly,
-                persistenceEvent,
-                PersistenceEvent.HEADER_ENTITY_TYPE,
-                persistenceEvent.getEntity().getClass()
-            );
         }
     }
 
