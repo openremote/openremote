@@ -17,6 +17,7 @@ buildscript {
     }
 }
 
+// Configure IDEA project (needs to be applied to the root project only)
 if (project == rootProject) {
     try {
         apply plugin: "org.jetbrains.gradle.plugin.idea-ext"
@@ -41,6 +42,40 @@ if (project == rootProject) {
                     mainClass = 'org.openremote.manager.Main'
                     shortenCommandLine = MANIFEST
                     workingDirectory = (isCustomProject() ? project(":openremote").projectDir.toString() : projectDir.toString())
+                }
+                "Empty"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
+                }
+                "Test Setup"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.main" : ".test.main")
+                }
+                "Empty with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
+                    envs = [
+                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            EXTERNAL_URL: "https://localhost:8443"
+                    ]
+                }
+                "Test Setup with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.main" : ".test.main")
+                    envs = [
+                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            EXTERNAL_URL: "https://localhost:8443"
+                    ]
+                }
+            }
+        }
+
+        if (isCustomProject()) {
+            idea.project.settings.runConfigurations {
+                "Custom Deployment"(Application) {
+                    moduleName = "${getProject().idea.module.name}.deployment.main"
+                    envs = [
+                        MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
+                        MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
+                        LOGGING_CONFIG_FILE: "../deployment/manager/logging.properties",
+                        CUSTOM_APP_DOCROOT: "../deployment/manager/app"
+                    ]
                 }
             }
         }
