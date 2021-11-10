@@ -586,7 +586,10 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         LOG.info("Creating gateway keycloak client for gateway id: " + gateway.getId());
 
-        String clientId = GATEWAY_CLIENT_ID_PREFIX + gateway.getId();
+        String clientId = GATEWAY_CLIENT_ID_PREFIX + gateway.getId().toLowerCase(Locale.ROOT);
+        if (clientId.length() > 255) {
+            clientId = clientId.substring(0, 254);
+        }
         String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
 
         try {

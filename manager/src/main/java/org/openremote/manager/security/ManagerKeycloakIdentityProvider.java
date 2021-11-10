@@ -633,7 +633,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 }
 
                 return roles.toArray(new Role[0]);
-            }, null);
+            }, () -> new Role[0]);
         });
     }
 
