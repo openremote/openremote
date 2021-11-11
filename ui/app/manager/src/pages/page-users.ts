@@ -135,18 +135,18 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     padding-left: 36px;
                 }
 
-                .attribute-meta-row td {
+                .item-row td {
                     padding: 0;
                 }
 
-                .meta-item-container {
+                .item-row-content {
                     flex-direction: row;
                     overflow: hidden;
                     max-height: 0;
                     padding-left: 16px;
                 }
 
-                .attribute-meta-row.expanded .meta-item-container {
+                .item-row.expanded .item-row-content {
                     overflow: visible;
                     max-height: unset;
                 }
@@ -223,8 +223,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     }
 
     public connectedCallback() {
-        this.loadUsers();
         super.connectedCallback();
+        this.loadUsers();
     }
 
     public disconnectedCallback() {
@@ -243,7 +243,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return;
         }
 
-        const loadedDeferred = new Util.Deferred<TemplateResult>();
         const realm = this.getState().app.realm;
         const responseAndStateOK: <T extends GenericAxiosResponse<any[]>>(response: T, errorMsg: string) => boolean = (response, errorMsg) => {
 
@@ -550,9 +549,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                     <or-translate .value="${user.enabled ? "enabled" : "disabled"}"></or-translate>
                 </td>
             </tr>
-            <tr class="attribute-meta-row${!user.id ? " expanded" : ""}">
+            <tr class="item-row${!user.id ? " expanded" : ""}">
                 <td colspan="4">
-                    <div class="meta-item-container">
+                    <div class="item-row-content">
                         <div class="row">
                             <div class="column">
                                 <h5>${i18next.t("details")}</h5>

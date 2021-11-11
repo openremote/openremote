@@ -44,7 +44,7 @@ import {JsonFormsStateContext} from "./index";
 import {
     getCombinatorInfos,
     getLabel,
-    getSchemaConst,
+    getSchemaConst, getSchemaPicker,
     getTemplateFromProps,
     mapStateToCombinatorRendererProps,
     showJsonEditor
@@ -240,7 +240,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
         resolvedProps.uischemas
     );
 
-    if (data !== undefined && (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0)) {
+    if (data !== undefined && data !== null && (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0)) {
         // Try and match the data using our own combinator info objects
         const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
 
@@ -254,7 +254,7 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
     if (resolvedProps.indexOfFittingSchema === undefined || resolvedProps.indexOfFittingSchema < 0) {
         const { handleChange } = mapDispatchToControlProps(state.dispatch);
 
-        if (data !== undefined) {
+        if (data !== undefined && data !== null) {
             // We have data that doesn't match a schema so show invalid template
             console.warn("Cannot match " + keyword + " schema to instance data");
 
@@ -267,20 +267,11 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
             };
 
             return html`
-                <span style="padding-right: 5px;">${label}:</span><span style="padding-right: 5px;"><b><or-translate value="validation.noSchemaMatchFound"></b></span><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${(ev: MouseEvent) => showJson(ev)}"></or-mwc-input>
+                <div class="item-container no-match-container"><span>${label}:</span><b><or-translate value="validation.noSchemaMatchFound"></b><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${(ev: MouseEvent) => showJson(ev)}"></or-mwc-input></div>
             `;
         } else {
             // We have no data so show a schema picker
-            const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
-            const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", Util.camelCaseToSentenceCase(combinatorInfo.title) || i18next.t("Item ") + (index+1)]);
-            const pickerUpdater = (index: number) => {
-                const matchedInfo = combinatorInfos[index];
-                handleChange(path, matchedInfo.defaultValueCreator());
-            };
-            const pickerLabel = (props.label || label) ? i18next.t("anyOfPickerLabel", {label: (props.label || label)}) : i18next.t("type");
-            return html`                
-                <or-mwc-input class="any-of-picker" .label="${pickerLabel}" .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
-            `;
+            return getSchemaPicker(rootSchema, resolvedSchema, path, keyword, props.label || label, (selectedSchema => handleChange(path, selectedSchema.defaultValueCreator())))
         }
     }
 

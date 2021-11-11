@@ -2,6 +2,7 @@ import {
     CombinatorKeyword,
     composeWithUi,
     ControlElement,
+    ControlProps,
     createDefaultValue,
     deriveTypes,
     getAjv,
@@ -23,7 +24,7 @@ import {
     StatePropsOfCombinator,
 } from "@jsonforms/core";
 import {DefaultColor5, Util} from "@openremote/core";
-import { InputType, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent, OrMwcInput } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import "@openremote/or-components/or-ace-editor";
 import {OrAceEditor, OrAceEditorChangedEvent} from "@openremote/or-components/or-ace-editor";
@@ -32,6 +33,7 @@ import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {ErrorObject} from "./index";
 import {unknownTemplate} from "./standard-renderers";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {AdditionalProps} from "./base-element";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult {
     if (!state || !props) {
@@ -110,7 +112,7 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         }
 
         return {
-            title: Util.camelCaseToSentenceCase(titleAndDescription[0]),
+            title: i18next.t("schema.title." + titleAndDescription[0], {defaultValue: Util.camelCaseToSentenceCase(titleAndDescription[0])}),
             description: titleAndDescription[1],
             defaultValueCreator: creator,
             constProperty: constProperty,
@@ -131,6 +133,19 @@ export function getSchemaConst(schema: JsonSchema): any {
     if (Array.isArray(schema.enum) && schema.enum!.length === 1) {
         return schema.enum[0];
     }
+}
+
+export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSchema, path: string, keyword: "anyOf" | "oneOf", label: string, selectedCallback: (selectedSchema: CombinatorInfo) => void): TemplateResult {
+    const combinatorInfos = getCombinatorInfos(resolvedSchema[keyword]!, rootSchema);
+    const options: [string, string][] = combinatorInfos.map((combinatorInfo, index) => [index+"", combinatorInfo.title || i18next.t("schema.title.indexedItem", {index: index})]);
+    const pickerUpdater = (index: number) => {
+        const matchedInfo = combinatorInfos[index];
+        selectedCallback(matchedInfo);
+    };
+    const pickerLabel = label ? i18next.t("schema.anyOfPickerLabel", {label: label}) : i18next.t("type");
+    return html`                
+        <or-mwc-input class="any-of-picker" .label="${pickerLabel}" .type="${InputType.SELECT}" .options="${options}" @or-mwc-input-changed="${(ev: OrInputChangedEvent) => pickerUpdater(Number(ev.detail.value))}"></or-mwc-input>
+    `;
 }
 
 export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema): [string | undefined, string | undefined] {

@@ -416,8 +416,6 @@
   "loadFailedRoles": "Failed to load roles",
   "loadFailedUsers": "Failed to load users",
   "loadFailedServiceUsers": "Failed to load service users",
-  "key": "Key",
-  "anyOfPickerLabel": "{{label}} type",
   "validation": {
     "noSchemaMatchFound": "No schema match found",
     "invalidAsset": "Asset is not valid",
@@ -435,5 +433,14 @@
   "assetTemplate": "Asset template",
   "createAsRestrictedUser": "Create restricted user",
   "ignoreExpiryDate": "Ignore expiry date",
-  "CACertPem": "CA Certificate (PEM)"
+  "CACertPem": "CA Certificate (PEM)",
+  "schema": {
+    "noDescriptionAvailable": "No description is available",
+    "selectTypeMessage": "Select a type to see a description",
+    "keyInputLabel": "Key",
+    "anyOfPickerLabel": "{{label}} type",
+    "title": {
+      "indexedItem": "Item {{index}}"
+    }
+  }
 }
