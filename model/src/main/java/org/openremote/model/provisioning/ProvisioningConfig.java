@@ -19,8 +19,10 @@
  */
 package org.openremote.model.provisioning;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.Constants;
 import org.openremote.model.security.ClientRole;
 
@@ -65,11 +67,12 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
 
     @NotNull
     @Column(name = "NAME", nullable = false)
-    @Size(min = 3, max = 255, message = "{ProvisioningConfig.name.Size}")
+    @Size(min = 1, max = 255, message = "{ProvisioningConfig.name.Size}")
     protected String name;
 
     @Column(name = "TYPE", nullable = false, updatable = false, insertable = false, length = 100, columnDefinition = "char(100)")
     @Size(min = 3, max = 100, message = "{ProvisioningConfig.type.Size}")
+    @JsonDeserialize
     protected String type;
 
     @Column(name = "REALM", nullable = false, updatable = false)
@@ -165,6 +168,7 @@ public abstract class ProvisioningConfig<T, U extends ProvisioningConfig<T, U>> 
     /**
      * Implementors must annotate the data field with @Column as JPA (Hibernate) doesn't work with generic fields
      */
+    @JsonProperty
     public abstract T getData();
     public abstract U setData(T data);
 

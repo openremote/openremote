@@ -19,8 +19,10 @@
  */
 package org.openremote.model.query.filter;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import com.vividsolutions.jts.geom.Coordinate;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -30,6 +32,12 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+/**
+ * Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified
+ * latitude and longitude unless negated.
+ */
+@JsonSchemaTitle("Radial geofence")
+@JsonClassDescription("Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified latitude and longitude unless negated.")
 public class RadialGeofencePredicate extends GeofencePredicate {
 
     public static final String name = "radial";
@@ -102,7 +110,7 @@ public class RadialGeofencePredicate extends GeofencePredicate {
             Coordinate coordinate;
 
             if (obj instanceof Coordinate) {
-                coordinate = (Coordinate)obj;
+                coordinate = (Coordinate) obj;
             } else {
                 coordinate = ValueUtil.getValue(obj, GeoJSONPoint.class).map(GeoJSONPoint::getCoordinates).orElse(null);
             }

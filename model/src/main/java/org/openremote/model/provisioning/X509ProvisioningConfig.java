@@ -19,6 +19,7 @@
  */
 package org.openremote.model.provisioning;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.util.TextUtil;
 
 import javax.persistence.Column;
@@ -34,10 +35,13 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 @DiscriminatorValue("x509")
 public class X509ProvisioningConfig extends ProvisioningConfig<X509ProvisioningData, X509ProvisioningConfig> {
 
+    @JsonIgnore
     @Transient
     protected X509Certificate certificate;
 
-    @Transient boolean valid = true;
+    @JsonIgnore
+    @Transient
+    boolean valid = true;
 
     @Column(name = DATA_PROPERTY_NAME, columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)

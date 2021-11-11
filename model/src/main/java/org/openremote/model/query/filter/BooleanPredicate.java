@@ -19,11 +19,17 @@
  */
 package org.openremote.model.query.filter;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import org.openremote.model.util.ValueUtil;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+/**
+ * Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value
+ * that is not a boolean will not match.
+ */
+@JsonClassDescription("Predicate for boolean values; will evaluate the value as a boolean and match against this predicates value, any value that is not a boolean will not match")
 public class BooleanPredicate extends ValuePredicate {
 
     public static final String name = "boolean";

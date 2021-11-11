@@ -35,8 +35,8 @@ import java.util.function.Supplier;
     @JsonSubTypes.Type(value = RadialGeofencePredicate.class, name = RadialGeofencePredicate.name),
     @JsonSubTypes.Type(value = RectangularGeofencePredicate.class, name = RectangularGeofencePredicate.name),
     @JsonSubTypes.Type(value = ArrayPredicate.class, name = ArrayPredicate.name),
+    @JsonSubTypes.Type(value = ValueAnyPredicate.class, name = ValueAnyPredicate.name),
     @JsonSubTypes.Type(value = ValueEmptyPredicate.class, name = ValueEmptyPredicate.name),
-    @JsonSubTypes.Type(value = ValueNotEmptyPredicate.class, name = ValueNotEmptyPredicate.name),
     @JsonSubTypes.Type(value = CalendarEventPredicate.class, name = CalendarEventPredicate.name)
 })
 @JsonTypeInfo(

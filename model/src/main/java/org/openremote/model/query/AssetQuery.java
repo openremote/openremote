@@ -401,7 +401,7 @@ public class AssetQuery {
     }
 
     public AssetQuery attributeValue(String name) {
-        return attributeValue(name, new ValueNotEmptyPredicate());
+        return attributeValue(name, new ValueEmptyPredicate().negate(true));
     }
 
     public AssetQuery attributeValue(String name, boolean b) {

@@ -193,7 +193,7 @@ public class EmailNotificationHandler implements NotificationHandler {
                                 .paths(new PathPredicate(targetId))
                                 .attributes(new AttributePredicate(
                                     new StringPredicate(Asset.EMAIL.getName()),
-                                    new ValueNotEmptyPredicate())));
+                                    new ValueEmptyPredicate().negate(true))));
 
                         if (assets.isEmpty()) {
                             LOG.fine("No assets with email attribute descendants of target asset");
