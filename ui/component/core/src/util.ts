@@ -281,7 +281,7 @@ export function camelCaseToSentenceCase(str: string | undefined): string {
         if (!v) return v;
 
         // If first block then capitalise 1st letter regardless
-        if (!startDone){
+        if (!startDone) {
             startDone = true;
             return v.charAt(0).toUpperCase() + v.slice(1);
         }

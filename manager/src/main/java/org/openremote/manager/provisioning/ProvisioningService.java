@@ -20,6 +20,7 @@
 package org.openremote.manager.provisioning;
 
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
@@ -29,7 +30,6 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
-import java.security.cert.CertificateFactory;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -40,7 +40,6 @@ public class ProvisioningService implements ContainerService {
     protected static final Logger LOG = Logger.getLogger(ProvisioningService.class.getName());
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
-    protected CertificateFactory certificateFactory;
 
     @Override
     public int getPriority() {
@@ -51,10 +50,10 @@ public class ProvisioningService implements ContainerService {
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
-
+        TimerService timerService = container.getService(TimerService.class);
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
-            new ProvisioningResourceImpl(this, identityService)
+            new ProvisioningResourceImpl(this, timerService, identityService)
         );
     }
 

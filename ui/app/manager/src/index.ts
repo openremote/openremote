@@ -1,4 +1,6 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
+import {pageProvisioningProvider} from "./pages/page-provisioning";
+
 declare var CONFIG_URL_PREFIX: string;
 
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
@@ -24,7 +26,8 @@ import {
     headerItemRoles,
     headerItemRealms,
     headerItemInsights,
-    headerItemExport} from "./headers";
+    headerItemExport, headerItemProvisioning
+} from "./headers";
 import "./pages/page-map";
 import {pageMapReducer, pageMapProvider, PageMapConfig} from "./pages/page-map";
 import "./pages/page-assets";
@@ -97,7 +100,8 @@ export const DefaultPagesConfig: PageProvider<any>[] = [
     pageRolesProvider(store),
     pageUsersProvider(store),
     pageRealmsProvider(store),
-    pageExportProvider(store)
+    pageExportProvider(store),
+    pageProvisioningProvider(store)
 ];
 
 export const DefaultHeaderMainMenu: {[name: string]: HeaderItem} = {
@@ -116,6 +120,7 @@ export const DefaultHeaderSecondaryMenu: {[name: string]: HeaderItem} = {
     roles: headerItemRoles(orApp),
     realms: headerItemRealms(orApp),
     export: headerItemExport(orApp),
+    provisioning: headerItemProvisioning(orApp),
     logout: headerItemLogout(orApp)
 };
 

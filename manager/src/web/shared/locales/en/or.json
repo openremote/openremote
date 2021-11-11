@@ -427,5 +427,13 @@
     "invalidJSON": "Invalid JSON",
     "invalidDate": "Invalid date",
     "keyAlreadyExists": "Key already exists"
-  }
+  },
+  "autoProvisioning": "Auto provisioning",
+  "provisioningConfigs": "Provisioning configurations",
+  "loadFailedProvisioningConfigs": "Failed to load provisioning configurations",
+  "deleteProvisioningConfigConfirm":"Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
+  "assetTemplate": "Asset template",
+  "createAsRestrictedUser": "Create restricted user",
+  "ignoreExpiryDate": "Ignore expiry date",
+  "CACertPem": "CA Certificate (PEM)"
 }
