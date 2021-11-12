@@ -1896,12 +1896,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         .append(location.latMax)
                         .append("))");
                 }
-            } else if (nameValuePredicate.value instanceof ValueNotEmptyPredicate) {
-                valuePathInserter.accept(attributeBuilder, binders);
-                attributeBuilder.append("\\:\\:text IS NOT NULL");
             } else if (nameValuePredicate.value instanceof ValueEmptyPredicate) {
                 valuePathInserter.accept(attributeBuilder, binders);
-                attributeBuilder.append("\\:\\:text IS NULL");
+                attributeBuilder.append(((ValueEmptyPredicate) nameValuePredicate.value).negate ? "\\:\\:text IS NOT NULL" : "\\:\\:text IS NULL");
             } else if (nameValuePredicate.value instanceof CalendarEventPredicate) {
                 final int pos = binders.size() + 1;
                 java.sql.Timestamp when = new java.sql.Timestamp(((CalendarEventPredicate)nameValuePredicate.value).timestamp.getTime());

@@ -29,11 +29,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.kjetland.jackson.jsonSchema.JsonSchemaConfig;
-import com.kjetland.jackson.jsonSchema.JsonSchemaDraft;
 import com.kjetland.jackson.jsonSchema.JsonSchemaGenerator;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaString;
 import org.hibernate.internal.util.SerializationHelper;
 import org.openremote.model.AssetModelProvider;
 import org.openremote.model.ModelDescriptor;
@@ -59,10 +55,7 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
@@ -886,6 +879,71 @@ public class ValueUtil {
             .map(Attribute::new)
             .collect(Collectors.toList())
         );
+    }
+
+    public static Object[] getObjectFieldValues(Object object, String[] fieldNames) {
+        return Arrays.stream(fieldNames).map(fieldName -> getObjectFieldValue(object, fieldName)).toArray();
+    }
+
+    public static Object[] getObjectFieldValues(Object object, Field[] fields) {
+        return Arrays.stream(fields).map(field -> getObjectFieldValue(object, field)).toArray();
+    }
+
+    public static Object getObjectFieldValue(Object object, String fieldName) {
+        try {
+            Field field = object.getClass().getDeclaredField(fieldName);
+            return getObjectFieldValue(object, field);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalStateException("Specified field could not be found: class=" + object.getClass().getSimpleName() + ", field=" + fieldName);
+        }
+    }
+    public static Object getObjectFieldValue(Object object, Field field) {
+        field.setAccessible(true);
+        try {
+            return field.get(object);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Failed to get field value: class=" + object.getClass().getSimpleName() + ", field=" + field.getName());
+        }
+    }
+
+    public static boolean objectsEquals(Object a, Object b) {
+        if (!Objects.equals(a, b)) {
+            Object subject = a != null ? a : b;
+            Object subordinate = a != null ? b : a;
+            if (subject.getClass().isArray()) {
+                Class<?> arrayType = subject.getClass().getComponentType();
+                if (arrayType.isPrimitive()) {
+                    if (arrayType == boolean.class) {
+                        return Arrays.equals((boolean[]) subject, (boolean[]) subordinate);
+                    }
+                    if (arrayType == int.class) {
+                        return Arrays.equals((int[]) subject, (int[]) subordinate);
+                    }
+                    if (arrayType == double.class) {
+                        return Arrays.equals((double[]) subject, (double[]) subordinate);
+                    }
+                    if (arrayType == float.class) {
+                        return Arrays.equals((float[]) subject, (float[]) subordinate);
+                    }
+                    if (arrayType == long.class) {
+                        return Arrays.equals((long[]) subject, (long[]) subordinate);
+                    }
+                    if (arrayType == short.class) {
+                        return Arrays.equals((short[]) subject, (short[]) subordinate);
+                    }
+                    if (arrayType == byte.class) {
+                        return Arrays.equals((byte[]) subject, (byte[]) subordinate);
+                    }
+                    if (arrayType == char.class) {
+                        return Arrays.equals((char[]) subject, (char[]) subordinate);
+                    }
+                    return false;
+                }
+                return Arrays.deepEquals((Object[])subject,(Object[])subordinate);
+            }
+            return false;
+        }
+        return true;
     }
 
     protected static boolean isGetter(Method method) {

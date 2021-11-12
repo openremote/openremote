@@ -116,6 +116,7 @@ public abstract class MQTTHandler {
         }
         if (!canSubscribe(connection, topic)) {
             getLogger().fine("Cannot subscribe to this topic, topic=" + topic + ", connection" + connection);
+            return false;
         }
         return true;
     }

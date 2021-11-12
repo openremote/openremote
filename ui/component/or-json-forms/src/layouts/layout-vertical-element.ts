@@ -19,7 +19,14 @@ import {
 import {css, html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {LayoutBaseElement} from "./layout-base-element";
-import {controlWithoutLabel, getLabel, getTemplateFromProps, showJsonEditor} from "../util";
+import {
+    CombinatorInfo,
+    controlWithoutLabel,
+    getLabel,
+    getSchemaPicker,
+    getTemplateFromProps,
+    showJsonEditor
+} from "../util";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -157,7 +164,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
                         <div id="footer">
-                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" @click="${() => this._addParameter(optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
+                            <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addParameter")}" icon="plus" @click="${() => this._addParameter(rootSchema, optionalProps, dynamicPropertyRegex, dynamicValueSchema)}"></or-mwc-input>
                         </div>`}
             </div>
         `;
@@ -241,10 +248,11 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         });
     }
 
-    protected _addParameter(optionalProps: StatePropsOfControl[], dynamicPropertyRegex?: string, dynamicValueSchema?: JsonSchema) {
+    protected _addParameter(rootSchema: JsonSchema, optionalProps: StatePropsOfControl[], dynamicPropertyRegex?: string, dynamicValueSchema?: JsonSchema) {
 
         const dynamic = optionalProps.length === 0;
         let selectedParameter: StatePropsOfControl | undefined;
+        let selectedOneOf: CombinatorInfo;
 
         const listItems: ListItem[] = optionalProps.map(props => {
             const labelStr = computeLabel(props.label, !!props.required, false);
@@ -257,9 +265,9 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
         const onParamChanged = (selected: StatePropsOfControl) => {
             selectedParameter = selected;
-            const descElem = dialog.shadowRoot!.getElementById("parameter-desc") as HTMLDivElement;
-            descElem.innerHTML = selected.description || "";
-            (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = false;
+            const isOneOf = !!(selectedParameter && selectedParameter.schema && selectedParameter.schema.oneOf);
+            dialog.dialogContent = dialogContentProvider();
+            (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = isOneOf;
         };
 
         // const keyValue: [any, any] = [undefined, undefined];
@@ -269,10 +277,10 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         //     (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !valid;
         // };
         let keyValue: string | undefined;
-        const onKeyChanged = (event: OrInputChangedEvent) => {
+        const onKeyChanged = (event: KeyboardEvent) => {
             const keyInput = event.currentTarget as OrMwcInput;
             keyInput.setCustomValidity(undefined);
-            keyValue = event.detail.value as string;
+            keyValue = keyInput.currentValue as string;
             let valid = keyInput.valid;
 
             if (this.data[keyValue] !== undefined) {
@@ -282,8 +290,21 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !valid;
         };
 
-        const dialog = showDialog({
-            content: html`
+        const dialogContentProvider: () => TemplateResult = () => {
+
+            // Only set when !dynamic
+            let schemaPicker: TemplateResult | undefined = undefined;
+
+            if (selectedParameter && selectedParameter.schema && selectedParameter.schema.oneOf) {
+                const handleChange = (selectedSchema: CombinatorInfo) => {
+                    selectedOneOf = selectedSchema;
+                    (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = !selectedOneOf;
+                    (dialog.shadowRoot!.getElementById("schema-description") as HTMLParagraphElement).innerHTML = (selectedOneOf ? selectedOneOf.description : i18next.t("schema.selectTypeMessage")) || i18next.t("schema.noDescriptionAvailable");
+                };
+                schemaPicker = getSchemaPicker(rootSchema, selectedParameter.schema, selectedParameter.path, "oneOf", selectedParameter.label, handleChange);
+            }
+
+            return html`
                 <div class="col">
                     <form id="mdc-dialog-form-add" class="row">
                         ${dynamic ? `` : html`
@@ -292,7 +313,28 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                             </div>
                         `}
                         <div id="parameter-desc" class="col">
-                            ${!dynamic ? `` : html`
+                            ${!selectedParameter ? `` : html`<p>${selectedParameter.description}</p>`}
+                            ${!dynamic ? !schemaPicker ? `` : html`
+                                <style>
+                                    #schema-picker {
+                                        align-self: stretch;
+                                        margin: auto 10px;
+                                        display: flex;
+                                        align-items: center;
+                                    }
+                                    #schema-picker > or-translate {
+                                        padding-right: 20px;
+                                    }
+                                    #schema-picker > or-mwc-input {
+                                        flex: 1;
+                                    }
+                                </style>
+                                <div id="schema-picker">
+                                    <or-translate style="justify-self: left;" value="type"></or-translate>
+                                    ${schemaPicker}
+                                </div>
+                                <p id="schema-description">${i18next.t("schema.selectTypeMessage")}</p>`
+                            : html`
                                 <style>
                                     #dynamic-wrapper > or-mwc-input {
                                         display: block;
@@ -300,13 +342,17 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                                     }
                                 </style>
                                 <div id="dynamic-wrapper">
-                                    <or-mwc-input required .type="${InputType.TEXT}" .pattern="${dynamicPropertyRegex}" .label="${i18next.t("key")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => onKeyChanged(evt)}"></or-mwc-input>
+                                    <or-mwc-input required .type="${InputType.TEXT}" .pattern="${dynamicPropertyRegex}" .label="${i18next.t("schema.keyInputLabel")}" @keyup="${(evt: KeyboardEvent) => onKeyChanged(evt)}"></or-mwc-input>
                                 </div>
                             `}
                         </div>
                     </form>
                 </div>
-            `,
+            `;
+        };
+
+        const dialog = showDialog({
+            content: dialogContentProvider(),
             styles: addItemOrParameterDialogStyle,
             title: (this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addParameter"),
             actions: [
@@ -321,7 +367,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                         const key = dynamic ? keyValue as string : selectedParameter!.path.split(".").pop()!;
                         const data = {...this.data};
                         const schema = dynamic ? dynamicValueSchema! : selectedParameter!.schema;
-                        data[key] = Array.isArray(schema.type) ? null : createDefaultValue(schema);
+                        data[key] = Array.isArray(schema.type) ? null : ((selectedOneOf ? selectedOneOf.defaultValueCreator() : undefined) || createDefaultValue(schema));
                         this.handleChange(this.path || "", data);
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`

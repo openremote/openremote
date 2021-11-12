@@ -19,38 +19,56 @@
  */
 package org.openremote.manager.provisioning;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.provisioning.ProvisioningResource;
 
-public class ProvisioningResourceImpl implements ProvisioningResource {
+import javax.ws.rs.ForbiddenException;
+
+public class ProvisioningResourceImpl extends ManagerWebResource implements ProvisioningResource {
 
     protected final ProvisioningService provisioningService;
     protected final ManagerIdentityService identityService;
 
-    public ProvisioningResourceImpl(ProvisioningService provisioningService, ManagerIdentityService identityService) {
+    public ProvisioningResourceImpl(ProvisioningService provisioningService, TimerService timerService, ManagerIdentityService identityService) {
+        super(timerService, identityService);
         this.provisioningService = provisioningService;
         this.identityService = identityService;
     }
 
     @Override
-    public ProvisioningConfig<?, ?> getProvisioningConfigs() {
-        return null;
+    public ProvisioningConfig<?, ?>[] getProvisioningConfigs() {
+        if (!isSuperUser()) {
+            throw new ForbiddenException("Only super admin can get provisioning configurations");
+        }
+        return provisioningService.getProvisioningConfigs().toArray(new ProvisioningConfig[0]);
     }
 
     @Override
     public long createProvisioningConfig(ProvisioningConfig<?, ?> provisioningConfig) {
-        return 0;
+        if (!isSuperUser()) {
+            throw new ForbiddenException("Only super admin can create provisioning configurations");
+        }
+        provisioningConfig = provisioningService.merge(provisioningConfig);
+        return provisioningConfig.getId();
     }
 
     @Override
     public void updateProvisioningConfig(RequestParams requestParams, Long id, ProvisioningConfig<?, ?> provisioningConfig) {
-
+        if (!isSuperUser()) {
+            throw new ForbiddenException("Only super admin can modify provisioning configurations");
+        }
+        provisioningService.merge(provisioningConfig);
     }
 
     @Override
     public void deleteProvisioningConfig(RequestParams requestParams, Long id) {
-
+        if (!isSuperUser()) {
+            throw new ForbiddenException("Only super admin can delete provisioning configurations");
+        }
+        provisioningService.delete(id);
     }
 }

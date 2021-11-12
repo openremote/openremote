@@ -19,6 +19,7 @@
  */
 package org.openremote.container.persistence;
 
+import org.apache.camel.ExchangePattern;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.hibernate.Session;
@@ -53,12 +54,14 @@ import javax.persistence.spi.ClassTransformer;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.sql.DataSource;
 import javax.ws.rs.core.UriBuilder;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 import static org.openremote.container.util.MapAccess.*;
 
@@ -391,6 +394,53 @@ public class PersistenceService implements ContainerService {
 
     public Set<String> getSchemas() {
         return schemas;
+    }
+
+    /**
+     * Generate {@link PersistenceEvent}s for entities not managed by JPA (i.e. Keycloak entities)
+     */
+    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object currentEntity, Object previousEntity, Field[] propertyFields) {
+        switch (cause) {
+            case CREATE:
+                publishPersistenceEvent(cause, currentEntity, null, null, null);
+                break;
+            case DELETE:
+                publishPersistenceEvent(cause, previousEntity, null, null, null);
+                break;
+            case UPDATE:
+                List<String> propertyNames = new ArrayList<>(propertyFields.length);
+                List<Object> currentState = new ArrayList<>(propertyFields.length);
+                List<Object> previousState = new ArrayList<>(propertyFields.length);
+                IntStream.range(0, propertyFields.length).forEach(i -> {
+                    Object currentValue = ValueUtil.getObjectFieldValue(currentEntity, propertyFields[i]);
+                    Object previousValue = ValueUtil.getObjectFieldValue(previousEntity, propertyFields[i]);
+                    if (!ValueUtil.objectsEquals(currentValue, previousValue)) {
+                        propertyNames.add(propertyFields[i].getName());
+                        currentState.add(currentValue);
+                        previousState.add(previousValue);
+                    }
+                });
+                publishPersistenceEvent(cause, currentEntity, propertyNames.toArray(new String[0]), currentState.toArray(), previousState.toArray());
+                break;
+        }
+    }
+
+    /**
+     * Generate {@link PersistenceEvent}s for entities not managed by JPA (i.e. Keycloak entities)
+     */
+    public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object entity, String[] propertyNames, Object[] currentState, Object[] previousState) {
+        // Fire persistence event although we don't use database for Tenant CUD but call Keycloak API
+        PersistenceEvent<?> persistenceEvent = new PersistenceEvent<>(cause, entity, propertyNames, currentState, previousState);
+
+        if (messageBrokerService.getProducerTemplate() != null) {
+            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                PersistenceEvent.PERSISTENCE_TOPIC,
+                ExchangePattern.InOnly,
+                persistenceEvent,
+                PersistenceEvent.HEADER_ENTITY_TYPE,
+                persistenceEvent.getEntity().getClass()
+            );
+        }
     }
 
     protected void openDatabase(Container container, Database database, String username, String password, String connectionUrl) {

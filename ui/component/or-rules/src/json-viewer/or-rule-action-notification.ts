@@ -244,7 +244,7 @@ export class OrRuleActionNotification extends LitElement {
                     items: [
                         {
                             name: { "predicateType": "string", "value": "email" },
-                            value: { "predicateType": "value-not-empty" }
+                            value: { "predicateType": "value-empty", negate: true }
                         }
                     ]
                 }

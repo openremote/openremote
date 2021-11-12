@@ -21,6 +21,14 @@ export const baseStyle = css`
         visibility: visible;
     }
     
+    .no-match-container {
+        align-items: center;
+    }
+
+    .no-match-container > *:not(:last-child) {
+        margin-right: 10px;
+    }
+
     .button-clear {
         background: none;
         color: ${unsafeCSS(DefaultColor5)};
@@ -126,8 +134,11 @@ export const addItemOrParameterDialogStyle = html`
             display: block;
         }
         #parameter-desc {
-            padding: 5px;
+            text-align: justify;
+            padding: 15px;
             flex: 1;
+            display: flex;
+            flex-direction: column;
         }
     </style>
 `;

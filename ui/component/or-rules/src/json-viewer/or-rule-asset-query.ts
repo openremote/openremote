@@ -224,8 +224,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 return html `<span>NOT IMPLEMENTED</span>`;
             case "value-empty":
                 return ``;
-            case "value-not-empty":
-                return ``;
             case "array":
                 // TODO: Update once we can determine inner type of array
                 // Assume string array
@@ -430,9 +428,7 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 }
                 return valuePredicate.negated ? AssetQueryOperator.NOT_CONTAINS : AssetQueryOperator.CONTAINS;
             case "value-empty":
-                return AssetQueryOperator.VALUE_EMPTY;
-            case "value-not-empty":
-                return AssetQueryOperator.VALUE_NOT_EMPTY;
+                return valuePredicate.negate ? AssetQueryOperator.VALUE_NOT_EMPTY : AssetQueryOperator.VALUE_EMPTY;
         }
     }
 
@@ -621,7 +617,8 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
                 break;
             case AssetQueryOperator.VALUE_NOT_EMPTY:
                 predicate = {
-                    predicateType: "value-not-empty"
+                    predicateType: "value-empty",
+                    negate: true
                 };
                 break;
             case AssetQueryOperator.CONTAINS:

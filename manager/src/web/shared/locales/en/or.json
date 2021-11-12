@@ -134,7 +134,10 @@
   "output": "Output",
   "selectAsset": "Select asset",
   "selectAssetOnTheLeft": "Select an asset on the left",
-  "noRuleStateAttributes": "No rule state attributes",
+  "noRuleStateAttributes": "No attributes with 'rule state' or 'agent link' configuration item found",
+  "noDatapointsAttributes": "No attributes with 'store data points' or 'agent link' configuration item found",
+  "noAttributesToShow": "No attributes found",
+  "noDatapointsOrRuleStateAttributes": "No attributes with 'rule state', 'store data points', or 'agent link' configuration item found",
   "copy": "Copy",
   "paste": "Paste",
   "delete": "Delete",
@@ -414,8 +417,6 @@
   "loadFailedRoles": "Failed to load roles",
   "loadFailedUsers": "Failed to load users",
   "loadFailedServiceUsers": "Failed to load service users",
-  "key": "Key",
-  "anyOfPickerLabel": "{{label}} type",
   "validation": {
     "noSchemaMatchFound": "No schema match found",
     "invalidAsset": "Asset is not valid",
@@ -425,5 +426,22 @@
     "invalidJSON": "Invalid JSON",
     "invalidDate": "Invalid date",
     "keyAlreadyExists": "Key already exists"
+  },
+  "autoProvisioning": "Auto provisioning",
+  "provisioningConfigs": "Provisioning configurations",
+  "loadFailedProvisioningConfigs": "Failed to load provisioning configurations",
+  "deleteProvisioningConfigConfirm":"Are you sure you want to delete this provisioning config?\nClients that use this config will no longer be able to connect.",
+  "assetTemplate": "Asset template",
+  "createAsRestrictedUser": "Create restricted user",
+  "ignoreExpiryDate": "Ignore expiry date",
+  "CACertPem": "CA Certificate (PEM)",
+  "schema": {
+    "noDescriptionAvailable": "No description is available",
+    "selectTypeMessage": "Select a type to see a description",
+    "keyInputLabel": "Key",
+    "anyOfPickerLabel": "{{label}} type",
+    "title": {
+      "indexedItem": "Item {{index}}"
+    }
   }
 }

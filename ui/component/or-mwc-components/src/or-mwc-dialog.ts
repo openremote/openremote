@@ -442,8 +442,8 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         });
         
         this.dialogContent = html`
-            <div class="row" style="display: flex;height: 600px;width: 800px;">
-                <div class="col" style="width: 260px;overflow: auto;">
+            <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
+                <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
                     <or-asset-tree id="chart-asset-tree" readonly
                                     @or-asset-tree-request-selection="${(event: CustomEvent) => this._onAssetSelectionChanged(event)}"
                                     @or-asset-tree-request-delete="${() => this._onAssetSelectionDeleted()}"></or-asset-tree>
@@ -472,7 +472,14 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                                         this.reRenderDialog()}
                                     }"></or-mwc-input>`
                     }
-                ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;"><span style="width:100%"><or-translate value="selectAssetOnTheLeft"></or-translate></span></div>`}
+                ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;"><span style="width:100%">
+                            <or-translate value="${
+                                (this.selectedAsset && listItems.length == 0) ?
+                                    ((this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) ? "noDatapointsOrRuleStateAttributes" :
+                                        this.showOnlyDatapointAttrs ? "noDatapointsAttributes" :
+                                            this.showOnlyRuleStateAttrs ? "noRuleStateAttributes" : "noAttributesToShow"
+                                    ) : "selectAssetOnTheLeft"}">
+                            </or-translate></span></div>`}
                 </div>
         `;
     }
@@ -499,12 +506,15 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
         manager.rest.api.AssetResource.get(this.selectedAsset.id!)
             .then(result => {
                 this.assetAttributes = Object.values(result.data.attributes!) as Attribute<any>[];
-                if (this.showOnlyDatapointAttrs) {
+                if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
+                    this.assetAttributes = this.assetAttributes
+                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
+                } else if (this.showOnlyDatapointAttrs) {
                     this.assetAttributes = this.assetAttributes
                         .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]));
-                }else if (this.showOnlyRuleStateAttrs) {
+                } else if (this.showOnlyRuleStateAttrs) {
                     this.assetAttributes = this.assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.RULESTATE]));
+                        .filter(e => e.meta && (e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
                 }
                 this.reRenderDialog();
             });

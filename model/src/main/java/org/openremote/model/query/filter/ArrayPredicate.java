@@ -19,6 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.util.ValueUtil;
@@ -40,6 +41,7 @@ import java.util.function.Supplier;
  * There is an implicit 'and' between each specified condition; the negation is applied once all the criteria are
  * evaluated.
  */
+@JsonClassDescription("Predicate for array values; will match based on configured options.")
 public class ArrayPredicate extends ValuePredicate {
 
     public static final String name = "array";

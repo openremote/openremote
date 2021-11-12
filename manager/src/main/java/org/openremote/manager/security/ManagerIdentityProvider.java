@@ -67,6 +67,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     void updateUserAttributes(String realm, String userId, Map<String, List<String>> attributes);
 
+    Map<String, List<String>> getUserAttributes(String realm, String userId);
+
     Role[] getRoles(String realm, String client);
 
     void updateClientRoles(String realm, String client, Role[] roles);

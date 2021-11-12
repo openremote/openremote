@@ -19,8 +19,10 @@
  */
 package org.openremote.model.query.filter;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.ValueUtil;
@@ -31,9 +33,10 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Can be applied to {@link org.openremote.model.attribute.Attribute}s of type
- * {@link ValueType#CALENDAR_EVENT}.
+ * Can be applied to {@link org.openremote.model.attribute.Attribute}s of type {@link ValueType#CALENDAR_EVENT}.
  */
+@JsonSchemaTitle("Calendar")
+@JsonClassDescription("Predicate for calendar event values; will match based on whether the calendar event is active for the specified time.")
 public class CalendarEventPredicate extends ValuePredicate {
 
     public static final String name = "calendar-event";

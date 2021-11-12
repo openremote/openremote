@@ -283,7 +283,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         optimisationAsset.setOptimisationDisabled(false)
         optimisationAsset = assetStorageService.merge(optimisationAsset)
 
-        then: "the battery setpoint should be set to max (7kW) to store produced energy for future deficit"
+        then: "the battery setpoint should be set to max to store produced energy for future deficit"
         conditions.eventually {
             assert ((ElectricityStorageAsset)assetStorageService.find(managerTestSetup.electricityBatteryAssetId)).getPowerSetpoint().orElse(0d) == 10d
 

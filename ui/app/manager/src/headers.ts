@@ -124,3 +124,13 @@ export function headerItemExport<S extends AppStateKeyed, A extends AnyAction>(o
         text: "dataExport"
     };
 }
+
+export function headerItemProvisioning<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
+    return {
+        icon: "cellphone-cog",
+        value: "provisioning",
+        href: "provisioning",
+        text: "autoProvisioning",
+        roles: () => manager.isSuperUser()
+    };
+}

@@ -19,37 +19,32 @@
  */
 package org.openremote.model.provisioning;
 
-import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 
-import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Path("provisioning")
 public interface ProvisioningResource {
 
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.REALM_ADMIN_ROLE})
-    ProvisioningConfig<?, ?> getProvisioningConfigs();
+    ProvisioningConfig<?, ?>[] getProvisioningConfigs();
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.REALM_ADMIN_ROLE})
     long createProvisioningConfig(ProvisioningConfig<?, ?> provisioningConfig);
 
     @PUT
     @Path("{id}")
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({Constants.REALM_ADMIN_ROLE})
     void updateProvisioningConfig(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid ProvisioningConfig<?, ?> provisioningConfig);
 
     @DELETE
     @Path("{id}")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.REALM_ADMIN_ROLE})
     void deleteProvisioningConfig(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 }

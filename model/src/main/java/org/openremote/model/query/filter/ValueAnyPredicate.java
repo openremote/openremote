@@ -19,16 +19,20 @@
  */
 package org.openremote.model.query.filter;
 
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class ValueNotEmptyPredicate extends ValuePredicate {
+@JsonSchemaTitle("Any value")
+@JsonClassDescription("Predicate that matches any value including null.")
+public class ValueAnyPredicate extends ValuePredicate {
 
-    public static final String name = "value-not-empty";
+    public static final String name = "value-any";
 
     @Override
     public Predicate<Object> asPredicate(Supplier<Long> currentMillisSupplier) {
-        return obj -> !Objects.isNull(obj);
+        return obj -> true;
     }
 }

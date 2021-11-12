@@ -87,6 +87,11 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     protected RulesetStorageService rulesetStorageService;
     protected RulesService rulesService;
     protected ScheduledExecutorService executorService;
+    /**
+     * Maps gateway asset IDs to connections; note that gateway asset IDs are stored lower case so that they can be
+     * matched up to the service user client ID (which needs to be all lower case); this could technically cause an
+     * ID collision but for now the odds of that are low enough to not be a concern.
+     */
     protected final Map<String, GatewayConnector> gatewayConnectorMap = new HashMap<>();
     protected final Map<String, String> assetIdGatewayIdMap = new HashMap<>();
     protected boolean active;
@@ -198,7 +203,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
                 // Create connector
                 GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, gateway);
-                gatewayConnectorMap.put(gateway.getId(), connector);
+                gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
 
                 // Get IDs of all assets under this gateway
                 List<Asset<?>> gatewayAssets = assetStorageService
@@ -294,7 +299,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             return false;
         }
 
-        GatewayConnector connector = gatewayConnectorMap.get(asset.getId());
+        GatewayConnector connector = gatewayConnectorMap.get(asset.getId().toLowerCase(Locale.ROOT));
 
         if (connector != null) {
             LOG.fine("Attribute event for a locally registered gateway asset (Asset ID=" + asset.getId() + "): " + attribute);
@@ -321,7 +326,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
             if (gatewayId != null) {
                 LOG.fine("Attribute event for a gateway descendant asset (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + "): " + attribute);
-                connector = gatewayConnectorMap.get(gatewayId);
+                connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
                 if (connector == null) {
                     LOG.warning("Gateway not found for descendant asset, this should not happen!!! (Asset<?> ID=" + asset.getId() + ", Gateway ID=" + gatewayId + ")");
                 } else {
@@ -349,7 +354,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     }
 
     public <T extends Asset<?>> T mergeGatewayAsset(String gatewayId, T asset) {
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
             String msg = "Gateway not found: Gateway ID=" + gatewayId;
@@ -362,7 +367,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     }
 
     public boolean deleteGateway(String gatewayId) {
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
             String msg = "Gateway is not known: Gateway ID=" + gatewayId;
@@ -390,7 +395,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             return false;
         }
 
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null || !connector.isConnected()) {
             String msg = "Gateway is not connected: Gateway ID=" + gatewayId;
@@ -405,7 +410,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
      * Check if asset ID is a gateway asset registered locally on this manager
      */
     public boolean isLocallyRegisteredGateway(String assetId) {
-        return gatewayConnectorMap.containsKey(assetId);
+        return gatewayConnectorMap.containsKey(assetId.toLowerCase(Locale.ROOT));
     }
 
     /**
@@ -423,7 +428,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
 
         if (parentId != null) {
-            GatewayConnector connector = gatewayConnectorMap.get(parentId);
+            GatewayConnector connector = gatewayConnectorMap.get(parentId.toLowerCase(Locale.ROOT));
 
             if (connector != null) {
                 return connector.gatewayId;
@@ -442,7 +447,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
 
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
             LOG.warning("Gateway connected but not recognised which shouldn't happen: Gateway ID=" + gatewayId);
@@ -477,7 +482,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
 
         String gatewayId = getGatewayIdFromClientId(gatewayClientId);
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
 
         if (connector == null) {
             return;
@@ -494,12 +499,12 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 createGatewayClient(gateway);
                 synchronized (gatewayConnectorMap) {
                     GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, gateway);
-                    gatewayConnectorMap.put(gateway.getId(), connector);
+                    gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
                 }
                 break;
             case UPDATE:
                 // Check if this gateway has a connector
-                GatewayConnector connector = gatewayConnectorMap.get(gateway.getId());
+                GatewayConnector connector = gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT));
                 if (connector == null) {
                     break;
                 }
@@ -535,13 +540,13 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 break;
             case DELETE:
                 // Check if this gateway has a connector
-                connector = gatewayConnectorMap.get(gateway.getId());
+                connector = gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT));
                 if (connector == null) {
                     break;
                 }
 
                 synchronized (gatewayConnectorMap) {
-                    connector = gatewayConnectorMap.remove(gateway.getId());
+                    connector = gatewayConnectorMap.remove(gateway.getId().toLowerCase(Locale.ROOT));
 
                     if (connector != null) {
                         connector.disconnect();
@@ -574,7 +579,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     protected boolean isGatewayConnected(String gatewayId) {
         AtomicBoolean connected = new AtomicBoolean(false);
 
-        gatewayConnectorMap.computeIfPresent(gatewayId, (id, gatewayConnector) -> {
+        gatewayConnectorMap.computeIfPresent(gatewayId.toLowerCase(Locale.ROOT), (id, gatewayConnector) -> {
             connected.set(gatewayConnector.isConnected());
             return gatewayConnector;
         });
@@ -582,11 +587,18 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         return connected.get();
     }
 
+    public static String getGatewayClientId(String gatewayAssetId) {
+        String clientId = GATEWAY_CLIENT_ID_PREFIX + gatewayAssetId.toLowerCase(Locale.ROOT);
+        if (clientId.length() > 255) {
+            clientId = clientId.substring(0, 254);
+        }
+        return clientId;
+    }
+
     protected void createGatewayClient(GatewayAsset gateway) {
 
         LOG.info("Creating gateway keycloak client for gateway id: " + gateway.getId());
-
-        String clientId = GATEWAY_CLIENT_ID_PREFIX + gateway.getId();
+        String clientId = getGatewayClientId(gateway.getId());
         String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
 
         try {
@@ -622,7 +634,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
     }
 
     protected void onGatewayClientEventReceived(String gatewayId, String messageId, SharedEvent event) {
-        GatewayConnector connector = gatewayConnectorMap.get(gatewayId);
+        GatewayConnector connector = gatewayConnectorMap.get(gatewayId.toLowerCase(Locale.ROOT));
         if (connector != null) {
             connector.onGatewayEvent(messageId, event);
         }

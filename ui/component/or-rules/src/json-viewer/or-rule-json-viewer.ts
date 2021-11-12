@@ -406,7 +406,6 @@ export class OrRuleJsonViewer extends translate(i18next)(LitElement) implements 
             case "array":
                 return (valuePredicate.index && !valuePredicate.value) || valuePredicate.value || valuePredicate.lengthEquals || valuePredicate.lengthLessThan || valuePredicate.lengthGreaterThan;
             case "value-empty":
-            case "value-not-empty":
                 return true;
             default:
                 return false;

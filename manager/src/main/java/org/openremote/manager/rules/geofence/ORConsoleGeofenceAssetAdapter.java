@@ -108,7 +108,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 .select(new AssetQuery.Select().excludePath(true)
                     .attributes(ConsoleAsset.CONSOLE_PROVIDERS.getName()))
                 .types(ConsoleAsset.class)
-                .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueNotEmptyPredicate(), false, new NameValuePredicate.Path("geofence"))))
+                .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, new ValueEmptyPredicate().negate(true), false, new NameValuePredicate.Path("geofence"))))
             .stream()
             .map(asset -> (ConsoleAsset)asset)
             .filter(ORConsoleGeofenceAssetAdapter::isLinkedToORConsoleGeofenceAdapter)
