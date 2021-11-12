@@ -264,6 +264,8 @@
   "details": "Details",
   "permissions":"Rechten",
   "restrictAccess": "Beperkte toegang",
+  "selectRestrictedAssets": "{{number}} assets",
+  "restrictedAccessToAssets": "Beperkte toegang tot",
   "fullAccessLabel":"Admin: volledige toegang; gebruikers en rollen beheren",
   "noChildAssets": "Geen onderliggende assets",
   "account": "Account",

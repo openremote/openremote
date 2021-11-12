@@ -712,13 +712,15 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
                                 <!-- restricted access -->
                                 <div>
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t("active")}"
-                                                  @click="${(e) => console.log('klikklak',e)}"></or-mwc-input>
-                                    
-                                    <or-mwc-input outlined .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" 
+                                                  .label="${i18next.t("restrictedAccessToAssets") + ':'}"
+                                                  .value="${!!user.roles.find(userRole => userRole.name === 'restricted_user')}"
+                                                  @click="${(e) => { }}"></or-mwc-input>
+
+                                    <or-mwc-input outlined 
+                                                  .type="${InputType.BUTTON}" 
+                                                  .label="${i18next.t("selectRestrictedAssets", {number: this._userAssetLinks.filter(ual => ual.id.userId === user.id).length})}"
                                                   @click="${() => this._openAssetSelector(user)}"></or-mwc-input>
-                                    
-                                    <span>zinnetje ${this._userAssetLinks.filter(ual => ual.id.userId === user.id).length}</span>
                                 </div>
                             </div>
                         </div>
