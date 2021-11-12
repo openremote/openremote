@@ -75,6 +75,13 @@ export const panelStyle = css`
         flex-direction: row;
     }
 
+    #type-label {
+        border: 1px solid green;
+        border-radius: 3px;
+        padding: 3px;
+        margin-left: 10px;
+    }
+
     #header-buttons {
         flex: 0;
     }

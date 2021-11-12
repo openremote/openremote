@@ -97,7 +97,8 @@ export const verticalLayoutRenderer = (state: JsonFormsStateContext, props: OwnP
         label: props.label,
         required: props.required,
         errors: props.errors,
-        minimal: props.minimal
+        minimal: props.minimal,
+        type: props.type
     };
 
     const template = html`<or-json-forms-vertical-layout .state="${state}" .props="${contentProps}"></or-json-forms-vertical-layout>`;
@@ -116,7 +117,7 @@ export const constTester: RankedTester = rankWith(
 );
 export const constRenderer = (state: JsonFormsStateContext, props: OwnPropsOfJsonFormsRenderer) => {
     // Don't render const
-    return html``;
+    return undefined;
 };
 
 export const inputControlTester: RankedTester = rankWith(
@@ -297,7 +298,8 @@ export const anyOfOneOfControlRenderer = (state: JsonFormsStateContext, props: C
         label: props.label || getLabel(matchedSchema, rootSchema, label) || "",
         required: props.required || !!required,
         errors: errors,
-        minimal: props.minimal
+        minimal: props.minimal,
+        type: matchedSchema.title
     }
 
     return getTemplateFromProps(state, contentProps);

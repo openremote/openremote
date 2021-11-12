@@ -90,6 +90,8 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
     @property()
     protected minimal?: boolean;
+    @property()
+    protected type?: string;
     public handleChange!: (path: string, data: any) => void;
 
     public static get styles() {
@@ -122,7 +124,10 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         }
 
         const header = this.minimal ? `` : html`
-            <span slot="header">${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+            <div slot="header">
+                <span>${this.label ? computeLabel(this.label, this.required, false) : ""}</span>
+                ${this.type ? html`<span id="type-label">${this.type}</span>` : ``}
+            </div>
             <div id="header-description" slot="header-description">
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
@@ -131,35 +136,43 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             </div>
         `;
 
+        let contentTemplate: TemplateResult | TemplateResult[] | undefined;
+
+        if (dynamic && dynamicValueSchema) {
+            contentTemplate = this._getDynamicContentTemplate(dynamicPropertyRegex, dynamicValueSchema);
+        } else if (this.getChildProps().length > 0) {
+            contentTemplate = this.getChildProps().map((childProps: OwnPropsOfRenderer & AdditionalProps) => {
+
+                if (childProps.schema) {
+                    // Make root schema definitions available to this schema
+                    childProps.schema.definitions = rootSchema.definitions;
+                }
+
+                if (isControl(childProps.uischema)) {
+
+                    const controlProps = childProps as OwnPropsOfControl;
+                    const stateControlProps = mapStateToControlProps(jsonFormsState, controlProps);
+                    stateControlProps.label = stateControlProps.label || getLabel(this.schema, rootSchema, undefined, (childProps.uischema as ControlElement).scope) || "";
+                    childProps.label = stateControlProps.label;
+                    childProps.required = !!stateControlProps.required;
+                    if (!stateControlProps.required && stateControlProps.data === undefined) {
+                        // Optional property with no data so show this in the add parameter dialog
+                        optionalProps.push(stateControlProps);
+                        return html``;
+                    }
+                }
+
+                return getTemplateFromProps(this.state, childProps);
+            }).filter(t => t !== undefined) as TemplateResult[];
+        }
+
+        const expandable = (!!contentTemplate && (!Array.isArray(contentTemplate) || contentTemplate.length > 0)) || (!this.errors && optionalProps.length > 0);
+
         const content = html`
             ${header}
             <div id="content-wrapper" slot="content">
                 <div id="content">
-                    ${dynamic && dynamicValueSchema ?
-                        this._getDynamicContentTemplate(dynamicPropertyRegex, dynamicValueSchema)
-                        : this.getChildProps().map((childProps: OwnPropsOfRenderer & AdditionalProps) => {
-
-                            if (childProps.schema) {
-                                // Make root schema definitions available to this schema
-                                childProps.schema.definitions = rootSchema.definitions;
-                            }
-
-                            if (isControl(childProps.uischema)) {
-
-                                const controlProps = childProps as OwnPropsOfControl;
-                                const stateControlProps = mapStateToControlProps(jsonFormsState, controlProps);
-                                stateControlProps.label = stateControlProps.label || getLabel(this.schema, rootSchema, undefined, (childProps.uischema as ControlElement).scope) || "";
-                                childProps.label = stateControlProps.label;
-                                childProps.required = !!stateControlProps.required;
-                                if (!stateControlProps.required && stateControlProps.data === undefined) {
-                                    // Optional property with no data so show this in the add parameter dialog
-                                    optionalProps.push(stateControlProps);
-                                    return html``;
-                                }
-                            }
-
-                            return getTemplateFromProps(this.state, childProps);
-                        })}
+                    ${contentTemplate || ``}
                 </div>
 
                 ${this.errors || (optionalProps.length === 0 && !dynamic) ? `` : html`
@@ -169,12 +182,12 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             </div>
         `;
 
-        return this.minimal ? html`<div>${content}</div>` : html`<or-collapsible-panel>${content}</or-collapsible-panel>`;
+        return this.minimal ? html`<div>${content}</div>` : html`<or-collapsible-panel .expandable="${expandable}">${content}</or-collapsible-panel>`;
     }
 
-    protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema): TemplateResult {
+    protected _getDynamicContentTemplate(dynamicPropertyRegex: string, dynamicValueSchema: JsonSchema): TemplateResult | undefined {
         if (!this.data) {
-            return html``;
+            return undefined;
         }
 
         const deleteHandler = (key: string) => {
@@ -216,7 +229,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
 
         const getDynamicValueTemplate: (key: string, value: any) => TemplateResult = (key, value) => {
             props.path = Paths.compose(this.path, key);
-            return getTemplateFromProps(this.state, props);
+            return getTemplateFromProps(this.state, props) || html``;
         };
 
         return html`

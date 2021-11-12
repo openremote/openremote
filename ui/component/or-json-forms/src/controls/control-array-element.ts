@@ -167,7 +167,7 @@ export class ControlArrayElement extends ControlBaseElement {
                             path: childPath
                         }
             
-                        return this.getArrayItemWrapper(getTemplateFromProps(this.state, props), index);
+                        return this.getArrayItemWrapper(getTemplateFromProps(this.state, props) || html``, index);
                     })}
 
                 </div>

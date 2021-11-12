@@ -35,7 +35,7 @@ import {unknownTemplate} from "./standard-renderers";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {AdditionalProps} from "./base-element";
 
-export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult {
+export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
     if (!state || !props) {
         return html``;
     }
@@ -56,7 +56,7 @@ export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFo
         }
     }
 
-    return template || html``;
+    return template;
 }
 
 export interface CombinatorInfo {

@@ -18,6 +18,7 @@ export interface AdditionalProps {
     required?: boolean;
     errors?: string;
     minimal?: boolean;
+    type?: string;
 }
 
 export abstract class BaseElement<T extends UISchemaElement, P extends OwnPropsOfRenderer> extends LitElement implements OwnPropsOfRenderer, AdditionalProps {

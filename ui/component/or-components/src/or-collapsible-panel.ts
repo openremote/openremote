@@ -23,7 +23,6 @@ const style = css`
     }
     
     #header {
-        cursor: pointer;
         display: flex;
         height: 48px;
         flex-direction: row;
@@ -33,6 +32,10 @@ const style = css`
         align-items: center;
         padding: 0 24px;
         border-radius: inherit;
+    }
+    
+    #header.expandable {
+        cursor: pointer;
         transition: height 225ms cubic-bezier(0.4, 0, 0.2, 1);
     }
     
@@ -42,10 +45,6 @@ const style = css`
 
     #header.expanded > #indicator {
         transform: rotate(180deg);
-    }
-    
-    .clickable {
-        cursor: pointer;
     }
     
     #header-content {
@@ -106,10 +105,15 @@ export class OrCollapsiblePanel extends LitElement {
 
     @property({type: Boolean})
     expanded: boolean = false;
+    @property({type: Boolean})
+    expandable: boolean = true;
     @query("#header")
     protected headerElem!: HTMLDivElement;
 
     protected _onHeaderClicked(ev: MouseEvent) {
+        if (!this.expandable) {
+            return;
+        }
         ev.preventDefault();
         this.expanded = !this.expanded;
     }
@@ -117,14 +121,14 @@ export class OrCollapsiblePanel extends LitElement {
     render() {
 
         return html`
-            <div id="header" class="${this.expanded ? "expanded" : ""}" @click="${(ev:MouseEvent) => this._onHeaderClicked(ev)}">
+            <div id="header" class="${this.expandable ? "expandable" : ""} ${this.expandable && this.expanded ? "expanded" : ""}" @click="${(ev:MouseEvent) => this._onHeaderClicked(ev)}">
                 <span id="header-content">
-                    <span id="header-title" class="clickable"><slot name="header"></slot></span>
+                    <span id="header-title"><slot name="header"></slot></span>
                     <span id="header-description"><slot name="header-description"></slot></span>
                 </span>
-                <span id="indicator" class="clickable"></span>
+                ${this.expandable ? html`<span id="indicator"></span>` : ""}
             </div>
-            <div id="content" class="${this.expanded ? "expanded" : ""}">
+            <div id="content" class="${this.expandable && this.expanded ? "expanded" : ""}">
                 <slot name="content"></slot>
             </div>
         `;
