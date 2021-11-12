@@ -31,7 +31,11 @@ dependencies {
 
     compile "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 
-    compile "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
+    // Custom build from https://github.com/richturner/mbknor-jackson-jsonSchema
+    compile files("libs/mbknor-jackson-jsonschema_2.12-1.0.40-SNAPSHOT.jar")
+    implementation "org.scala-lang:scala-library:2.12.10"
+    implementation "io.github.classgraph:classgraph:4.8.21"
+    //compile "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
 }
 
 jar {
