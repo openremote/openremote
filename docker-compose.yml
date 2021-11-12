@@ -12,6 +12,7 @@ version: '2.4'
 
 volumes:
   temp-data:
+  postgresql-data:
 
 services:
 
@@ -30,6 +31,7 @@ services:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}
     volumes:
+      - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp
 
   keycloak:
