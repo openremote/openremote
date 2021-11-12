@@ -12,6 +12,7 @@ import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-com
 import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
+import {UserResourceClient} from "@openremote/rest/dist/restclient";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -28,6 +29,7 @@ export function pageUsersProvider<S extends AppStateKeyed>(store: EnhancedStore<
 interface UserModel extends User {
     password?: string;
     roles?: Role[];
+    realmRoles?: Role[];
     userAssetLinks?: UserAsset[];
 }
 
@@ -213,8 +215,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     protected _compositeRoles: Role[] = [];
     @state()
     protected _userAssetLinks: UserAsset[] = [];
-    @state()
-    protected selectedAssetIds: string[] = [];
 
     get name(): string {
         return "user_plural";
@@ -298,6 +298,8 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             user.roles = userRolesResponse.data.filter(r => r.assigned);
             const userAssetLinksResponse = await manager.rest.api.AssetResource.getUserAssetLinks({realm: manager.displayRealm, userId: user.id});
             this._userAssetLinks = this._userAssetLinks.concat(userAssetLinksResponse.data);
+            const userRealmRoles = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, user.id);
+            user.realmRoles = userRealmRoles.data.filter(r => r.assigned);
         });
 
         await Promise.all(roleLoaders);
@@ -326,6 +328,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             }
             (response.data as UserModel).roles = user.roles;
             await this._updateRoles(response.data);
+            await this.handleRestrictedUserBoolean(user);
             await this.handleRestrictedAccessSelection(user);
             this._activeUser = null;
         } finally {
@@ -712,10 +715,11 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
                                 <!-- restricted access -->
                                 <div>
-                                    <or-mwc-input .type="${InputType.CHECKBOX}" 
-                                                  .label="${i18next.t("restrictedAccessToAssets") + ':'}"
-                                                  .value="${!!user.roles.find(userRole => userRole.name === 'restricted_user')}"
-                                                  @click="${(e) => { }}"></or-mwc-input>
+                                    <or-mwc-input
+                                            id="${user.id}-restricted"
+                                            .type="${InputType.CHECKBOX}" 
+                                            .label="${i18next.t("restrictedAccessToAssets") + ':'}"
+                                            .value="${!!user.realmRoles.find(r => r.name === 'restricted_user')}"></or-mwc-input>
 
                                     <or-mwc-input outlined 
                                                   .type="${InputType.BUTTON}" 
@@ -765,6 +769,13 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         });
         await Promise.all(addPromises)
 
+    }
+
+    private async handleRestrictedUserBoolean(user: UserModel) {
+        const checkboxElem = this.shadowRoot.getElementById(user.id + "-restricted") as OrMwcInput;
+        const role = user.realmRoles.find(r => r.name === 'restricted_user');
+        role.assigned = checkboxElem.value;
+        await manager.rest.api.UserResource.updateUserRealmRoles(manager.displayRealm, user.id, [role]);
     }
 
     private getUserAssetLinksByUser(userId): UserAsset[] {
