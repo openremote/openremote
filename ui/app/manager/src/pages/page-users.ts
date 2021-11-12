@@ -5,14 +5,13 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {ClientRole, Role, User} from "@openremote/model";
+import {Asset, ClientRole, Role, User, UserAsset} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
-import {UiAssetTreeNode} from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -29,6 +28,7 @@ export function pageUsersProvider<S extends AppStateKeyed>(store: EnhancedStore<
 interface UserModel extends User {
     password?: string;
     roles?: Role[];
+    userAssetLinks?: UserAsset[];
 }
 
 @customElement("page-users")
@@ -206,9 +206,13 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     @state()
     protected _serviceUsers: UserModel[] = [];
     @state()
+    protected _activeUser: UserModel;
+    @state()
     protected _roles: Role[] = [];
     @state()
     protected _compositeRoles: Role[] = [];
+    @state()
+    protected selectedAssetIds: string[] = [];
 
     get name(): string {
         return "user_plural";
@@ -290,8 +294,15 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             const userRolesResponse = await (user.serviceAccount ? manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, user.username) : manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
             user.roles = userRolesResponse.data.filter(r => r.assigned);
         });
+
+        // Load each users linked assets
+        users.map((user) => {
+            manager.rest.api.AssetResource.getUserAssetLinks({realm: manager.displayRealm, userId: user.id})
+                .then(r => user.userAssetLinks = r.data);
+        });
         
-        await Promise.all(roleLoaders);
+        await Promise.all(roleLoaders)
+            .then(() => console.log(users));
 
         // Only update state once all promises are fulfilled
         this._compositeRoles = compositeRoles.sort(Util.sortByString(role => role.name));
@@ -317,6 +328,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             }
             (response.data as UserModel).roles = user.roles;
             await this._updateRoles(response.data);
+            await this.handleRestrictedAccessSelection();
         } finally {
             this.loadUsers();
         }
@@ -381,7 +393,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 </div>
 
                 <div class="panel">
-                    <p class="panel-title">${i18next.t("regularUser_plural")}</p>
+                    <p class="panel-title">${i18next.t("regularUser_plural")} ${this.selectedAssetIds.length}</p>
                     <div id="table-users" class="mdc-data-table">
                         <table class="mdc-data-table__table" aria-label="attribute list">
                             <thead>
@@ -479,27 +491,32 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         }
     }
 
-    protected _openAssetSelector() {
+    protected _openAssetSelector(user: UserModel, selectedAssetIds: string[]) {
+        this._activeUser = user;
         const hostElement = document.body;
-        let selectedAssets: UiAssetTreeNode[] = [];
+        console.log(selectedAssetIds);
+        const preSelectedAssetIds = selectedAssetIds.length > 0 ? selectedAssetIds : this.getUserAssetLinksByUser(user.id);
 
         const dialog = new OrMwcDialog();
         dialog.isOpen = true;
         dialog.dialogTitle = i18next.t("restrictAccess");
         dialog.dialogContent = html`
-            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="" .showSortBtn="${false}" .expandNodes="${true}" .checkboxes="${true}"
-                @or-asset-tree-selection="${(e) => selectedAssets = e.detail.newNodes}"></or-asset-tree>
+            <or-asset-tree id="chart-asset-tree" readonly .selectedIds="${preSelectedAssetIds}" .showSortBtn="${false}" .expandNodes="${true}" .checkboxes="${true}"
+                @or-asset-tree-selection="${(e) => this.selectedAssetIds = e.detail.newNodes.map(e => e.asset.id)}"></or-asset-tree>
         `;
         dialog.dialogActions = [
             {
                 default: true,
                 actionName: "cancel",
-                content: i18next.t("cancel")
+                content: i18next.t("cancel"),
+                action: () => {
+                    this._activeUser = null;
+                    // this.selectedAssetIds = preSelectedAssetIds;
+                }
             },
             {
                 actionName: "ok",
-                content: i18next.t("ok"),
-                action: () => console.log(selectedAssets)
+                content: i18next.t("ok")
             }
         ];
         
@@ -560,6 +577,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         const isServiceUser = user.serviceAccount;
         const isSameUser = user.username === manager.username;
         user.roles = user.roles || [];
+        const selectedAssetIds = this.getUserAssetLinksByUser(user.id) || [];
         const implicitRoleNames = this.getImplicitUserRoles(user);
 
         return html`
@@ -645,11 +663,11 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                               style="height: 56px;"></or-mwc-input>
 
                                 <!-- is admin -->
-                                <!--<or-mwc-input ?readonly="${true}"
+                                <or-mwc-input ?readonly="${true}"
                                               .label="${i18next.t("fullAccessLabel")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${user.enabled}"
-                                              style="height: 56px;"></or-mwc-input>-->
+                                              style="height: 56px;"></or-mwc-input>
                                 
                                 <!-- composite roles -->
                                 <or-mwc-input
@@ -689,10 +707,15 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 </div>
 
                                 <!-- restricted access -->
-                                <or-mwc-input outlined .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
-                                              @click="${() => this._openAssetSelector()}"></or-mwc-input>
-
-                                <!-- placeholder -->
+                                <div>
+                                    <or-mwc-input .type="${InputType.CHECKBOX}" .label="${i18next.t("active")}"
+                                                  @click="${(e) => console.log('klikklak',e)}"></or-mwc-input>
+                                    
+                                    <or-mwc-input outlined .type="${InputType.BUTTON}" .label="${i18next.t("restrictAccess")}"
+                                                  @click="${() => this._openAssetSelector(user, this.selectedAssetIds)}"></or-mwc-input>
+                                    
+                                    <span>zinnetje ${selectedAssetIds.length}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -719,4 +742,33 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             </tr>
         `
     }
+
+    private async handleRestrictedAccessSelection() {
+        // delete all userassetlinks
+        const delPromises = this.getUserAssetLinksByUser(this._activeUser.id).map((ual: UserAsset) => {
+            return manager.rest.api.AssetResource.deleteUserAsset(ual.id.realm, ual.id.userId, ual.id.assetId);
+        });
+        await Promise.all(delPromises)
+
+        // post all new userassetlinks
+        const addPromises = this.selectedAssetIds.map(assetId => {
+            const payload: UserAsset = {
+                id: { realm: manager.displayRealm, userId: this._activeUser.id, assetId: assetId },
+            };
+            return manager.rest.api.AssetResource.createUserAsset(payload);
+        });
+        await Promise.all(addPromises)
+            .then(() => manager.rest.api.AssetResource.getUserAssetLinks({realm: manager.displayRealm, userId: this._activeUser.id}))
+            .then((asdf) => {
+                //update gui first:
+                console.log('after add', asdf)
+                this._activeUser = null;
+            });
+
+    }
+
+    private getUserAssetLinksByUser(userId): UserAsset[] {
+        return this._users.find(u => u.id === userId).userAssetLinks;
+    }
+
 }
