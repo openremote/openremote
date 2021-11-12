@@ -5,13 +5,13 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {ClientRole, Role, User} from "@openremote/model";
+import {ClientRole, Role, User, UserAsset} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {GenericAxiosResponse, RestResponse} from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -28,6 +28,8 @@ export function pageUsersProvider<S extends AppStateKeyed>(store: EnhancedStore<
 interface UserModel extends User {
     password?: string;
     roles?: Role[];
+    realmRoles?: Role[];
+    userAssetLinks?: UserAsset[];
 }
 
 @customElement("page-users")
@@ -205,9 +207,13 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     @state()
     protected _serviceUsers: UserModel[] = [];
     @state()
+    protected _activeUser: UserModel;
+    @state()
     protected _roles: Role[] = [];
     @state()
     protected _compositeRoles: Role[] = [];
+    @state()
+    protected _userAssetLinks: UserAsset[] = [];
 
     get name(): string {
         return "user_plural";
@@ -237,6 +243,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         this._roles = [];
         this._users = [];
         this._serviceUsers = [];
+        this._userAssetLinks = [];
 
         if (!manager.authenticated || !manager.hasRole(ClientRole.READ_USERS)) {
             console.warn("Not authenticated or insufficient access");
@@ -288,6 +295,10 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         const roleLoaders = [...users, ...serviceUsers].map(async user => {
             const userRolesResponse = await (user.serviceAccount ? manager.rest.api.UserResource.getUserClientRoles(manager.displayRealm, user.id, user.username) : manager.rest.api.UserResource.getUserRoles(manager.displayRealm, user.id));
             user.roles = userRolesResponse.data.filter(r => r.assigned);
+            const userAssetLinksResponse = await manager.rest.api.AssetResource.getUserAssetLinks({realm: manager.displayRealm, userId: user.id});
+            this._userAssetLinks = this._userAssetLinks.concat(userAssetLinksResponse.data);
+            const userRealmRoles = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, user.id);
+            user.realmRoles = userRealmRoles.data.filter(r => r.assigned);
         });
 
         await Promise.all(roleLoaders);
@@ -316,6 +327,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             }
             (response.data as UserModel).roles = user.roles;
             await this._updateRoles(response.data);
+            await this.handleRestrictedUserBoolean(user);
+            await this.handleRestrictedAccessSelection(user);
+            this._activeUser = null;
         } finally {
             this.loadUsers();
         }
@@ -338,7 +352,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             await manager.rest.api.UserResource.updateUserClientRoles(manager.displayRealm, user.id, user.username, roles);
         }
     }
-
+    
     private _deleteUser(user) {
         showOkCancelDialog(i18next.t("delete"), i18next.t("deleteUserConfirm"), i18next.t("delete"))
             .then((ok) => {
@@ -476,6 +490,45 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             expanderIcon.icon = "chevron-right";
             userRow.classList.remove("expanded");
         }
+    }
+
+    protected _openAssetSelector(user: UserModel) {
+        this._activeUser = user;
+        const userAssetLinks = this.getUserAssetLinksByUser(user.id);
+        this._activeUser.userAssetLinks = userAssetLinks;
+        const hostElement = document.body;
+
+        const dialog = new OrMwcDialog();
+        dialog.isOpen = true;
+        dialog.dialogTitle = i18next.t("restrictAccess");
+        dialog.dialogContent = html`
+            <or-asset-tree 
+                id="chart-asset-tree" readonly .selectedIds="${this._activeUser.userAssetLinks.map(ual => ual.id.assetId)}"
+                .showSortBtn="${false}" .expandNodes="${true}" .checkboxes="${true}"
+                @or-asset-tree-selection="${e => this.handleAssetIdSelection(e, this._activeUser)}"></or-asset-tree>
+        `;
+        dialog.dialogActions = [
+            {
+                default: true,
+                actionName: "cancel",
+                content: i18next.t("cancel"),
+                action: () => {
+                    this._activeUser.userAssetLinks = userAssetLinks;
+                    this.updateAssetLinksForUser(userAssetLinks, user.id);
+                }
+            },
+            {
+                actionName: "ok",
+                content: i18next.t("ok"),
+                action: () => {
+                    this.updateAssetLinksForUser(this._activeUser.userAssetLinks, user.id);
+                    this._activeUser = null;
+                }
+            }
+        ];
+        
+        hostElement.append(dialog);
+        return dialog;
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
@@ -638,7 +691,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                     }}"></or-mwc-input>
 
                                 <!-- roles -->
-                                <div style="display:flex;flex-wrap:wrap;" id="role-list-${suffix}">
+                                <div style="display:flex;flex-wrap:wrap;margin-bottom: 20px;" id="role-list-${suffix}">
                                     ${this._roles.map(r => {
                                         return html`
                                             <or-mwc-input 
@@ -660,7 +713,18 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                 </div>
 
                                 <!-- restricted access -->
-                                <!-- placeholder -->
+                                <div>
+                                    <or-mwc-input
+                                            id="${user.id}-restricted"
+                                            .type="${InputType.CHECKBOX}" 
+                                            .label="${i18next.t("restrictedAccessToAssets") + ':'}"
+                                            .value="${!!user.realmRoles.find(r => r.name === 'restricted_user')}"></or-mwc-input>
+
+                                    <or-mwc-input outlined 
+                                                  .type="${InputType.BUTTON}" 
+                                                  .label="${i18next.t("selectRestrictedAssets", {number: this._userAssetLinks.filter(ual => ual.id.userId === user.id).length})}"
+                                                  @click="${() => this._openAssetSelector(user)}"></or-mwc-input>
+                                </div>
                             </div>
                         </div>
 
@@ -686,5 +750,49 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 </td>
             </tr>
         `
+    }
+
+    private async handleRestrictedAccessSelection(user: UserModel) {
+        // delete all userassetlinks for user
+        const delPromises = this.getUserAssetLinksByUser(user.id).map((ual: UserAsset) => {
+            return manager.rest.api.AssetResource.deleteUserAsset(ual.id.realm, user.id, ual.id.assetId);
+        });
+        await Promise.all(delPromises);
+
+        // post all new userassetlinks
+        const addPromises = this._userAssetLinks.filter(ual => ual.id.userId === user.id).map((ual: UserAsset) => {
+            const payload: UserAsset = {
+                id: { realm: manager.displayRealm, userId: user.id, assetId: ual.id.assetId },
+            };
+            return manager.rest.api.AssetResource.createUserAsset(payload);
+        });
+        await Promise.all(addPromises)
+
+    }
+
+    private async handleRestrictedUserBoolean(user: UserModel) {
+        const checkboxElem = this.shadowRoot.getElementById(user.id + "-restricted") as OrMwcInput;
+        const role = user.realmRoles.find(r => r.name === 'restricted_user');
+        role.assigned = checkboxElem.value;
+        await manager.rest.api.UserResource.updateUserRealmRoles(manager.displayRealm, user.id, [role]);
+    }
+
+    private getUserAssetLinksByUser(userId): UserAsset[] {
+        return this._userAssetLinks.filter(ual => ual.id.userId === userId) || [];
+    }
+
+    private updateAssetLinksForUser(userAssetLinks: UserAsset[], userId: string) {
+        const linksWithoutCurrentUser = this._userAssetLinks.filter(ual => ual.id.userId !== userId);
+        this._userAssetLinks = linksWithoutCurrentUser.concat(userAssetLinks);
+    }
+
+    private handleAssetIdSelection(e, user?: UserModel) {
+        this._activeUser.userAssetLinks = e.detail.newNodes.map(e => ({
+            id: {
+                realm: manager.displayRealm,
+                userId: user.id,
+                assetId: e.asset.id
+            }
+        }));
     }
 }
