@@ -126,7 +126,9 @@ public class JSONSchemaUtil {
             }},
             null,
             false,
-            null
+            null,
+            null,
+            true
         ).withJsonSchemaDraft(JsonSchemaDraft.DRAFT_07);
     }
 }

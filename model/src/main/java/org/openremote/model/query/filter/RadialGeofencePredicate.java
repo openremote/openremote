@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  * latitude and longitude unless negated.
  */
 @JsonSchemaTitle("Radial geofence")
-@JsonClassDescription("Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified latitude and longitude unless negated.")
+@JsonSchemaDescription("Predicate for GEO JSON point values; will return true if the point is within the specified radius of the specified latitude and longitude unless negated.")
 public class RadialGeofencePredicate extends GeofencePredicate {
 
     public static final String name = "radial";

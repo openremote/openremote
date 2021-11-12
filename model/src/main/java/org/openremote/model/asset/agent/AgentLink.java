@@ -62,7 +62,8 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         " protocol (particularly useful for executable attributes)")
     protected String writeValue;
     @JsonPropertyDescription("The predicate to apply to incoming messages to determine if the message is intended for the" +
-        " linked attribute; the value used in the predicate can be filtered using the message match filters")
+        " linked attribute; the value used in the predicate can be filtered using the message match filters. This must be defined to" +
+        " enable attributes to be updated by the linked agent.")
     protected ValuePredicate messageMatchPredicate;
     @JsonPropertyDescription("ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate")
     protected ValueFilter[] messageMatchFilters;

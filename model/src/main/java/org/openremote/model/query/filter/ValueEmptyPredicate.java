@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 
 import java.util.Objects;
@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 @JsonSchemaTitle("Empty value")
-@JsonClassDescription("Predicate that matches any empty/null value; unless negated.")
+@JsonSchemaDescription("Predicate that matches any empty/null value; unless negated.")
 public class ValueEmptyPredicate extends ValuePredicate {
 
     public static final String name = "value-empty";

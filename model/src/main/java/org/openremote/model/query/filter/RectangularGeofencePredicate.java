@@ -19,9 +19,9 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  * latitude and longitude values of two corners unless negated.
  */
 @JsonSchemaTitle("Rectangular geofence")
-@JsonClassDescription("Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as latitude and longitude values of two corners unless negated.")
+@JsonSchemaDescription("Predicate for GEO JSON point values; will return true if the point is within the specified rectangle specified as latitude and longitude values of two corners unless negated.")
 public class RectangularGeofencePredicate extends GeofencePredicate {
 
     public static final String name = "rect";

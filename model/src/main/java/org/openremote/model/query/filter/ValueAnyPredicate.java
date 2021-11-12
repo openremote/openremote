@@ -19,14 +19,14 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 @JsonSchemaTitle("Any value")
-@JsonClassDescription("Predicate that matches any value including null.")
+@JsonSchemaDescription("Predicate that matches any value including null.")
 public class ValueAnyPredicate extends ValuePredicate {
 
     public static final String name = "value-any";

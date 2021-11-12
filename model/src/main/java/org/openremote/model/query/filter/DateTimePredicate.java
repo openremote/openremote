@@ -19,7 +19,7 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaDescription;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TimeUtil;
@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss\u00b1HH:mm), offset and time are optional, if no offset
  * information is supplied then UTC is assumed.
  */
-@JsonClassDescription("Predicate for date time values; provided values should be valid ISO 8601 datetime strings (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss\\u00b1HH:mm), offset and time are optional, if no offset information is supplied then UTC is assumed.")
+@JsonSchemaDescription("Predicate for date time values; provided values should be valid ISO 8601 datetime strings (e.g. yyyy-MM-dd'T'HH:mm:ssZ or yyyy-MM-dd'T'HH:mm:ss±HH:mm), offset and time are optional, if no offset information is supplied then UTC is assumed.")
 public class DateTimePredicate extends ValuePredicate {
 
     public static final String name = "datetime";
