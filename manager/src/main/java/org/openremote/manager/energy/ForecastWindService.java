@@ -169,7 +169,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 )
                 .stream()
                 .map(asset -> (ElectricityProducerWindAsset) asset)
-                .filter(electricityProducerWindAsset -> !electricityProducerWindAsset.isIncludeForecastWindService().orElse(false)
+                .filter(electricityProducerWindAsset -> electricityProducerWindAsset.isIncludeForecastWindService().orElse(false)
                         && electricityProducerWindAsset.getLocation().isPresent())
                 .collect(Collectors.toList());
 
@@ -221,7 +221,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         // Get latest asset from storage
         ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
 
-        if (asset != null && !asset.isIncludeForecastWindService().orElse(false) && asset.getLocation().isPresent()) {
+        if (asset != null && asset.isIncludeForecastWindService().orElse(false) && asset.getLocation().isPresent()) {
             startCalculation(asset);
         }
     }
@@ -231,7 +231,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         stopCalculation(persistenceEvent.getEntity().getId());
 
         if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
-            if (!persistenceEvent.getEntity().isIncludeForecastWindService().orElse(false)
+            if (persistenceEvent.getEntity().isIncludeForecastWindService().orElse(false)
                     && persistenceEvent.getEntity().getLocation().isPresent()) {
                 startCalculation(persistenceEvent.getEntity());
             }
@@ -261,26 +261,30 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 .request()
                 .build("GET")
                 .invoke()) {
+            if (response != null && response.getStatus() == 200) {
 
-            WeatherForecastResponseModel weatherForecastResponseModel = response.readEntity(WeatherForecastResponseModel.class);
+                WeatherForecastResponseModel weatherForecastResponseModel = response.readEntity(WeatherForecastResponseModel.class);
 
-            double currentPower = calculatePower(electricityProducerWindAsset, weatherForecastResponseModel.current);
+                double currentPower = calculatePower(electricityProducerWindAsset, weatherForecastResponseModel.current);
 
-            assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), currentPower));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), currentPower));
 
-            if (electricityProducerWindAsset.isSetActualValueWithForecast().orElse(false)) {
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), currentPower));
+                if (electricityProducerWindAsset.isSetActualValueWithForecast().orElse(false)) {
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), currentPower));
+                }
+
+                for (WeatherForecastModel weatherForecastModel : weatherForecastResponseModel.getList()) {
+                    double powerForecast = calculatePower(electricityProducerWindAsset, weatherForecastModel);
+
+                    LocalDateTime timestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(weatherForecastModel.getTimestamp()), ZoneId.systemDefault());
+                    assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -powerForecast, timestamp);
+                    assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -powerForecast, timestamp);
+                }
+
+                rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerWindAsset.getId());
+            } else {
+                LOG.warning("Request failed: " + response);
             }
-
-            for (WeatherForecastModel weatherForecastModel : weatherForecastResponseModel.getList()) {
-                double powerForecast = calculatePower(electricityProducerWindAsset, weatherForecastModel);
-
-                LocalDateTime timestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(weatherForecastModel.getTimestamp()), ZoneId.systemDefault());
-                assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -powerForecast, timestamp);
-                assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -powerForecast, timestamp);
-            }
-
-            rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerWindAsset.getId());
         } catch (Throwable e) {
             if (e.getCause() != null && e.getCause() instanceof IOException) {
                 LOG.log(Level.SEVERE, "Exception when requesting openweathermap data", e.getCause());

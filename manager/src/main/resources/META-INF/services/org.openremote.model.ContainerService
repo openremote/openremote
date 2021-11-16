@@ -27,4 +27,5 @@ org.openremote.manager.mqtt.MqttBrokerService
 org.openremote.manager.asset.AssetModelService
 org.openremote.manager.energy.EnergyOptimisationService
 org.openremote.manager.energy.ForecastWindService
+org.openremote.manager.energy.ForecastSolarService
 org.openremote.manager.provisioning.ProvisioningService

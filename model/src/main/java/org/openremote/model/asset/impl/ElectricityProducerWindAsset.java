@@ -258,5 +258,13 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
         return this;
     }
 
+    public ElectricityProducerWindAsset setIncludeForecastWindService(boolean value) {
+        getAttributes().getOrCreate(INCLUDE_FORECAST_WIND_SERVICE).setValue(value);
+        return this;
+    }
 
+    public ElectricityProducerWindAsset setSetActualValueWithForecast(boolean value) {
+        getAttributes().getOrCreate(SET_ACTUAL_VALUE_WITH_FORECAST).setValue(value);
+        return this;
+    }
 }

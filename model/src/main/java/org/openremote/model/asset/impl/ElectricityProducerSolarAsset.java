@@ -24,6 +24,7 @@ import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 import org.openremote.model.value.ValueType;
@@ -33,6 +34,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 import static org.openremote.model.Constants.UNITS_DEGREE;
+import static org.openremote.model.value.ValueType.BOOLEAN;
 
 @Entity
 public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
@@ -50,6 +52,10 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
     public static final AttributeDescriptor<Integer> PANEL_PITCH = new AttributeDescriptor<>("panelPitch", ValueType.POSITIVE_INTEGER
     ).withUnits(UNITS_DEGREE);
 
+    public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_SOLAR_SERVICE = new AttributeDescriptor<>("includeForecastSolarService", BOOLEAN);
+
+    public static final AttributeDescriptor<Boolean> SET_ACTUAL_VALUE_WITH_FORECAST = new AttributeDescriptor<>("setActualValueWithForecast", BOOLEAN);
+
     public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "EABB4D", ElectricityProducerSolarAsset.class);
 
     /**
@@ -64,6 +70,14 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
 
     public Optional<PanelOrientation> getPanelOrientation() {
         return getAttributes().getValue(PANEL_ORIENTATION);
+    }
+
+    public Optional<Boolean> isIncludeForecastSolarService() {
+        return getAttribute(INCLUDE_FORECAST_SOLAR_SERVICE).flatMap(AbstractNameValueHolder::getValue);
+    }
+
+    public Optional<Boolean> isSetActualValueWithForecast() {
+        return getAttribute(SET_ACTUAL_VALUE_WITH_FORECAST).flatMap(AbstractNameValueHolder::getValue);
     }
 
     public ElectricityProducerSolarAsset setPanelOrientation(PanelOrientation value) {
@@ -86,6 +100,16 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
 
     public ElectricityProducerSolarAsset setPanelPitch(Integer value) {
         getAttributes().getOrCreate(PANEL_PITCH).setValue(value);
+        return this;
+    }
+
+    public ElectricityProducerSolarAsset setIncludeForecastSolarService(boolean value) {
+        getAttributes().getOrCreate(INCLUDE_FORECAST_SOLAR_SERVICE).setValue(value);
+        return this;
+    }
+
+    public ElectricityProducerSolarAsset setSetActualValueWithForecast(boolean value) {
+        getAttributes().getOrCreate(SET_ACTUAL_VALUE_WITH_FORECAST).setValue(value);
         return this;
     }
 
