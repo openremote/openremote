@@ -831,10 +831,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected List<AssetState<?>> getAssetStatesInScope(String assetId) {
-        return assetStates
-            .stream()
-            .filter(assetState -> Arrays.asList(assetState.getPath()).contains(assetId))
-            .collect(Collectors.toList());
+        return withLockReturning(getClass().getSimpleName() + "::getAssetStatesInScope", () ->
+                assetStates
+                .stream()
+                .filter(assetState -> Arrays.asList(assetState.getPath()).contains(assetId))
+                .collect(Collectors.toList()));
     }
 
     protected List<RulesEngine<?>> getEnginesInScope(String realm, String[] assetPath) {
@@ -1026,6 +1027,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         return Optional.empty();
     }
 
+    /**
+     * Trigger rules engines which have the {@link org.openremote.model.value.MetaItemDescriptor} {@link org.openremote.model.rules.Ruleset#TRIGGER_ON_PREDICTED_DATA}
+     * and contain {@link AssetState} of the specified asset id. Use this when {@link PredictedDatapoints} has changed for this asset.
+     * @param assetId of the asset which has new predicated data points.
+     */
     public void fireDeploymentsWithPredictedDataForAsset(String assetId) {
         List<AssetState<?>> assetStates = getAssetStatesInScope(assetId);
         if (assetStates.size() > 0) {
