@@ -247,6 +247,9 @@ services:
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # DATA_POINTS_MAX_AGE_DAYS = 30
 
+      # App id for the API of OpenWeather: https://openweathermap.org
+      # OPEN_WEATHER_API_APP_ID
+
       # Custom JVM options (increase heap size if required)
       MANAGER_JAVA_OPTS: ${MANAGER_JAVA_OPTS:--Xms400m -Xmx400m
        -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
