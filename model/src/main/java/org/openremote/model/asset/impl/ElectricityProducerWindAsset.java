@@ -24,6 +24,7 @@ import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeMap;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.value.AbstractNameValueHolder;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
@@ -32,6 +33,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.value.ValueType.BOOLEAN;
 
 @Entity
 public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
@@ -42,6 +44,10 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
     ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
     public static final AttributeDescriptor<Double> WIND_SPEED_MAX = new AttributeDescriptor<>("windSpeedMax", ValueType.POSITIVE_NUMBER
     ).withUnits(UNITS_METRE, UNITS_PER, UNITS_SECOND);
+
+    public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_WIND_SERVICE = new AttributeDescriptor<>("includeForecastWindService", BOOLEAN);
+
+    public static final AttributeDescriptor<Boolean> SET_ACTUAL_VALUE_WITH_FORECAST = new AttributeDescriptor<>("setActualValueWithForecast", BOOLEAN);
 
     public static final AssetDescriptor<ElectricityProducerWindAsset> DESCRIPTOR = new AssetDescriptor<>("wind-turbine", "4B87EA", ElectricityProducerWindAsset.class);
 
@@ -61,6 +67,18 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
 
     public Optional<Double> getWindSpeedMin() {
         return getAttributes().getValue(WIND_SPEED_MIN);
+    }
+
+    public Optional<Double> getWindSpeedMax() {
+        return getAttributes().getValue(WIND_SPEED_MAX);
+    }
+
+    public Optional<Boolean> isIncludeForecastWindService() {
+        return getAttribute(INCLUDE_FORECAST_WIND_SERVICE).flatMap(AbstractNameValueHolder::getValue);
+    }
+
+    public Optional<Boolean> isSetActualValueWithForecast() {
+        return getAttribute(SET_ACTUAL_VALUE_WITH_FORECAST).flatMap(AbstractNameValueHolder::getValue);
     }
 
     @Override
@@ -239,4 +257,6 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
         getAttributes().getOrCreate(WIND_SPEED_REFERENCE).setValue(value);
         return this;
     }
+
+
 }
