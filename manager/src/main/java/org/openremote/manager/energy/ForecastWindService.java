@@ -11,6 +11,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.gateway.GatewayService;
+import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
@@ -112,6 +113,8 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     protected AssetPredictedDatapointService assetPredictedDatapointService;
     protected ClientEventService clientEventService;
     protected ScheduledExecutorService executorService;
+    protected RulesService rulesService;
+
 
     private ResteasyWebTarget weatherForecastClient;
     private String openWeatherAppId;
@@ -136,6 +139,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class);
         clientEventService = container.getService(ClientEventService.class);
         executorService = container.getExecutorService();
+        rulesService = container.getService(RulesService.class);
 
         openWeatherAppId = getString(container.getConfig(), OPEN_WEATHER_API_APP_ID, null);
     }
@@ -275,6 +279,8 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -powerForecast, timestamp);
                 assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -powerForecast, timestamp);
             }
+
+            rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerWindAsset.getId());
         } catch (Throwable e) {
             if (e.getCause() != null && e.getCause() instanceof IOException) {
                 LOG.log(Level.SEVERE, "Exception when requesting openweathermap data", e.getCause());
