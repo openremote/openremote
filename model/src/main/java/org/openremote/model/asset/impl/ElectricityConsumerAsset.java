@@ -24,6 +24,9 @@ import org.openremote.model.value.*;
 
 import javax.persistence.Entity;
 
+import static org.openremote.model.Constants.UNITS_KILO;
+import static org.openremote.model.Constants.UNITS_WATT;
+
 @Entity
 public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsumerAsset> {
 
@@ -40,6 +43,9 @@ public class ElectricityConsumerAsset extends ElectricityAsset<ElectricityConsum
     public static final AttributeDescriptor<Double> TARIFF_IMPORT = ElectricitySupplierAsset.TARIFF_IMPORT.withOptional(true);
     public static final AttributeDescriptor<Double> TARIFF_EXPORT = ElectricitySupplierAsset.TARIFF_EXPORT.withOptional(true);
     public static final AttributeDescriptor<Double> CARBON_IMPORT = ElectricitySupplierAsset.CARBON_IMPORT.withOptional(true);
+
+    public static final AttributeDescriptor<Double> POWER_FORECAST = new AttributeDescriptor<>("powerForecast", ValueType.NUMBER
+    ).withUnits(UNITS_KILO, UNITS_WATT);
 
     /**
      * For use by hydrators (i.e. JPA/Jackson)
