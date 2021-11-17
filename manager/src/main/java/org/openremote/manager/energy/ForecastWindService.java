@@ -16,6 +16,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
+import org.openremote.model.asset.impl.WeatherAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
 
@@ -279,6 +280,12 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                     LocalDateTime timestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(weatherForecastModel.getTimestamp()), ZoneId.systemDefault());
                     assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -powerForecast, timestamp);
                     assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -powerForecast, timestamp);
+
+                    for (int i = 0; i < 3; i++) {
+                        timestamp = timestamp.plusMinutes(15);
+                        assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -powerForecast, timestamp);
+                        assetPredictedDatapointService.updateValue(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -powerForecast, timestamp);
+                    }
                 }
 
                 rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerWindAsset.getId());

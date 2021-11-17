@@ -236,6 +236,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                     if (responseModel != null) {
                         // Forecast date time is ISO8601 without 'T' so needs special formatter
                         LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
+                        LocalDateTime previousTimestamp = null;
                         boolean setActualValuePower = electricityProducerSolarAsset.isSetActualValueWithForecast().orElse(false);
                         boolean setActualValueForecastPower = true;
 
@@ -254,6 +255,14 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                                     setActualValuePower = false;
                                 }
                             }
+                            if (previousTimestamp != null && !previousTimestamp.toLocalDate().equals(timestamp.toLocalDate())) {
+                                while (previousTimestamp.isBefore(timestamp)) {
+                                    previousTimestamp = previousTimestamp.plusMinutes(15);
+                                    assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName(), -wattItem.getValue() / 1000, previousTimestamp);
+                                    assetPredictedDatapointService.updateValue(electricityProducerSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName(), -wattItem.getValue() / 1000, previousTimestamp);
+                                }
+                            }
+                            previousTimestamp = timestamp;
                         }
                         rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerSolarAsset.getId());
                     }
