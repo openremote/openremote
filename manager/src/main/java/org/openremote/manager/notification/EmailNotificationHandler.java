@@ -43,7 +43,6 @@ import org.simplejavamail.mailer.config.TransportStrategy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -154,10 +153,10 @@ public class EmailNotificationHandler implements NotificationHandler {
                         User[] users = targetType == Notification.TargetType.TENANT
                             ? managerIdentityService
                                 .getIdentityProvider()
-                                .getUsers(new UserQuery().tenant(new TenantPredicate(targetId)))
+                                .queryUsers(new UserQuery().tenant(new TenantPredicate(targetId)))
                             : managerIdentityService
                                 .getIdentityProvider()
-                                .getUsers(Collections.singletonList(targetId));
+                                .queryUsers(new UserQuery().ids(targetId));
 
                         if (users.length == 0) {
                             if (targetType == Notification.TargetType.USER) {

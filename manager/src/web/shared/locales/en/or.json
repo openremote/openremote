@@ -418,7 +418,7 @@
   "agentTypeMismatch": "Agent type mismatch",
   "loadFailedRoles": "Failed to load roles",
   "loadFailedUsers": "Failed to load users",
-  "loadFailedServiceUsers": "Failed to load service users",
+  "loadFailedUserInfo": "Failed to load user info",
   "validation": {
     "noSchemaMatchFound": "No schema match found",
     "invalidAsset": "Asset is not valid",

@@ -183,7 +183,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.data.get("token").asText() == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
-        def userAssets = assetStorageService.findUserAssets(keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser3Id, consoleId)
+        def userAssets = assetStorageService.findUserAssetLinks(keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser3Id, consoleId)
         assert userAssets.size() == 1
         assert userAssets.get(0).assetName == "Test Console"
 
@@ -306,7 +306,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         anonymousConsole1 = console
         consoleGeofenceProvider = console.getConsoleProviders().map{it.get("geofence")}.orElse(null)
         consolePushProvider = console.getConsoleProviders().map{it.get("push")}.orElse(null)
-        userAssets = assetStorageService.findUserAssets(null, null, consoleId)
+        userAssets = assetStorageService.findUserAssetLinks(null, null, consoleId)
 
         then: "the console asset should have been created and be correctly configured"
         assert !isNullOrEmpty(consoleId)

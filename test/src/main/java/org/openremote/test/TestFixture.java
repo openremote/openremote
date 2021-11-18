@@ -21,15 +21,18 @@ package org.openremote.test;
 
 import org.openremote.container.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.security.Role;
+import org.openremote.model.security.User;
+import org.openremote.model.util.Pair;
 import org.spockframework.runtime.extension.AbstractGlobalExtension;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Used to store state for tests to help improve test performance
@@ -43,7 +46,8 @@ public class TestFixture extends AbstractGlobalExtension {
     public static List<AssetRuleset> assetRulesets;
     public static List<GatewayConnection> gatewayConnections;
     public static List<Asset<?>> assets;
-    public static List<UserAsset> userAssets;
+    public static List<UserAssetLink> userAssets;
+    public static List<User> users;
 
     @Override
     public void stop() {

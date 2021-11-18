@@ -213,9 +213,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
                     case USER:
                         // Get all console assets linked to the specified user
-                        String[] ids = assetStorageService.findUserAssets(null, targetId, null)
+                        String[] ids = assetStorageService.findUserAssetLinks(null, targetId, null)
                             .stream()
-                            .map(userAsset -> userAsset.getId().getAssetId()).toArray(String[]::new);
+                            .map(userAssetLink -> userAssetLink.getId().getAssetId()).toArray(String[]::new);
 
                         if (ids.length > 0) {
 

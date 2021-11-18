@@ -8,7 +8,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.AssetResource
-import org.openremote.model.asset.UserAsset
+import org.openremote.model.asset.UserAssetLink
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
@@ -132,7 +132,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
 
         then: "an error response should be returned"
         ex = thrown()
-        ex.response.status == 404
+        ex.response.status == 400
 
         when: "all user assets are retrieved of a realm and user"
         userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, null, managerTestSetup.apartment1Id)
@@ -171,8 +171,8 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is linked to a user"
-        UserAsset userAsset = new UserAsset(keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, managerTestSetup.apartment2Id)
-        assetResource.createUserAsset(null, userAsset)
+        UserAssetLink userAssetLink = new UserAssetLink(keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, managerTestSetup.apartment2Id)
+        assetResource.createUserAssetLinks(null, [userAssetLink])
         userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, null)
 
         then: "result should match"
@@ -188,7 +188,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         }
 
         when: "an asset link is deleted"
-        assetResource.deleteUserAsset(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, managerTestSetup.apartment2Id)
+        assetResource.deleteUserAssetLink(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, managerTestSetup.apartment2Id)
         userAssets = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, keycloakTestSetup.testuser2Id, null)
 
         then: "result should match"

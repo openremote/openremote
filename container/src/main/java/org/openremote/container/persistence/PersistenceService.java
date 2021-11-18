@@ -34,7 +34,7 @@ import org.openremote.model.EntityClassProvider;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.notification.SentNotification;
@@ -46,6 +46,7 @@ import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
+import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.util.ValueUtil;
 
@@ -275,12 +276,13 @@ public class PersistenceService implements ContainerService {
         // Register standard entity classes and also any Entity ClassProviders
         List<String> entityClasses = new ArrayList<>(50);
         entityClasses.add(Asset.class.getName());
-        entityClasses.add(UserAsset.class.getName());
+        entityClasses.add(UserAssetLink.class.getName());
         entityClasses.add(AssetDatapoint.class.getName());
         entityClasses.add(SentNotification.class.getName());
         entityClasses.add(AssetPredictedDatapoint.class.getName());
         entityClasses.add(Tenant.class.getName());
         entityClasses.add(User.class.getName());
+        entityClasses.add(UserAttribute.class.getName());
         entityClasses.add(GlobalRuleset.class.getName());
         entityClasses.add(AssetRuleset.class.getName());
         entityClasses.add(TenantRuleset.class.getName());

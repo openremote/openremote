@@ -93,7 +93,7 @@ class MQTTClientProtocolTest extends Specification implements ManagerContainerTr
             .setClientId(clientId)
             .setHost(mqttHost)
             .setPort(mqttPort)
-            .setUsernamePassword(new UsernamePassword(keycloakTestSetup.tenantBuilding.realm + ":" + KeycloakTestSetup.serviceUserId, KeycloakTestSetup.serviceUserSecret))
+            .setUsernamePassword(new UsernamePassword(keycloakTestSetup.tenantBuilding.realm + ":" + keycloakTestSetup.serviceUser.username, keycloakTestSetup.serviceUser.secret))
 
         and: "the agent is added to the asset service"
         agent = assetStorageService.merge(agent)

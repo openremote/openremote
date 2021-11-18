@@ -60,12 +60,12 @@ import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.lang.reflect.Field;
 import java.sql.*;
-import java.util.Date;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -75,6 +75,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -178,9 +179,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
              boolean skipAssetIdCheck = false;
              if (isRestrictedUser && (filter.getAssetIds() == null || filter.getAssetIds().length == 0)) {
                  filter.setAssetIds(
-                     assetStorageService.findUserAssets(auth.getAuthenticatedRealm(), auth.getUserId(), null)
+                     assetStorageService.findUserAssetLinks(auth.getAuthenticatedRealm(), auth.getUserId(), null)
                          .stream()
-                         .map(userAsset -> userAsset.getId().getAssetId())
+                         .map(userAssetLink -> userAssetLink.getId().getAssetId())
                          .toArray(String[]::new)
                  );
                  skipAssetIdCheck = true;
@@ -766,7 +767,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             if (user != null) {
-                storeUserAsset(em, new UserAsset(user.getRealm(), user.getId(), updatedAsset.getId()));
+                storeUserAssetLinks(em, Collections.singletonList(new UserAssetLink(user.getRealm(), user.getId(), updatedAsset.getId())));
             }
 
             return updatedAsset;
@@ -887,8 +888,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 String queryStr = TextUtil.isNullOrEmpty(userId) ?
-                    "select count(ua) from UserAsset ua where ua.id.assetId = :assetId" :
-                    "select count(ua) from UserAsset ua where ua.id.userId = :userId and ua.id.assetId = :assetId";
+                    "select count(ual) from UserAssetLink ual where ual.id.assetId = :assetId" :
+                    "select count(ual) from UserAssetLink ual where ual.id.userId = :userId and ual.id.assetId = :assetId";
 
                 TypedQuery<Long> query = entityManager.createQuery(
                     queryStr,
@@ -912,7 +913,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(ua) from UserAsset ua where ua.id.userId in :userIds and ua.id.assetId = :assetId",
+                    "select count(ual) from UserAssetLink ual where ual.id.userId in :userIds and ual.id.assetId = :assetId",
                     Long.class)
                     .setParameter("userIds", userIds)
                     .setParameter("assetId", assetId)
@@ -930,7 +931,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(ua) from UserAsset ua where ua.id.userId = :userId and ua.id.assetId in :assetIds",
+                    "select count(ual) from UserAssetLink ual where ual.id.userId = :userId and ual.id.assetId in :assetIds",
                     Long.class)
                     .setParameter("userId", userId)
                     .setParameter("assetIds", assetIds)
@@ -990,11 +991,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }));
     }
 
-    public List<UserAsset> findUserAssets(String realm, String userId, String assetId) {
+    public List<UserAssetLink> findUserAssetLinks(String realm, String userId, String assetId) {
         return persistenceService.doReturningTransaction(entityManager -> {
             StringBuilder sb = new StringBuilder();
             Map<String, Object> parameters = new HashMap<>(3);
-            sb.append("select ua from UserAsset ua where 1=1");
+            sb.append("select ua from UserAssetLink ua where 1=1");
 
             if (!isNullOrEmpty(realm)) {
                 sb.append(" and ua.id.realm = :realm");
@@ -1011,7 +1012,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             sb.append(" order by ua.createdOn desc");
 
-            TypedQuery<UserAsset> query = entityManager.createQuery(sb.toString(), UserAsset.class);
+            TypedQuery<UserAssetLink> query = entityManager.createQuery(sb.toString(), UserAssetLink.class);
             parameters.forEach(query::setParameter);
             return query.getResultList();
         });
@@ -1020,28 +1021,108 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     /* ####################################################################################### */
 
     /**
-     * This used to automatically make the user restricted as well but this has been disabled as it no longer fitted
-     * with use cases.
+     * Delete specific {@link UserAssetLink}s.
      */
-    public void storeUserAsset(UserAsset userAsset) {
-        persistenceService.doTransaction(entityManager -> storeUserAsset(entityManager, userAsset));
-    }
-
-    /**
-     * This used to automatically unrestrict a user  if no assets are linked to the them anymore but this has been
-     * disabled as it no longer fitted with use cases.
-     */
-    public void deleteUserAsset(String realm, String userId, String assetId) {
+    public void deleteUserAssetLinks(List<UserAssetLink> userAssetLinks) {
         persistenceService.doTransaction(entityManager -> {
-            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset.Id(realm, userId, assetId));
-            if (userAsset != null)
-                entityManager.remove(userAsset);
+            StringBuilder sb = new StringBuilder("DELETE FROM user_asset_link WHERE (1=0");
+
+            IntStream.range(0, userAssetLinks.size()).forEach(i -> sb.append(" OR (asset_id=?")
+                .append(3*i)
+                .append(" AND user_id=?")
+                .append((3*i)+1)
+                .append(" AND realm=?")
+                .append((3*i)+2)
+                .append(")"));
+            sb.append(")");
+
+            Query query = entityManager.createNativeQuery(sb.toString());
+
+            IntStream.range(0, userAssetLinks.size()).forEach(i -> {
+                UserAssetLink userAssetLink = userAssetLinks.get(i);
+                query.setParameter((3*i), userAssetLink.getId().getAssetId());
+                query.setParameter((3*i)+1, userAssetLink.getId().getUserId());
+                query.setParameter((3*i)+2, userAssetLink.getId().getRealm());
+            });
+
+            int deleteCount = query.executeUpdate();
+
+            if (deleteCount != userAssetLinks.size()) {
+                throw new IllegalArgumentException("Cannot delete one or more requested user asset link as they don't exist");
+            }
         });
     }
 
-    protected void storeUserAsset(EntityManager entityManager, UserAsset userAsset) {
-        userAsset.setCreatedOn(new Date(timerService.getCurrentTimeMillis()));
-        entityManager.merge(userAsset);
+    /**
+     * Delete all {@link UserAssetLink}s for the specified realm (must be called before the realm is removed)
+     */
+    public void deleteUserAssetsByRealm(String realm) {
+        persistenceService.doTransaction(entityManager -> {
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.realm = ?0");
+            query.setParameter(0, realm);
+            int deleteCount = query.executeUpdate();
+            LOG.fine("Deleted all user asset links for realm: realm=" + realm + ", count=" + deleteCount);
+        });
+    }
+
+    /**
+     * Delete all {@link UserAssetLink}s for the specified {@link User} (must be called before the user is removed)
+     */
+    public void deleteUserAssetsByUserId(String userId) {
+        persistenceService.doTransaction(entityManager -> {
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.userId = ?0");
+            query.setParameter(0, userId);
+            int deleteCount = query.executeUpdate();
+            LOG.fine("Deleted all user asset links for user: user ID=" + userId + ", count=" + deleteCount);
+        });
+    }
+
+    /**
+     * Delete all {@link UserAssetLink}s for the specified {@link Asset} (must be called before the asset is removed)
+     */
+    public void deleteUserAssetsByAssetId(String assetId) {
+        persistenceService.doTransaction(entityManager -> {
+            Query query = entityManager.createQuery("DELETE FROM UserAssetLink ual WHERE ual.id.assetId = ?0");
+            query.setParameter(0, assetId);
+            int deleteCount = query.executeUpdate();
+            LOG.fine("Deleted all user asset links for asset: asset ID=" + assetId + ", count=" + deleteCount);
+        });
+    }
+
+    /**
+     * Create specified {@link UserAssetLink}s.
+     */
+    public void storeUserAssetLinks(List<UserAssetLink> userAssetLinks) {
+
+        if (userAssetLinks.isEmpty()) {
+            return;
+        }
+
+        persistenceService.doTransaction(em -> storeUserAssetLinks(em, userAssetLinks));
+    }
+    protected void storeUserAssetLinks(EntityManager em, List<UserAssetLink> userAssets) {
+
+        em.unwrap(Session.class).doWork(connection -> {
+
+            LOG.finest("Storing user assets: count=" + userAssets.size());
+            PreparedStatement st;
+
+            try {
+                st = connection.prepareStatement("INSERT INTO USER_ASSET_LINK (asset_id, realm, user_id, created_on) VALUES (?, ?, ?, ?) ON CONFLICT (asset_id, realm, user_id) DO NOTHING");
+                for (UserAssetLink userAssetLink : userAssets) {
+                    st.setString(1, userAssetLink.getId().getAssetId());
+                    st.setString(2, userAssetLink.getId().getRealm());
+                    st.setObject(3, userAssetLink.getId().getUserId());
+                    st.setTimestamp(4, new Timestamp(timerService.getCurrentTimeMillis()));
+                    st.addBatch();
+                }
+                st.executeBatch();
+            } catch (Exception e) {
+                String msg = "Failed to create user assets: count=" + userAssets.size();
+                LOG.log(Level.WARNING, msg, e);
+                throw new IllegalStateException(msg, e);
+            }
+        });
     }
 
     protected Asset<?> find(EntityManager em, String assetId, boolean loadComplete, Access access) {
@@ -1395,7 +1476,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if ((!recursive || level == 3) && query.userIds != null && query.userIds.length > 0) {
-            sb.append("right join USER_ASSET UA on A.ID = UA.ASSET_ID ");
+            sb.append("right join USER_ASSET_LINK UA on A.ID = UA.ASSET_ID ");
         }
 
         return sb.toString();

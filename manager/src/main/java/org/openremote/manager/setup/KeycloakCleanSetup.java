@@ -20,6 +20,8 @@
 package org.openremote.manager.setup;
 
 import org.openremote.model.Container;
+import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.TenantPredicate;
 
 import java.util.Arrays;
 import java.util.logging.Logger;
@@ -56,7 +58,7 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
         });
 
         LOG.info("Deleting all non-master admin users");
-        Arrays.stream(keycloakProvider.getUsers(MASTER_REALM)).forEach(user -> {
+        Arrays.stream(keycloakProvider.queryUsers(new UserQuery().tenant(new TenantPredicate(MASTER_REALM)))).forEach(user -> {
             if (!user.getUsername().equals(MASTER_REALM_ADMIN_USER)) {
                 LOG.info("Deleting user: " + user);
                 keycloakProvider.deleteUser(MASTER_REALM, user.getId());

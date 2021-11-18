@@ -26,7 +26,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetEvent;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.asset.impl.GroupAsset;
 import org.openremote.model.attribute.MetaItem;
@@ -43,6 +43,7 @@ import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.BadRequestException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -108,7 +109,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
 
         // If authenticated link the console to this user
         if (isAuthenticated()) {
-            assetStorageService.storeUserAsset(new UserAsset(getAuthenticatedRealm(), getUserId(), consoleAsset.getId()));
+            assetStorageService.storeUserAssetLinks(Collections.singletonList(new UserAssetLink(getAuthenticatedRealm(), getUserId(), consoleAsset.getId())));
         }
 
         return consoleRegistration;

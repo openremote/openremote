@@ -79,7 +79,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * obviously no validation can be performed on such dynamic {@link Attribute}s. Use the {@link Attribute} etc. class to
  * work with this API. This property can be empty when certain optimized loading operations are used.
  * <p>
- * For more details on restricted access of user-assigned assets, see {@link UserAsset}.
+ * For more details on restricted access of user-assigned assets, see {@link UserAssetLink}.
  * </p>
  * <p>
  * Example JSON representation of an asset tree:

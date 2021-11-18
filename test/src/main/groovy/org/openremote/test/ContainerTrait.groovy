@@ -41,11 +41,12 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.gateway.GatewayClientService
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.Constants
 import org.openremote.model.ContainerService
 import org.openremote.model.asset.Asset
-import org.openremote.model.asset.UserAsset
+import org.openremote.model.asset.UserAssetLink
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.gateway.GatewayConnection
 import org.openremote.model.query.AssetQuery
@@ -54,7 +55,9 @@ import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
-import spock.util.concurrent.PollingConditions
+import org.openremote.model.security.Role
+import org.openremote.model.security.User
+import org.openremote.model.util.Pair
 
 import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
@@ -110,6 +113,19 @@ trait ContainerTrait {
                 try {
                     println("Services and config matches already running container so checking state")
                     def counter = 0
+
+                    // Reset users - just delete ones that weren't there before (if tests change user roles etc. then the test should force stop the container in cleanup)
+                    if (container.hasService(ManagerIdentityService.class)) {
+                        def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+                        def users = identityProvider.queryUsers()
+                        def newUsers = users.findAll {user -> !TestFixture.users.any {previousUser -> previousUser.id == user.id}}
+                        if (!TestFixture.users.every {previousUser -> users.any {user -> user.id == previousUser.id}}) {
+                            throw new IllegalStateException("Users have been modified so cannot do simple purge")
+                        }
+
+                        println("Purging ${newUsers.size()} new user(s)")
+                        newUsers.forEach {user -> identityProvider.deleteUser(user.realm, user.id)}
+                    }
 
                     // Reset gateway connections
                     if (container.hasService(GatewayClientService.class)) {
@@ -214,8 +230,8 @@ trait ContainerTrait {
                         }
                         if (!TestFixture.userAssets.isEmpty()) {
                             println("Re-linking ${TestFixture.userAssets.size()} user asset(s)")
-                            TestFixture.userAssets.forEach { ua ->
-                                assetStorageService.storeUserAsset(ua)
+                            TestFixture.userAssets.groupBy {it.id.userId}.values().forEach { ua ->
+                                assetStorageService.storeUserAssetLinks(ua)
                             }
                         }
                     }
@@ -269,6 +285,9 @@ trait ContainerTrait {
 
             // Track gateway connections
             TestFixture.gatewayConnections = getGatewayConnections()
+
+            // Track users and their roles
+            TestFixture.users = getUsers()
         }
 
         // Wait for agents and rulesets to be deployed - Just a very basic way of waiting for the system to be 'initialised'
@@ -365,18 +384,34 @@ trait ContainerTrait {
         container.getService(AssetStorageService.class).findAll(new AssetQuery())
     }
 
-    List<UserAsset> getUserAssets() {
+    List<UserAssetLink> getUserAssets() {
         if (!container.hasService(AssetStorageService.class)) {
             return Collections.emptyList()
         }
-        container.getService(AssetStorageService.class).findUserAssets(null, null, null)
+        container.getService(AssetStorageService.class).findUserAssetLinks(null, null, null)
     }
 
     List<GatewayConnection> getGatewayConnections() {
         if (!container.hasService(GatewayClientService.class)) {
-            return Collections.emptyList();
+            return Collections.emptyList()
         }
         container.getService(GatewayClientService.class).getConnections()
+    }
+
+    List<User> getUsers() {
+        if (!container.hasService(ManagerIdentityService)) {
+            return Collections.emptyList()
+        }
+        def identityProvider = container.getService(ManagerIdentityService.class).getIdentityProvider()
+        List<User> users = identityProvider.queryUsers()
+        return users
+//        List<Pair<User, Pair<Role[], Role[]>>> results = []
+//        users.forEach {user ->
+//            def roles = identityProvider.getUserRoles(user.realm, user.id, Constants.KEYCLOAK_CLIENT_ID)
+//            def realmRoles = identityProvider.getUserRealmRoles(user.realm, user.id)
+//            results.add(new Pair<User, Pair<Role[],Role[]>>(user, new Pair<>(roles, realmRoles)))
+//        }
+//        return results
     }
 
     Container getContainer() {

@@ -20,7 +20,6 @@
 package org.openremote.model.asset;
 
 import org.hibernate.annotations.Formula;
-import org.openremote.model.AssetModelProvider;
 import org.openremote.model.value.MetaItemType;
 
 import javax.persistence.*;
@@ -53,8 +52,8 @@ import java.util.Date;
  * </ul>.
  */
 @Entity
-@Table(name = "USER_ASSET")
-public class UserAsset {
+@Table(name = "USER_ASSET_LINK")
+public class UserAssetLink {
 
     public static class Id implements Serializable {
         @Column(name = "REALM", length = 36)
@@ -133,15 +132,15 @@ public class UserAsset {
     @Formula("(select u.USERNAME ||  ' (' || u.FIRST_NAME || ' ' || u.LAST_NAME || ')' from PUBLIC.USER_ENTITY u where u.ID = USER_ID)")
     protected String userFullName;
 
-    protected UserAsset() {
+    protected UserAssetLink() {
     }
 
-    public UserAsset(Id id) {
+    public UserAssetLink(Id id) {
         this.id = id;
     }
 
-    public UserAsset(String realm, String userId, String assetId) {
-        this(new UserAsset.Id(realm, userId, assetId));
+    public UserAssetLink(String realm, String userId, String assetId) {
+        this(new UserAssetLink.Id(realm, userId, assetId));
     }
 
     public Id getId() {

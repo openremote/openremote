@@ -27,7 +27,7 @@ import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
@@ -37,6 +37,8 @@ import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
+
+import java.util.Arrays;
 
 import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.Constants.*;
@@ -532,43 +534,45 @@ public class ManagerTestSetup extends ManagerSetup {
 
         // ################################ Link users and assets ###################################
 
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+        assetStorageService.storeUserAssetLinks(Arrays.asList(
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.testuser3Id,
-                apartment1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1Id),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.testuser3Id,
-                apartment1LivingroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1LivingroomId),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.testuser3Id,
-                apartment1KitchenId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1KitchenId),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.testuser3Id,
-                apartment1Bedroom1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1Bedroom1Id),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.testuser3Id,
-                apartment1BathroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1BathroomId),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.testuser3Id,
-                apartment1HallwayId));
+                apartment1HallwayId)));
 
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+        assetStorageService.storeUserAssetLinks(Arrays.asList(
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1Id),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1LivingroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1LivingroomId),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1KitchenId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1KitchenId),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1Bedroom1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1Bedroom1Id),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1BathroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakTestSetup.tenantBuilding.getRealm(),
+                apartment1BathroomId),
+            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1HallwayId));
+                apartment1HallwayId)));
 
         // ################################ Make users restricted ###################################
 

@@ -27,7 +27,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
@@ -37,12 +37,15 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.persistence.OptimisticLockException;
 import javax.validation.ConstraintViolationException;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
@@ -99,13 +102,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public UserAsset[] getUserAssetLinks(RequestParams requestParams, String realm, String userId, String assetId) {
+    public UserAssetLink[] getUserAssetLinks(RequestParams requestParams, String realm, String userId, String assetId) {
         try {
+            realm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm() : realm;
+
             if (realm == null)
                 throw new WebApplicationException(BAD_REQUEST);
-
-            if (!identityService.getIdentityProvider().tenantExists(realm))
-                throw new WebApplicationException(NOT_FOUND);
 
             if (!(isSuperUser() || getAuthenticatedRealm().equals(realm)))
                 throw new WebApplicationException(FORBIDDEN);
@@ -113,7 +115,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realm))
                 throw new WebApplicationException(BAD_REQUEST);
 
-            UserAsset[] result = assetStorageService.findUserAssets(realm, userId, assetId).toArray(new UserAsset[0]);
+            UserAssetLink[] result = assetStorageService.findUserAssetLinks(realm, userId, assetId).toArray(new UserAssetLink[0]);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
@@ -127,48 +129,105 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
 
     @Override
-    public void createUserAsset(RequestParams requestParams, UserAsset userAsset) {
-        String realm = userAsset.getId().getRealm();
-        String userId = userAsset.getId().getUserId();
-        String assetId = userAsset.getId().getAssetId();
+    public void createUserAssetLinks(RequestParams requestParams, List<UserAssetLink> userAssetLinks) {
 
-        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm))
-            throw new WebApplicationException(BAD_REQUEST);
-
-        Asset<?> asset;
-        if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealm().equals(realm)) {
-            throw new WebApplicationException(BAD_REQUEST);
-        }
-
-        if (isSuperUser()) {
-            assetStorageService.storeUserAsset(userAsset);
-            return;
-        }
-
-        // Restricted users or regular users in a different realm can not create links
-        if (isRestrictedUser()
-            || !getAuthenticatedTenant().getRealm().equals(realm))
+        // Restricted users cannot create or delete links
+        if (isRestrictedUser()) {
             throw new WebApplicationException(FORBIDDEN);
+        }
 
-        assetStorageService.storeUserAsset(userAsset);
+        // Check all links are for the same user and realm
+        String realm = userAssetLinks.get(0).getId().getRealm();
+        String userId = userAssetLinks.get(0).getId().getUserId();
+        String[] assetIds = new String[userAssetLinks.size()];
+
+        IntStream.range(0, userAssetLinks.size()).forEach(i -> {
+            UserAssetLink userAssetLink = userAssetLinks.get(i);
+            assetIds[i] = userAssetLink.getId().getAssetId();
+
+            if (!userAssetLink.getId().getRealm().equals(realm) || !userAssetLink.getId().getUserId().equals(userId)) {
+                throw new BadRequestException("All user asset links must be for the same user");
+            }
+        });
+
+        if (!isSuperUser() && !realm.equals(getAuthenticatedRealm())) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        List<Asset<?>> assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new AssetQuery.Select().excludeParentInfo(true).excludePath(true).excludeAttributes(true))
+                .tenant(new TenantPredicate(realm))
+                .ids(assetIds)
+        );
+
+        if (assets.size() != userAssetLinks.size()) {
+            throw new BadRequestException("One or more asset IDs are invalid");
+        }
+
+        try {
+            assetStorageService.storeUserAssetLinks(userAssetLinks);
+        } catch (Exception e) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
     }
 
     @Override
-    public void deleteUserAsset(RequestParams requestParams, String realm, String userId, String assetId) {
-        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm))
-            throw new WebApplicationException(BAD_REQUEST);
+    public void deleteUserAssetLink(RequestParams requestParams, String realm, String userId, String assetId) {
+        deleteUserAssetLinks(requestParams, Collections.singletonList(new UserAssetLink(realm, userId, assetId)));
+    }
 
-        if (isSuperUser()) {
-            assetStorageService.deleteUserAsset(realm, userId, assetId);
-            return;
+    @Override
+    public void deleteAllUserAssetLinks(RequestParams requestParams, String realm, String userId) {
+        // Restricted users cannot create or delete links
+        if (isRestrictedUser()) {
+            throw new WebApplicationException(FORBIDDEN);
         }
 
-        // Restricted users or regular users in a different realm can not delete links
-        if (isRestrictedUser()
-            || !getAuthenticatedTenant().getRealm().equals(realm))
+        // Regular users in a different realm can not delete links
+        if (!isSuperUser() && !getAuthenticatedTenant().getRealm().equals(realm)) {
             throw new WebApplicationException(FORBIDDEN);
+        }
 
-        assetStorageService.deleteUserAsset(realm, userId, assetId);
+        // User must be in the same realm as the requested realm
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        assetStorageService.deleteUserAssetsByUserId(userId);
+    }
+
+    @Override
+    public void deleteUserAssetLinks(RequestParams requestParams, List<UserAssetLink> userAssetLinks) {
+        // Restricted users cannot create or delete links
+        if (isRestrictedUser()) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        // Check all links are for the same user and realm
+        String realm = userAssetLinks.get(0).getId().getRealm();
+        String userId = userAssetLinks.get(0).getId().getUserId();
+
+        if (userAssetLinks.stream().anyMatch(userAssetLink -> !userAssetLink.getId().getRealm().equals(realm) || !userAssetLink.getId().getUserId().equals(userId))) {
+            throw new BadRequestException("All user asset links must be for the same user");
+        }
+
+        // Regular users in a different realm can not delete links
+        if (!isSuperUser() && !getAuthenticatedTenant().getRealm().equals(realm)) {
+            throw new WebApplicationException(FORBIDDEN);
+        }
+
+        // If delete count doesn't equal link count an exception will be thrown
+        try {
+            assetStorageService.deleteUserAssetLinks(userAssetLinks);
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Failed to delete user asset links", e);
+            throw new BadRequestException();
+        }
     }
 
     @Override

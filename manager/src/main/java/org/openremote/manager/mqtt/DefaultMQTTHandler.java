@@ -256,7 +256,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
 
 //            Asset<?> asset;
 //            if(identityProvider.isRestrictedUser(authContext.getUserId())) {
-//                Optional<UserAsset> userAsset = assetStorageService.findUserAssets(connection.realm, authContext.getUserId(), assetId).stream().findFirst();
+//                Optional<UserAssetLink> userAsset = assetStorageService.findUserAssets(connection.realm, authContext.getUserId(), assetId).stream().findFirst();
 //                asset = userAsset.map(value -> assetStorageService.find(value.getId().getAssetId())).orElse(null);
 //            } else {
 //                asset = assetStorageService.find(assetId, false);

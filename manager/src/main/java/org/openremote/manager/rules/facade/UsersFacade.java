@@ -33,7 +33,6 @@ import org.openremote.model.security.User;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -86,7 +85,10 @@ public class UsersFacade<T extends Ruleset> extends Users {
             }
         }
 
-        return Arrays.stream(identityService.getIdentityProvider().getUsers(userQuery))
+        // Prevent system users being retrieved
+        userQuery.select(new UserQuery.Select().excludeSystemUsers(true));
+
+        return Arrays.stream(identityService.getIdentityProvider().queryUsers(userQuery))
             .map(User::getId);
     }
 

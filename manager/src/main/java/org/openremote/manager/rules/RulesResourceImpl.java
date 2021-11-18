@@ -26,7 +26,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.AssetQuery;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.rules.*;
@@ -417,7 +417,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!asset.isAccessPublicRead()) {
 
             // If asset is linked to users then only those users can get the geofences for it
-            List<UserAsset> userAssetLinks = assetStorageService.findUserAssets(asset.getRealm(), null, assetId);
+            List<UserAssetLink> userAssetLinks = assetStorageService.findUserAssetLinks(asset.getRealm(), null, assetId);
 
             if (!userAssetLinks.isEmpty()) {
                 if (!isAuthenticated() || userAssetLinks.stream().noneMatch(userAssetLink -> userAssetLink.getId().getUserId().equals(getUserId()))) {

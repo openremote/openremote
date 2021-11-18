@@ -24,17 +24,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
+import org.openremote.model.persistence.EpochMillisInstantType;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.util.*;
+
+import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
@@ -72,12 +75,24 @@ public class User {
     @Column(name = "ENABLED")
     protected Boolean enabled;
 
-    @Transient
+    @Column(name = "CREATED_TIMESTAMP")
+    @org.hibernate.annotations.Type(type = EpochMillisInstantType.TYPE_NAME)
+    protected Instant createdOn;
+
+    @Formula("(SELECT C.SECRET FROM PUBLIC.CLIENT C WHERE C.ID = SERVICE_ACCOUNT_CLIENT_LINK)")
     protected String secret; // For service users
 
-    @Transient
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinColumn(name = "USER_ID")
     @JsonIgnore
-    protected Map<String, List<String>> attributes;
+    protected List<UserAttribute> attributes;
+
+    public User(String id, String username, String firstName, String lastName) {
+        this.id = id;
+        this.username = username;
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
 
     public User() {
     }
@@ -137,13 +152,38 @@ public class User {
         return username != null && username.startsWith(SERVICE_ACCOUNT_PREFIX);
     }
 
+    @JsonProperty
+    public Map<String, List<String>> getAttributes() {
+        if (this.attributes == null) {
+            return null;
+        }
+        MultivaluedMap<String, String> attrs = new MultivaluedHashMap<>();
+        this.attributes.forEach(attribute -> attrs.add(attribute.getName(), attribute.getValue()));
+        return attrs;
+    }
+
     public User setAttributes(Map<String, List<String>> attributes) {
-        this.attributes = attributes;
+        if (attributes == null) {
+            this.attributes = null;
+            return this;
+        }
+        List<UserAttribute> attrs = new ArrayList<>();
+        attributes.forEach((k, v) -> v.forEach(val -> attrs.add(new UserAttribute(k, val))));
+        this.attributes = attrs;
         return this;
     }
 
-    public Map<String, List<String>> getAttributes() {
-        return attributes;
+    public User setAttribute(String key, String...values) {
+        if (attributes == null) {
+            attributes = new ArrayList<>();
+        } else {
+            attributes.removeIf(attr -> attr.getName().equals(key));
+        }
+
+        if (values != null && values.length > 0) {
+            Arrays.stream(values).forEach((value) -> attributes.add(new UserAttribute(key, value)));
+        }
+        return this;
     }
 
     public User setServiceAccount(boolean serviceAccount) {
@@ -155,22 +195,20 @@ public class User {
         return this;
     }
 
+    public boolean isSystemAccount() {
+        Map<String, List<String>> attributes = getAttributes();
+        return attributes != null && attributes.containsKey(SYSTEM_ACCOUNT_ATTRIBUTE);
+    }
+
     /**
      * Will hide this user from HTTP API
      */
     public User setSystemAccount(boolean systemAccount) {
 
-        if (attributes == null) {
-            attributes = new HashMap<>();
-        }
-
         if (systemAccount) {
-            attributes.put(User.SYSTEM_ACCOUNT_ATTRIBUTE, Collections.singletonList("true"));
+            setAttribute(SYSTEM_ACCOUNT_ATTRIBUTE, "true");
         } else {
-            attributes.remove(User.SYSTEM_ACCOUNT_ATTRIBUTE);
-            if (attributes.isEmpty()) {
-                attributes = null;
-            }
+            setAttribute(SYSTEM_ACCOUNT_ATTRIBUTE);
         }
         return this;
     }

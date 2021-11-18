@@ -119,7 +119,7 @@ export class OrRuleActionNotification extends LitElement {
             let value: string | undefined;
 
             if (targetType === ActionTargetType.USER) {
-                targetValuesGenerator = manager.rest.api.UserResource.getAll(manager.displayRealm).then(
+                targetValuesGenerator = manager.rest.api.UserResource.query({tenant: manager.displayRealm} as UserQuery).then(
                     (usersResponse) => usersResponse.data.map((user) => [user.id!, user.username!])
                 );
                 label = i18next.t("user_plural");

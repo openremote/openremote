@@ -41,7 +41,6 @@ import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.StringPredicate;
-import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -130,52 +129,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         redirectUrls.add(realmManagerCallbackUrl);
     }
 
-    @Override
-    public User[] getUsers(String realm) {
-        User[] users = getUsers(new UserQuery().tenant(new TenantPredicate(realm)));
-
-        return getRealms(realmsResource -> {
-            // Need to load secrets from client resource
-            return Arrays.stream(users).filter(user -> {
-                RealmResource realmResource = realmsResource.realm(realm);
-
-                // Filter out users with service account attribute
-                UserRepresentation userRepresentation = realmResource.users().get(user.getId()).toRepresentation();
-                if (userRepresentation.getAttributes() != null && userRepresentation.getAttributes().containsKey(User.SYSTEM_ACCOUNT_ATTRIBUTE)) {
-                    return false;
-                }
-
-                return true;
-            }).toArray(User[]::new);
-        });
-    }
-
-    @Override
-    public User[] getServiceUsers(String realm) {
-        User[] users = ManagerIdentityProvider.getUsersFromDb(persistenceService, new UserQuery().usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX)).tenant(new TenantPredicate(realm)));
-
-        return getRealms(realmsResource -> Arrays.stream(users).filter(user -> {
-            RealmResource realmResource = realmsResource.realm(realm);
-
-            // Filter out users with system account attribute
-            UserRepresentation userRepresentation = realmResource.users().get(user.getId()).toRepresentation();
-            if (userRepresentation.getAttributes() != null && userRepresentation.getAttributes().containsKey(User.SYSTEM_ACCOUNT_ATTRIBUTE)) {
-                return false;
-            }
-
-            withClientResource(realm, user.getUsername(), realmsResource, (clientRep, clientResource) ->
-                    user.setSecret(getClientSecret(clientResource)),
-            null);
-
-            return true;
-        }).toArray(User[]::new));
-    }
-
-    protected String getClientSecret(ClientResource clientResource) {
-        CredentialRepresentation credentialRepresentation = clientResource.getSecret();
-        return credentialRepresentation != null ? credentialRepresentation.getValue() : null;
-    }
-
     protected <T> T withClientResource(String realm, String client, RealmsResource realmsResource, BiFunction<ClientRepresentation, ClientResource, T> clientResourceConsumer, Supplier<T> notFoundProvider) {
         ClientRepresentation clientRepresentation = null;
         ClientResource clientResource = null;
@@ -189,9 +142,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 }
                 clientRepresentation = clientRepresentations.get(0);
                 clientResource = clientsResource.get(clientRepresentation.getId());
-                if (clientRepresentation.isServiceAccountsEnabled()) {
-                    clientRepresentation.setSecret(getClientSecret(clientResource));
-                }
             }
         } catch (Exception e) {
             LOG.log(Level.INFO, "withClientResource failed", e);
@@ -205,12 +155,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public User[] getUsers(List<String> userIds) {
-        return getUsers(new UserQuery().ids(userIds.toArray(new String[0])));
-    }
+    public User[] queryUsers(UserQuery userQuery) {
+        if (userQuery == null) {
+            userQuery = new UserQuery();
+        }
 
-    @Override
-    public User[] getUsers(UserQuery userQuery) {
         if (userQuery.usernames == null) {
             userQuery.usernames = new StringPredicate[1];
             userQuery.usernames(new StringPredicate(AssetQuery.Match.BEGIN, User.SERVICE_ACCOUNT_PREFIX).negate(true));
@@ -224,30 +173,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public User getUser(String realm, String userId) {
-        User user = ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
-        if (user != null && user.isServiceAccount()) {
-            getRealms(realmsResource -> {
-                withClientResource(realm, user.getUsername(), realmsResource, (clientRep, clientResource) ->
-                    user.setSecret(getClientSecret(clientResource)), null);
-                return null;
-            });
-        }
-
-        return user;
+        return ManagerIdentityProvider.getUserByIdFromDb(persistenceService, realm, userId);
     }
 
     @Override
     public User getUserByUsername(String realm, String username) {
-        User user = ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
-        if (user != null && user.isServiceAccount()) {
-            getRealms(realmsResource -> {
-                withClientResource(realm, user.getUsername(), realmsResource, (clientRep, clientResource) ->
-                    user.setSecret(getClientSecret(clientResource)), null);
-                return null;
-            });
-        }
-
-        return user;
+        return ManagerIdentityProvider.getUserByUsernameFromDb(persistenceService, realm, username);
     }
 
     @Override
@@ -257,6 +188,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             if (user.getUsername() == null) {
                 throw new BadRequestException("Attempt to create/update user but no username provided: User=" + user);
             }
+
+            // Force lowercase username
+            user.setUsername(user.getUsername().toLowerCase(Locale.ROOT));
 
             boolean isUpdate = false;
             User existingUser = user.getId() != null ? getUser(realm, user.getId()) : getUserByUsername(realm, user.getUsername());
@@ -815,7 +749,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public Tenant getTenant(String realm) {
         try {
             RealmRepresentation realmRepresentation = getRealms(realmsResource ->
-                realmsResource.realm(realm).toRepresentation());
+                realmsResource.realm(realm.toLowerCase(Locale.ROOT)).toRepresentation());
             return convert(realmRepresentation, Tenant.class);
         } catch (Exception ex) {
             LOG.log(Level.INFO, "Failed to get tenant for realm: " + realm, ex);
@@ -827,6 +761,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public void updateTenant(Tenant tenant) {
         LOG.fine("Update tenant: " + tenant);
         getRealms(realmsResource -> {
+
+            if (TextUtil.isNullOrEmpty(tenant.getId())) {
+                throw new IllegalStateException("Tenant must already exist, ID does not match an existing tenant");
+            }
+
+            // Force realm to lowercase
+            tenant.setRealm(tenant.getRealm().toLowerCase(Locale.ROOT));
+
             // Find existing realm by ID as realm name could have been changed
             RealmRepresentation existing = realmsResource.findAll().stream().filter(r -> r.getId().equals(tenant.getId())).findFirst().orElse(null);
             if (existing == null) {
@@ -862,6 +804,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public Tenant createTenant(Tenant tenant) {
         LOG.fine("Create tenant: " + tenant);
         return getRealms(realmsResource -> {
+
+            // Force realm to lowercase
+            tenant.setRealm(tenant.getRealm().toLowerCase(Locale.ROOT));
+
             RealmRepresentation realmRepresentation = convert(tenant, RealmRepresentation.class);
 
             try {

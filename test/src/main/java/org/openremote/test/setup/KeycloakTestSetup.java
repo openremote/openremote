@@ -59,8 +59,6 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
     public Tenant energyTenant;
     public Tenant tenantCity;
     public User serviceUser;
-    public static final String serviceUserId = "test";
-    public static final String serviceUserSecret = UniqueIdentifierGenerator.generateId("test");
 
     public KeycloakTestSetup(Container container) {
         super(container);
@@ -109,12 +107,12 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         serviceUser = new User()
             .setServiceAccount(true)
             .setEnabled(true)
-            .setUsername(serviceUserId);
-        serviceUser = keycloakProvider.createUpdateUser(tenantBuilding.getRealm(), serviceUser, serviceUserSecret);
+            .setUsername("test");
+        serviceUser = keycloakProvider.createUpdateUser(tenantBuilding.getRealm(), serviceUser, UniqueIdentifierGenerator.generateId("serviceusertest"));
         keycloakProvider.updateUserRoles(
             tenantBuilding.getRealm(),
             serviceUser.getId(),
-            serviceUserId,
+            serviceUser.getUsername(),
             Stream.of(ClientRole.READ_ASSETS, ClientRole.WRITE_ASSETS, ClientRole.WRITE_ATTRIBUTES).map(ClientRole::getValue).toArray(String[]::new)
         );
     }

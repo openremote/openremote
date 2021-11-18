@@ -20,7 +20,7 @@
 package org.openremote.model.value;
 
 import org.openremote.model.Constants;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -65,13 +65,13 @@ public final class MetaItemType {
 
     /**
      * Marks the attribute as readable by restricted clients and therefore users who are linked to the asset, see {@link
-     * UserAsset}.
+     * UserAssetLink}.
      */
     public static final MetaItemDescriptor<Boolean> ACCESS_RESTRICTED_READ = new MetaItemDescriptor<>("accessRestrictedRead", ValueType.BOOLEAN);
 
     /**
      * Marks the attribute as writable by restricted clients and therefore users who are linked to the asset, see {@link
-     * UserAsset}.
+     * UserAssetLink}.
      */
     public static final MetaItemDescriptor<Boolean> ACCESS_RESTRICTED_WRITE = new MetaItemDescriptor<>("accessRestrictedWrite", ValueType.BOOLEAN);
 

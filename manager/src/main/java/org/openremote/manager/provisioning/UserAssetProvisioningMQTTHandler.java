@@ -38,7 +38,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.provisioning.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
@@ -457,7 +457,7 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
         assetStorageService.merge(asset);
 
         if (provisioningConfig.isRestrictedUser()) {
-            assetStorageService.storeUserAsset(new UserAsset(realm, serviceUser.getId(), assetId));
+            assetStorageService.storeUserAssetLinks(Collections.singletonList(new UserAssetLink(realm, serviceUser.getId(), assetId)));
         }
 
         return asset;

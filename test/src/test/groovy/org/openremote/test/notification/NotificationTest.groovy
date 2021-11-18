@@ -13,6 +13,8 @@ import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.query.UserQuery
+import org.openremote.model.query.filter.TenantPredicate
 import org.openremote.model.util.TextUtil
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
@@ -557,7 +559,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         expect: "the demo users to be created"
         conditions.eventually {
-            def users = identityService.getIdentityProvider().getUsers(keycloakTestSetup.tenantBuilding.realm)
+            def users = identityService.getIdentityProvider().queryUsers(new UserQuery().tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm)).select(new UserQuery.Select().excludeServiceUsers(true)))
             assert users.size() == 3
             assert users.count { !TextUtil.isNullOrEmpty(it.email)} == 3
         }

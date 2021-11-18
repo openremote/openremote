@@ -83,22 +83,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public User[] getUsers(String realm) {
-        return getUsers(new UserQuery().tenant(new TenantPredicate(realm)));
-    }
-
-    @Override
-    public User[] getServiceUsers(String realm) {
-        return new User[0];
-    }
-
-    @Override
-    public User[] getUsers(List<String> userIds) {
-        return getUsers(new UserQuery().ids(userIds.toArray(new String[0])));
-    }
-
-    @Override
-    public User[] getUsers(UserQuery userQuery) {
+    public User[] queryUsers(UserQuery userQuery) {
         return ManagerIdentityProvider.getUsersFromDb(persistenceService, userQuery);
     }
 

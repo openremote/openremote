@@ -38,6 +38,7 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.RepeatFrequency;
 import org.openremote.model.notification.SentNotification;
+import org.openremote.model.query.UserQuery;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
@@ -512,7 +513,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     boolean realmMatch = false;
 
                     if (target.getType() == Notification.TargetType.USER) {
-                        realmMatch = Arrays.stream(identityService.getIdentityProvider().getUsers(Collections.singletonList(target.getId())))
+                        realmMatch = Arrays.stream(identityService.getIdentityProvider().queryUsers(new UserQuery().ids(target.getId())))
                                 .allMatch(user -> realm.equals(user.getRealm()));
                     } else {
                         // Can only send to the same realm as the requestor realm

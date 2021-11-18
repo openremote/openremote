@@ -80,7 +80,7 @@ create table TENANT_RULESET (
   primary key (ID)
 );
 
-create table USER_ASSET (
+create table USER_ASSET_LINK (
   ASSET_ID   char(22)                 not null,
   REALM      varchar(255)             not null,
   USER_ID    varchar(36)              not null,
@@ -211,13 +211,13 @@ alter table TENANT_RULESET
 alter table ASSET_RULESET
   add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;
 
-alter table USER_ASSET
+alter table USER_ASSET_LINK
   add foreign key (USER_ID) references PUBLIC.USER_ENTITY (ID) on delete cascade;
 
-alter table USER_ASSET
+alter table USER_ASSET_LINK
   add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;
 
-alter table USER_ASSET
+alter table USER_ASSET_LINK
   add foreign key (REALM) references PUBLIC.REALM (NAME) on delete cascade;
 
 alter table PROVISIONING_CONFIG

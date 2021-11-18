@@ -51,14 +51,14 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def clientEventService = container.getService(ClientEventService.class)
         def agentService = container.getService(AgentService.class)
         def mqttClientId = UniqueIdentifierGenerator.generateId()
-        def username = keycloakTestSetup.tenantBuilding.realm + ":" + KeycloakTestSetup.serviceUserId // realm and OAuth client id
-        def password = KeycloakTestSetup.serviceUserSecret
+        def username = keycloakTestSetup.tenantBuilding.realm + ":" + keycloakTestSetup.serviceUser.username // realm and OAuth client id
+        def password = keycloakTestSetup.serviceUser.secret
 
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST)
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT)
 
         when: "a mqtt client connects with invalid credentials"
-        def wrongUsername = "master:" + KeycloakTestSetup.serviceUserId
+        def wrongUsername = "master:" + keycloakTestSetup.serviceUser.username
         MQTT_IOClient client = new MQTT_IOClient(mqttClientId, mqttHost, mqttPort, false, true, new UsernamePassword(wrongUsername, password), null)
         client.connect()
 

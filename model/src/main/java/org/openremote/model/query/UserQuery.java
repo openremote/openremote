@@ -1,6 +1,5 @@
 package org.openremote.model.query;
 
-
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
@@ -10,13 +9,97 @@ import java.util.Arrays;
 
 public class UserQuery {
 
+    public static class Select {
+        public boolean basic;
+        public boolean excludeServiceUsers;
+        public boolean excludeRegularUsers;
+        public boolean excludeSystemUsers;
+
+        public Select excludeServiceUsers(boolean excludeServiceUsers) {
+            this.excludeServiceUsers = excludeServiceUsers;
+            return this;
+        }
+
+        public Select excludeRegularUsers(boolean excludeRegularUsers) {
+            this.excludeRegularUsers = excludeRegularUsers;
+            return this;
+        }
+
+        public Select excludeSystemUsers(boolean excludeSystemUsers) {
+            this.excludeSystemUsers = excludeSystemUsers;
+            return this;
+        }
+
+        public Select basic(boolean basic) {
+            this.basic = basic;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "excludeServiceUsers=" + excludeServiceUsers +
+                ", excludeRegularUsers=" + excludeRegularUsers +
+                ", excludeSystemUsers=" + excludeSystemUsers +
+                ", basic=" + basic +
+                '}';
+        }
+    }
+
+    public static class OrderBy {
+
+        public enum Property {
+            CREATED_ON,
+            FIRST_NAME,
+            LAST_NAME,
+            USERNAME,
+            EMAIL
+        }
+
+        public Property property;
+        public boolean descending;
+
+        public OrderBy() {
+        }
+
+        public OrderBy(Property property) {
+            this.property = property;
+        }
+
+        public OrderBy(Property property, boolean descending) {
+            this.property = property;
+            this.descending = descending;
+        }
+
+        public OrderBy property(Property property) {
+            this.property = property;
+            return this;
+        }
+
+        public OrderBy descending(boolean descending) {
+            this.descending = descending;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "property=" + property +
+                ", descending=" + descending +
+                '}';
+        }
+    }
+
     // Restriction predicates
     public TenantPredicate tenantPredicate;
     public UserAssetPredicate assetPredicate;
     public PathPredicate pathPredicate;
     public String[] ids;
+    public Select select;
     public StringPredicate[] usernames;
-    public int limit;
+    public Integer limit;
+    public Integer offset;
+    public OrderBy orderBy;
 
     public UserQuery() {
     }
@@ -51,6 +134,21 @@ public class UserQuery {
         return this;
     }
 
+    public UserQuery offset(int offset) {
+        this.offset = offset;
+        return this;
+    }
+
+    public UserQuery orderBy(OrderBy orderBy) {
+        this.orderBy = orderBy;
+        return this;
+    }
+
+    public UserQuery select(Select select) {
+        this.select = select;
+        return this;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -60,6 +158,9 @@ public class UserQuery {
             ", ids=" + (ids != null ? Arrays.toString(ids) : "null") +
             ", usernames=" + (usernames != null ? Arrays.toString(usernames) : "null") +
             ", limit=" + limit +
+            ", offset=" + offset +
+            ", orderBy=" + orderBy +
+            ", select=" + select +
             '}';
     }
 }
