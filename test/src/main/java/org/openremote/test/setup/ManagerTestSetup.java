@@ -557,22 +557,13 @@ public class ManagerTestSetup extends ManagerSetup {
         assetStorageService.storeUserAssetLinks(Arrays.asList(
             new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1Id),
+                apartment2Id),
             new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1LivingroomId),
+                apartment2LivingroomId),
             new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
                 keycloakTestSetup.buildingUserId,
-                apartment1KitchenId),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
-                keycloakTestSetup.buildingUserId,
-                apartment1Bedroom1Id),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
-                keycloakTestSetup.buildingUserId,
-                apartment1BathroomId),
-            new UserAssetLink(keycloakTestSetup.tenantBuilding.getRealm(),
-                keycloakTestSetup.buildingUserId,
-                apartment1HallwayId)));
+                apartment2BathroomId)));
 
         // ################################ Make users restricted ###################################
 

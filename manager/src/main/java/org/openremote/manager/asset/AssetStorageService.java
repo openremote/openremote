@@ -389,6 +389,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             new AssetQuery()
                                 .ids(assetId)
                                 .select(new Select().excludePath(false).excludeParentInfo(true))
+                                .userIds(access == PROTECTED ? authContext.getUserId() : null)
                                 .access(access));
 
                         if (asset != null) {
@@ -434,6 +435,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                         // Set access requirements
                         query.access(access);
+
+                        if (access == PROTECTED) {
+                            query.userIds(authContext.getUserId());
+                        }
 
                         List<Asset<?>> assets = findAll(query);
 
