@@ -1057,6 +1057,10 @@ export class Manager implements EventProviderFactory {
         return !!(this.getRealm() && this.getRealm() === "master" && this.hasRealmRole("admin"));
     }
 
+    public isRestrictedUser(): boolean {
+        return !!this.hasRealmRole("restricted_user");
+    }
+
     public getApiBaseUrl(): string {
         let baseUrl = this._config.managerUrl!;
         baseUrl += "/api/" + this._config.realm + "/";

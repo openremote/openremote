@@ -1,6 +1,6 @@
 import {css, html} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {Action, createSlice, EnhancedStore, PayloadAction, ThunkAction} from "@reduxjs/toolkit";
+import {createSlice, EnhancedStore, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
     MapAssetCardConfig,
@@ -10,12 +10,20 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent
 } from "@openremote/or-map";
-import manager, {OREvent, Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
-import {Asset, AssetEvent, AssetEventCause, AttributeEvent, GeoJSONPoint, Attribute, WellknownMetaItems, WellknownAttributes, LogicGroupOperator} from "@openremote/model";
+import {
+    Asset,
+    AssetEvent,
+    AssetEventCause,
+    Attribute,
+    AttributeEvent,
+    GeoJSONPoint,
+    WellknownAttributes,
+    WellknownMetaItems
+} from "@openremote/model";
 import {getAssetsRoute} from "./page-assets";
-import {Page, PageProvider, router} from "@openremote/or-app";
-import {AppStateKeyed} from "@openremote/or-app";
+import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 
 export interface MapState {
     assets: Asset[];
@@ -307,6 +315,9 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
             <or-map id="map" class="or-map">
                 ${
                     this._assets.filter((asset) => {
+                        if (!asset.attributes) {
+                            return false;
+                        }
                         const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
                         const showOnMap = !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr); 
                         return showOnMap;

@@ -621,7 +621,12 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 }
             ],
             dismissAction: {
-                actionName: "cancel"
+                actionName: "cancel",
+                action: () => {
+                    user.userAssetLinks = user.previousAssetLinks;
+                    user.previousAssetLinks = undefined;
+                    openBtn.disabled = false;
+                }
             }
         });
     }

@@ -58,6 +58,10 @@ export interface AssetTreeConfig {
     };
 }
 
+interface AssetWithReparentId extends Asset {
+    reparentId?: string | null;
+}
+
 export interface UiAssetTreeNode extends AssetTreeNode {
     selected: boolean;
     expandable: boolean;
@@ -259,6 +263,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @property({attribute: false})
     protected _nodes?: UiAssetTreeNode[];
 
+    protected _loading: boolean = false;
     protected _connected: boolean = false;
     protected _selectedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
@@ -352,7 +357,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._nodes = undefined;
         }
 
-        if (!this._nodes || this._nodes.length === 0) {
+        if (!this._nodes) {
             this._loadAssets();
             return true;
         }
@@ -783,13 +788,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 return;
             }
 
+            if (this._loading) {
+                return;
+            }
+
+            this._loading = true;
+
             const query: AssetQuery = {
                 tenant: {
                     realm: manager.isSuperUser() ? manager.displayRealm : manager.getRealm()
                 },
                 select: { // Just need the basic asset info
                     excludeAttributes: true,
-                    excludePath: true,
+                    excludePath: !manager.isRestrictedUser(),
                     excludeParentInfo: true
                 }
             };
@@ -810,9 +821,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     assetQuery: query
                 }
             })
-                .then((ev) =>
-                    this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction));
+                .then((ev) => {
+                    this._loading = false;
+                    this._buildTreeNodes((ev as AssetsEvent).assets!, sortFunction)
+                });
         } else {
+            this._loading = false;
             this._buildTreeNodes(this.assets, sortFunction);
         }
     }
@@ -879,6 +893,23 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (!assets || assets.length === 0) {
             this._nodes = [];
         } else {
+            if (manager.isRestrictedUser()) {
+                // Any assets whose parents aren't accessible need to be re-parented
+                assets.forEach(asset => {
+                    if (!!asset.parentId && !!asset.path && assets.find(a => a.id === asset.parentId) === undefined) {
+                        let reparentId = null;
+                        for (let i = 2; i < asset.path!.length; i++) {
+                            const ancestorId = asset.path![i];
+                            if (assets.find(a => a.id === ancestorId) !== undefined) {
+                                reparentId = ancestorId;
+                                break;
+                            }
+                        }
+                        (asset as AssetWithReparentId).reparentId = reparentId;
+                    }
+                });
+            }
+
             let rootAssetIds: string[] | undefined;
 
             if (this.rootAssetIds) {
@@ -890,13 +921,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             let rootAssets: UiAssetTreeNode[];
 
             if (rootAssetIds) {
-                rootAssets = assets.filter((asset) => rootAssetIds!.indexOf(asset.id!) >= 0).map((asset) => {
+                rootAssets = assets.filter((asset: AssetWithReparentId) => rootAssetIds!.indexOf(asset.id!) >= 0 || asset.reparentId === null).map((asset) => {
                     return {
                         asset: asset
                     } as UiAssetTreeNode;
                 });
             } else {
-                rootAssets = assets.filter((asset) => !asset.parentId).map((asset) => {
+                rootAssets = assets.filter((asset: AssetWithReparentId) => !asset.parentId || asset.reparentId === null).map((asset) => {
                     return {
                         asset: asset
                     } as UiAssetTreeNode;
@@ -921,8 +952,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
     }
 
-    protected _buildChildTreeNodes(treeNode: UiAssetTreeNode, assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
-        treeNode.children = assets.filter((asset) => asset.parentId === treeNode.asset!.id).map((asset) => {
+    protected _buildChildTreeNodes(treeNode: UiAssetTreeNode, assets: AssetWithReparentId[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
+        treeNode.children = assets.filter((asset) => asset.parentId === treeNode.asset!.id || asset.reparentId === treeNode.asset!.id).map((asset) => {
             return {
                 asset: asset
             } as UiAssetTreeNode;
