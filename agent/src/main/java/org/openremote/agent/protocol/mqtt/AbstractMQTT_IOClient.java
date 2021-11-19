@@ -50,6 +50,8 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS;
+import static org.openremote.agent.protocol.io.AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S>> {

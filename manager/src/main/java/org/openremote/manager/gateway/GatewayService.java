@@ -198,7 +198,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                 boolean hasClientSecret = gateway.getClientSecret().isPresent();
 
                 if (!hasClientId || !hasClientSecret) {
-                    createGatewayClient(gateway);
+                    createUpdateGatewayServiceUser(gateway);
                 }
 
                 // Create connector
@@ -310,15 +310,30 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
             if (GatewayAsset.DISABLED.getName().equals(attribute.getName())) {
                 boolean disabled = attribute.getValueAs(Boolean.class).orElse(false);
                 boolean isAlreadyDisabled = gatewayAsset.getDisabled().orElse(false);
+                gatewayAsset.setDisabled(disabled); // Ensure we update state
 
                 if (disabled != isAlreadyDisabled) {
+                    createUpdateGatewayServiceUser(gatewayAsset);
                     if (disabled) {
                         connector.sendMessageToGateway(new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
-                        destroyGatewayClient(gatewayAsset);
-                    } else {
-                        createGatewayClient(gatewayAsset);
                     }
                     connector.setDisabled(disabled);
+                }
+            }
+
+            if (GatewayAsset.CLIENT_SECRET.getName().equals(attribute.getName())) {
+                String newSecret = attribute.getValueAs(String.class).orElse(null);
+                if (!TextUtil.isNullOrEmpty(newSecret)) {
+                    LOG.fine("Gateway client secret attribute updated so updating gateway service user secret to match: (Gateway ID=" + asset.getId() + ")");
+                    User gatewayServiceUser = identityProvider.getUserByUsername(asset.getRealm(), User.SERVICE_ACCOUNT_PREFIX + ((GatewayAsset) asset).getClientId().orElse(""));
+                    if (gatewayServiceUser != null) {
+                        identityProvider.resetSecret(asset.getRealm(), gatewayServiceUser.getId(), newSecret);
+                    } else {
+                        LOG.info("Couldn't retrieve gateway service user to update secret: (Gateway ID=" + asset.getId() + ")");
+                    }
+                } else {
+                    // Push old secret back
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), GatewayAsset.CLIENT_SECRET, gatewayAsset.getClientSecret().orElseThrow(() -> new IllegalStateException("Gateway client secret is null which was not expected"))));
                 }
             }
         } else {
@@ -465,8 +480,6 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
 
         if (connector.isDisabled()) {
             LOG.warning("Gateway is currently disabled so will be ignored: Gateway ID=" + gatewayId);
-            // Should not have got passed keycloak ensure keycloak client is removed
-            destroyGatewayClient(connector.gateway);
             clientEventService.sendToSession(sessionId, new GatewayDisconnectEvent(GatewayDisconnectEvent.Reason.DISABLED));
             clientEventService.closeSession(sessionId);
             return;
@@ -496,7 +509,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         switch (persistenceEvent.getCause()) {
 
             case CREATE:
-                createGatewayClient(gateway);
+                createUpdateGatewayServiceUser(gateway);
                 synchronized (gatewayConnectorMap) {
                     GatewayConnector connector = new GatewayConnector(assetStorageService, assetProcessingService, executorService, gateway);
                     gatewayConnectorMap.put(gateway.getId().toLowerCase(Locale.ROOT), connector);
@@ -530,11 +543,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     boolean wasDisabled = oldAttributes.getValue(GatewayAsset.DISABLED).orElse(false);
 
                     if (wasDisabled != isNowDisabled) {
-                        if (isNowDisabled) {
-                            destroyGatewayClient(gateway);
-                        } else {
-                            createGatewayClient(gateway);
-                        }
+                        createUpdateGatewayServiceUser(gateway);
                     }
                 }
                 break;
@@ -553,7 +562,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     }
                 }
 
-                destroyGatewayClient(gateway);
+                removeGatewayServiceUser(gateway);
                 break;
         }
     }
@@ -595,14 +604,18 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         return clientId;
     }
 
-    protected void createGatewayClient(GatewayAsset gateway) {
+    protected void createUpdateGatewayServiceUser(GatewayAsset gateway) {
 
-        LOG.info("Creating gateway keycloak client for gateway id: " + gateway.getId());
+        LOG.info("Creating/updating gateway service user for gateway id: " + gateway.getId());
         String clientId = getGatewayClientId(gateway.getId());
         String secret = gateway.getClientSecret().orElseGet(() -> UUID.randomUUID().toString());
 
         try {
-            identityProvider.createUpdateUser(gateway.getRealm(), new User().setServiceAccount(true).setUsername(clientId).setEnabled(true), secret);
+            identityProvider.createUpdateUser(gateway.getRealm(), new User()
+                .setServiceAccount(true)
+                .setSystemAccount(true)
+                .setUsername(clientId)
+                .setEnabled(!gateway.getDisabled().orElse(false)), secret);
 
             if (!clientId.equals(gateway.getClientId().orElse(null)) || !secret.equals(gateway.getClientSecret().orElse(null))) {
                 gateway.setClientId(clientId);
@@ -620,7 +633,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
     }
 
-    protected void destroyGatewayClient(GatewayAsset gateway) {
+    protected void removeGatewayServiceUser(GatewayAsset gateway) {
         String id = gateway.getClientId().orElse(null);
         if (TextUtil.isNullOrEmpty(id)) {
             LOG.warning("Cannot find gateway keycloak client ID so cannot remove keycloak client for gateway: " + gateway.getId());

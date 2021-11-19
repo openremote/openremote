@@ -202,7 +202,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 userRepresentation = withClientResource(realm, user.getUsername(), realmsResource, (clientRep, clientResource) -> {
                     UserRepresentation userRep = clientResource.getServiceAccountUser();
                     if (userRep == null) {
-                        String msg = "Attempt to update/creat service user but a regular client with same client ID as this username already exists: User=" + user;
+                        String msg = "Attempt to update/create service user but a regular client with same client ID as this username already exists: User=" + user;
                         LOG.info(msg);
                         throw new NotAllowedException(msg);
                     }

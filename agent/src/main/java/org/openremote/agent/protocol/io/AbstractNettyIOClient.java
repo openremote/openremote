@@ -74,6 +74,10 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  */
 public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implements NettyIOClient<T> {
 
+    public static long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
+    public static long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
+    public static long RECONNECT_DELAY_JITTER_MILLIS = 10000L;
+
     /**
      * This is intended to be used at the end of a decoder chain where the previous decoder outputs a {@link ByteBuf};
      * the provided {@link #decoder} should extract the messages of type &lt;T&gt; from the {@link ByteBuf} and add them

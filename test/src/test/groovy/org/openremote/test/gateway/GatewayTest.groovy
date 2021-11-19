@@ -19,6 +19,7 @@ import org.openremote.manager.gateway.GatewayService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.security.User
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.*
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -118,6 +119,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         gatewayClient.setEncoderDecoderProvider({
             [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
         })
+
 
         and: "we add callback consumers to the client"
         def connectionStatus = gatewayClient.getConnectionStatus()
@@ -577,14 +579,43 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.SECONDS, container)
 
         and: "the gateway is enabled again"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), "disabled", false))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.DISABLED.getName(), false))
 
         then: "the gateway connector should be enabled"
         conditions.eventually {
             assert !gatewayService.gatewayConnectorMap.get(gateway.getId().toLowerCase(Locale.ROOT)).disabled
         }
 
-        and: "the gateway client reconnects"
+        when: "the gateway asset client secret attribute is updated"
+        def newSecret = UniqueIdentifierGenerator.generateId()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(gateway.getId(), GatewayAsset.CLIENT_SECRET, newSecret))
+
+        then: "the service user secret should be updated"
+        conditions.eventually {
+            gateway = assetStorageService.find(gateway.getId()) as GatewayAsset
+            assert gateway.getClientSecret().orElse(null) == newSecret
+            def user = identityProvider.getUserByUsername(gateway.getRealm(), User.SERVICE_ACCOUNT_PREFIX + gateway.getClientId().orElse(""))
+            assert user != null
+            assert user.secret == newSecret
+        }
+
+        when: "the gateway client reconnects with the new secret"
+        gatewayClient = new WebsocketIOClient<String>(
+                new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=$managerTestSetup.realmBuildingTenant").build(),
+                null,
+                new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingTenant/protocol/openid-connect/token",
+                        gateway.getClientId().orElse(""),
+                        gateway.getClientSecret().orElse(""),
+                        null).setBasicAuthHeader(true))
+        gatewayClient.setEncoderDecoderProvider({
+            [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, gatewayClient)].toArray(new ChannelHandler[0])
+        })
+        gatewayClient.addMessageConsumer({
+            message -> clientReceivedMessages.add(message)
+        })
+        gatewayClient.addConnectionStatusConsumer({
+            status -> connectionStatus = status
+        })
         gatewayClient.connect()
 
         then: "the gateway netty client status should become CONNECTED"

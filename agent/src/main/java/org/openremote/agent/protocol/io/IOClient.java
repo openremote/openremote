@@ -30,10 +30,6 @@ import java.util.function.Consumer;
  */
 public interface IOClient<T> {
 
-    long RECONNECT_DELAY_INITIAL_MILLIS = 1000L;
-    long RECONNECT_DELAY_MAX_MILLIS = 5*60000L;
-    long RECONNECT_DELAY_JITTER_MILLIS = 10000L;
-
     /**
      * Send a message over the wire
      */

@@ -19,6 +19,7 @@
  */
 package org.openremote.test;
 
+import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.container.Container;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
@@ -48,6 +49,15 @@ public class TestFixture extends AbstractGlobalExtension {
     public static List<Asset<?>> assets;
     public static List<UserAssetLink> userAssets;
     public static List<User> users;
+
+    @Override
+    public void start() {
+        // Force RECONNECT times to be short to improve test run times
+        AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = 50;
+        AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS = 0;
+        AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS = 50;
+        super.start();
+    }
 
     @Override
     public void stop() {

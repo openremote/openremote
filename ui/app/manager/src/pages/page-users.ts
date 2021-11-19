@@ -224,6 +224,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     protected _realmRoles: Role[] = [];
     @state()
     protected _compositeRoles: Role[] = [];
+    protected _loading: boolean = false;
 
     get name(): string {
         return "user_plural";
@@ -264,6 +265,12 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
     protected async loadUsers() {
 
+        if (!this.realm || this._loading || !this.isConnected) {
+            return;
+        }
+
+        this._loading = true;
+
         this._compositeRoles = [];
         this._roles = [];
         this._realmRoles = [];
@@ -275,11 +282,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return;
         }
 
-        const realm = this.getState().app.realm;
-
         // After async op check that the response still matches current state and that the component is still loaded in the UI
         const stateChecker = () => {
-            return this.getState().app.realm === realm && this.isConnected;
+            return this.getState().app.realm === this.realm && this.isConnected;
         }
 
         const roleResponse = await manager.rest.api.UserResource.getRoles(manager.displayRealm);
@@ -305,6 +310,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         this._realmRoles = realmRoleResponse.data.sort(Util.sortByString(role => role.name));
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
+        this._loading = false;
     }
 
     private async _createUpdateUser(user: UserModel) {
@@ -420,7 +426,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 <div class="panel">
                     <p class="panel-title">${i18next.t("regularUser_plural")}</p>
                     <div id="table-users" class="mdc-data-table">
-                        <table class="mdc-data-table__table" aria-label="attribute list">
+                        <table class="mdc-data-table__table" aria-label="user list">
                             <thead>
                             <tr class="mdc-data-table__header-row">
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
@@ -458,7 +464,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                 <div class="panel">
                     <p class="panel-title">${i18next.t("serviceUser_plural")}</p>
                     <div id="table-users" class="mdc-data-table">
-                        <table class="mdc-data-table__table" aria-label="attribute list">
+                        <table class="mdc-data-table__table" aria-label="user list">
                             <thead>
                             <tr class="mdc-data-table__header-row">
                                 <th class="mdc-data-table__header-cell" role="columnheader" scope="col">
