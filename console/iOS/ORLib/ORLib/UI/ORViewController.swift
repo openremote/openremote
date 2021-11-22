@@ -38,6 +38,7 @@ open class ORViewcontroller : UIViewController {
     public var geofenceProvider: GeofenceProvider?
     public var pushProvider: PushNotificationProvider?
     public var storageProvider: StorageProvider?
+    public var qrProvider: QrScannerProvider?
 
     var popoverOptions: [PopoverOption]?
     
@@ -353,6 +354,28 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                         if let retrieveData = storageProvider?.retrieve(key: key) {
                                             sendData(data: retrieveData)
                                         }
+                                    }
+                                default:
+                                    print("Wrong action \(action) for \(provider)")
+                                }
+                            case Providers.qr:
+                                switch (action) {
+                                case Actions.providerInit:
+                                    qrProvider = QrScannerProvider()
+                                    qrProvider!.initialize(callback: { initializeData in
+                                        self.sendData(data: initializeData)
+                                    })
+                                case Actions.providerEnable:
+                                    qrProvider?.enable(callback: { enableData in
+                                        self.sendData(data: enableData)
+                                    })
+                                case Actions.providerDisable:
+                                    if let disableData = qrProvider?.disable() {
+                                        sendData(data: disableData)
+                                    }
+                                case Actions.scanQr:
+                                    qrProvider?.startScanner(currentViewController: self) { scannedData in
+                                        self.sendData(data: scannedData)
                                     }
                                 default:
                                     print("Wrong action \(action) for \(provider)")
