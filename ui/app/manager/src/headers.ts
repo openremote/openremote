@@ -24,7 +24,8 @@ export function headerItemRules<S extends AppStateKeyed, A extends AnyAction>(or
         icon: "state-machine",
         href: "rules",
         text: "rule_plural",
-        hideMobile: true
+        hideMobile: true,
+        roles: () => !manager.hasRealmRole("restricted_user")
     };
 }
 
