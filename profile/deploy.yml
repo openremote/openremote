@@ -265,7 +265,7 @@ services:
 
   # Keycloak identity provider
   keycloak:
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.2}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.3}
     restart: always
     # Map any custom themes into the /deployment/keycloak/themes dir:
     #volumes:
