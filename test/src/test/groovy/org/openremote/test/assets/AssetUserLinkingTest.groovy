@@ -64,7 +64,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def userAssetLinks = assetResource.getUserAssetLinks(null, keycloakTestSetup.tenantBuilding.realm, null, null)
 
         then: "result should match"
-        userAssetLinks.length == 12
+        userAssetLinks.length == 9
         userAssetLinks.any {
             it.id.realm == keycloakTestSetup.tenantBuilding.realm &&
                     it.id.userId == keycloakTestSetup.testuser3Id &&
