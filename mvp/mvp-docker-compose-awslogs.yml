@@ -103,7 +103,7 @@ services:
     <<: *awslogs
 
   keycloak:
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.0}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.3}
     networks:
       - public
       - private
