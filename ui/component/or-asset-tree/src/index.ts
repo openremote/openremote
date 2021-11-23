@@ -319,7 +319,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected render() {
-        //@input="${ (e: any) => { this._onFilterValueChange(e); } }"
+
         return html`
             <div id="header">
                 <div id="title-container">
