@@ -326,6 +326,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             (v) => this._onSortClicked(v as string))}
                 </div>
             </div>
+            
+            <div id="asset-tree-filter">
+                <or-mwc-input type="${InputType.FILTER}" @click="${() => this._onFilterClicked()}"></or-mwc-input>
+            </div>
 
             ${!this._nodes
                 ? html`
@@ -524,6 +528,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected _onDeselectClicked() {
         this._onNodeClicked(null, null);
+    }
+
+    protected _onFilterClicked() {
+        console.log("CLICK SEARCH");
     }
 
     protected async _onCopyClicked() {

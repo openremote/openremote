@@ -124,7 +124,8 @@ export enum InputType {
     CRON = "cron",
     DURATION = "duration",
     DURATION_TIME = "duration-time",
-    DURATION_PERIOD = "duration-period"
+    DURATION_PERIOD = "duration-period",
+    FILTER = "filter"
 }
 
 export interface ValueInputProviderOptions {
@@ -163,7 +164,8 @@ function inputTypeSupportsButton(inputType: InputType): boolean {
         || inputType === InputType.TEXTAREA
         || inputType === InputType.TIME
         || inputType === InputType.URL
-        || inputType === InputType.WEEK;
+        || inputType === InputType.WEEK
+        || inputType === InputType.FILTER;
 }
 
 function inputTypeSupportsHelperText(inputType: InputType) {
@@ -1082,6 +1084,7 @@ export class OrMwcInput extends LitElement {
                 case InputType.URL:
                 case InputType.TEXT:
                 case InputType.TEXTAREA:
+                case InputType.FILTER:
                 case InputType.JSON: {
                     // The following HTML input types require the values as specially formatted strings
                     let valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? undefined : this.value, this.min, this.max];
@@ -1150,6 +1153,10 @@ export class OrMwcInput extends LitElement {
                     }
 
                     if (!(this.type === InputType.RANGE && this.disableSliderNumberInput)) {
+                        if (type === InputType.FILTER) {
+                            outlined = true;
+                        }
+
                         const classes = {
                             "mdc-text-field": true,
                             "mdc-text-field--invalid": !this.valid,
