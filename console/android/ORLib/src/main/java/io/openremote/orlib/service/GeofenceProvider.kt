@@ -383,8 +383,8 @@ class GeofenceProvider(val context: Context) {
                         .setIcon(R.mipmap.ic_launcher)
                         .setTitle(R.string.location_background_disabled_title)
                         .setMessage(R.string.background_location_alert_body)
-                        .setNegativeButton(R.string.background_location_decline, null)
-                        .setPositiveButton(R.string.background_location_accept) { dialog, which ->
+                        .setNegativeButton(R.string.no, null)
+                        .setPositiveButton(R.string.yes) { dialog, which ->
                             activity.requestPermissions(
                                 arrayOf(
                                     ACCESS_BACKGROUND_LOCATION
@@ -421,8 +421,8 @@ class GeofenceProvider(val context: Context) {
                         .setIcon(R.mipmap.ic_launcher)
                         .setTitle(R.string.background_location_alert_title)
                         .setMessage(R.string.background_location_alert_body)
-                        .setNegativeButton(R.string.background_location_decline, null)
-                        .setPositiveButton(R.string.background_location_accept) { dialog, which ->
+                        .setNegativeButton(R.string.no, null)
+                        .setPositiveButton(R.string.yes) { dialog, which ->
                             activity.requestPermissions(
                                 arrayOf(
                                     ACCESS_BACKGROUND_LOCATION

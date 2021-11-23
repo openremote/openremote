@@ -16,4 +16,6 @@
     <item name="yellow" type="color">#fffbc02d</item>
     <item name="blue" type="color">#ff1976d2</item>
     <item name="purple" type="color">#ff660092</item>
+
+    <color name="qr_code_reader_square">#FFFFFFFF</color>
 </resources>
