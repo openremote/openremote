@@ -19,7 +19,14 @@
  */
 package org.openremote.test.provisioning
 
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3AsyncClientView
+import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
+import com.hivemq.client.mqtt.MqttClientConfig
+import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.moquette.BrokerConstants
+import io.netty.channel.ChannelOption
+import io.netty.channel.socket.SocketChannel
+import io.netty.channel.socket.nio.NioSocketChannel
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.container.util.UniqueIdentifierGenerator
@@ -76,6 +83,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
+        def userAssetProvisioningMQTTHandler = mqttBrokerService.customHandlers.find {it instanceof UserAssetProvisioningMQTTHandler} as UserAssetProvisioningMQTTHandler
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST)
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT)
 
@@ -124,9 +132,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def device1UniqueId = "device1"
         def mqttDevice1ClientId = UniqueIdentifierGenerator.generateId("device1")
         List<String> subscribeFailures = []
+        List<ConnectionStatus> connectionStatuses = []
         Consumer<String> subscribeFailureCallback = {String topic -> subscribeFailures.add(topic)}
         MQTT_IOClient device1Client = new MQTT_IOClient(mqttDevice1ClientId, mqttHost, mqttPort, false, false, null, null)
         device1Client.setTopicSubscribeFailureConsumer(subscribeFailureCallback)
+        device1Client.addConnectionStatusConsumer({connectionStatus ->
+            connectionStatuses.add(connectionStatus)})
         device1Client.connect()
 
         then: "mqtt connection should exist"
@@ -156,6 +167,43 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
                     new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
             ).orElse(null))
+        )
+
+        then: "the broker should have published to the response topic a success message containing the provisioned asset"
+        conditions.eventually {
+            assert device1Responses.size() == 1
+            assert device1Responses.get(0) instanceof SuccessResponseMessage
+            assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
+            def asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert asset != null
+            assert asset instanceof WeatherAsset
+            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+        }
+
+        when: "the client gets abruptly disconnected"
+        device1Responses.clear()
+        def existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
+//        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).config().setOption(ChannelOption.SO_LINGER, 0I)
+        ((NioSocketChannel)((MqttClientConnectionConfig)((MqttClientConfig)((Mqtt3ClientConfigView)((Mqtt3AsyncClientView)device1Client.client).clientConfig).delegate).connectionConfig.get()).channel).close()
+
+        then: "the client should reconnect"
+        conditions.eventually {
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != existingConnection
+        }
+
+        then: "the subscriptions should succeed"
+        conditions.eventually {
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic) != null
+            assert device1Client.topicConsumerMap.get(device1ResponseTopic).size() == 1
+            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
+        }
+
+        when: "the client publishes a valid x509 certificate that has been signed by the CA stored in the provisioning config"
+        device1Client.sendMessage(
+                new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(
+                        new X509ProvisioningMessage(getClass().getResource("/org/openremote/test/provisioning/device1.pem").text)
+                ).orElse(null))
         )
 
         then: "the broker should have published to the response topic a success message containing the provisioned asset"
@@ -291,6 +339,12 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert asset != null
             assert asset instanceof WeatherAsset
             assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+        }
+
+        and: "the connection should be recorded against the provisioning config"
+        conditions.eventually {
+            assert userAssetProvisioningMQTTHandler.provisioningConfigAuthenticatedConnectionMap.get(provisioningConfig.id) != null
+            assert userAssetProvisioningMQTTHandler.provisioningConfigAuthenticatedConnectionMap.get(provisioningConfig.id).size() == 1
         }
 
         when: "the client subscribes again to the asset and attributes"
@@ -457,13 +511,17 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the provisioning config is updated to disabled"
-        def existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
+        existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
         device1Responses.clear()
+        connectionStatuses.clear()
         provisioningConfig.setDisabled(true)
         provisioningConfig = provisioningService.merge(provisioningConfig)
 
         then: "already connected client that was authenticated should be disconnected, then reconnect and should fail to re-subscribe to asset and attribute events"
         conditions.eventually {
+            assert connectionStatuses.size() == 2
+            assert connectionStatuses.get(0) == ConnectionStatus.WAITING
+            assert connectionStatuses.get(1) == ConnectionStatus.CONNECTED
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != existingConnection
             assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttDevice1ClientId)
@@ -528,18 +586,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         }
 
         when: "the provisioning config is updated to enabled"
-        existingConnection = mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId)
         provisioningConfig.setDisabled(false)
         provisioningConfig = provisioningService.merge(provisioningConfig)
 
-        then: "already connected client that was authenticated should be disconnected, then reconnect"
-        conditions.eventually {
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != null
-            assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) != existingConnection
-            assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttDevice1ClientId)
-        }
-
-        when: "the re-connected device publishes its' valid client certificate"
+        and: "the already connected device publishes its' valid client certificate"
         device1Responses.clear()
         device1Client.sendMessage(
                 new MQTTMessage<String>(device1RequestTopic, ValueUtil.asJSON(

@@ -337,7 +337,7 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
         LOG.info("Establishing connection: " + getClientUri());
 
         Mqtt3ConnectBuilder.Send<CompletableFuture<Mqtt3ConnAck>> completableFutureSend = client.connectWith()
-            .cleanSession(cleanSession)
+            .cleanSession(true) // Always clean session as there's some inconsistency in how HiveMQ client handles this on reconnects
             .keepAlive(5);
 
         if (usernamePassword != null) {
@@ -371,6 +371,10 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
     }
 
     protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+        if (this.connectionStatus == connectionStatus) {
+            return;
+        }
+
         this.connectionStatus = connectionStatus;
 
         executorService.submit(() -> {

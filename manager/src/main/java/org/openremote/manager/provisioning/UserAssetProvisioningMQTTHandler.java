@@ -347,16 +347,18 @@ public class UserAssetProvisioningMQTTHandler extends MQTTHandler {
 
         LOG.fine("Client successfully initialised: topic=" + topic + ", connection=" + connection + ", config=" + matchingConfig);
 
+        // Update connection with service user credentials
+        connection.setCredentials(realm, serviceUser.getUsername(), serviceUser.getSecret());
+
         synchronized (provisioningConfigAuthenticatedConnectionMap) {
             provisioningConfigAuthenticatedConnectionMap.compute(matchingConfig.getId(), (id, connections) -> {
                 if (connections == null) {
                     connections = new HashSet<>();
-                    connections.add(connection);
                 }
+                connections.remove(connection);
+                connections.add(connection);
                 return connections;
             });
-            // Update connection with service user credentials
-            connection.setCredentials(realm, serviceUser.getUsername(), serviceUser.getSecret());
             brokerService.publishMessage(getResponseTopic(topic), new SuccessResponseMessage(realm, asset), MqttQoS.AT_MOST_ONCE);
         }
     }

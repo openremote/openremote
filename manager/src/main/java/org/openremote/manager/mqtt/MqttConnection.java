@@ -10,6 +10,7 @@ import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.util.TextUtil;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -117,5 +118,18 @@ public class MqttConnection {
             ", username='" + username + '\'' +
             ", clientId='" + clientId + '\'' +
             '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MqttConnection that = (MqttConnection) o;
+        return Objects.equals(realm, that.realm) && Objects.equals(username, that.username) && clientId.equals(that.clientId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(realm, username, clientId);
     }
 }
