@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {until} from "lit/directives/until";
+import {until} from "lit/directives/until.js";
 import manager, {
     Util,
     DefaultBoxShadowBottom,
@@ -76,8 +76,9 @@ function hasRequiredRole(option: HeaderItem): boolean {
     return Object.entries(option.roles).some(([client, roles]) => roles.some((r: string) => manager.hasRole(r, client)));
 }
 
+
 function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
- 	const menu = window.location.hash.split("/")[0].substr(2);
+    const menu = window.location.hash.substr(2).split("/")[0];
 	return menu || defaultRef;
 }
 
@@ -350,30 +351,27 @@ class OrHeader extends LitElement {
     @property({ type: String })
     private activeMenu: string | undefined;
 
+    constructor() {
+        super();
+        router.on("*", (match) => {
+            this.activeMenu = match ? match.url : undefined;
+        });
+    }
+
     public connectedCallback(): void {
         super.connectedCallback();
-        window.addEventListener("hashchange", this._hashCallback, false);
         const realm = window.sessionStorage.getItem('realm');
         if (realm) manager.displayRealm = realm;
     }
 
     public disconnectedCallback(): void {
         super.disconnectedCallback();
-        window.removeEventListener("hashchange", this._hashCallback);
-    }
-
-    public _onHashChanged(e: Event) {
-        const menu = getCurrentMenuItemRef(this.config && this.config.mainMenu?.length > 0 ? this.config.mainMenu[0].href : undefined);
-        this.activeMenu = menu;
     }
 
     public _onRealmSelect(realm: string) {
         manager.displayRealm = realm;
         window.sessionStorage.setItem('realm', realm);
         this.requestUpdate();
-    }
-    protected _hashCallback = (e: Event) => {
-        this._onHashChanged(e);
     }
 
     protected shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -494,7 +492,11 @@ class OrHeader extends LitElement {
         if (headerItem.action) {
             headerItem.action();
         } else if (headerItem.href) {
-            router.navigate(headerItem.href, !!headerItem.absolute);
+            if (headerItem.absolute) {
+                window.location.href = headerItem.href;
+            } else {
+                router.navigate(headerItem.href);
+            }
         }
     }
 

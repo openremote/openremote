@@ -247,8 +247,8 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     if (pageProvider.routes) {
                         pageProvider.routes.forEach((route) => {
                             router.on(
-                                route, (params, query) => {
-                                    this._store.dispatch(updatePage({page: pageProvider.name, params: params}));
+                                route, (match) => {
+                                    this._store.dispatch(updatePage({page: pageProvider.name, params: match!.data}));
                                 }
                             );
                         });
@@ -256,10 +256,14 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                 });
 
                 if (this.appConfig.pages.length > 0) {
-                    router.on("*", (params, query) => {
+                    router.notFound(() => {
                         this._store.dispatch(updatePage(this.appConfig!.pages[0].name));
                     });
                 }
+
+                window.onhashchange = (e: Event) => {
+                    console.log(e);
+                };
                
                 router.resolve();
             } else {

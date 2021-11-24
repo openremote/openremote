@@ -15,7 +15,7 @@ export class RestApi {
 
     constructor() {
         this._axiosInstance = axios.create();
-        this._axiosInstance.defaults.headers["Content-Type"] = "application/json";
+        this._axiosInstance.defaults.headers.common["Content-Type"] = "application/json";
         this._axiosInstance.interceptors.request.use((config) => {
             config.paramsSerializer = (params) => Qs.stringify(params, {arrayFormat: "repeat"});
             return config;

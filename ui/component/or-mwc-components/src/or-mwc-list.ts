@@ -7,8 +7,8 @@ import {
     unsafeCSS
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {styleMap} from "lit/directives/style-map";
-import {ifDefined} from "lit/directives/if-defined";
+import {styleMap} from "lit/directives/style-map.js";
+import {ifDefined} from "lit/directives/if-defined.js";
 import {MDCList, MDCListActionEvent} from "@material/list";
 import { DefaultColor8, DefaultColor4, Util } from "@openremote/core";
 import "@openremote/or-translate";

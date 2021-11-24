@@ -15,7 +15,7 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import { html } from "lit";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
-import { until } from "lit/directives/until";
+import { until } from "lit/directives/until.js";
 import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 /**

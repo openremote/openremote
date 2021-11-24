@@ -7,9 +7,7 @@
     "ui/demo/*"
   ],
   "devDependencies": {
-    "lerna": "^3.18.1"
+    "lerna": "^4.0.0"
   },
-  "resolutions": {
-
-  }
+  "resolutions": {}
 }

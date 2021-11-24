@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { repeat } from "lit/directives/repeat";
+import { repeat } from "lit/directives/repeat.js";
 import { Node, NodeSocket } from "@openremote/model";
 import { IdentityDomLink } from "../node-structure";
 import { List } from "linqts";

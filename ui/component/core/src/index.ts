@@ -841,11 +841,11 @@ export class Manager implements EventProviderFactory {
         // Add interceptor to inject authorization header on each request
         rest.addRequestInterceptor(
             (config: AxiosRequestConfig) => {
-                if (!config.headers.Authorization) {
+                if (!config!.headers!.Authorization) {
                     const authHeader = this.getAuthorizationHeader();
 
                     if (authHeader) {
-                        config.headers.Authorization = authHeader;
+                        config!.headers!.Authorization = authHeader;
                     }
                 }
 

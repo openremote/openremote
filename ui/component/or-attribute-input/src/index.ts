@@ -1,7 +1,7 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {ifDefined} from "lit/directives/if-defined";
-import {until} from "lit/directives/until";
+import {ifDefined} from "lit/directives/if-defined.js";
+import {until} from "lit/directives/until.js";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {i18next, translate} from "@openremote/or-translate";
 import {

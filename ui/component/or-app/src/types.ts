@@ -8,7 +8,7 @@ import {ThunkMiddleware} from "redux-thunk";
 import Navigo from "navigo";
 
 // Configure routing
-export const router = new Navigo(null, true, "#!");
+export const router = new Navigo("/", {hash: true});
 
 export interface RealmAppConfig {
     appTitle?: string;

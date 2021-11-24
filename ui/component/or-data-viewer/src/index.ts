@@ -8,8 +8,8 @@ import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {Asset, Attribute} from "@openremote/model";
 import {style} from "./style";
 import i18next from "i18next";
-import {styleMap} from "lit/directives/style-map";
-import {classMap} from "lit/directives/class-map";
+import {styleMap} from "lit/directives/style-map.js";
+import {classMap} from "lit/directives/class-map.js";
 import "@openremote/or-attribute-card";
 import manager from "@openremote/core";
 

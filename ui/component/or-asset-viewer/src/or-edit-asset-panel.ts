@@ -1,5 +1,5 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {until} from "lit/directives/until";
+import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";

@@ -275,16 +275,12 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         }
     }
 
+
     protected _updateRoute(silent: boolean = true) {
-        if (silent) {
-            router.pause();
-        }
         const assetId = this._assetIds && this._assetIds.length === 1 ? this._assetIds[0] : undefined;
-        router.navigate(getAssetsRoute(this._editMode, assetId));
-        if (silent) {
-            window.setTimeout(() => {
-                router.resume();
-            }, 0);
-        }
+        router.navigate(getAssetsRoute(this._editMode, assetId), {
+            callHooks: !silent,
+            callHandler: !silent
+        });
     }
 }

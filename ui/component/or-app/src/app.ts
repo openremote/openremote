@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface AppState {
     page: string;
-    params: {[k in string]: any} | undefined;
+    params: {[k in string]: string} | null;
     offline: boolean;
     resolved: boolean,
     drawerOpened: boolean;
@@ -16,7 +16,7 @@ export interface AppStateKeyed {
 
 const INITIAL_STATE: AppState = {
     page: "",
-    params: undefined,
+    params: null,
     offline: false,
     resolved: false,
     drawerOpened: false,
@@ -26,7 +26,7 @@ const INITIAL_STATE: AppState = {
 
 export interface PageAndParams {
     page: string;
-    params?: {[k in string]: any};
+    params: {[k in string]: string} | null;
 }
 
 const appSlice = createSlice({
@@ -37,7 +37,7 @@ const appSlice = createSlice({
             return {
                 ...state,
                 page: typeof action.payload === "string" ? action.payload : action.payload.page,
-                params: typeof action.payload === "string" ? undefined : action.payload.params
+                params: typeof action.payload === "string" ? null : action.payload.params
             };
         },
         updateDrawer(state, action: PayloadAction<boolean>) {

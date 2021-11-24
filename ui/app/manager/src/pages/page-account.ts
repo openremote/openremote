@@ -11,7 +11,7 @@ export function pageAccountProvider<S extends AppStateKeyed>(store: EnhancedStor
     return {
         name: "account",
         routes: [
-            "account"
+            "/account"
         ],
         pageCreator: () => {
             return new PageAccount(store);
