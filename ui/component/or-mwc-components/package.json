@@ -35,6 +35,7 @@
     "@material/textfield": "^9.0.0",
     "@openremote/core": "^1.0.3",
     "@openremote/or-icon": "^1.0.3",
+    "@openremote/or-asset-tree": "^1.0.3",
     "@openremote/or-translate": "^1.0.3",
     "lit": "^2.0.0-rc.2"
   },

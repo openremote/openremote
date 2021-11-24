@@ -11,6 +11,7 @@
   "references": [
     { "path": "../core" },
     { "path": "../or-translate" },
+    { "path": "../or-asset-tree" },
     { "path": "../or-icon" }
   ]
 }
