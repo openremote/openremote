@@ -384,13 +384,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         }
 
                         Access access = authContext.isSuperUser() || !identityService.getIdentityProvider().isRestrictedUser(authContext) ? PRIVATE : PROTECTED;
+                        AssetQuery assetQuery = new AssetQuery()
+                            .ids(assetId)
+                            .select(new Select().excludePath(false).excludeParentInfo(true))
+                            .access(access);
 
-                        Asset<?> asset = find(
-                            new AssetQuery()
-                                .ids(assetId)
-                                .select(new Select().excludePath(false).excludeParentInfo(true))
-                                .userIds(access == PROTECTED ? authContext.getUserId() : null)
-                                .access(access));
+                        if (access == PROTECTED) {
+                            assetQuery.userIds(authContext.getUserId());
+                        }
+
+                        Asset<?> asset = find(assetQuery);
 
                         if (asset != null) {
                             String messageId = exchange.getIn().getHeader(ClientEventService.HEADER_REQUEST_RESPONSE_MESSAGE_ID, String.class);
