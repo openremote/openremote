@@ -1,13 +1,14 @@
-import {css, html, LitElement, TemplateResult, unsafeCSS, PropertyValues} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType, OrInputChangedEvent} from "./or-mwc-input";
-import { i18next } from "@openremote/or-translate";
-import {DefaultColor2, DefaultColor4, DefaultColor5, Util } from "@openremote/core";
-import { Asset, AssetEvent, Attribute, AttributeRef, WellknownMetaItems } from "@openremote/model";
-import manager from "@openremote/core";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "./or-mwc-input";
+import {i18next} from "@openremote/or-translate";
+import manager, {DefaultColor2, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
+import {Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
+import "@openremote/or-asset-tree";
+import {OrAssetTree, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 import {ListItem, ListType, OrMwcListChangedEvent} from "./or-mwc-list";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
@@ -355,29 +356,36 @@ export class OrAddAttributeRefsEvent extends CustomEvent<AddAttrRefsEventDetail>
     }
 }
 
+declare global {
+    export interface HTMLElementEventMap {
+        [OrAddAttributeRefsEvent.NAME]: OrAddAttributeRefsEvent;
+    }
+}
+
 @customElement("or-mwc-attribute-selector")
 export class OrMwcAttributeSelector extends OrMwcDialog {
 
-    public selectedAsset?: Asset;
-
-    private assetAttributes: Attribute<any>[] = []; // to display attributes that belong to selected asset
-    
     @property({type: Boolean})
     public showOnlyDatapointAttrs?: boolean = false;
     
     @property({type: Boolean})
     public showOnlyRuleStateAttrs?: boolean = false;
 
-    @property({type: Array, attribute: false})
-    public selectedAttributes: AttributeRef[] = [];
-
     @property({type: Boolean})
     public multiSelect?: boolean = false;
+
+    @state()
+    protected assetAttributes?: Attribute<any>[];
+    protected selectedAttributes: AttributeRef[] = [];
+    @query("#add-btn")
+    protected addBtn!: OrMwcInput;
     
     constructor() {
         super();
         
-        this.dialogTitle = 'Add attributes';
+        this.dialogTitle = "Add attributes";
+        this.setDialogContent();
+        this.setDialogActions();
         this.dismissAction = null;
 
         this.styles = `
@@ -398,11 +406,8 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                 padding: 0;
             }
         `;
-        
-        this.reRenderDialog();
-
     }
-    
+
     protected setDialogActions(): void {
         this.dialogActions = [
             {
@@ -411,7 +416,7 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
             },
             {
                 actionName: "add",
-                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length || !this.selectedAsset}"></or-mwc-input>`,
+                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length}"></or-mwc-input>`,
                 action: () => {
 
                     if (!this.selectedAttributes.length) {
@@ -433,23 +438,30 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
     }
     
     protected setDialogContent(): void {
-    
-        const listItems: ListItem[] = this.assetAttributes.map((attribute: Attribute<any>) => {
-            return {
-                text: Util.getAttributeLabel(undefined, attribute, undefined, true),
-                value: attribute.name
-            } as ListItem
-        });
-        
+
+        const getListItems: () => ListItem[] = () => {
+            if (!this.assetAttributes) {
+                return [];
+            }
+
+            return this.assetAttributes.map((attribute: Attribute<any>) => {
+                return {
+                    text: Util.getAttributeLabel(undefined, attribute, undefined, true),
+                    value: attribute.name,
+                    data: attribute
+                } as ListItem
+            });
+        };
+
         this.dialogContent = html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
                 <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
                     <or-asset-tree id="chart-asset-tree" readonly
-                                    @or-asset-tree-request-selection="${(event: CustomEvent) => this._onAssetSelectionChanged(event)}"
-                                    @or-asset-tree-request-delete="${() => this._onAssetSelectionDeleted()}"></or-asset-tree>
+                                   @or-asset-tree-selection="${(ev: OrAssetTreeSelectionEvent) => this._onAssetSelectionChanged(ev)}">
+                    </or-asset-tree>
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
-                ${this.selectedAsset && listItems.length > 0 ? html`
+                ${this.assetAttributes && this.assetAttributes.length > 0 ? html`
                     <div class="attributes-header">
                         <or-translate value="attribute_plural"></or-translate>
                     </div>
@@ -457,24 +469,22 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                         ?
                             html`<div style="display: grid">
                                 <or-mwc-list 
-                                        id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${listItems}"
-                                        .values="${this.selectedAttributes.map(e => e.id === this.selectedAsset!.id && e.name!)}"
-                                        @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._addRemoveAttrs(ev)}"></or-mwc-list>
+                                        id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${getListItems()}"
+                                        .values="${this.selectedAttributes.map(attribute => attribute.name!)}"
+                                        @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._onAttributeSelectionChanged(ev.detail.map(li => li.data as Attribute<any>))}"></or-mwc-list>
                             </div>`
                         :
                             html`<or-mwc-input id="attribute-selector"
                                     style="display:flex;"
                                     .label="${i18next.t("attribute")}"
                                     .type="${InputType.LIST}"
-                                    .options="${listItems.map(item => ([item.value, item.text]))}"
-                                    @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
-                                        this.selectedAttributes = [{id: this.selectedAsset!.id, name: ev.detail.value}]; 
-                                        this.reRenderDialog()}
+                                    .options="${getListItems().map(item => ([item, item.text]))}"
+                                    @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onAttributeSelectionChanged([(ev.detail.value as ListItem).data as Attribute<any>])}"
                                     }"></or-mwc-input>`
                     }
                 ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;"><span style="width:100%">
                             <or-translate value="${
-                                (this.selectedAsset && listItems.length == 0) ?
+                                (this.assetAttributes && this.assetAttributes.length === 0) ?
                                     ((this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) ? "noDatapointsOrRuleStateAttributes" :
                                         this.showOnlyDatapointAttrs ? "noDatapointsAttributes" :
                                             this.showOnlyRuleStateAttrs ? "noRuleStateAttributes" : "noAttributesToShow"
@@ -483,29 +493,23 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                 </div>
         `;
     }
-    
-    protected reRenderDialog(): void {
-        this.setDialogContent();
-        this.setDialogActions();
-    }
-    
-    protected _addRemoveAttrs(event: OrMwcListChangedEvent) {
-        this.selectedAttributes = this.selectedAttributes
-            .filter(e => e.id !== this.selectedAsset!.id)
-            .concat(event.detail.map(e => ({id: this.selectedAsset!.id, name: e.value}) as AttributeRef))
-        
-        this.reRenderDialog();
-    }
 
-    protected _getAttributeOptions() {
-        if (!this.selectedAsset || !this.selectedAsset.type) {
-            this.reRenderDialog();
-            return;
-        }
+    protected async _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
+        this.assetAttributes = undefined;
+        this.selectedAttributes = [];
+        const assetTree = event.target as OrAssetTree;
+        assetTree.disabled = true;
 
-        manager.rest.api.AssetResource.get(this.selectedAsset.id!)
-            .then(result => {
-                this.assetAttributes = Object.values(result.data.attributes!) as Attribute<any>[];
+        let selectedAsset = event.detail.newNodes.length === 0 ? undefined : event.detail.newNodes[0].asset;
+
+        if (selectedAsset) {
+            // Load the asset attributes
+            const assetResponse = await manager.rest.api.AssetResource.get(selectedAsset.id!);
+            selectedAsset = assetResponse.data;
+
+            if (selectedAsset) {
+                this.assetAttributes = Object.values(selectedAsset.attributes!) as Attribute<any>[];
+
                 if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
                     this.assetAttributes = this.assetAttributes
                         .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
@@ -516,31 +520,14 @@ export class OrMwcAttributeSelector extends OrMwcDialog {
                     this.assetAttributes = this.assetAttributes
                         .filter(e => e.meta && (e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
                 }
-                this.reRenderDialog();
-            });
-
-    }
-
-    protected async _onAssetSelectionChanged(event: CustomEvent) {
-        if (!event.detail.detail.newNodes.length) {
-            this._onAssetSelectionDeleted();
-        } else {
-            const assetEvent: AssetEvent = await manager.events!.sendEventWithReply({
-                event: {
-                    eventType: "read-asset",
-                    assetId: event.detail.detail.newNodes[0].asset.id
-                }
-            });
-            this.selectedAsset = assetEvent.asset;
+            }
         }
 
-        this._getAttributeOptions();
-    }
-    
-    protected _onAssetSelectionDeleted() {
-        this.selectedAsset = undefined;
-        this.assetAttributes = [];
-        this._getAttributeOptions();
+        assetTree.disabled = false;
     }
 
+    protected _onAttributeSelectionChanged(attributes: Attribute<any>[]) {
+        this.selectedAttributes = attributes;
+        this.addBtn.disabled = this.selectedAttributes.length > 0;
+    }
 }
