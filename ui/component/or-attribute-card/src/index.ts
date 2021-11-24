@@ -20,9 +20,11 @@ import {OrChartConfig} from "@openremote/or-chart";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-dialog";
+import "@openremote/or-attribute-picker";
 import moment from "moment";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
-import {OrAddAttributeRefsEvent, OrMwcAttributeSelector, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 
 export type ContextMenuOptions = "editAttribute" | "editDelta" | "editCurrentValue" | "delete";
@@ -509,13 +511,13 @@ export class OrAttributeCard extends LitElement {
     protected _openAttributePicker() {
         const hostElement = document.body;
 
-        const dialog = new OrMwcAttributeSelector();
+        const dialog = new OrAttributePicker();
         dialog.isOpen = true;
-        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: any) => {
+        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
             // handle selected attrs
-            const attrRef = ev.detail.selectedAttributes[0];
+            const attrRef = ev.detail[0];
             try {
-                const response = await manager.rest.api.AssetResource.get(attrRef.id);
+                const response = await manager.rest.api.AssetResource.get(attrRef.id!);
                 this.asset = response.data;
                 this._setAttribute(attrRef.name as string);
             } catch (e) {

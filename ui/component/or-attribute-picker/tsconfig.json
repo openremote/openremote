@@ -6,12 +6,13 @@
     "rootDir": "src"
   },
   "include": [
-    "./src"
+    "./src",
+    "../or-map/@types"
   ],
   "references": [
     { "path": "../core" },
-    { "path": "../or-chart" },
+    { "path": "../or-translate" },
     { "path": "../or-mwc-components" },
-    { "path": "../or-attribute-picker" }
+    { "path": "../or-asset-tree" }
   ]
 }

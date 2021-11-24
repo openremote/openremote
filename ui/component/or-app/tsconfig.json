@@ -15,6 +15,7 @@
   	{ "path": "../../component/or-icon" },
   	{ "path": "../../component/or-map" },
   	{ "path": "../../component/or-attribute-input" },
+  	{ "path": "../../component/or-attribute-picker" },
     { "path": "../../component/or-asset-tree" },
     { "path": "../../component/or-asset-viewer" },
     { "path": "../../component/or-data-viewer" },

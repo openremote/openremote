@@ -20,6 +20,8 @@
     "@openremote/core": "^1.0.3",
     "@openremote/or-mwc-components": "^1.0.3",
     "@openremote/or-asset-tree": "^1.0.4",
+    "@openremote/or-attribute-input": "^1.0.4",
+    "@openremote/or-attribute-picker": "^1.0.4",
     "@openremote/or-asset-viewer": "^1.0.4",
     "@openremote/or-chart": "^1.0.4",
     "@openremote/or-map": "^1.0.4",

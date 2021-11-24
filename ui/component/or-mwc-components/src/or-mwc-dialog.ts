@@ -1,15 +1,11 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query, state} from "lit/decorators.js";
+import {customElement, property, query} from "lit/decorators.js";
 import {MDCDialog} from "@material/dialog";
 import "@openremote/or-translate";
 import "./or-mwc-input";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "./or-mwc-input";
+import {InputType} from "./or-mwc-input";
 import {i18next} from "@openremote/or-translate";
-import manager, {DefaultColor2, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
-import {Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
-import "@openremote/or-asset-tree";
-import {OrAssetTree, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
-import {ListItem, ListType, OrMwcListChangedEvent} from "./or-mwc-list";
+import {Util} from "@openremote/core";
 
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
@@ -200,7 +196,7 @@ export class OrMwcDialog extends LitElement {
     public dialogTitle?: string | TemplateResult;
 
     @property({type: Object, attribute: false})
-    public dialogContent?: TemplateResult;
+    public dialogContent?: TemplateResult | (() => TemplateResult);
 
     @property({type: Array, attribute: false})
     public dialogActions?: DialogAction[];
@@ -273,7 +269,7 @@ export class OrMwcDialog extends LitElement {
                             : this.dialogTitle ? html`<span class="mdc-dialog__title" id="dialog-title">${this.dialogTitle}</span>` : ``}
                         ${this.dialogContent ? html` 
                             <div class="dialog-container mdc-dialog__content" id="dialog-content">
-                                ${this.dialogContent ? this.dialogContent : html`<slot></slot>`}
+                                ${typeof this.dialogContent === "function" ? this.dialogContent() : this.dialogContent}
                             </div>
                             <footer class="mdc-dialog__actions">
                                 ${this.dialogActions ? this.dialogActions.map((action) => {
@@ -322,212 +318,5 @@ export class OrMwcDialog extends LitElement {
             this._mdcComponent = undefined;
         }
         this.dispatchEvent(new OrMwcDialogClosedEvent(action));
-    }
-}
-
-export type AddAttrRefsEventDetail = {
-    selectedAttributes?: AttributeRef[];
-}
-export class OrAttributeRefsAddRequestEvent extends CustomEvent<Util.RequestEventDetail<AddAttrRefsEventDetail>> {
-
-    public static readonly NAME = "or-attribute-refs-request-add";
-
-    constructor(detail: AddAttrRefsEventDetail) {
-        super(OrAttributeRefsAddRequestEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: {
-                allow: true,
-                detail: detail
-            }
-        });
-    }
-}
-export class OrAddAttributeRefsEvent extends CustomEvent<AddAttrRefsEventDetail> {
-
-    public static readonly NAME = "or-attribute-refs-add";
-
-    constructor(detail: AddAttrRefsEventDetail) {
-        super(OrAddAttributeRefsEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: detail
-        });
-    }
-}
-
-declare global {
-    export interface HTMLElementEventMap {
-        [OrAddAttributeRefsEvent.NAME]: OrAddAttributeRefsEvent;
-    }
-}
-
-@customElement("or-mwc-attribute-selector")
-export class OrMwcAttributeSelector extends OrMwcDialog {
-
-    @property({type: Boolean})
-    public showOnlyDatapointAttrs?: boolean = false;
-    
-    @property({type: Boolean})
-    public showOnlyRuleStateAttrs?: boolean = false;
-
-    @property({type: Boolean})
-    public multiSelect?: boolean = false;
-
-    @state()
-    protected assetAttributes?: Attribute<any>[];
-    protected selectedAttributes: AttributeRef[] = [];
-    @query("#add-btn")
-    protected addBtn!: OrMwcInput;
-    
-    constructor() {
-        super();
-        
-        this.dialogTitle = "Add attributes";
-        this.setDialogContent();
-        this.setDialogActions();
-        this.dismissAction = null;
-
-        this.styles = `
-            .attributes-header {
-                line-height: 48px;
-                padding: 0 15px;
-                background-color: ${unsafeCSS(DefaultColor2)};
-                font-weight: bold;
-                border-bottom: 1px solid ${unsafeCSS(DefaultColor2)};
-            }
-            footer.mdc-dialog__actions {
-                border-top: 1px solid ${unsafeCSS(DefaultColor5)};
-            }
-            #header {
-                background-color: ${unsafeCSS(DefaultColor4)} !important;
-            }
-            #dialog-content {
-                padding: 0;
-            }
-        `;
-    }
-
-    protected setDialogActions(): void {
-        this.dialogActions = [
-            {
-                actionName: "cancel",
-                content: i18next.t("cancel")
-            },
-            {
-                actionName: "add",
-                content: html`<or-mwc-input id="add-btn" class="button" .type="${InputType.BUTTON}" label="${i18next.t("add")}" ?disabled="${!this.selectedAttributes.length}"></or-mwc-input>`,
-                action: () => {
-
-                    if (!this.selectedAttributes.length) {
-                        return;
-                    }
-                    
-                    const detail: AddAttrRefsEventDetail = {
-                        selectedAttributes: this.selectedAttributes
-                    };
-                    Util.dispatchCancellableEvent(this, new OrAttributeRefsAddRequestEvent(detail))
-                        .then((detail) => {
-                            if (detail.allow) {
-                                this.dispatchEvent(new OrAddAttributeRefsEvent(detail.detail));
-                            }
-                        });
-                }
-            }
-        ];
-    }
-    
-    protected setDialogContent(): void {
-
-        const getListItems: () => ListItem[] = () => {
-            if (!this.assetAttributes) {
-                return [];
-            }
-
-            return this.assetAttributes.map((attribute: Attribute<any>) => {
-                return {
-                    text: Util.getAttributeLabel(undefined, attribute, undefined, true),
-                    value: attribute.name,
-                    data: attribute
-                } as ListItem
-            });
-        };
-
-        this.dialogContent = html`
-            <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
-                <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
-                    <or-asset-tree id="chart-asset-tree" readonly
-                                   @or-asset-tree-selection="${(ev: OrAssetTreeSelectionEvent) => this._onAssetSelectionChanged(ev)}">
-                    </or-asset-tree>
-                </div>
-                <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
-                ${this.assetAttributes && this.assetAttributes.length > 0 ? html`
-                    <div class="attributes-header">
-                        <or-translate value="attribute_plural"></or-translate>
-                    </div>
-                    ${this.multiSelect
-                        ?
-                            html`<div style="display: grid">
-                                <or-mwc-list 
-                                        id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${getListItems()}"
-                                        .values="${this.selectedAttributes.map(attribute => attribute.name!)}"
-                                        @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._onAttributeSelectionChanged(ev.detail.map(li => li.data as Attribute<any>))}"></or-mwc-list>
-                            </div>`
-                        :
-                            html`<or-mwc-input id="attribute-selector"
-                                    style="display:flex;"
-                                    .label="${i18next.t("attribute")}"
-                                    .type="${InputType.LIST}"
-                                    .options="${getListItems().map(item => ([item, item.text]))}"
-                                    @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onAttributeSelectionChanged([(ev.detail.value as ListItem).data as Attribute<any>])}"
-                                    }"></or-mwc-input>`
-                    }
-                ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;"><span style="width:100%">
-                            <or-translate value="${
-                                (this.assetAttributes && this.assetAttributes.length === 0) ?
-                                    ((this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) ? "noDatapointsOrRuleStateAttributes" :
-                                        this.showOnlyDatapointAttrs ? "noDatapointsAttributes" :
-                                            this.showOnlyRuleStateAttrs ? "noRuleStateAttributes" : "noAttributesToShow"
-                                    ) : "selectAssetOnTheLeft"}">
-                            </or-translate></span></div>`}
-                </div>
-        `;
-    }
-
-    protected async _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
-        this.assetAttributes = undefined;
-        this.selectedAttributes = [];
-        const assetTree = event.target as OrAssetTree;
-        assetTree.disabled = true;
-
-        let selectedAsset = event.detail.newNodes.length === 0 ? undefined : event.detail.newNodes[0].asset;
-
-        if (selectedAsset) {
-            // Load the asset attributes
-            const assetResponse = await manager.rest.api.AssetResource.get(selectedAsset.id!);
-            selectedAsset = assetResponse.data;
-
-            if (selectedAsset) {
-                this.assetAttributes = Object.values(selectedAsset.attributes!) as Attribute<any>[];
-
-                if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
-                    this.assetAttributes = this.assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
-                } else if (this.showOnlyDatapointAttrs) {
-                    this.assetAttributes = this.assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]));
-                } else if (this.showOnlyRuleStateAttrs) {
-                    this.assetAttributes = this.assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
-                }
-            }
-        }
-
-        assetTree.disabled = false;
-    }
-
-    protected _onAttributeSelectionChanged(attributes: Attribute<any>[]) {
-        this.selectedAttributes = attributes;
-        this.addBtn.disabled = this.selectedAttributes.length > 0;
     }
 }

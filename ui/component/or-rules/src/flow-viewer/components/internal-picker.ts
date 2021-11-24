@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { Node, PickerType, AttributeInternalValue, AssetState, WellknownMetaItems, Asset, NodeDataType, AttributeRef } from "@openremote/model";
+import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import rest from "@openremote/rest";
@@ -11,8 +11,7 @@ import { NodeUtilities } from "../node-structure";
 import { translate, i18next } from "@openremote/or-translate";
 import { PickerStyle } from "../styles/picker-styles";
 import { AssetModelUtil, Util } from "@openremote/core";
-import { OrMwcAttributeSelector } from "@openremote/or-mwc-components/or-mwc-dialog";
-import { OrAddAttributeRefsEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -138,16 +137,16 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             }
 
             const hostElement = document.body;
-            const dialog = new OrMwcAttributeSelector();
+            const dialog = new OrAttributePicker();
             dialog.showOnlyRuleStateAttrs = true;
             dialog.showOnlyDatapointAttrs = false;
             dialog.multiSelect = false;
             dialog.selectedAttributes = _selectedAttributes;
             dialog.isOpen = true;
-            dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: any) => {
+            dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
                 const value: AttributeInternalValue = {
-                    assetId: ev.detail.selectedAttributes[0].id,
-                    attributeName: ev.detail.selectedAttributes[0].name
+                    assetId: ev.detail[0].id,
+                    attributeName: ev.detail[0].name
                 };
                 await this.setSocketTypeDynamically(value);
                 this.setValue(value);

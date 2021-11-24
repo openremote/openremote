@@ -7,7 +7,7 @@ import {AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
 import manager, { DefaultColor3, Util } from "@openremote/core";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import {OrAddAttributeRefsEvent, OrMwcAttributeSelector, OrAttributeRefsAddRequestEvent } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrAttributePickerPickedEvent, OrAttributePicker } from "@openremote/or-attribute-picker";
 import { AttributeRef } from "@openremote/model";
 import moment from "moment";
 import { buttonStyle } from "@openremote/or-rules/dist/style";
@@ -354,13 +354,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     protected _openDialog() {
         const hostElement = document.body;
 
-        const dialog = new OrMwcAttributeSelector();
+        const dialog = new OrAttributePicker();
         dialog.isOpen = true;
         dialog.showOnlyDatapointAttrs = true;
         dialog.multiSelect = true;
         dialog.selectedAttributes = this.config.selectedAttributes;
-        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, async (ev: OrAddAttributeRefsEvent) => {
-            const selectedAttributes = ev.detail.selectedAttributes;
+        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
+            const selectedAttributes = ev.detail;
             await this.renderTable(selectedAttributes);
             this.config = {
                 realm: this.realm,

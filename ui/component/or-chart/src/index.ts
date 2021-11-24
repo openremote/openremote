@@ -37,7 +37,7 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import ChartAnnotation, { AnnotationOptions } from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
 import {GenericAxiosResponse } from "@openremote/rest";
-import {OrMwcAttributeSelector, OrAddAttributeRefsEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -599,9 +599,6 @@ export class OrChart extends translate(i18next)(LitElement) {
                         })}
                     </div>
                     <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
-                    <div id="mdc-dialog">
-                        <or-mwc-attribute-selector id="attribute-selector-dialog"></or-mwc-attribute-selector>
-                    </div>
                 </div>
             </div>
         `;
@@ -817,12 +814,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     
     _openDialog() {
         const hostElement = document.body;
-        const dialog = new OrMwcAttributeSelector();
+        const dialog = new OrAttributePicker();
         dialog.showOnlyDatapointAttrs = true;
         dialog.multiSelect = true;
         dialog.selectedAttributes = this._getSelectedAttributes();
         dialog.isOpen = true;
-        dialog.addEventListener(OrAddAttributeRefsEvent.NAME, (ev: any) => this._addAttribute(ev.detail.selectedAttributes));
+        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
 
         hostElement.append(dialog);
         return dialog;
