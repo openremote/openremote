@@ -103,7 +103,7 @@ class OrHeader extends LitElement {
                 --internal-or-header-drawer-separator-color: var(--or-header-drawer-separator-color, var(--or-app-color5, ${unsafeCSS(DefaultColor5)}));
                 
                 display: block;
-                z-index: 99999;
+                z-index: 4;
             }
               
             #toolbar-top {
