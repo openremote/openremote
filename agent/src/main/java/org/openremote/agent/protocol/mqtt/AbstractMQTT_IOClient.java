@@ -404,12 +404,13 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             }
 
             LOG.finest("Disconnecting IO client: " + getClientUri());
-            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
         this.disconnected = true;
 
         client.disconnect().whenComplete((unused, throwable) -> {
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
             if (this.cleanSession) {
                 removeAllMessageConsumers();
             }

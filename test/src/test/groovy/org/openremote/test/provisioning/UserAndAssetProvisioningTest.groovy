@@ -296,10 +296,11 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         when: "the client disconnects"
         device1Client.disconnect()
 
-        then: "all subscriptions should be removed"
+        then: "all subscriptions should be removed and the client should be disconnected"
         conditions.eventually {
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDevice1ClientId) == null
             assert !clientEventService.eventSubscriptions.sessionSubscriptionIdMap.containsKey(mqttDevice1ClientId)
+            assert device1Client.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
         when: "the client reconnects"
@@ -412,6 +413,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the connection should be removed from the broker"
         conditions.eventually {
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDeviceNClientId) == null
+            assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
         when: "another device connects"
@@ -458,6 +460,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the connection should be removed from the broker"
         conditions.eventually {
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDeviceNClientId) == null
+            assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
         when: "another device connects"
@@ -508,6 +511,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the connection should be removed from the broker"
         conditions.eventually {
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDeviceNClientId) == null
+            assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
         when: "the provisioning config is updated to disabled"
@@ -583,6 +587,7 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         then: "the connection should be removed from the broker"
         conditions.eventually {
             assert mqttBrokerService.clientIdConnectionMap.get(mqttDeviceNClientId) == null
+            assert deviceNClient.getConnectionStatus() == ConnectionStatus.DISCONNECTED
         }
 
         when: "the provisioning config is updated to enabled"
