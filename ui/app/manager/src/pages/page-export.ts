@@ -18,7 +18,7 @@ export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore
     return {
         name: "export",
         routes: [
-            "export"
+            "data-export"
         ],
         pageCreator: () => {
             return new PageExport(store);

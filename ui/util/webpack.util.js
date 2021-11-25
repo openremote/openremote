@@ -157,7 +157,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
             index: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
         },
         port: 9000,
-        open: true,
+        open: false,
         static: OUTPUT_PATH
     };
     config.watchOptions = {
