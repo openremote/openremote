@@ -13,7 +13,7 @@ import {customElement, property} from "lit/decorators.js";
 import {CombinatorInfo, controlWithoutLabel, getCombinatorInfos, getTemplateFromProps, showJsonEditor} from "../util";
 import {InputType, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
-import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
 import {ListItem, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
@@ -296,8 +296,8 @@ export class ControlArrayElement extends ControlBaseElement {
             (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = false;
         };
 
-        const dialog = showDialog({
-            content: html`
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(html`
                 <div class="col">
                     <form id="mdc-dialog-form-add" class="row">
                         <div id="type-list" class="col">
@@ -306,10 +306,10 @@ export class ControlArrayElement extends ControlBaseElement {
                         <div id="parameter-desc" class="col"></div>
                     </form>
                 </div>
-            `,
-            styles: addItemOrParameterDialogStyle,
-            title: (this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addItem"),
-            actions: [
+            `)
+            .setStyles(addItemOrParameterDialogStyle)
+            .setHeading((this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addItem"))
+            .setActions([
                 {
                     actionName: "cancel",
                     content: i18next.t("cancel")
@@ -325,8 +325,7 @@ export class ControlArrayElement extends ControlBaseElement {
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
                 }
-            ],
-            dismissAction: null
-        });
+            ])
+            .setDismissAction(null));
     }
 }

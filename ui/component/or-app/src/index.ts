@@ -16,8 +16,8 @@ import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
 import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, OREvent, normaliseConfig, Manager} from "@openremote/core";
-import {DEFAULT_LANGUAGES, HeaderConfig, HeaderItem, Languages} from "./or-header";
-import {DialogConfig, OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {DEFAULT_LANGUAGES, HeaderConfig, Languages} from "./or-header";
+import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
@@ -290,16 +290,16 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             }
         `;
 
-        const dialog = showDialog({
-            styles: html`<style>${styles}</style>`,
-            title: html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`,
-            content: html`
+        const dialog = showDialog(new OrMwcDialog()
+            .setStyles(html`<style>${styles}</style>`)
+            .setHeading(html`<img id="login-logo" src="${this._config.logoMobile || this._config.logo}" /></or-icon><or-translate value="login"></or-translate>`)
+            .setContent(html`
                 <div id="login_wrapper">
                     <or-mwc-input .label="${i18next.t("user")}" .type="${InputType.TEXT}" min="1" required .value="${username}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => u = e.detail.value}"></or-mwc-input>            
                     <or-mwc-input .label="${i18next.t("password")}" .type="${InputType.PASSWORD}" min="1" required .value="${password}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => p = e.detail.value}"></or-mwc-input>           
                 </div>
-            `,
-            actions: [
+            `)
+            .setActions([
                 {
                     actionName: "submit",
                     default: true,
@@ -312,8 +312,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     },
                     content: html`<or-mwc-input .type=${InputType.BUTTON} .label="${i18next.t("submit")}" raised></or-mwc-input>`
                 }
-            ]
-        }, document.body); // Attach to document as or-app isn't visible until initialised
+            ]), document.body); // Attach to document as or-app isn't visible until initialised
 
         return deferred.promise;
     }
@@ -422,7 +421,17 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     }
 
     public showLanguageModal() {
-        showDialog(this._getLanguageModalConfig(DEFAULT_LANGUAGES));
+        showDialog(new OrMwcDialog()
+            .setHeading("language")
+            .setDismissAction(null)
+            .setActions(Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {
+            return {
+                content: i18next.t(value),
+                actionName: key,
+                action: () => {
+                    manager.language = key;
+                }
+            }})));
     }
 
     public stateChanged(state: S) {
@@ -439,24 +448,5 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             realmConfig.header = this.appConfig.superUserHeader;
         }
         return realmConfig;
-    }
-
-    protected _getLanguageModalConfig(languages: Languages): DialogConfig {
-        const title = "language";
-        const actions = Object.entries(languages).map(([key, value]) => {
-            return {
-                content: i18next.t(value),
-                actionName: key,
-                action: () => {
-                    manager.language = key;
-                }
-            };
-        });
-
-        return {
-            title: title,
-            actions: actions,
-            dismissAction: null
-        };
     }
 }

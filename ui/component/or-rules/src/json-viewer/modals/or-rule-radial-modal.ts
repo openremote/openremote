@@ -89,7 +89,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         const dialog: OrMwcDialog = this.shadowRoot!.getElementById("radial-modal") as OrMwcDialog;
 
         if (dialog) {
-            dialog.dialogContent = html`
+            dialog.content = html`
                 <div style="display:grid">
                     <or-map class="or-map" type="VECTOR" style="border: 1px solid #d5d5d5; height: 400px; min-width: 300px; margin-bottom: 20px;">
                         <or-map-marker active color="#FF0000" icon="information" lat="${value.lat}" lng="${value.lng}" radius="${value.radius}"></or-map-marker>
@@ -152,7 +152,7 @@ export class OrRuleRadialModal extends translate(i18next)(LitElement) {
         
         return html`
             <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("area")}" @click="${radialPickerModalOpen}"></or-mwc-input>
-            <or-mwc-dialog id="radial-modal" dialogTitle="area" .dialogActions="${radiusPickerModalActions}"></or-mwc-dialog>
+            <or-mwc-dialog id="radial-modal" heading="area" .actions="${radiusPickerModalActions}"></or-mwc-dialog>
         `
     }
 }

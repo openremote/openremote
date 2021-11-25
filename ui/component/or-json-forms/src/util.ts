@@ -32,7 +32,7 @@ import {html, TemplateResult, unsafeCSS} from "lit";
 import {createRef, Ref, ref} from 'lit/directives/ref.js';
 import {ErrorObject} from "./index";
 import {unknownTemplate} from "./standard-renderers";
-import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {AdditionalProps} from "./base-element";
 
 export function getTemplateFromProps<T extends OwnPropsOfRenderer>(state: JsonFormsSubStates | undefined, props: T | undefined): TemplateResult | undefined {
@@ -340,12 +340,11 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
         updateBtnRef.value!.disabled = !valid;
     };
 
-    const dialog = showDialog(
-        {
-            content: html`
+    const dialog = showDialog(new OrMwcDialog()
+        .setContent(html`
                 <or-ace-editor ${ref(editorRef)} @or-ace-editor-edit="${() => onEditorEdit()}" @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => onEditorChanged(ev)}" .value="${value}"></or-ace-editor>
-            `,
-            actions: [
+            `)
+        .setActions([
                 {
                     actionName: "cancel",
                     content: i18next.t("cancel")
@@ -362,10 +361,10 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                     },
                     content: html`<or-mwc-input ${ref(updateBtnRef)} disabled .type="${InputType.BUTTON}" .label="${i18next.t("update")}"></or-mwc-input>`
                 }
-            ],
-            title: title,
-            dismissAction: null,
-            styles: html`
+            ])
+        .setHeading(title)
+        .setDismissAction(null)
+        .setStyles(html`
                 <style>
                     .mdc-dialog__surface {
                         width: 1024px;
@@ -383,7 +382,5 @@ export const showJsonEditor = (title: string, value: any, updateCallback: (newVa
                         height: 60vh;
                     }
                 </style>
-            `
-        }
-    )
+            `));
 };

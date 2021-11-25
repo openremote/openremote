@@ -38,6 +38,7 @@ import ChartAnnotation, { AnnotationOptions } from "chartjs-plugin-annotation";
 import "chartjs-adapter-moment";
 import {GenericAxiosResponse } from "@openremote/rest";
 import {OrAttributePicker, OrAttributePickerPickedEvent} from "@openremote/or-attribute-picker";
+import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 Chart.register(LineController, ScatterController, LineElement, PointElement, LinearScale, TimeScale, Title, Filler, Legend, Tooltip, ChartAnnotation);
 
@@ -813,16 +814,12 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
     
     _openDialog() {
-        const hostElement = document.body;
-        const dialog = new OrAttributePicker();
-        dialog.showOnlyDatapointAttrs = true;
-        dialog.multiSelect = true;
-        dialog.selectedAttributes = this._getSelectedAttributes();
-        dialog.isOpen = true;
-        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
+        const dialog = showDialog(new OrAttributePicker()
+            .setShowOnlyDatapointAttrs(true)
+            .setMultiSelect(true)
+            .setSelectedAttributes(this._getSelectedAttributes()));
 
-        hostElement.append(dialog);
-        return dialog;
+        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (ev: any) => this._addAttribute(ev.detail));
     }
 
     protected async _addAttribute(selectedAttrs?: AttributeRef[]) {

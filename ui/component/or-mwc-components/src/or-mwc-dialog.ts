@@ -10,14 +10,6 @@ import {Util} from "@openremote/core";
 const dialogStyle = require("@material/dialog/dist/mdc.dialog.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
 
-export interface DialogConfig {
-    title?: TemplateResult | string;
-    content?: TemplateResult;
-    actions?: DialogAction[];
-    avatar?: boolean;
-    styles?: TemplateResult | string;
-    dismissAction?: DialogActionBase | null;
-}
 export interface DialogActionBase {
     actionName: string;
     action?: (dialog: OrMwcDialog) => void;
@@ -64,9 +56,10 @@ declare global {
 export async function showErrorDialog(errorMessage: string, hostElement?: HTMLElement) {
     const deferred = new Util.Deferred<void>();
 
-    showDialog({
-        title: "error",
-        content: html`
+    showDialog(new OrMwcDialog()
+        .setHeading("error")
+        .setContent(
+            html`
                 <div>
                     <p><or-translate value="errorOccurred"></or-translate>
                     ${errorMessage ? html`
@@ -77,52 +70,54 @@ export async function showErrorDialog(errorMessage: string, hostElement?: HTMLEl
                             <or-translate .value="${errorMessage}"></or-translate>
                     ` : ``}
                     </p>
-                </div>`,
-        actions: [{
-            actionName: "ok",
-            content: i18next.t("ok"),
-            default: true,
-            action: (dialog) => deferred.resolve()
-        }]
-    }, hostElement);
+                </div>`
+        )
+        .setActions(
+            [{
+                actionName: "ok",
+                content: i18next.t("ok"),
+                default: true,
+                action: (dialog) => deferred.resolve()
+            }]
+        ), hostElement);
 
     await deferred.promise;
 }
 
-export async function showOkCancelDialog(title: string, content: string | TemplateResult, okText?: string) {
+export async function showOkCancelDialog(title: string, content: string | TemplateResult, okText?: string, hostElement?: HTMLElement) {
 
     const deferred = new Util.Deferred<boolean>();
 
     showDialog(
-        {
-            content: typeof(content) === "string" ? html`<p>${content}</p>` : content,
-            actions: [
-                {
-                    actionName: "cancel",
-                    content: "cancel",
-                    default: true,
-                    action: () => deferred.resolve(false)
-                },
-                {
-                    actionName: "ok",
-                    content: okText ? okText : "ok",
-                    action: () => deferred.resolve(true)
-                }
-            ],
-            title: title
-        }
-    );
+        new OrMwcDialog()
+            .setContent(typeof(content) === "string" ? html`<p>${content}</p>` : content)
+            .setActions(
+                [
+                    {
+                        actionName: "cancel",
+                        content: "cancel",
+                        default: true,
+                        action: () => deferred.resolve(false)
+                    },
+                    {
+                        actionName: "ok",
+                        content: okText ? okText : "ok",
+                        action: () => deferred.resolve(true)
+                    }
+                ]
+            )
+            .setHeading(title),
+        hostElement);
 
     return await deferred.promise;
 }
 
-export function showDialog(config: DialogConfig, hostElement?: HTMLElement): OrMwcDialog {
+export function showDialog<T extends OrMwcDialog>(dialog: T, hostElement?: HTMLElement): T {
     if (!hostElement) {
         hostElement = OrMwcDialog.DialogHostElement || document.body;
     }
 
-    const dialog = new OrMwcDialog();
-    dialog.isOpen = true;
+    dialog.setOpen(true);
     dialog.addEventListener(OrMwcDialogOpenedEvent.NAME, (ev) => {
         ev.stopPropagation();
     });
@@ -134,7 +129,6 @@ export function showDialog(config: DialogConfig, hostElement?: HTMLElement): OrM
             }
         }, 0);
     });
-    dialog.config = config;
     hostElement.append(dialog);
     return dialog;
 }
@@ -181,25 +175,14 @@ export class OrMwcDialog extends LitElement {
         ];
     }
 
-    public set config(config: DialogConfig) {
-        if (config) {
-            this.dialogTitle = config.title;
-            this.dialogContent = config.content;
-            this.dialogActions = config.actions;
-            this.dismissAction = config.dismissAction;
-            this.avatar = config.avatar;
-            this.styles = config.styles;
-        }
-    };
-
     @property({type: String})
-    public dialogTitle?: string | TemplateResult;
+    public heading?: string | TemplateResult;
 
     @property({type: Object, attribute: false})
-    public dialogContent?: TemplateResult | (() => TemplateResult);
+    public content?: TemplateResult | (() => TemplateResult);
 
     @property({type: Array, attribute: false})
-    public dialogActions?: DialogAction[];
+    public actions?: DialogAction[];
 
     @property({type: Object, attribute: false})
     public dismissAction: DialogActionBase | null | undefined;
@@ -222,8 +205,39 @@ export class OrMwcDialog extends LitElement {
         return this._mdcComponent ? this._mdcComponent.isOpen : false;
     }
 
-    public set isOpen(isOpen: boolean) {
+    public setOpen(isOpen: boolean): OrMwcDialog  {
         this._open = true;
+        return this;
+    }
+
+    public setHeading(heading: TemplateResult | string | undefined): OrMwcDialog {
+        this.heading = heading;
+        return this;
+    }
+
+    public setContent(content: TemplateResult | (() => TemplateResult) | undefined): OrMwcDialog {
+        this.content = content;
+        return this;
+    }
+
+    public setActions(actions: DialogAction[] | undefined): OrMwcDialog {
+        this.actions = actions;
+        return this;
+    }
+
+    public setDismissAction(action: DialogActionBase | null | undefined): OrMwcDialog {
+        this.dismissAction = action;
+        return this;
+    }
+
+    public setStyles(styles: string | TemplateResult | undefined): OrMwcDialog {
+        this.styles = styles;
+        return this;
+    }
+
+    public setAvatar(avatar: boolean | undefined): OrMwcDialog {
+        this.avatar = avatar;
+        return this;
     }
 
     public open() {
@@ -265,14 +279,14 @@ export class OrMwcDialog extends LitElement {
                 @MDCDialog:closed="${(evt: any) => this._onDialogClosed(evt.detail.action)}">
                 <div class="mdc-dialog__container">
                     <div class="mdc-dialog__surface">
-						${typeof(this.dialogTitle) === "string" ? html`<h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.dialogTitle}"></or-translate></h2>`
-                            : this.dialogTitle ? html`<span class="mdc-dialog__title" id="dialog-title">${this.dialogTitle}</span>` : ``}
-                        ${this.dialogContent ? html` 
+						${typeof(this.heading) === "string" ? html`<h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.heading}"></or-translate></h2>`
+                            : this.heading ? html`<span class="mdc-dialog__title" id="dialog-title">${this.heading}</span>` : ``}
+                        ${this.content ? html` 
                             <div class="dialog-container mdc-dialog__content" id="dialog-content">
-                                ${typeof this.dialogContent === "function" ? this.dialogContent() : this.dialogContent}
+                                ${typeof this.content === "function" ? this.content() : this.content}
                             </div>
                             <footer class="mdc-dialog__actions">
-                                ${this.dialogActions ? this.dialogActions.map((action) => {
+                                ${this.actions ? this.actions.map((action) => {
                                     return html`
                                     <div class="mdc-button mdc-dialog__button" ?data-mdc-dialog-button-default="${action.default}" data-mdc-dialog-action="${action.actionName}">
                                         ${typeof(action.content) === "string" ? html`<or-mwc-input .type="${InputType.BUTTON}" .disabled="${action.disabled}" .label="${action.content}"></or-mwc-input>` : action.content}
@@ -281,7 +295,7 @@ export class OrMwcDialog extends LitElement {
                             </footer>
                         ` : html`
                             <ul class="mdc-list ${this.avatar ? "mdc-list--avatar-list" : ""}">
-                                ${!this.dialogActions ? `` : this.dialogActions!.map((action, index) => {
+                                ${!this.actions ? `` : this.actions!.map((action, index) => {
                                     return html`<li class="mdc-list-item" data-mdc-dialog-action="${action.actionName}"><span class="mdc-list-item__text">${action.content}</span></li>`;                    
                                 })}
                             </ul>
@@ -307,8 +321,8 @@ export class OrMwcDialog extends LitElement {
     protected _onDialogClosed(action?: string) {
         if (action === "close" && this.dismissAction && this.dismissAction.action) {
             this.dismissAction.action(this);
-        } else if (action && this.dialogActions) {
-            const matchedAction = this.dialogActions.find((dialogAction) => dialogAction.actionName === action);
+        } else if (action && this.actions) {
+            const matchedAction = this.actions.find((dialogAction) => dialogAction.actionName === action);
             if (matchedAction && matchedAction.action) {
                 matchedAction.action(this);
             }

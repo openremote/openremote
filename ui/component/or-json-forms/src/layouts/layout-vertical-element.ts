@@ -29,7 +29,7 @@ import {
 } from "../util";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
-import {showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-components/or-collapsible-panel";
 import {addItemOrParameterDialogStyle, baseStyle, panelStyle} from "../styles";
@@ -279,8 +279,8 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         const onParamChanged = (selected: StatePropsOfControl) => {
             selectedParameter = selected;
             const isOneOf = !!(selectedParameter && selectedParameter.schema && selectedParameter.schema.oneOf);
-            dialog.dialogContent = dialogContentProvider();
             (dialog.shadowRoot!.getElementById("add-btn") as OrMwcInput).disabled = isOneOf;
+            dialog.requestUpdate();
         };
 
         // const keyValue: [any, any] = [undefined, undefined];
@@ -364,11 +364,11 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
             `;
         };
 
-        const dialog = showDialog({
-            content: dialogContentProvider(),
-            styles: addItemOrParameterDialogStyle,
-            title: (this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addParameter"),
-            actions: [
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContentProvider)
+            .setStyles(addItemOrParameterDialogStyle)
+            .setHeading((this.label ? computeLabel(this.label, this.required, false) + " - " : "") + i18next.t("addParameter"))
+            .setActions([
                 {
                     actionName: "cancel",
                     content: i18next.t("cancel")
@@ -385,8 +385,7 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
                 }
-            ],
-            dismissAction: null
-        });
+            ])
+            .setDismissAction(null));
     }
 }

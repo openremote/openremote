@@ -1,4 +1,4 @@
-import manager, {EventCallback, MapType, OREvent} from "@openremote/core";
+import manager, {EventCallback, MapType} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
@@ -7,10 +7,15 @@ import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
-import { OrMwcInput, InputType, ValueInputProviderGenerator, ValueInputTemplateFunction } from "@openremote/or-mwc-components/or-mwc-input";
-import {showDialog, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {
+    InputType,
+    OrMwcInput,
+    ValueInputProviderGenerator,
+    ValueInputTemplateFunction
+} from "@openremote/or-mwc-components/or-mwc-input";
+import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getMarkerIconAndColorFromAssetType} from "./markers/or-map-marker-asset";
-import { i18next } from "@openremote/or-translate";
+import {i18next} from "@openremote/or-translate";
 
 // Re-exports
 export {Util, LngLatLike};
@@ -190,9 +195,9 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         if (!valueChangeNotifier) {
             return;
         }
-        if (value) {
+        if (value !== undefined) {
             valueChangeNotifier({
-                value: Util.getGeoJSONPoint(value)
+                value: value ? Util.getGeoJSONPoint(value) : null
             });
         } else {
             valueChangeNotifier(undefined);
@@ -200,7 +205,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
     };
 
     const coordinatesControl = new CoordinatesControl(disabled, valueChangeHandler);
-    let pos: { lng: number, lat: number } | undefined;
+    let pos: { lng: number, lat: number } | null | undefined;
 
     const templateFunction: ValueInputTemplateFunction = (value, focused, loading, sending, error, helperText) => {
         let center: number[] | undefined;
@@ -211,7 +216,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         }
 
         const centerStr = center ? center.join(", ") : undefined;
-        centerControl.pos = pos;
+        centerControl.pos = pos || undefined;
         coordinatesControl.readonly = disabled || readonly || sending || loading;
         coordinatesControl.value = centerStr;
 
@@ -219,12 +224,12 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
 
         let dialog: OrMwcDialog | undefined;
 
-        const setPos = (lngLat: LngLatLike | undefined) => {
+        const setPos = (lngLat: LngLatLike | null) => {
             if (readonly || disabled) {
                 return;
             }
 
-            pos = Util.getLngLat(lngLat);
+            pos = lngLat ? Util.getLngLat(lngLat) : null;
 
             if (dialog) {
                 // We're in compact mode modal
@@ -254,24 +259,25 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         if (compact) {
             const mapContent = content;
 
+
             const onClick = () => {
                 dialog = showDialog(
-                    {
-                        content: mapContent,
-                        styles: html`
+                    new OrMwcDialog()
+                        .setContent(mapContent)
+                        .setStyles(html`
                             <style>
                                 or-map {
                                     width: 600px !important;
                                     height: 600px !important;
                                 }
                             </style>
-                        `,
-                        actions: [
+                        `)
+                        .setActions([
                             {
                                 actionName: "none",
                                 content: i18next.t("none"),
                                 action: () => {
-                                    setPos(undefined);
+                                    setPos(null);
                                     valueChangeHandler(pos as LngLatLike);
                                 }
                             },
@@ -287,8 +293,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                                 actionName: "cancel",
                                 content: i18next.t("cancel")
                             }
-                        ]
-                    });
+                        ]));
             };
 
             content = html`

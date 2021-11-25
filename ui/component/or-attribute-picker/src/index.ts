@@ -1,4 +1,4 @@
-import {html, unsafeCSS} from "lit";
+import {html, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-asset-tree";
 import "@openremote/or-translate";
@@ -10,7 +10,7 @@ import {i18next} from "@openremote/or-translate";
 import manager, {DefaultColor2, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
 import {Asset, Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
 import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
-import {OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {DialogAction, DialogActionBase, OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export class OrAttributePickerPickedEvent extends CustomEvent<AttributeRef[]> {
 
@@ -43,11 +43,11 @@ export class OrAttributePicker extends OrMwcDialog {
     @property({type: Boolean})
     public multiSelect?: boolean = false;
 
+    public selectedAttributes: AttributeRef[] = [];
+
     @state()
     protected assetAttributes?: (Attribute<any>)[];
     protected asset?: Asset;
-
-    public selectedAttributes: AttributeRef[] = [];
 
     @query("#add-btn")
     protected addBtn!: OrMwcInput;
@@ -55,7 +55,7 @@ export class OrAttributePicker extends OrMwcDialog {
     constructor() {
         super();
 
-        this.dialogTitle = i18next.t("selectAttributes");
+        this.heading = i18next.t("selectAttributes");
         this.setDialogContent();
         this.setDialogActions();
         this.dismissAction = null;
@@ -80,8 +80,58 @@ export class OrAttributePicker extends OrMwcDialog {
         `;
     }
 
+    public setShowOnlyDatapointAttrs(showOnlyDatapointAttrs: boolean | undefined): OrAttributePicker {
+        this.showOnlyDatapointAttrs = showOnlyDatapointAttrs;
+        return this;
+    }
+
+    public setShowOnlyRuleStateAttrs(showOnlyRuleStateAttrs: boolean | undefined): OrAttributePicker {
+        this.showOnlyRuleStateAttrs = showOnlyRuleStateAttrs;
+        return this;
+    }
+
+    public setMultiSelect(multiSelect: boolean | undefined): OrAttributePicker {
+        this.multiSelect = multiSelect;
+        return this;
+    }
+
+    public setSelectedAttributes(selectedAttributes: AttributeRef[]): OrAttributePicker {
+        this.selectedAttributes = selectedAttributes;
+        return this;
+    }
+
+    public setOpen(isOpen: boolean): OrAttributePicker  {
+        super.setOpen(isOpen);
+        return this;
+    }
+
+    public setHeading(heading: TemplateResult | string | undefined): OrAttributePicker {
+        super.setHeading(heading);
+        return this;
+    }
+
+    public setContent(content: TemplateResult | (() => TemplateResult) | undefined): OrAttributePicker {
+        throw new Error("Cannot modify attribute picker content");
+    }
+
+    public setActions(actions: DialogAction[] | undefined): OrAttributePicker {
+        throw new Error("Cannot modify attribute picker actions");
+    }
+
+    public setDismissAction(action: DialogActionBase | null | undefined): OrAttributePicker {
+        throw new Error("Cannot modify attribute picker dismiss action");
+    }
+
+    public setStyles(styles: string | TemplateResult | undefined): OrAttributePicker {
+        throw new Error("Cannot modify attribute picker styles");
+    }
+
+    public setAvatar(avatar: boolean | undefined): OrAttributePicker {
+        throw new Error("Cannot modify attribute picker avatar setting");
+    }
+
     protected setDialogActions(): void {
-        this.dialogActions = [
+        this.actions = [
             {
                 actionName: "cancel",
                 content: i18next.t("cancel")
@@ -117,7 +167,7 @@ export class OrAttributePicker extends OrMwcDialog {
         };
 
 
-        this.dialogContent = () => html`
+        this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
                 <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
                     <or-asset-tree id="chart-asset-tree" readonly

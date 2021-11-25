@@ -416,11 +416,11 @@ export class OrEditAssetPanel extends LitElement {
             attr = attribute;
         };
 
-        const dialog = showDialog({
-            content: html`
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(html`
                 <or-add-attribute-panel .asset="${asset}" @or-add-attribute-panel-attribute-changed="${(ev: OrAddAttributePanelAttributeChangedEvent) => onAttributeChanged(ev.detail)}"></or-add-attribute-panel>
-            `,
-            styles: html`
+            `)
+            .setStyles(html`
                 <style>
                     .mdc-dialog__surface {
                         overflow-x: visible !important;
@@ -431,9 +431,9 @@ export class OrEditAssetPanel extends LitElement {
                         overflow: visible;
                     }
                 </style>
-            `,
-            title: i18next.t("addAttribute"),
-            actions: [
+            `)
+            .setHeading(i18next.t("addAttribute"))
+            .setActions([
                 {
                     actionName: "cancel",
                     content: i18next.t("cancel")
@@ -447,9 +447,8 @@ export class OrEditAssetPanel extends LitElement {
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
                 }
-            ],
-            dismissAction: null
-        });
+            ])
+            .setDismissAction(null));
     }
 
     protected _addMetaItems(attribute: Attribute<any>) {
@@ -471,13 +470,13 @@ export class OrEditAssetPanel extends LitElement {
                 };
             }).sort(Util.sortByString((item) => item.text));
 
-        const dialog = showDialog({
-            content: html`
+        const dialog = showDialog(new OrMwcDialog()
+            .setContent(html`
                 <div id="meta-creator">
                     <or-mwc-list id="meta-creator-list" .type="${ListType.MULTI_CHECKBOX}" .listItems="${metaItemList}"></or-mwc-list>
                 </div>
-            `,
-            styles: html`
+            `)
+            .setStyles(html`
                 <style>
                     #meta-creator {
                         height: 600px;
@@ -488,9 +487,9 @@ export class OrEditAssetPanel extends LitElement {
                         height: 100%;
                     }
                 </style>
-            `,
-            title: i18next.t("addMetaItems"),
-            actions: [
+            `)
+            .setHeading(i18next.t("addMetaItems"))
+            .setActions([
                 {
                     actionName: "cancel",
                     content: i18next.t("cancel")
@@ -516,9 +515,8 @@ export class OrEditAssetPanel extends LitElement {
                     },
                     content: i18next.t("add")
                 }
-            ],
-            dismissAction: null
-        });
+            ])
+            .setDismissAction(null));
     }
 
     protected _getParentTemplate() {
@@ -573,11 +571,10 @@ export class OrEditAssetPanel extends LitElement {
         ];
 
         const openDialog = () => {
-            dialog = showDialog(
-                {
-                    content: dialogContent,
-                    actions: dialogActions,
-                    styles: html`
+            dialog = showDialog(new OrMwcDialog()
+                .setContent(dialogContent)
+                .setActions(dialogActions)
+                .setStyles(html`
                         <style>
                             .mdc-dialog__surface {
                                 width: 400px;
@@ -596,10 +593,8 @@ export class OrEditAssetPanel extends LitElement {
                                 height: 100%;
                             }
                         </style>
-                    `,
-                     dismissAction: null
-                }
-            );
+                    `)
+                .setDismissAction(null));
         };
 
         return html`

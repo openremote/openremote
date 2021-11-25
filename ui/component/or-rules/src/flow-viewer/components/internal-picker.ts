@@ -12,6 +12,7 @@ import { translate, i18next } from "@openremote/or-translate";
 import { PickerStyle } from "../styles/picker-styles";
 import { AssetModelUtil, Util } from "@openremote/core";
 import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
+import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -136,13 +137,12 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 }];
             }
 
-            const hostElement = document.body;
-            const dialog = new OrAttributePicker();
-            dialog.showOnlyRuleStateAttrs = true;
-            dialog.showOnlyDatapointAttrs = false;
-            dialog.multiSelect = false;
-            dialog.selectedAttributes = _selectedAttributes;
-            dialog.isOpen = true;
+            const dialog = showDialog(new OrAttributePicker()
+                .setShowOnlyRuleStateAttrs(true)
+                .setShowOnlyDatapointAttrs(false)
+                .setMultiSelect(false)
+                .setSelectedAttributes(_selectedAttributes));
+
             dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
                 const value: AttributeInternalValue = {
                     assetId: ev.detail[0].id,
@@ -152,8 +152,6 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 this.setValue(value);
                 await this.setSelectedAssetFromInternalValue();
             });
-    
-            hostElement.append(dialog);
         };
 
         let selectedAttrLabel = '?';

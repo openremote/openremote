@@ -573,13 +573,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             addBtn.disabled = !ev.detail.descriptor || !nameValid;
         };
 
-        dialog = showDialog(
-            {
-                title: i18next.t("addAsset"),
-                content: html`
+        dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t("addAsset"))
+            .setContent(html`
                     <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${agentTypes}" .assetTypes="${assetTypes}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
-                `,
-                actions: [
+                `)
+            .setActions([
                     {
                         actionName: "cancel",
                         content: i18next.t("cancel")
@@ -649,17 +648,16 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                 });
                         }
                     }
-                ],
-                styles: html`
+                ])
+            .setStyles(html`
                     <style>
                         .mdc-dialog__content {
                             padding: 0 !important;
                         }
                     </style>
-                `,
-                dismissAction: null
-            }
-        )
+                `)
+            .setDismissAction(null)
+        );
     }
 
     protected _onDeleteClicked() {

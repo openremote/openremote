@@ -144,7 +144,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 break;
         }
         this._validity = {...validity}
-        this.refreshDialogContent();
+        this._dialog!.requestUpdate();
     }
 
     timeLabel() {
@@ -200,7 +200,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 });
                 break;
         }
-        this.refreshDialogContent();
+        this._dialog!.requestUpdate();
     }
 
     getValidityType () {
@@ -224,9 +224,9 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
     protected showDialog() {
 
-        this._dialog = showDialog({
-            title: i18next.t("scheduleRuleActivity"),
-            styles: html`
+        this._dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t("scheduleRuleActivity"))
+            .setStyles(html`
                 <style>
                     .mdc-dialog__surface {
                         overflow-x: visible !important;
@@ -248,9 +248,8 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                             overflow: auto;
                         }
                     }
-                </style>`
-            ,
-            actions: [
+                </style>`)
+            .setActions([
                 {
                     actionName: "cancel",
                     content: html`<or-mwc-input class="button" .type="${InputType.BUTTON}" .label="${i18next.t("cancel")}"></or-mwc-input>`,
@@ -277,18 +276,9 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                         }
                     }
                 },
-            ],
-            content: this.getDialogContent(),
-            dismissAction: null
-        });
-    }
-
-    protected refreshDialogContent() {
-        if (!this._dialog) {
-            return;
-        }
-
-        this._dialog.dialogContent = this.getDialogContent();
+            ])
+            .setContent(() => this.getDialogContent())
+            .setDismissAction(null));
     }
 
     protected getDialogContent(): TemplateResult {

@@ -12,6 +12,7 @@ import { AttributeRef } from "@openremote/model";
 import moment from "moment";
 import { buttonStyle } from "@openremote/or-rules/dist/style";
 import {createSelector} from "reselect";
+import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
@@ -265,7 +266,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
                         <or-mwc-input .disabled="${this.isClearExportBtnDisabled}" class="button" .type="${InputType.BUTTON}" label="${i18next.t("clearTable")}" @click="${() => this.clearSelection()}"></or-mwc-input>
                         <or-mwc-input .disabled="${this.isExportBtnDisabled}" class="button" raised .type="${InputType.BUTTON}" label="${i18next.t("export")}" @click="${() => this.export()}"></or-mwc-input>
                     </div>
-                    <or-mwc-dialog id="mdc-dialog"></or-mwc-dialog>
                 </div>
             </div>
 
@@ -352,13 +352,13 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     }
     
     protected _openDialog() {
-        const hostElement = document.body;
 
-        const dialog = new OrAttributePicker();
-        dialog.isOpen = true;
-        dialog.showOnlyDatapointAttrs = true;
-        dialog.multiSelect = true;
-        dialog.selectedAttributes = this.config.selectedAttributes;
+        const dialog = showDialog(new OrAttributePicker()
+            .setShowOnlyDatapointAttrs(true)
+            .setMultiSelect(true)
+            .setSelectedAttributes(this.config.selectedAttributes)
+        );
+
         dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
             const selectedAttributes = ev.detail;
             await this.renderTable(selectedAttributes);
@@ -368,8 +368,6 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
             }
             this.saveConfig();
         });
-        hostElement.append(dialog);
-        return dialog;
     }
     
     protected export = () => {

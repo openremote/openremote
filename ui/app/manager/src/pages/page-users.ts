@@ -9,7 +9,7 @@ import {ClientRole, Role, User, UserAssetLink, UserQuery} from "@openremote/mode
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
-import {showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {GenericAxiosResponse} from "@openremote/rest";
 import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
@@ -592,15 +592,15 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             })
         };
 
-        const dialog = showDialog({
-            title: i18next.t("restrictAccess"),
-            content: html`
+        const dialog = showDialog(new OrMwcDialog()
+            .setHeading(i18next.t("restrictAccess"))
+            .setContent(html`
                 <or-asset-tree 
                     id="chart-asset-tree" readonly .selectedIds="${user.userAssetLinks.map(ual => ual.id.assetId)}"
                     .showSortBtn="${false}" expandNodes checkboxes
                     @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => onAssetSelectionChanged(e)}"></or-asset-tree>
-            `,
-            actions: [
+            `)
+            .setActions([
                 {
                     default: true,
                     actionName: "cancel",
@@ -619,16 +619,15 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                         this.requestUpdate();
                     }
                 }
-            ],
-            dismissAction: {
+            ])
+            .setDismissAction({
                 actionName: "cancel",
                 action: () => {
                     user.userAssetLinks = user.previousAssetLinks;
                     user.previousAssetLinks = undefined;
                     openBtn.disabled = false;
                 }
-            }
-        });
+            }));
     }
 
     protected _onPasswordChanged(user: UserModel, suffix: string) {
