@@ -7,7 +7,6 @@ import {
     unsafeCSS
 } from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {unsafeHTML} from "lit/directives/unsafe-html";
 import {AppConfig, Page, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-menu";

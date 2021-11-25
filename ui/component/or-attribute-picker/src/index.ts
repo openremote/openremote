@@ -8,7 +8,7 @@ import {OrAssetTree, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree"
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import {i18next} from "@openremote/or-translate";
 import manager, {DefaultColor2, DefaultColor4, DefaultColor5, Util} from "@openremote/core";
-import {Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
+import {Asset, Attribute, AttributeRef, WellknownMetaItems} from "@openremote/model";
 import {ListItem, ListType, OrMwcListChangedEvent} from "@openremote/or-mwc-components/or-mwc-list";
 import {OrMwcDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
@@ -31,8 +31,6 @@ declare global {
     }
 }
 
-type AttributeAndId = Attribute<any> & {id: string};
-
 @customElement("or-attribute-picker")
 export class OrAttributePicker extends OrMwcDialog {
 
@@ -46,7 +44,8 @@ export class OrAttributePicker extends OrMwcDialog {
     public multiSelect?: boolean = false;
 
     @state()
-    protected assetAttributes?: (AttributeAndId)[];
+    protected assetAttributes?: (Attribute<any>)[];
+    protected asset?: Asset;
 
     public selectedAttributes: AttributeRef[] = [];
 
@@ -112,8 +111,7 @@ export class OrAttributePicker extends OrMwcDialog {
             return this.assetAttributes.map((attribute) => {
                 return {
                     text: Util.getAttributeLabel(undefined, attribute, undefined, true),
-                    value: attribute.name,
-                    data: attribute
+                    value: attribute.name
                 } as ListItem
             });
         };
@@ -136,8 +134,8 @@ export class OrAttributePicker extends OrMwcDialog {
                         html`<div style="display: grid">
                                             <or-mwc-list
                                                     id="attribute-selector" .type="${ListType.MULTI_CHECKBOX}" .listItems="${getListItems()}"
-                                                    .values="${this.selectedAttributes.map(attribute => attribute.name!)}"
-                                                    @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._onAttributeSelectionChanged(ev.detail.map(li => li.data as AttributeAndId))}"></or-mwc-list>
+                                                    .values="${this.selectedAttributes.filter(attributeRef => attributeRef.id === this.asset!.id).map(attributeRef => attributeRef.name!)}"
+                                                    @or-mwc-list-changed="${(ev: OrMwcListChangedEvent) => this._onAttributeSelectionChanged([...this.selectedAttributes.filter(attributeRef => attributeRef.id !== this.asset!.id),...ev.detail.map(li => {return {id: this.asset!.id!, name:li.value as string} as AttributeRef;})])}"></or-mwc-list>
                                         </div>`
                         :
                         html`<or-mwc-input id="attribute-selector"
@@ -145,9 +143,15 @@ export class OrAttributePicker extends OrMwcDialog {
                                                 .label="${i18next.t("attribute")}"
                                                 .type="${InputType.LIST}"
                                                 .options="${getListItems().map(item => ([item, item.text]))}"
-                                                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._onAttributeSelectionChanged([(ev.detail.value as ListItem).data as AttributeAndId])}"
-                                                }"></or-mwc-input>`
-                    }
+                                                @or-mwc-input-changed="${(ev: OrInputChangedEvent) => {
+                                                    this._onAttributeSelectionChanged(
+                                                        [
+                                                            {
+                                                                id: this.asset!.id!,
+                                                                name: (ev.detail.value as ListItem).value as string
+                                                            } as AttributeRef
+                                                        ]);
+                                                }}"></or-mwc-input>`}
                 ` : html`<div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;"><span style="width:100%">
                             <or-translate value="${
             (this.assetAttributes && this.assetAttributes.length === 0) ?
@@ -162,12 +166,15 @@ export class OrAttributePicker extends OrMwcDialog {
 
     protected async _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
         this.assetAttributes = undefined;
-        this.selectedAttributes = [];
-        this.addBtn.disabled = true;
+        if (!this.multiSelect) {
+            this.selectedAttributes = [];
+        }
+        this.addBtn.disabled = this.selectedAttributes.length === 0;
         const assetTree = event.target as OrAssetTree;
         assetTree.disabled = true;
 
         let selectedAsset = event.detail.newNodes.length === 0 ? undefined : event.detail.newNodes[0].asset;
+        this.asset = selectedAsset;
 
         if (selectedAsset) {
             // Load the asset attributes
@@ -193,8 +200,8 @@ export class OrAttributePicker extends OrMwcDialog {
         assetTree.disabled = false;
     }
 
-    protected _onAttributeSelectionChanged(attributes: AttributeAndId[]) {
-        this.selectedAttributes = attributes.map(attr => {return {id: attr.id, name: attr.name} as AttributeRef});
+    protected _onAttributeSelectionChanged(attributeRefs: AttributeRef[]) {
+        this.selectedAttributes = attributeRefs;
         this.addBtn.disabled = this.selectedAttributes.length === 0;
     }
 }
