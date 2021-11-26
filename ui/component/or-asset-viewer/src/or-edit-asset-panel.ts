@@ -262,7 +262,7 @@ export class OrEditAssetPanel extends LitElement {
         return html`
             <div id="edit-wrapper">
                 ${getPanel("properties", {}, html`${properties}`) || ``}
-                ${getPanel("attributes", {}, html`${attributes}`) || ``}
+                ${getPanel("attribute_plural", {}, html`${attributes}`) || ``}
             </div>
         `;
     }

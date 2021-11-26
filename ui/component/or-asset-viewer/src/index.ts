@@ -984,7 +984,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                     }
                 }
             },
-            attributes: {
+            attribute_plural: {
                 type: "info",
                 properties: {
                     include:[]
