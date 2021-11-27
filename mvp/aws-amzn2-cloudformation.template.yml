@@ -37,10 +37,6 @@ Parameters:
   LatestAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2'
-#  InstanceAMI:
-#    Description: Managed AMI ID for EC2 Instance (don't change it unless you know what you are doing)
-#    Type : String
-#    Default: ami-03ec287fa560a6ccc
 Conditions:
   DnsRecordCreate: !Equals [!Ref HostedZone, true]
   DomainName: !Not [ !Equals [!Ref DomainName, ""] ]
@@ -176,10 +172,11 @@ Resources:
                   - /etc/cfn/cfn-hup.conf
                   - /etc/cfn/hooks.d/cfn-auto-reloader.conf
         install_logs:
-          # TODO this sends docker logs but not cloud init, install in userdata
-          # packages:
-          #   yum:
-          #     awslogs: []
+          # TODO this sends docker logs but not cloud init, why?
+          packages:
+            yum:
+              awslogs: []
+              docker: []
           files:
             /etc/awslogs/awslogs.conf:
               content: !Join
@@ -239,6 +236,9 @@ Resources:
           commands:
             '01_create_state_directory':
               command: mkdir -p /var/awslogs/state
+            start_docker:
+              command: !Sub |
+                systemctl start docker
           services:
             sysvinit:
               awslogs:
@@ -246,6 +246,9 @@ Resources:
                 ensureRunning: 'true'
                 files:
                   - /etc/awslogs/awslogs.conf
+              docker:
+                enabled: 'true'
+                ensureRunning: 'true'
     Properties:
       InstanceType:
         Ref: InstanceType
@@ -262,30 +265,19 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          yum update -y
-          groupadd docker
-          gpasswd -a ec2-user docker
-          yum install docker -y
-          #service docker start
-          systemctl start docker
-          systemctl enable docker.service
-          docker swarm init
-          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          chmod +x /usr/local/bin/docker-compose
-          # SNMP tools
-          #sudo apt install snmp snmpd snmptt snmptrapd -y
-          # Install openremote-cli tool (for e-mail credentials)
-          pip3 install -U openremote-cli
-          # CFN tools for CloudWatch
           rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --configsets install_all --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
-          # end CFN
-          # awslogs needed here because in init skips /var/log/cloud-init*
-          yum install -y awslogs
-          systemctl start awslogsd
-          systemctl enable awslogsd.service
-          # end awslogs
+          yum update -y
+          groupadd docker
+          gpasswd -a ec2-user docker
+          docker swarm init
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          # TODO SNMP tools (do we need this?)
+          #sudo apt install snmp snmpd snmptt snmptrapd -y
+          # Install openremote-cli tool (for e-mail credentials)
+          pip3 install -U openremote-cli
           cd /home/ec2-user
           # Create volume for deployment (needed for SWARM due to concurency in compose-file)
           # docker volume create openremote_deployment-data
