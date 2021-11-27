@@ -1,0 +1,417 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Template to install OpenRemote 3 stack on AWS environment on ubuntu'
+Parameters:
+  OpenRemotePassword:
+    Description: Password for OpenRemote admin login
+    Type: String
+    Default: secret
+  DomainName:
+    Description: DNS domain for created stack (clear it is you want the deployment with an insecure SSL certificate)
+    Type: String
+    Default: developers.openremote.io
+  HostName:
+    Description: Hostname of the Openremote manager
+    Type: String
+    Default: demo
+  HostedZone:
+    Description: Use AWS hosted zone
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: openremote
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: EC2 instance type (don't change it unless you know what you are doing)
+    Type: String
+    # AWS Compute Optimizer reports that this instance type is under-provisioned and advise to use
+    # more than double the price instance. However, it works in our test setup.
+    Default: t4g.small
+    ConstraintDescription: must be a valid EC2 instance type.
+  InstanceAMI:
+    Description: Managed AMI ID for EC2 Instance (don't change it unless you know what you are doing)
+    Type : String
+    Default: ami-03ec287fa560a6ccc
+Conditions:
+  DnsRecordCreate: !Equals [!Ref HostedZone, true]
+  DomainName: !Not [ !Equals [!Ref DomainName, ""] ]
+Outputs:
+    InstanceIP:
+      Description: The Instance public IP
+      Value: !GetAtt EC2Instance.PublicIp
+    PublicUrl:
+      Condition: DnsRecordCreate
+      Description: OpenRemote Instance URL
+      Value: !Join [ ".", [ !Ref HostName, !Ref DomainName ] ]
+    UserId:
+      Description: SMTP server username
+      Value: !Ref AccessKeys
+    UserSecret:
+      Description: SMTP server password
+      Value: !GetAtt AccessKeys.SecretAccessKey
+    SmtpServer:
+      Value: !Join [ ".", [ "email-smtp", !Ref "AWS::Region", "amazonaws.com"]]
+Resources:
+  EmailUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+      - PolicyName: OpenRemoteSendEmail
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - ses:SendRawEmail
+            Resource:
+              - '*'
+  AccessKeys:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref EmailUser
+  DNSRecord:
+    Condition: DnsRecordCreate
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join [ "", [ !Ref DomainName, "." ] ]
+      Name: !Join [ ".", [!Ref HostName, !Ref DomainName ] ]
+      ResourceRecords:
+        - !GetAtt EC2Instance.PublicIp
+      TTL: '60'
+      Type: A
+#  DNSRecord6:
+#    Condition: DnsRecordCreate
+#    Type: AWS::Route53::RecordSet
+#    Properties:
+#      HostedZoneName: !Join [ "", [ !Ref DomainName, "." ] ]
+#      Name: !Join [ ".", [!Ref HostName, !Ref DomainName ] ]
+#      ResourceRecords:
+#        - !GetAtt EC2Instance.PublicIp
+#      TTL: '60'
+#      Type: AAAA
+  LogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: LogRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Join
+                    - ''
+                    - - 'arn:aws:'
+                      - logs:*:*:*
+  LogRoleInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref 'LogRole'
+  CloudFormationLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          install_all:
+            - install_cfn
+            - install_logs
+        install_cfn:
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content: !Join
+                - ''
+                - - "[main]\n"
+                  - stack=
+                  - !Ref 'AWS::StackId'
+                  - "\n"
+                  - region=
+                  - !Ref 'AWS::Region'
+                  - "\n"
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Join
+                - ''
+                - - "[cfn-auto-reloader-hook]\n"
+                  - "triggers=post.update\n"
+                  - "path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init\n"
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - ' --stack '
+                  - !Ref 'AWS::StackName'
+                  - ' --resource EC2Instance '
+                  - ' --configsets install_all '
+                  - ' --region '
+                  - !Ref 'AWS::Region'
+                  - "\n"
+                  - "runas=root\n"
+              mode: '000400'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+        install_logs:
+          # TODO this won't work. sed is needed on install script. See UserData
+          # packages:
+          #   pip:
+          #     awslogs: []
+          files:
+            /etc/awslogs/awslogs.conf:
+              content: !Join
+                - ''
+                - - "[general]\n"
+                  - "state_file= /var/awslogs/state/agent-state\n"
+                  - "[/var/log/cloud-init.log]\n"
+                  - "file = /var/log/cloud-init.log\n"
+                  - 'log_group_name = '
+                  - !Ref 'CloudFormationLogs'
+                  - "\n"
+                  - "log_stream_name = {instance_id}/cloud-init.log\n"
+                  - "datetime_format = \n"
+                  - "[/var/log/cloud-init-output.log]\n"
+                  - "file = /var/log/cloud-init-output.log\n"
+                  - 'log_group_name = '
+                  - !Ref 'CloudFormationLogs'
+                  - "\n"
+                  - "log_stream_name = {instance_id}/cloud-init-output.log\n"
+                  - "datetime_format = \n"
+                  - "[/var/log/cfn-init.log]\n"
+                  - "file = /var/log/cfn-init.log\n"
+                  - 'log_group_name = '
+                  - !Ref 'CloudFormationLogs'
+                  - "\n"
+                  - "log_stream_name = {instance_id}/cfn-init.log\n"
+                  - "datetime_format = \n"
+                  - "[/var/log/cfn-hup.log]\n"
+                  - "file = /var/log/cfn-hup.log\n"
+                  - 'log_group_name = '
+                  - !Ref 'CloudFormationLogs'
+                  - "\n"
+                  - "log_stream_name = {instance_id}/cfn-hup.log\n"
+                  - "datetime_format = \n"
+                  - "[/var/log/cfn-wire.log]\n"
+                  - "file = /var/log/cfn-wire.log\n"
+                  - 'log_group_name = '
+                  - !Ref 'CloudFormationLogs'
+                  - "\n"
+                  - "log_stream_name = {instance_id}/cfn-wire.log\n"
+                  - "datetime_format = \n"
+              mode: '000444'
+              owner: root
+              group: root
+            /etc/awslogs/awscli.conf:
+              content: !Join
+                - ''
+                - - "[plugins]\n"
+                  - "cwlogs = cwlogs\n"
+                  - "[default]\n"
+                  - 'region = '
+                  - !Ref 'AWS::Region'
+                  - "\n"
+              mode: '000444'
+              owner: root
+              group: root
+          commands:
+            '01_create_state_directory':
+              command: mkdir -p /var/awslogs/state
+          services:
+            sysvinit:
+              awslogs:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/awslogs/awslogs.conf
+    Properties:
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      ImageId:
+        Ref: InstanceAMI
+      SecurityGroups:
+        - Ref: InstanceSecurityGroup
+      Ipv6AddressCount: 1
+      Tags:
+        - Key: "Name"
+          Value: !Join [ ".", [ !Ref HostName, !Ref DomainName ] ]
+      IamInstanceProfile: !Ref 'LogRoleInstanceProfile'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo apt update
+          # Install docker newest version
+          sudo groupadd docker
+          sudo gpasswd -a ubuntu docker
+          apt-get update
+          apt-get install apt-transport-https ca-certificates curl gnupg lsb-release -y
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          apt-get update
+          apt-get install docker-ce docker-ce-cli containerd.io -y
+          sudo apt install docker-compose -y
+          # SNMP tools
+          sudo apt install snmp snmpd snmptt snmptrapd -y
+          # Install openremote-cli tool
+          sudo apt install python3-pip -y
+          sudo pip3 install -U openremote-cli
+          # CFN tools for CloudWatch
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+          cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+          chmod +x /etc/init.d/cfn-hup
+          update-rc.d cfn-hup defaults
+          service cfn-hup start
+          echo cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets install_all --region ${AWS::Region}
+          cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets install_all --region ${AWS::Region}
+          echo cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+          cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+          # end CFN
+          # awslogs
+          echo AWS Logs
+          curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -O
+          # Bump Python version (TODO AWS)
+          sed -i 's/3,6/3,9/g' awslogs-agent-setup.py
+          python3 awslogs-agent-setup.py -n -r ${AWS::Region} -c /etc/awslogs/awslogs.conf
+          # awslogs
+          cd /home/ubuntu
+          # Create volume for deployment (needed for SWARM due to concurency in compose-file)
+          # docker volume create openremote_deployment-data
+          # docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:mvp
+          wget https://github.com/openremote/openremote/raw/master/mvp/mvp-docker-compose-awslogs.yml
+          docker swarm init
+          if [ ${HostName} ] && [ ${DomainName} ]
+          then
+            export DOMAINNAME=${HostName}.${DomainName}
+            export EXTERNAL_URL=https://$DOMAINNAME
+          elif [ ${DomainName} ]
+          then
+            export DOMAINNAME=${DomainName}
+            export EXTERNAL_URL=https://$DOMAINNAME
+          elif [ ${HostName} ]
+          then
+            export DOMAINNAME=${HostName}
+            export EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+          else
+            export DOMAINNAME=localhost
+            export EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+          fi
+          openremote-cli -V -t
+          export PASSWORD=${OpenRemotePassword}
+          export EMAIL_USER=${AccessKeys}
+          export EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet)
+          export EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com
+          export AWSLOGS_GROUP=${CloudFormationLogs}
+          docker-compose -f mvp-docker-compose-awslogs.yml -p openremote up -d
+          echo USER=${AccessKeys} > access.txt
+          echo SECRET=${AccessKeys.SecretAccessKey} >> access.txt
+          echo export EMAIL_PASSWORD=$(or configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
+          echo export EMAIL_USER=$EMAIL_USER >> access.txt
+          echo export EMAIL_HOST=$EMAIL_HOST >> access.txt
+          echo export PASSWORD=${OpenRemotePassword} >> access.txt
+          echo export DOMAINNAME=$DOMAINNAME >> access.txt
+          echo export EXTERNAL_URL=$EXTERNAL_URL >> access.txt
+          echo export AWSLOGS_GROUP=${CloudFormationLogs} >> access.txt
+          mkdir ${HostName}
+          cd ${HostName}
+          wget https://github.com/openremote/openremote/raw/master/mvp/fetch_s3_deploy.sh -O fetch.txt
+          cat ../access.txt ./fetch.txt > fetch_s3_deploy.sh
+          chmod +x fetch_s3_deploy.sh
+          rm fetch.txt
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH + HTTP + HTTPS + MQTT + ping
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+        Description: SSH
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+        Description: HTTP
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
+        Description: HTTPS
+      - IpProtocol: tcp
+        FromPort: '8883'
+        ToPort: '8883'
+        CidrIp: 0.0.0.0/0
+        Description: MQTT
+      - IpProtocol: udp
+        FromPort: '161'
+        ToPort: '162'
+        CidrIp: 0.0.0.0/0
+        Description: SNMP
+      - IpProtocol: icmp
+        FromPort: '8'
+        ToPort: '-1'
+        CidrIp: 0.0.0.0/0
+        Description: Ping
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIpv6: ::/0
+        Description: SSH
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIpv6: ::/0
+        Description: HTTP
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIpv6: ::/0
+        Description: HTTPS
+      - IpProtocol: tcp
+        FromPort: '8883'
+        ToPort: '8883'
+        CidrIpv6: ::/0
+        Description: MQTT
+      - IpProtocol: udp
+        FromPort: '161'
+        ToPort: '162'
+        CidrIpv6: ::/0
+        Description: SNMP
+      - IpProtocol: icmpv6
+        FromPort: '-1'
+        ToPort: '-1'
+        CidrIpv6: ::/0
+        Description: Ping
