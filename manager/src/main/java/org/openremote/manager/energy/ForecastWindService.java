@@ -268,10 +268,10 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 double currentPower = calculatePower(electricityProducerWindAsset, weatherForecastResponseModel.current);
 
-                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), currentPower));
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower));
 
                 if (electricityProducerWindAsset.isSetActualValueWithForecast().orElse(false)) {
-                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), currentPower));
+                    assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower));
                 }
 
                 for (WeatherForecastModel weatherForecastModel : weatherForecastResponseModel.getList()) {
