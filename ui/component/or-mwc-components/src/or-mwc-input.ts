@@ -59,6 +59,7 @@ const lineRippleStyle = require("@material/line-ripple/dist/mdc.line-ripple.css"
 const floatingLabelStyle = require("@material/floating-label/dist/mdc.floating-label.css");
 const formFieldStyle = require("@material/form-field/dist/mdc.form-field.css");
 const checkboxStyle = require("@material/checkbox/dist/mdc.checkbox.css");
+const radioStyle = require("@material/radio/dist/mdc.radio.css");
 const switchStyle = require("@material/switch/dist/mdc.switch.css");
 const selectStyle = require("@material/select/dist/mdc.select.css");
 const listStyle = require("@material/list/dist/mdc.list.css");
@@ -490,7 +491,10 @@ const style = css`
         height: 32px;
         width: 32px;
     }
-    
+    .mdc-radio-container {
+        display: flex;
+        flex-direction: column;
+    }
     .mdc-text-field.mdc-text-field--invalid:not(.mdc-text-field--disabled) + .mdc-text-field-helper-line .mdc-text-field-helper-text {
         color: var(--mdc-theme-error, #b00020)
     }
@@ -589,6 +593,7 @@ export class OrMwcInput extends LitElement {
             css`${unsafeCSS(floatingLabelStyle)}`,
             css`${unsafeCSS(formFieldStyle)}`,
             css`${unsafeCSS(checkboxStyle)}`,
+            css`${unsafeCSS(radioStyle)}`,
             css`${unsafeCSS(switchStyle)}`,
             css`${unsafeCSS(selectStyle)}`,
             css`${unsafeCSS(listStyle)}`,
@@ -607,6 +612,9 @@ export class OrMwcInput extends LitElement {
 
     @property({type: String})
     public type?: InputType;
+
+    @property({type: String})
+    public name?: String;
 
     @property({type: Boolean})
     public readonly: boolean = false;
@@ -809,7 +817,39 @@ export class OrMwcInput extends LitElement {
 
             switch (this.type) {
                 case InputType.RADIO:
-                    return html`RADIO`
+                    const optsRadio = this.resolveOptions(this.options);
+                    this._selectedIndex = -1;
+                    return html`
+                            <div class="mdc-radio-container">
+                                ${optsRadio ? optsRadio.map(([optValue, optDisplay], index) => {
+                                    if (this.value === optValue) {
+                                        this._selectedIndex = index;
+                                    }
+                                    return html`
+                                    <div id="field" class="mdc-form-field">
+                                        <div class="mdc-radio">
+                                            <input type="radio" 
+                                                id="elem-${optValue}"
+                                                name="${ifDefined(this.name)}"
+                                                value="${optValue}"
+                                                ?checked="${this.value && this.value.includes(optValue)}"
+                                                ?required="${this.required}"
+                                                ?disabled="${this.disabled || this.readonly}"                            
+                                                @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
+                                                class="mdc-radio__native-control"/>
+                                            <div class="mdc-radio__background">
+                                            <div class="mdc-radio__outer-circle"></div>
+                                            <div class="mdc-radio__inner-circle"></div>
+                                            </div>
+                                            <div class="mdc-radio__ripple"></div>
+                                        </div>
+                                        <label for="elem-${optValue}"><or-translate value="${optDisplay}"></or-translate></label>
+                                    </div>
+
+                                    `;
+                                }) : ``}
+                            </div>
+                    `;
                     break;
                 case InputType.SWITCH:
                     return html`
@@ -1013,11 +1053,11 @@ export class OrMwcInput extends LitElement {
                 }
                 case InputType.CHECKBOX_LIST:
 
-                    const optsRadio = this.resolveOptions(this.options);
+                    const optsCheckboxList = this.resolveOptions(this.options);
                     this._selectedIndex = -1;
                     return html`
                             <div class="mdc-checkbox-list">
-                                ${optsRadio ? optsRadio.map(([optValue, optDisplay], index) => {
+                                ${optsCheckboxList ? optsCheckboxList.map(([optValue, optDisplay], index) => {
                                     if (this.value === optValue) {
                                         this._selectedIndex = index;
                                     }
@@ -1522,7 +1562,6 @@ export class OrMwcInput extends LitElement {
                     break;
             }
         }
-
         this.value = newValue;
         this.setCustomValidity(errorMsg);
         this.reportValidity();

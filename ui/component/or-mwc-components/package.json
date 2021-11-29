@@ -22,6 +22,7 @@
   "dependencies": {
     "@material/button": "^9.0.0",
     "@material/checkbox": "^9.0.0",
+    "@material/radio": "^9.0.0",
     "@material/data-table": "^9.0.0",
     "@material/dialog": "^9.0.0",
     "@material/drawer": "^9.0.0",
