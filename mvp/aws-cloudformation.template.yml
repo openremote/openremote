@@ -267,7 +267,6 @@ Resources:
           #!/bin/bash
           rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --configsets install_all --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
           yum update -y
           groupadd docker
           gpasswd -a ec2-user docker
@@ -279,7 +278,7 @@ Resources:
           # Install openremote-cli tool (for e-mail credentials)
           pip3 install -U openremote-cli
           cd /home/ec2-user
-          # Create volume for deployment (needed for SWARM due to concurency in compose-file)
+          # Create volume for deployment (needed for SWARM due to concurrency in compose-file)
           # docker volume create openremote_deployment-data
           # docker run --rm -v openremote_deployment-data:/deployment openremote/deployment:mvp
           wget https://github.com/openremote/openremote/raw/master/mvp/mvp-docker-compose-awslogs.yml -O docker-compose.yml
@@ -323,6 +322,7 @@ Resources:
           cat ../access.txt ./fetch.txt > fetch_s3_deploy.sh
           chmod +x fetch_s3_deploy.sh
           rm fetch.txt
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
