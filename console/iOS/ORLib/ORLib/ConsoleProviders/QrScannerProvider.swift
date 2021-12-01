@@ -120,15 +120,19 @@ public class QrScannerProvider: NSObject {
         case .authorized:
             scanner = QrScannerViewController()
             scanner!.delegate = self
+            self.scanner?.modalPresentationStyle = .fullScreen
             currentViewController.present(scanner!, animated: true, completion: nil)
             scannedCallback = callback
         default:
             AVCaptureDevice.requestAccess(for: .video, completionHandler: { granted in
                 if granted {
-                    self.scanner = QrScannerViewController()
-                    self.scanner!.delegate = self
-                    currentViewController.present(self.scanner!, animated: true, completion: nil)
-                    self.scannedCallback = callback
+                    DispatchQueue.main.async {
+                        self.scanner = QrScannerViewController()
+                        self.scanner!.delegate = self
+                        self.scanner?.modalPresentationStyle = .fullScreen
+                        currentViewController.present(self.scanner!, animated: true, completion: nil)
+                        self.scannedCallback = callback
+                    }
                 } else {
                     let alertController = UIAlertController(title: "Camera permission needed", message: "In order to scan QR codes, access to the camera is needed. Would you like to enable it now?", preferredStyle: .alert)
                     alertController.addAction(UIAlertAction(title: "Yes", style: .default, handler: {alertAction in
@@ -154,7 +158,7 @@ extension QrScannerProvider: QrScannerDelegate {
         scanner?.dismiss(animated: true) {
             self.scannedCallback?(
                 [
-                    DefaultsKey.actionKey: Actions.getLocation,
+                    DefaultsKey.actionKey: Actions.scanQr,
                     DefaultsKey.providerKey: Providers.qr,
                     DefaultsKey.dataKey: ["result": codeContents]
                 ]
