@@ -230,6 +230,10 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
                 }
 
                 doLinkedAttributeWrite(attribute, agent.getAgentLink(attribute), event, ignoreAndConverted.value);
+
+                if (agent.isUpdateOnWrite().orElse(false)) {
+                    updateLinkedAttribute(new AttributeState(event.getAttributeRef(), ignoreAndConverted.value));
+                }
             }
         });
     }

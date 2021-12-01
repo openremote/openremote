@@ -130,6 +130,11 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
      */
     public static final AttributeDescriptor<Integer> POLLING_MILLIS = new AttributeDescriptor<>("pollingMillis", ValueType.POSITIVE_INTEGER).withOptional(true);
 
+    /**
+     * Don't expect a response from the protocol just update the attribute immediately on write
+     */
+    public static final AttributeDescriptor<Boolean> UPDATE_ON_WRITE = new AttributeDescriptor<>("updateOnWrite", ValueType.BOOLEAN).withOptional(true);
+
     protected Agent() {
     }
 
@@ -247,6 +252,16 @@ public abstract class Agent<T extends Agent<T, U, V>, U extends Protocol<T>, V e
 
     public Optional<Integer> getPollingMillis() {
         return getAttributes().getValue(POLLING_MILLIS);
+    }
+
+    public Optional<Boolean> isUpdateOnWrite() {
+        return getAttributes().getValue(UPDATE_ON_WRITE);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setUpdateOnWrite(boolean updateOnWrite) {
+        getAttributes().getOrCreate(UPDATE_ON_WRITE).setValue(updateOnWrite);
+        return (T) this;
     }
 
     /**
