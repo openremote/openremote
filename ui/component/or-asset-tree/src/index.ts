@@ -14,7 +14,8 @@ import {
     Attribute,
     ClientRole,
     SharedEvent,
-    WellknownAssets
+    WellknownAssets,
+    AssetQueryMatch
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -269,6 +270,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _expandedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
 
+    protected _filterValue: string = '';
+    protected _isFiltering: boolean = false;
+
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
     }
@@ -329,9 +333,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             </div>
             
             <div id="asset-tree-filter">
-                <or-mwc-input type="${InputType.FILTER}" @click="${() => this._onFilterClicked()}"></or-mwc-input>
+                <or-mwc-input type="${ InputType.FILTER }"
+                              .value="${ this._filterValue }"
+                              @input="${ (e: any) => { this._onFilterValueChange(e); } }"
+                              icon="search"></or-mwc-input>
+                <or-mwc-input ?hidden="${this._filterValue && this._filterValue.length > 0}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onCancelFilterChange()}"></or-mwc-input>
+                <div ?hidden="${ !this._isFiltering }">TOTOTOTOTO</div>
             </div>
-
+            
             ${!this._nodes
                 ? html`
                     <span id="loading"><or-translate value="loading"></or-translate></span>`
@@ -542,8 +551,41 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._onNodeClicked(null, null);
     }
 
-    protected _onFilterClicked() {
-        console.log("CLICK SEARCH");
+    protected _onCancelFilterChange() {
+        //Canceling the current filtering :
+        // - Cancel filterValue
+        // - Reset assetTree
+    }
+
+    protected _onFilterValueChange(event: any) {
+        const keyInput = event.currentTarget as OrMwcInput;
+        this._filterValue = keyInput.currentValue as string;
+
+        if (this._filterValue && this._filterValue.length > 2) {
+            console.log("trigger search on asset query with " + this._filterValue);
+            this._isFiltering = true;
+
+            const query: AssetQuery = {
+                select: {
+                    attributes: [
+                        "id", "name", "type"
+                    ]
+                },
+                names: [{
+                    predicateType: "string",
+                    match: AssetQueryMatch.CONTAINS,
+                    value: this._filterValue,
+                    caseSensitive: false
+                }]
+            };
+
+            const response = manager.rest.api.AssetResource.queryAssets(query);
+
+            console.log('---');
+            console.log(response);
+
+            //Pass through rendered assetTree to highlight the matching assets
+        }
     }
 
     protected async _onCopyClicked() {
