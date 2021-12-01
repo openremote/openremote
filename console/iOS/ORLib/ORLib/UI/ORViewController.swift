@@ -45,10 +45,6 @@ open class ORViewcontroller : UIViewController {
     open override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.white
-    }
-    
-    open override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
         self.configureAccess()
     }
 
@@ -68,6 +64,7 @@ open class ORViewcontroller : UIViewController {
             let returnMessage = "OpenRemoteConsole._handleProviderResponse('\(theJSONText ?? "null")')"
             DispatchQueue.main.async {
                 self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
+                    print(error)
                     print("JSON string = \(theJSONText!)")
                 })
             }
