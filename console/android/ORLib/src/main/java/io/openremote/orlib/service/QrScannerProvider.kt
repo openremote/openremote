@@ -19,7 +19,6 @@ class QrScannerProvider(val context: Context) {
         private const val cameraPermissionAskedKey = "CameraPermissionAsked"
         private const val qrDisabledKey = "qrDisabled"
         private const val version = "qr"
-        const val REQUEST_CAMERA_PERMISSION = 201
         const val REQUEST_SCAN_QR = 222
     }
 
@@ -57,29 +56,16 @@ class QrScannerProvider(val context: Context) {
                 Manifest.permission.CAMERA
             ) == PackageManager.PERMISSION_GRANTED
 
-
-
-        if (!hasPermission && !sharedPreferences.getBoolean(
-                cameraPermissionAskedKey, false
+        callback?.accept(
+            hashMapOf(
+                "action" to "PROVIDER_ENABLE",
+                "provider" to "qr",
+                "hasPermission" to hasPermission,
+                "success" to true,
+                "enabled" to true,
+                "disabled" to sharedPreferences.contains(qrDisabledKey)
             )
-        ) {
-            sharedPreferences.edit().putBoolean(cameraPermissionAskedKey, true).apply()
-            ActivityCompat.requestPermissions(
-                context as Activity,
-                arrayOf(Manifest.permission.CAMERA),
-                REQUEST_CAMERA_PERMISSION
-            )
-            enableCallback = callback
-        } else {
-            callback?.accept(
-                hashMapOf(
-                    "action" to "PROVIDER_ENABLE",
-                    "provider" to "qr",
-                    "hasPermission" to hasPermission,
-                    "success" to true
-                )
-            )
-        }
+        )
     }
 
     fun disable(): Map<String, Any> {
@@ -93,37 +79,6 @@ class QrScannerProvider(val context: Context) {
             "action" to "PROVIDER_DISABLE",
             "provider" to "qr"
         )
-    }
-
-    fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            enableCallback?.accept(
-                hashMapOf(
-                    "action" to "PROVIDER_ENABLE",
-                    "provider" to "qr",
-                    "hasPermission" to true,
-                    "success" to true
-                )
-            )
-        } else {
-            AlertDialog.Builder(context)
-                .setIcon(R.mipmap.ic_launcher)
-                .setTitle(R.string.camera_needed_alert_title)
-                .setMessage(R.string.camera_needed_alert_body)
-                .setNegativeButton(R.string.no, null)
-                .setPositiveButton(R.string.yes) { dialog, which ->
-                    ActivityCompat.requestPermissions(
-                        context as Activity,
-                        arrayOf(Manifest.permission.CAMERA),
-                        REQUEST_CAMERA_PERMISSION
-                    )
-                }
-                .show()
-        }
     }
 
     fun startScanner(activity: Activity) {

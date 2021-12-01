@@ -517,8 +517,6 @@ open class OrMainActivity : Activity() {
             }
         } else if (requestCode == GeofenceProvider.locationResponseCode) {
             geofenceProvider?.onRequestPermissionsResult(this)
-        } else if (requestCode == QrScannerProvider.REQUEST_CAMERA_PERMISSION) {
-            qrScannerProvider?.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -527,7 +525,13 @@ open class OrMainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == QrScannerProvider.REQUEST_SCAN_QR) {
             val qrResult = data?.getStringExtra("result")
-            notifyClient(hashMapOf("result" to qrResult))
+
+            val response = hashMapOf(
+                "action" to "SCAN_QR",
+                "provider" to "qr",
+                "data" to hashMapOf("result" to qrResult)
+            )
+            notifyClient(response)
         }
     }
 
@@ -566,6 +570,9 @@ open class OrMainActivity : Activity() {
                                 }
                                 provider.equals("storage", ignoreCase = true) -> {
                                     handleStorageProviderMessage(it)
+                                }
+                                provider.equals("qr", ignoreCase = true) -> {
+                                    handleQrScannerProviderMessage(it)
                                 }
                             }
                         }

@@ -2,11 +2,13 @@ package io.openremote.orlib.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.vision.CameraSource
@@ -16,6 +18,7 @@ import com.google.android.gms.vision.barcode.Barcode
 import com.google.android.gms.vision.barcode.BarcodeDetector
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrQrScannerBinding
+import io.openremote.orlib.service.QrScannerProvider
 import java.io.IOException
 
 class QrScannerActivity : AppCompatActivity() {
@@ -108,6 +111,20 @@ class QrScannerActivity : AppCompatActivity() {
             } catch (e: IOException) {
                 e.printStackTrace()
             }
+        } else {
+            AlertDialog.Builder(this)
+                .setIcon(R.mipmap.ic_launcher)
+                .setTitle(R.string.camera_needed_alert_title)
+                .setMessage(R.string.camera_needed_alert_body)
+                .setNegativeButton(R.string.no, null)
+                .setPositiveButton(R.string.yes) { dialog, which ->
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.CAMERA),
+                        REQUEST_CAMERA_PERMISSION
+                    )
+                }
+                .show()
         }
     }
 
