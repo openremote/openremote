@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Template to install OpenRemote 3 stack on Amazon Linux'
+Description: 'Template to install OpenRemote 3 stack on Amazon Linux 2'
 Parameters:
   OpenRemotePassword:
     Description: Password for OpenRemote admin login
@@ -94,7 +94,7 @@ Resources:
 #        - !GetAtt EC2Instance.PublicIp
 #      TTL: '60'
 #      Type: AAAA
-  LogRole:
+  InstanceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -108,7 +108,7 @@ Resources:
               - sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: LogRolePolicy
+        - PolicyName: InstancePolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -118,17 +118,16 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                   - logs:DescribeLogStreams
+                  - route53:ListHostedZones
+                  - route53:ChangeResourceRecordSets
                 Resource:
-                  - !Join
-                    - ''
-                    - - 'arn:aws:'
-                      - logs:*:*:*
-  LogRoleInstanceProfile:
+                  - '*'
+  InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
       Roles:
-        - !Ref 'LogRole'
+        - !Ref 'InstanceRole'
   CloudFormationLogs:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -143,6 +142,9 @@ Resources:
             - install_cfn
             - install_logs
         install_cfn:
+          packages:
+            yum:
+              aws-cfn-bootstrap: []
           files:
             /etc/cfn/cfn-hup.conf:
               content: !Sub |
@@ -177,6 +179,7 @@ Resources:
             yum:
               awslogs: []
               docker: []
+              jq: []
           files:
             /etc/awslogs/awslogs.conf:
               content: !Join
@@ -234,9 +237,9 @@ Resources:
               owner: root
               group: root
           commands:
-            '01_create_state_directory':
+            01_create_state_directory:
               command: mkdir -p /var/awslogs/state
-            start_docker:
+            02_start_docker:
               command: !Sub |
                 systemctl start docker
           services:
@@ -249,6 +252,9 @@ Resources:
               docker:
                 enabled: 'true'
                 ensureRunning: 'true'
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT7M
     Properties:
       InstanceType:
         Ref: InstanceType
@@ -261,13 +267,14 @@ Resources:
       Tags:
         - Key: "Name"
           Value: !Join [ ".", [ !Ref HostName, !Ref DomainName ] ]
-      IamInstanceProfile: !Ref 'LogRoleInstanceProfile'
+      IamInstanceProfile: !Ref 'InstanceProfile'
       UserData:
         Fn::Base64: !Sub |
-          #!/bin/bash
-          rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
+          #!/bin/bash -x
+          #yum update -y
+          #yum install -y aws-cfn-bootstrap
+          #rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --configsets install_all --region ${AWS::Region}
-          yum update -y
           groupadd docker
           gpasswd -a ec2-user docker
           docker swarm init
@@ -299,18 +306,9 @@ Resources:
             export EXTERNAL_URL=https://$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
           fi
           openremote-cli -V -t
-          export PASSWORD=${OpenRemotePassword}
-          export EMAIL_USER=${AccessKeys}
-          export EMAIL_PASSWORD=$(openremote-cli configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet)
-          export EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com
-          export AWSLOGS_GROUP=${CloudFormationLogs}
-          export AWS_REGION=${AWS::Region}
-          docker-compose -p openremote up -d
-          echo USER=${AccessKeys} > access.txt
-          echo SECRET=${AccessKeys.SecretAccessKey} >> access.txt
-          echo export EMAIL_PASSWORD=$EMAIL_PASSWORD >> access.txt
-          echo export EMAIL_USER=$EMAIL_USER >> access.txt
-          echo export EMAIL_HOST=$EMAIL_HOST >> access.txt
+          echo export EMAIL_PASSWORD=$(openremote-cli configure_aws --secret ${AccessKeys.SecretAccessKey} --quiet) >> access.txt
+          echo export EMAIL_USER=${AccessKeys} >> access.txt
+          echo export EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com >> access.txt
           echo export PASSWORD=${OpenRemotePassword} >> access.txt
           echo export DOMAINNAME=$DOMAINNAME >> access.txt
           echo export EXTERNAL_URL=$EXTERNAL_URL >> access.txt
@@ -322,6 +320,20 @@ Resources:
           cat ../access.txt ./fetch.txt > fetch_s3_deploy.sh
           chmod +x fetch_s3_deploy.sh
           rm fetch.txt
+          cd ..
+          source access.txt
+          # Route53 records
+          export IP=`curl http://169.254.169.254/latest/meta-data/public-ipv4`
+          export IP6=`curl http://169.254.169.254/latest/meta-data/ipv6`
+          export HOSTED_ZONE_ID=`aws route53 list-hosted-zones | jq -r '.HostedZones | .[] | .Id'`
+          aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID \
+            --change-batch '{ "Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "'"$DOMAINNAME"'",
+                              "Type": "A", "TTL": 60, "ResourceRecords": [ { "Value": "'"$IP"'" } ] } } ] }'
+          aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID \
+            --change-batch '{ "Changes": [ { "Action": "UPSERT", "ResourceRecordSet": { "Name": "'"$DOMAINNAME"'",
+                              "Type": "AAAA", "TTL": 60, "ResourceRecords": [ { "Value": "'"$IP6"'" } ] } } ] }'
+          # Route53
+          docker-compose -p openremote up -d
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
 
   InstanceSecurityGroup:
