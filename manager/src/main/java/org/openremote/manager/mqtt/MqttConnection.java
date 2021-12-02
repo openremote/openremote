@@ -31,11 +31,13 @@ public class MqttConnection {
     protected final boolean cleanSession;
     protected Supplier<String> tokenSupplier;
     protected ManagerKeycloakIdentityProvider identityProvider;
+    protected long connectionTime;
 
-    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password, boolean cleanSession) {
+    public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password, boolean cleanSession, long connectionTime) {
         this.cleanSession = cleanSession;
         this.clientId = clientId;
         this.identityProvider = identityProvider;
+        this.connectionTime = connectionTime;
         setCredentials(realm, username, password);
     }
 
@@ -61,6 +63,11 @@ public class MqttConnection {
         }
 
         return tokenSupplier.get();
+    }
+
+    public String getUserId() {
+        AuthContext authContext = getAuthContext();
+        return authContext != null ? authContext.getUserId() : null;
     }
 
     public AuthContext getAuthContext() {
@@ -114,7 +121,8 @@ public class MqttConnection {
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
+            "connectionTime=" + connectionTime +
+            ", realm='" + realm + '\'' +
             ", username='" + username + '\'' +
             ", clientId='" + clientId + '\'' +
             '}';

@@ -33,9 +33,9 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
-import org.openremote.manager.provisioning.UserAssetProvisioningMQTTHandler;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
@@ -77,6 +77,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
     protected ClientEventService clientEventService;
     protected MessageBrokerService messageBrokerService;
     protected ScheduledExecutorService executorService;
+    protected TimerService timerService;
     protected final Map<String, MqttConnection> clientIdConnectionMap = new HashMap<>();
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
 
@@ -100,6 +101,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         executorService = container.getExecutorService();
+        timerService = container.getService(TimerService.class);
 
         if (!identityService.isKeycloakEnabled()) {
             LOG.warning("MQTT connections are not supported when not using Keycloak identity provider");
@@ -118,7 +120,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         properties.setProperty(BrokerConstants.HOST_PROPERTY_NAME, host);
         properties.setProperty(BrokerConstants.PORT_PROPERTY_NAME, String.valueOf(port));
         properties.setProperty(BrokerConstants.ALLOW_ANONYMOUS_PROPERTY_NAME, String.valueOf(true));
-        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new ORInterceptHandler(this, identityProvider, messageBrokerService));
+        List<? extends InterceptHandler> interceptHandlers = Collections.singletonList(new ORInterceptHandler(this, identityProvider, messageBrokerService, timerService));
 
         // Load custom handlers
         this.customHandlers = stream(ServiceLoader.load(MQTTHandler.class).spliterator(), false)

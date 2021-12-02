@@ -24,6 +24,7 @@ import io.moquette.broker.subscriptions.Topic;
 import io.moquette.interception.AbstractInterceptHandler;
 import io.moquette.interception.messages.*;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.syslog.SyslogCategory;
 
@@ -37,13 +38,16 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
     protected final MqttBrokerService brokerService;
     protected final MessageBrokerService messageBrokerService;
     protected final ManagerKeycloakIdentityProvider identityProvider;
+    protected final TimerService timerService;
 
     public ORInterceptHandler(MqttBrokerService brokerService,
                               ManagerKeycloakIdentityProvider identityProvider,
-                              MessageBrokerService messageBrokerService) {
+                              MessageBrokerService messageBrokerService,
+                              TimerService timerService) {
         this.brokerService = brokerService;
         this.identityProvider = identityProvider;
         this.messageBrokerService = messageBrokerService;
+        this.timerService = timerService;
     }
 
     @Override
@@ -75,7 +79,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
             username = realmAndUsername[1];
         }
 
-        MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password, msg.isCleanSession());
+        MqttConnection connection = new MqttConnection(identityProvider, msg.getClientID(), realm, username, password, msg.isCleanSession(), timerService.getCurrentTimeMillis());
         brokerService.addConnection(connection.getClientId(), connection);
 
         // Notify all custom handlers
