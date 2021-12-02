@@ -19,6 +19,7 @@
  */
 package org.openremote.model.value;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -29,6 +30,8 @@ import java.util.Optional;
 
 @JsonSchemaTitle("Substring")
 @JsonTypeName(SubStringValueFilter.NAME)
+@JsonClassDescription("Returns the substring beginning at the specified index (inclusive) and ending at the optional endIndex (exclusive); if endIndex is not supplied then" +
+    " the remainder of the string is returned; negative values can be used to indicate a backwards count from the length of the string e.g. -1 means length-1")
 public class SubStringValueFilter extends ValueFilter {
 
     public static final String NAME = "substring";
@@ -55,8 +58,17 @@ public class SubStringValueFilter extends ValueFilter {
 
         String result = null;
 
+        if (beginIndex < 0) {
+            beginIndex = valueStr.get().length() + 1 + beginIndex;
+            beginIndex = Math.max(0, beginIndex);
+        }
+
         try {
             if (endIndex != null) {
+                if (endIndex < 0) {
+                    endIndex = valueStr.get().length() + endIndex;
+                    endIndex = Math.max(beginIndex, endIndex);
+                }
                 result = valueStr.get().substring(beginIndex, endIndex);
             } else {
                 result = valueStr.get().substring(beginIndex);
