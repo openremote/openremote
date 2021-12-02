@@ -513,7 +513,7 @@ const style = css`
 
     ::-webkit-clear-button {display: none;}
     ::-webkit-inner-spin-button { display: none; }
-    ::-webkit-datetime-edit { padding: 0em;}
+    ::-webkit-datetime-edit { padding: 0em; }
     ::-webkit-datetime-edit-text { padding: 0; }
 
     .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
@@ -714,7 +714,7 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public helperPersistent: boolean = false;
 
-    @property({type: String})
+    @property({type: String, attribute: true})
     public validationMessage?: string;
 
     @property({type: Boolean})
@@ -743,6 +743,8 @@ export class OrMwcInput extends LitElement {
     protected _tempValue: any;
     @state()
     protected isUiValid = true;
+    @state()
+    protected errorMessage?: string;
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
@@ -800,6 +802,7 @@ export class OrMwcInput extends LitElement {
         }
     }
 
+
     protected render() {
 
         if (this.type) {
@@ -807,9 +810,9 @@ export class OrMwcInput extends LitElement {
             const showLabel = !this.fullWidth && this.label;
             let outlined = !this.fullWidth && this.outlined;
             let hasHelper = !!this.helperText;
-            const showValidationMessage = !this.isUiValid && !!this.validationMessage;
+            const showValidationMessage = !this.isUiValid && (!!this.errorMessage || !!this.validationMessage);
             const helperClasses = {
-                "mdc-text-field-helper-text--persistent": this.helperPersistent,
+                "mdc-text-field-helper-text--persistent": !showValidationMessage && this.helperPersistent,
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = this.value || this.value === false;
@@ -1010,7 +1013,7 @@ export class OrMwcInput extends LitElement {
                             </div>
                                 ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
-                                        ${showValidationMessage ? this.validationMessage : this.helperText}
+                                        ${showValidationMessage ? this.errorMessage || this.validationMessage : this.helperText}
                                     </p>` : ``}
                         </div>
                     `;
@@ -1239,7 +1242,7 @@ export class OrMwcInput extends LitElement {
                             </label>
                             ${hasHelper || showValidationMessage ? html`
                                 <div class="mdc-text-field-helper-line">
-                                    <div class="mdc-text-field-helper-text ${classMap(helperClasses)}">${showValidationMessage ? this.validationMessage : this.helperText}</div>
+                                    <div class="mdc-text-field-helper-text ${classMap(helperClasses)}">${showValidationMessage ? this.errorMessage || this.validationMessage : this.helperText}</div>
                                     ${this.charCounter && !this.readonly ? html`<div class="mdc-text-field-character-counter"></div>` : ``}
                                 </div>
                             ` : ``}
@@ -1451,7 +1454,9 @@ export class OrMwcInput extends LitElement {
                 checkbox.disabled = this.disabled || this.readonly;
             }
 
-            (this._mdcComponent as any).required = !!this.required;
+            if (this._mdcComponent) {
+                (this._mdcComponent as any).required = this.required;
+            }
         }
 
         if (this.autoValidate) {
@@ -1474,7 +1479,7 @@ export class OrMwcInput extends LitElement {
     }
 
     public setCustomValidity(msg: string | undefined) {
-        this.validationMessage = msg;
+        this.errorMessage = msg;
         const elem = this.shadowRoot!.getElementById("elem") as HTMLElement;
         if (elem && (elem as any).setCustomValidity) {
             (elem as any).setCustomValidity(msg ?? "");

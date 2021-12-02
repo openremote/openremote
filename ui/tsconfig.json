@@ -15,6 +15,7 @@
     "sourceMap": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "composite": true
+    "composite": true,
+    "useDefineForClassFields": false
   }
 }
