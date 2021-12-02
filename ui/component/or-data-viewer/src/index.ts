@@ -41,28 +41,36 @@ export interface DataViewerConfig {
     chartConfig?: OrChartConfig;
 }
 
-class EventHandler {
-    public _callbacks: Function[];
+export class OrDataViewerRenderCompleteEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-data-viewer-render-complete-event";
 
     constructor() {
-        this._callbacks = [];
-    }
-
-    public startCallbacks() {
-        return new Promise<void>((resolve, reject) => {
-            if (this._callbacks && this._callbacks.length > 0) {
-                this._callbacks.forEach((cb) => cb());
-            }
-            resolve();
+        super(OrDataViewerRenderCompleteEvent.NAME, {
+            bubbles: true,
+            composed: true
         });
-
-    }
-
-    public addCallback(callback: Function) {
-        this._callbacks.push(callback);
     }
 }
-const onRenderComplete = new EventHandler();
+
+export class OrDataViewerConfigInvalidEvent extends CustomEvent<void> {
+
+    public static readonly NAME = "or-data-viewer-config-invalid-event";
+
+    constructor() {
+        super(OrDataViewerConfigInvalidEvent.NAME, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrDataViewerRenderCompleteEvent.NAME]: OrDataViewerRenderCompleteEvent;
+        [OrDataViewerConfigInvalidEvent.NAME]: OrDataViewerConfigInvalidEvent;
+    }
+}
 
 @customElement("or-data-viewer")
 export class OrDataViewer extends translate(i18next)(LitElement) {
@@ -187,20 +195,16 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         window.removeEventListener("resize", this._resizeHandler);
     }
 
-    public async onCompleted() {
-        await this.updateComplete;
-    }
-
     public refresh() {
-        this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
+        this.realm = manager.displayRealm;
     }
 
-    public getPanel(name: string, panelConfig: PanelConfig) {
+    public getPanel(name: string, panelConfig: PanelConfig): TemplateResult {
 
         const content = this.getPanelContent(name, panelConfig);
 
         if (!content) {
-            return;
+            return html``;
         }
 
         return html`
@@ -225,7 +229,7 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
             return;
         }
 
-        this.realm = window.sessionStorage.getItem('realm') || manager.getRealm();
+        this.realm = manager.displayRealm;
 
         let content: TemplateResult | undefined;
 
@@ -256,10 +260,24 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
         return html`
             <div id="wrapper">
                 <div id="container" style="${this.config.viewerStyles ? styleMap(this.config.viewerStyles) : ""}">
-                    ${Object.entries(this.config.panels).map(([name, panelConfig]) => this.getPanel(name,  panelConfig))}
+                    ${this.renderConfig()}
                 </div>
             </div>
         `;
+    }
+
+    protected renderConfig(): TemplateResult[] {
+        const hasConfig = !!this.config;
+        let config = hasConfig ? this.config : OrDataViewer.DEFAULT_CONFIG;
+        try {
+            return Object.entries(config!.panels).map(([name, panelConfig]) => this.getPanel(name, panelConfig))
+        } catch (e) {
+            console.warn("OR data viewer config is invalid");
+            this.config = undefined;
+            this.dispatchEvent(new OrDataViewerConfigInvalidEvent());
+            config = OrDataViewer.DEFAULT_CONFIG;
+            return Object.entries(config!.panels).map(([name, panelConfig]) => this.getPanel(name, panelConfig))
+        }
     }
 
     protected updated(_changedProperties: PropertyValues) {
@@ -269,10 +287,9 @@ export class OrDataViewer extends translate(i18next)(LitElement) {
             this.refresh();
         }
 
-        this.onCompleted().then(() => {
-            onRenderComplete.startCallbacks().then(() => {
-                OrDataViewer.generateGrid(this.shadowRoot);
-            });
+        this.updateComplete.then(() => {
+            this.dispatchEvent(new OrDataViewerRenderCompleteEvent());
+            OrDataViewer.generateGrid(this.shadowRoot);
         });
     }
 }

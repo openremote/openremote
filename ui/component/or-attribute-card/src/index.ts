@@ -556,7 +556,7 @@ export class OrAttributeCard extends LitElement {
             return;
         }
 
-        const view = config && config.views ? config.views[viewSelector][this.panelName] : undefined;
+        const view = config && config.views && config.views[viewSelector] ? config.views[viewSelector][this.panelName] : undefined;
 
         if (!view) {
             return;
@@ -638,9 +638,12 @@ export class OrAttributeCard extends LitElement {
             config = {
                 realm: this.realm,
                 views: {
-                    [viewSelector]: {}
                 }
             }
+        }
+
+        if (!config.views[viewSelector]) {
+            config.views[viewSelector] = {};
         }
 
         if (!this.assets || !this.assetAttributes || this.assets.length === 0 || this.assetAttributes.length === 0) {
