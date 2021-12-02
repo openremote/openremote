@@ -67,6 +67,8 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     protected ValuePredicate messageMatchPredicate;
     @JsonPropertyDescription("ValueFilters to apply to incoming messages prior to comparison with the messageMatchPredicate")
     protected ValueFilter[] messageMatchFilters;
+    @JsonPropertyDescription("Don't expect a response from the protocol just update the attribute immediately on write")
+    protected Boolean updateOnWrite;
 
     @JsonSerialize
     protected String getType() {
@@ -109,6 +111,10 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
         return Optional.ofNullable(messageMatchFilters);
     }
 
+    public Optional<Boolean> getUpdateOnWrite() {
+        return Optional.ofNullable(updateOnWrite);
+    }
+
     @SuppressWarnings("unchecked")
     public T setValueFilters(ValueFilter[] valueFilters) {
         this.valueFilters = valueFilters;
@@ -142,6 +148,12 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     @SuppressWarnings("unchecked")
     public T setMessageMatchFilters(ValueFilter[] messageMatchFilters) {
         this.messageMatchFilters = messageMatchFilters;
+        return (T)this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setUpdateOnWrite(Boolean updateOnWrite) {
+        this.updateOnWrite = updateOnWrite;
         return (T)this;
     }
 

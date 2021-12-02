@@ -343,7 +343,8 @@ public class AssetQuery implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    public AssetQuery types(AssetDescriptor<? extends Asset<?>>... types) {
+    @SafeVarargs
+    public final AssetQuery types(AssetDescriptor<? extends Asset<?>>... types) {
         if (types == null || types.length == 0) {
             this.types = null;
             return this;

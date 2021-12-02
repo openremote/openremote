@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.FixedLengthFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
@@ -102,13 +103,18 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
                 );
             } else {
                 encodersDecoders.add(new StringEncoder(charset));
-                if (delimiters.length > 0) {
-                    ByteBuf[] byteDelimiters = Arrays.stream(delimiters)
-                        .map(delim -> Unpooled.wrappedBuffer(delim.getBytes(charset)))
-                        .toArray(ByteBuf[]::new);
-                    encodersDecoders.add(new DelimiterBasedFrameDecoder(maxLength, stripDelimiter, byteDelimiters));
-                } else {
+                if (agent.getMessageMaxLength().isPresent()) {
                     encodersDecoders.add(new FixedLengthFrameDecoder(maxLength));
+                } else {
+                    ByteBuf[] byteDelimiters;
+                    if (delimiters.length > 0) {
+                        byteDelimiters = Arrays.stream(delimiters)
+                            .map(delim -> Unpooled.wrappedBuffer(delim.getBytes(charset)))
+                            .toArray(ByteBuf[]::new);
+                    } else {
+                        byteDelimiters = Delimiters.lineDelimiter();
+                    }
+                    encodersDecoders.add(new DelimiterBasedFrameDecoder(maxLength, stripDelimiter, byteDelimiters));
                 }
                 encodersDecoders.add(new StringDecoder(charset));
                 encodersDecoders.add(new AbstractNettyIOClient.MessageToMessageDecoder<>(String.class, client));
