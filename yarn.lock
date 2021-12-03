@@ -2114,6 +2114,21 @@
   dependencies:
     tslib "^1.9.3"
 
+"@material/radio@^9.0.0":
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/@material/radio/-/radio-9.0.0.tgz#66c2ea24de6a81375bee3917999f3392f2ce6a69"
+  integrity sha512-nP1Jf47Hag64qnCPFePnk4x61yhKi4mJrOCCxRqm9gMzDcod+YrXWXQQPdlkSJxIlgrKesH2so0R+fJzzXr2RA==
+  dependencies:
+    "@material/animation" "^9.0.0"
+    "@material/base" "^9.0.0"
+    "@material/density" "^9.0.0"
+    "@material/dom" "^9.0.0"
+    "@material/feature-targeting" "^9.0.0"
+    "@material/ripple" "^9.0.0"
+    "@material/theme" "^9.0.0"
+    "@material/touch-target" "^9.0.0"
+    tslib "^1.9.3"
+
 "@material/ripple@^9.0.0":
   version "9.0.0"
   resolved "https://registry.yarnpkg.com/@material/ripple/-/ripple-9.0.0.tgz#dc7004a40ab7f906569682209b6b340eacd99fbd"

@@ -11,8 +11,7 @@ import {
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
-
+import {AssetModelUtil, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 
 export type OrAddAssetDetail = {
@@ -306,7 +305,9 @@ export class OrAddAssetDialog extends LitElement {
         this.onModified();
     }
 
-    protected onTypeChanged(isAgent: boolean, listItem: ListItem) {
+    protected async onTypeChanged(isAgent: boolean, listItem: ListItem) {
+        await this.requestUpdate();
+
         this.selectedType = listItem.data as AssetDescriptor | AgentDescriptor;
 
         // Deselect other list selection
