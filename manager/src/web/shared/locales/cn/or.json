@@ -107,6 +107,8 @@
   "ending": "结束",
   "timeframe": "时间轴",
   "addAttribute": "添加参数",
+  "selectAttributes": "选择参数",
+  "selectAttribute": "选择参数",
   "clearTable": "Clear",
   "addAssetAttribute": "添加资源参数",
   "add": "添加",

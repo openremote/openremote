@@ -118,6 +118,7 @@
   "timeframe": "Timeframe",
   "addAttribute": "Add attribute",
   "selectAttributes": "Select attributes",
+  "selectAttribute": "Select attribute",
   "clearTable": "Clear",
   "export": "export",
   "addAssetAttribute": "Add asset attribute",

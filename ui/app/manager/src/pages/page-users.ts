@@ -796,13 +796,6 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
                                                   @or-mwc-input-changed="${(e: OrInputChangedEvent) => user.enabled = e.detail.value}"
                                                   style="height: 56px;"></or-mwc-input>
 
-                                    <!-- is admin -->
-                                    <or-mwc-input ?readonly="${true}"
-                                                  .label="${i18next.t("fullAccessLabel")}"
-                                                  .type="${InputType.CHECKBOX}"
-                                                  .value="${user.enabled}"
-                                                  style="height: 56px;"></or-mwc-input>
-
                                     <!-- composite roles -->
                                     <or-mwc-input
                                             ?readonly="${readonly}"

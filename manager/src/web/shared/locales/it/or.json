@@ -107,6 +107,8 @@
   "ending": "Fine",
   "timeframe": "Lasso di tempo",
   "addAttribute": "Aggiungi attributo",
+  "selectAttributes": "Seleziona attributi",
+  "selectAttribute": "Seleziona attributo",
   "clearTable": "Chiara",
   "addAssetAttribute": "Aggiungere l'attributo di asset",
   "add": "Aggiungi",

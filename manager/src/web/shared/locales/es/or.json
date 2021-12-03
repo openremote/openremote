@@ -107,6 +107,8 @@
   "ending": "Final",
   "timeframe": "Periodo de tiempo",
   "addAttribute": "Agregar atributo",
+  "selectAttributes": "Seleccione atributos",
+  "selectAttribute": "Seleccione atributo",
   "clearTable": "Clara",
   "addAssetAttribute": "Adicionar atributo de ativo",
   "add": "Añadir",

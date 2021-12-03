@@ -107,6 +107,8 @@
   "ending": "Se terminant",
   "timeframe": "Plage de temps",
   "addAttribute": "Ajouter un attribut",
+  "selectAttributes": "Sélectionnez attributs",
+  "selectAttribute": "Sélectionnez attribut",
   "clearTable": "Effacer",
   "addAssetAttribute": "Ajouter un attribut de ressource",
   "add": "Ajouter",
