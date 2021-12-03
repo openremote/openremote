@@ -308,6 +308,7 @@ export class OrAddAssetDialog extends LitElement {
     protected async onTypeChanged(isAgent: boolean, listItem: ListItem) {
         await this.requestUpdate();
 
+        this.selectedAttributes = [];
         this.selectedType = listItem.data as AssetDescriptor | AgentDescriptor;
 
         // Deselect other list selection
