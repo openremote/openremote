@@ -1435,7 +1435,7 @@ export class OrMwcInput extends LitElement {
                     (this._mdcComponent as MDCSelect).layoutOptions();
                 }
                 (this._mdcComponent as MDCSelect).useDefaultValidation = !this.multiple;
-                (this._mdcComponent as MDCSelect).valid = (!this.multiple && (this._mdcComponent as MDCSelect).valid) || (this.multiple && this.required && Array.isArray(this.value) && (this.value as []).length > 0);
+                (this._mdcComponent as MDCSelect).valid = !this.required || (!this.multiple && (this._mdcComponent as MDCSelect).valid) || (this.multiple && Array.isArray(this.value) && (this.value as []).length > 0);
                 const selectedText = this.getSelectedTextValue();
                 (this._mdcComponent as any).foundation.adapter.setSelectedText(selectedText);
                 (this._mdcComponent as any).foundation.adapter.floatLabel(!!selectedText);

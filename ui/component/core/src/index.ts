@@ -702,7 +702,7 @@ export class Manager implements EventProviderFactory {
             console.warn("Failed to initialise the manager");
         }
 
-        this._displayRealm = config.realm;
+        this.displayRealm = config.realm || "master";
 
         return success;
     }
@@ -1232,7 +1232,7 @@ export class Manager implements EventProviderFactory {
 
     protected _emitEvent(event: OREvent) {
         window.setTimeout(() => {
-            const listeners = this._listeners.slice();
+            const listeners = this._listeners;
             for (const listener of listeners) {
                 listener(event);
             }

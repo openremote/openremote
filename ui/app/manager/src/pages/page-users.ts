@@ -315,7 +315,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
     private async _createUpdateUser(user: UserModel) {
 
-        if (!!user.username) {
+        if (!user.username) {
             return;
         }
 
