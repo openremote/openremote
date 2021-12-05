@@ -13,6 +13,7 @@ version: '2.4'
 volumes:
   temp-data:
   postgresql-data:
+  btmesh-data:
 
 services:
 
@@ -45,6 +46,7 @@ services:
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
   manager:
+    privileged: true
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
     depends_on:
@@ -55,6 +57,8 @@ services:
       SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
     volumes:
       - temp-data:/tmp
+      - /var/run/dbus:/var/run/dbus
+      - btmesh-data:/btmesh
 #   devices:
 #     - /dev/ttyACM0:/dev/ttyS0
 
