@@ -3,6 +3,7 @@ package org.openremote.test.energy
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
+import org.junit.Ignore
 import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -32,6 +33,7 @@ import java.time.temporal.ChronoUnit
 
 import static org.openremote.manager.energy.ForecastSolarService.FORECAST_SOLAR_API_KEY
 
+@Ignore
 class ForecastSolarServiceTest extends Specification implements ManagerContainerTrait {
 
     @Shared
