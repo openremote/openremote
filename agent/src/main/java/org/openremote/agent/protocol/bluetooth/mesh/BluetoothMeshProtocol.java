@@ -62,6 +62,9 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     public static final String PROTOCOL_DISPLAY_NAME = "Bluetooth Mesh";
     public static final int DEFAULT_MTU = 20;
     public static final int DEFAULT_SEQUENCE_NUMBER = 1;
+    public static final int DEFAULT_NETWORK_KEY_INDEX = 0;
+    public static final int DEFAULT_APPLICATION_KEY_INDEX = 0;
+    public static final String REGEXP_INDEX_AND_KEY = "^(\\s*(0|([1-9]+[0-9]*))\\s*:)?(\\s*[0-9A-Fa-f]{32}\\s*)";
 
 
     // Class Members --------------------------------------------------------------------------------
@@ -168,11 +171,29 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             LOG.warning(msg);
             return new IllegalArgumentException(msg);
         });
+        Integer netKeyIndex = extractIndex(meshNetKeyParam, DEFAULT_NETWORK_KEY_INDEX);
+        String netKeyAsString = extractKey(meshNetKeyParam);
+        if (netKeyIndex == null || netKeyAsString == null) {
+            String msg = "Format of network key '" + meshNetKeyParam + "' is invalid for protocol: " + this;
+            LOG.warning(msg);
+            throw new IllegalArgumentException(msg);
+        }
+        NetworkKey networkKey = new NetworkKey(netKeyIndex, MeshParserUtils.toByteArray(netKeyAsString));
+
         String meshAppKeyParam = agent.getApplicationKey().orElseThrow(() -> {
             String msg = "No Bluetooth Mesh application key provided for protocol: " + this;
             LOG.warning(msg);
             return new IllegalArgumentException(msg);
         });
+        Integer appKeyIndex = extractIndex(meshAppKeyParam, DEFAULT_APPLICATION_KEY_INDEX);
+        String appKeyAsString = extractKey(meshAppKeyParam);
+        if (appKeyIndex == null || appKeyAsString == null) {
+            String msg = "Format of application key '" + meshAppKeyParam + "' is invalid for protocol: " + this;
+            LOG.warning(msg);
+            throw new IllegalArgumentException(msg);
+        }
+        ApplicationKey applicationKey = new ApplicationKey(appKeyIndex, MeshParserUtils.toByteArray(appKeyAsString));
+
         String sourceAddressParam = agent.getSourceAddress().orElseThrow(() -> {
             String msg = "No Bluetooth Mesh unicast source address provided for protocol: " + this;
             LOG.warning(msg);
@@ -183,15 +204,10 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             String msg = "Format of Bluetooth Mesh unicast source address '" + sourceAddressParam + "' is invalid for protocol: " + this;
             throw new IllegalArgumentException(msg);
         }
+
         int sequenceNumberParam = agent.getSequenceNumber().orElse(DEFAULT_SEQUENCE_NUMBER);
         final int mtuParam = agent.getMtu().orElse(DEFAULT_MTU);
 
-        // TODO: add network key index configuration
-        int netKeyIndex = 0;
-        NetworkKey networkKey = new NetworkKey(netKeyIndex, MeshParserUtils.toByteArray(meshNetKeyParam));
-        // TODO: add application key index configuration
-        int appKeyIndex = 0;
-        ApplicationKey applicationKey = new ApplicationKey(appKeyIndex, MeshParserUtils.toByteArray(meshAppKeyParam));
         Map<Integer, ApplicationKey> applicationKeyMap = new HashMap<>();
         applicationKeyMap.put(appKeyIndex, applicationKey);
         final ScheduledExecutorService finalExecutorService = executorService;
@@ -362,11 +378,38 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         }
     }
 
+    private Integer extractIndex(String indexAndKey, int defaultIndex) {
+        Integer index = null;
+        if (indexAndKey.matches(REGEXP_INDEX_AND_KEY)) {
+            String[] indexAndKeyArr = indexAndKey.split(":");
+            if (indexAndKeyArr.length == 2) {
+                try {
+                    index = Integer.decode(indexAndKeyArr[0].trim());
+                } catch (NumberFormatException e) {}
+            } else {
+                index = defaultIndex;
+            }
+        }
+        return index;
+    }
+
+    private String extractKey(String indexAndKey) {
+        String key = null;
+        if (indexAndKey.matches(REGEXP_INDEX_AND_KEY)) {
+            String[] indexAndKeyArr = indexAndKey.split(":");
+            key = indexAndKeyArr[indexAndKeyArr.length == 2 ? 1 : 0].trim();
+        }
+        return key;
+    }
+
     private Integer toIntegerAddress(String addressAsString, AttributeRef attributeRef) {
         if (addressAsString == null) {
             return null;
         }
-        Integer address = Integer.decode("0x" + addressAsString);
+        Integer address = null;
+        try {
+            address = Integer.decode("0x" + addressAsString);
+        } catch (NumberFormatException e) {}
         if (address == null) {
             if (attributeRef != null) {
                 LOG.warning("Format of Bluetooth Mesh unicast address value '" + addressAsString + "' is invalid for protocol attribute: " + attributeRef);
