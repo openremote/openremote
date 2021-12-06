@@ -85,6 +85,7 @@ public class ManagerTestSetup extends ManagerSetup {
     public String masterRealm;
     public String realmBuildingTenant;
     public String realmCityTenant;
+    public String realmEnergyTenant;
     public String smartCityServiceAgentId;
     public String area1Id;
     public String microphone1Id;
@@ -110,6 +111,7 @@ public class ManagerTestSetup extends ManagerSetup {
         masterRealm = masterTenant.getRealm();
         this.realmBuildingTenant = tenantBuilding.getRealm();
         this.realmCityTenant = tenantCity.getRealm();
+        this.realmEnergyTenant = keycloakTestSetup.energyTenant.getRealm();
 
         // ################################ Assets for 'master' realm ###################################
 
@@ -219,6 +221,14 @@ public class ManagerTestSetup extends ManagerSetup {
         electricitySolarAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
             attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
         );
+        electricitySolarAsset.setPanelOrientation(ElectricityProducerSolarAsset.PanelOrientation.SOUTH);
+        electricitySolarAsset.setPanelAzimuth(0);
+        electricitySolarAsset.setPanelPitch(30);
+        electricitySolarAsset.setEfficiencyExport(100);
+        electricitySolarAsset.setPowerExportMax(2.5);
+        electricitySolarAsset.setLocation(new GeoJSONPoint(9.195285, 48.787418));
+        electricitySolarAsset.setSetActualValueWithForecast(true);
+        electricitySolarAsset.setIncludeForecastSolarService(true);
         electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
         electricitySolarAssetId = electricitySolarAsset.getId();
 
@@ -253,6 +263,8 @@ public class ManagerTestSetup extends ManagerSetup {
         );
         electricitySupplierAsset = assetStorageService.merge(electricitySupplierAsset);
         electricitySupplierAssetId = electricitySupplierAsset.getId();
+
+
 
         // ################################ Assets for 'building' realm ###################################
 

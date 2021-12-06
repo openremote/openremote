@@ -28,10 +28,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +53,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         protected Result result;
     }
 
-    protected static  class  Result{
+    protected static class Result {
         @JsonProperty
         protected Map<String, Double> wattHours;
         @JsonProperty
@@ -64,7 +61,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         @JsonProperty
         protected Map<String, Double> watts;
     }
-    
+
     public static final String FORECAST_SOLAR_API_KEY = "FORECAST_SOLAR_API_KEY";
 
     protected static final DateTimeFormatter ISO_LOCAL_DATE_TIME_WITHOUT_T = new DateTimeFormatterBuilder()
@@ -151,13 +148,11 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     @Override
     public void stop(Container container) throws Exception {
-        calculationFutures.keySet().forEach(this::stopProcessing);
+        new ArrayList<>(calculationFutures.keySet()).forEach(this::stopProcessing);
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {
-        ScheduledFuture<?> calculationFuture = calculationFutures.get(attributeEvent.getAssetId());
-
-        if (calculationFuture != null) {
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.getName())) {
             processElectricityProducerSolarAssetAttributeEvent(attributeEvent);
         }
     }
@@ -171,11 +166,11 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         }
 
         if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.getName())) {
-            boolean disabled = attributeEvent.<Boolean>getValue().orElse(false);
-            if (!disabled && calculationFutures.containsKey(attributeEvent.getAssetId())) {
+            boolean enabled = attributeEvent.<Boolean>getValue().orElse(false);
+            if (enabled && calculationFutures.containsKey(attributeEvent.getAssetId())) {
                 // Nothing to do here
                 return;
-            } else if (disabled && !calculationFutures.containsKey(attributeEvent.getAssetId())) {
+            } else if (!enabled && !calculationFutures.containsKey(attributeEvent.getAssetId())) {
                 // Nothing to do here
                 return;
             }
