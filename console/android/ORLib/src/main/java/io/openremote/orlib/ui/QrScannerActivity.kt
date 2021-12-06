@@ -35,6 +35,7 @@ class QrScannerActivity : AppCompatActivity() {
         setContentView(view)
         supportActionBar!!.title = "Scan QR Code"
         initViews()
+        initialiseDetectorsAndSources()
     }
 
     private fun initViews() {
@@ -128,14 +129,18 @@ class QrScannerActivity : AppCompatActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        cameraSource!!.release()
-    }
+    override fun onDestroy() {
+        if (barcodeDetector != null) {
+            barcodeDetector!!.release()
+            barcodeDetector = null
+        }
 
-    override fun onResume() {
-        super.onResume()
-        initialiseDetectorsAndSources()
+        if (cameraSource != null) {
+            cameraSource!!.stop()
+            cameraSource!!.release()
+            cameraSource = null
+        }
+        super.onDestroy()
     }
 
     companion object {

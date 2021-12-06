@@ -145,7 +145,9 @@ public class QrScannerProvider: NSObject {
                         }
                     }))
                     alertController.addAction(UIAlertAction(title: "No", style: .cancel, handler: nil))
-                    currentViewController.present(alertController, animated: true, completion: nil)
+                    DispatchQueue.main.async {
+                        currentViewController.present(alertController, animated: true, completion: nil)
+                    }
                 }
             })
         }
@@ -154,7 +156,7 @@ public class QrScannerProvider: NSObject {
 
 extension QrScannerProvider: QrScannerDelegate {
     
-    public func codeScanned(_ codeContents: String) {
+    public func codeScanned(_ codeContents: String?) {
         scanner?.dismiss(animated: true) {
             self.scannedCallback?(
                 [

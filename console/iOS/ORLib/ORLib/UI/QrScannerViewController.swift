@@ -9,7 +9,7 @@ import AVFoundation
 import UIKit
 
 public protocol QrScannerDelegate: AnyObject {
-     func codeScanned(_ codeContents:String)
+    func codeScanned(_ codeContents:String?)
 }
 
 public class QrScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
@@ -58,9 +58,28 @@ public class QrScannerViewController: UIViewController, AVCaptureMetadataOutputO
         previewLayer.cornerRadius = 5
         metadataOutput.rectOfInterest = previewLayer.rectOfInterest
 
-        view.layer.addSublayer(previewLayer)
+        let subView = UIView(frame: view.frame)
+
+        subView.layer.addSublayer(previewLayer)
+        view.addSubview(subView)
         
         captureSession.startRunning()
+
+        let cancelButton = UIButton(type: .close)
+        cancelButton.layer.cornerRadius = 25
+        cancelButton.backgroundColor = .white.withAlphaComponent(0.7)
+        cancelButton.setTitleColor(.black, for: [.normal, .highlighted, .selected])
+        cancelButton.addTarget(self, action: #selector(cancelButtonTapped), for: .touchUpInside)
+        cancelButton.frame = CGRect(x: 20, y: 20, width: 48, height: 48)
+        view.addSubview(cancelButton)
+    }
+
+    @objc func cancelButtonTapped() {
+        if (delegate != nil) {
+            delegate?.codeScanned(nil)
+        } else {
+            self.dismiss(animated: true, completion: nil)
+        }
     }
 
     func failed() {
