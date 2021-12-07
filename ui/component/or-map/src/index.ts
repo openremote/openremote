@@ -2,7 +2,7 @@ import manager, {EventCallback, MapType} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL} from "mapbox-gl";
+import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike,  Map as MapGL} from "maplibre-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
@@ -21,7 +21,7 @@ import {i18next} from "@openremote/or-translate";
 export {Util, LngLatLike};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
-export {Control, IControl} from "mapbox-gl";
+export {Control, IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 
 export interface ViewSettings {
@@ -83,16 +83,16 @@ export class CenterControl {
     onAdd(map: MapGL): HTMLElement {
         this.map = map;
         const control = document.createElement("div");
-        control.classList.add("mapboxgl-ctrl");
-        control.classList.add("mapboxgl-ctrl-group");
+        control.classList.add("maplibregl-ctrl");
+        control.classList.add("maplibregl-ctrl-group");
         const button = document.createElement("button");
-        button.className = "mapboxgl-ctrl-geolocate";
+        button.className = "maplibregl-ctrl-geolocate";
         button.addEventListener("click", (ev) => map.flyTo({
             center: this.pos,
             zoom: map.getZoom()
         }));
         const buttonIcon = document.createElement("span");
-        buttonIcon.className = "mapboxgl-ctrl-icon";
+        buttonIcon.className = "maplibregl-ctrl-icon";
         button.appendChild(buttonIcon);
         control.appendChild(button);
         this.elem = control;
@@ -144,8 +144,8 @@ export class CoordinatesControl {
     onAdd(map: MapGL): HTMLElement {
         this.map = map;
         const control = document.createElement("div");
-        control.classList.add("mapboxgl-ctrl");
-        control.classList.add("mapboxgl-ctrl-group");
+        control.classList.add("maplibregl-ctrl");
+        control.classList.add("maplibregl-ctrl-group");
 
         const input = new OrMwcInput();
         input.type = InputType.TEXT;

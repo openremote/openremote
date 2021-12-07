@@ -62,12 +62,12 @@ export const style = css`
         bottom: 0;
     }
 
-    .leaflet-marker-icon, .mapboxgl-marker {
+    .leaflet-marker-icon, .maplibregl-marker {
         pointer-events: none !important;
     }
 
     .or-map-marker {
-        position: absolute; /* This makes mapboxJS behave like mapboxGL */
+        position: absolute; /* This makes mapboxJS behave like maplibreGL */
     }
     
     .or-map-marker.active {

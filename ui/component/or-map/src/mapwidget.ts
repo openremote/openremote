@@ -3,14 +3,14 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
     MapMouseEvent,
     NavigationControl,
     Control,
-    IControl} from "mapbox-gl";
+    IControl} from "maplibre-gl";
 import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat} from "./util";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
-const mapboxGlStyles = require("mapbox-gl/dist/mapbox-gl.css");
+const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
@@ -234,11 +234,11 @@ export class MapWidget {
         } else {
             // Add style to shadow root
             const style = document.createElement("style");
-            style.id = "mapboxGlStyle";
-            style.textContent = mapboxGlStyles;
+            style.id = "maplibreGlStyle";
+            style.textContent = maplibreGlStyles;
             this._styleParent.appendChild(style);
 
-            const map: typeof import("mapbox-gl") = await import(/* webpackChunkName: "mapbox-gl" */ "mapbox-gl");
+            const map: typeof import("maplibre-gl") = await import(/* webpackChunkName: "maplibre-gl" */ "maplibre-gl");
             const settings = await this.loadViewSettings();
                 
             const options: OptionsGL = {
