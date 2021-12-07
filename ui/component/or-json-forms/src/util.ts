@@ -112,7 +112,7 @@ export function getCombinatorInfos(schemas: JsonSchema[], rootSchema: JsonSchema
         }
 
         return {
-            title: i18next.t("schema.title." + titleAndDescription[0], {defaultValue: Util.camelCaseToSentenceCase(titleAndDescription[0])}),
+            title: titleAndDescription[0],
             description: titleAndDescription[1],
             defaultValueCreator: creator,
             constProperty: constProperty,
@@ -170,7 +170,7 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
         }
     }
 
-    return [title, undefined];
+    return [i18next.t("schema.title." + title, {defaultValue: Util.camelCaseToSentenceCase(title)}), undefined];
 }
 
 function getLabelFromScopeOrRef(scopeOrRef: string) {

@@ -1,4 +1,4 @@
-package org.openremote.test.failure
+package org.openremote.test.rules
 
 import org.openremote.manager.rules.*
 import org.openremote.manager.setup.SetupService

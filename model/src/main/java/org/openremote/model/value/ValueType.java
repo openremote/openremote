@@ -36,6 +36,7 @@ import org.openremote.model.auth.UsernamePassword;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.console.ConsoleProviders;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.util.CronExpressionParser;
 import org.openremote.model.util.TsIgnore;
 import org.openremote.model.value.impl.*;
@@ -201,6 +202,8 @@ public final class ValueType {
     public static final ValueDescriptor<String> WS_URL = new ValueDescriptor<>("WS_URL", String.class,
         new ValueConstraint.Pattern(Constants.WS_URL_REGEXP)
     );
+
+    public static final ValueDescriptor<AssetQuery> ASSET_QUERY = new ValueDescriptor<>("assetQuery", AssetQuery.class);
 
     protected ValueType() {
     }
