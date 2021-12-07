@@ -60,6 +60,7 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     @JsonPropertyDescription("String to be used for attribute writes and can contain '" + Protocol.DYNAMIC_VALUE_PLACEHOLDER +
         "' placeholders to allow the written value to be injected into the string or to even hardcode the value written to the" +
         " protocol (particularly useful for executable attributes)")
+    @JsonSchemaFormat("or-multiline")
     protected String writeValue;
     @JsonPropertyDescription("The predicate to apply to incoming messages to determine if the message is intended for the" +
         " linked attribute; the value used in the predicate can be filtered using the message match filters. This must be defined to" +
