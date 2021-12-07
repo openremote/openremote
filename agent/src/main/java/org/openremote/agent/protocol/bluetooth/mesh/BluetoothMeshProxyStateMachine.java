@@ -961,7 +961,22 @@ public class BluetoothMeshProxyStateMachine {
         public void disconnect() {
             setState(getDisconnectedState());
             disableOutCharacteristicNotifications();
+            executeOnMainThread(() -> {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
             cancelConnection();
+            // Add delay between disconnection and next reconnection
+            executeOnMainThread(() -> {
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
             notifyStatusConsumer(ConnectionStatus.DISCONNECTED);
             stopQueueWorker();
         }

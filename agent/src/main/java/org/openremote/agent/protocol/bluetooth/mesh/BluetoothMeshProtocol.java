@@ -44,6 +44,8 @@ import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -71,72 +73,84 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshProtocol.class.getName());
 
-
-    // Private Instance Fields --------------------------------------------------------------------
-
-    private volatile BluetoothCentralManager bluetoothCentral;
-    private volatile BluetoothMeshNetwork meshNetwork;
-    private volatile ScheduledFuture<?> mainThreadFuture;
-    private final Map<AttributeRef, Consumer<Object>> sensorValueConsumerMap = new HashMap<>();
-    private final MainThreadManager mainThread = new MainThreadManager();
-    private final SequenceNumberPersistencyManager sequenceNumberManager = new SequenceNumberPersistencyManager();
-
-    private final BluetoothCentralManagerCallback bluetoothManagerCallback = new BluetoothCentralManagerCallback() {
+    private static MainThreadManager mainThread = new MainThreadManager();
+    private static ScheduledFuture<?> mainThreadFuture = null;
+    private static BluetoothCentralManagerCallback bluetoothManagerCallback = new BluetoothCentralManagerCallback() {
         @Override
         public void onConnectedPeripheral(BluetoothPeripheral peripheral) {
-            LOG.fine("BluetoothCentralManager::onConnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
+            LOG.info("BluetoothCentralManager::onConnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
 
-            synchronized (BluetoothMeshProtocol.this) {
-                if (meshNetwork != null) {
-                    meshNetwork.onConnectedPeripheral(peripheral);
+            synchronized (BluetoothMeshProtocol.class) {
+                for (BluetoothMeshNetwork network : networkList) {
+                    network.onConnectedPeripheral(peripheral);
                 }
             }
         }
 
         @Override
         public void onConnectionFailed(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-            LOG.fine("BluetoothCentralManager::onConnectionFailed: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
+            LOG.info("BluetoothCentralManager::onConnectionFailed: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
 
-            synchronized (BluetoothMeshProtocol.this) {
-                if (meshNetwork != null) {
-                    meshNetwork.onConnectionFailed(peripheral, status);
+            synchronized (BluetoothMeshProtocol.class) {
+                for (BluetoothMeshNetwork network : networkList) {
+                    network.onConnectionFailed(peripheral, status);
                 }
             }
         }
 
         @Override
         public void onDisconnectedPeripheral(BluetoothPeripheral peripheral, BluetoothCommandStatus status) {
-            LOG.fine("BluetoothCentralManager::onDisconnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
+            LOG.info("BluetoothCentralManager::onDisconnectedPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", Status=" + status +"]");
 
-            synchronized (BluetoothMeshProtocol.this) {
-                if (meshNetwork != null) {
-                    meshNetwork.onDisconnectedPeripheral(peripheral, status);
+            synchronized (BluetoothMeshProtocol.class) {
+                for (BluetoothMeshNetwork network : networkList) {
+                    network.onDisconnectedPeripheral(peripheral, status);
                 }
             }
         }
 
         @Override
         public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
-            LOG.fine("BluetoothCentralManager::onDiscoveredPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", ScanResult=" + scanResult +"]");
+            LOG.info("BluetoothCentralManager::onDiscoveredPeripheral: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + ", ScanResult=" + scanResult +"]");
 
-            synchronized (BluetoothMeshProtocol.this) {
-                if (meshNetwork != null) {
-                    meshNetwork.onDiscoveredPeripheral(peripheral, scanResult);
+            synchronized (BluetoothMeshProtocol.class) {
+                for (BluetoothMeshNetwork network : networkList) {
+                    network.onDiscoveredPeripheral(peripheral, scanResult);
                 }
             }
         }
 
         @Override
         public void onScanFailed(int errorCode) {
-            LOG.fine("BluetoothCentralManager::onScanFailed: [errorCode=" + errorCode + "]");
+            LOG.info("BluetoothCentralManager::onScanFailed: [errorCode=" + errorCode + "]");
 
-            synchronized (BluetoothMeshProtocol.this) {
-                if (meshNetwork != null) {
-                    meshNetwork.onScanFailed(errorCode);
+            synchronized (BluetoothMeshProtocol.class) {
+                for (BluetoothMeshNetwork network : networkList) {
+                    network.onScanFailed(errorCode);
                 }
             }
         }
     };
+    private static BluetoothCentralManager bluetoothCentral = new BluetoothCentralManager(bluetoothManagerCallback);
+    private static List<BluetoothMeshNetwork> networkList = new LinkedList<>();
+    private static SequenceNumberPersistencyManager sequenceNumberManager = new SequenceNumberPersistencyManager();
+
+
+    public synchronized static void initMainThread(ScheduledExecutorService executorService) {
+        if (mainThreadFuture == null) {
+            mainThreadFuture = executorService.schedule(mainThread, 0, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    public synchronized static void addNetwork(BluetoothMeshNetwork network) {
+        networkList.add(network);
+    }
+
+
+    // Private Instance Fields --------------------------------------------------------------------
+
+    private volatile BluetoothMeshNetwork meshNetwork;
+    private final Map<AttributeRef, Consumer<Object>> sensorValueConsumerMap = new HashMap<>();
 
 
     // Constructors -------------------------------------------------------------------------------
@@ -220,30 +234,22 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
                 }
             }
         };
-        sequenceNumberManager.load();
-        Integer oldSequenceNumber = sequenceNumberManager.getSequenceNumber(networkKey, sourceAddress);
+        BluetoothMeshProtocol.sequenceNumberManager.load();
+        Integer oldSequenceNumber = BluetoothMeshProtocol.sequenceNumberManager.getSequenceNumber(networkKey, sourceAddress);
         if (oldSequenceNumber == null) {
             oldSequenceNumber = sequenceNumberParam;
-            sequenceNumberManager.save(networkKey, sourceAddress, oldSequenceNumber);
+            BluetoothMeshProtocol.sequenceNumberManager.save(networkKey, sourceAddress, oldSequenceNumber);
         }
-        final int sequenceNumber = oldSequenceNumber;
+        BluetoothMeshProtocol.initMainThread(executorService);
+        meshNetwork = new BluetoothMeshNetwork(
+            BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread, sourceAddress, networkKey,
+            applicationKeyMap, mtuParam, oldSequenceNumber, executorService, statusConsumer
+        );
+        BluetoothMeshProtocol.addNetwork(meshNetwork);
         Runnable runnable = () -> {
-            synchronized (BluetoothMeshProtocol.this) {
-                if (bluetoothCentral == null) {
-                    bluetoothCentral = new BluetoothCentralManager(bluetoothManagerCallback);
-                }
-                sequenceNumberManager.load();
-                meshNetwork = new BluetoothMeshNetwork(
-                    bluetoothCentral, sequenceNumberManager, mainThread, sourceAddress, networkKey,
-                    applicationKeyMap, mtuParam, sequenceNumber, executorService, statusConsumer
-                );
-                meshNetwork.connect();
-            }
+            meshNetwork.connect();
         };
-        if (mainThreadFuture == null) {
-            mainThreadFuture = executorService.schedule(mainThread, 0, TimeUnit.MILLISECONDS);
-        }
-        mainThread.enqueue(runnable);
+        BluetoothMeshProtocol.mainThread.enqueue(runnable);
     }
 
     @Override
