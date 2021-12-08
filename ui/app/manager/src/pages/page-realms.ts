@@ -367,7 +367,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
                                   <div class="row">
                                     <div class="column">
                                       <or-mwc-input ?readonly="${tenant.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${tenant.realm}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => tenant.realm = e.detail.value}"></or-mwc-input>            
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${tenant.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>tenant.enabled = e.detail.value}}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${tenant.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>tenant.enabled = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
                                       <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${tenant.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => tenant.displayName = e.detail.value}"></or-mwc-input>            

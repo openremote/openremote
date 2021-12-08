@@ -19,18 +19,19 @@
  */
 package org.openremote.model.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.lang.reflect.Field;
-import java.util.Arrays;
+import java.util.*;
+
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**
  * This can be used (among other things) to query the REALM table in JPA queries.
@@ -86,6 +87,10 @@ public class Tenant {
 
     @Transient
     protected Integer accessTokenLifespan;
+
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinColumn(name = "REALM_ID")
+    protected Set<RealmRole> realmRoles;
 
     public Tenant() {
         this(null, null, null, null);
@@ -233,6 +238,24 @@ public class Tenant {
         return this;
     }
 
+    public Set<RealmRole> getRealmRoles() {
+        return realmRoles;
+    }
+
+    @JsonIgnore
+    public Set<RealmRole> getNormalisedRealmRoles() {
+        Set<RealmRole> tempSet = new LinkedHashSet<>(getDefaultRealmRoles(getRealm()));
+        if (realmRoles != null) {
+            tempSet.addAll(realmRoles);
+        }
+        return tempSet;
+    }
+
+    public Tenant setRealmRoles(Set<RealmRole> realmRoles) {
+        this.realmRoles = realmRoles;
+        return this;
+    }
+
     public static Field[] getPropertyFields() {
         if (propertyFields == null) {
             propertyFields = Arrays.stream(Tenant.class.getDeclaredFields())
@@ -240,6 +263,26 @@ public class Tenant {
                 .toArray(Field[]::new);
         }
         return propertyFields;
+    }
+
+    protected static List<RealmRole> getDefaultRealmRoles(String realm) {
+        if (MASTER_REALM.equals(realm)) {
+            return Arrays.asList(
+                new RealmRole("default-roles-master"),
+                new RealmRole("admin"),
+                new RealmRole("create-realm"),
+                new RealmRole("offline_access"),
+                new RealmRole("uma_authorization"),
+                new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
+            );
+        }
+
+        return Arrays.asList(
+            new RealmRole("default-roles-" + realm),
+            new RealmRole("offline_access"),
+            new RealmRole("uma_authorization"),
+            new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
+        );
     }
 
     @Override

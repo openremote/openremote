@@ -41,6 +41,7 @@ import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export const enum ConditionType {
+    AGENT_QUERY = "agentQuery",
     ASSET_QUERY = "assetQuery",
     TIMER = "timer"
 }
@@ -194,7 +195,7 @@ export function getAssetIdsFromQuery(query?: AssetQuery) {
     return query && query.ids ? [...query.ids] : undefined;
 }
 
-export const getAssetTypes = async () => {
+export const getAssetTypes: () => Promise<string[]> = async () => {
     // RT: Change to just get all asset types for now as if an instance of a particular asset doesn't exist you
     // won't be able to create a rule for it (e.g. if no ConsoleAsset in a realm then cannot create a console rule)
     return AssetModelUtil.getAssetTypeInfos().filter((ati) => ati.assetDescriptor!.name !== WellknownAssets.UNKNOWNASSET).map(ati => ati.assetDescriptor!.name!);

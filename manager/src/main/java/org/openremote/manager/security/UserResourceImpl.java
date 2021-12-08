@@ -282,19 +282,6 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
     }
 
     @Override
-    public Role[] getRealmRoles(RequestParams requestParams, String realm) {
-        try {
-            return identityService.getIdentityProvider().getRoles(
-                    realm,
-                    null);
-        } catch (ClientErrorException ex) {
-            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
-        } catch (Exception ex) {
-            throw new WebApplicationException(ex);
-        }
-    }
-
-    @Override
     public void updateRoles(RequestParams requestParams, String realm, Role[] roles) {
         updateClientRoles(requestParams, realm, roles, KEYCLOAK_CLIENT_ID);
     }

@@ -17,33 +17,61 @@ import {OrRuleAssetQuery} from "./or-rule-asset-query";
 const TIMER_COLOR = "4b87ea";
 const DATE_TIME_COLOR = "6AEAA4";
 
-export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): ListItem[] {
+export function getWhenTypesMenu(config?: RulesConfig, assetInfos?: AssetTypeInfo[]): (ListItem | null)[] {
 
     let addAssetTypes = true;
+    let addAgentTypes = true;
     let addTimer = true;
 
     if (config && config.controls && config.controls.allowedConditionTypes) {
         addAssetTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.ASSET_QUERY) >= 0;
+        addAgentTypes = config.controls.allowedConditionTypes.indexOf(ConditionType.AGENT_QUERY) >= 0;
         addTimer = config.controls.allowedConditionTypes.indexOf(ConditionType.TIMER) >= 0;
     }
 
-    const menu: ListItem[] = [];
+    const menu: (ListItem | null)[] = [];
 
-    if (addAssetTypes && assetInfos) {
-        menu.push(...assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
+    if (assetInfos) {
 
-            const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
-            const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
-            const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+        if (addAssetTypes) {
+            const items = assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType !== "agent").map((assetTypeInfo) => {
 
-            return {
-                text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
-                value: assetTypeInfo.assetDescriptor!.name,
-                icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
-                styleMap: styleMap
-            } as ListItem;
-        })
-        .sort(Util.sortByString((listItem) => listItem.value!)));
+                const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
+                const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
+                const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+
+                return {
+                    text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
+                    value: assetTypeInfo.assetDescriptor!.name,
+                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
+                    styleMap: styleMap
+                } as ListItem;
+            });
+
+            menu.push(...items.sort(Util.sortByString((listItem) => listItem.text!)));
+        }
+
+        if (addAssetTypes && addAgentTypes) {
+            menu.push(null);
+        }
+
+        if (addAgentTypes) {
+            const items = assetInfos.filter((assetInfo) => assetInfo.assetDescriptor!.descriptorType === "agent").map((assetTypeInfo) => {
+
+                const color = AssetModelUtil.getAssetDescriptorColour(assetTypeInfo);
+                const icon = AssetModelUtil.getAssetDescriptorIcon(assetTypeInfo);
+                const styleMap = color ? {"--or-icon-fill": "#" + color} : undefined;
+
+                return {
+                    text: Util.getAssetTypeLabel(assetTypeInfo.assetDescriptor!),
+                    value: assetTypeInfo.assetDescriptor!.name,
+                    icon: icon ? icon : AssetModelUtil.getAssetDescriptorIcon(WellknownAssets.THINGASSET),
+                    styleMap: styleMap
+                } as ListItem;
+            });
+
+            menu.push(...items.sort(Util.sortByString((listItem) => listItem.text!)));
+        }
     }
 
     if (addTimer) {
