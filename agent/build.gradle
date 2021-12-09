@@ -31,6 +31,14 @@ dependencies {
     }
 
     compile "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+
+    compile ("com.github.weliem.blessed-bluez:blessed:$bluetoothVersion") {
+        // Libraries should not depend on a logging implementation and/or alpha versions!
+        exclude group: "org.slf4j"
+
+        // Conflicts with asm version bundled with GWT
+        exclude group: "org.ow2.asm"
+    }
 }
 
 jar {
