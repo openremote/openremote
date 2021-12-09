@@ -6,7 +6,7 @@ import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.query.AssetQuery
 import org.openremote.model.query.filter.AttributePredicate
 import org.openremote.model.query.filter.StringPredicate
-import org.openremote.model.query.filter.ValueNotEmptyPredicate
+import org.openremote.model.query.filter.ValueEmptyPredicate
 import org.openremote.model.rules.AssetState
 import org.openremote.model.rules.Assets
 
@@ -92,7 +92,7 @@ rules.add()
                 facts.matchFirstAssetState(
                         new AssetQuery().types(BuildingAsset)
                                 .ids(vacationMode.residenceId)
-                                .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueNotEmptyPredicate()))
+                                .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueEmptyPredicate().negate(true)))
                 ).map { residence ->
                     vacationMode.until != residence.value.get()
                 }.orElse(false)
@@ -116,7 +116,7 @@ rules.add()
                 !facts.matchFirstAssetState(
                         new AssetQuery().types(BuildingAsset)
                                 .ids(vacationMode.residenceId)
-                                .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueNotEmptyPredicate()))).isPresent()
+                                .attributes(new AttributePredicate(new StringPredicate("vacationUntil"), new ValueEmptyPredicate().negate(true)))).isPresent()
             }.map { vacationMode ->
                 facts.bind("vacationMode", vacationMode)
                 true
