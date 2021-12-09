@@ -45,7 +45,7 @@ public class BluetoothMeshProxyStateMachine {
 
     public static final Logger LOG = SyslogCategory.getLogger(SyslogCategory.PROTOCOL, BluetoothMeshProxyStateMachine.class.getName());
 
-    public static final int MAX_RETRY_COUNT = 7;
+    public static final int MAX_RETRY_COUNT = 20;
     public static final int CONNECT_TIMEOUT = 60000;
     public static final int SCAN_TIMEOUT = 60000;
 
