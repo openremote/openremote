@@ -133,6 +133,7 @@ public class SequenceNumberPersistencyManager {
         }
         map.clear();
         Element root = doc.getRootElement();
+        @SuppressWarnings("unchecked")
         List<Element> itemElements = root.getChildren(XML_TAG_SEQUENCE_NUMBER_ITEM);
         for (Element itemElement : itemElements) {
             Element keyElement = itemElement.getChild(XML_TAG_NETWORK_KEY);
