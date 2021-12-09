@@ -221,7 +221,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
 
         Tenant tenant = identityProvider.getTenant(realm);
 
-        if (tenant == null || !tenant.getEnabled()) {
+        if (tenant == null || !tenant.isActive(timerService.getCurrentTimeMillis())) {
             LOG.warning("Realm not found or is inactive: " + realm);
             return false;
         }

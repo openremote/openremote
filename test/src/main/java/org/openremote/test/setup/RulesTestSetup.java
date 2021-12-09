@@ -32,7 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
-import static org.openremote.model.rules.Ruleset.Lang.SHOW_ON_LIST;
+import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST;
 
 public class RulesTestSetup extends ManagerSetup {
 

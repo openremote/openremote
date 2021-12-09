@@ -14,7 +14,7 @@ import {
     OrRulesRequestSelectionEvent,
     OrRulesSelectionEvent,
     RulesConfig,
-    RulesetNode
+    RulesetNode, RuleViewInfoMap
 } from "./index";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
@@ -458,6 +458,12 @@ export class OrRuleList extends translate(i18next)(LitElement) {
 
         if (this.config && this.config.rulesetAddHandler && !this.config.rulesetAddHandler(ruleset)) {
             return;
+        }
+
+        if (this.config && this.config.rulesetTemplates && this.config.rulesetTemplates[lang]) {
+            ruleset.rules = this.config.rulesetTemplates[lang];
+        } else {
+            ruleset.rules = RuleViewInfoMap[lang].viewRulesetTemplate;
         }
 
         // Ensure config hasn't messed with certain values

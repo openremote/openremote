@@ -19,7 +19,7 @@ import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMI
 import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
-import static org.openremote.model.rules.Ruleset.Lang.SHOW_ON_LIST
+import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST
 
 class BasicRulesetResourceTest extends Specification implements ManagerContainerTrait {
 

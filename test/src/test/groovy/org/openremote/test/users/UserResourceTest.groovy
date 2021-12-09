@@ -195,21 +195,4 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
         writeRole.compositeRoleIds.length == 1
         writeRole.compositeRoleIds.contains(roles.find {it.name == ClientRole.READ_ASSETS.value}.id)
     }
-
-    def "Get realm roles"() {
-
-        when: "a request is made for the realm roles in the building realm by the admin user"
-        def roles = adminUserResource.getRealmRoles(null, keycloakTestSetup.tenantBuilding.realm)
-
-        then: "the standard realm roles should have been returned"
-        roles.size() == 4
-        def restrictedUser = roles.find {it.name == RESTRICTED_USER_REALM_ROLE }
-        restrictedUser != null
-
-        when: "a request is made for the realm roles in the building realm by a regular user"
-        regularUserResource.getRealmRoles(null, keycloakTestSetup.tenantBuilding.realm)
-
-        then: "a not allowed exception should be thrown"
-        thrown(ForbiddenException.class)
-    }
 }

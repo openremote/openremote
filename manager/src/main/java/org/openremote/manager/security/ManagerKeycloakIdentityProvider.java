@@ -779,13 +779,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             Tenant existingTenant = getTenant(realm);
 
             // Tenant only has a subset of realm representation so overlay on actual realm representation
-            realmRepresentation.setRealm(tenant.getRealm());
             realmRepresentation.setDisplayName(tenant.getDisplayName());
             realmRepresentation.setAccountTheme(tenant.getAccountTheme());
             realmRepresentation.setAdminTheme(tenant.getAdminTheme());
             realmRepresentation.setEmailTheme(tenant.getEmailTheme());
             realmRepresentation.setLoginTheme(tenant.getLoginTheme());
             realmRepresentation.setRememberMe(tenant.getRememberMe());
+            realmRepresentation.setVerifyEmail(tenant.getVerifyEmail());
+            realmRepresentation.setLoginWithEmailAllowed(tenant.getLoginWithEmail());
             realmRepresentation.setRegistrationAllowed(tenant.getRegistrationAllowed());
             realmRepresentation.setRegistrationEmailAsUsername(tenant.getRegistrationEmailAsUsername());
             realmRepresentation.setEnabled(tenant.getEnabled());

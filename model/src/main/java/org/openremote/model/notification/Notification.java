@@ -93,6 +93,9 @@ public class Notification {
     protected String repeatInterval;
     protected List<Target> targets;
 
+    public Notification() {
+    }
+
     @JsonCreator
     public Notification(@JsonProperty("name") String name, @JsonProperty("message") AbstractNotificationMessage message, @JsonProperty("targets") List<Target> targets, @JsonProperty("repeatFrequency") RepeatFrequency repeatFrequency, @JsonProperty("repeatInterval") String repeatInterval) {
         this.name = name;

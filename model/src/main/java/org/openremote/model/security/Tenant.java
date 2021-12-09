@@ -57,35 +57,40 @@ public class Tenant {
     @Column(name = "NOT_BEFORE")
     protected Double notBefore; // This will explode in 2038
 
-    // We allow password reset by default
-    @Transient
-    protected Boolean resetPasswordAllowed = true;
+    @Column(name = "reset_password_allowed")
+    protected Boolean resetPasswordAllowed;
 
-    @Transient
+    @Column(name = "duplicate_emails_allowed")
     protected Boolean duplicateEmailsAllowed;
 
-    @Transient
+    @Column(name = "remember_me")
     protected Boolean rememberMe;
 
-    @Transient
+    @Column(name = "registration_allowed")
     protected Boolean registrationAllowed;
 
-    @Transient
+    @Column(name = "reg_email_as_username")
     protected Boolean registrationEmailAsUsername;
 
-    @Transient
+    @Column(name = "verify_email")
+    protected Boolean verifyEmail;
+
+    @Column(name = "login_with_email_allowed")
+    protected Boolean loginWithEmail;
+
+    @Column(name = "login_theme")
     protected String loginTheme;
 
-    @Transient
+    @Column(name = "account_theme")
     protected String accountTheme;
 
-    @Transient
+    @Column(name = "admin_theme")
     protected String adminTheme;
 
-    @Transient
+    @Column(name = "email_theme")
     protected String emailTheme;
 
-    @Transient
+    @Column(name = "access_token_lifespan")
     protected Integer accessTokenLifespan;
 
     @OneToMany(fetch = FetchType.EAGER)
@@ -93,7 +98,6 @@ public class Tenant {
     protected Set<RealmRole> realmRoles;
 
     public Tenant() {
-        this(null, null, null, null);
     }
 
     public Tenant(String id, String realm, String displayName, Boolean enabled) {
@@ -153,7 +157,8 @@ public class Tenant {
     }
 
     public Boolean getResetPasswordAllowed() {
-        return resetPasswordAllowed;
+        // We allow password reset by default
+        return resetPasswordAllowed != null ? resetPasswordAllowed : true;
     }
 
     public Tenant setResetPasswordAllowed(Boolean resetPasswordAllowed) {
@@ -162,7 +167,7 @@ public class Tenant {
     }
 
     public Boolean getDuplicateEmailsAllowed() {
-        return duplicateEmailsAllowed;
+        return duplicateEmailsAllowed != null && duplicateEmailsAllowed;
     }
 
     public Tenant setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
@@ -170,8 +175,35 @@ public class Tenant {
         return this;
     }
 
+    public Boolean getVerifyEmail() {
+        return verifyEmail != null && verifyEmail;
+    }
+
+    public Tenant setVerifyEmail(Boolean verifyEmail) {
+        this.verifyEmail = verifyEmail;
+        return this;
+    }
+
+    public Boolean getLoginWithEmail() {
+        return loginWithEmail != null && loginWithEmail;
+    }
+
+    public Tenant setLoginWithEmail(Boolean loginWithEmail) {
+        this.loginWithEmail = loginWithEmail;
+        return this;
+    }
+
+    public Integer getAccessTokenLifespan() {
+        return accessTokenLifespan;
+    }
+
+    public Tenant setAccessTokenLifespan(Integer accessTokenLifespan) {
+        this.accessTokenLifespan = accessTokenLifespan;
+        return this;
+    }
+
     public Boolean getRememberMe() {
-        return rememberMe;
+        return rememberMe != null && rememberMe;
     }
 
     public Tenant setRememberMe(Boolean rememberMe) {
@@ -180,7 +212,7 @@ public class Tenant {
     }
 
     public Boolean getRegistrationAllowed() {
-        return registrationAllowed;
+        return registrationAllowed != null && registrationAllowed;
     }
 
     public Tenant setRegistrationAllowed(Boolean registrationAllowed) {
@@ -189,7 +221,7 @@ public class Tenant {
     }
 
     public Boolean getRegistrationEmailAsUsername() {
-        return registrationEmailAsUsername;
+        return registrationEmailAsUsername != null && registrationEmailAsUsername;
     }
 
     public Tenant setRegistrationEmailAsUsername(Boolean registrationEmailAsUsername) {
@@ -259,7 +291,7 @@ public class Tenant {
     public static Field[] getPropertyFields() {
         if (propertyFields == null) {
             propertyFields = Arrays.stream(Tenant.class.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Column.class))
+                .filter(field -> field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(JoinColumn.class) || field.isAnnotationPresent(Formula.class))
                 .toArray(Field[]::new);
         }
         return propertyFields;
@@ -293,6 +325,19 @@ public class Tenant {
             ", displayName='" + displayName + '\'' +
             ", enabled=" + enabled +
             ", notBefore=" + notBefore +
+            ", resetPasswordAllowed=" + resetPasswordAllowed +
+            ", duplicateEmailsAllowed=" + duplicateEmailsAllowed +
+            ", rememberMe=" + rememberMe +
+            ", registrationAllowed=" + registrationAllowed +
+            ", registrationEmailAsUsername=" + registrationEmailAsUsername +
+            ", verifyEmail=" + verifyEmail +
+            ", loginWithEmail=" + loginWithEmail +
+            ", loginTheme='" + loginTheme + '\'' +
+            ", accountTheme='" + accountTheme + '\'' +
+            ", adminTheme='" + adminTheme + '\'' +
+            ", emailTheme='" + emailTheme + '\'' +
+            ", accessTokenLifespan=" + accessTokenLifespan +
+            ", realmRoles=" + realmRoles +
             '}';
     }
 }

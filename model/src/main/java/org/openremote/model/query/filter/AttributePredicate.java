@@ -71,6 +71,18 @@ public class AttributePredicate extends NameValuePredicate {
     }
 
     @Override
+    public AttributePredicate name(String name) {
+        this.name = new StringPredicate(name);
+        return this;
+    }
+
+    @Override
+    public AttributePredicate name(NameHolder name) {
+        this.name = new StringPredicate(name);
+        return this;
+    }
+
+    @Override
     public AttributePredicate value(ValuePredicate value) {
         this.value = value;
         return this;

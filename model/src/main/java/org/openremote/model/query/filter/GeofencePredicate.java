@@ -29,7 +29,7 @@ public abstract class GeofencePredicate extends ValuePredicate {
     public abstract double[] getCentrePoint();
 
     public GeofencePredicate negate() {
-        negated = true;
+        negated = !negated;
         return this;
     }
 }

@@ -1,17 +1,15 @@
 package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesBuilder
+import org.openremote.model.notification.*
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.impl.*
-import org.openremote.model.notification.Notification
-import org.openremote.model.notification.PushNotificationMessage
-import org.openremote.model.query.AssetQuery
-import org.openremote.model.query.filter.LocationAttributePredicate
-import org.openremote.model.query.filter.RadialGeofencePredicate
-import org.openremote.model.query.filter.ValueEmptyPredicate
+import org.openremote.model.query.*
+import org.openremote.model.query.filter.*
 import org.openremote.model.rules.Assets
 import org.openremote.model.rules.Notifications
+import org.openremote.model.rules.Users
 
 import java.util.logging.Logger
 import java.util.stream.Collectors
@@ -19,6 +17,7 @@ import java.util.stream.Collectors
 Logger LOG = binding.LOG
 RulesBuilder rules = binding.rules
 Notifications notifications = binding.notifications
+Users users = binding.users
 Assets assets = binding.assets
 
 rules.add()
