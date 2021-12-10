@@ -42,8 +42,15 @@ public interface TenantResource {
 
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed(Constants.READ_LOGS_ROLE)
     Tenant[] getAll(@BeanParam RequestParams requestParams);
+
+    /**
+     * Will return realm and display names for accessible realms by authenticated user
+     */
+    @GET
+    @Path("accessible")
+    @Produces(APPLICATION_JSON)
+    Tenant[] getAccessible(@BeanParam RequestParams requestParams);
 
     /**
      * Regular users can call this, but only to obtain details about their currently authenticated and active realm.

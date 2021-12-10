@@ -806,7 +806,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             const query: AssetQuery = {
                 tenant: {
-                    realm: manager.isSuperUser() ? manager.displayRealm : manager.getRealm()
+                    realm: manager.displayRealm
                 },
                 select: { // Just need the basic asset info
                     excludeAttributes: true,

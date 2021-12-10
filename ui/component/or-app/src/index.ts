@@ -6,7 +6,7 @@ import {
     TemplateResult,
     unsafeCSS
 } from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {AppConfig, Page, RealmAppConfig, router} from "./types";
 import "@openremote/or-translate";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -16,7 +16,7 @@ import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
 import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, OREvent, normaliseConfig, Manager} from "@openremote/core";
-import {DEFAULT_LANGUAGES, HeaderConfig, Languages} from "./or-header";
+import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
@@ -24,6 +24,7 @@ import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
+import { Tenant } from "@openremote/model";
 
 const DefaultLogo = require("../images/logo.svg");
 const DefaultMobileLogo = require("../images/logo-mobile.svg");
@@ -61,7 +62,7 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     keycloakUrl: KEYCLOAK_URL,
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: getRealmQueryParameter(),
+    realm: undefined,
     consoleAutoEnable: true,
     loadTranslations: ["or"]
 };
@@ -80,15 +81,19 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @query("main")
     protected _mainElem!: HTMLElement;
 
-    @property()
+    @state()
     protected _initialised = false;
 
-    @property()
+    @state()
     protected _page?: string;
 
-    @property()
+    @state()
     protected _config!: RealmAppConfig;
 
+    @state()
+    protected _realm?: string;
+
+    protected _realms!: Tenant[];
     protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
     protected _storeUnsubscribe!: Unsubscribe;
 
@@ -165,42 +170,16 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         super.disconnectedCallback();
     }
 
-    protected _onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this._store.dispatch(updateRealm(manager.displayRealm));
-                const config = this._getConfig(manager.displayRealm);
-
-                if (!config) {
-                    console.error("No default AppConfig or realm specific config for requested realm: " + manager.displayRealm);
-                    return;
-                } else {
-                    this._config = config;
-                }
-                break;
-        }
-    };
-
-    protected doAppConfigInit() {
-        this.appConfig = this.appConfig || (this.appConfigProvider ? this.appConfigProvider(manager) : undefined);
-
-        if (!this.appConfig) {
-            return;
-        }
-
-        if (!this._config) {
-            const realm = getRealmQueryParameter();
-            this._config = this._getConfig(realm);
-        }
-    }
-
     protected firstUpdated(_changedProperties: Map<PropertyKey, unknown>): void {
         super.firstUpdated(_changedProperties);
 
         const managerConfig: ManagerConfig = this.managerConfig ? {...DEFAULT_MANAGER_CONFIG,...this.managerConfig} : DEFAULT_MANAGER_CONFIG;
+        if (!managerConfig.realm) {
+            // Use realm query parameter if no specific realm provided
+            managerConfig.realm = getRealmQueryParameter();
+        }
         managerConfig.skipFallbackToBasicAuth = true; // We do this so we can load styling config before displaying basic login
         managerConfig.basicLoginProvider = (u, p) => this.doBasicLogin(u, p);
-        manager.addListener(this._onManagerEvent);
 
         console.info("Initialising the manager");
 
@@ -240,8 +219,25 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                     return;
                 }
 
+                // Load available realm info
+                const response = await manager.rest.api.TenantResource.getAccessible();
+                this._realms = response.data;
+                let realm: string | null | undefined = undefined;
+
+                // Set current display realm if super user
+                if (manager.isSuperUser()) {
+                    // Look in session storage
+                    realm = window.sessionStorage.getItem("realm");
+                    if (realm && !this._realms.some(r => r.realm === realm)) {
+                        realm = undefined;
+                    }
+                }
+
+                this._store.dispatch(updateRealm(realm || manager.getRealm() || "master"));
+
                 this._initialised = true;
 
+                // Configure routes
                 this.appConfig.pages.forEach((pageProvider, index) => {
                     if (pageProvider.routes) {
                         pageProvider.routes.forEach((route) => {
@@ -253,22 +249,142 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
                         });
                     }
                 });
-
                 if (this.appConfig.pages.length > 0) {
                     router.notFound(() => {
                         this._store.dispatch(updatePage(this.appConfig!.pages[0].name));
                     });
                 }
-
-                window.onhashchange = (e: Event) => {
-                    console.log(e);
-                };
-               
                 router.resolve();
             } else {
                 showErrorDialog(manager.isError ? "managerError." + manager.error : "");
             }
         });
+    }
+
+    protected updated(changedProps: PropertyValues) {
+        super.updated(changedProps);
+
+        if (!this._initialised) {
+            return;
+        }
+
+        if (changedProps.has("_page")) {
+            if (this._mainElem) {
+                if (this._mainElem.firstElementChild) {
+                    this._mainElem.firstElementChild.remove();
+                }
+                if (this._page) {
+                    const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
+                    if (pageProvider) {
+                        const pageElem = pageProvider.pageCreator();
+                        this._mainElem.appendChild(pageElem);
+                    }
+                }
+            }
+
+            this.updateWindowTitle();
+        }
+    }
+
+    protected shouldUpdate(changedProps: PropertyValues): boolean {
+        if (changedProps.has("_realm")) {
+            this._config = this._getConfig();
+            if (this._realm) {
+                manager.displayRealm = this._realm;
+                window.sessionStorage.setItem("realm", this._realm!);
+            } else {
+                window.sessionStorage.removeItem("realm");
+            }
+        }
+
+        if (changedProps.has("_config") && this._config) {
+
+            if (!this._config.logo) {
+                this._config.logo = DefaultLogo;
+            }
+            if (!this._config.logoMobile) {
+                this._config.logoMobile = DefaultMobileLogo;
+            }
+
+            const favIcon = this._config && this._config.favicon ? this._config.favicon : DefaultFavIcon;
+
+            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+
+            if (!link) {
+                link = document.createElement("link");
+                link.rel = "icon";
+                document.getElementsByTagName("head")[0].appendChild(link);
+            }
+            link.href = favIcon;
+        }
+
+        this.updateWindowTitle();
+        return super.shouldUpdate(changedProps);
+    }
+
+    protected render(): TemplateResult | void {
+
+        if (!this._initialised) {
+            return html`<or-mwc-dialog id="app-modal"></or-mwc-dialog>`;
+        }
+        let consoleStyles;
+        if (manager.consoleAppConfig) {
+            const consoleAppConfig = manager.consoleAppConfig;
+            const primary = consoleAppConfig.primaryColor;
+            const secondary = consoleAppConfig.secondaryColor;
+            consoleStyles = html`<style>:host {--or-console-primary-color:${primary};--or-console-secondary-color:${secondary};}</style>`;
+        }
+        return html`
+            ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
+            ${consoleStyles}
+            ${this._config.header ? html`
+                <or-header .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
+            ` : ``}
+            
+            <!-- Main content -->
+            <main role="main" class="main-content d-none"></main>
+            
+            <slot></slot>
+        `;
+    }
+
+    public stateChanged(state: S) {
+        this._realm = state.app.realm;
+        this._page = state.app!.page;
+    }
+
+    public logout() {
+        manager.logout();
+    }
+
+    public setLanguage(lang: string) {
+        manager.language = lang;
+    }
+
+    public showLanguageModal() {
+        showDialog(new OrMwcDialog()
+            .setHeading("language")
+            .setDismissAction(null)
+            .setActions(Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {
+                return {
+                    content: i18next.t(value),
+                    actionName: key,
+                    action: () => {
+                        manager.language = key;
+                    }
+                }})));
+    }
+
+    protected doAppConfigInit() {
+        this.appConfig = this.appConfig || (this.appConfigProvider ? this.appConfigProvider(manager) : undefined);
+
+        if (!this.appConfig) {
+            return;
+        }
+
+        if (!this._config) {
+            this._config = this._getConfig();
+        }
     }
 
     protected doBasicLogin(username: string | undefined, password: string | undefined): PromiseLike<BasicLoginResult> {
@@ -317,36 +433,11 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         return deferred.promise;
     }
 
-    protected updated(changedProps: PropertyValues) {
-        super.updated(changedProps);
-
-        if (!this._initialised) {
-            return;
-        }
-
-        if (changedProps.has("_page")) {
-            if (this._mainElem) {
-                if (this._mainElem.firstElementChild) {
-                    this._mainElem.firstElementChild.remove();
-                }
-                if (this._page) {
-                    const pageProvider = this.appConfig!.pages.find((page) => page.name === this._page);
-                    if (pageProvider) {
-                        const pageElem = pageProvider.pageCreator();
-                        this._mainElem.appendChild(pageElem);
-                    }
-                }
-            }
-
-            this.updateWindowTitle();
-        }
-    }
-
     protected updateWindowTitle() {
         if (!this._initialised) {
             return;
         }
-        
+
         const appTitle = this._config.appTitle || "";
         let pageTitle = (i18next.isInitialized ? i18next.t(appTitle) : appTitle);
         const pageElem = (this._mainElem ? this._mainElem.firstElementChild : undefined) as Page<any>;
@@ -360,88 +451,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         });
     }
 
-    protected shouldUpdate(changedProps: PropertyValues): boolean {
-        if (changedProps.has("_config") && this._config) {
-
-            if (!this._config.logo) {
-                this._config.logo = DefaultLogo;
-            }
-            if (!this._config.logoMobile) {
-                this._config.logoMobile = DefaultMobileLogo;
-            }
-
-            const favIcon = this._config && this._config.favicon ? this._config.favicon : DefaultFavIcon;
-
-            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-
-            if (!link) {
-                link = document.createElement("link");
-                link.rel = "icon";
-                document.getElementsByTagName("head")[0].appendChild(link);
-            }
-            link.href = favIcon;
-        }
-
-        this.updateWindowTitle();
-        return super.shouldUpdate(changedProps);
-    }
-
-    protected render(): TemplateResult | void {
-
-        if (!this._initialised) {
-            return html`<or-mwc-dialog id="app-modal"></or-mwc-dialog>`;
-        }
-        let consoleStyles;
-        if (manager.consoleAppConfig) {
-            const consoleAppConfig = manager.consoleAppConfig;
-            const primary = consoleAppConfig.primaryColor;
-            const secondary = consoleAppConfig.secondaryColor;
-            consoleStyles = html`<style>:host {--or-console-primary-color:${primary};--or-console-secondary-color:${secondary};}</style>`;
-        }
-        return html`
-            ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
-            ${consoleStyles}
-            ${this._config.header ? html`
-                <or-header .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
-            ` : ``}
-            
-            <!-- Main content -->
-            <main role="main" class="main-content d-none"></main>
-            
-            <slot></slot>
-        `;
-    }
-
-    public logout() {
-        manager.logout();
-    }
-
-    public setLanguage(lang: string) {
-        manager.language = lang;
-    }
-
-    public showLanguageModal() {
-        showDialog(new OrMwcDialog()
-            .setHeading("language")
-            .setDismissAction(null)
-            .setActions(Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {
-            return {
-                content: i18next.t(value),
-                actionName: key,
-                action: () => {
-                    manager.language = key;
-                }
-            }})));
-    }
-
-    public stateChanged(state: S) {
-        this._page = state.app!.page;
-    }
-
-    protected _getConfig(realm: string | undefined): RealmAppConfig {
-        realm = realm || "default";
+    protected _getConfig(): RealmAppConfig {
         const defaultConfig = this.appConfig!.realms ? this.appConfig!.realms.default : {};
-        let realmConfig = this.appConfig!.realms ? this.appConfig!.realms![realm] : undefined;
+        let realmConfig = this.appConfig!.realms ? this.appConfig!.realms![this._realm || ""] : undefined;
         realmConfig = Util.mergeObjects(defaultConfig, realmConfig, false);
 
         if (this.appConfig && this.appConfig.superUserHeader && manager.isSuperUser()) {

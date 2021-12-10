@@ -1,5 +1,5 @@
 import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import i18next from "i18next";
 import "@openremote/or-components/or-panel";
 import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
@@ -111,16 +111,16 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
-    @property()
-    public realm?: string;
+    @state()
+    protected realm?: string;
 
-    @property()
+    @state()
     protected _loading = true;
 
-    @property()
+    @state()
     protected _connection?: GatewayConnection;
 
-    @property()
+    @state()
     protected _connectionStatus?: ConnectionStatus;
 
     @property()
@@ -128,14 +128,6 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
 
     protected _readonly = false;
     protected _eventSubscriptionId?: string;
-
-    protected _onManagerEvent = (event: OREvent) => {
-        switch (event) {
-            case OREvent.DISPLAY_REALM_CHANGED:
-                this.realm = manager.displayRealm;
-                break;
-        }
-    };
 
     get name(): string {
         return "gatewayConnection";
@@ -148,14 +140,12 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
     connectedCallback() {
         super.connectedCallback();
         this._readonly = !manager.hasRole("write:admin");
-        manager.addListener(this._onManagerEvent)
         this._subscribeEvents();
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._unsubscribeEvents();
-        manager.removeListener(this._onManagerEvent);
     }
 
     public shouldUpdate(_changedProperties: PropertyValues): boolean {
@@ -207,6 +197,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
     }
 
     public stateChanged(state: S) {
+        this.realm = state.app.realm;
     }
 
     protected async _subscribeEvents() {

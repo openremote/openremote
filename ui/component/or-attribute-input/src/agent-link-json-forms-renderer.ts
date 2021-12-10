@@ -24,6 +24,7 @@ import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog"
  */
 let agents: Agent[] | undefined;
 let loadingPromise: Promise<Agent[]> | undefined;
+let subscribed = false;
 const timeout = 2000;
 
 export function loadAgents(): PromiseLike<Agent[]> {
@@ -34,6 +35,26 @@ export function loadAgents(): PromiseLike<Agent[]> {
 
     if (loadingPromise) {
         return loadingPromise;
+    }
+
+    if (!subscribed) {
+        manager.addListener((ev: OREvent) => {
+            switch (ev) {
+                case OREvent.DISPLAY_REALM_CHANGED:
+                    agents = undefined;
+                    loadingPromise = undefined;
+                    break;
+            }
+        });
+        
+        manager.events!.subscribeAssetEvents(undefined, false, undefined, (assetEvent) => {
+            if (assetEvent.asset && assetEvent.asset.type!.endsWith("Agent")) {
+                agents = undefined;
+                loadingPromise = undefined;
+            }
+        });
+
+        subscribed = true;
     }
 
     loadingPromise = manager.rest.api.AssetResource.queryAssets({
@@ -52,21 +73,6 @@ export function loadAgents(): PromiseLike<Agent[]> {
         .then(response => response.data as Agent[])
         .then(agnts => {
             agents = agnts;
-            manager.addListener((ev: OREvent) => {
-                switch (ev) {
-                    case OREvent.DISPLAY_REALM_CHANGED:
-                        agents = undefined;
-                        loadingPromise = undefined;
-                        break;
-                }
-            });
-            manager.events!.subscribeAssetEvents(undefined, false, undefined, (assetEvent) => {
-                if (assetEvent.asset && assetEvent.asset.type!.endsWith("Agent")) {
-                    agents = undefined;
-                    loadingPromise = undefined;
-                }
-            })
-
             return agnts;
         });
 

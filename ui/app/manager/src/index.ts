@@ -59,6 +59,10 @@ const rootReducer = combineReducers({
 
 type RootState = ReturnType<typeof rootReducer>;
 
+export const store = configureStore({
+    reducer: rootReducer
+});
+
 type HeaderName = "map" | "assets" | "rules" | "insights" | "gateway" | "logs" | "account" | "users" | "roles" | "realms" | "logout" | "language" | "export";
 
 export interface ManagerRealmConfig {
@@ -82,10 +86,6 @@ export interface ManagerAppConfig {
     loadLocales?: boolean;
     manager?: ManagerConfig;
 }
-
-export const store = configureStore({
-    reducer: rootReducer
-});
 
 const orApp = new OrApp(store);
 
