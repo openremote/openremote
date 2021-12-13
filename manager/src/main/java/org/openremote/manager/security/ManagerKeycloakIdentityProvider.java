@@ -86,8 +86,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String KEYCLOAK_GRANT_FILE = "KEYCLOAK_GRANT_FILE";
     public static final String KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
-    public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED = "emailNotifitionsEnabled";
-    public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED = "pushNotifitionsEnabled";
+    public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED = "emailNotificationsEnabled";
+    public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED = "pushNotificationsEnabled";
 
     protected PersistenceService persistenceService;
     protected TimerService timerService;
