@@ -1,4 +1,4 @@
-import {css, html, LitElement, unsafeCSS} from "lit";
+import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import manager, {
     AssetModelUtil,
@@ -41,6 +41,7 @@ import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 export const enum ConditionType {
+    AGENT_QUERY = "agentQuery",
     ASSET_QUERY = "assetQuery",
     TIMER = "timer"
 }
@@ -116,6 +117,7 @@ export interface RulesConfig {
         when?: RulesDescriptorSection;
         action?: RulesDescriptorSection;
     };
+    rulesetTemplates?: {[key in RulesetLang]?: string};
     rulesetAddHandler?: (ruleset: RulesetUnion) => boolean;
     rulesetDeleteHandler?: (ruleset: RulesetUnion) => boolean;
     rulesetCopyHandler?: (ruleset: RulesetUnion) => boolean;
@@ -170,6 +172,175 @@ export interface RuleView {
     config?: RulesConfig;
 }
 
+export interface RuleViewInfo {
+    viewTemplateProvider: (ruleset:RulesetUnion, config: RulesConfig | undefined, readonly: boolean) => TemplateResult;
+    viewRulesetTemplate?: string;
+}
+
+export const RuleViewInfoMap: {[key in RulesetLang]: RuleViewInfo} = {
+    JSON: {
+        viewTemplateProvider: (ruleset, config, readonly) => html`<or-rule-json-viewer id="rule-view" .ruleset="${ruleset}" .config="${config}" .readonly="${readonly}"></or-rule-json-viewer>`,
+    },
+    FLOW: {
+        viewTemplateProvider: (ruleset, config, readonly) => html`<flow-editor id="rule-view" .ruleset="${ruleset}" .readonly="${readonly}"></flow-editor>`
+    },
+    GROOVY: {
+        viewTemplateProvider: (ruleset, config, readonly) => html`
+            <or-rule-text-viewer id="rule-view" .ruleset="${ruleset}" .config="${config}" .readonly="${readonly}"></or-rule-text-viewer>
+        `,
+        viewRulesetTemplate: "package demo.rules\n" +
+            "\n" +
+            "import org.openremote.manager.rules.RulesBuilder\n" +
+            "import org.openremote.model.notification.*\n" +
+            "import org.openremote.model.rules.AssetState\n" +
+            "import org.openremote.model.asset.Asset\n" +
+            "import org.openremote.model.asset.impl.*\n" +
+            "import org.openremote.model.query.*\n" +
+            "import org.openremote.model.query.filter.*\n" +
+            "import org.openremote.model.rules.Assets\n" +
+            "import org.openremote.model.rules.Notifications\n" +
+            "import org.openremote.model.rules.Users\n" +
+            "import org.simplejavamail.email.Email\n" +
+            "\n" +
+            "import java.util.logging.Logger\n" +
+            "import java.util.stream.Collectors\n" +
+            "\n" +
+            "Logger LOG = binding.LOG\n" +
+            "RulesBuilder rules = binding.rules\n" +
+            "Notifications notifications = binding.notifications\n" +
+            "Users users = binding.users\n" +
+            "Assets assets = binding.assets\n" +
+            "\n" +
+            "/*\n" +
+            "* A groovy rule is made up of a when closure (LHS) which must return a boolean indicating whether the then closure (RHS)\n" +
+            "* should be executed. The rule engine will periodically evaluate the when closure and if it evaluates to true then the\n" +
+            "* rule then closure will execute.\n" +
+            "*\n" +
+            "* NOTE: DO NOT MODIFY THE FACTS IN THE WHEN CLOSURE THIS SHOULD BE DONE IN THE THEN CLOSURE\n" +
+            "*\n" +
+            "* To avoid an infinite rule loop the when closure should not continually return true for subsequent executions\n" +
+            "* so either the then closure should perform an action that prevents the when closure from matching on subsequent\n" +
+            "* evaluations, or custom facts should be used, some ideas:\n" +
+            "*\n" +
+            "* - Change the value of an attribute being matched in the when closure (which will prevent it matching on subsequent evaluations)\n" +
+            "* - Insert a custom fact on first match and test this fact in the when closure to determine when the rule should match again (for\n" +
+            "*   example if a rule should match whenever the asset state changes the asset state timestamp can be used)\n" +
+            "*/\n" +
+            "\n" +
+            "rules.add()\n" +
+            "        .name(\"Example rule\")\n" +
+            "        .when({\n" +
+            "    facts ->\n" +
+            "\n" +
+            "        // Find first matching asset state using an asset query\n" +
+            "\n" +
+            "        facts.matchFirstAssetState(\n" +
+            "\n" +
+            "                // Find asset state by asset type and attribute name\n" +
+            "                new AssetQuery().types(ThingAsset).attributeNames(\"someAttribute\")\n" +
+            "\n" +
+            "                // Find asset state by asset ID and attribute name\n" +
+            "                //new AssetQuery().ids(\"7CaBoyiDhtdf2kn1Xso1w5\").attributeNames(\"someAttribute\")\n" +
+            "\n" +
+            "                // Find asset state by asset type, attribute name and value string predicate\n" +
+            "                //new AssetQuery().types(ThingAsset).attributes(\n" +
+            "                //        new AttributePredicate()\n" +
+            "                //                .name(\"someAttribute\")\n" +
+            "                //                .value(new StringPredicate()\n" +
+            "                //                            .value(\"someValue\")\n" +
+            "                //                            .match(AssetQuery.Match.EXACT)\n" +
+            "                //                            .caseSensitive(true)))\n" +
+            "\n" +
+            "                // Find asset state by asset type and location attribute predicate\n" +
+            "                //new AssetQuery().types(ThingAsset).attributes(\n" +
+            "                //        new AttributePredicate()\n" +
+            "                //                .name(Asset.LOCATION)\n" +
+            "                //                .value(new RadialGeofencePredicate()\n" +
+            "                //                            .radius(100)\n" +
+            "                //                            .lat(50.0)\n" +
+            "                //                            .lng(0.0)))\n" +
+            "\n" +
+            "        ).map { assetState ->\n" +
+            "\n" +
+            "            // Use logging to help with debugging if needed" +
+            "            //LOG.info(\"ATTRIBUTE FOUND\")\n" +
+            "\n" +
+            "            // Check if this rule really should fire this time\n" +
+            "            Optional<Long> lastFireTimestamp = facts.getOptional(\"someAttribute\")\n" +
+            "            if (lastFireTimestamp.isPresent() && assetState.getTimestamp() <= lastFireTimestamp.get()) {\n" +
+            "                return false\n" +
+            "            }\n" +
+            "\n" +
+            "            // OK to fire if we reach here\n" +
+            "\n" +
+            "            // Compute and bind any facts required for the then closure\n" +
+            "            facts.bind(\"assetState\", assetState)\n" +
+            "            true\n" +
+            "        }.orElseGet {\n" +
+            "            // Asset state didn't match so clear out any custom facts to allow the rule to fire next time the when closure matches\n" +
+            "            facts.remove(\"someAttribute\")\n" +
+            "            false\n" +
+            "        }\n" +
+            "\n" +
+            "})\n" +
+            "        .then({\n" +
+            "    facts ->\n" +
+            "\n" +
+            "        // Extract any binded facts\n" +
+            "        AssetState assetState = facts.bound(\"assetState\")\n" +
+            "\n" +
+            "        // Insert the custom fact to prevent rule loop\n" +
+            "        facts.put(\"someAttribute\", assetState.getTimestamp())\n" +
+            "\n" +
+            "        // Write to attributes\n" +
+            "        def otherAttributeValue = null\n" +
+            "        if (assetState.getValue().orElse{null} == \"Value 1\") {\n" +
+            "            otherAttributeValue = \"Converted Value 1\"\n" +
+            "        } else if (assetState.getValue().orElse{null} == \"Value 2\") {\n" +
+            "            otherAttributeValue = \"Converted Value 2\"\n" +
+            "        } else {\n" +
+            "            otherAttributeValue = \"Unknown\"\n" +
+            "        }\n" +
+            "        assets.dispatch(assetState.id, \"otherAttribute\", otherAttributeValue)\n" +
+            "\n" +
+            "        // Generate notifications (useful for rules that check if an attribute is out of range)\n" +
+            "        //notifications.send(new Notification()\n" +
+            "        //        .setName(\"Attribute alert\")\n" +
+            "        //        .setMessage(new EmailNotificationMessage()\n" +
+            "        //                .setTo(\"no-reply@openremote.io\")\n" +
+            "        //                .setSubject(\"Attribute out of range: Attribute=${assetState.name} Asset ID=${assetState.id}\")\n" +
+            "        //                .setText(\"Some text body\")\n" +
+            "        //                .setHtml(\"<p>Or some HTML body</p>\")\n" +
+            "        //        )\n" +
+            "        //)\n" +
+            "})"
+    },
+    JAVASCRIPT: {
+        viewTemplateProvider: (ruleset, config, readonly) => html`
+            <or-rule-text-viewer id="rule-view" .ruleset="${ruleset}" .config="${config}" .readonly="${readonly}"></or-rule-text-viewer>
+        `,
+        viewRulesetTemplate: "rules = [ // An array of rules, add more objects to add more rules\n" +
+            "    {\n" +
+            "        name: \"Set bar to foo on someAttribute\",\n" +
+            "        description: \"An example rule that sets 'bar' on someAttribute when it is 'foo'\",\n" +
+            "        when: function(facts) {\n" +
+            "            return facts.matchAssetState(\n" +
+            "                new AssetQuery().types(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
+            "            ).map(function(thing) {\n" +
+            "                facts.bind(\"assetId\", thing.id);\n" +
+            "                return true;\n" +
+            "            }).orElse(false);\n" +
+            "        },\n" +
+            "        then: function(facts) {\n" +
+            "            facts.updateAssetState(\n" +
+            "                facts.bound(\"assetId\"), \"someAttribute\", \"bar\"\n" +
+            "            );\n" +
+            "        }\n" +
+            "    }\n" +
+            "]"
+    }
+}
+
 function getAssetDescriptorFromSection(assetType: string, config: RulesConfig | undefined, useActionConfig: boolean): RulesConfigAsset | undefined {
     if (!config || !config.descriptors) {
         return;
@@ -194,7 +365,7 @@ export function getAssetIdsFromQuery(query?: AssetQuery) {
     return query && query.ids ? [...query.ids] : undefined;
 }
 
-export const getAssetTypes = async () => {
+export const getAssetTypes: () => Promise<string[]> = async () => {
     // RT: Change to just get all asset types for now as if an instance of a particular asset doesn't exist you
     // won't be able to create a rule for it (e.g. if no ConsoleAsset in a realm then cannot create a console rule)
     return AssetModelUtil.getAssetTypeInfos().filter((ati) => ati.assetDescriptor!.name !== WellknownAssets.UNKNOWNASSET).map(ati => ati.assetDescriptor!.name!);

@@ -31,6 +31,7 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -53,6 +54,18 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         }
         try {
             return identityService.getIdentityProvider().getTenants();
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public Tenant[] getAccessible(RequestParams requestParams) {
+        try {
+            Tenant[] tenants = isSuperUser() ? identityService.getIdentityProvider().getTenants() : new Tenant[] {getAuthenticatedTenant()};
+            return Arrays.stream(tenants).map(tenant -> new Tenant().setRealm(tenant.getRealm()).setDisplayName(tenant.getDisplayName())).toArray(Tenant[]::new);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

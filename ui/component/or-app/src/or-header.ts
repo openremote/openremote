@@ -1,22 +1,23 @@
 import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {until} from "lit/directives/until.js";
+import {customElement, property, query, state} from "lit/decorators.js";
 import manager, {
-    Util,
     DefaultBoxShadowBottom,
     DefaultColor1,
     DefaultColor2,
     DefaultColor3,
     DefaultColor4,
     DefaultColor5,
-    DefaultHeaderHeight
+    DefaultHeaderHeight,
+    Util
 } from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-icon";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Tenant} from "@openremote/model";
-import {router} from "./index";
+import {AppStateKeyed, router, updateRealm} from "./index";
+import {AnyAction, EnhancedStore} from "@reduxjs/toolkit";
+import {ThunkMiddleware} from "redux-thunk";
 
 export interface HeaderConfig {
     mainMenu: HeaderItem[];
@@ -331,6 +332,15 @@ class OrHeader extends LitElement {
     `;
     }
 
+    @property({type: Array})
+    public realms!: Tenant[];
+
+    @property({type: String})
+    public realm!: string;
+
+    @property({type: Object})
+    public store!: EnhancedStore<AppStateKeyed, AnyAction, ReadonlyArray<ThunkMiddleware<AppStateKeyed>>>;
+
     @property({type: String})
     public logo?: string;
 
@@ -343,12 +353,10 @@ class OrHeader extends LitElement {
     @query("div[id=mobile-bottom]")
     protected _mobileBottomDiv!: HTMLDivElement;
 
-    protected _tenants?: Tenant[];
-
-    @property({type: Boolean})
+    @state()
     private _drawerOpened = false;
 
-    @property({ type: String })
+    @state()
     private activeMenu: string | undefined;
 
     constructor() {
@@ -358,20 +366,8 @@ class OrHeader extends LitElement {
         });
     }
 
-    public connectedCallback(): void {
-        super.connectedCallback();
-        const realm = window.sessionStorage.getItem('realm');
-        if (realm) manager.displayRealm = realm;
-    }
-
-    public disconnectedCallback(): void {
-        super.disconnectedCallback();
-    }
-
     public _onRealmSelect(realm: string) {
-        manager.displayRealm = realm;
-        window.sessionStorage.setItem('realm', realm);
-        this.requestUpdate();
+        this.store.dispatch(updateRealm(realm));
     }
 
     protected shouldUpdate(changedProperties: PropertyValues): boolean {
@@ -441,44 +437,35 @@ class OrHeader extends LitElement {
         `;
     }
 
-    protected _getRealmMenu(callback: (language: string) => void): TemplateResult {
-        if (!manager.isSuperUser()) {
-            return html``;
-        }
+    protected _getRealmMenu(callback: (realm: string) => void): TemplateResult {
 
-        const picker = this._getTenants().then((tenants) => {
+        const currentRealm = this.realms.find((t) => t.realm === this.realm);
 
-            const menuItems = tenants.map((r) => {
+        let realmTemplate = html`
+            <div id="realm-picker">
+                <span>${currentRealm ? currentRealm.displayName : ""}</span>
+                ${this.realms.length > 1 ? html`<or-icon icon="chevron-down"></or-icon>` : ``}
+            </div>
+        `;
+
+        if (manager.isSuperUser()) {
+            const menuItems = this.realms.map((r) => {
                 return {
                     text: r.displayName!,
                     value: r.realm!
                 } as ListItem;
             });
 
-            return html`
-            ${getContentWithMenuTemplate(
-                html`
-                    <div id="realm-picker">
-                        <span>${tenants.find((t) => t.realm === manager.displayRealm)?.displayName}</span>
-                        <or-icon icon="chevron-down"></or-icon>
-                    </div>
-                `,
-                menuItems,
-                manager.displayRealm,
-                (values: string | string[]) => callback(values as string))}
-        `;
-        });
-
-        return html`${until(picker, html``)}`;
-    }
-
-    protected async _getTenants() {
-        if (!this._tenants) {
-            const response = await manager.rest.api.TenantResource.getAll();
-            this._tenants = response.data.filter(t => t.enabled);
+            realmTemplate = html`
+                ${getContentWithMenuTemplate(
+                        realmTemplate,
+                        menuItems,
+                        currentRealm ? currentRealm.realm : undefined,
+                        (values: string | string[]) => callback(values as string))}
+            `;
         }
 
-        return this._tenants;
+        return realmTemplate;
     }
 
     protected _onSecondaryMenuSelect(value: string) {

@@ -46,6 +46,9 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
     public double latMax;
     public double lngMax;
 
+    public RectangularGeofencePredicate() {
+    }
+
     @JsonCreator
     public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin,
                                         @JsonProperty("lngMin") double lngMin,
@@ -68,7 +71,7 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
 
     @Override
     public RectangularGeofencePredicate negate() {
-        negated = true;
+        negated = !negated;
         return this;
     }
 

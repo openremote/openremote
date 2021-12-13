@@ -748,9 +748,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     @Override
     public Tenant getTenant(String realm) {
         try {
-            RealmRepresentation realmRepresentation = getRealms(realmsResource ->
-                realmsResource.realm(realm.toLowerCase(Locale.ROOT)).toRepresentation());
-            return convert(realmRepresentation, Tenant.class);
+            return ManagerIdentityProvider.getTenantFromDb(persistenceService, realm);
         } catch (Exception ex) {
             LOG.log(Level.INFO, "Failed to get tenant for realm: " + realm, ex);
         }
@@ -770,32 +768,58 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             tenant.setRealm(tenant.getRealm().toLowerCase(Locale.ROOT));
 
             // Find existing realm by ID as realm name could have been changed
-            RealmRepresentation existing = realmsResource.findAll().stream().filter(r -> r.getId().equals(tenant.getId())).findFirst().orElse(null);
-            if (existing == null) {
+            RealmRepresentation realmRepresentation = realmsResource.findAll().stream().filter(r -> r.getId().equals(tenant.getId())).findFirst().orElse(null);
+
+            if (realmRepresentation == null) {
                 throw new IllegalStateException("Tenant must already exist, ID does not match an existing tenant");
             }
 
-            String realm = existing.getRealm();
-            Tenant existingTenant = convert(existing, Tenant.class);
+            String realm = realmRepresentation.getRealm();
+            RealmResource realmResource = realmsResource.realm(realm);
+            Tenant existingTenant = getTenant(realm);
 
             // Tenant only has a subset of realm representation so overlay on actual realm representation
-            existing.setRealm(tenant.getRealm());
-            existing.setDisplayName(tenant.getDisplayName());
-            existing.setAccountTheme(tenant.getAccountTheme());
-            existing.setAdminTheme(tenant.getAdminTheme());
-            existing.setEmailTheme(tenant.getEmailTheme());
-            existing.setLoginTheme(tenant.getLoginTheme());
-            existing.setRememberMe(tenant.getRememberMe());
-            existing.setRegistrationAllowed(tenant.getRegistrationAllowed());
-            existing.setRegistrationEmailAsUsername(tenant.getRegistrationEmailAsUsername());
-            existing.setEnabled(tenant.getEnabled());
-            existing.setDuplicateEmailsAllowed(tenant.getDuplicateEmailsAllowed());
-            existing.setResetPasswordAllowed(tenant.getResetPasswordAllowed());
-            existing.setNotBefore(tenant.getNotBefore() != null ? tenant.getNotBefore().intValue() : null);
-            configureRealm(existing);
+            realmRepresentation.setDisplayName(tenant.getDisplayName());
+            realmRepresentation.setAccountTheme(tenant.getAccountTheme());
+            realmRepresentation.setAdminTheme(tenant.getAdminTheme());
+            realmRepresentation.setEmailTheme(tenant.getEmailTheme());
+            realmRepresentation.setLoginTheme(tenant.getLoginTheme());
+            realmRepresentation.setRememberMe(tenant.getRememberMe());
+            realmRepresentation.setVerifyEmail(tenant.getVerifyEmail());
+            realmRepresentation.setLoginWithEmailAllowed(tenant.getLoginWithEmail());
+            realmRepresentation.setRegistrationAllowed(tenant.getRegistrationAllowed());
+            realmRepresentation.setRegistrationEmailAsUsername(tenant.getRegistrationEmailAsUsername());
+            realmRepresentation.setEnabled(tenant.getEnabled());
+            realmRepresentation.setDuplicateEmailsAllowed(tenant.getDuplicateEmailsAllowed());
+            realmRepresentation.setResetPasswordAllowed(tenant.getResetPasswordAllowed());
+            realmRepresentation.setNotBefore(tenant.getNotBefore() != null ? tenant.getNotBefore().intValue() : null);
+            configureRealm(realmRepresentation);
+            realmResource.update(realmRepresentation);
 
-            realmsResource.realm(realm).update(existing);
-            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.UPDATE, convert(existing, Tenant.class), existingTenant, Tenant.getPropertyFields());
+            Set<RealmRole> existingRealmRoles = existingTenant.getRealmRoles();
+            existingTenant.setRealmRoles(existingRealmRoles);
+
+            // Update realm roles if required
+            if (tenant.getRealmRoles() != null) {
+
+                Set<RealmRole> realmRoles = tenant.getNormalisedRealmRoles();
+                RolesResource rolesResource = realmResource.roles();
+
+                // Handle removed roles
+                existingRealmRoles.stream().filter(realmRole -> !realmRoles.contains(realmRole)).forEach(realmRole -> {
+                    LOG.finer("Removing realm role + " + realmRole);
+                    rolesResource.deleteRole(realmRole.getName());
+                });
+                // Handle added roles
+                realmRoles.stream().filter(realmRole -> !existingRealmRoles.contains(realmRole)).forEach(realmRole -> {
+                    LOG.finer("Adding realm role + " + realmRole);
+                    rolesResource.create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
+                });
+            }
+
+            Tenant updatedTenant = convert(realmRepresentation, Tenant.class);
+            updatedTenant.setRealmRoles((tenant.getRealmRoles() == null) ? existingRealmRoles : tenant.getNormalisedRealmRoles());
+            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.UPDATE, updatedTenant, existingTenant, Tenant.getPropertyFields());
             return null;
         });
     }
@@ -819,14 +843,21 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 configureRealm(realmRepresentation);
                 realmResource.update(realmRepresentation);
 
+                // Set realm roles
+                RolesResource rolesResource = realmResource.roles();
+                List<RoleRepresentation> existingRealmRoles = rolesResource.list();
+                tenant.getNormalisedRealmRoles().stream().filter(realmRole -> existingRealmRoles.stream().noneMatch(roleRepresentation -> roleRepresentation.getName().equals(realmRole.getName())))
+                .forEach(realmRole -> {
+                    LOG.finer("Adding realm role + " + realmRole);
+                    rolesResource.create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
+                });
+
                 // Auto create the standard openremote client
                 ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
                 createUpdateClient(tenant.getRealm(), clientRepresentation);
 
-                // Add restricted realm role
-                realmResource.roles().create(new RoleRepresentation(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets", false));
-
                 Tenant createdTenant = convert(realmRepresentation, Tenant.class);
+                createdTenant.setRealmRoles(tenant.getRealmRoles());
                 persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.CREATE, tenant, null, Tenant.getPropertyFields());
                 return createdTenant;
             } catch (Exception e) {
@@ -1061,7 +1092,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         return false;
     }
 
-    public void configureRealm(RealmRepresentation realmRepresentation) {
+    protected void configureRealm(RealmRepresentation realmRepresentation) {
 
         realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
 

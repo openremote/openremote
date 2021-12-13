@@ -19,18 +19,19 @@
  */
 package org.openremote.model.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.lang.reflect.Field;
-import java.util.Arrays;
+import java.util.*;
+
+import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE;
 
 /**
  * This can be used (among other things) to query the REALM table in JPA queries.
@@ -56,39 +57,47 @@ public class Tenant {
     @Column(name = "NOT_BEFORE")
     protected Double notBefore; // This will explode in 2038
 
-    // We allow password reset by default
-    @Transient
-    protected Boolean resetPasswordAllowed = true;
+    @Column(name = "reset_password_allowed")
+    protected Boolean resetPasswordAllowed;
 
-    @Transient
+    @Column(name = "duplicate_emails_allowed")
     protected Boolean duplicateEmailsAllowed;
 
-    @Transient
+    @Column(name = "remember_me")
     protected Boolean rememberMe;
 
-    @Transient
+    @Column(name = "registration_allowed")
     protected Boolean registrationAllowed;
 
-    @Transient
+    @Column(name = "reg_email_as_username")
     protected Boolean registrationEmailAsUsername;
 
-    @Transient
+    @Column(name = "verify_email")
+    protected Boolean verifyEmail;
+
+    @Column(name = "login_with_email_allowed")
+    protected Boolean loginWithEmail;
+
+    @Column(name = "login_theme")
     protected String loginTheme;
 
-    @Transient
+    @Column(name = "account_theme")
     protected String accountTheme;
 
-    @Transient
+    @Column(name = "admin_theme")
     protected String adminTheme;
 
-    @Transient
+    @Column(name = "email_theme")
     protected String emailTheme;
 
-    @Transient
+    @Column(name = "access_token_lifespan")
     protected Integer accessTokenLifespan;
 
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinColumn(name = "REALM_ID")
+    protected Set<RealmRole> realmRoles;
+
     public Tenant() {
-        this(null, null, null, null);
     }
 
     public Tenant(String id, String realm, String displayName, Boolean enabled) {
@@ -148,7 +157,8 @@ public class Tenant {
     }
 
     public Boolean getResetPasswordAllowed() {
-        return resetPasswordAllowed;
+        // We allow password reset by default
+        return resetPasswordAllowed != null ? resetPasswordAllowed : true;
     }
 
     public Tenant setResetPasswordAllowed(Boolean resetPasswordAllowed) {
@@ -157,7 +167,7 @@ public class Tenant {
     }
 
     public Boolean getDuplicateEmailsAllowed() {
-        return duplicateEmailsAllowed;
+        return duplicateEmailsAllowed != null && duplicateEmailsAllowed;
     }
 
     public Tenant setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
@@ -165,8 +175,35 @@ public class Tenant {
         return this;
     }
 
+    public Boolean getVerifyEmail() {
+        return verifyEmail != null && verifyEmail;
+    }
+
+    public Tenant setVerifyEmail(Boolean verifyEmail) {
+        this.verifyEmail = verifyEmail;
+        return this;
+    }
+
+    public Boolean getLoginWithEmail() {
+        return loginWithEmail != null && loginWithEmail;
+    }
+
+    public Tenant setLoginWithEmail(Boolean loginWithEmail) {
+        this.loginWithEmail = loginWithEmail;
+        return this;
+    }
+
+    public Integer getAccessTokenLifespan() {
+        return accessTokenLifespan;
+    }
+
+    public Tenant setAccessTokenLifespan(Integer accessTokenLifespan) {
+        this.accessTokenLifespan = accessTokenLifespan;
+        return this;
+    }
+
     public Boolean getRememberMe() {
-        return rememberMe;
+        return rememberMe != null && rememberMe;
     }
 
     public Tenant setRememberMe(Boolean rememberMe) {
@@ -175,7 +212,7 @@ public class Tenant {
     }
 
     public Boolean getRegistrationAllowed() {
-        return registrationAllowed;
+        return registrationAllowed != null && registrationAllowed;
     }
 
     public Tenant setRegistrationAllowed(Boolean registrationAllowed) {
@@ -184,7 +221,7 @@ public class Tenant {
     }
 
     public Boolean getRegistrationEmailAsUsername() {
-        return registrationEmailAsUsername;
+        return registrationEmailAsUsername != null && registrationEmailAsUsername;
     }
 
     public Tenant setRegistrationEmailAsUsername(Boolean registrationEmailAsUsername) {
@@ -233,13 +270,51 @@ public class Tenant {
         return this;
     }
 
+    public Set<RealmRole> getRealmRoles() {
+        return realmRoles;
+    }
+
+    @JsonIgnore
+    public Set<RealmRole> getNormalisedRealmRoles() {
+        Set<RealmRole> tempSet = new LinkedHashSet<>(getDefaultRealmRoles(getRealm()));
+        if (realmRoles != null) {
+            tempSet.addAll(realmRoles);
+        }
+        return tempSet;
+    }
+
+    public Tenant setRealmRoles(Set<RealmRole> realmRoles) {
+        this.realmRoles = realmRoles;
+        return this;
+    }
+
     public static Field[] getPropertyFields() {
         if (propertyFields == null) {
             propertyFields = Arrays.stream(Tenant.class.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Column.class))
+                .filter(field -> field.isAnnotationPresent(Column.class) || field.isAnnotationPresent(JoinColumn.class) || field.isAnnotationPresent(Formula.class))
                 .toArray(Field[]::new);
         }
         return propertyFields;
+    }
+
+    protected static List<RealmRole> getDefaultRealmRoles(String realm) {
+        if (MASTER_REALM.equals(realm)) {
+            return Arrays.asList(
+                new RealmRole("default-roles-master"),
+                new RealmRole("admin"),
+                new RealmRole("create-realm"),
+                new RealmRole("offline_access"),
+                new RealmRole("uma_authorization"),
+                new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
+            );
+        }
+
+        return Arrays.asList(
+            new RealmRole("default-roles-" + realm),
+            new RealmRole("offline_access"),
+            new RealmRole("uma_authorization"),
+            new RealmRole(RESTRICTED_USER_REALM_ROLE, "Restricted access to assets")
+        );
     }
 
     @Override
@@ -250,6 +325,19 @@ public class Tenant {
             ", displayName='" + displayName + '\'' +
             ", enabled=" + enabled +
             ", notBefore=" + notBefore +
+            ", resetPasswordAllowed=" + resetPasswordAllowed +
+            ", duplicateEmailsAllowed=" + duplicateEmailsAllowed +
+            ", rememberMe=" + rememberMe +
+            ", registrationAllowed=" + registrationAllowed +
+            ", registrationEmailAsUsername=" + registrationEmailAsUsername +
+            ", verifyEmail=" + verifyEmail +
+            ", loginWithEmail=" + loginWithEmail +
+            ", loginTheme='" + loginTheme + '\'' +
+            ", accountTheme='" + accountTheme + '\'' +
+            ", adminTheme='" + adminTheme + '\'' +
+            ", emailTheme='" + emailTheme + '\'' +
+            ", accessTokenLifespan=" + accessTokenLifespan +
+            ", realmRoles=" + realmRoles +
             '}';
     }
 }

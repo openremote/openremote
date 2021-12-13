@@ -32,7 +32,6 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Date;
-import java.util.Optional;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
@@ -52,110 +51,13 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 })
 public abstract class Ruleset {
 
+    public static final MetaItemDescriptor<Boolean> SHOW_ON_LIST = new MetaItemDescriptor<>("showOnList", ValueType.BOOLEAN);
+
     public enum Lang {
-        JAVASCRIPT(".js",
-            "rules = [ // An array of rules, add more objects to add more rules\n" +
-            "    {\n" +
-            "        name: \"Set bar to foo on someAttribute\",\n" +
-            "        description: \"An example rule that sets 'bar' on someAttribute when it is 'foo'\",\n" +
-            "        when: function(facts) {\n" +
-            "            return facts.matchAssetState(\n" +
-            "                new AssetQuery().types(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
-            "            ).map(function(thing) {\n" +
-            "                facts.bind(\"assetId\", thing.id);\n" +
-            "                return true;\n" +
-            "            }).orElse(false);\n" +
-            "        },\n" +
-            "        then: function(facts) {\n" +
-            "            facts.updateAssetState(\n" +
-            "                facts.bound(\"assetId\"), \"someAttribute\", \"bar\"\n" +
-            "            );\n" +
-            "        }\n" +
-            "    }\n" +
-            "]"),
-        GROOVY(".groovy",
-            "package demo.rules\n" +
-                "\n" +
-                "import org.openremote.manager.rules.RulesBuilder\n" +
-                "import org.openremote.model.asset.*\n" +
-                "import org.openremote.model.attribute.*\n" +
-                "import org.openremote.model.value.*\n" +
-                "import org.openremote.model.rules.*\n" +
-                "import java.util.logging.*\n" +
-                "\n" +
-                "Logger LOG = binding.LOG\n" +
-                "RulesBuilder rules = binding.rules\n" +
-                "Assets assets = binding.assets\n" +
-                "\n" +
-                "rules.add()\n" +
-                "        .name(\"Set bar to foo on someAttribute\")\n" +
-                "        .description(\"An example rule that sets 'bar' on someAttribute when it is 'foo'\")\n" +
-                "        .when(\n" +
-                "        { facts ->\n" +
-                "            facts.matchFirstAssetState(\n" +
-                "                    new AssetQuery().types(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
-                "            ).map { thing ->\n" +
-                "                facts.bind(\"assetId\", thing.id)\n" +
-                "                true\n" +
-                "            }.orElse(false)\n" +
-                "        })\n" +
-                "        .then(\n" +
-                "        { facts ->\n" +
-                "            facts.updateAssetState(\n" +
-                "                    facts.bound(\"assetId\") as String, \"someAttribute\", \"bar\"\n" +
-                "            )\n" +
-                "        })"),
-        JSON(".json",
-            "locations: [],\n" +
-                    "rules: [\n" +
-                    "  {\n" +
-                    "    name: \"Test Rule\",\n" +
-                    "    when: {\n" +
-                    "        operator: \"AND\",\n" +
-                    "        predicates: [\n" +
-                    "          {\n" +
-                    "            query: {\n" +
-                    "\n" +
-                    "            }\n" +
-                    "          }\n" +
-                    "        ],\n" +
-                    "        conditions: []\n" +
-                    "    },\n" +
-                    "    then: {\n" +
-                    "            notifications: [],\n" +
-                    "            attributeEvents: []\n" +
-                    "    },\n" +
-                    "    reset: null // Only trigger once ever\n" +
-                    "  }\n" +
-                    "]"
-                ),
-        FLOW(".json", "{\"name\":\"\", \"description\": \"\", \"nodes\":[], \"connections\":[]}");
-
-        public static final MetaItemDescriptor<Boolean> SHOW_ON_LIST = new MetaItemDescriptor<>("showOnList", ValueType.BOOLEAN);
-
-        final String fileExtension;
-        final String emptyRulesExample;
-
-        Lang(String fileExtension, String emptyRulesExample) {
-            this.fileExtension = fileExtension;
-            this.emptyRulesExample = emptyRulesExample;
-        }
-
-        public String getFileExtension() {
-            return fileExtension;
-        }
-
-        public String getEmptyRulesExample() {
-            return emptyRulesExample;
-        }
-
-        static public Optional<Lang> valueOfFileName(String fileName) {
-            for (Lang lang : values()) {
-                if (fileName.endsWith(lang.getFileExtension()))
-                    return Optional.of(lang);
-            }
-            return Optional.empty();
-        }
+        JAVASCRIPT,
+        GROOVY,
+        JSON,
+        FLOW
     }
 
     @Id

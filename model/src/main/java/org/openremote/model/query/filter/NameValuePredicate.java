@@ -123,6 +123,16 @@ public class NameValuePredicate {
         return this;
     }
 
+    public NameValuePredicate name(String name) {
+        this.name = new StringPredicate(name);
+        return this;
+    }
+
+    public NameValuePredicate name(NameHolder name) {
+        this.name = new StringPredicate(name);
+        return this;
+    }
+
     public NameValuePredicate value(ValuePredicate value) {
         this.value = value;
         return this;

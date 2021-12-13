@@ -275,7 +275,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     static Tenant getTenantFromDb(PersistenceService persistenceService, String realm) {
         return persistenceService.doReturningTransaction(em -> {
-                List<Tenant> tenants = em.createQuery("select t from Tenant t where t.realm = :realm and t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())", Tenant.class)
+                List<Tenant> tenants = em.createQuery("select t from Tenant t where t.realm = :realm", Tenant.class)
                     .setParameter("realm", realm).getResultList();
                 return tenants.size() == 1 ? tenants.get(0) : null;
             }

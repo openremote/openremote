@@ -21,15 +21,11 @@ package org.openremote.manager.setup;
 
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.Container;
-import org.openremote.model.auth.OAuthClientCredentialsGrant;
-import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.security.ClientRole;
-import org.openremote.model.security.Role;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.MANAGER_CLIENT_ID;
@@ -52,6 +48,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         // e.g. Set SMTP server, theme, timeouts, etc.
         Tenant masterRealm = keycloakProvider.getTenant(MASTER_REALM);
         masterRealm.setDisplayName("Master");
+        masterRealm.setRealmRoles(masterRealm.getNormalisedRealmRoles());
         keycloakProvider.updateTenant(masterRealm);
 
         // Create our client application with its default roles in the master realm

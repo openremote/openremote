@@ -266,6 +266,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _loading: boolean = false;
     protected _connected: boolean = false;
     protected _selectedNodes: UiAssetTreeNode[] = [];
+    protected _expandedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
 
     public get selectedNodes(): UiAssetTreeNode[] {
@@ -439,6 +440,21 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         nodes.forEach((node) => this._updateSort(node.children, sortFunction));
     }
 
+    protected _toggleExpander(expander: HTMLElement, node: UiAssetTreeNode | null) {
+        if (node && node.expandable) {
+            node.expanded = !node.expanded;
+
+            if (node.expanded) {
+                this._expandedNodes.push(node);
+            } else {
+                this._expandedNodes = this._expandedNodes.filter(n => n !== node);
+            }
+
+            const elem = expander.parentElement!.parentElement!.parentElement!;
+            elem.toggleAttribute("data-expanded");
+        }
+    }
+
     protected _onNodeClicked(evt: MouseEvent | null, node: UiAssetTreeNode | null) {
         if (evt && evt.defaultPrevented) {
             return;
@@ -452,11 +468,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         const isParentCheckbox = evt && (evt.target as OrIcon)?.icon?.includes("checkbox-multiple");
 
         if (isExpander) {
-            if (node && node.expandable) {
-                node.expanded = !node.expanded;
-                const elem = (evt!.target as HTMLElement).parentElement!.parentElement!.parentElement!;
-                elem.toggleAttribute("data-expanded");
-            }
+            this._toggleExpander((evt.target as HTMLElement), node);
         } else {
             let canSelect = true;
 
@@ -794,7 +806,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             const query: AssetQuery = {
                 tenant: {
-                    realm: manager.isSuperUser() ? manager.displayRealm : manager.getRealm()
+                    realm: manager.displayRealm
                 },
                 select: { // Just need the basic asset info
                     excludeAttributes: true,
@@ -888,6 +900,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _buildTreeNodes(assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
+
         if (!assets || assets.length === 0) {
             this._nodes = [];
         } else {
@@ -935,6 +948,16 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             rootAssets.sort(sortFunction);
             rootAssets.forEach((rootAsset) => this._buildChildTreeNodes(rootAsset, assets, sortFunction));
             this._nodes = rootAssets;
+            const newExpanded: UiAssetTreeNode[] = [];
+            this._expandedNodes.forEach(expandedNode => {
+                OrAssetTree._forEachNodeRecursive(this._nodes!, n => {
+                    if (n.asset && expandedNode.asset && n.asset.id === expandedNode.asset.id) {
+                        n.expanded = true;
+                        newExpanded.push(n);
+                    }
+                });
+            });
+            this._expandedNodes = newExpanded;
         }
 
         if (this.selectedIds && this.selectedIds.length > 0) {

@@ -45,6 +45,9 @@ public class RadialGeofencePredicate extends GeofencePredicate {
     public double lat;
     public double lng;
 
+    public RadialGeofencePredicate() {
+    }
+
     @JsonCreator
     public RadialGeofencePredicate(@JsonProperty("radius") int radius,
                                    @JsonProperty("lat") double lat,
@@ -64,7 +67,22 @@ public class RadialGeofencePredicate extends GeofencePredicate {
 
     @Override
     public RadialGeofencePredicate negate() {
-        negated = true;
+        negated = !negated;
+        return this;
+    }
+
+    public RadialGeofencePredicate radius(int radius) {
+        this.radius = radius;
+        return this;
+    }
+
+    public RadialGeofencePredicate lat(double lat) {
+        this.lat = lat;
+        return this;
+    }
+
+    public RadialGeofencePredicate lng(double lng) {
+        this.lng = lng;
         return this;
     }
 

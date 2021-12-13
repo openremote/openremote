@@ -3,7 +3,7 @@ const util = require("@openremote/util");
 bundles = {
     "index": {
         vendor: {
-            "maplibre-gl": "maplibregl",
+            "mapbox-gl": "mapboxgl",
             "mapbox.js": "L.mapbox",
             "moment": "moment"
         },

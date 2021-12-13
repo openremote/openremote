@@ -33,7 +33,8 @@ export function pageRealmsProvider<S extends AppStateKeyed>(store: EnhancedStore
 
 @customElement("page-realms")
 class PageRealms<S extends AppStateKeyed> extends Page<S> {
-  static get styles() {
+
+    static get styles() {
     // language=CSS
     return [
       unsafeCSS(tableStyle),
@@ -217,9 +218,6 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
   @property()
   protected _tenants: Tenant[] = [];
 
-  @property()
-  public realm?: string;
-
   get name(): string {
     return "realm_plural";
   }
@@ -229,14 +227,6 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
     this._getTenants();
   }
 
-    protected _onManagerEvent = (event: OREvent) => {
-      switch (event) {
-          case OREvent.DISPLAY_REALM_CHANGED:
-              this.realm = manager.displayRealm;
-              break;
-      }
-  };
-
   public shouldUpdate(_changedProperties: PropertyValues): boolean {
 
       if (_changedProperties.has("realm")) {
@@ -244,69 +234,6 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
       }
 
       return super.shouldUpdate(_changedProperties);
-  }
-
-  public connectedCallback() {
-      super.connectedCallback();
-      manager.addListener(this._onManagerEvent);
-  }
-
-  public disconnectedCallback() {
-      super.disconnectedCallback();
-      manager.removeListener(this._onManagerEvent);
-  }
-
-
- 
-  protected async _getTenants() {
-    const response = await manager.rest.api.TenantResource.getAll();
-    this._tenants = response.data;
-    return this._tenants;
-  }
-
-  private async _updateTenant(tenant) {
-    const response = await manager.rest.api.TenantResource.update(tenant.realm, tenant);
-    const data:any = response.data;
-    this._tenants = this._tenants.map(t => {
-      if(t.id === data.id) {
-        return data;
-      } else {
-        return t
-      }
-    })
-  }
-
-  private async _createTenant(tenant) {
-    await manager.rest.api.TenantResource.create(tenant).then(response => {
-      //TODO improve this so that header realm picker is updated
-      window.location.reload()
-    });
-  }
-  
-  private _deleteTenant(tenant) {
-    showOkCancelDialog(i18next.t("delete"), i18next.t("deleteTenantConfirm"), i18next.t("delete"))
-    .then((ok) => {
-        if (ok) {
-          this._doDelete(tenant);
-        }
-    });
-  }
-  
-  private async _doDelete(tenant) {
-    await manager.rest.api.TenantResource.delete(tenant.realm);
-    this._tenants = [...this._tenants.filter(u => u.id != tenant.id)]
-  }
-
-  private expanderToggle(ev: MouseEvent, index:number) {
-    const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
-    const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
-    if(metaRow.classList.contains('expanded')){
-      metaRow.classList.remove("expanded");
-      expanderIcon.icon = "chevron-right";
-    } else {
-      metaRow.classList.add("expanded");
-      expanderIcon.icon = "chevron-down";
-    }
   }
 
   protected render(): TemplateResult | void {
@@ -367,7 +294,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
                                   <div class="row">
                                     <div class="column">
                                       <or-mwc-input ?readonly="${tenant.id}" .label="${i18next.t("realm")}" .type="${InputType.TEXT}" min="1" required .value="${tenant.realm}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => tenant.realm = e.detail.value}"></or-mwc-input>            
-                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${tenant.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>tenant.enabled = e.detail.value}}"></or-mwc-input>
+                                      <or-mwc-input ?readonly="${readonly}" .label="${i18next.t("enabled")}" .type="${InputType.SWITCH}" min="1" .value="${tenant.enabled}" @or-mwc-input-changed="${(e: OrInputChangedEvent) =>tenant.enabled = e.detail.value}"></or-mwc-input>
                                     </div>
                                     <div class="column">
                                       <or-mwc-input .label="${i18next.t("displayName")}" .type="${InputType.TEXT}" min="1" required .value="${tenant.displayName}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => tenant.displayName = e.detail.value}"></or-mwc-input>            
@@ -409,5 +336,56 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
         `;
   }
 
-  public stateChanged(state: S) {}
+  public stateChanged(state: S) {
+  }
+
+    protected async _getTenants() {
+        const response = await manager.rest.api.TenantResource.getAll();
+        this._tenants = response.data;
+        return this._tenants;
+    }
+
+    private async _updateTenant(tenant) {
+        const response = await manager.rest.api.TenantResource.update(tenant.realm, tenant);
+        const data: any = response.data;
+        this._tenants = this._tenants.map(t => {
+            if (t.id === data.id) {
+                return data;
+            }
+            return t;
+        })
+    }
+
+    private async _createTenant(tenant) {
+        await manager.rest.api.TenantResource.create(tenant).then(response => {
+            //TODO improve this so that header realm picker is updated
+            window.location.reload();
+        });
+    }
+
+    private _deleteTenant(tenant) {
+        showOkCancelDialog(i18next.t("delete"), i18next.t("deleteTenantConfirm"), i18next.t("delete"))
+            .then((ok) => {
+                if (ok) {
+                    this._doDelete(tenant);
+                }
+            });
+    }
+
+    private async _doDelete(tenant) {
+        await manager.rest.api.TenantResource.delete(tenant.realm);
+        this._tenants = [...this._tenants.filter(u => u.id != tenant.id)];
+    }
+
+    private expanderToggle(ev: MouseEvent, index:number) {
+        const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
+        const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
+        if (metaRow.classList.contains('expanded')) {
+            metaRow.classList.remove("expanded");
+            expanderIcon.icon = "chevron-right";
+        } else {
+            metaRow.classList.add("expanded");
+            expanderIcon.icon = "chevron-down";
+        }
+    }
 }

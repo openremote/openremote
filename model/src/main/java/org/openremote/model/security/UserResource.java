@@ -54,13 +54,6 @@ public interface UserResource {
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
     Role[] getClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
-    @GET
-    @Path("{realm}/realm-roles")
-    @Produces(APPLICATION_JSON)
-    @SuppressWarnings("unusable-by-js")
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    Role[] getRealmRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
-
     @PUT
     @Path("{realm}/roles")
     @Consumes(APPLICATION_JSON)

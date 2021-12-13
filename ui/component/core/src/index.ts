@@ -618,7 +618,7 @@ export class Manager implements EventProviderFactory {
     private _console!: Console;
     private _consoleAppConfig?: ConsoleAppConfig;
     private _events?: EventProvider;
-    private _displayRealm?: string = "";
+    private _displayRealm?: string;
 
     public isManagerSameOrigin(): boolean {
         if (!this.ready) {

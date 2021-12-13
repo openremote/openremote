@@ -1,15 +1,16 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {
+    OrRulesRequestSaveEvent,
     OrRulesRuleChangedEvent,
     OrRulesRuleUnsupportedEvent,
     OrRulesSaveEvent,
-    OrRulesRequestSaveEvent,
     RulesConfig,
-    RuleView
+    RuleView,
+    RuleViewInfoMap
 } from "./index";
-import {ClientRole, RulesetLang, RulesetUnion} from "@openremote/model";
-import manager, { Util } from "@openremote/core";
+import {ClientRole, RulesetUnion} from "@openremote/model";
+import manager, {Util} from "@openremote/core";
 import "./json-viewer/or-rule-json-viewer";
 import "./or-rule-text-viewer";
 import "./or-rule-validity";
@@ -18,8 +19,8 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import {translate} from "@openremote/or-translate";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import { GenericAxiosResponse } from "@openremote/rest";
-import { showErrorDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {GenericAxiosResponse} from "@openremote/rest";
+import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
 
 // language=CSS
@@ -159,25 +160,8 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
             return html`<div class="wrapper" style="justify-content: center"><or-translate value="noRuleSelected"></or-translate></div>`;
         }
 
-        let viewer: TemplateResult | string = ``;
-        if (!this._supported || this.ruleset.lang === RulesetLang.GROOVY || this.ruleset.lang === RulesetLang.JAVASCRIPT) {
-            viewer = html`
-                <or-rule-text-viewer id="rule-view" .ruleset="${this.ruleset}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-text-viewer>
-            `;
-        } else {
-            switch (this.ruleset.lang!) {
-                case RulesetLang.JSON:
-                    viewer = html`<or-rule-json-viewer id="rule-view" .ruleset="${this.ruleset}" .config="${this.config}" .readonly="${this.readonly}"></or-rule-json-viewer>`;
-                    break;
-                case RulesetLang.FLOW:
-                    viewer = html`<flow-editor id="rule-view" .ruleset="${this.ruleset}" .readonly="${this.readonly}"></flow-editor>`;
-                    break;
-                default:
-                    viewer = html`<div class="wrapper"><or-translate value="notSupported"></or-translate></div>`;
-            }
-        }
+        let viewer = RuleViewInfoMap[this.ruleset!.lang!].viewTemplateProvider(this.ruleset, this.config, this.readonly);
 
-        // TODO: load the appropriate viewer depending on state and ruleset language
         return html`
             <div id="main-wrapper" class="wrapper">            
                 <div id="rule-header">

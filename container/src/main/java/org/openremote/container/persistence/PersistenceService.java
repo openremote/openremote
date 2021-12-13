@@ -44,6 +44,7 @@ import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.security.RealmRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
@@ -283,6 +284,7 @@ public class PersistenceService implements ContainerService {
         entityClasses.add(Tenant.class.getName());
         entityClasses.add(User.class.getName());
         entityClasses.add(UserAttribute.class.getName());
+        entityClasses.add(RealmRole.class.getName());
         entityClasses.add(GlobalRuleset.class.getName());
         entityClasses.add(AssetRuleset.class.getName());
         entityClasses.add(TenantRuleset.class.getName());

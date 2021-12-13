@@ -13,7 +13,7 @@ import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
-import static org.openremote.model.rules.Ruleset.Lang.SHOW_ON_LIST
+import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST
 import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 
 class BasicRulesImport {

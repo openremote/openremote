@@ -5,7 +5,7 @@ import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
-import {ClientRole, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
+import {ClientRole, RealmRole, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import {OrIcon} from "@openremote/or-icon";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -221,7 +221,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
     @state()
     protected _roles: Role[] = [];
     @state()
-    protected _realmRoles: Role[] = [];
+    protected _realmRoles: RealmRole[] = [];
     @state()
     protected _compositeRoles: Role[] = [];
     protected _loading: boolean = false;
@@ -293,9 +293,9 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
             return;
         }
 
-        const realmRoleResponse = await manager.rest.api.UserResource.getRealmRoles(manager.displayRealm);
+        const tenantResponse = await manager.rest.api.TenantResource.get(manager.displayRealm);
 
-        if (!this.responseAndStateOK(stateChecker, roleResponse, i18next.t("loadFailedRoles"))) {
+        if (!this.responseAndStateOK(stateChecker, tenantResponse, i18next.t("loadFailedRoles"))) {
             return;
         }
 
@@ -307,7 +307,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
 
         this._compositeRoles = roleResponse.data.filter(role => role.composite).sort(Util.sortByString(role => role.name));
         this._roles = roleResponse.data.filter(role => !role.composite).sort(Util.sortByString(role => role.name));
-        this._realmRoles = realmRoleResponse.data.sort(Util.sortByString(role => role.name));
+        this._realmRoles = (tenantResponse.data.realmRoles || []).sort(Util.sortByString(role => role.name));
         this._users = usersResponse.data.filter(user => !user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._serviceUsers = usersResponse.data.filter(user => user.serviceAccount).sort(Util.sortByString(u => u.username));
         this._loading = false;
