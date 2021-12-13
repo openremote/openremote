@@ -21,12 +21,12 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
         module: {
             rules: [
                 {
-                    test: /(mapbox|@material).*\.css$/, //output mapbox and material css as strings
+                    test: /(maplibre|mapbox|@material).*\.css$/, //output mapbox and material css as strings
                     type: "asset/source"
                 },
                 {
                     test: /\.css$/, //
-                    exclude: /(mapbox|@material).*\.css$/,
+                    exclude: /(maplibre|mapbox|@material).*\.css$/,
                     use: [
                         { loader: "css-loader" }
                     ]
