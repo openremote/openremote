@@ -86,6 +86,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String KEYCLOAK_GRANT_FILE = "KEYCLOAK_GRANT_FILE";
     public static final String KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
+    public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED = "emailNotifitionsEnabled";
+    public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED = "pushNotifitionsEnabled";
 
     protected PersistenceService persistenceService;
     protected TimerService timerService;
@@ -234,6 +236,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     LOG.info(msg);
                     throw new NotAllowedException(msg);
                 }
+            }
+
+            if (!user.getAttributes().containsKey(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED)) {
+                user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED,"true");
+            }
+
+            if (!user.getAttributes().containsKey(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED)) {
+                user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, "true");
             }
 
             // For service users we don't actually create the user - keycloak does that when the client is created
