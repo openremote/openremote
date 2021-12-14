@@ -219,8 +219,8 @@ plugins.withType(JavaPlugin).whenPluginAdded {
 
     // Use Java 8
     tasks.withType(JavaCompile) {
-        sourceCompatibility = "1.8"
-        targetCompatibility = "1.8"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         def warnLogFile = file("$buildDir/${name}Warnings.log")
         logging.addStandardErrorListener(new StandardOutputListener() {
             void onOutput(CharSequence output) {

@@ -6,19 +6,19 @@ apply plugin: "groovy"
 
 dependencies {
 
-    compile "org.codehaus.groovy:groovy:$groovyVersion"
+    implementation "org.codehaus.groovy:groovy:$groovyVersion"
 
-    compile resolveProject(":manager")
+    implementation resolveProject(":manager")
 
-    compile "junit:junit:$junitVersion"
-    compile "org.spockframework:spock-core:$spockVersion"
+    implementation "junit:junit:$junitVersion"
+    implementation "org.spockframework:spock-core:$spockVersion"
 
-    compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
-    compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
-    compile "org.objenesis:objenesis:$objenesisVersion"
-    compile "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    implementation "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
+    implementation "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
+    implementation "org.objenesis:objenesis:$objenesisVersion"
+    implementation "net.bytebuddy:byte-buddy:$byteBuddyVersion"
 
-    compile("com.github.calimero:calimero-server:$calimeroVersion") {
+    implementation("com.github.calimero:calimero-server:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
     }

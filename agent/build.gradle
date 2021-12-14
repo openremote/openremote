@@ -1,38 +1,38 @@
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "groovy"
 
 dependencies {
 
-    compile resolveProject(":container")
+    api resolveProject(":container")
 
-    compile "io.netty:netty-codec:$nettyVersion"
-    compile "io.netty:netty-codec-http:$nettyVersion"
+    implementation "io.netty:netty-codec:$nettyVersion"
+    implementation "io.netty:netty-codec-http:$nettyVersion"
 
-    compile "com.fazecast:jSerialComm:$jSerialCommVersion"
+    implementation "com.fazecast:jSerialComm:$jSerialCommVersion"
 
-    compile("com.github.calimero:calimero-core:$calimeroVersion") {
+    implementation("com.github.calimero:calimero-core:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
     }
 
-    compile ("com.github.calimero:calimero-tools:$calimeroVersion") {
+    implementation ("com.github.calimero:calimero-tools:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
     }
 
-    compile "net.sf.saxon:Saxon-HE:$saxonHEVersion"
+    implementation "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 
     //IKEA Tradfri agent dependencies
-    compile "org.eclipse.californium:californium-core:$californiumCoreVersion"
-    compile "org.eclipse.californium:scandium:$californiumScandiumVersion"
+    implementation "org.eclipse.californium:californium-core:$californiumCoreVersion"
+    implementation "org.eclipse.californium:scandium:$californiumScandiumVersion"
     
-    compile("org.openremote:or-zwave:$zwaveVersion") {
+    implementation("org.openremote:or-zwave:$zwaveVersion") {
         exclude group: "org.bidib.com.neuronrobotics"
     }
 
-    compile "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+    implementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    compile ("com.github.weliem.blessed-bluez:blessed:$bluetoothVersion") {
+    implementation ("com.github.weliem.blessed-bluez:blessed:$bluetoothVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
 

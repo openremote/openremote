@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.agent;
 
+import groovy.util.MapEntry;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.message.MessageBrokerService;

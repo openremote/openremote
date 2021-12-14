@@ -1,4 +1,4 @@
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "application"
 apply plugin: "distribution"
 
@@ -6,29 +6,30 @@ mainClassName = "org.openremote.manager.Main"
 
 dependencies {
 
-    compile resolveProject(":container")
-    compile resolveProject(":agent")
-    compile resolveProject(":model")
+    api resolveProject(":container")
+    api resolveProject(":agent")
+    api resolveProject(":model")
 
-    compile "org.xerial:sqlite-jdbc:$sqliteVersion"
+    implementation "org.xerial:sqlite-jdbc:$sqliteVersion"
 
-    compile "org.mnode.ical4j:ical4j:$ical4jVersion"
+    implementation "org.mnode.ical4j:ical4j:$ical4jVersion"
 
-    compile "net.jafama:jafama:$jafamaVersion"
-    compile "org.geotools:gt-main:$geotoolsVersion"
-    compile "com.google.firebase:firebase-admin:$firebaseAdminVersion"
-    compile "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
-    compile "io.swagger.core.v3:swagger-jaxrs2:$swaggerVersion"
+    implementation "net.jafama:jafama:$jafamaVersion"
+    implementation "org.geotools:gt-main:$geotoolsVersion"
+    implementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
+    implementation "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
+    implementation "io.swagger.core.v3:swagger-jaxrs2:$swaggerVersion"
+    implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
 
-    compile ("io.netty:netty-codec-http:$nettyVersion") {
+    implementation ("io.netty:netty-codec-http:$nettyVersion") {
         force = true
     }
 
-    compile ("io.moquette:moquette-broker:$moquetteVersion") {
+    implementation ("io.moquette:moquette-broker:$moquetteVersion") {
         exclude module: "slf4j-log4j12" // Don't want log4J
     }
 
-    compile("org.quartz-scheduler:quartz:$quartzVersion") {
+    implementation("org.quartz-scheduler:quartz:$quartzVersion") {
         exclude group: "c3p0"
     }
 }
