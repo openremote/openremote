@@ -238,11 +238,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 }
             }
 
-            if (!user.getAttributes().containsKey(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED)) {
+            if (!user.isServiceAccount() && !user.getAttributes().containsKey(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED)) {
                 user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED,"true");
             }
 
-            if (!user.getAttributes().containsKey(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED)) {
+            if (!user.isServiceAccount() && !user.getAttributes().containsKey(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED)) {
                 user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, "true");
             }
 

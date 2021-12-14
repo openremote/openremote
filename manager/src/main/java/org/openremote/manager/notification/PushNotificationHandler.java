@@ -30,8 +30,11 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.gateway.GatewayService;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.ConsoleAsset;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.AbstractNotificationMessage;
@@ -39,7 +42,9 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.*;
+import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
@@ -50,11 +55,13 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
 
 @SuppressWarnings("deprecation")
@@ -66,6 +73,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     public static final int READ_TIMEOUT_MILLIS = 3000;
     public static final String FCM_PROVIDER_NAME = "fcm";
 
+    protected ManagerIdentityService managerIdentityService;
     protected AssetStorageService assetStorageService;
     protected GatewayService gatewayService;
     protected boolean valid;
@@ -78,6 +86,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     public void init(Container container) throws Exception {
+        this.managerIdentityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.gatewayService = container.getService(GatewayService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
@@ -199,36 +208,63 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
                     case TENANT:
                         // Get all console assets with a push provider defined within the specified tenant
-                        mappedTargets.addAll(
-                            assetStorageService.findAll(
+                        List<Asset<?>> consoleAssets = assetStorageService.findAll(
                                 new AssetQuery()
-                                    .select(AssetQuery.Select.selectExcludeAll())
-                                    .tenant(new TenantPredicate(targetId))
-                                    .types(ConsoleAsset.class)
-                                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
-                                .stream()
-                                .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
-                                .collect(Collectors.toList()));
+                                        .select(AssetQuery.Select.selectExcludeAll())
+                                        .tenant(new TenantPredicate(targetId))
+                                        .types(ConsoleAsset.class)
+                                        .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))));
+
+                        // Get all user ids which have pushNotificationsEnabled set to false
+                        String[] userIds = Arrays.stream(managerIdentityService
+                                        .getIdentityProvider()
+                                        .queryUsers(new UserQuery().tenant(new TenantPredicate((targetId))))
+                                )
+                                .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, Collections.singletonList("true")).get(0)))
+                                .map(User::getId)
+                                .toArray(String[]::new);
+
+                        String[] assetIds = assetStorageService.findUserAssetLinks(targetId, null, null).stream()
+                                .filter(userAssetLink -> Arrays.stream(userIds).anyMatch(userId->userId.equals(userAssetLink.getId().getUserId())))
+                                .map(userAssetLink -> userAssetLink.getId().getAssetId())
+                                .toArray(String[]::new);
+
+                        //Remove consoleAssets which are linked to an User which has pushNotificationsEnabled set to false
+                        consoleAssets = consoleAssets.stream()
+                                .filter(consoleAsset -> Arrays.stream(assetIds).noneMatch(assetId -> assetId.equals(consoleAsset.getId())))
+                                .collect(Collectors.toList());
+
+                            mappedTargets.addAll(
+                                    consoleAssets
+                                            .stream()
+                                            .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                                            .collect(Collectors.toList()));
                         break;
 
                     case USER:
-                        // Get all console assets linked to the specified user
-                        String[] ids = assetStorageService.findUserAssetLinks(null, targetId, null)
-                            .stream()
-                            .map(userAssetLink -> userAssetLink.getId().getAssetId()).toArray(String[]::new);
+                        Optional<User> user = Arrays.stream(managerIdentityService
+                                .getIdentityProvider()
+                                .queryUsers(new UserQuery().ids(targetId))).findFirst();
 
-                        if (ids.length > 0) {
+                        if (user.isPresent() && Boolean.parseBoolean(user.get().getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, Collections.singletonList("true")).get(0))) {
 
-                            mappedTargets.addAll(
-                                assetStorageService.findAll(
-                                    new AssetQuery()
-                                        .select(AssetQuery.Select.selectExcludeAll())
-                                        .ids(ids)
-                                        .types(ConsoleAsset.class)
-                                        .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
+                            // Get all console assets linked to the specified user
+                            String[] ids = assetStorageService.findUserAssetLinks(null, targetId, null)
                                     .stream()
-                                    .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
-                                    .collect(Collectors.toList()));
+                                    .map(userAssetLink -> userAssetLink.getId().getAssetId()).toArray(String[]::new);
+
+                            if (ids.length > 0) {
+                                mappedTargets.addAll(
+                                        assetStorageService.findAll(
+                                                new AssetQuery()
+                                                        .select(AssetQuery.Select.selectExcludeAll())
+                                                        .ids(ids)
+                                                        .types(ConsoleAsset.class)
+                                                        .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
+                                        .stream()
+                                        .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                                        .collect(Collectors.toList()));
+                            }
                         } else {
                             LOG.fine("No console assets linked to target user");
                             return;
@@ -238,16 +274,40 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
                     case ASSET:
                         // Find all console descendants of the specified asset
+                        consoleAssets = assetStorageService.findAll(new AssetQuery()
+                                .select(AssetQuery.Select.selectExcludeAll())
+                                .paths(new PathPredicate(targetId))
+                                .types(ConsoleAsset.class)
+                                .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))));
+
+                        UserAssetLink[] userAssetLinks = consoleAssets.stream()
+                                .map(consoleAsset -> assetStorageService.findUserAssetLinks(null, null, consoleAsset.getId()))
+                                .flatMap(Collection::stream)
+                                .toArray(UserAssetLink[]::new);
+
+                        // Get all user ids which have pushNotificationsEnabled set to false
+                        assetIds = Arrays.stream(userAssetLinks)
+                                .filter(userAssetLink -> Arrays.stream(managerIdentityService
+                                            .getIdentityProvider()
+                                            .queryUsers(new UserQuery().asset(new UserAssetPredicate(userAssetLink.getId().getAssetId())))
+                                        )
+                                        .filter(user1 -> !Boolean.parseBoolean(user1.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, Collections.singletonList("true")).get(0)))
+                                        .map(User::getId)
+                                        .anyMatch(userId -> userId.equals(userAssetLink.getId().getUserId()))
+                                ).map(userAssetLink -> userAssetLink.getId().getAssetId())
+                                .toArray(String[]::new);
+
+                        //Remove consoleAssets which are linked to an User which has pushNotificationsEnabled set to false
+                        consoleAssets = consoleAssets.stream()
+                                .filter(consoleAsset -> Arrays.stream(assetIds).noneMatch(assetId -> assetId.equals(consoleAsset.getId())))
+                                .collect(Collectors.toList());
+
+
                         mappedTargets.addAll(
-                            assetStorageService.findAll(
-                                new AssetQuery()
-                                    .select(AssetQuery.Select.selectExcludeAll())
-                                    .paths(new PathPredicate(targetId))
-                                    .types(ConsoleAsset.class)
-                                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
-                                .stream()
-                                .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
-                                .collect(Collectors.toList()));
+                                consoleAssets
+                                        .stream()
+                                        .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
+                                        .collect(Collectors.toList()));
                         break;
                 }
             });
