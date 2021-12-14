@@ -364,7 +364,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 public KeycloakDeployment load(KeycloakRealmClient keycloakRealmClient) {
                     LOG.fine("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
 
-                    // Using authenticated client here doesn't seem to work
                     //KeycloakResource keycloak = getKeycloak();
                     KeycloakResource keycloak = getTarget(httpClient, keycloakServiceUri.build(), null, null, null).proxy(KeycloakResource.class);
 

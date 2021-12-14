@@ -427,8 +427,8 @@ class PageProvisioning<S extends AppStateKeyed> extends Page<S> {
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.userRoles = e.detail.value as ClientRole[]}"></or-mwc-input>
                                 <or-mwc-input .label="${i18next.t("assetTemplate")}"
                                               .type="${InputType.JSON}"
-                                              .value="${config.assetTemplate}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value}"></or-mwc-input>
+                                              .value="${config.assetTemplate ? JSON.stringify(JSON.parse(config.assetTemplate), null, 2) : undefined}"
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value ? JSON.stringify(e.detail.value) : undefined}"></or-mwc-input>
                                 <or-mwc-input .label="${i18next.t("createAsRestrictedUser")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${config.restrictedUser}"
