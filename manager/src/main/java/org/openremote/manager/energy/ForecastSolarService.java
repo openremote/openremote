@@ -2,6 +2,7 @@ package org.openremote.manager.energy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.camel.builder.RouteBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
@@ -82,7 +83,8 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     protected static final Logger LOG = Logger.getLogger(ForecastSolarService.class.getName());
 
-    protected ResteasyWebTarget forecastSolarClient;
+    protected ResteasyClient resteasyClient;
+    protected ResteasyWebTarget forecastSolarTarget;
     private String forecastSolarApiKey;
 
     private final Map<String, ScheduledFuture<?>> calculationFutures = new HashMap<>();
@@ -108,6 +110,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
 
+        resteasyClient = WebTargetBuilder.createClient(executorService);
         forecastSolarApiKey = getString(container.getConfig(), FORECAST_SOLAR_API_KEY, null);
     }
 
@@ -118,7 +121,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             return;
         }
 
-        forecastSolarClient = WebTargetBuilder.createClient(executorService)
+        forecastSolarTarget = resteasyClient
                 .target("https://api.forecast.solar/" + forecastSolarApiKey + "/estimate");
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
@@ -221,7 +224,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         Optional<Integer> azimuth = electricityProducerSolarAsset.getPanelAzimuth();
         Optional<Double> kwp = electricityProducerSolarAsset.getPowerExportMax();
         if (lat.isPresent() && lon.isPresent() && pitch.isPresent() && azimuth.isPresent() && kwp.isPresent()) {
-            try (Response response = forecastSolarClient
+            try (Response response = forecastSolarTarget
                     .path(String.format("%f/%f/%d/%d/%f", lat.get(), lon.get(), pitch.get(), azimuth.get(), kwp.get()))
                     .request()
                     .build("GET")
