@@ -195,7 +195,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
-        when: "the admin user sends a notification to a user in a different realm with emailNotificationsEnabled set to false"
+        when: "the admin user sends a notification to a user in a different realm with emailNotificationsDisabled set to true"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
         advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
@@ -205,7 +205,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 400
         notificationIds.size() == 3
 
-        when: "the admin user sends a notification to a user in a different realm with emailNotificationsEnabled set to true"
+        when: "the admin user sends a notification to a user in a different realm with emailNotificationsDisabled set to false"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser3Id)]
         advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)

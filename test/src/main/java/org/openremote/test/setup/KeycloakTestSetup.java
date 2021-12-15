@@ -84,14 +84,14 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         User testuser1 = createUser(MASTER_REALM, "testuser1", "testuser1", "DemoMaster", "DemoLast", null, true, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
         this.testuser1Id = testuser1.getId();
         keycloakProvider.updateUserRoles(MASTER_REALM, testuser1Id, "account"); // Remove all roles for account client
-        User testuser2 = createUser(tenantBuilding.getRealm(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, true, false, new ClientRole[] {
+        User testuser2 = createUser(tenantBuilding.getRealm(), "testuser2", "testuser2", "DemoA2", "DemoLast", "testuser2@openremote.local", true, false, true, new ClientRole[] {
             ClientRole.WRITE_USER,
             ClientRole.READ_MAP,
             ClientRole.READ_ASSETS
         });
         this.testuser2Id = testuser2.getId();
         keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), testuser2Id, "account"); // Remove all roles for account client
-        User testuser3 = createUser(tenantBuilding.getRealm(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, false, true, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
+        User testuser3 = createUser(tenantBuilding.getRealm(), "testuser3", "testuser3", "DemoA3", "DemoLast", "testuser3@openremote.local", true, true, false, container.isDevMode() ? REGULAR_USER_ROLES : demoUserRoles);
         this.testuser3Id = testuser3.getId();
         keycloakProvider.updateUserRoles(tenantBuilding.getRealm(), testuser3Id, "account"); // Remove all roles for account client
         User buildingUser = createUser(tenantBuilding.getRealm(), "building", "building", "Building", "User", "building@openremote.local", true, demoUserRoles);

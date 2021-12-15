@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED;
+import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED;
 import static org.openremote.model.Constants.*;
 
 public class EmailNotificationHandler implements NotificationHandler {
@@ -171,7 +171,7 @@ public class EmailNotificationHandler implements NotificationHandler {
 
                         mappedTargets.addAll(
                             Arrays.stream(users)
-                                .filter(user -> Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_ENABLED, Collections.singletonList("true")).get(0)))
+                                .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
                                 .map(user -> {
                                     Notification.Target userAssetTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
                                     userAssetTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
