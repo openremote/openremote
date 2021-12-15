@@ -2,7 +2,7 @@ import {css, html, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {AppStateKeyed} from "@openremote/or-app/dist/app";
 import {Page, PageProvider} from "@openremote/or-app/dist/types";
-import {NavigationControl} from "mapbox-gl";
+import {NavigationControl} from "maplibre-gl";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import manager from "@openremote/core";
 import {JsonRulesetDefinition} from "@openremote/model";

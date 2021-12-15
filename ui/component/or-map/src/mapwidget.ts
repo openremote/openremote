@@ -3,14 +3,16 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
     MapMouseEvent,
     NavigationControl,
     Control,
-    IControl} from "mapbox-gl";
+    IControl} from "maplibre-gl";
+import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
+import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat} from "./util";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
-const mapboxGlStyles = require("mapbox-gl/dist/mapbox-gl.css");
+const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
@@ -29,13 +31,15 @@ export class MapWidget {
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLatLike;
     protected _zoom?: number;
+    protected _showGeoCodingControl: boolean = false;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
 
-    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement) {
+    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
+        this._showGeoCodingControl = showGeoCodingControl;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -234,11 +238,11 @@ export class MapWidget {
         } else {
             // Add style to shadow root
             const style = document.createElement("style");
-            style.id = "mapboxGlStyle";
-            style.textContent = mapboxGlStyles;
+            style.id = "maplibreGlStyle";
+            style.textContent = maplibreGlStyles;
             this._styleParent.appendChild(style);
 
-            const map: typeof import("mapbox-gl") = await import(/* webpackChunkName: "mapbox-gl" */ "mapbox-gl");
+            const map: typeof import("maplibre-gl") = await import(/* webpackChunkName: "maplibre-gl" */ "maplibre-gl");
             const settings = await this.loadViewSettings();
                 
             const options: OptionsGL = {
@@ -294,6 +298,11 @@ export class MapWidget {
             } else {
                 // Add zoom and rotation controls to the map
                 this._mapGl.addControl(new NavigationControl());
+            }
+
+            if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geoCodeUrl) {
+                var geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode, reverseGeocode: this._reverseGeocode }, {marker: false});
+                this._mapGl!.addControl(geocoder);
             }
         }
 
@@ -507,5 +516,40 @@ export class MapWidget {
             elem.removeEventListener("click", handler);
             this._clickHandlers.delete(marker);
         }
+    }
+
+    protected async _forwardGeocode(config: any) {
+        const features = [];
+        try {
+            let request =  this._viewSettings!.geoCodeUrl + '/search?q=' + config.query + '&format=geojson&polygon_geojson=1&addressdetails=1';
+            const response = await fetch(request);
+            const geojson = await response.json();
+            for (let feature of geojson.features) {
+                let center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
+                let point = {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: center
+                    },
+                    place_name: feature.properties.display_name,
+                    properties: feature.properties,
+                    text: feature.properties.display_name,
+                    place_type: ['place'],
+                    center: center
+                };
+                features.push(point);
+            }
+        } catch (e) {
+            console.error(`Failed to forwardGeocode with error: ${e}`);
+        }
+
+        return {
+            features: features
+        };
+    }
+
+    protected async _reverseGeocode(config: any) {
+
     }
 }
