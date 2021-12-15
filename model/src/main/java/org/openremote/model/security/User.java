@@ -186,6 +186,13 @@ public class User {
         return this;
     }
 
+    public User removeAttribute(String key) {
+        if (attributes != null) {
+            attributes.removeIf(attr -> attr.getName().equals(key));
+        }
+        return this;
+    }
+
     public User setServiceAccount(boolean serviceAccount) {
         if (username != null) {
             username = serviceAccount ? SERVICE_ACCOUNT_PREFIX + username.replace(SERVICE_ACCOUNT_PREFIX, "") : username.replace(SERVICE_ACCOUNT_PREFIX, "");

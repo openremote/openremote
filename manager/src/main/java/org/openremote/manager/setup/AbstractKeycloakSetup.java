@@ -93,8 +93,12 @@ public abstract class AbstractKeycloakSetup implements Setup {
         user.setLastName(lastName);
         user.setEmail(email);
         user.setEnabled(enabled);
-        user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Boolean.toString(emailNotificationsDisabled));
-        user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Boolean.toString(pushNotificationsDisabled));
+        if (emailNotificationsDisabled) {
+            user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, "true");
+        }
+        if (pushNotificationsDisabled) {
+            user.setAttribute(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, "true");
+        }
         user = keycloakProvider.createUpdateUser(realm, user, password);
         if (user == null) {
             return null;

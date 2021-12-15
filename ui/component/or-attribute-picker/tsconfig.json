@@ -6,8 +6,7 @@
     "rootDir": "src"
   },
   "include": [
-    "./src",
-    "../or-map/@types"
+    "./src"
   ],
   "references": [
     { "path": "../core" },
