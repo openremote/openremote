@@ -20,13 +20,19 @@
 package org.openremote.manager.setup;
 
 import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthPasswordGrant;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.security.Role;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.container.security.keycloak.KeycloakIdentityProvider.MANAGER_CLIENT_ID;
 import static org.openremote.model.Constants.*;
@@ -72,7 +78,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         keycloakProxyUser = keycloakProvider.createUpdateUser(MASTER_REALM, keycloakProxyUser, password);
 
         // Make this proxy user a super user by giving them admin realm role
-        keycloakProvider.updateUserRoles(MASTER_REALM, keycloakProxyUser.getId(), null, "admin");
+        keycloakProvider.updateUserRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), keycloakProvider.addRealmRoles(MASTER_REALM, keycloakProxyUser.getId(), REALM_ADMIN_ROLE));
 
         // Update the grant to match the proxy user and make this grant active
         OAuthPasswordGrant grant = keycloakProvider.getDefaultKeycloakGrant(container);
