@@ -37,7 +37,7 @@ x-app: &awslogs
 
 services:
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.3}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.4}
     networks:
       - public
       - private

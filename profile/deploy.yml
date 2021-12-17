@@ -34,7 +34,7 @@ services:
   # map a Docker volume or host directory to access/store proxy configuration files
   # and SSL certificates.
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.3}
+    image: openremote/proxy:${PROXY_VERSION:-2.1.2.4}
     restart: always
     # Override the haproxy.cfg with custom file
     #volumes:
