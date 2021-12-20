@@ -6,6 +6,7 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
     IControl} from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
+import {debounce} from "lodash";
 import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
@@ -13,6 +14,7 @@ import {
 import {getLatLngBounds, getLngLat} from "./util";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
 const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
+const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
@@ -34,6 +36,7 @@ export class MapWidget {
     protected _showGeoCodingControl: boolean = false;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
+    protected _geocoder?: any;
 
     constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement) {
         this._type = type;
@@ -237,9 +240,14 @@ export class MapWidget {
             }
         } else {
             // Add style to shadow root
-            const style = document.createElement("style");
+            let style = document.createElement("style");
             style.id = "maplibreGlStyle";
             style.textContent = maplibreGlStyles;
+            this._styleParent.appendChild(style);
+
+            style = document.createElement("style");
+            style.id = "maplibreGeoCoderStyles";
+            style.textContent = maplibreGeoCoderStyles;
             this._styleParent.appendChild(style);
 
             const map: typeof import("maplibre-gl") = await import(/* webpackChunkName: "maplibre-gl" */ "maplibre-gl");
@@ -301,8 +309,68 @@ export class MapWidget {
             }
 
             if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geoCodeUrl) {
-                var geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode, reverseGeocode: this._reverseGeocode }, {marker: false});
-                this._mapGl!.addControl(geocoder);
+                this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { marker: false, showResultsWhileTyping: true });
+                // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
+                this._geocoder._onKeyDown = debounce((e: KeyboardEvent) => {
+                    var ESC_KEY_CODE = 27,
+                    TAB_KEY_CODE = 9;
+              
+                  if (e.keyCode === ESC_KEY_CODE && this._geocoder.options.clearAndBlurOnEsc) {
+                    this._geocoder._clear(e);
+                    return this._geocoder._inputEl.blur();
+                  }
+              
+                  // if target has shadowRoot, then get the actual active element inside the shadowRoot
+                  var value = this._geocoder._inputEl.value || e.key;
+              
+                  if (!value) {
+                    this._geocoder.fresh = true;
+                    // the user has removed all the text
+                    if (e.keyCode !== TAB_KEY_CODE) this._geocoder.clear(e);
+                    return (this._geocoder._clearEl.style.display = "none");
+                  }
+              
+                  // TAB, ESC, LEFT, RIGHT, UP, DOWN
+                  if (
+                    e.metaKey ||
+                    [TAB_KEY_CODE, ESC_KEY_CODE, 37, 39, 38, 40].indexOf(e.keyCode) !== -1
+                  )
+                    return;
+              
+                  // ENTER
+                  if (e.keyCode === 13) {
+                    if (!this._geocoder.options.showResultsWhileTyping) {
+                      if (!this._geocoder._typeahead.list.selectingListItem)
+                      this._geocoder._geocode(value);
+                    } else {
+                      if (this._geocoder.options.showResultMarkers) {
+                        this._geocoder._fitBoundsForMarkers();
+                      }
+                      this._geocoder._inputEl.value = this._geocoder._typeahead.query;
+                      this._geocoder.lastSelected = null;
+                      this._geocoder._typeahead.selected = null;
+                      return;
+                    }
+                  }
+              
+                  if (
+                    value.length >= this._geocoder.options.minLength &&
+                    this._geocoder.options.showResultsWhileTyping
+                  ) {
+                    this._geocoder._geocode(value);
+                  }
+                }, 300);
+                this._mapGl!.addControl(this._geocoder);
+
+                // There's no callback parameter in the options of the MaplibreGeocoder,
+                // so this is how we get the selected result.
+                this._geocoder._inputEl.addEventListener("change", () => {
+                    var selected = this._geocoder._typeahead.selected;
+                    if (selected) {
+                        // Set marker by calling _onMapClick and doubleClicked set to true
+                        this._onMapClick(selected.center, true);
+                    }
+                });
             }
         }
 

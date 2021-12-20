@@ -252,7 +252,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     margin: 3px 0;
                 }
             </style>
-            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}" ?showGeoCodingControl="true">
+            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[[centerControl, "bottom-left"], [coordinatesControl, "top-left"]]}" .showGeoCodingControl=${!readonly}>
                 <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .colour="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
         `;
@@ -367,7 +367,7 @@ export class OrMap extends LitElement {
     public zoom?: number;
 
     @property({type: Boolean})
-    public showGeoCodingControl: boolean = true;
+    public showGeoCodingControl: boolean = false;
 
     public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
 
