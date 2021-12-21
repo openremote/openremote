@@ -14,7 +14,6 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
 import org.openremote.model.asset.impl.ElectricityProducerSolarAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;

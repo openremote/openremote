@@ -1,13 +1,11 @@
 package org.openremote.test.energy
 
-
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.energy.ForecastSolarService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.ElectricityProducerSolarAsset
-import org.openremote.model.asset.impl.ElectricityProducerWindAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.geo.GeoJSONPoint
