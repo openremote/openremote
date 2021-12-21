@@ -1,8 +1,6 @@
 package org.openremote.test.energy
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.collect.Lists
-import org.junit.Ignore
+
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.energy.ForecastSolarService
@@ -26,7 +24,6 @@ import java.time.temporal.ChronoUnit
 
 import static org.openremote.manager.energy.ForecastSolarService.FORECAST_SOLAR_API_KEY
 
-@Ignore
 class ForecastSolarServiceTest extends Specification implements ManagerContainerTrait {
 
     @Shared
@@ -129,8 +126,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
-        config << [(FORECAST_SOLAR_API_KEY): System.getenv(FORECAST_SOLAR_API_KEY)]
-
+        config << [(FORECAST_SOLAR_API_KEY): "test-key"]
 
         if (!ForecastSolarService.resteasyClient.configuration.isRegistered(mockServer)) {
             ForecastSolarService.resteasyClient.register(mockServer, Integer.MAX_VALUE)
