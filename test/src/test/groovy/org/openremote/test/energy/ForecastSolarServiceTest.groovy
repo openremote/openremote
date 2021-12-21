@@ -1,8 +1,8 @@
 package org.openremote.test.energy
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.collect.Lists
 import org.junit.Ignore
-import org.openremote.agent.protocol.websocket.WebsocketAgentProtocol
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.energy.ForecastSolarService
@@ -10,6 +10,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.ElectricityProducerSolarAsset
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Shared
@@ -38,86 +39,86 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
             switch (requestUri.host) {
                 case "api.forecast.solar":
                     def now = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-                    def content = "\"{\\n\" +\n" +
-                            "                \"  \\\"result\\\": {\\n\" +\n" +
-                            "                \"    \\\"watts\\\": {\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.toLocalTime().toString()}\\\": 0,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(15).toLocalTime().toString()}\\\": 780000,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(30).toLocalTime().toString()}\\\": 3904036,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(45).toLocalTime().toString()}\\\": 3854598,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(60).toLocalTime().toString()}\\\": 3746874,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(75).toLocalTime().toString()}\\\": 3675780,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(90).toLocalTime().toString()}\\\": 3553500,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(105).toLocalTime().toString()}\\\": 3439679,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(120).toLocalTime().toString()}\\\": 3278604,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(135).toLocalTime().toString()}\\\": 3137450,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(150).toLocalTime().toString()}\\\": 2954064,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(165).toLocalTime().toString()}\\\": 2739056,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(180).toLocalTime().toString()}\\\": 2493609,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(195).toLocalTime().toString()}\\\": 2254420,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(210).toLocalTime().toString()}\\\": 1949976,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(225).toLocalTime().toString()}\\\": 1697104,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(240).toLocalTime().toString()}\\\": 1452142,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(255).toLocalTime().toString()}\\\": 1194060,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(270).toLocalTime().toString()}\\\": 925642,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(285).toLocalTime().toString()}\\\": 761949,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(300).toLocalTime().toString()}\\\": 594217,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(315).toLocalTime().toString()}\\\": 423624,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(330).toLocalTime().toString()}\\\": 80000,\\n\" +\n" +
-                            "                \"      \\\"${now.plusDays(1).toLocalDate().toString()} ${now.toLocalTime().toString()}\\\": 0\\n\" +\n" +
-                            "                \"    },\\n\" +\n" +
-                            "                \"    \\\"watt_hours\\\": {\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.toLocalTime().toString()}\\\": 0,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(15).toLocalTime().toString()}\\\": 3471000,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(30).toLocalTime().toString()}\\\": 20778893,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(45).toLocalTime().toString()}\\\": 21742542,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(60).toLocalTime().toString()}\\\": 22679261,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(75).toLocalTime().toString()}\\\": 23598206,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(90).toLocalTime().toString()}\\\": 24486581,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(105).toLocalTime().toString()}\\\": 25346501,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(120).toLocalTime().toString()}\\\": 26166152,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(135).toLocalTime().toString()}\\\": 26950514,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(150).toLocalTime().toString()}\\\": 27689030,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(165).toLocalTime().toString()}\\\": 28373794,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(180).toLocalTime().toString()}\\\": 28997196,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(195).toLocalTime().toString()}\\\": 29560801,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(210).toLocalTime().toString()}\\\": 30048295,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(225).toLocalTime().toString()}\\\": 30472571,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(240).toLocalTime().toString()}\\\": 30835607,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(255).toLocalTime().toString()}\\\": 31134122,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(270).toLocalTime().toString()}\\\": 31365532,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(285).toLocalTime().toString()}\\\": 31556020,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(300).toLocalTime().toString()}\\\": 31704574,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(315).toLocalTime().toString()}\\\": 31810480,\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.plusMinutes(330).toLocalTime().toString()}\\\": 31817147,\\n\" +\n" +
-                            "                \"      \\\"${now.plusDays(1).toLocalDate().toString()} ${now.toLocalTime().toString()}\\\": 0\\n\" +\n" +
-                            "                \"    },\\n\" +\n" +
-                            "                \"    \\\"watt_hours_day\\\": {\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()}\\\": 31817147\\n\" +\n" +
-                            "                \"    }\\n\" +\n" +
-                            "                \"  },\\n\" +\n" +
-                            "                \"  \\\"message\\\": {\\n\" +\n" +
-                            "                \"    \\\"code\\\": 0,\\n\" +\n" +
-                            "                \"    \\\"type\\\": \\\"success\\\",\\n\" +\n" +
-                            "                \"    \\\"text\\\": \\\"\\\",\\n\" +\n" +
-                            "                \"    \\\"info\\\": {\\n\" +\n" +
-                            "                \"      \\\"latitude\\\": 51.4969,\\n\" +\n" +
-                            "                \"      \\\"longitude\\\": -0.2773,\\n\" +\n" +
-                            "                \"      \\\"place\\\": \\\"W3 8BZ Turnham Green, Hounslow London Boro, England, GB\\\",\\n\" +\n" +
-                            "                \"      \\\"timezone\\\": \\\"Europe/London\\\"\\n\" +\n" +
-                            "                \"    },\\n\" +\n" +
-                            "                \"    \\\"ratelimit\\\": {\\n\" +\n" +
-                            "                \"      \\\"period\\\": 60,\\n\" +\n" +
-                            "                \"      \\\"limit\\\": 5,\\n\" +\n" +
-                            "                \"      \\\"remaining\\\": 4\\n\" +\n" +
-                            "                \"    }\\n\" +\n" +
-                            "                \"  }\\n\" +\n" +
-                            "                \"}\""
-                    def responseBody = new ObjectMapper().readValue(content, ForecastSolarService.EstimateResponse.class)
+                    def content = "{\n" +
+                            "    \"result\": {\n" +
+                            "        \"watts\": {\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(15).toLocalTime().toString()}\": 780000,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(30).toLocalTime().toString()}\": 3904036,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(45).toLocalTime().toString()}\": 3854598,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(60).toLocalTime().toString()}\": 3746874,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(75).toLocalTime().toString()}\": 3675780,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(90).toLocalTime().toString()}\": 3553500,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(105).toLocalTime().toString()}\": 3439679,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(120).toLocalTime().toString()}\": 3278604,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(135).toLocalTime().toString()}\": 3137450,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(150).toLocalTime().toString()}\": 2954064,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(165).toLocalTime().toString()}\": 2739056,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(180).toLocalTime().toString()}\": 2493609,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(195).toLocalTime().toString()}\": 2254420,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(210).toLocalTime().toString()}\": 1949976,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(225).toLocalTime().toString()}\": 1697104,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(240).toLocalTime().toString()}\": 1452142,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(255).toLocalTime().toString()}\": 1194060,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(270).toLocalTime().toString()}\": 925642,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(285).toLocalTime().toString()}\": 761949,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(300).toLocalTime().toString()}\": 594217,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(315).toLocalTime().toString()}\": 423624,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(330).toLocalTime().toString()}\": 80000,\n"+
+                            "          \"${now.plusDays(1).toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0\n"+
+                            "        },\n"+
+                            "        \"watt_hours\": {\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(15).toLocalTime().toString()}\": 3471000,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(30).toLocalTime().toString()}\": 20778893,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(45).toLocalTime().toString()}\": 21742542,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(60).toLocalTime().toString()}\": 22679261,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(75).toLocalTime().toString()}\": 23598206,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(90).toLocalTime().toString()}\": 24486581,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(105).toLocalTime().toString()}\": 25346501,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(120).toLocalTime().toString()}\": 26166152,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(135).toLocalTime().toString()}\": 26950514,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(150).toLocalTime().toString()}\": 27689030,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(165).toLocalTime().toString()}\": 28373794,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(180).toLocalTime().toString()}\": 28997196,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(195).toLocalTime().toString()}\": 29560801,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(210).toLocalTime().toString()}\": 30048295,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(225).toLocalTime().toString()}\": 30472571,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(240).toLocalTime().toString()}\": 30835607,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(255).toLocalTime().toString()}\": 31134122,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(270).toLocalTime().toString()}\": 31365532,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(285).toLocalTime().toString()}\": 31556020,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(300).toLocalTime().toString()}\": 31704574,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(315).toLocalTime().toString()}\": 31810480,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(330).toLocalTime().toString()}\": 31817147,\n"+
+                            "          \"${now.plusDays(1).toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0\n"+
+                            "        },\n"+
+                            "        \"watt_hours_day\": {\n"+
+                            "          \"${now.toLocalDate().toString()}\": 31817147\n"+
+                            "        }\n"+
+                            "      },\n"+
+                            "      \"message\": {\n"+
+                            "        \"code\": 0,\n"+
+                            "        \"type\": \"success\",\n"+
+                            "        \"text\": \"\",\n"+
+                            "        \"info\": {\n"+
+                            "          \"latitude\": 51.4969,\n"+
+                            "          \"longitude\": -0.2773,\n"+
+                            "          \"place\": \"W3 8BZ Turnham Green, Hounslow London Boro, England, GB\",\n"+
+                            "          \"timezone\": \"Europe/London\"\n"+
+                            "        },\n"+
+                            "        \"ratelimit\": {\n"+
+                            "          \"period\": 60,\n"+
+                            "          \"limit\": 5,\n"+
+                            "          \"remaining\": 4\n"+
+                            "        }\n"+
+                            "    }\n"+
+                            "}"
+                    def responseBody = ValueUtil.JSON.readValue(content, ForecastSolarService.EstimateResponse.class)
                     requestContext.abortWith(
                             Response.ok(responseBody, MediaType.APPLICATION_JSON_TYPE).build()
                     )
-                    break
+                    return
             }
 
             requestContext.abortWith(Response.serverError().build())
@@ -129,16 +130,17 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
         config << [(FORECAST_SOLAR_API_KEY): System.getenv(FORECAST_SOLAR_API_KEY)]
+
+
+        if (!ForecastSolarService.resteasyClient.configuration.isRegistered(mockServer)) {
+            ForecastSolarService.resteasyClient.register(mockServer, Integer.MAX_VALUE)
+        }
+
         def container = startContainer(config, defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def forecastSolarService = container.getService(ForecastSolarService.class)
-
-        and: "the web client is configured to use the mock HTTP server"
-        if (!forecastSolarService.resteasyClient.configuration.isRegistered(mockServer)) {
-            forecastSolarService.resteasyClient.register(mockServer, Integer.MAX_VALUE)
-        }
 
         expect: "a Future for calculation should exist and the asset should have filled in value for power and powerForecast"
         conditions.eventually {
@@ -194,8 +196,26 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         then: "it should be present present in the calculationFutures"
         conditions.eventually {
             assert forecastSolarService.calculationFutures.get(newSolarAsset2.getId()) != null
+            newSolarAsset2 = assetStorageService.find(newSolarAsset2.getId())
             assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) == 0d
             assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
+        }
+
+        when: "an asset updated it's setActualValueWithForecast to true"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.name, true))
+
+        then: "it power should be updated too"
+        conditions.eventually {
+            newSolarAsset2 = assetStorageService.find(newSolarAsset2.getId())
+            assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) != 0d
+        }
+
+        when: "an asset updated it's includeForecastSolarService to false"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.name, false))
+
+        then: "it shouldn't be present present in the calculationFutures"
+        conditions.eventually {
+            assert forecastSolarService.calculationFutures.get(newSolarAsset2.getId()) == null
         }
     }
 }
