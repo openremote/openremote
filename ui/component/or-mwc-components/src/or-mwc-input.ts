@@ -569,8 +569,12 @@ const style = css`
     .mdc-switch {
         margin: 0 24px;
     }
+
+    .mdc-switch--full-width {
+        margin-left: auto;
+    }
     
-    #field {
+        #field {
         height: 100%;
     }
 
@@ -855,10 +859,16 @@ export class OrMwcInput extends LitElement {
                     `;
                     break;
                 case InputType.SWITCH:
+                    const classesSwitch = {
+                        "mdc-switch--disabled": this.disabled || this.readonly,
+                        "mdc-switch--full-width": this.fullWidth,
+                        "mdc-switch--checked": this.value,
+                    };
+
                     return html`
                         <span id="wrapper">
                             ${this.label ? html`<label for="elem" class="${this.disabled ? "mdc-switch--disabled" : ""}">${this.label}</label>` : ``}
-                            <div id="component" class="mdc-switch ${this.disabled || this.readonly ? "mdc-switch--disabled" : ""} ${this.value ? "mdc-switch--checked" : ""}">
+                            <div id="component" class="mdc-switch ${classMap(classesSwitch)}">
                                 <div class="mdc-switch__track"></div>
                                 <div class="mdc-switch__thumb-underlay">
                                     <div class="mdc-switch__thumb">
