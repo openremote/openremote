@@ -49,6 +49,9 @@ distributions {
                 include("*Dockerfile")
             }
             into ("web") {
+                from("${rootDir}/LICENSE.txt")
+            }
+            into ("web") {
                 from("${projectDir}/src/web")
             }
             into ("map") {
