@@ -301,19 +301,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                 if (!oldAttribute.hasMeta(MetaItemType.ACCESS_PUBLIC_WRITE)) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
-                                // Check read-only
-                                if (oldAttribute.getMetaValue(MetaItemType.READ_ONLY).orElse(false)) {
-                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                                }
                             } else {
                                 // Check realm, must be accessible
                                 if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext,
                                     asset.getRealm())) {
-                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                                }
-
-                                // Check read-only
-                                if (oldAttribute.getMetaValue(MetaItemType.READ_ONLY).orElse(false) && !authContext.isSuperUser()) {
                                     throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                                 }
 

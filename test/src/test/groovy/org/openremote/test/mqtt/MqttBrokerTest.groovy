@@ -161,11 +161,17 @@ class MqttBrokerTest extends Specification implements ManagerContainerTrait {
         def payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "motionSensor", 70)).get()
         client.sendMessage(new MQTTMessage<String>(topic, payload))
 
-        then: "The value of the attribute shouldn't be updated"
+        then: "The value of the attribute should be updated and the client should have received the event"
         new PollingConditions(initialDelay: 1, timeout: 10, delay: 1).eventually {
             def asset = assetStorageService.find(managerTestSetup.apartment1HallwayId)
-            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 50d
+            assert asset.getAttribute("motionSensor").get().value.orElse(0) == 70d
+            assert receivedEvents.size() == 1
+            assert receivedEvents.get(0) instanceof AttributeEvent
+            assert (receivedEvents.get(0) as AttributeEvent).assetId == managerTestSetup.apartment1HallwayId
+            assert (receivedEvents.get(0) as AttributeEvent).attributeName == "motionSensor"
+            assert (receivedEvents.get(0) as AttributeEvent).value.orElse(0) == 70d
         }
+        receivedEvents.clear()
 
         when: "a mqtt client publishes to an asset attribute which is not readonly"
         payload = ValueUtil.asJSON(new AttributeEvent(managerTestSetup.apartment1HallwayId, "lights", false)).get()

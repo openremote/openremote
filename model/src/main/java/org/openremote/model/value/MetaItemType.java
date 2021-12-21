@@ -76,9 +76,7 @@ public final class MetaItemType {
     public static final MetaItemDescriptor<Boolean> ACCESS_RESTRICTED_WRITE = new MetaItemDescriptor<>("accessRestrictedWrite", ValueType.BOOLEAN);
 
     /**
-     * Marks the attribute as read-only for non-superuser clients. South-bound {@link AttributeEvent}s by regular or
-     * restricted users are ignored. North-bound {@link AttributeEvent}s made by protocols and rules engine are
-     * possible.
+     * Marks the attribute as read-only for UI purposes only; this does not offer any authorisation/security.
      */
     public static final MetaItemDescriptor<Boolean> READ_ONLY = new MetaItemDescriptor<>("readOnly", ValueType.BOOLEAN);
 
