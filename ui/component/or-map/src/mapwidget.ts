@@ -2,6 +2,7 @@ import manager, {MapType} from "@openremote/core";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent,
     NavigationControl,
+    GeolocateControl,
     Control,
     IControl} from "maplibre-gl";
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
@@ -306,6 +307,14 @@ export class MapWidget {
             } else {
                 // Add zoom and rotation controls to the map
                 this._mapGl.addControl(new NavigationControl());
+                // Add current location controls to the map
+                this._mapGl.addControl(new GeolocateControl({
+                    positionOptions: {
+                        enableHighAccuracy: true
+                    },
+                    showAccuracyCircle: true,
+                    showUserLocation: true
+                }));
             }
 
             if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geoCodeUrl) {

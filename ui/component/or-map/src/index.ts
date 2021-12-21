@@ -2,7 +2,7 @@ import manager, {EventCallback, MapType} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL} from "maplibre-gl";
+import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
@@ -87,7 +87,7 @@ export class CenterControl {
         control.classList.add("maplibregl-ctrl");
         control.classList.add("maplibregl-ctrl-group");
         const button = document.createElement("button");
-        button.className = "maplibregl-ctrl-geolocate";
+        button.className = "maplibregl-ctrl-compass";
         button.addEventListener("click", (ev) => map.flyTo({
             center: this.pos,
             zoom: map.getZoom()
@@ -245,6 +245,29 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
             }
         };
 
+        const controls = [[centerControl, "bottom-left"], [coordinatesControl, "top-left"]]
+
+        if (!readonly) {
+
+            const userLocationControl = new GeolocateControl({
+                positionOptions: {
+                    enableHighAccuracy: true
+                },
+                showAccuracyCircle: false,
+                showUserLocation: false
+            });
+        
+            userLocationControl.on('geolocate', (currentLocation: GeolocationPosition) => {
+                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
+                console.log(currentLocation);
+            });
+            userLocationControl.on('outofmaxbounds', (currentLocation: GeolocationPosition) => {
+                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
+                console.log(currentLocation);
+            });
+            controls.push([userLocationControl, "bottom-left"]);
+        }
+
         let content = html`
             <style>
                 or-map {
@@ -252,7 +275,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     margin: 3px 0;
                 }
             </style>
-            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[[centerControl, "bottom-left"], [coordinatesControl, "top-left"]]}" .showGeoCodingControl=${!readonly}>
+            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
                 <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .colour="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
         `;
