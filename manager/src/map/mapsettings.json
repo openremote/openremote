@@ -5,7 +5,8 @@
       "bounds": [ 4.42, 51.88, 4.55, 51.94 ],
       "zoom": 14,
       "maxZoom": 19,
-      "boxZoom": false
+      "boxZoom": false,
+      "geoCodeUrl": "https://nominatim.openstreetmap.org"
     }
   },
   "version": 8,

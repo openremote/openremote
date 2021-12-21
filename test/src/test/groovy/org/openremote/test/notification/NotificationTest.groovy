@@ -362,7 +362,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notification should have been updated"
         assert notifications.size() == 16
-        assert notifications.count {n -> n.targetId == testuser3Console1.id &&  n.deliveredOn != null} == 2
+        assert notifications.count {n -> n.targetId == testuser3Console1.id &&  n.deliveredOn != null} == 1
 
 // TODO: Update once console permissions model finalised
 //        when: "an anonymous user marks a console notification from another console as delivered"

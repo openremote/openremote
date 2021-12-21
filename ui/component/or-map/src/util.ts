@@ -1,4 +1,4 @@
-import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
+import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
 import {Asset, Attribute, GeoJSONPoint, ValueHolder, WellknownAttributes} from "@openremote/model";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
