@@ -2,10 +2,10 @@ package org.openremote.manager.energy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.camel.builder.RouteBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
-import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
@@ -14,9 +14,10 @@ import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
+import org.openremote.model.asset.impl.ElectricityProducerSolarAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
-import org.openremote.model.asset.impl.WeatherAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
 
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
 /**
@@ -117,10 +120,15 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     protected RulesService rulesService;
 
 
-    private ResteasyWebTarget weatherForecastClient;
+    protected static ResteasyClient resteasyClient;
+    private ResteasyWebTarget weatherForecastWebTarget;
     private String openWeatherAppId;
 
     private final Map<String, ScheduledFuture<?>> calculationFutures = new HashMap<>();
+
+    static {
+        resteasyClient = createClient(org.openremote.container.Container.EXECUTOR_SERVICE);
+    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -152,7 +160,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
             return;
         }
 
-        weatherForecastClient = WebTargetBuilder.createClient(container.getExecutorService())
+        weatherForecastWebTarget = resteasyClient
                 .target("https://api.openweathermap.org/data/2.5")
                 .queryParam("units", "metric")
                 .queryParam("exclude", "minutely,daily,alerts")
@@ -186,15 +194,11 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
     @Override
     public void stop(Container container) throws Exception {
-        calculationFutures.keySet().forEach(this::stopCalculation);
+        new ArrayList<>(calculationFutures.keySet()).forEach(this::stopCalculation);
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {
-        ScheduledFuture<?> calculationFuture = calculationFutures.get(attributeEvent.getAssetId());
-
-        if (calculationFuture != null) {
-            processElectricityProducerWindAssetAttributeEvent(attributeEvent);
-        }
+        processElectricityProducerWindAssetAttributeEvent(attributeEvent);
     }
 
     protected synchronized void processElectricityProducerWindAssetAttributeEvent(AttributeEvent attributeEvent) {
@@ -206,24 +210,34 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         }
 
         if (attributeEvent.getAttributeName().equals(ElectricityProducerWindAsset.INCLUDE_FORECAST_WIND_SERVICE.getName())) {
-            boolean disabled = attributeEvent.<Boolean>getValue().orElse(false);
-            if (!disabled && calculationFutures.containsKey(attributeEvent.getAssetId())) {
+            boolean enabled = attributeEvent.<Boolean>getValue().orElse(false);
+            if (enabled && calculationFutures.containsKey(attributeEvent.getAssetId())) {
                 // Nothing to do here
                 return;
-            } else if (disabled && !calculationFutures.containsKey(attributeEvent.getAssetId())) {
+            } else if (!enabled && !calculationFutures.containsKey(attributeEvent.getAssetId())) {
                 // Nothing to do here
                 return;
             }
+
+            LOG.info("Processing producer wind asset attribute event: " + attributeEvent);
+            stopCalculation(attributeEvent.getAssetId());
+
+            // Get latest asset from storage
+            ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
+
+            if (asset != null && asset.isIncludeForecastWindService().orElse(false) && asset.getLocation().isPresent()) {
+                startCalculation(asset);
+            }
         }
 
-        LOG.info("Processing producer wind asset attribute event: " + attributeEvent);
-        stopCalculation(attributeEvent.getAssetId());
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+            // Get latest asset from storage
+            ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
 
-        // Get latest asset from storage
-        ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
-
-        if (asset != null && asset.isIncludeForecastWindService().orElse(false) && asset.getLocation().isPresent()) {
-            startCalculation(asset);
+            // Check if power is currently zero and set it if power forecast has an value
+            if (asset.getPower().orElse(0d) == 0d && asset.getPowerForecast().orElse(0d) != 0d) {
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerWindAsset.POWER, asset.getPowerForecast().orElse(0d)));
+            }
         }
     }
 
@@ -255,7 +269,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
     }
 
     protected void processWeatherData(ElectricityProducerWindAsset electricityProducerWindAsset) {
-        try (Response response = weatherForecastClient
+        try (Response response = weatherForecastWebTarget
                 .path("onecall")
                 .queryParam("lat", electricityProducerWindAsset.getLocation().get().getY())
                 .queryParam("lon", electricityProducerWindAsset.getLocation().get().getX())

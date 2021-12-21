@@ -3,10 +3,13 @@ package org.openremote.test.energy
 
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.energy.ForecastSolarService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.ElectricityProducerSolarAsset
+import org.openremote.model.asset.impl.ElectricityProducerWindAsset
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
@@ -135,6 +138,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         def container = startContainer(config, defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def forecastSolarService = container.getService(ForecastSolarService.class)
 
@@ -145,6 +149,8 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
             def solarAsset = assetStorageService.find(managerTestSetup.electricitySolarAssetId)
             assert solarAsset.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) != 0d
             assert solarAsset.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(solarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName())).size() > 0
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(solarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName())).size() > 0
         }
 
         when: "an asset is added with includeForecastSolarService set to true"
@@ -166,6 +172,8 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
             newSolarAsset = assetStorageService.find(newSolarAsset.getId())
             assert newSolarAsset.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) != 0d
             assert newSolarAsset.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName())).size() > 0
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName())).size() > 0
         }
 
         when: "an asset is added with includeForecastSolarService set to false"
@@ -195,6 +203,8 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
             newSolarAsset2 = assetStorageService.find(newSolarAsset2.getId())
             assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) == 0d
             assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset2.getId(), ElectricityProducerSolarAsset.POWER.getName())).size() > 0
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset2.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName())).size() > 0
         }
 
         when: "an asset updated it's setActualValueWithForecast to true"

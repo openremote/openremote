@@ -94,6 +94,7 @@ public class ManagerTestSetup extends ManagerSetup {
     public String electricityOptimisationAssetId;
     public String electricityConsumerAssetId;
     public String electricitySolarAssetId;
+    public String electricityWindAssetId;
     public String electricitySupplierAssetId;
     public String electricityBatteryAssetId;
 
@@ -232,6 +233,23 @@ public class ManagerTestSetup extends ManagerSetup {
         electricitySolarAsset.setIncludeForecastSolarService(true);
         electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
         electricitySolarAssetId = electricitySolarAsset.getId();
+
+        ElectricityProducerWindAsset electricityWindAsset = new ElectricityProducerWindAsset("Wind Turbine");
+        electricityWindAsset.setParent(electricityOptimisationAsset);
+        electricityWindAsset.getAttribute(ElectricityAsset.POWER).ifPresent(attr ->
+                attr.addMeta(new MetaItem<>(HAS_PREDICTED_DATA_POINTS))
+        );
+        electricityWindAsset.setWindSpeedMax(18d);
+        electricityWindAsset.setWindSpeedMin(2d);
+        electricityWindAsset.setWindSpeedReference(12d);
+        electricityWindAsset.setPowerExportMax(9000d);
+        electricityWindAsset.setEfficiencyExport(100);
+        electricityWindAsset.setPowerExportMax(2.5);
+        electricityWindAsset.setLocation(new GeoJSONPoint(9.195285, 48.787418));
+        electricityWindAsset.setSetActualValueWithForecast(true);
+        electricityWindAsset.setIncludeForecastWindService(true);
+        electricityWindAsset = assetStorageService.merge(electricityWindAsset);
+        electricityWindAssetId = electricityWindAsset.getId();
 
         ElectricityBatteryAsset electricityBatteryAsset = new ElectricityBatteryAsset("Battery");
         electricityBatteryAsset.setParent(electricityOptimisationAsset);
