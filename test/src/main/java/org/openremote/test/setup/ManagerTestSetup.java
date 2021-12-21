@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.agent.protocol.simulator.SimulatorAgent;
 import org.openremote.agent.protocol.simulator.SimulatorAgentLink;
 import org.openremote.container.util.UniqueIdentifierGenerator;
+import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.setup.ManagerSetup;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
@@ -33,9 +34,9 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueConstraint;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.impl.ColourRGB;
 
 import java.util.Arrays;
@@ -578,9 +579,9 @@ public class ManagerTestSetup extends ManagerSetup {
                 apartment2BathroomId)));
 
         // ################################ Make users restricted ###################################
-
-        identityService.getIdentityProvider().updateUserRoles(tenantBuilding.getRealm(), keycloakTestSetup.testuser3Id, null, RESTRICTED_USER_REALM_ROLE);
-        identityService.getIdentityProvider().updateUserRoles(tenantBuilding.getRealm(), keycloakTestSetup.buildingUserId, null, RESTRICTED_USER_REALM_ROLE);
+        ManagerIdentityProvider identityProvider = identityService.getIdentityProvider();
+        identityProvider.updateUserRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.testuser3Id, identityProvider.addRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.testuser3Id, RESTRICTED_USER_REALM_ROLE));
+        identityProvider.updateUserRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.buildingUserId, identityProvider.addRealmRoles(tenantBuilding.getRealm(), keycloakTestSetup.buildingUserId, RESTRICTED_USER_REALM_ROLE));
 
         // ################################ Realm smartcity ###################################
 

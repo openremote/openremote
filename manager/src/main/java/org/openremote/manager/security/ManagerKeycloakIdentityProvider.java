@@ -45,6 +45,7 @@ import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.NotFoundException;
@@ -606,7 +607,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public void updateUserRoles(String realm, String userId, String client, String...roles) {
+    public void updateUserRoles(@NotNull String realm, @NotNull String userId, @NotNull String client, String...roles) {
         getRealms(realmsResource -> {
             RealmResource realmResource = realmsResource.realm(realm);
             UserRepresentation user = realmResource.users().get(userId).toRepresentation();
@@ -616,21 +617,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             }
 
             RoleMappingResource roleMappingResource = realmResource.users().get(user.getId()).roles();
-            ClientRepresentation clientRepresentation = null;
-            ClientResource clientResource = null;
+            ClientRepresentation clientRepresentation = getClient(realm, client);
 
-            if (client != null) {
-                clientRepresentation = getClient(realm, client);
-
-                if (clientRepresentation == null) {
-                    throw new IllegalStateException("Invalid client: " + client);
-                }
-                clientResource = realmResource.clients().get(clientRepresentation.getId());
+            if (clientRepresentation == null) {
+                throw new IllegalStateException("Invalid client: " + client);
             }
 
+            ClientResource clientResource = realmResource.clients().get(clientRepresentation.getId());
+
             // Get all roles
-            List<RoleRepresentation> existingRoles = clientRepresentation != null ? roleMappingResource.clientLevel(clientRepresentation.getId()).listAll() : roleMappingResource.realmLevel().listAll();
-            List<RoleRepresentation> availableRoles = clientResource != null ? clientResource.roles().list() : realmResource.roles().list();
+            List<RoleRepresentation> existingRoles = roleMappingResource.clientLevel(clientRepresentation.getId()).listAll();
+            List<RoleRepresentation> availableRoles = clientResource.roles().list();
             List<RoleRepresentation> requestedRoles = availableRoles.stream().filter(role -> Arrays.stream(roles).anyMatch(name -> role.getName().equals(name))).collect(Collectors.toList());
 
             // Strip out requested roles that are already in a requested composite role
@@ -657,18 +654,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 .collect(Collectors.toList());
 
             if (!removeRoles.isEmpty()) {
-                if (clientRepresentation != null) {
-                    roleMappingResource.clientLevel(clientRepresentation.getId()).remove(removeRoles);
-                } else {
-                    roleMappingResource.realmLevel().remove(removeRoles);
-                }
+                roleMappingResource.clientLevel(clientRepresentation.getId()).remove(removeRoles);
             }
             if (!addRoles.isEmpty()) {
-                if (clientRepresentation != null) {
-                    roleMappingResource.clientLevel(clientRepresentation.getId()).add(addRoles);
-                } else {
-                    roleMappingResource.realmLevel().add(addRoles);
-                }
+                roleMappingResource.clientLevel(clientRepresentation.getId()).add(addRoles);
             }
 
             return null;
@@ -964,9 +953,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     // TODO: Provide an implementation agnostic client
-    public ClientRepresentation getClient(String realm, String clientId) {
+    public ClientRepresentation getClient(String realm, String client) {
         return getRealms(realmsResource ->
-            withClientResource(realm, clientId, realmsResource, (clientRepresentation, clientResource) ->
+            withClientResource(realm, client, realmsResource, (clientRepresentation, clientResource) ->
                 clientRepresentation, null));
     }
 

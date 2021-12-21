@@ -30,9 +30,8 @@ import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
 import javax.persistence.TypedQuery;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.openremote.manager.asset.AssetStorageService.buildMatchFilter;
@@ -109,6 +108,12 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     /*
      * BELOW ARE STATIC HELPER METHODS
      */
+
+    default String[] addRealmRoles(String realm, String userId, String...roles) {
+        Set<String> realmRoles = Arrays.stream(getUserRealmRoles(realm, userId)).map(Role::getName).collect(Collectors.toCollection(LinkedHashSet::new));
+        realmRoles.addAll(Arrays.asList(roles));
+        return realmRoles.toArray(new String[0]);
+    }
 
     static User[] getUsersFromDb(PersistenceService persistenceService, UserQuery query) {
         StringBuilder sb = new StringBuilder();
