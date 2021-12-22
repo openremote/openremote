@@ -404,7 +404,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "the admin user removes notifications by timestamp and the notifications are retrieved again"
         notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, null).reverse(true)
         def sentNotification = notifications[0]
-        def removeCount = notifications.count {it.sentOn == sentNotification.sentOn}
+        def removeCount = notifications.count {it.sentOn >= sentNotification.sentOn}
         adminNotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, sentNotification.sentOn.getTime(), null, null, null, null)
 
         then: "notifications sent after or at that time should have been removed"
