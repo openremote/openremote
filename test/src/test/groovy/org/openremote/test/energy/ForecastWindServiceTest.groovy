@@ -40,1140 +40,588 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
                 case "/data/2.5/onecall":
                     def now = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
                     def content = "{\n" +
-                            "\t\"lat\": 51.97,\n" +
-                            "\t\"lon\": 5.9,\n" +
-                            "\t\"timezone\": \"Europe/Amsterdam\",\n" +
-                            "\t\"timezone_offset\": 3600,\n" +
-                            "\t\"current\": {\n" +
-                            "\t\t\"dt\": ${now.toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\"sunrise\": 1637045887,\n" +
-                            "\t\t\"sunset\": 1637077471,\n" +
-                            "\t\t\"temp\": 5.37,\n" +
-                            "\t\t\"feels_like\": 5.37,\n" +
-                            "\t\t\"pressure\": 1022,\n" +
-                            "\t\t\"humidity\": 93,\n" +
-                            "\t\t\"dew_point\": 4.33,\n" +
-                            "\t\t\"uvi\": 0.51,\n" +
-                            "\t\t\"clouds\": 90,\n" +
-                            "\t\t\"visibility\": 6000,\n" +
-                            "\t\t\"wind_speed\": 3.45,\n" +
-                            "\t\t\"wind_deg\": 170,\n" +
-                            "\t\t\"wind_gust\": 0,\n" +
-                            "\t\t\"weather\": [\n" +
-                            "\t\t\t{\n" +
-                            "\t\t\t\t\"id\": 701,\n" +
-                            "\t\t\t\t\"main\": \"Mist\",\n" +
-                            "\t\t\t\t\"description\": \"mist\",\n" +
-                            "\t\t\t\t\"icon\": \"50d\"\n" +
-                            "\t\t\t}\n" +
-                            "\t\t]\n" +
-                            "\t},\n" +
-                            "\t\"hourly\": [\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.37,\n" +
-                            "\t\t\t\"feels_like\": 5.37,\n" +
-                            "\t\t\t\"pressure\": 1022,\n" +
-                            "\t\t\t\"humidity\": 93,\n" +
-                            "\t\t\t\"dew_point\": 4.33,\n" +
-                            "\t\t\t\"uvi\": 0.51,\n" +
-                            "\t\t\t\"clouds\": 90,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.19,\n" +
-                            "\t\t\t\"wind_deg\": 230,\n" +
-                            "\t\t\t\"wind_gust\": 1.4,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(1).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.63,\n" +
-                            "\t\t\t\"feels_like\": 4.53,\n" +
-                            "\t\t\t\"pressure\": 1022,\n" +
-                            "\t\t\t\"humidity\": 89,\n" +
-                            "\t\t\t\"dew_point\": 3.96,\n" +
-                            "\t\t\t\"uvi\": 0.3,\n" +
-                            "\t\t\t\"clouds\": 92,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 2.61,\n" +
-                            "\t\t\t\"wind_deg\": 232,\n" +
-                            "\t\t\t\"wind_gust\": 2.04,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(2).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.79,\n" +
-                            "\t\t\t\"feels_like\": 4.46,\n" +
-                            "\t\t\t\"pressure\": 1022,\n" +
-                            "\t\t\t\"humidity\": 86,\n" +
-                            "\t\t\t\"dew_point\": 3.63,\n" +
-                            "\t\t\t\"uvi\": 0.11,\n" +
-                            "\t\t\t\"clouds\": 94,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 1.83,\n" +
-                            "\t\t\t\"wind_deg\": 239,\n" +
-                            "\t\t\t\"wind_gust\": 2.56,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(3).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.83,\n" +
-                            "\t\t\t\"feels_like\": 4.51,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 83,\n" +
-                            "\t\t\t\"dew_point\": 3.17,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 96,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 1.83,\n" +
-                            "\t\t\t\"wind_deg\": 248,\n" +
-                            "\t\t\t\"wind_gust\": 2.92,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(4).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.89,\n" +
-                            "\t\t\t\"feels_like\": 4.64,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 81,\n" +
-                            "\t\t\t\"dew_point\": 2.88,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 98,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 1.77,\n" +
-                            "\t\t\t\"wind_deg\": 254,\n" +
-                            "\t\t\t\"wind_gust\": 3.22,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(5).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.99,\n" +
-                            "\t\t\t\"feels_like\": 4.72,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 78,\n" +
-                            "\t\t\t\"dew_point\": 2.31,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 1.81,\n" +
-                            "\t\t\t\"wind_deg\": 251,\n" +
-                            "\t\t\t\"wind_gust\": 3.57,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(6).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6,\n" +
-                            "\t\t\t\"feels_like\": 4.55,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 77,\n" +
-                            "\t\t\t\"dew_point\": 2.15,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 1.98,\n" +
-                            "\t\t\t\"wind_deg\": 254,\n" +
-                            "\t\t\t\"wind_gust\": 3.76,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(7).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.95,\n" +
-                            "\t\t\t\"feels_like\": 4.68,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 77,\n" +
-                            "\t\t\t\"dew_point\": 2.15,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 1.8,\n" +
-                            "\t\t\t\"wind_deg\": 242,\n" +
-                            "\t\t\t\"wind_gust\": 3.37,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(8).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.93,\n" +
-                            "\t\t\t\"feels_like\": 4.53,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 77,\n" +
-                            "\t\t\t\"dew_point\": 2.18,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 1.92,\n" +
-                            "\t\t\t\"wind_deg\": 213,\n" +
-                            "\t\t\t\"wind_gust\": 3.31,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(9).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.94,\n" +
-                            "\t\t\t\"feels_like\": 4.27,\n" +
-                            "\t\t\t\"pressure\": 1020,\n" +
-                            "\t\t\t\"humidity\": 77,\n" +
-                            "\t\t\t\"dew_point\": 2.24,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 2.2,\n" +
-                            "\t\t\t\"wind_deg\": 195,\n" +
-                            "\t\t\t\"wind_gust\": 3.58,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(10).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.05,\n" +
-                            "\t\t\t\"feels_like\": 4.19,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 77,\n" +
-                            "\t\t\t\"dew_point\": 2.35,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 2.45,\n" +
-                            "\t\t\t\"wind_deg\": 192,\n" +
-                            "\t\t\t\"wind_gust\": 4.3,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(11).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.16,\n" +
-                            "\t\t\t\"feels_like\": 4.12,\n" +
-                            "\t\t\t\"pressure\": 1020,\n" +
-                            "\t\t\t\"humidity\": 78,\n" +
-                            "\t\t\t\"dew_point\": 2.52,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 2.7,\n" +
-                            "\t\t\t\"wind_deg\": 228,\n" +
-                            "\t\t\t\"wind_gust\": 6.04,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(12).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.24,\n" +
-                            "\t\t\t\"feels_like\": 4.04,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 78,\n" +
-                            "\t\t\t\"dew_point\": 2.66,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 2.93,\n" +
-                            "\t\t\t\"wind_deg\": 221,\n" +
-                            "\t\t\t\"wind_gust\": 7.28,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(13).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.33,\n" +
-                            "\t\t\t\"feels_like\": 3.88,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 79,\n" +
-                            "\t\t\t\"dew_point\": 2.84,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.34,\n" +
-                            "\t\t\t\"wind_deg\": 208,\n" +
-                            "\t\t\t\"wind_gust\": 7.93,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(14).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.49,\n" +
-                            "\t\t\t\"feels_like\": 3.7,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 79,\n" +
-                            "\t\t\t\"dew_point\": 2.97,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.98,\n" +
-                            "\t\t\t\"wind_deg\": 202,\n" +
-                            "\t\t\t\"wind_gust\": 8.55,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(15).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.52,\n" +
-                            "\t\t\t\"feels_like\": 3.53,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 79,\n" +
-                            "\t\t\t\"dew_point\": 3.15,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 98,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.37,\n" +
-                            "\t\t\t\"wind_deg\": 214,\n" +
-                            "\t\t\t\"wind_gust\": 9.76,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(16).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.69,\n" +
-                            "\t\t\t\"feels_like\": 3.65,\n" +
-                            "\t\t\t\"pressure\": 1018,\n" +
-                            "\t\t\t\"humidity\": 81,\n" +
-                            "\t\t\t\"dew_point\": 3.62,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 98,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.57,\n" +
-                            "\t\t\t\"wind_deg\": 211,\n" +
-                            "\t\t\t\"wind_gust\": 9.8,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(17).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.72,\n" +
-                            "\t\t\t\"feels_like\": 3.71,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 84,\n" +
-                            "\t\t\t\"dew_point\": 4.1,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 99,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.52,\n" +
-                            "\t\t\t\"wind_deg\": 218,\n" +
-                            "\t\t\t\"wind_gust\": 10.41,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(18).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.85,\n" +
-                            "\t\t\t\"feels_like\": 3.86,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 86,\n" +
-                            "\t\t\t\"dew_point\": 4.58,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.54,\n" +
-                            "\t\t\t\"wind_deg\": 225,\n" +
-                            "\t\t\t\"wind_gust\": 10.91,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.01\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(19).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 7.15,\n" +
-                            "\t\t\t\"feels_like\": 4.2,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 89,\n" +
-                            "\t\t\t\"dew_point\": 5.39,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 98,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.6,\n" +
-                            "\t\t\t\"wind_deg\": 228,\n" +
-                            "\t\t\t\"wind_gust\": 10.3,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.05\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(20).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 7.85,\n" +
-                            "\t\t\t\"feels_like\": 5.02,\n" +
-                            "\t\t\t\"pressure\": 1019,\n" +
-                            "\t\t\t\"humidity\": 91,\n" +
-                            "\t\t\t\"dew_point\": 6.35,\n" +
-                            "\t\t\t\"uvi\": 0.1,\n" +
-                            "\t\t\t\"clouds\": 91,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.72,\n" +
-                            "\t\t\t\"wind_deg\": 229,\n" +
-                            "\t\t\t\"wind_gust\": 10.31,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.05\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(21).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 8.52,\n" +
-                            "\t\t\t\"feels_like\": 5.91,\n" +
-                            "\t\t\t\"pressure\": 1020,\n" +
-                            "\t\t\t\"humidity\": 93,\n" +
-                            "\t\t\t\"dew_point\": 7.31,\n" +
-                            "\t\t\t\"uvi\": 0.26,\n" +
-                            "\t\t\t\"clouds\": 94,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.6,\n" +
-                            "\t\t\t\"wind_deg\": 258,\n" +
-                            "\t\t\t\"wind_gust\": 9.79,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.05\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(22).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 10.23,\n" +
-                            "\t\t\t\"feels_like\": 9.5,\n" +
-                            "\t\t\t\"pressure\": 1020,\n" +
-                            "\t\t\t\"humidity\": 84,\n" +
-                            "\t\t\t\"dew_point\": 7.47,\n" +
-                            "\t\t\t\"uvi\": 0.36,\n" +
-                            "\t\t\t\"clouds\": 94,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.92,\n" +
-                            "\t\t\t\"wind_deg\": 287,\n" +
-                            "\t\t\t\"wind_gust\": 8.04,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.05\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(23).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 10.03,\n" +
-                            "\t\t\t\"feels_like\": 9.05,\n" +
-                            "\t\t\t\"pressure\": 1020,\n" +
-                            "\t\t\t\"humidity\": 75,\n" +
-                            "\t\t\t\"dew_point\": 5.78,\n" +
-                            "\t\t\t\"uvi\": 0.37,\n" +
-                            "\t\t\t\"clouds\": 95,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.91,\n" +
-                            "\t\t\t\"wind_deg\": 294,\n" +
-                            "\t\t\t\"wind_gust\": 8.34,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.05\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(24).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 9.77,\n" +
-                            "\t\t\t\"feels_like\": 8.22,\n" +
-                            "\t\t\t\"pressure\": 1020,\n" +
-                            "\t\t\t\"humidity\": 73,\n" +
-                            "\t\t\t\"dew_point\": 5.19,\n" +
-                            "\t\t\t\"uvi\": 0.53,\n" +
-                            "\t\t\t\"clouds\": 99,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.02,\n" +
-                            "\t\t\t\"wind_deg\": 273,\n" +
-                            "\t\t\t\"wind_gust\": 6.7,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.18\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(25).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 10.16,\n" +
-                            "\t\t\t\"feels_like\": 9.11,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 72,\n" +
-                            "\t\t\t\"dew_point\": 5.19,\n" +
-                            "\t\t\t\"uvi\": 0.31,\n" +
-                            "\t\t\t\"clouds\": 99,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.88,\n" +
-                            "\t\t\t\"wind_deg\": 276,\n" +
-                            "\t\t\t\"wind_gust\": 7.62,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.12\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(26).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 9.19,\n" +
-                            "\t\t\t\"feels_like\": 7.03,\n" +
-                            "\t\t\t\"pressure\": 1021,\n" +
-                            "\t\t\t\"humidity\": 75,\n" +
-                            "\t\t\t\"dew_point\": 4.98,\n" +
-                            "\t\t\t\"uvi\": 0.11,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.95,\n" +
-                            "\t\t\t\"wind_deg\": 276,\n" +
-                            "\t\t\t\"wind_gust\": 8.37,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0.04\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(27).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 7.33,\n" +
-                            "\t\t\t\"feels_like\": 5.08,\n" +
-                            "\t\t\t\"pressure\": 1022,\n" +
-                            "\t\t\t\"humidity\": 83,\n" +
-                            "\t\t\t\"dew_point\": 4.62,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 88,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.35,\n" +
-                            "\t\t\t\"wind_deg\": 270,\n" +
-                            "\t\t\t\"wind_gust\": 7.42,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(28).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.69,\n" +
-                            "\t\t\t\"feels_like\": 4.25,\n" +
-                            "\t\t\t\"pressure\": 1023,\n" +
-                            "\t\t\t\"humidity\": 86,\n" +
-                            "\t\t\t\"dew_point\": 4.51,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 91,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.44,\n" +
-                            "\t\t\t\"wind_deg\": 260,\n" +
-                            "\t\t\t\"wind_gust\": 8.64,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(29).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.54,\n" +
-                            "\t\t\t\"feels_like\": 4,\n" +
-                            "\t\t\t\"pressure\": 1023,\n" +
-                            "\t\t\t\"humidity\": 87,\n" +
-                            "\t\t\t\"dew_point\": 4.47,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 92,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.56,\n" +
-                            "\t\t\t\"wind_deg\": 257,\n" +
-                            "\t\t\t\"wind_gust\": 9.1,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(30).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.54,\n" +
-                            "\t\t\t\"feels_like\": 3.94,\n" +
-                            "\t\t\t\"pressure\": 1024,\n" +
-                            "\t\t\t\"humidity\": 87,\n" +
-                            "\t\t\t\"dew_point\": 4.48,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.66,\n" +
-                            "\t\t\t\"wind_deg\": 253,\n" +
-                            "\t\t\t\"wind_gust\": 9.4,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(31).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.56,\n" +
-                            "\t\t\t\"feels_like\": 3.8,\n" +
-                            "\t\t\t\"pressure\": 1024,\n" +
-                            "\t\t\t\"humidity\": 87,\n" +
-                            "\t\t\t\"dew_point\": 4.54,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.95,\n" +
-                            "\t\t\t\"wind_deg\": 247,\n" +
-                            "\t\t\t\"wind_gust\": 10.34,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(32).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 7.1,\n" +
-                            "\t\t\t\"feels_like\": 4.42,\n" +
-                            "\t\t\t\"pressure\": 1024,\n" +
-                            "\t\t\t\"humidity\": 85,\n" +
-                            "\t\t\t\"dew_point\": 4.71,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.03,\n" +
-                            "\t\t\t\"wind_deg\": 243,\n" +
-                            "\t\t\t\"wind_gust\": 9.87,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(33).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 7.61,\n" +
-                            "\t\t\t\"feels_like\": 5,\n" +
-                            "\t\t\t\"pressure\": 1024,\n" +
-                            "\t\t\t\"humidity\": 83,\n" +
-                            "\t\t\t\"dew_point\": 4.81,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.12,\n" +
-                            "\t\t\t\"wind_deg\": 242,\n" +
-                            "\t\t\t\"wind_gust\": 9.75,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(34).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 7.4,\n" +
-                            "\t\t\t\"feels_like\": 4.69,\n" +
-                            "\t\t\t\"pressure\": 1024,\n" +
-                            "\t\t\t\"humidity\": 84,\n" +
-                            "\t\t\t\"dew_point\": 4.89,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.24,\n" +
-                            "\t\t\t\"wind_deg\": 239,\n" +
-                            "\t\t\t\"wind_gust\": 10.22,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(35).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.66,\n" +
-                            "\t\t\t\"feels_like\": 3.87,\n" +
-                            "\t\t\t\"pressure\": 1025,\n" +
-                            "\t\t\t\"humidity\": 90,\n" +
-                            "\t\t\t\"dew_point\": 4.99,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.06,\n" +
-                            "\t\t\t\"wind_deg\": 239,\n" +
-                            "\t\t\t\"wind_gust\": 9.87,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(36).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.25,\n" +
-                            "\t\t\t\"feels_like\": 3.37,\n" +
-                            "\t\t\t\"pressure\": 1024,\n" +
-                            "\t\t\t\"humidity\": 92,\n" +
-                            "\t\t\t\"dew_point\": 5.05,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.04,\n" +
-                            "\t\t\t\"wind_deg\": 236,\n" +
-                            "\t\t\t\"wind_gust\": 9.76,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(37).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 6.18,\n" +
-                            "\t\t\t\"feels_like\": 3.37,\n" +
-                            "\t\t\t\"pressure\": 1025,\n" +
-                            "\t\t\t\"humidity\": 93,\n" +
-                            "\t\t\t\"dew_point\": 5.08,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.89,\n" +
-                            "\t\t\t\"wind_deg\": 235,\n" +
-                            "\t\t\t\"wind_gust\": 9.44,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(38).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.99,\n" +
-                            "\t\t\t\"feels_like\": 3.04,\n" +
-                            "\t\t\t\"pressure\": 1025,\n" +
-                            "\t\t\t\"humidity\": 93,\n" +
-                            "\t\t\t\"dew_point\": 4.93,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.06,\n" +
-                            "\t\t\t\"wind_deg\": 239,\n" +
-                            "\t\t\t\"wind_gust\": 10.04,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(39).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.74,\n" +
-                            "\t\t\t\"feels_like\": 2.93,\n" +
-                            "\t\t\t\"pressure\": 1025,\n" +
-                            "\t\t\t\"humidity\": 94,\n" +
-                            "\t\t\t\"dew_point\": 4.72,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.71,\n" +
-                            "\t\t\t\"wind_deg\": 239,\n" +
-                            "\t\t\t\"wind_gust\": 9.54,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(40).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.68,\n" +
-                            "\t\t\t\"feels_like\": 2.89,\n" +
-                            "\t\t\t\"pressure\": 1025,\n" +
-                            "\t\t\t\"humidity\": 94,\n" +
-                            "\t\t\t\"dew_point\": 4.64,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.66,\n" +
-                            "\t\t\t\"wind_deg\": 236,\n" +
-                            "\t\t\t\"wind_gust\": 9.14,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(41).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.56,\n" +
-                            "\t\t\t\"feels_like\": 2.77,\n" +
-                            "\t\t\t\"pressure\": 1026,\n" +
-                            "\t\t\t\"humidity\": 94,\n" +
-                            "\t\t\t\"dew_point\": 4.55,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 100,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.62,\n" +
-                            "\t\t\t\"wind_deg\": 236,\n" +
-                            "\t\t\t\"wind_gust\": 9.26,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(42).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.26,\n" +
-                            "\t\t\t\"feels_like\": 2.52,\n" +
-                            "\t\t\t\"pressure\": 1027,\n" +
-                            "\t\t\t\"humidity\": 95,\n" +
-                            "\t\t\t\"dew_point\": 4.43,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 59,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.43,\n" +
-                            "\t\t\t\"wind_deg\": 233,\n" +
-                            "\t\t\t\"wind_gust\": 8.77,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 803,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"broken clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04n\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(43).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 5.99,\n" +
-                            "\t\t\t\"feels_like\": 3.21,\n" +
-                            "\t\t\t\"pressure\": 1027,\n" +
-                            "\t\t\t\"humidity\": 93,\n" +
-                            "\t\t\t\"dew_point\": 4.9,\n" +
-                            "\t\t\t\"uvi\": 0,\n" +
-                            "\t\t\t\"clouds\": 77,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 3.77,\n" +
-                            "\t\t\t\"wind_deg\": 230,\n" +
-                            "\t\t\t\"wind_gust\": 9.2,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 803,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"broken clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(44).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 7.51,\n" +
-                            "\t\t\t\"feels_like\": 4.8,\n" +
-                            "\t\t\t\"pressure\": 1027,\n" +
-                            "\t\t\t\"humidity\": 88,\n" +
-                            "\t\t\t\"dew_point\": 5.6,\n" +
-                            "\t\t\t\"uvi\": 0.24,\n" +
-                            "\t\t\t\"clouds\": 85,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 4.29,\n" +
-                            "\t\t\t\"wind_deg\": 232,\n" +
-                            "\t\t\t\"wind_gust\": 9.78,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(45).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 8.75,\n" +
-                            "\t\t\t\"feels_like\": 5.98,\n" +
-                            "\t\t\t\"pressure\": 1027,\n" +
-                            "\t\t\t\"humidity\": 85,\n" +
-                            "\t\t\t\"dew_point\": 6.23,\n" +
-                            "\t\t\t\"uvi\": 0.47,\n" +
-                            "\t\t\t\"clouds\": 89,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 5.12,\n" +
-                            "\t\t\t\"wind_deg\": 236,\n" +
-                            "\t\t\t\"wind_gust\": 10.55,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(46).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 9.89,\n" +
-                            "\t\t\t\"feels_like\": 7.14,\n" +
-                            "\t\t\t\"pressure\": 1027,\n" +
-                            "\t\t\t\"humidity\": 81,\n" +
-                            "\t\t\t\"dew_point\": 6.69,\n" +
-                            "\t\t\t\"uvi\": 0.66,\n" +
-                            "\t\t\t\"clouds\": 91,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 5.87,\n" +
-                            "\t\t\t\"wind_deg\": 240,\n" +
-                            "\t\t\t\"wind_gust\": 10.95,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t},\n" +
-                            "\t\t{\n" +
-                            "\t\t\t\"dt\": ${now.plusHours(47).toEpochSecond(ZoneOffset.UTC)},\n" +
-                            "\t\t\t\"temp\": 10.55,\n" +
-                            "\t\t\t\"feels_like\": 9.72,\n" +
-                            "\t\t\t\"pressure\": 1026,\n" +
-                            "\t\t\t\"humidity\": 79,\n" +
-                            "\t\t\t\"dew_point\": 6.9,\n" +
-                            "\t\t\t\"uvi\": 0.69,\n" +
-                            "\t\t\t\"clouds\": 92,\n" +
-                            "\t\t\t\"visibility\": 10000,\n" +
-                            "\t\t\t\"wind_speed\": 6.06,\n" +
-                            "\t\t\t\"wind_deg\": 240,\n" +
-                            "\t\t\t\"wind_gust\": 11.02,\n" +
-                            "\t\t\t\"weather\": [\n" +
-                            "\t\t\t\t{\n" +
-                            "\t\t\t\t\t\"id\": 804,\n" +
-                            "\t\t\t\t\t\"main\": \"Clouds\",\n" +
-                            "\t\t\t\t\t\"description\": \"overcast clouds\",\n" +
-                            "\t\t\t\t\t\"icon\": \"04d\"\n" +
-                            "\t\t\t\t}\n" +
-                            "\t\t\t],\n" +
-                            "\t\t\t\"pop\": 0\n" +
-                            "\t\t}\n" +
-                            "\t]\n" +
+                            "  \"lat\": 51.97,\n" +
+                            "  \"lon\": 5.9,\n" +
+                            "  \"timezone\": \"Europe/Amsterdam\",\n" +
+                            "  \"timezone_offset\": 3600,\n" +
+                            "  \"current\": {\n" +
+                            "    \"dt\": ${now.toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "    \"sunrise\": 1637045887,\n" +
+                            "    \"sunset\": 1637077471,\n" +
+                            "    \"temp\": 5.37,\n" +
+                            "    \"feels_like\": 5.37,\n" +
+                            "    \"pressure\": 1022,\n" +
+                            "    \"humidity\": 93,\n" +
+                            "    \"dew_point\": 4.33,\n" +
+                            "    \"uvi\": 0.51,\n" +
+                            "    \"clouds\": 90,\n" +
+                            "    \"visibility\": 6000,\n" +
+                            "    \"wind_speed\": 3.45,\n" +
+                            "    \"wind_deg\": 170,\n" +
+                            "    \"wind_gust\": 0,\n" +
+                            "    \"weather\": [\n" +
+                            "      {\n" +
+                            "        \"id\": 701,\n" +
+                            "        \"main\": \"Mist\",\n" +
+                            "        \"description\": \"mist\",\n" +
+                            "        \"icon\": \"50d\"\n" +
+                            "      }\n" +
+                            "    ]\n" +
+                            "  },\n" +
+                            "  \"hourly\": [\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.37,\n" +
+                            "      \"feels_like\": 5.37,\n" +
+                            "      \"pressure\": 1022,\n" +
+                            "      \"humidity\": 93,\n" +
+                            "      \"dew_point\": 4.33,\n" +
+                            "      \"uvi\": 0.51,\n" +
+                            "      \"clouds\": 90,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 3.19,\n" +
+                            "      \"wind_deg\": 230,\n" +
+                            "      \"wind_gust\": 1.4,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(1).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.63,\n" +
+                            "      \"feels_like\": 4.53,\n" +
+                            "      \"pressure\": 1022,\n" +
+                            "      \"humidity\": 89,\n" +
+                            "      \"dew_point\": 3.96,\n" +
+                            "      \"uvi\": 0.3,\n" +
+                            "      \"clouds\": 92,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 2.61,\n" +
+                            "      \"wind_deg\": 232,\n" +
+                            "      \"wind_gust\": 2.04,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(2).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.79,\n" +
+                            "      \"feels_like\": 4.46,\n" +
+                            "      \"pressure\": 1022,\n" +
+                            "      \"humidity\": 86,\n" +
+                            "      \"dew_point\": 3.63,\n" +
+                            "      \"uvi\": 0.11,\n" +
+                            "      \"clouds\": 94,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 1.83,\n" +
+                            "      \"wind_deg\": 239,\n" +
+                            "      \"wind_gust\": 2.56,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(3).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.83,\n" +
+                            "      \"feels_like\": 4.51,\n" +
+                            "      \"pressure\": 1021,\n" +
+                            "      \"humidity\": 83,\n" +
+                            "      \"dew_point\": 3.17,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 96,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 1.83,\n" +
+                            "      \"wind_deg\": 248,\n" +
+                            "      \"wind_gust\": 2.92,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(4).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.89,\n" +
+                            "      \"feels_like\": 4.64,\n" +
+                            "      \"pressure\": 1021,\n" +
+                            "      \"humidity\": 81,\n" +
+                            "      \"dew_point\": 2.88,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 98,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 1.77,\n" +
+                            "      \"wind_deg\": 254,\n" +
+                            "      \"wind_gust\": 3.22,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(5).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.99,\n" +
+                            "      \"feels_like\": 4.72,\n" +
+                            "      \"pressure\": 1021,\n" +
+                            "      \"humidity\": 78,\n" +
+                            "      \"dew_point\": 2.31,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 1.81,\n" +
+                            "      \"wind_deg\": 251,\n" +
+                            "      \"wind_gust\": 3.57,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(6).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6,\n" +
+                            "      \"feels_like\": 4.55,\n" +
+                            "      \"pressure\": 1021,\n" +
+                            "      \"humidity\": 77,\n" +
+                            "      \"dew_point\": 2.15,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 1.98,\n" +
+                            "      \"wind_deg\": 254,\n" +
+                            "      \"wind_gust\": 3.76,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(7).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.95,\n" +
+                            "      \"feels_like\": 4.68,\n" +
+                            "      \"pressure\": 1021,\n" +
+                            "      \"humidity\": 77,\n" +
+                            "      \"dew_point\": 2.15,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 1.8,\n" +
+                            "      \"wind_deg\": 242,\n" +
+                            "      \"wind_gust\": 3.37,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(8).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.93,\n" +
+                            "      \"feels_like\": 4.53,\n" +
+                            "      \"pressure\": 1021,\n" +
+                            "      \"humidity\": 77,\n" +
+                            "      \"dew_point\": 2.18,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 1.92,\n" +
+                            "      \"wind_deg\": 213,\n" +
+                            "      \"wind_gust\": 3.31,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(9).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 5.94,\n" +
+                            "      \"feels_like\": 4.27,\n" +
+                            "      \"pressure\": 1020,\n" +
+                            "      \"humidity\": 77,\n" +
+                            "      \"dew_point\": 2.24,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 2.2,\n" +
+                            "      \"wind_deg\": 195,\n" +
+                            "      \"wind_gust\": 3.58,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(10).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.05,\n" +
+                            "      \"feels_like\": 4.19,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 77,\n" +
+                            "      \"dew_point\": 2.35,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 2.45,\n" +
+                            "      \"wind_deg\": 192,\n" +
+                            "      \"wind_gust\": 4.3,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(11).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.16,\n" +
+                            "      \"feels_like\": 4.12,\n" +
+                            "      \"pressure\": 1020,\n" +
+                            "      \"humidity\": 78,\n" +
+                            "      \"dew_point\": 2.52,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 2.7,\n" +
+                            "      \"wind_deg\": 228,\n" +
+                            "      \"wind_gust\": 6.04,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(12).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.24,\n" +
+                            "      \"feels_like\": 4.04,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 78,\n" +
+                            "      \"dew_point\": 2.66,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 2.93,\n" +
+                            "      \"wind_deg\": 221,\n" +
+                            "      \"wind_gust\": 7.28,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(13).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.33,\n" +
+                            "      \"feels_like\": 3.88,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 79,\n" +
+                            "      \"dew_point\": 2.84,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 3.34,\n" +
+                            "      \"wind_deg\": 208,\n" +
+                            "      \"wind_gust\": 7.93,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(14).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.49,\n" +
+                            "      \"feels_like\": 3.7,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 79,\n" +
+                            "      \"dew_point\": 2.97,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 3.98,\n" +
+                            "      \"wind_deg\": 202,\n" +
+                            "      \"wind_gust\": 8.55,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(15).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.52,\n" +
+                            "      \"feels_like\": 3.53,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 79,\n" +
+                            "      \"dew_point\": 3.15,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 98,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 4.37,\n" +
+                            "      \"wind_deg\": 214,\n" +
+                            "      \"wind_gust\": 9.76,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(16).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.69,\n" +
+                            "      \"feels_like\": 3.65,\n" +
+                            "      \"pressure\": 1018,\n" +
+                            "      \"humidity\": 81,\n" +
+                            "      \"dew_point\": 3.62,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 98,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 4.57,\n" +
+                            "      \"wind_deg\": 211,\n" +
+                            "      \"wind_gust\": 9.8,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(17).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.72,\n" +
+                            "      \"feels_like\": 3.71,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 84,\n" +
+                            "      \"dew_point\": 4.1,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 99,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 4.52,\n" +
+                            "      \"wind_deg\": 218,\n" +
+                            "      \"wind_gust\": 10.41,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04n\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(18).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 6.85,\n" +
+                            "      \"feels_like\": 3.86,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 86,\n" +
+                            "      \"dew_point\": 4.58,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 100,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 4.54,\n" +
+                            "      \"wind_deg\": 225,\n" +
+                            "      \"wind_gust\": 10.91,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0.01\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(19).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 7.15,\n" +
+                            "      \"feels_like\": 4.2,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 89,\n" +
+                            "      \"dew_point\": 5.39,\n" +
+                            "      \"uvi\": 0,\n" +
+                            "      \"clouds\": 98,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 4.6,\n" +
+                            "      \"wind_deg\": 228,\n" +
+                            "      \"wind_gust\": 10.3,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0.05\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(20).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 7.85,\n" +
+                            "      \"feels_like\": 5.02,\n" +
+                            "      \"pressure\": 1019,\n" +
+                            "      \"humidity\": 91,\n" +
+                            "      \"dew_point\": 6.35,\n" +
+                            "      \"uvi\": 0.1,\n" +
+                            "      \"clouds\": 91,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 4.72,\n" +
+                            "      \"wind_deg\": 229,\n" +
+                            "      \"wind_gust\": 10.31,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0.05\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(21).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 8.52,\n" +
+                            "      \"feels_like\": 5.91,\n" +
+                            "      \"pressure\": 1020,\n" +
+                            "      \"humidity\": 93,\n" +
+                            "      \"dew_point\": 7.31,\n" +
+                            "      \"uvi\": 0.26,\n" +
+                            "      \"clouds\": 94,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 4.6,\n" +
+                            "      \"wind_deg\": 258,\n" +
+                            "      \"wind_gust\": 9.79,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0.05\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(22).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 10.23,\n" +
+                            "      \"feels_like\": 9.5,\n" +
+                            "      \"pressure\": 1020,\n" +
+                            "      \"humidity\": 84,\n" +
+                            "      \"dew_point\": 7.47,\n" +
+                            "      \"uvi\": 0.36,\n" +
+                            "      \"clouds\": 94,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 3.92,\n" +
+                            "      \"wind_deg\": 287,\n" +
+                            "      \"wind_gust\": 8.04,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0.05\n" +
+                            "    },\n" +
+                            "    {\n" +
+                            "      \"dt\": ${now.plusHours(23).toEpochSecond(ZoneOffset.UTC)},\n" +
+                            "      \"temp\": 10.03,\n" +
+                            "      \"feels_like\": 9.05,\n" +
+                            "      \"pressure\": 1020,\n" +
+                            "      \"humidity\": 75,\n" +
+                            "      \"dew_point\": 5.78,\n" +
+                            "      \"uvi\": 0.37,\n" +
+                            "      \"clouds\": 95,\n" +
+                            "      \"visibility\": 10000,\n" +
+                            "      \"wind_speed\": 3.91,\n" +
+                            "      \"wind_deg\": 294,\n" +
+                            "      \"wind_gust\": 8.34,\n" +
+                            "      \"weather\": [\n" +
+                            "        {\n" +
+                            "          \"id\": 804,\n" +
+                            "          \"main\": \"Clouds\",\n" +
+                            "          \"description\": \"overcast clouds\",\n" +
+                            "          \"icon\": \"04d\"\n" +
+                            "        }\n" +
+                            "      ],\n" +
+                            "      \"pop\": 0.05\n" +
+                            "    },\n" +
+                            "  ]\n" +
                             "}"
                     def responseBody = ValueUtil.JSON.readValue(content, ForecastWindService.WeatherForecastResponseModel.class)
                     requestContext.abortWith(
