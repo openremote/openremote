@@ -409,7 +409,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "notifications sent after or at that time should have been removed"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, null).length == (notifications.length - removeCount)
+            assert adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, null).length == (notifications.length - removeCount)
         }
 
         when: "the admin user removes notifications sent to specific console assets without other constraints and the notifications are retrieved again"
@@ -428,7 +428,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notifications should have been removed"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id).length == 0
+            assert adminNotificationResource.getNotifications(null, null, PushNotificationMessage.TYPE, null, null, null, null, anonymousConsole.id).length == 0
         }
 
         when: "the admin user removes notifications without sufficient constraints"
