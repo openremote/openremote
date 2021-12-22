@@ -36,10 +36,7 @@ public class ContainerThreadFactory implements ThreadFactory {
 
     public ContainerThreadFactory(String name) {
         this.name = name;
-        SecurityManager securityManager = System.getSecurityManager();
-        group = (securityManager != null)
-            ? securityManager.getThreadGroup()
-            : Thread.currentThread().getThreadGroup();
+        group = Thread.currentThread().getThreadGroup();
     }
 
     public Thread newThread(Runnable r) {

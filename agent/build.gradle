@@ -5,34 +5,34 @@ dependencies {
 
     api resolveProject(":container")
 
-    implementation "io.netty:netty-codec:$nettyVersion"
-    implementation "io.netty:netty-codec-http:$nettyVersion"
+    api "io.netty:netty-codec:$nettyVersion"
+    api "io.netty:netty-codec-http:$nettyVersion"
 
-    implementation "com.fazecast:jSerialComm:$jSerialCommVersion"
+    api "com.fazecast:jSerialComm:$jSerialCommVersion"
 
-    implementation("com.github.calimero:calimero-core:$calimeroVersion") {
+    api("com.github.calimero:calimero-core:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
     }
 
-    implementation ("com.github.calimero:calimero-tools:$calimeroVersion") {
+    api ("com.github.calimero:calimero-tools:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
     }
 
-    implementation "net.sf.saxon:Saxon-HE:$saxonHEVersion"
+    api "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 
     //IKEA Tradfri agent dependencies
-    implementation "org.eclipse.californium:californium-core:$californiumCoreVersion"
-    implementation "org.eclipse.californium:scandium:$californiumScandiumVersion"
-    
-    implementation("org.openremote:or-zwave:$zwaveVersion") {
+    api "org.eclipse.californium:californium-core:$californiumCoreVersion"
+    api "org.eclipse.californium:scandium:$californiumScandiumVersion"
+
+    api("org.openremote:or-zwave:$zwaveVersion") {
         exclude group: "org.bidib.com.neuronrobotics"
     }
 
-    implementation "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
+    api "com.hivemq:hivemq-mqtt-client:$hiveMQClientVersion"
 
-    implementation ("com.github.weliem.blessed-bluez:blessed:$bluetoothVersion") {
+    api ("com.github.weliem.blessed-bluez:blessed:$bluetoothVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
         exclude group: "org.slf4j"
 

@@ -22,7 +22,6 @@ package org.openremote.container.xml;
 import org.xml.sax.*;
 import org.xml.sax.helpers.AttributesImpl;
 import org.xml.sax.helpers.DefaultHandler;
-import org.xml.sax.helpers.XMLReaderFactory;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
@@ -56,16 +55,16 @@ public class SAXParser {
 
     protected XMLReader create() {
         try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+
             if (getSchemaSources() != null) {
                 // Jump through all the hoops and create a validating reader
-                SAXParserFactory factory = SAXParserFactory.newInstance();
                 factory.setNamespaceAware(true);
                 factory.setSchema(createSchema(getSchemaSources()));
-                XMLReader xmlReader = factory.newSAXParser().getXMLReader();
-                xmlReader.setErrorHandler(getErrorHandler());
-                return xmlReader;
             }
-            return XMLReaderFactory.createXMLReader();
+            XMLReader xmlReader = factory.newSAXParser().getXMLReader();
+            xmlReader.setErrorHandler(getErrorHandler());
+            return xmlReader;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

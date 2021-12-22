@@ -59,7 +59,7 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         public Attribute<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
 
             // Need to find the type field to know how to deserialise the value
-            TokenBuffer tokenBuffer = TokenBuffer.asCopyOfValue(jp);
+            TokenBuffer tokenBuffer = new TokenBuffer(jp);
             JsonParser jp2 = tokenBuffer.asParser();
             JsonParser jp3 = tokenBuffer.asParser();
             String attributeValueType = null;

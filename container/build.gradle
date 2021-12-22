@@ -5,7 +5,7 @@ dependencies {
 
     api resolveProject(":model")
 
-    api "org.codehaus.groovy:groovy:$groovyVersion"
+    api "org.codehaus.groovy:groovy-all:$groovyVersion"
     api "org.kohsuke:groovy-sandbox:$groovySandboxVersion"
 
     api "org.slf4j:slf4j-api:$slf4jVersion"

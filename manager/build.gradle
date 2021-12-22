@@ -10,26 +10,26 @@ dependencies {
     api resolveProject(":agent")
     api resolveProject(":model")
 
-    implementation "org.xerial:sqlite-jdbc:$sqliteVersion"
+    api "org.xerial:sqlite-jdbc:$sqliteVersion"
 
-    implementation "org.mnode.ical4j:ical4j:$ical4jVersion"
+    api "org.mnode.ical4j:ical4j:$ical4jVersion"
 
-    implementation "net.jafama:jafama:$jafamaVersion"
-    implementation "org.geotools:gt-main:$geotoolsVersion"
-    implementation "com.google.firebase:firebase-admin:$firebaseAdminVersion"
-    implementation "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
-    implementation "io.swagger.core.v3:swagger-jaxrs2:$swaggerVersion"
-    implementation "org.openjdk.nashorn:nashorn-core:$nashornVersion"
+    api "net.jafama:jafama:$jafamaVersion"
+    api "org.geotools:gt-main:$geotoolsVersion"
+    api "com.google.firebase:firebase-admin:$firebaseAdminVersion"
+    api "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
+    api "io.swagger.core.v3:swagger-jaxrs2:$swaggerVersion"
+    api "org.openjdk.nashorn:nashorn-core:$nashornVersion"
 
-    implementation ("io.netty:netty-codec-http:$nettyVersion") {
+    api ("io.netty:netty-codec-http:$nettyVersion") {
         force = true
     }
 
-    implementation ("io.moquette:moquette-broker:$moquetteVersion") {
+    api ("io.moquette:moquette-broker:$moquetteVersion") {
         exclude module: "slf4j-log4j12" // Don't want log4J
     }
 
-    implementation("org.quartz-scheduler:quartz:$quartzVersion") {
+    api("org.quartz-scheduler:quartz:$quartzVersion") {
         exclude group: "c3p0"
     }
 }

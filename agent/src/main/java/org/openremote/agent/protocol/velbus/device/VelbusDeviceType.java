@@ -80,7 +80,7 @@ public enum VelbusDeviceType {
                         processorClazz,
                         clazz -> {
                             try {
-                                return clazz.newInstance();
+                                return clazz.getDeclaredConstructor().newInstance();
                             } catch (Exception e) {
                                 LOG.log(Level.SEVERE, "Failed to instantiate feature processor: " + clazz.getSimpleName(), e);
                                 return null;
