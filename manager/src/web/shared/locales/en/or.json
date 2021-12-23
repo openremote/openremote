@@ -107,6 +107,8 @@
   "noAssetSelected": "Please select an asset on the left",
   "noAssetTypeSelected": "Please select an asset type on the left",
   "loading": "Loading...",
+  "noAssetsFound": "No assets found",
+  "filterInvite": "Filter with at least 3 characters",
   "location": "Location",
   "hour": "Hour",
   "day": "Day",

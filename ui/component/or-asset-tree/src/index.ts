@@ -1,6 +1,7 @@
 import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
+import {OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-icon";
 import {
     Asset,
@@ -270,8 +271,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _expandedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
 
+    @property({attribute: false})
     protected _filterValue: string = '';
+    @property({type: Boolean})
     protected _isFiltering: boolean = false;
+    protected _foundAssets: string[] = [];
+    protected _searchInputTimer: ReturnType<typeof setTimeout> | undefined = undefined;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -309,8 +314,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return false;
     }
 
-    protected render() {
+    protected isFilteringAndNotMatching(assetId: string | undefined): boolean {
+        return assetId !== undefined && this._filterValue.length > 0 && this._foundAssets.length > 0 && this._foundAssets.indexOf(assetId) === -1;
+    }
 
+    protected render() {
+        //@input="${ (e: any) => { this._onFilterValueChange(e); } }"
         return html`
             <div id="header">
                 <div id="title-container">
@@ -333,24 +342,33 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             </div>
             
             <div id="asset-tree-filter">
-                <or-mwc-input type="${ InputType.FILTER }"
+                <or-mwc-input id="filterInput"
+                              style="width: 100%;"
+                              type="${ InputType.FILTER }"
                               .value="${ this._filterValue }"
-                              @input="${ (e: any) => { this._onFilterValueChange(e); } }"
-                              icon="search"></or-mwc-input>
-                <or-mwc-input ?hidden="${this._filterValue && this._filterValue.length > 0}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onCancelFilterChange()}"></or-mwc-input>
-                <div ?hidden="${ !this._isFiltering }">TOTOTOTOTO</div>
+                              icon="magnify" iconTrailing="${this._filterValue.length > 0 ? 'close' : ''}" 
+                              compact="true"
+                              eventOnInput="true"
+                              @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
+                                this._onFilterValueChange(e);
+                              } }">
+                              </or-mwc-input>
             </div>
             
             ${!this._nodes
                 ? html`
                     <span id="loading"><or-translate value="loading"></or-translate></span>`
-                : html`
+                : (this._nodes.length === 0 && this._isFiltering
+                            ? html `<span id="loading"><or-translate value="loading"></or-translate></span>`
+                            : (this._nodes.length === 0
+                            ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
+                            : html`
                     <div id="list-container">
                         <ol id="list">
                             ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0))}
                         </ol>
                     </div>
-                `
+                `))
             }
 
             <div id="footer">
@@ -551,41 +569,101 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._onNodeClicked(null, null);
     }
 
-    protected _onCancelFilterChange() {
-        //Canceling the current filtering :
-        // - Cancel filterValue
-        // - Reset assetTree
+    protected showClearFilter() {
+        return this._filterValue && this._filterValue.length > 0;
     }
 
-    protected _onFilterValueChange(event: any) {
-        const keyInput = event.currentTarget as OrMwcInput;
-        this._filterValue = keyInput.currentValue as string;
+    /**
+     * On Cancel button click, we clear everything and reset the asset tree to original content
+     *
+     * @param event
+     * @protected
+     */
+    protected _onCancelFilterChange() {
+        this._filterValue = '';
+        this._foundAssets = [];
 
-        if (this._filterValue && this._filterValue.length > 2) {
-            console.log("trigger search on asset query with " + this._filterValue);
-            this._isFiltering = true;
+        this._loadAssets();
+    }
 
-            const query: AssetQuery = {
-                select: {
-                    attributes: [
-                        "id", "name", "type"
-                    ]
-                },
-                names: [{
-                    predicateType: "string",
-                    match: AssetQueryMatch.CONTAINS,
-                    value: this._filterValue,
-                    caseSensitive: false
-                }]
-            };
+    protected _onFilterValueChange(e: OrInputChangedEvent) {
+        this._filterValue = e.detail.value;
+        const oldFilterValue: string = e.detail.previousValue;
 
-            const response = manager.rest.api.AssetResource.queryAssets(query);
-
-            console.log('---');
-            console.log(response);
-
-            //Pass through rendered assetTree to highlight the matching assets
+        if (!this._filterValue.startsWith(oldFilterValue) || this._filterValue.length === 0) {
+            this._onCancelFilterChange();
         }
+
+        if (this._searchInputTimer) {
+            clearTimeout(this._searchInputTimer);
+        }
+
+        this._searchInputTimer = setTimeout(async () => {
+            if (this._nodes && this._filterValue.length > 2) {
+                let newNodes: UiAssetTreeNode[] = this._nodes;
+                this._nodes = [];
+                this._isFiltering = true;
+
+                const query: AssetQuery = {
+                    select: {
+                        excludePath: true,
+                        excludeAttributes: true,
+                        excludeParentInfo: true
+                    },
+                    names: [{
+                        predicateType: "string",
+                        match: AssetQueryMatch.CONTAINS,
+                        value: this._filterValue,
+                        caseSensitive: false
+                    }]
+                };
+
+                const response = await manager.rest.api.AssetResource.queryAssets(query);
+
+                this._foundAssets = response.data.map<string>((asset: Asset) => asset.id ? asset.id : '' );
+
+                //Timeout to ensure a little visual effect for the user on filtering
+                setTimeout(() => {
+                    this._nodes = [];
+                    newNodes.forEach((asset: UiAssetTreeNode) => {
+                        let answer: boolean = this.filterTreeNode(asset, false);
+
+                        if (answer) {
+                            asset.expanded = true;
+                            this._nodes?.push(asset);
+                        }
+                    });
+                    this._isFiltering = false;
+                }, 1500);
+            }
+        }, 1500);
+    }
+
+    protected filterTreeNode(currentNode: UiAssetTreeNode, keep: boolean): boolean {
+        if (currentNode.asset && currentNode.asset.id && this._foundAssets.includes(currentNode.asset.id)) {
+            return true;
+        }
+
+        let childrenMatching: boolean = false;
+
+        let newChildren: UiAssetTreeNode[] = [];
+
+        currentNode.children.forEach((childrenAsset: UiAssetTreeNode) => {
+            let result: boolean = this.filterTreeNode(childrenAsset, false);
+
+            if (result) {
+                currentNode.expanded = true;
+                childrenMatching = true;
+                newChildren.push(childrenAsset);
+            }
+        });
+
+        if (childrenMatching) {
+            currentNode.children = newChildren;
+            return true;
+        }
+
+        return false;
     }
 
     protected async _onCopyClicked() {
@@ -1053,13 +1131,18 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             parentCheckboxIcon = 'checkbox-multiple-blank-outline';
         }
 
+        let filterColor: boolean = false;
+        if (treeNode.asset && this.isFilteringAndNotMatching(treeNode.asset.id)) {
+            filterColor = true;
+        }
+
         return html`
             <li ?data-selected="${treeNode.selected}" ?data-expanded="${treeNode.expanded}" @click="${(evt: MouseEvent) => this._onNodeClicked(evt, treeNode)}">
                 <div class="node-container" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
-                        ${getAssetDescriptorIconTemplate(descriptor)}
-                        <span>${treeNode.asset!.name}</span>
+                        ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColor ? '#d3d3d3;' : undefined))}
+                        <span style="color: ${filterColor ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic">
                                 ${treeNode.expandable 

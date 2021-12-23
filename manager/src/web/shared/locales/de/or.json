@@ -107,6 +107,7 @@
   "noAssetSelected": "Bitte wählen Sie links ein Asset aus",
   "noAssetTypeSelected": "Bitte wählen Sie links ein Asset Type aus",
   "loading": "Wird geladen...",
+  "noAssetsFound": "No assets found",
   "location": "Standort",
   "hour": "Stunde",
   "day": "Tag",
