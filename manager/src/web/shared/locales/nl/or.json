@@ -107,6 +107,7 @@
   "noAssetSelected": "Kies een asset uit de lijst aan de linkerkant",
   "noAssetTypeSelected": "Kies een asset type uit de lijst aan de linkerkant",
   "loading": "Aan het laden...",
+  "noAssetsFound": "Geen assets gevonden",
   "location": "Locatie",
   "hour": "Uur",
   "day": "Dag",
