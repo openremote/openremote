@@ -97,6 +97,7 @@
   "showOnMap": "Montrer sur la carte",
   "noAssetSelected": "Veuillez sélectionner une ressource à gauche",
   "loading": "Chargement...",
+  "noAssetsFound": "Aucune ressource trouvée",
   "location": "Position",
   "hour": "Heure",
   "day": "Jour",
