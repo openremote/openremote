@@ -1,7 +1,17 @@
 import {PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {OrMapMarker} from "./or-map-marker";
-import {AttributeEvent, GeoJSONPoint, AssetEvent, AssetEventCause, Asset, SharedEvent, AssetDescriptor, WellknownAttributes} from "@openremote/model";
+import {
+    AttributeEvent,
+    GeoJSONPoint,
+    AssetEvent,
+    AssetEventCause,
+    Asset,
+    SharedEvent,
+    AssetDescriptor,
+    WellknownAttributes,
+    WellknownAssets
+} from "@openremote/model";
 import {subscribe} from "@openremote/core";
 import manager, {AssetModelUtil} from "@openremote/core";
 
@@ -12,10 +22,16 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
 
     const descriptor = typeof(type) !== "string" ? type : AssetModelUtil.getAssetDescriptor(type);
     const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+
+    console.log(descriptor);
+
     let color: string | undefined;
 
-    if (descriptor && descriptor.colour) {
-        color = descriptor.colour;
+    if (descriptor && descriptor.color) {
+        color = descriptor.color;
+    }
+    if (descriptor!.name === WellknownAssets.DOORASSET) {
+        color = "000000";
     }
 
     return {
