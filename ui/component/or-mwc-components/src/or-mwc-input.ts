@@ -1256,7 +1256,6 @@ export class OrMwcInput extends LitElement {
                             @change="${(e: Event) => { 
                                 if (!this.eventOnInput) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)
-                                }
                                 }}}" />`;
 
                         inputElem = html`
