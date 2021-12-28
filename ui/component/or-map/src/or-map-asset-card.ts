@@ -1,6 +1,4 @@
 import {
-    CSSResult,
-    CSSResultArray,
     CSSResultGroup,
     html,
     LitElement,
@@ -22,6 +20,7 @@ import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
+import { getMarkerIconAndColorFromAssetType } from "./util";
 
 export interface MapAssetCardTypeConfig {
     include?: string[];
@@ -178,14 +177,17 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
     protected getIcon(): string | undefined {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
-            return descriptor ? descriptor.icon : undefined;
+            const icon = getMarkerIconAndColorFromAssetType(descriptor)?.icon;
+            return icon ? icon : undefined;
         }
     }
 
     protected getColor(): string | undefined {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
-            return descriptor ? descriptor.colour : undefined;
+            const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
+            console.log('asdf', color);
+            return color ? color : undefined;
         }
     }
 }

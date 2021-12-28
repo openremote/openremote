@@ -1,5 +1,6 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
-import {Asset, Attribute, GeoJSONPoint, ValueHolder, WellknownAttributes} from "@openremote/model";
+import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownAssets, WellknownAttributes} from "@openremote/model";
+import { AssetModelUtil } from "@openremote/core";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
@@ -77,4 +78,29 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     if (lngLatBounds) {
         return L.latLngBounds(lngLatBounds.getNorthEast()!, lngLatBounds.getSouthWest()!);
     }
+}
+
+export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | undefined} | undefined {
+    if (!type) {
+        return;
+    }
+
+    const descriptor = typeof(type) !== "string" ? type : AssetModelUtil.getAssetDescriptor(type);
+    const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+
+    console.log(descriptor);
+
+    let color: string | undefined;
+
+    if (descriptor && descriptor.colour) {
+        color = descriptor.colour;
+    }
+    if (descriptor!.name === WellknownAssets.DOORASSET) {
+        color = "000000";
+    }
+
+    return {
+        color: color,
+        icon: icon
+    };
 }

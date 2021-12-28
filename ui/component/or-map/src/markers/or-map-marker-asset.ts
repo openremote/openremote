@@ -8,37 +8,11 @@ import {
     AssetEventCause,
     Asset,
     SharedEvent,
-    AssetDescriptor,
     WellknownAttributes,
-    WellknownAssets
 } from "@openremote/model";
 import {subscribe} from "@openremote/core";
-import manager, {AssetModelUtil} from "@openremote/core";
-
-export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | undefined} | undefined {
-    if (!type) {
-        return;
-    }
-
-    const descriptor = typeof(type) !== "string" ? type : AssetModelUtil.getAssetDescriptor(type);
-    const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
-
-    console.log(descriptor);
-
-    let color: string | undefined;
-
-    if (descriptor && descriptor.color) {
-        color = descriptor.color;
-    }
-    if (descriptor!.name === WellknownAssets.DOORASSET) {
-        color = "000000";
-    }
-
-    return {
-        color: color,
-        icon: icon
-    };
-}
+import manager from "@openremote/core";
+import { getMarkerIconAndColorFromAssetType } from "../util";
 
 @customElement("or-map-marker-asset")
 export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
