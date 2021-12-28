@@ -174,6 +174,13 @@ fetch(configURL).then(async (result) => {
         }
     }
 
+    appConfig.manager['markerConfig'] = {
+        DoorAsset: {
+            color: '000000',
+            icon: 'door'
+        }
+    };
+
     orApp.managerConfig = appConfig.manager;
 
     orApp.appConfigProvider = (manager) => {

@@ -124,6 +124,7 @@ export interface ManagerConfig {
     loadIcons?: boolean;
     loadDescriptors?: boolean;
     mapType?: MapType;
+    markerConfig?: any;
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: InitOptions) => void;

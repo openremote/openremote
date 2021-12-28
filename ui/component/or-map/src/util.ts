@@ -1,6 +1,6 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
 import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownAssets, WellknownAttributes} from "@openremote/model";
-import { AssetModelUtil } from "@openremote/core";
+import manager, { AssetModelUtil } from "@openremote/core";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
@@ -85,18 +85,29 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
         return;
     }
 
-    const descriptor = typeof(type) !== "string" ? type : AssetModelUtil.getAssetDescriptor(type);
-    const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+    const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
-    console.log(descriptor);
+    // check config for overrides
+    let iconOverride;
+    let colorOverride;
+    if (descriptor && Object.keys(manager.config.markerConfig).includes(descriptor.name!)) {
+        const overrideConfig = manager.config.markerConfig[descriptor.name!];
+        iconOverride = overrideConfig.icon || undefined;
+        colorOverride = overrideConfig.color || undefined;
+    }
+    
+    let icon;
+    if (iconOverride) {
+        icon = iconOverride
+    } else {
+        icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+    }
 
     let color: string | undefined;
-
-    if (descriptor && descriptor.colour) {
+    if (colorOverride) {
+        color = colorOverride;
+    } else if (descriptor && descriptor.colour) {
         color = descriptor.colour;
-    }
-    if (descriptor!.name === WellknownAssets.DOORASSET) {
-        color = "000000";
     }
 
     return {
