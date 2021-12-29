@@ -84,7 +84,7 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     }
 }
 
-export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | AttributeMarkerColoursRange[]} | undefined {
+export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
     if (!type) {
         return;
     }
@@ -100,16 +100,10 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
         colorOverride = overrideConfig[WellknownAttributes.ENERGYEXPORTTOTAL].ranges as AttributeMarkerColoursRange[] || undefined;
         // todo icon override
     }
-    
-    let icon;
-    icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
-    // if (iconOverride) {
-    //     icon = iconOverride
-    // } else {
-    //     icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
-    // }
 
-    let color: string | AttributeMarkerColoursRange[];
+    const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+
+    let color: string | undefined | AttributeMarkerColoursRange[];
     if (colorOverride) {
         color = colorOverride as AttributeMarkerColoursRange[];
     } else if (descriptor && descriptor.colour) {
@@ -117,7 +111,7 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
     }
 
     return {
-        color: color!,
+        color: color,
         icon: icon
     };
 }

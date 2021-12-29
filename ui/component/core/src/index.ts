@@ -111,10 +111,6 @@ export enum MapType {
 
 export interface AttributeMarkerColours {
     type: "string" | "boolean",
-    // values are HEX codes
-    // keys are:
-    // "boolean" -> "true|false"
-    // "string" -> "ANY STRING"
     [value: string]: string;
 }
 
@@ -123,12 +119,12 @@ export interface AttributeMarkerColoursRange {
     colour: string;
 }
 
-// Range array should be in order
 export interface RangeAttributeMarkerColours {
     type: "range",
     ranges: AttributeMarkerColoursRange[]
 }
 
+// todo: should add support for selecting which attr value to show in picker label
 export interface AssetTypeMarkerConfig {
     [attributeName: string]: RangeAttributeMarkerColours;
 }

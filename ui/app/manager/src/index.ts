@@ -166,6 +166,7 @@ fetch(configURL).then(async (result) => {
         }
     }
 
+    // todo: remove this as it should come from the manager_config
     const markerConfig: RangeAttributeMarkerColours = {
         type: "range",
         ranges: [
@@ -175,7 +176,6 @@ fetch(configURL).then(async (result) => {
             }
         ]
     };
-
     appConfig.manager.mapConfig = {
         markers: {
             ElectricityProducerSolarAsset: {
