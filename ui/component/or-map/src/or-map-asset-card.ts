@@ -186,7 +186,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
             const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
-            return color ? color : undefined;
+            // check if range
+            return (typeof color === 'string') ? color : color![0].colour;
         }
     }
 }

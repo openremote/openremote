@@ -44,7 +44,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             this.icon = iconAndColor.icon;
         }
 
-        this.markerColor = iconAndColor.color;
+        this.markerColor = (Array.isArray(iconAndColor.color)) ? iconAndColor.color[0].colour : iconAndColor.color || undefined;
         this.updateColor(this.markerContainer);
         this.visible = true;
     }

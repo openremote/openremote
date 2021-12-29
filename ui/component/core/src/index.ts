@@ -109,6 +109,38 @@ export enum MapType {
     RASTER = "RASTER"
 }
 
+export interface AttributeMarkerColours {
+    type: "string" | "boolean",
+    // values are HEX codes
+    // keys are:
+    // "boolean" -> "true|false"
+    // "string" -> "ANY STRING"
+    [value: string]: string;
+}
+
+export interface AttributeMarkerColoursRange {
+    max: number;
+    colour: string;
+}
+
+// Range array should be in order
+export interface RangeAttributeMarkerColours {
+    type: "range",
+    ranges: AttributeMarkerColoursRange[]
+}
+
+export interface AssetTypeMarkerConfig {
+    [attributeName: string]: RangeAttributeMarkerColours;
+}
+
+export interface MapMarkerConfig {
+    [assetType: string]: AssetTypeMarkerConfig;
+}
+
+export interface MapConfig {
+    markers: MapMarkerConfig;
+}
+
 export interface ManagerConfig {
     managerUrl?: string;
     keycloakUrl?: string;
@@ -124,7 +156,7 @@ export interface ManagerConfig {
     loadIcons?: boolean;
     loadDescriptors?: boolean;
     mapType?: MapType;
-    markerConfig?: any;
+    mapConfig?: MapConfig;
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: InitOptions) => void;

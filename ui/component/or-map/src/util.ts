@@ -1,6 +1,10 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
 import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownAssets, WellknownAttributes} from "@openremote/model";
-import manager, { AssetModelUtil } from "@openremote/core";
+import manager, {
+    AssetModelUtil,
+    AssetTypeMarkerConfig,
+    AttributeMarkerColoursRange,
+} from "@openremote/core";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
@@ -80,7 +84,7 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     }
 }
 
-export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | undefined} | undefined {
+export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | AttributeMarkerColoursRange[]} | undefined {
     if (!type) {
         return;
     }
@@ -88,30 +92,32 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
     const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
     // check config for overrides
-    let iconOverride;
-    let colorOverride;
-    if (descriptor && Object.keys(manager.config.markerConfig).includes(descriptor.name!)) {
-        const overrideConfig = manager.config.markerConfig[descriptor.name!];
-        iconOverride = overrideConfig.icon || undefined;
-        colorOverride = overrideConfig.color || undefined;
+    // let iconOverride;
+    let colorOverride: string | AttributeMarkerColoursRange[] | undefined;
+    if (descriptor && manager.config.mapConfig
+        && Object.keys(manager.config.mapConfig.markers).includes(descriptor.name!)) {
+        const overrideConfig = manager.config.mapConfig.markers[descriptor.name!] as AssetTypeMarkerConfig;
+        colorOverride = overrideConfig[WellknownAttributes.ENERGYEXPORTTOTAL].ranges as AttributeMarkerColoursRange[] || undefined;
+        // todo icon override
     }
     
     let icon;
-    if (iconOverride) {
-        icon = iconOverride
-    } else {
-        icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
-    }
+    icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+    // if (iconOverride) {
+    //     icon = iconOverride
+    // } else {
+    //     icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+    // }
 
-    let color: string | undefined;
+    let color: string | AttributeMarkerColoursRange[];
     if (colorOverride) {
-        color = colorOverride;
+        color = colorOverride as AttributeMarkerColoursRange[];
     } else if (descriptor && descriptor.colour) {
-        color = descriptor.colour;
+        color = descriptor.colour as string;
     }
 
     return {
-        color: color,
+        color: color!,
         icon: icon
     };
 }
