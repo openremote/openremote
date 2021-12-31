@@ -1,6 +1,7 @@
-import {html, LitElement, PropertyValues} from "lit";
+import {css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
+import {DefaultBoxShadowBottom} from "@openremote/core";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -56,7 +57,26 @@ declare global {
 @customElement("or-map-marker")
 export class OrMapMarker extends LitElement {
 
+    static get styles(): CSSResultGroup {
+        return css`
+          .label {
+            background-color: white;
+            width: 50px;
+            height: 20px;
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 3px;
+            -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+          }
+        `;
+    }
+
     protected static _defaultTemplate = (icon: string | undefined) => `
+        <div class="label"></div>
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -213,6 +233,7 @@ export class OrMapMarker extends LitElement {
 
     protected updateActive(container?: HTMLDivElement) {
         if (container) {
+            console.log(container);
             if (this.active) {
                 container.classList.add("active");
             } else {
