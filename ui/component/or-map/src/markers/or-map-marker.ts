@@ -67,6 +67,7 @@ export class OrMapMarker extends LitElement {
             top: -20px;
             left: 50%;
             transform: translate(-50%, -50%);
+            text-align: center;
             border-radius: 3px;
             -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
             -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
@@ -76,7 +77,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected static _defaultTemplate = (icon: string | undefined) => `
-        <div class="label"></div>
+        <div class="label"><span>demotext</span></div>
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -233,7 +234,6 @@ export class OrMapMarker extends LitElement {
 
     protected updateActive(container?: HTMLDivElement) {
         if (container) {
-            console.log(container);
             if (this.active) {
                 container.classList.add("active");
             } else {

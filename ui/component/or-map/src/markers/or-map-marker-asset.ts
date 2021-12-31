@@ -10,7 +10,7 @@ import {
     SharedEvent,
     WellknownAttributes,
 } from "@openremote/model";
-import {subscribe} from "@openremote/core";
+import {subscribe, Util} from "@openremote/core";
 import manager from "@openremote/core";
 import { getMarkerIconAndColorFromAssetType } from "../util";
 
@@ -78,6 +78,11 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
                 return;
             }
 
+            if (this.asset) {
+                this.asset = Util.updateAsset(this.asset, event as AttributeEvent);
+                this.requestUpdate();
+            }
+
             return;
         }
 
@@ -97,8 +102,18 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         }
     }
 
-    protected onAssetChanged(asset?: Asset) {
+    protected async onAssetChanged(asset?: Asset) {
         if (asset) {
+            const result: AssetEvent = await manager.events!.sendEventWithReply({
+                event: {
+                    eventType: "read-asset",
+                    assetId: asset.id
+                }
+            });
+            asset = result.asset!;
+            if (asset.attributes!.length) {
+                this._updateDisplayValue(asset.attributes![0].value as string);
+            }
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
             this.type = asset.type;
@@ -111,6 +126,10 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     protected _updateLocation(location: GeoJSONPoint | null) {
         this.lat = location && location.coordinates ? (location.coordinates as any)[1] : undefined;
         this.lng = location && location.coordinates ? (location.coordinates as any)[0] : undefined;
+    }
+
+    protected _updateDisplayValue(value: string) {
+        // this.displayValue = value;
     }
 
     protected getColor() {
