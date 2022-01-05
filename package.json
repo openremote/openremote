@@ -9,5 +9,7 @@
   "devDependencies": {
     "lerna": "^4.0.0"
   },
-  "resolutions": {}
+  "dependencies": {
+    "parse-link-header": "2.0.0"
+  }
 }

@@ -16,7 +16,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageUsersProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+export function pageUsersProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "users",
         routes: ["users"],
@@ -41,7 +41,7 @@ interface UserModel extends User {
 const RESTRICTED_USER_REALM_ROLE = "restricted_user";
 
 @customElement("page-users")
-class PageUsers<S extends AppStateKeyed> extends Page<S> {
+class PageUsers extends Page<AppStateKeyed> {
     static get styles() {
         // language=CSS
         return [
@@ -525,7 +525,7 @@ class PageUsers<S extends AppStateKeyed> extends Page<S> {
         `;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
         this.realm = state.app.realm;
     }
 

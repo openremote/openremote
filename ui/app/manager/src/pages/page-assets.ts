@@ -21,19 +21,18 @@ import {
 } from "@openremote/or-asset-tree";
 import manager, {DefaultBoxShadow, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {EnhancedStore} from "@reduxjs/toolkit";
+import {EnhancedStore, createSelector} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
-import {createSelector} from "reselect";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
     tree?: AssetTreeConfig;
 }
 
-export function pageAssetsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: PageAssetsConfig): PageProvider<S> {
+export function pageAssetsProvider(store: EnhancedStore<AppStateKeyed>, config?: PageAssetsConfig): PageProvider<AppStateKeyed> {
     return {
         name: "assets",
         routes: [
@@ -78,7 +77,7 @@ export function getAssetsRoute(editMode?: boolean, assetId?: string) {
 }
 
 @customElement("page-assets")
-class PageAssets<S extends AppStateKeyed> extends Page<S>  {
+class PageAssets extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
@@ -134,7 +133,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
     protected _viewer!: OrAssetViewer;
 
     protected _addedAssetId?: string;
-    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
     get name(): string {
         return "assets";
@@ -142,7 +141,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
 
     protected getRealmState = createSelector(
         [this._realmSelector],
-        async () => {
+        async (realm: string) => {
             this._assetIds = undefined;
             if (this._viewer && this._viewer.assetId) this._viewer.assetId = undefined;
             if (this._tree) this._tree.refresh();
@@ -150,7 +149,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         }
     )
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
         this.addEventListener(OrAssetTreeRequestSelectionEvent.NAME, this._onAssetSelectionRequested);
         this.addEventListener(OrAssetTreeSelectionEvent.NAME, this._onAssetSelectionChanged);
@@ -168,7 +167,7 @@ class PageAssets<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
-    stateChanged(state: S) {
+    stateChanged(state: AppStateKeyed) {
         // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
         this._editMode = !!(state.app.params && state.app.params.editMode === "true");

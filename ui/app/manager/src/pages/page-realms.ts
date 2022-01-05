@@ -20,7 +20,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageRealmsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+export function pageRealmsProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
   return {
     name: "realms",
     routes: ["realms"],
@@ -32,7 +32,7 @@ export function pageRealmsProvider<S extends AppStateKeyed>(store: EnhancedStore
 
 
 @customElement("page-realms")
-class PageRealms<S extends AppStateKeyed> extends Page<S> {
+class PageRealms extends Page<AppStateKeyed> {
 
     static get styles() {
     // language=CSS
@@ -222,7 +222,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
     return "realm_plural";
   }
 
-  constructor(store: EnhancedStore<S>) {
+  constructor(store: EnhancedStore<AppStateKeyed>) {
     super(store);
     this._getTenants();
   }
@@ -336,7 +336,7 @@ class PageRealms<S extends AppStateKeyed> extends Page<S> {
         `;
   }
 
-  public stateChanged(state: S) {
+  public stateChanged(state: AppStateKeyed) {
   }
 
     protected async _getTenants() {

@@ -348,7 +348,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         `;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
         this._realm = state.app.realm;
         this._page = state.app!.page;
     }

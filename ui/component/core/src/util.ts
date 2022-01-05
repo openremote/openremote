@@ -272,7 +272,7 @@ export function arrayRemove<T>(arr: T[], item: T) {
 }
 
 export function camelCaseToSentenceCase(str: string | undefined): string {
-    if (str === undefined) {
+    if (str === undefined || str === null) {
         return "";
     }
     let startDone = false;

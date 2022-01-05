@@ -12,7 +12,7 @@ import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@o
 export interface GeofencesConfig {
 }
 
-export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: GeofencesConfig): PageProvider<S> {
+export function pageMobileGeofencesProvider(store: EnhancedStore<AppStateKeyed>, config?: GeofencesConfig): PageProvider<AppStateKeyed> {
     return {
         name: "geofences",
         routes: [
@@ -28,7 +28,7 @@ export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: Enha
 const QUERY_VIEW = new URLSearchParams(window.location.search).get("view");
 const APP_ICON_POSITION = new URLSearchParams(window.location.search).get("appIconPosition");
 @customElement("page-mobile-geofences")
-class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
+class PageMobileGeofences extends Page<AppStateKeyed> {
 
     
     static get styles() {
@@ -204,7 +204,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
         return "mobile-geofences";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
         this.getGeoNotifications();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
@@ -220,9 +220,8 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
         this.activeItem = undefined;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
     }
-
 
     @property()
     public config?: GeofencesConfig;

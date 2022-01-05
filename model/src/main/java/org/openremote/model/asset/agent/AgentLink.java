@@ -36,8 +36,8 @@ import java.util.Optional;
 
 /**
  * Represents the configuration of an {@link Attribute} linked to an {@link Agent}; each {@link Agent} should have its'
- * own concrete implementation of this class with fields describing each configuration item and standard JSR-380
- * annotations should be used to provide validation logic.
+ * own concrete implementation of this class or use {@link DefaultAgentLink} with fields describing each configuration
+ * item and standard JSR-380 annotations should be used to provide validation logic.
  */
 @JsonTypeInfo(property = "type", use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, defaultImpl = DefaultAgentLink.class)
 public abstract class AgentLink<T extends AgentLink<?>> implements Serializable {
@@ -71,91 +71,12 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
     @JsonPropertyDescription("Don't expect a response from the protocol just update the attribute immediately on write")
     protected Boolean updateOnWrite;
 
-    @JsonSerialize
-    protected String getType() {
-        return getClass().getSimpleName();
-    }
-
     // For Hydrators
-    protected AgentLink() {}
+    protected AgentLink() {
+    }
 
     protected AgentLink(String id) {
         this.id = id;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-
-    public Optional<ValueFilter[]> getValueFilters() {
-        return Optional.ofNullable(valueFilters);
-    }
-
-    public Optional<ObjectNode> getValueConverter() {
-        return Optional.ofNullable(valueConverter);
-    }
-
-    public Optional<ObjectNode> getWriteValueConverter() {
-        return Optional.ofNullable(writeValueConverter);
-    }
-
-    public Optional<String> getWriteValue() {
-        return Optional.ofNullable(writeValue);
-    }
-
-    public Optional<ValuePredicate> getMessageMatchPredicate() {
-        return Optional.ofNullable(messageMatchPredicate);
-    }
-
-    public Optional<ValueFilter[]> getMessageMatchFilters() {
-        return Optional.ofNullable(messageMatchFilters);
-    }
-
-    public Optional<Boolean> getUpdateOnWrite() {
-        return Optional.ofNullable(updateOnWrite);
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setValueFilters(ValueFilter[] valueFilters) {
-        this.valueFilters = valueFilters;
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setValueConverter(ObjectNode valueConverter) {
-        this.valueConverter = valueConverter;
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setWriteValueConverter(ObjectNode writeValueConverter) {
-        this.writeValueConverter = writeValueConverter;
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setWriteValue(String writeValue) {
-        this.writeValue = writeValue;
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setMessageMatchPredicate(ValuePredicate messageMatchPredicate) {
-        this.messageMatchPredicate = messageMatchPredicate;
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setMessageMatchFilters(ValueFilter[] messageMatchFilters) {
-        this.messageMatchFilters = messageMatchFilters;
-        return (T)this;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setUpdateOnWrite(Boolean updateOnWrite) {
-        this.updateOnWrite = updateOnWrite;
-        return (T)this;
     }
 
     public static <T> T getOrThrowAgentLinkProperty(Optional<T> value, String name) {
@@ -164,5 +85,84 @@ public abstract class AgentLink<T extends AgentLink<?>> implements Serializable 
             ValueUtil.LOG.warning(msg);
             return new IllegalStateException("msg");
         });
+    }
+
+    @JsonSerialize
+    protected String getType() {
+        return getClass().getSimpleName();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public Optional<ValueFilter[]> getValueFilters() {
+        return Optional.ofNullable(valueFilters);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setValueFilters(ValueFilter[] valueFilters) {
+        this.valueFilters = valueFilters;
+        return (T) this;
+    }
+
+    public Optional<ObjectNode> getValueConverter() {
+        return Optional.ofNullable(valueConverter);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setValueConverter(ObjectNode valueConverter) {
+        this.valueConverter = valueConverter;
+        return (T) this;
+    }
+
+    public Optional<ObjectNode> getWriteValueConverter() {
+        return Optional.ofNullable(writeValueConverter);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setWriteValueConverter(ObjectNode writeValueConverter) {
+        this.writeValueConverter = writeValueConverter;
+        return (T) this;
+    }
+
+    public Optional<String> getWriteValue() {
+        return Optional.ofNullable(writeValue);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setWriteValue(String writeValue) {
+        this.writeValue = writeValue;
+        return (T) this;
+    }
+
+    public Optional<ValuePredicate> getMessageMatchPredicate() {
+        return Optional.ofNullable(messageMatchPredicate);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setMessageMatchPredicate(ValuePredicate messageMatchPredicate) {
+        this.messageMatchPredicate = messageMatchPredicate;
+        return (T) this;
+    }
+
+    public Optional<ValueFilter[]> getMessageMatchFilters() {
+        return Optional.ofNullable(messageMatchFilters);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setMessageMatchFilters(ValueFilter[] messageMatchFilters) {
+        this.messageMatchFilters = messageMatchFilters;
+        return (T) this;
+    }
+
+    public Optional<Boolean> getUpdateOnWrite() {
+        return Optional.ofNullable(updateOnWrite);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setUpdateOnWrite(Boolean updateOnWrite) {
+        this.updateOnWrite = updateOnWrite;
+        return (T) this;
     }
 }

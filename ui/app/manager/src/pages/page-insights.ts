@@ -13,7 +13,7 @@ export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
 }
 
-export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: PageInsightsConfig): PageProvider<S> {
+export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>, config?: PageInsightsConfig): PageProvider<AppStateKeyed> {
     return {
         name: "insights",
         routes: [
@@ -29,7 +29,7 @@ export function pageInsightsProvider<S extends AppStateKeyed>(store: EnhancedSto
 }
 
 @customElement("page-insights")
-class PageInsights<S extends AppStateKeyed> extends Page<S>  {
+class PageInsights extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
@@ -91,7 +91,7 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
     @query("#data-viewer")
     protected _dataviewer!: OrDataViewer;
 
-    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
     get name(): string {
         return "insights";
@@ -104,7 +104,7 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
         }
     )
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 
@@ -123,7 +123,7 @@ class PageInsights<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
-    stateChanged(state: S) {
+    stateChanged(state: AppStateKeyed) {
         // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
     }

@@ -17,7 +17,8 @@
     "@openremote/or-mwc-components": "^1.0.3",
     "lit": "^2.0.2",
     "moment": "^2.24.0",
-    "parse-link-header": "^1.0.1"
+    "parse-link-header": "^2.0.0",
+    "url": "^0.11.0"
   },
   "devDependencies": {
     "tslint": ">=5.11.0",
