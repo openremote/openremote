@@ -8,8 +8,5 @@
   ],
   "devDependencies": {
     "lerna": "^4.0.0"
-  },
-  "dependencies": {
-    "parse-link-header": "2.0.0"
   }
 }

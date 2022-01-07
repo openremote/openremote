@@ -37,7 +37,7 @@ x-app: &awslogs
 
 services:
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.4}
+    image: openremote/proxy:${PROXY_VERSION:-2.5.0.1}
     networks:
       - public
       - private
@@ -104,7 +104,7 @@ services:
     <<: *awslogs
 
   keycloak:
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.3}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-16.0.0.0}
     networks:
       - public
       - private
@@ -130,7 +130,7 @@ services:
     <<: *awslogs
 
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.0}
     networks:
       - private
     healthcheck:
