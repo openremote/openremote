@@ -1,5 +1,6 @@
 import {css, html} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
+import {until} from 'lit/directives/until.js';
 import {createSlice, EnhancedStore, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
@@ -337,12 +338,24 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                             return false;
                         }
                         const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                        const showOnMap = !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr); 
-                        return showOnMap;
-                    }).map((asset) => {
+                        return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                    }).map(asset => {
                         return html`
-                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" 
-                                                 .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
+                            ${until(
+                                    manager.events.sendEventWithReply({
+                                        event: {
+                                            eventType: "read-asset",
+                                            assetId: asset.id
+                                        }
+                                    }).then((result: AssetEvent) => {
+                                        return html`
+                                            <or-map-marker-asset
+                                                ?active="${this._currentAsset && this._currentAsset.id === result.asset.id}"
+                                                .asset="${result.asset}"
+                                                .config="${this.config.markers}"></or-map-marker-asset>
+                                        `;
+                                    })
+                            )};
                         `;
                     })
                 }

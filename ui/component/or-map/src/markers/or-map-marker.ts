@@ -76,8 +76,8 @@ export class OrMapMarker extends LitElement {
         `;
     }
 
-    protected static _defaultTemplate = (icon: string | undefined) => `
-        <div class="label"><span>demotext</span></div>
+    protected static _defaultTemplate = (icon: string | undefined, displayText: string | undefined) => `
+        <div class="label"><span>${displayText}</span></div>
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -289,7 +289,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon);
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, 'demotext');
         return div;
     }
 }
