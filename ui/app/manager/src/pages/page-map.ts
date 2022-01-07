@@ -10,7 +10,7 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent
 } from "@openremote/or-map";
-import manager, {MapMarkerConfig, Util} from "@openremote/core";
+import manager, {MapMarkerConfig, RangeAttributeMarkerColours, Util} from "@openremote/core";
 import {createSelector} from "reselect";
 import {
     Asset,
@@ -100,7 +100,24 @@ export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>
         ],
         pageCreator: () => {
             const page = new PageMap(store);
-            if(config) page.config = config;
+
+            page.config = config || {};
+
+            // todo: remove stub
+            page.config.markers = {
+                ElectricityProducerSolarAsset: {
+                    energyExportTotal: {
+                        type: "range",
+                        ranges: [
+                            {
+                                max: 100,
+                                colour: 'FF0000'
+                            }
+                        ]
+                    } as RangeAttributeMarkerColours
+                }
+            } as MapMarkerConfig;
+
             return page
         }
     };
@@ -324,7 +341,8 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
                         return showOnMap;
                     }).map((asset) => {
                         return html`
-                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}"></or-map-marker-asset>
+                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" 
+                                                 .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
                         `;
                     })
                 }

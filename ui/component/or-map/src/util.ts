@@ -3,7 +3,8 @@ import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownA
 import {
     AssetModelUtil,
     AssetTypeMarkerConfig,
-    AttributeMarkerColoursRange, MapMarkerConfig, RangeAttributeMarkerColours,
+    AttributeMarkerColoursRange,
+    MapMarkerConfig,
 } from "@openremote/core";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
@@ -84,35 +85,20 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     }
 }
 
-export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
+export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined, markerConfig?: MapMarkerConfig): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
     if (!type) {
         return;
     }
 
     const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
-    // todo: remove stub
-    const markerConfig: MapMarkerConfig = {
-        ElectricityProducerSolarAsset: {
-            energyExportTotal: {
-                type: "range",
-                ranges: [
-                    {
-                        max: 100,
-                        colour: 'FF0000'
-                    }
-                ]
-            } as RangeAttributeMarkerColours
-        }
-    };
-
-    // check config for overrides
-    // let iconOverride;
     let colorOverride: string | AttributeMarkerColoursRange[] | undefined;
-    if (descriptor && Object.keys(markerConfig).includes(descriptor.name!)) {
-        const overrideConfig = markerConfig[descriptor.name!] as AssetTypeMarkerConfig;
-        colorOverride = overrideConfig[WellknownAttributes.ENERGYEXPORTTOTAL].ranges as AttributeMarkerColoursRange[] || undefined;
-        // todo icon override
+    if (markerConfig) {
+        if (descriptor && Object.keys(markerConfig).includes(descriptor.name!)) {
+            const overrideConfig = markerConfig[descriptor.name!] as AssetTypeMarkerConfig;
+            colorOverride = overrideConfig[WellknownAttributes.ENERGYEXPORTTOTAL].ranges as AttributeMarkerColoursRange[] || undefined;
+            // todo icon override
+        }
     }
 
     const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
