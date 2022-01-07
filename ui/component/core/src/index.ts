@@ -124,9 +124,9 @@ export interface RangeAttributeMarkerColours {
     ranges: AttributeMarkerColoursRange[]
 }
 
-// todo: should add support for selecting which attr value to show in picker label
+// todo: could add support for selecting which attr value to show in picker label
 export interface AssetTypeMarkerConfig {
-    [attributeName: string]: RangeAttributeMarkerColours;
+    [attributeName: string]: AttributeMarkerColours | RangeAttributeMarkerColours;
 }
 
 export interface MapMarkerConfig {
