@@ -67,6 +67,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
         if (_changedProperties.has("asset")) {
             this.onAssetChanged(this.asset);
+            this.displayText = 'asdf';
         }
 
         return super.shouldUpdate(_changedProperties);

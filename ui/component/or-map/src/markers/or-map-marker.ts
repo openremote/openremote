@@ -91,6 +91,9 @@ export class OrMapMarker extends LitElement {
     @property({type: Number, reflect: true})
     public radius?: number;
 
+    @property({type: String, reflect: true})
+    public displayText?: string;
+
     @property({type: Boolean})
     public visible: boolean = true;
 
@@ -289,7 +292,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, 'demotext');
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayText);
         return div;
     }
 }
