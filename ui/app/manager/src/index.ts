@@ -40,7 +40,7 @@ import {pageRolesProvider} from "./pages/page-roles";
 import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
-import {ManagerConfig, MapConfig, RangeAttributeMarkerColours} from "@openremote/core";
+import {ManagerConfig} from "@openremote/core";
 
 declare var CONFIG_URL_PREFIX: string;
 
@@ -165,24 +165,6 @@ fetch(configURL).then(async (result) => {
             appConfig.manager.translationsLoadPath = CONFIG_URL_PREFIX + appConfig.manager.translationsLoadPath;
         }
     }
-
-    // todo: remove this as it should come from the manager_config
-    const markerConfig: RangeAttributeMarkerColours = {
-        type: "range",
-        ranges: [
-            {
-                max: 100,
-                colour: 'FF0000'
-            }
-        ]
-    };
-    appConfig.manager.mapConfig = {
-        markers: {
-            ElectricityProducerSolarAsset: {
-                energyExportTotal: markerConfig
-            }
-        }
-    };
 
     orApp.managerConfig = appConfig.manager;
 

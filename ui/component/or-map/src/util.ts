@@ -1,9 +1,9 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
-import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownAssets, WellknownAttributes} from "@openremote/model";
-import manager, {
+import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownAttributes} from "@openremote/model";
+import {
     AssetModelUtil,
     AssetTypeMarkerConfig,
-    AttributeMarkerColoursRange,
+    AttributeMarkerColoursRange, MapMarkerConfig, RangeAttributeMarkerColours,
 } from "@openremote/core";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
@@ -91,12 +91,26 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
 
     const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
+    // todo: remove stub
+    const markerConfig: MapMarkerConfig = {
+        ElectricityProducerSolarAsset: {
+            energyExportTotal: {
+                type: "range",
+                ranges: [
+                    {
+                        max: 100,
+                        colour: 'FF0000'
+                    }
+                ]
+            } as RangeAttributeMarkerColours
+        }
+    };
+
     // check config for overrides
     // let iconOverride;
     let colorOverride: string | AttributeMarkerColoursRange[] | undefined;
-    if (descriptor && manager.config.mapConfig
-        && Object.keys(manager.config.mapConfig.markers).includes(descriptor.name!)) {
-        const overrideConfig = manager.config.mapConfig.markers[descriptor.name!] as AssetTypeMarkerConfig;
+    if (descriptor && Object.keys(markerConfig).includes(descriptor.name!)) {
+        const overrideConfig = markerConfig[descriptor.name!] as AssetTypeMarkerConfig;
         colorOverride = overrideConfig[WellknownAttributes.ENERGYEXPORTTOTAL].ranges as AttributeMarkerColoursRange[] || undefined;
         // todo icon override
     }

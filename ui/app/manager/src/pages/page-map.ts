@@ -10,7 +10,7 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent
 } from "@openremote/or-map";
-import manager, {Util} from "@openremote/core";
+import manager, {MapMarkerConfig, Util} from "@openremote/core";
 import {createSelector} from "reselect";
 import {
     Asset,
@@ -87,7 +87,8 @@ const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.act
 export const pageMapReducer = pageMapSlice.reducer;
 
 export interface PageMapConfig {
-    card?: MapAssetCardConfig
+    card?: MapAssetCardConfig,
+    markers?: MapMarkerConfig
 }
 
 export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?: PageMapConfig): PageProvider<S> {

@@ -133,10 +133,6 @@ export interface MapMarkerConfig {
     [assetType: string]: AssetTypeMarkerConfig;
 }
 
-export interface MapConfig {
-    markers: MapMarkerConfig;
-}
-
 export interface ManagerConfig {
     managerUrl?: string;
     keycloakUrl?: string;
@@ -152,7 +148,6 @@ export interface ManagerConfig {
     loadIcons?: boolean;
     loadDescriptors?: boolean;
     mapType?: MapType;
-    mapConfig?: MapConfig;
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: InitOptions) => void;
