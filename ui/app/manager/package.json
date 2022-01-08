@@ -5,6 +5,16 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "private": true,
+  "exports": {
+    "./*": "./dist/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/*"
+      ]
+    }
+  },
   "scripts": {
     "clean": "npx shx rm -rf dist",
     "modelBuild": "npx orutil build",
