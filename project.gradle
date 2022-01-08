@@ -69,7 +69,7 @@ if (project == rootProject) {
         if (isCustomProject()) {
             idea.project.settings.runConfigurations {
                 "Custom Deployment"(Application) {
-                    moduleName = "${getProject().idea.module.name}.deployment.main"
+                    moduleName = "${getProject().idea.module.name}.setup.main"
                     envs = [
                         MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
                         MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
