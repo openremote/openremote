@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-rules";
-import {ActionTargetType, OrRules, RulesConfig} from "@openremote/or-rules";
+import {OrRules, RulesConfig} from "@openremote/or-rules";
 import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
@@ -39,7 +39,7 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
                 actions: {
                     wait: [],
                     attribute: [],
-                    email: [ActionTargetType.USER, ActionTargetType.CUSTOM],
+                    email: [NotificationTargetType.USER, NotificationTargetType.CUSTOM],
                     push: [NotificationTargetType.USER, NotificationTargetType.ASSET],
                 }
             }

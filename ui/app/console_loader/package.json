@@ -5,13 +5,15 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "private": true,
+  "exports": {
+    "./*": "./lib/*.js"
+  },
   "scripts": {
-    "clean": "npx shx rm -rf dist",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx tsc -b -f && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
     "serve": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --host 0.0.0.0 --mode development",
-    "watch": "npx tsc -b -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -19,7 +21,9 @@
   },
   "devDependencies": {
     "@openremote/util": "^1.0.4",
-    "tslint": ">=5.11.0",
+    "fork-ts-checker-notifier-webpack-plugin": "^4.0.0",
+    "fork-ts-checker-webpack-plugin": "^6.5.0",
+    "ts-loader": "^9.2.6",
     "typescript": ">=4.5.2",
     "webpack": "^5.64.3",
     "webpack-cli": "^4.9.1",

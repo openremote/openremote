@@ -1,12 +1,10 @@
 import {css, html, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {AppStateKeyed} from "@openremote/or-app/dist/app";
-import {Page, PageProvider} from "@openremote/or-app/dist/types";
+import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {NavigationControl} from "maplibre-gl";
 import {EnhancedStore} from "@reduxjs/toolkit";
-import manager from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {JsonRulesetDefinition} from "@openremote/model";
-import {getGeoNotificationsFromRulesSet} from "@openremote/core/dist/util";
 import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@openremote/or-map";
 
 export interface GeofencesConfig {
@@ -333,15 +331,15 @@ class PageMobileGeofences extends Page<AppStateKeyed> {
 
                 });
             }
-            this.mapItems = getGeoNotificationsFromRulesSet(mapItemDefinition);
-            this.listItems = getGeoNotificationsFromRulesSet(listItemtDefinition);
+            this.mapItems = Util.getGeoNotificationsFromRulesSet(mapItemDefinition);
+            this.listItems = Util.getGeoNotificationsFromRulesSet(listItemtDefinition);
         }).catch((reason) => {
             console.log("Error:" + reason);
             const rulesetDefinition: JsonRulesetDefinition = {
                 rules: []
             };
-            this.mapItems = getGeoNotificationsFromRulesSet(rulesetDefinition);
-            this.listItems = getGeoNotificationsFromRulesSet(rulesetDefinition);
+            this.mapItems = Util.getGeoNotificationsFromRulesSet(rulesetDefinition);
+            this.listItems = Util.getGeoNotificationsFromRulesSet(rulesetDefinition);
         });
     }
 

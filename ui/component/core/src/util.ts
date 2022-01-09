@@ -923,7 +923,6 @@ try {
     window.addEventListener("test", null, Object.defineProperty({}, 'passive', {
         get: () => { supportsPassive = true; }
     }));
-// tslint:disable-next-line:no-empty
 } catch(e) {}
 
 const wheelOpt = supportsPassive ? { passive: false } : false;

@@ -14,12 +14,11 @@ allprojects {
     apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"
 }
 
-task deleteNodeModules {
-    doFirst {
-        delete "node_modules"
-    }
-}
-
 task clean {
-    dependsOn deleteNodeModules
+    if (isCustomProject()) {
+        doFirst {
+            println("DELETE NODE MODULES!!!!!")
+            delete "node_modules"
+        }
+    }
 }

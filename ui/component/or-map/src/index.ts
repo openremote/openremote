@@ -5,6 +5,8 @@ import {customElement, property, query} from "lit/decorators.js";
 import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
+import "./markers/or-map-marker";
+import "./markers/or-map-marker-asset";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
 import {

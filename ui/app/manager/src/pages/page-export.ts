@@ -10,7 +10,7 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import {OrAttributePickerPickedEvent, OrAttributePicker } from "@openremote/or-attribute-picker";
 import { AttributeRef } from "@openremote/model";
 import moment from "moment";
-import { buttonStyle } from "@openremote/or-rules/dist/style";
+import { buttonStyle } from "@openremote/or-rules";
 import {createSelector} from "reselect";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");

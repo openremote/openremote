@@ -3,12 +3,16 @@
   "version": "1.0.4",
   "description": "Renders a JSON schema and provides instance editing",
   "main": "dist/umd/index.bundle.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js"
+  },
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx tsc -b && npx webpack"
+    "prepublishOnly": "npx webpack"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -20,7 +24,6 @@
   },
   "devDependencies": {
     "@jsonforms/core": "^3.0.0-alpha.1",
-    "tslint": ">=5.11.0",
     "typescript": ">=4.5.2",
     "webpack": "^5.64.3",
     "webpack-cli": "^4.9.1"

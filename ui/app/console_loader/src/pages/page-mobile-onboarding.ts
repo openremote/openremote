@@ -1,7 +1,6 @@
 import {css, html} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {AppStateKeyed} from "@openremote/or-app/dist/app";
-import {Page, PageProvider} from "@openremote/or-app/dist/types";
+import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import manager from "@openremote/core";
 
