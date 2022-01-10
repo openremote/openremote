@@ -17,7 +17,6 @@ allprojects {
 task clean {
     if (isCustomProject()) {
         doFirst {
-            println("DELETE NODE MODULES!!!!!")
             delete "node_modules"
         }
     }
