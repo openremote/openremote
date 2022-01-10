@@ -30,6 +30,7 @@ const DefaultLogo = require("../images/logo.svg");
 const DefaultMobileLogo = require("../images/logo-mobile.svg");
 const DefaultFavIcon = require("../images/favicon.ico");
 
+export {AnyAction};
 export * from "./app";
 export * from "./or-header";
 export * from "./types";
@@ -365,7 +366,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         showDialog(new OrMwcDialog()
             .setHeading("language")
             .setDismissAction(null)
-            .setActions(Object.entries(DEFAULT_LANGUAGES).map(([key, value]) => {
+            .setActions(Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES).map(([key, value]) => {
                 return {
                     content: i18next.t(value),
                     actionName: key,
