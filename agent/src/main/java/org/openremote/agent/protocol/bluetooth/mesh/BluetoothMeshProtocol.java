@@ -57,7 +57,7 @@ import java.util.logging.Logger;
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
-public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> implements ProtocolAssetDiscovery {
+public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> {
 
     // Constants ------------------------------------------------------------------------------------
 
@@ -339,37 +339,6 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         meshNetwork.sendMeshSetCommand(address, modelId, processedValue);
         meshNetwork.sendMeshGetCommand(address, modelId);
-    }
-
-
-    // Implements ProtocolAssetDiscovery -----------------------------------------------------------
-
-    @Override
-    public Future<Void> startAssetDiscovery(final Consumer<AssetTreeNode[]> assetConsumer) {
-        return executorService.submit(() -> {
-            Asset<?> device = new ThingAsset("ESP32");
-
-            Attribute<?> attribute = new Attribute<>("genericOnOff_0002", ValueType.BOOLEAN);
-            attribute.addMeta(new MetaItem<>(MetaItemType.FORMAT, ValueFormat.BOOLEAN_ON_OFF()));
-
-            int appKeyIndex = 0;
-            String address = "0002";
-            String modelName = "GenericOnOff";
-            BluetoothMeshAgentLink agentLink = new BluetoothMeshAgentLink(agent.getId(), appKeyIndex, address, modelName);
-
-            attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, agentLink),
-                new MetaItem<>(MetaItemType.LABEL, "Generic On Off")
-            );
-
-            device.getAttributes().addOrReplace(attribute);
-
-            AssetTreeNode treeNode = new AssetTreeNode(device);
-            AssetTreeNode[] assetTreeNodes = new AssetTreeNode[1];
-            assetTreeNodes[0] = treeNode;
-
-            assetConsumer.accept(assetTreeNodes);
-        }, null );
     }
 
 
