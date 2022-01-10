@@ -32,7 +32,7 @@ export function pageRealmsProvider(store: EnhancedStore<AppStateKeyed>): PagePro
 
 
 @customElement("page-realms")
-class PageRealms extends Page<AppStateKeyed> {
+export class PageRealms extends Page<AppStateKeyed> {
 
     static get styles() {
     // language=CSS

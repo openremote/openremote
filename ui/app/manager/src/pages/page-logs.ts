@@ -25,7 +25,7 @@ export function pageLogsProvider(store: EnhancedStore<AppStateKeyed>, config?: P
 }
 
 @customElement("page-logs")
-class PageLogs extends Page<AppStateKeyed> {
+export class PageLogs extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS

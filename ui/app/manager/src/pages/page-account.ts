@@ -20,7 +20,7 @@ export function pageAccountProvider(store: EnhancedStore<AppStateKeyed>): PagePr
 }
 
 @customElement("page-account")
-class PageAccount extends Page<AppStateKeyed>  {
+export class PageAccount extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS

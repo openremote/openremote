@@ -26,6 +26,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
 import "@openremote/or-json-forms";
+import {getAssetsRoute} from "../routes";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -67,17 +68,8 @@ export const PAGE_ASSETS_CONFIG_DEFAULT: PageAssetsConfig = {
     }
 };
 
-export function getAssetsRoute(editMode?: boolean, assetId?: string) {
-    let route = "assets/" + (editMode ? "true" : "false");
-    if (assetId) {
-        route += "/" + assetId;
-    }
-
-    return route;
-}
-
 @customElement("page-assets")
-class PageAssets extends Page<AppStateKeyed>  {
+export class PageAssets extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS

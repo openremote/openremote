@@ -22,7 +22,7 @@ import {
     WellknownAttributes,
     WellknownMetaItems
 } from "@openremote/model";
-import {getAssetsRoute} from "./page-assets";
+import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 
 export interface MapState {
@@ -105,14 +105,6 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
     };
 }
 
-export function getMapRoute(assetId?: string) {
-    let route = "map";
-    if (assetId) {
-        route += "/" + assetId;
-    }
-
-    return route;
-}
 
 @customElement("page-map")
 export class PageMap extends Page<MapStateKeyed> {

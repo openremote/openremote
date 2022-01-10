@@ -32,7 +32,7 @@ export function pageRolesProvider(store: EnhancedStore<AppStateKeyed>): PageProv
 
 
 @customElement("page-roles")
-class PageRoles extends Page<AppStateKeyed> {
+export class PageRoles extends Page<AppStateKeyed> {
   static get styles() {
     // language=CSS
     return [

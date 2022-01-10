@@ -59,7 +59,7 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
 };
 
 @customElement("page-rules")
-class PageRules extends Page<AppStateKeyed>  {
+export class PageRules extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS

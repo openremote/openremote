@@ -26,7 +26,7 @@ export function pageMobileGeofencesProvider(store: EnhancedStore<AppStateKeyed>,
 const QUERY_VIEW = new URLSearchParams(window.location.search).get("view");
 const APP_ICON_POSITION = new URLSearchParams(window.location.search).get("appIconPosition");
 @customElement("page-mobile-geofences")
-class PageMobileGeofences extends Page<AppStateKeyed> {
+export class PageMobileGeofences extends Page<AppStateKeyed> {
 
     
     static get styles() {

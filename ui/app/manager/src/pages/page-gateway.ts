@@ -22,7 +22,7 @@ export function pageGatewayProvider(store: EnhancedStore<AppStateKeyed>): PagePr
 }
 
 @customElement("page-gateway")
-class PageGateway extends Page<AppStateKeyed>  {
+export class PageGateway extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS

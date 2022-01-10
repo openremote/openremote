@@ -37,7 +37,7 @@ export function pageMobileOnboardingProvider(store: EnhancedStore<AppStateKeyed>
 }
 
 @customElement("page-mobile-onboarding")
-class PageMobileOnboarding extends Page<AppStateKeyed> {
+export class PageMobileOnboarding extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS

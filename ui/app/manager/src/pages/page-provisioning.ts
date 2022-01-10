@@ -26,7 +26,7 @@ export function pageProvisioningProvider(store: EnhancedStore<AppStateKeyed>): P
 }
 
 @customElement("page-provisioning")
-class PageProvisioning extends Page<AppStateKeyed> {
+export class PageProvisioning extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS

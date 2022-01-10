@@ -24,7 +24,7 @@ export function pageMobileSplashProvider(store: EnhancedStore<AppStateKeyed>, co
 }
 
 @customElement("page-mobile-splash")
-class PageMobileSplash extends Page<AppStateKeyed> {
+export class PageMobileSplash extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS

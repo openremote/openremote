@@ -41,7 +41,7 @@ interface UserModel extends User {
 const RESTRICTED_USER_REALM_ROLE = "restricted_user";
 
 @customElement("page-users")
-class PageUsers extends Page<AppStateKeyed> {
+export class PageUsers extends Page<AppStateKeyed> {
     static get styles() {
         // language=CSS
         return [

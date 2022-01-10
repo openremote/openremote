@@ -41,7 +41,7 @@ interface TableRow {
 }
 
 @customElement("page-export")
-class PageExport extends Page<AppStateKeyed> {
+export class PageExport extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS

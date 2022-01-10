@@ -29,7 +29,7 @@ export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>, config
 }
 
 @customElement("page-insights")
-class PageInsights extends Page<AppStateKeyed>  {
+export class PageInsights extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
