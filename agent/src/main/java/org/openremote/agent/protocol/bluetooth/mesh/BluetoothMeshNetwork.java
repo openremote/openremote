@@ -60,7 +60,7 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
     private volatile BluetoothMeshProxyScanner proxyScanner;
     private volatile BluetoothMeshProxy bluetoothMeshProxy;
     private volatile MeshManagerApi meshManagerApi;
-    private volatile boolean isConnected = false;
+    private volatile boolean isStarted = false;
 
     private final ScheduledExecutorService executorService;
     private final BluetoothCentralManager bluetoothCentral;
@@ -278,55 +278,16 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
 
     // Public Instance Methods --------------------------------------------------------------------
 
-    public synchronized void connect() {
-        if (isConnected) {
+    public synchronized void start() {
+        if (isStarted) {
             return;
         }
-        isConnected = true;
-        bluetoothMeshProxy = null;
-        proxyScanner = new BluetoothMeshProxyScanner(mainThreadManager, bluetoothCentral, executorService);
-        proxyScanner.start(networkKey, SCAN_DURATION, new BluetoothMeshProxyScannerCallback() {
-            @Override
-            public void onMeshProxiesScanned(List<BluetoothMeshProxy> meshProxies, Integer errorCode) {
-                LOG.info("Finished scanning Bluetooth mesh proxies.");
-                if (errorCode == null) {
-                    for (BluetoothMeshProxy curMeshProxy : meshProxies) {
-                        LOG.info("Scan found Bluetooth mesh proxy: [Name=" + curMeshProxy.getPeripheral().getName() + ", Address=" + curMeshProxy.getPeripheral().getAddress() + ", Rssi=" + curMeshProxy.getRssi() + "]");
-                    }
-                    if (meshProxies.size() > 0) {
-                        synchronized (BluetoothMeshNetwork.this) {
-                            // TODO: consider rssi and choose proxy in close proximity
-                            BluetoothMeshNetwork.this.bluetoothMeshProxy = meshProxies.get(0);
-                            BluetoothMeshNetwork.this.bluetoothMeshProxy.setRxDataCallback(BluetoothMeshNetwork.this);
-                            BluetoothMeshNetwork.this.bluetoothMeshProxy.connect(statusConsumer, new BluetoothMeshProxyConnectCallback() {
-                                @Override
-                                public void onMeshProxyConnected(BluetoothPeripheral peripheral, boolean isSuccess) {
-                                    synchronized (BluetoothMeshNetwork.this) {
-                                        if (isSuccess) {
-                                            LOG.info("Successfully connected to Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
-                                        } else {
-                                            LOG.warning("Failed to connect to Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
-                                            BluetoothMeshNetwork.this.bluetoothMeshProxy.disconnect();
-                                            BluetoothMeshNetwork.this.bluetoothMeshProxy = null;
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    } else {
-                        LOG.info("No Bluetooth mesh proxy found!");
-                        executorService.execute(() -> statusConsumer.accept(ConnectionStatus.ERROR));
-                    }
-                } else {
-                    LOG.info("Failed to scan Bluetooth mesh proxies: [error code=" + errorCode + "]");
-                    executorService.execute(() -> statusConsumer.accept(ConnectionStatus.ERROR));
-                }
-            }
-        });
+        isStarted = true;
+        connect();
     }
 
-    public synchronized void disconnect() {
-        isConnected = false;
+    public synchronized void stop() {
+        isStarted = false;
         if (proxyScanner != null) {
             proxyScanner.stop();
             proxyScanner = null;
@@ -487,6 +448,55 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
 
 
     // Private Instance Methods -------------------------------------------------------------------
+
+    private synchronized void connect() {
+        bluetoothMeshProxy = null;
+        if (proxyScanner != null) {
+            proxyScanner.stop();
+        }
+        executorService.execute(() -> statusConsumer.accept(ConnectionStatus.CONNECTING));
+        proxyScanner = new BluetoothMeshProxyScanner(mainThreadManager, bluetoothCentral, executorService);
+        proxyScanner.start(networkKey, SCAN_DURATION, new BluetoothMeshProxyScannerCallback() {
+            @Override
+            public void onMeshProxiesScanned(List<BluetoothMeshProxy> meshProxies, Integer errorCode) {
+                LOG.info("Finished scanning Bluetooth mesh proxies.");
+                if (errorCode == null) {
+                    for (BluetoothMeshProxy curMeshProxy : meshProxies) {
+                        LOG.info("Scan found Bluetooth mesh proxy: [Name=" + curMeshProxy.getPeripheral().getName() + ", Address=" + curMeshProxy.getPeripheral().getAddress() + ", Rssi=" + curMeshProxy.getRssi() + "]");
+                    }
+                    if (meshProxies.size() > 0) {
+                        synchronized (BluetoothMeshNetwork.this) {
+                            // TODO: consider rssi and choose proxy in close proximity
+                            BluetoothMeshNetwork.this.bluetoothMeshProxy = meshProxies.get(0);
+                            BluetoothMeshNetwork.this.bluetoothMeshProxy.setRxDataCallback(BluetoothMeshNetwork.this);
+                            BluetoothMeshNetwork.this.bluetoothMeshProxy.connect(statusConsumer, new BluetoothMeshProxyConnectCallback() {
+                                @Override
+                                public void onMeshProxyConnected(BluetoothPeripheral peripheral, boolean isSuccess, boolean isConnectionLoss) {
+                                    synchronized (BluetoothMeshNetwork.this) {
+                                        if (isSuccess) {
+                                            LOG.info("Successfully connected to Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
+                                        } else {
+                                            LOG.warning("Failed to connect to Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
+                                            BluetoothMeshNetwork.this.bluetoothMeshProxy = null;
+                                            // Try it again
+                                            executorService.execute(() -> connect());
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        LOG.info("No Bluetooth mesh proxy found!");
+                        // Try it again
+                        executorService.execute(() -> connect());
+                    }
+                } else {
+                    LOG.info("Failed to scan Bluetooth mesh proxies: [error code=" + errorCode + "]");
+                    executorService.execute(() -> statusConsumer.accept(ConnectionStatus.ERROR));
+                }
+            }
+        });
+    }
 
     private ShadowMeshModel searchShadowModel(int address, int modelId) {
         ShadowMeshModel model = null;

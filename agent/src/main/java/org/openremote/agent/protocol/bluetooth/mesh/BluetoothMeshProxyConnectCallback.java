@@ -22,5 +22,5 @@ package org.openremote.agent.protocol.bluetooth.mesh;
 import com.welie.blessed.BluetoothPeripheral;
 
 public interface BluetoothMeshProxyConnectCallback {
-    void onMeshProxyConnected(BluetoothPeripheral peripheral, boolean isSuccess);
+    void onMeshProxyConnected(BluetoothPeripheral peripheral, boolean isSuccess, boolean isConnectionLoss);
 }

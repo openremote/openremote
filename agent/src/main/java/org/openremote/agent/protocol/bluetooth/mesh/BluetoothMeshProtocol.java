@@ -246,17 +246,14 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
             applicationKeyMap, mtuParam, oldSequenceNumber, executorService, statusConsumer
         );
         BluetoothMeshProtocol.addNetwork(meshNetwork);
-        Runnable runnable = () -> {
-            meshNetwork.connect();
-        };
-        BluetoothMeshProtocol.mainThread.enqueue(runnable);
+        BluetoothMeshProtocol.mainThread.enqueue(() -> meshNetwork.start());
     }
 
     @Override
     protected synchronized void doStop(Container container) throws Exception {
         LOG.info("Stopping Bluetooth Mesh protocol.");
         if (meshNetwork != null) {
-            meshNetwork.disconnect();
+            meshNetwork.stop();
             meshNetwork = null;
         }
     }
