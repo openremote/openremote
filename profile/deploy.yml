@@ -308,7 +308,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.0}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:

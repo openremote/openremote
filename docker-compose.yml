@@ -30,7 +30,7 @@ services:
 
   postgresql:
     restart: always
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.0}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp

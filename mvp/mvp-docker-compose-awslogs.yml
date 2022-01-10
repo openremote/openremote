@@ -130,7 +130,7 @@ services:
     <<: *awslogs
 
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.0}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
     networks:
       - private
     healthcheck:
