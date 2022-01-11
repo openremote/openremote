@@ -6,7 +6,7 @@ const { spawn } = require("child_process");
 
 /* THIS IS JUST A WRAPPER THAT LAUNCHES GRADLE TASKS  */
 
-/* Try and get the gradle root project dir this could be the openremote repo or a custom project */
+/* Try and get the gradle openremote project dir */
 function getWorkingDirectory() {
     let dirs = __dirname.split(path.sep);
     dirs.pop();
@@ -14,16 +14,6 @@ function getWorkingDirectory() {
     // get CWD as the openremote repo root
     let cwd = dirs.join(path.sep);
     cwd = path.join(cwd, "..");
-
-    try {
-        if (fs.existsSync(path.join(cwd, "..", ".gitmodules"))) {
-            // Go up a level to custom project
-            cwd = path.join(cwd, "..");
-        }
-    } catch(err) {
-        console.error(err);
-        process.exit(1);
-    }
 
     return cwd;
 }
@@ -50,7 +40,7 @@ if (process.argv.length >= 3 && process.argv[2] =="watch") {
 
     // Do build
     let cwd = getWorkingDirectory();
-    console.log("Running gradlew modelBuild task...");
+    console.log("Running gradlew modelBuild task in " + cwd + " ...");
     const gradleModelWatch = spawnSync((process.platform === "win32" ? "gradlew" : "./gradlew"), ["modelWatch"], {
         cwd: cwd,
         shell: true
