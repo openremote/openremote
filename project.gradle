@@ -236,7 +236,7 @@ task tscWatch(type: Exec) {
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
 
-    // Use Java 8
+    // Use Java 17
     tasks.withType(JavaCompile) {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
