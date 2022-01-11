@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
 
@@ -94,13 +96,11 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
             public void run() {
                 synchronized (BluetoothMeshProxyScanner.this) {
                     if (isStarted && callback != null) {
-                        final List<BluetoothMeshProxy> proxies = new ArrayList<>(meshProxyMap.values());
-                        executorService.schedule(new Runnable() {
-                            @Override
-                            public void run() {
-                                callback.onMeshProxiesScanned(proxies, null);
-                            }
-                        }, 0, TimeUnit.MILLISECONDS);
+                        final List<BluetoothMeshProxy> proxies = meshProxyMap.values()
+                            .stream()
+                            .sorted(Comparator.comparingInt(BluetoothMeshProxy::getRssi).reversed())
+                            .collect(Collectors.toList());
+                        executorService.execute(() -> callback.onMeshProxiesScanned(proxies, null));
                     }
                     timeoutFuture = null;
                     stop();
