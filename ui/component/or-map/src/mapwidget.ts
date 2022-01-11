@@ -634,9 +634,9 @@ export class MapWidget {
 
     protected _initLongPressEvent() {
         if (this._mapGl) {
-            let pressTimeout: NodeJS.Timeout;
+            let pressTimeout: NodeJS.Timeout | null; 
             let pos: LngLat;
-            let clearTimeoutFunc = () => { if (pressTimeout) clearTimeout(pressTimeout); };
+            let clearTimeoutFunc = () => { if (pressTimeout) clearTimeout(pressTimeout); pressTimeout = null; };
 
             this._mapGl.on('touchstart', (e) => {
                 if (e.originalEvent.touches.length > 1) {
@@ -649,19 +649,20 @@ export class MapWidget {
             });
 
             this._mapGl.on('mousedown', (e) => {
-                pos = e.lngLat;
-                pressTimeout = setTimeout(() => {
-                    this._onLongPress(pos!);
-                }, 500);
+                if (!pressTimeout) {
+                    pos = e.lngLat;
+                    pressTimeout = setTimeout(() => {
+                        this._onLongPress(pos!);
+                        pressTimeout = null;
+                    }, 500);
+                }
             });
-
-            this._mapGl.on('mousemove', clearTimeoutFunc);
+           
+            this._mapGl.on('dragstart', clearTimeoutFunc);
             this._mapGl.on('mouseup', clearTimeoutFunc);
             this._mapGl.on('touchend', clearTimeoutFunc);
             this._mapGl.on('touchcancel', clearTimeoutFunc);
             this._mapGl.on('touchmove', clearTimeoutFunc);
-            this._mapGl.on('pointerdrag', clearTimeoutFunc);
-            this._mapGl.on('pointermove', clearTimeoutFunc);
             this._mapGl.on('moveend', clearTimeoutFunc);
             this._mapGl.on('gesturestart', clearTimeoutFunc);
             this._mapGl.on('gesturechange', clearTimeoutFunc);
