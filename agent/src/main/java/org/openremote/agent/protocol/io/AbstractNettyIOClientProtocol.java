@@ -34,10 +34,10 @@ public abstract class AbstractNettyIOClientProtocol<T extends AbstractIOClientPr
     }
 
     @Override
-    protected ProtocolIOClient<V, W> createIoClient() throws Exception {
-        ProtocolIOClient<V, W>  protocolIOClient = super.createIoClient();
+    protected W createIoClient() throws Exception {
+        W client = super.createIoClient();
         Supplier<ChannelHandler[]> encoderDecoderProvider = getEncoderDecoderProvider();
-        protocolIOClient.ioClient.setEncoderDecoderProvider(encoderDecoderProvider);
+        client.setEncoderDecoderProvider(encoderDecoderProvider);
         return client;
     }
 

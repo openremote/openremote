@@ -81,7 +81,7 @@ public class TCPProtocol extends AbstractTCPClientProtocol<TCPProtocol, TCPAgent
 
     @Override
     protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
-        return getGenericStringEncodersAndDecoders(client.ioClient, agent);
+        return getGenericStringEncodersAndDecoders(client, agent);
     }
 
     @Override

@@ -231,6 +231,11 @@ public abstract class AbstractMQTT_IOClient<S> implements IOClient<MQTTMessage<S
             }
         };
 
+        if (this.connectionStatus != ConnectionStatus.CONNECTED) {
+            // Just return true and let connection logic sort out actual subscription
+            return true;
+        }
+
         try {
             Mqtt3SubAck subAck = client.subscribeWith()
                 .topicFilter(topic)

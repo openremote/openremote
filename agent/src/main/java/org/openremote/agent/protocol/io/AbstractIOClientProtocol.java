@@ -125,7 +125,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     }
 
     public static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractIOClientProtocol.class);
-    protected ProtocolIOClient<V, W> client;
+    protected W client;
 
     protected AbstractIOClientProtocol(U agent) {
         super(agent);
@@ -133,13 +133,16 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
 
     @Override
     public String getProtocolInstanceUri() {
-        return client != null ? client.ioClient.getClientUri() : "";
+        return client != null ? client.getClientUri() : "";
     }
 
     @Override
     protected void doStop(Container container) throws Exception {
         if (client != null) {
             LOG.fine("Stopping IO client for protocol: " + this);
+            client.removeAllMessageConsumers();
+            client.removeAllConnectionStatusConsumers();
+            AbstractIOClientProtocol.LOG.info("Disconnecting IO client");
             client.disconnect();
         }
         client = null;
@@ -149,7 +152,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
     protected void doStart(Container container) throws Exception {
         try {
             client = createIoClient();
-            LOG.fine("Created IO client '" + client.ioClient.getClientUri() + "' for protocol: " + this);
+            LOG.fine("Created IO client '" + client.getClientUri() + "' for protocol: " + this);
             client.connect();
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to create IO client for protocol: " + this, e);
@@ -167,18 +170,25 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
         V message = createWriteMessage(attribute, agent.getAgentLink(attribute), event, processedValue);
 
         if (message == null) {
-            LOG.fine("No message produced for attribute event so not sending to IO client '" + client.ioClient.getClientUri() + "': " + event);
+            LOG.fine("No message produced for attribute event so not sending to IO client '" + client.getClientUri() + "': " + event);
             return;
         }
 
-        client.send(message);
+        AbstractIOClientProtocol.LOG.finer("Sending message to IO client: " + client.getClientUri());
+        client.sendMessage(message);
     }
 
-    protected ProtocolIOClient<V, W> createIoClient() throws Exception {
+    protected W createIoClient() throws Exception {
         W client = doCreateIoClient();
-        ProtocolIOClient<V, W> protocolIoClient = new ProtocolIOClient<>(client, this::onConnectionStatusChanged, this::onMessageReceived);
-        this.client = protocolIoClient;
-        return protocolIoClient;
+
+        if (client == null) {
+            throw new IllegalStateException("IO client for protocol should not be null");
+        }
+
+        client.addConnectionStatusConsumer(this::onConnectionStatusChanged);
+        client.addMessageConsumer(this::onMessageReceived);
+        this.client = client;
+        return client;
     }
 
     /**
