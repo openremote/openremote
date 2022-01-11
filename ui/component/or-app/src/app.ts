@@ -1,4 +1,3 @@
-import manager from "@openremote/core";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface AppState {

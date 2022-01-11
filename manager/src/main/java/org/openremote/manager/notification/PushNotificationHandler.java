@@ -55,13 +55,12 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
-import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED;
+import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
 
 @SuppressWarnings("deprecation")
@@ -215,12 +214,12 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                         .types(ConsoleAsset.class)
                                         .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))));
 
-                        // Get all user ids which have pushNotificationsEnabled set to false
+                        // Get all user ids which have pushNotificationsDisabled set to false
                         String[] userIds = Arrays.stream(managerIdentityService
                                         .getIdentityProvider()
                                         .queryUsers(new UserQuery().tenant(new TenantPredicate((targetId))))
                                 )
-                                .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, Collections.singletonList("true")).get(0)))
+                                .filter(user -> Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
                                 .map(User::getId)
                                 .toArray(String[]::new);
 
@@ -229,7 +228,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                 .map(userAssetLink -> userAssetLink.getId().getAssetId())
                                 .toArray(String[]::new);
 
-                        //Remove consoleAssets which are linked to an User which has pushNotificationsEnabled set to false
+                        //Remove consoleAssets which are linked to an User which has pushNotificationsDisabled set to false
                         consoleAssets = consoleAssets.stream()
                                 .filter(consoleAsset -> Arrays.stream(assetIds).noneMatch(assetId -> assetId.equals(consoleAsset.getId())))
                                 .collect(Collectors.toList());
@@ -246,7 +245,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                 .getIdentityProvider()
                                 .queryUsers(new UserQuery().ids(targetId))).findFirst();
 
-                        if (user.isPresent() && Boolean.parseBoolean(user.get().getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, Collections.singletonList("true")).get(0))) {
+                        if (user.isPresent() && !Boolean.parseBoolean(user.get().getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0))) {
 
                             // Get all console assets linked to the specified user
                             String[] ids = assetStorageService.findUserAssetLinks(null, targetId, null)
@@ -285,19 +284,19 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                 .flatMap(Collection::stream)
                                 .toArray(UserAssetLink[]::new);
 
-                        // Get all user ids which have pushNotificationsEnabled set to false
+                        // Get all user ids which have pushNotificationsDisabled set to false
                         assetIds = Arrays.stream(userAssetLinks)
                                 .filter(userAssetLink -> Arrays.stream(managerIdentityService
                                             .getIdentityProvider()
                                             .queryUsers(new UserQuery().asset(new UserAssetPredicate(userAssetLink.getId().getAssetId())))
                                         )
-                                        .filter(user1 -> !Boolean.parseBoolean(user1.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_ENABLED, Collections.singletonList("true")).get(0)))
+                                        .filter(user1 -> Boolean.parseBoolean(user1.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
                                         .map(User::getId)
                                         .anyMatch(userId -> userId.equals(userAssetLink.getId().getUserId()))
                                 ).map(userAssetLink -> userAssetLink.getId().getAssetId())
                                 .toArray(String[]::new);
 
-                        //Remove consoleAssets which are linked to an User which has pushNotificationsEnabled set to false
+                        //Remove consoleAssets which are linked to an User which has pushNotificationsDisabled set to false
                         consoleAssets = consoleAssets.stream()
                                 .filter(consoleAsset -> Arrays.stream(assetIds).noneMatch(assetId -> assetId.equals(consoleAsset.getId())))
                                 .collect(Collectors.toList());

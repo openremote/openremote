@@ -124,7 +124,7 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
 
         if (!this.core) {
             this.core = {
-                ajv: createAjv({useDefaults: true, format: false}),
+                ajv: createAjv({useDefaults: true, validateFormats: false}),
                 data: {},
                 schema: this.schema!,
                 uischema: this.uischema!

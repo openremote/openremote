@@ -16,9 +16,9 @@ import {OrRulesJsonRuleChangedEvent} from "../or-rule-json-viewer";
 import {translate} from "@openremote/or-translate";
 
 import {DialogAction, OrMwcDialog, OrMwcDialogOpenedEvent} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {OrMap, OrMapClickedEvent} from '@openremote/or-map';
-import '@openremote/or-map/dist/markers/or-map-marker';
-import {LngLatLike} from "mapbox-gl";
+import {OrMap, OrMapClickedEvent} from "@openremote/or-map";
+import "@openremote/or-map";
+import {LngLatLike} from "maplibre-gl";
 
 @customElement("or-rule-radial-modal")
 export class OrRuleRadialModal extends translate(i18next)(LitElement) {

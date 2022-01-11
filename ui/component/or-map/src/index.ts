@@ -2,9 +2,11 @@ import manager, {EventCallback, MapType} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
 import {CSSResult, html, LitElement, PropertyValues} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL} from "mapbox-gl";
+import {Control, IControl, LngLat, LngLatBoundsLike, LngLatLike, Map as MapGL, GeolocateControl} from "maplibre-gl";
 import {MapWidget} from "./mapwidget";
 import {style} from "./style";
+import "./markers/or-map-marker";
+import "./markers/or-map-marker-asset";
 import {OrMapMarker, OrMapMarkerChangedEvent} from "./markers/or-map-marker";
 import * as Util from "./util";
 import {
@@ -21,7 +23,7 @@ import {i18next} from "@openremote/or-translate";
 export {Util, LngLatLike};
 export * from "./markers/or-map-marker";
 export * from "./markers/or-map-marker-asset";
-export {Control, IControl} from "mapbox-gl";
+export {Control, IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 
 export interface ViewSettings {
@@ -31,6 +33,7 @@ export interface ViewSettings {
     "maxZoom": number;
     "minZoom": number;
     "boxZoom": boolean;
+    "geoCodeUrl": String;
 }
 
 export interface MapEventDetail {
@@ -83,16 +86,16 @@ export class CenterControl {
     onAdd(map: MapGL): HTMLElement {
         this.map = map;
         const control = document.createElement("div");
-        control.classList.add("mapboxgl-ctrl");
-        control.classList.add("mapboxgl-ctrl-group");
+        control.classList.add("maplibregl-ctrl");
+        control.classList.add("maplibregl-ctrl-group");
         const button = document.createElement("button");
-        button.className = "mapboxgl-ctrl-geolocate";
+        button.className = "maplibregl-ctrl-compass";
         button.addEventListener("click", (ev) => map.flyTo({
             center: this.pos,
             zoom: map.getZoom()
         }));
         const buttonIcon = document.createElement("span");
-        buttonIcon.className = "mapboxgl-ctrl-icon";
+        buttonIcon.className = "maplibregl-ctrl-icon";
         button.appendChild(buttonIcon);
         control.appendChild(button);
         this.elem = control;
@@ -144,8 +147,8 @@ export class CoordinatesControl {
     onAdd(map: MapGL): HTMLElement {
         this.map = map;
         const control = document.createElement("div");
-        control.classList.add("mapboxgl-ctrl");
-        control.classList.add("mapboxgl-ctrl-group");
+        control.classList.add("maplibregl-ctrl");
+        control.classList.add("maplibregl-ctrl-group");
 
         const input = new OrMwcInput();
         input.type = InputType.TEXT;
@@ -244,6 +247,29 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
             }
         };
 
+        const controls = [[centerControl, "bottom-left"], [coordinatesControl, "top-left"]]
+
+        if (!readonly) {
+
+            const userLocationControl = new GeolocateControl({
+                positionOptions: {
+                    enableHighAccuracy: true
+                },
+                showAccuracyCircle: false,
+                showUserLocation: false
+            });
+        
+            userLocationControl.on('geolocate', (currentLocation: GeolocationPosition) => {
+                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
+                console.log(currentLocation);
+            });
+            userLocationControl.on('outofmaxbounds', (currentLocation: GeolocationPosition) => {
+                setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
+                console.log(currentLocation);
+            });
+            controls.push([userLocationControl, "bottom-left"]);
+        }
+
         let content = html`
             <style>
                 or-map {
@@ -251,7 +277,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     margin: 3px 0;
                 }
             </style>
-            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${[centerControl, [coordinatesControl, "top-left"]]}">
+            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
                 <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .colour="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
         `;
@@ -365,6 +391,9 @@ export class OrMap extends LitElement {
     @property({type: Number})
     public zoom?: number;
 
+    @property({type: Boolean})
+    public showGeoCodingControl: boolean = false;
+
     public controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
 
     protected _initCallback?: EventCallback;
@@ -443,7 +472,7 @@ export class OrMap extends LitElement {
         }
 
         if (this._mapContainer && this._slotElement) {
-            this._map = new MapWidget(this.type, this.shadowRoot!, this._mapContainer)
+            this._map = new MapWidget(this.type, this.showGeoCodingControl, this.shadowRoot!, this._mapContainer)
                 .setCenter(this.center)
                 .setZoom(this.zoom)
                 .setControls(this.controls);

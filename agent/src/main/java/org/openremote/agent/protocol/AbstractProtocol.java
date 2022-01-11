@@ -117,10 +117,6 @@ public abstract class AbstractProtocol<T extends Agent<T, ?, U>, U extends Agent
                                     LOG.info("Attempt to write to attribute that is not actually linked to this protocol '" + AbstractProtocol.this + "': " + linkedAttribute);
                                     return;
                                 }
-                                if (linkedAttribute.getMetaValue(MetaItemType.READ_ONLY).orElse(false)) {
-                                    LOG.info("Attempt to write to readonly attribute: " + linkedAttribute);
-                                    return;
-                                }
 
                                 processLinkedAttributeWrite(event);
                             });

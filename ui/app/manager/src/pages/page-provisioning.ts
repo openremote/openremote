@@ -15,7 +15,7 @@ import {GenericAxiosResponse} from "@openremote/rest";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageProvisioningProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+export function pageProvisioningProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "provisioning",
         routes: ["provisioning"],
@@ -26,7 +26,7 @@ export function pageProvisioningProvider<S extends AppStateKeyed>(store: Enhance
 }
 
 @customElement("page-provisioning")
-class PageProvisioning<S extends AppStateKeyed> extends Page<S> {
+export class PageProvisioning extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS
@@ -209,7 +209,7 @@ class PageProvisioning<S extends AppStateKeyed> extends Page<S> {
         this._loadConfigs();
     }
 
-    stateChanged(state: S): void {
+    stateChanged(state: AppStateKeyed): void {
     }
 
     protected render(): TemplateResult | void {
@@ -427,8 +427,8 @@ class PageProvisioning<S extends AppStateKeyed> extends Page<S> {
                                               @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.userRoles = e.detail.value as ClientRole[]}"></or-mwc-input>
                                 <or-mwc-input .label="${i18next.t("assetTemplate")}"
                                               .type="${InputType.JSON}"
-                                              .value="${config.assetTemplate}"
-                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value}"></or-mwc-input>
+                                              .value="${config.assetTemplate ? JSON.stringify(JSON.parse(config.assetTemplate), null, 2) : undefined}"
+                                              @or-mwc-input-changed="${(e: OrInputChangedEvent) => config.assetTemplate = e.detail.value ? JSON.stringify(e.detail.value) : undefined}"></or-mwc-input>
                                 <or-mwc-input .label="${i18next.t("createAsRestrictedUser")}"
                                               .type="${InputType.CHECKBOX}"
                                               .value="${config.restrictedUser}"

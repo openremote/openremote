@@ -272,7 +272,7 @@ export function arrayRemove<T>(arr: T[], item: T) {
 }
 
 export function camelCaseToSentenceCase(str: string | undefined): string {
-    if (str === undefined) {
+    if (str === undefined || str === null) {
         return "";
     }
     let startDone = false;
@@ -923,7 +923,6 @@ try {
     window.addEventListener("test", null, Object.defineProperty({}, 'passive', {
         get: () => { supportsPassive = true; }
     }));
-// tslint:disable-next-line:no-empty
 } catch(e) {}
 
 const wheelOpt = supportsPassive ? { passive: false } : false;

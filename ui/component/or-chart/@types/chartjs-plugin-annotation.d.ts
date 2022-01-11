@@ -1,4 +1,4 @@
-/* tslint:disable:class-name */
+/* eslint:disable:class-name */
 declare module "chartjs-plugin-annotation" {
 
 }

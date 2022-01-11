@@ -1,4 +1,4 @@
-import {HeaderConfig} from "./or-header";
+import {HeaderConfig, Languages} from "./or-header";
 import {AppStateKeyed} from "./app";
 import { TemplateResult, LitElement } from "lit";
 import i18next from "i18next";
@@ -22,6 +22,7 @@ export interface RealmAppConfig {
 
 export interface AppConfig<S extends AppStateKeyed> {
     pages: PageProvider<S>[];
+    languages?: Languages;
     superUserHeader?: HeaderConfig;
     realms?: {
         // @ts-ignore

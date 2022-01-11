@@ -1,4 +1,7 @@
 // Common configuration applied to all projects
+
+import java.nio.file.Paths
+
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
@@ -69,11 +72,10 @@ if (project == rootProject) {
         if (isCustomProject()) {
             idea.project.settings.runConfigurations {
                 "Custom Deployment"(Application) {
-                    moduleName = "${getProject().idea.module.name}.deployment.main"
+                    moduleName = "${getProject().idea.module.name}.setup.main"
                     envs = [
                         MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
                         MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
-                        LOGGING_CONFIG_FILE: "../deployment/manager/logging.properties",
                         CUSTOM_APP_DOCROOT: "../deployment/manager/app"
                     ]
                 }
@@ -120,6 +122,7 @@ idea {
         excludeDirs += file(".node")
         excludeDirs += file("node_modules")
         excludeDirs += file("dist")
+        excludeDirs += file("lib")
         excludeDirs += file("build")
     }
 }
@@ -142,6 +145,21 @@ def resolveProject(String path) {
 
 def resolveTask(String path) {
     tasks.getByPath(resolvePath(path))
+}
+
+def getYarnInstallTask() {
+    if (isCustomProject()) {
+        def customPackageJsonFile = Paths.get(rootProject.projectDir.path, "package.json").toFile()
+        if (!customPackageJsonFile.exists()) {
+            // No custom project yarn package.json so use standard openremote repo package.json
+            return resolveTask(":yarnInstall")
+        } else {
+            return tasks.getByPath(":yarnInstall")
+        }
+    } else {
+        // Just use openremote repo yarn install
+        resolveTask(":yarnInstall")
+    }
 }
 
 ext {
@@ -181,31 +199,32 @@ task npmInstall(type: Exec){
     commandLine npmCommand("npm"), "install"
 }
 task npmClean(type: Exec){
+    dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run-script", "clean"
 }
 task npmBuild(type: Exec){
     mustRunAfter npmClean
-    dependsOn tasks.getByPath(":yarnInstall")
+    dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run-script", "build"
 }
 task npmTest(type: Exec){
-    dependsOn tasks.getByPath(":yarnInstall")
+    dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run-script", "test"
 }
 task npmServe(type: Exec){
-    dependsOn tasks.getByPath(":yarnInstall")
+    dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run-script", "serve"
 }
 task npmPrepare(type: Exec){
-    dependsOn tasks.getByPath(":yarnInstall")
+    dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run-script", "prepublishOnly"
 }
 task npmPublish(type: Exec){
-    dependsOn tasks.getByPath(":yarnInstall")
+    dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "publish"
 }
 task npmServeProduction(type: Exec){
-    dependsOn tasks.getByPath(":yarnInstall")
+    dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run-script", "serveProduction"
 }
 

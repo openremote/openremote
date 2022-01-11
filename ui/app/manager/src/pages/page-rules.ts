@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-rules";
-import {ActionTargetType, OrRules, RulesConfig} from "@openremote/or-rules";
+import {OrRules, RulesConfig} from "@openremote/or-rules";
 import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
@@ -13,7 +13,7 @@ export interface PageRulesConfig {
     rules: RulesConfig;
 }
 
-export function pageRulesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT): PageProvider<S> {
+export function pageRulesProvider(store: EnhancedStore<AppStateKeyed>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT): PageProvider<AppStateKeyed> {
     return {
         name: "rules",
         routes: [
@@ -39,7 +39,7 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
                 actions: {
                     wait: [],
                     attribute: [],
-                    email: [ActionTargetType.USER, ActionTargetType.CUSTOM],
+                    email: [NotificationTargetType.USER, NotificationTargetType.CUSTOM],
                     push: [NotificationTargetType.USER, NotificationTargetType.ASSET],
                 }
             }
@@ -59,7 +59,7 @@ export const PAGE_RULES_CONFIG_DEFAULT: PageRulesConfig = {
 };
 
 @customElement("page-rules")
-class PageRules<S extends AppStateKeyed> extends Page<S>  {
+export class PageRules extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
@@ -81,7 +81,7 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
     @query("#rules")
     protected _orRules!: OrRules;
 
-    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
     protected getRealmState = createSelector(
         [this._realmSelector],
@@ -96,7 +96,7 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
         return "rules";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 
@@ -106,7 +106,7 @@ class PageRules<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
         this.getRealmState(state);
     }
 }

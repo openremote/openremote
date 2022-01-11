@@ -2,6 +2,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
 name: CI/CD
+concurrency: ci
 
 on:
   push:
@@ -52,7 +53,7 @@ jobs:
         run: sleep 600
       - name: login staging.demo.openremote.io and wait for map
         run: openremote-cli manager --open -t --quit --quiet -v --dnsname staging.demo.openremote.io --password "${{ secrets.STAGING_DEMO_PASSWORD }}"
-        continue-on-error: true
+        continue-on-error: false
 
   image_manager:
     runs-on: ubuntu-latest

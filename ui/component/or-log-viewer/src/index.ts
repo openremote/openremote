@@ -234,10 +234,6 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             this.interval = OrLogViewer.DEFAULT_INTERVAL;
         }
 
-        if (!this.limit) {
-            this.limit = OrLogViewer.DEFAULT_LIMIT;
-        }
-
         if (!this.categories) {
             if (this.config && this.config.initialCategories) {
                 this.categories = [...this.config.initialCategories];
@@ -300,12 +296,12 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                         )}
                         <or-mwc-input ?hidden="${hideFilter}" .type="${InputType.TEXT}" outlined ?disabled="${disabled}" icontrailing="magnify" .label="${i18next.t("subCategoryFilters")}" .value="${this.filter}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onFilterChanged(evt.detail.value)}"></or-mwc-input>
                         <or-mwc-input ?hidden="${hideLevel}" .type="${InputType.SELECT}" id="level-select" ?disabled="${disabled}" .label="${i18next.t("level")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLevelChanged(evt.detail.value)}" .value="${this.level}" .options="${this._getLevelOptions()}"></or-mwc-input>
-                        <or-mwc-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${this.limit}" .options="${this._getLimitOptions()}"></or-mwc-input>
+                        <or-mwc-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${"" + this.getLimit()}" .options="${this._getLimitOptions()}"></or-mwc-input>
                     </div>
                     <div id="page-controls" ?hidden="${isLive || !this._pageCount || !this._data || this._data.length === 0}">
                         <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === 1}" icon="chevron-left" @click="${() => this._updatePage(false)}"></or-mwc-input>
                         <span>${this._currentPage}</span><or-translate value="of"></or-translate><span>${this._pageCount}</span>
-                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < (this.limit || 50))}" icon="chevron-right" @click="${() => this._updatePage(true)}"></or-mwc-input>
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < this.getLimit())}" icon="chevron-right" @click="${() => this._updatePage(true)}"></or-mwc-input>
                     </div>
                     <div id="time-controls">
                         <or-mwc-input id="live-button" .type="${InputType.CHECKBOX}" ?disabled="${disabled}" .label="${i18next.t("live")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLiveChanged(evt.detail.value)}" .value="${this.live}"></or-mwc-input>
@@ -328,7 +324,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
     }
 
     protected _getLimitOptions() {
-        return [25, 50, 100, 200];
+        return ["25", "50", "100", "200"];
     }
 
     protected _getLevelOptions() {
@@ -343,6 +339,10 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                 value: cat
             } as ListItem;
         });
+    }
+
+    protected getLimit() {
+        return this.limit || OrLogViewer.DEFAULT_LIMIT;
     }
 
     protected _onCategoriesChanged(values: Model.SyslogCategory[]) {
@@ -372,11 +372,17 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _onLimitChanged(limit: number) {
-        this.limit = limit;
+    protected _onLimitChanged(limit: string) {
+        if (!limit) {
+            this.limit = undefined;
+            return;
+        }
 
-        if (this.live && this._data!.length > limit) {
-            this._data!.splice(limit - 1);
+        this.limit = parseInt(limit);
+        const newLimit = this.getLimit();
+
+        if (this.live && this._data!.length > newLimit) {
+            this._data!.splice(newLimit - 1);
         }
     }
 
@@ -458,7 +464,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
 
         const response = await manager.rest.api.SyslogResource.getEvents({
             level: this.level,
-            per_page: this.limit,
+            per_page: this.getLimit(),
             page: this._currentPage,
             from: this._getFrom(),
             to: this.timestamp ? this.timestamp.getTime() : undefined,
@@ -575,7 +581,7 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
             return;
         }
 
-        const limit = this.limit || OrLogViewer.DEFAULT_LIMIT;
+        const limit = this.getLimit();
         if (this._data!.length === limit - 1) {
             this._data!.pop();
         }

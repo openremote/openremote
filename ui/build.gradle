@@ -1,38 +1,13 @@
-import java.nio.file.Paths
 
 afterEvaluate {
-
-    // Ensure main repo ui installDist tasks are performed before the custom projects
-    if (isCustomProject() && parent == rootProject) {
-        def customUi = findProject(':ui')
-        if (customUi != null) {
-            customUi.getTasksByName('installDist', true).forEach {
-                it.mustRunAfter(project(":openremote:ui").getTasksByName('installDist', true))
-                it.mustRunAfter(resolveTask(":deployment:installDist"))
-            }
-        }
-    }
-
-    // Ensure yarn install in openremote repo is run if no package.json in custom project
-    if (isCustomProject() && parent != rootProject) {
-        def packageJsonFile = Paths.get(rootProject.projectDir.path, "package.json").toFile()
-        if (!packageJsonFile.exists()) {
-            println("Adding dependency on openremote yarn install to root project yarn install")
-            tasks.getByPath(":yarnInstall").dependsOn(resolveTask(":yarnInstall"))
-        }
-    }
-
     // Add dependencies on model and rest typescript generation
-    it.getTasksByName('prepareUi', true).forEach {
+    rootProject.getTasksByName('prepareUi', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }
-    it.getTasksByName('publishUi', true).forEach {
+    rootProject.getTasksByName('publishUi', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }
-    it.getTasksByName('npmBuild', true).forEach {
-        it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
-    }
-    it.getTasksByName('installDist', true).forEach {
+    rootProject.getTasksByName('npmBuild', true).forEach {
         it.dependsOn resolveTask(":ui:component:model:generateTypeScript"), resolveTask(":ui:component:rest:generateTypeScript")
     }
 }

@@ -1,24 +1,4 @@
-FROM adoptopenjdk/openjdk8:ubi-minimal-jre-nightly
-
-### S6 installation
-ENV S6_OVERLAY_VERSION=v2.2.0.3
-
-RUN apkArch="$(uname -m)"; \
-	case "${apkArch}" in \
-        x86_64) s6Arch='amd64'; ;; \
-        armv7) s6Arch='arm'; ;; \
-        armv7l) s6Arch='arm'; ;; \
-        armhf) s6Arch='armhf'; ;; \
-        aarch64) s6Arch='aarch64'; ;; \
-        ppc64le) s6Arch='ppc64le'; ;; \
-        *) echo >&2 "Error: unsupported architecture ${apkArch}"; exit 1 ;; \
-	esac; \
-  curl -LfsSo /tmp/s6-overlay.tar.gz https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${s6Arch}.tar.gz;
-
-RUN tar xzf /tmp/s6-overlay.tar.gz -C / --exclude="./bin" && \
-    tar xzf /tmp/s6-overlay.tar.gz -C /usr ./bin
-### End S6 installation
-
+FROM registry.access.redhat.com/ubi8/openjdk-11-runtime
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
@@ -78,19 +58,13 @@ ENV MANAGER_JAVA_OPTS ${MANAGER_JAVA_OPTS:--Xms400m -Xmx400m \
     -XX:MaxDirectMemorySize=25m -XX:NativeMemoryTracking=summary \
     -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof}
 
-EXPOSE 8080
-
-HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
-
-RUN mkdir -p /opt/app
-RUN mkdir -p /deployment/manager/extensions
-RUN mkdir -p /zwave
-
 WORKDIR /opt/app
 
 ADD lib /opt/app/lib
 ADD web /opt/web
 ADD map /opt/map
 
-ENTRYPOINT ["/init"]
-CMD java $MANAGER_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
+EXPOSE 8080
+
+HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
+ENTRYPOINT java $MANAGER_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main

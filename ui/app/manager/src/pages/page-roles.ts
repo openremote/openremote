@@ -20,7 +20,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageRolesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+export function pageRolesProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "roles",
         routes: ["roles"],
@@ -32,7 +32,7 @@ export function pageRolesProvider<S extends AppStateKeyed>(store: EnhancedStore<
 
 
 @customElement("page-roles")
-class PageRoles<S extends AppStateKeyed> extends Page<S> {
+export class PageRoles extends Page<AppStateKeyed> {
   static get styles() {
     // language=CSS
     return [
@@ -247,7 +247,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
       this.realm = this.getState().app.realm;
   }
 
-  protected getState(): S {
+  protected getState() {
       return this._store.getState();
   }
 
@@ -293,7 +293,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
     this.requestUpdate('_compositeRoles')
   }
 
-  private expanderToggle(ev: MouseEvent, index:number) {
+  private expanderToggle(ev: MouseEvent, index: number) {
     const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
     const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
     if(metaRow.classList.contains('expanded')){
@@ -437,7 +437,7 @@ class PageRoles<S extends AppStateKeyed> extends Page<S> {
         `;
   }
 
-  public stateChanged(state: S) {
+  public stateChanged(state: AppStateKeyed) {
       this.realm = state.app.realm;
   }
 }

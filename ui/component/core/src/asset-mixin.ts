@@ -1,4 +1,3 @@
-/* tslint:disable:no-empty */
 import {EventProviderFactory, EventProviderStatus} from "./event";
 import {objectsEqual} from "./util";
 import {AttributeRef, SharedEvent, EventRequestResponseWrapper} from "@openremote/model";

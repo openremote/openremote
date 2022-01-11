@@ -62,7 +62,7 @@ export const style = css`
         bottom: 0;
     }
 
-    .leaflet-marker-icon, .mapboxgl-marker {
+    .leaflet-marker-icon, .maplibregl-marker, .mapboxgl-marker {
         pointer-events: none !important;
     }
 

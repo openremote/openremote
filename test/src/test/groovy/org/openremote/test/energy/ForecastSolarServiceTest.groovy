@@ -1,20 +1,16 @@
 package org.openremote.test.energy
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import org.jboss.resteasy.spi.ResteasyUriInfo
-import org.jboss.resteasy.util.BasicAuthHelper
 import org.junit.Ignore
-import org.openremote.container.web.OAuthServerResponse
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.datapoint.AssetPredictedDatapointService
 import org.openremote.manager.energy.ForecastSolarService
 import org.openremote.manager.setup.SetupService
 import org.openremote.model.asset.impl.ElectricityProducerSolarAsset
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.auth.OAuthGrant
-import org.openremote.model.auth.OAuthPasswordGrant
-import org.openremote.model.auth.OAuthRefreshTokenGrant
+import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.util.ValueUtil
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.setup.ManagerTestSetup
 import spock.lang.Shared
@@ -23,11 +19,8 @@ import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
-import javax.ws.rs.core.Form
-import javax.ws.rs.core.HttpHeaders
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
-import javax.ws.rs.core.UriInfo
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -39,152 +32,93 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
     @Shared
     def mockServer = new ClientRequestFilter() {
 
-
         @Override
         void filter(ClientRequestContext requestContext) throws IOException {
             def requestUri = requestContext.uri
 
-            switch (requestUri.host)
-            {
+            switch (requestUri.host) {
                 case "api.forecast.solar":
                     def now = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
-                    def content = "\"{\\n\" +\n" +
-                            "                \"  \\\"result\\\": {\\n\" +\n" +
-                            "                \"    \\\"watts\\\": {\\n\" +\n" +
-                            "                \"      \\\"${now.toLocalDate().toString()} ${now.toLocalTime().toString()}\\\": 0,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 10:34:00\\\": 780000,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:00:00\\\": 3904036,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:15:00\\\": 3854598,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:30:00\\\": 3746874,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:45:00\\\": 3675780,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:00:00\\\": 3553500,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:15:00\\\": 3439679,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:30:00\\\": 3278604,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:45:00\\\": 3137450,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:00:00\\\": 2954064,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:15:00\\\": 2739056,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:30:00\\\": 2493609,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:45:00\\\": 2254420,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:00:00\\\": 1949976,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:15:00\\\": 1697104,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:30:00\\\": 1452142,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:45:00\\\": 1194060,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:00:00\\\": 925642,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:15:00\\\": 761949,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:30:00\\\": 594217,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:45:00\\\": 423624,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:50:00\\\": 80000,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:54:00\\\": 0,\\n\" +\n" +
-                            "                \"      \\\"2021-09-02 06:09:00\\\": 0\\n\" +\n" +
-                            "                \"    },\\n\" +\n" +
-                            "                \"    \\\"watt_hours\\\": {\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 06:07:00\\\": 0,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 10:34:00\\\": 3471000,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:00:00\\\": 20778893,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:15:00\\\": 21742542,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:30:00\\\": 22679261,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 15:45:00\\\": 23598206,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:00:00\\\": 24486581,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:15:00\\\": 25346501,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:30:00\\\": 26166152,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 16:45:00\\\": 26950514,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:00:00\\\": 27689030,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:15:00\\\": 28373794,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:30:00\\\": 28997196,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 17:45:00\\\": 29560801,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:00:00\\\": 30048295,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:15:00\\\": 30472571,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:30:00\\\": 30835607,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 18:45:00\\\": 31134122,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:00:00\\\": 31365532,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:15:00\\\": 31556020,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:30:00\\\": 31704574,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:45:00\\\": 31810480,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:50:00\\\": 31817147,\\n\" +\n" +
-                            "                \"      \\\"2021-09-01 19:54:00\\\": 31817147,\\n\" +\n" +
-                            "                \"      \\\"2021-09-02 06:09:00\\\": 0\\n\" +\n" +
-                            "                \"    },\\n\" +\n" +
-                            "                \"    \\\"watt_hours_day\\\": {\\n\" +\n" +
-                            "                \"      \\\"2021-09-01\\\": 31817147\\n\" +\n" +
-                            "                \"    }\\n\" +\n" +
-                            "                \"  },\\n\" +\n" +
-                            "                \"  \\\"message\\\": {\\n\" +\n" +
-                            "                \"    \\\"code\\\": 0,\\n\" +\n" +
-                            "                \"    \\\"type\\\": \\\"success\\\",\\n\" +\n" +
-                            "                \"    \\\"text\\\": \\\"\\\",\\n\" +\n" +
-                            "                \"    \\\"info\\\": {\\n\" +\n" +
-                            "                \"      \\\"latitude\\\": 51.4969,\\n\" +\n" +
-                            "                \"      \\\"longitude\\\": -0.2773,\\n\" +\n" +
-                            "                \"      \\\"place\\\": \\\"W3 8BZ Turnham Green, Hounslow London Boro, England, GB\\\",\\n\" +\n" +
-                            "                \"      \\\"timezone\\\": \\\"Europe/London\\\"\\n\" +\n" +
-                            "                \"    },\\n\" +\n" +
-                            "                \"    \\\"ratelimit\\\": {\\n\" +\n" +
-                            "                \"      \\\"period\\\": 60,\\n\" +\n" +
-                            "                \"      \\\"limit\\\": 5,\\n\" +\n" +
-                            "                \"      \\\"remaining\\\": 4\\n\" +\n" +
-                            "                \"    }\\n\" +\n" +
-                            "                \"  }\\n\" +\n" +
-                            "                \"}\""
-//                    def response = new ObjectMapper().readValue(, ForecastSolarService.EstimateResponse.class)
-
-                    // OAuth token request extract the grant info
-                    def grant = ((Form)requestContext.getEntity()).asMap()
-                    if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "password"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID ) == "client1"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET ) == "secret1"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE ) == "scope1 scope2"
-                            && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_USERNAME) == "testuser"
-                            && grant.getFirst(OAuthPasswordGrant.VALUE_KEY_PASSWORD) == "password1") {
-                        accessToken = "accesstoken" + accessTokenCount++
-                        def response = new OAuthServerResponse()
-                        response.accessToken = accessToken
-                        response.expiresIn = requestPath == "https://oauthserver/token" ? 5 : 100
-                        response.tokenType = "Bearer"
-
-                        // Include refresh token if configured to support it
-                        if (supportsRefresh) {
-                            refreshToken = "refreshtoken" + accessTokenCount
-                            response.refreshToken = refreshToken
-                        }
-
-                        requestContext.abortWith(
-                                Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                        )
-                        return
-                    } else if (grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "client_credentials"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID ) == "client1"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET ) == "secret1"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE ) == "scope1 scope2") {
-                        accessToken = "accesstoken" + accessTokenCount++
-                        def response = new OAuthServerResponse()
-                        response.accessToken = accessToken
-                        response.expiresIn = requestPath == "https://oauthserver/token" ? 1 : 100
-                        response.tokenType = "Bearer"
-
-                        requestContext.abortWith(
-                                Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                        )
-                        return
-                    } else if (supportsRefresh && grant.getFirst(OAuthGrant.VALUE_KEY_GRANT_TYPE) == "refresh_token"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_ID ) == "client1"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_CLIENT_SECRET ) == "secret1"
-                            && grant.getFirst(OAuthGrant.VALUE_KEY_SCOPE ) == "scope1 scope2"
-                            && grant.getFirst(OAuthRefreshTokenGrant.REFRESH_TOKEN_GRANT_TYPE) == refreshToken) {
-                        refreshTokenCount++
-                        accessToken = "accesstoken" + accessTokenCount++
-                        refreshToken = "refreshtoken" + accessTokenCount
-                        def response = new OAuthServerResponse()
-                        response.accessToken = accessToken
-                        response.refreshToken = refreshToken
-                        response.expiresIn = requestPath == "https://oauthserver/token" ? 1 : 100
-                        response.tokenType = "Bearer"
-
-                        requestContext.abortWith(
-                                Response.ok(response, MediaType.APPLICATION_JSON_TYPE).build()
-                        )
-                        return
-                    }
-                    break
+                    def content = "{\n" +
+                            "    \"result\": {\n" +
+                            "        \"watts\": {\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(15).toLocalTime().toString()}\": 780000,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(30).toLocalTime().toString()}\": 3904036,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(45).toLocalTime().toString()}\": 3854598,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(60).toLocalTime().toString()}\": 3746874,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(75).toLocalTime().toString()}\": 3675780,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(90).toLocalTime().toString()}\": 3553500,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(105).toLocalTime().toString()}\": 3439679,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(120).toLocalTime().toString()}\": 3278604,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(135).toLocalTime().toString()}\": 3137450,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(150).toLocalTime().toString()}\": 2954064,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(165).toLocalTime().toString()}\": 2739056,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(180).toLocalTime().toString()}\": 2493609,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(195).toLocalTime().toString()}\": 2254420,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(210).toLocalTime().toString()}\": 1949976,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(225).toLocalTime().toString()}\": 1697104,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(240).toLocalTime().toString()}\": 1452142,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(255).toLocalTime().toString()}\": 1194060,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(270).toLocalTime().toString()}\": 925642,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(285).toLocalTime().toString()}\": 761949,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(300).toLocalTime().toString()}\": 594217,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(315).toLocalTime().toString()}\": 423624,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(330).toLocalTime().toString()}\": 80000,\n"+
+                            "          \"${now.plusDays(1).toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0\n"+
+                            "        },\n"+
+                            "        \"watt_hours\": {\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(15).toLocalTime().toString()}\": 3471000,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(30).toLocalTime().toString()}\": 20778893,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(45).toLocalTime().toString()}\": 21742542,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(60).toLocalTime().toString()}\": 22679261,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(75).toLocalTime().toString()}\": 23598206,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(90).toLocalTime().toString()}\": 24486581,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(105).toLocalTime().toString()}\": 25346501,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(120).toLocalTime().toString()}\": 26166152,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(135).toLocalTime().toString()}\": 26950514,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(150).toLocalTime().toString()}\": 27689030,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(165).toLocalTime().toString()}\": 28373794,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(180).toLocalTime().toString()}\": 28997196,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(195).toLocalTime().toString()}\": 29560801,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(210).toLocalTime().toString()}\": 30048295,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(225).toLocalTime().toString()}\": 30472571,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(240).toLocalTime().toString()}\": 30835607,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(255).toLocalTime().toString()}\": 31134122,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(270).toLocalTime().toString()}\": 31365532,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(285).toLocalTime().toString()}\": 31556020,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(300).toLocalTime().toString()}\": 31704574,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(315).toLocalTime().toString()}\": 31810480,\n"+
+                            "          \"${now.toLocalDate().toString()} ${now.plusMinutes(330).toLocalTime().toString()}\": 31817147,\n"+
+                            "          \"${now.plusDays(1).toLocalDate().toString()} ${now.toLocalTime().toString()}\": 0\n"+
+                            "        },\n"+
+                            "        \"watt_hours_day\": {\n"+
+                            "          \"${now.toLocalDate().toString()}\": 31817147\n"+
+                            "        }\n"+
+                            "      },\n"+
+                            "      \"message\": {\n"+
+                            "        \"code\": 0,\n"+
+                            "        \"type\": \"success\",\n"+
+                            "        \"text\": \"\",\n"+
+                            "        \"info\": {\n"+
+                            "          \"latitude\": 51.4969,\n"+
+                            "          \"longitude\": -0.2773,\n"+
+                            "          \"place\": \"W3 8BZ Turnham Green, Hounslow London Boro, England, GB\",\n"+
+                            "          \"timezone\": \"Europe/London\"\n"+
+                            "        },\n"+
+                            "        \"ratelimit\": {\n"+
+                            "          \"period\": 60,\n"+
+                            "          \"limit\": 5,\n"+
+                            "          \"remaining\": 4\n"+
+                            "        }\n"+
+                            "    }\n"+
+                            "}"
+                    def responseBody = ValueUtil.JSON.readValue(content, ForecastSolarService.EstimateResponse.class)
+                    requestContext.abortWith(
+                            Response.ok(responseBody, MediaType.APPLICATION_JSON_TYPE).build()
+                    )
+                    return
             }
 
             requestContext.abortWith(Response.serverError().build())
@@ -195,10 +129,16 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
-        config << [(FORECAST_SOLAR_API_KEY) : System.getenv(FORECAST_SOLAR_API_KEY)]
+        config << [(FORECAST_SOLAR_API_KEY): "test-key"]
+
+        if (!ForecastSolarService.resteasyClient.configuration.isRegistered(mockServer)) {
+            ForecastSolarService.resteasyClient.register(mockServer, Integer.MAX_VALUE)
+        }
+
         def container = startContainer(config, defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetPredictedDatapointService = container.getService(AssetPredictedDatapointService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def forecastSolarService = container.getService(ForecastSolarService.class)
 
@@ -207,8 +147,10 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
             assert !forecastSolarService.calculationFutures.isEmpty()
             assert forecastSolarService.calculationFutures.get(managerTestSetup.electricitySolarAssetId) != null
             def solarAsset = assetStorageService.find(managerTestSetup.electricitySolarAssetId)
-            assert solarAsset.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap{it.value}.orElse(0d) != 0d
-            assert solarAsset.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap{it.value}.orElse(0d) != 0d
+            assert solarAsset.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) != 0d
+            assert solarAsset.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(solarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName())).size() > 0
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(solarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName())).size() > 0
         }
 
         when: "an asset is added with includeForecastSolarService set to true"
@@ -228,8 +170,10 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert forecastSolarService.calculationFutures.get(newSolarAsset.getId()) != null
             newSolarAsset = assetStorageService.find(newSolarAsset.getId())
-            assert newSolarAsset.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap{it.value}.orElse(0d) != 0d
-            assert newSolarAsset.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap{it.value}.orElse(0d) != 0d
+            assert newSolarAsset.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) != 0d
+            assert newSolarAsset.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset.getId(), ElectricityProducerSolarAsset.POWER.getName())).size() > 0
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName())).size() > 0
         }
 
         when: "an asset is added with includeForecastSolarService set to false"
@@ -256,8 +200,28 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         then: "it should be present present in the calculationFutures"
         conditions.eventually {
             assert forecastSolarService.calculationFutures.get(newSolarAsset2.getId()) != null
-            assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap{it.value}.orElse(0d) == 0d
-            assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap{it.value}.orElse(0d) != 0d
+            newSolarAsset2 = assetStorageService.find(newSolarAsset2.getId())
+            assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) == 0d
+            assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER_FORECAST).flatMap { it.value }.orElse(0d) != 0d
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset2.getId(), ElectricityProducerSolarAsset.POWER.getName())).size() > 0
+            assert assetPredictedDatapointService.getDatapoints(new AttributeRef(newSolarAsset2.getId(), ElectricityProducerSolarAsset.POWER_FORECAST.getName())).size() > 0
+        }
+
+        when: "an asset updated it's setActualValueWithForecast to true"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.name, true))
+
+        then: "it power should be updated too"
+        conditions.eventually {
+            newSolarAsset2 = assetStorageService.find(newSolarAsset2.getId())
+            assert newSolarAsset2.getAttribute(ElectricityProducerSolarAsset.POWER).flatMap { it.value }.orElse(0d) != 0d
+        }
+
+        when: "an asset updated it's includeForecastSolarService to false"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.name, false))
+
+        then: "it shouldn't be present present in the calculationFutures"
+        conditions.eventually {
+            assert forecastSolarService.calculationFutures.get(newSolarAsset2.getId()) == null
         }
     }
 }

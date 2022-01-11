@@ -40,6 +40,8 @@ import {RecurrenceOption} from "./json-viewer/or-rule-then-otherwise";
 import {ValueInputProviderGenerator} from "@openremote/or-mwc-components/or-mwc-input";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
+export {buttonStyle} from "./style";
+
 export const enum ConditionType {
     AGENT_QUERY = "agentQuery",
     ASSET_QUERY = "assetQuery",
@@ -52,8 +54,6 @@ export const enum ActionType {
     PUSH_NOTIFICATION = "push",
     ATTRIBUTE = "attribute"
 }
-
-export import ActionTargetType = NotificationTargetType;
 
 export enum AssetQueryOperator {
     VALUE_EMPTY = "empty",
@@ -89,8 +89,8 @@ export enum AssetQueryOperator {
 }
 
 export interface AllowedActionTargetTypes {
-    default?: ActionTargetType[];
-    actions?: {[actionType in ActionType]?: ActionTargetType[]};
+    default?: NotificationTargetType[];
+    actions?: {[actionType in ActionType]?: NotificationTargetType[]};
 }
 
 export interface RulesConfig {

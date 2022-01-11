@@ -18,7 +18,7 @@ volumes:
 services:
 
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.1.2.3}
+    image: openremote/proxy:${PROXY_VERSION:-2.5.0.1}
     restart: always
     depends_on:
       manager:
@@ -30,14 +30,14 @@ services:
 
   postgresql:
     restart: always
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-9.6.21.0}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp
 
   keycloak:
     restart: always
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-13.0.1.3}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-16.0.0.0}
     depends_on:
       postgresql:
         condition: service_healthy

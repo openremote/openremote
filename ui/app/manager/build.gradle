@@ -1,13 +1,11 @@
 buildDir = "dist"
 
 task clean {
-    doFirst {
-        delete "node_modules"
-    }
+    dependsOn npmClean
 }
 
 task installDist(type: Copy) {
-    dependsOn clean, npmBuild
+    dependsOn npmBuild
     mustRunAfter(resolveTask(":manager:installDist"))
     from project.buildDir
     into "${resolveProject(':manager').buildDir}/install/manager/web/${projectDir.name}"

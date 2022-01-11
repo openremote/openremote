@@ -7,7 +7,17 @@
     "ui/demo/*"
   ],
   "devDependencies": {
-    "lerna": "^4.0.0"
-  },
-  "resolutions": {}
+    "lerna": "^4.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.9.0",
+    "@typescript-eslint/parser": "^5.9.0",
+    "eslint": "^8.6.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "fork-ts-checker-notifier-webpack-plugin": "^4.0.0",
+    "fork-ts-checker-webpack-plugin": "^6.5.0",
+    "prettier": "^2.5.1"
+  }
 }

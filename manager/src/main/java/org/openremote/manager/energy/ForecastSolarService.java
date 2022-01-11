@@ -2,11 +2,11 @@ package org.openremote.manager.energy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.camel.builder.RouteBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebTargetBuilder;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
@@ -41,6 +41,7 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
 /**
@@ -82,10 +83,15 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
     protected static final Logger LOG = Logger.getLogger(ForecastSolarService.class.getName());
 
-    protected ResteasyWebTarget forecastSolarClient;
+    protected static ResteasyClient resteasyClient;
+    protected ResteasyWebTarget forecastSolarTarget;
     private String forecastSolarApiKey;
 
     private final Map<String, ScheduledFuture<?>> calculationFutures = new HashMap<>();
+
+    static {
+        resteasyClient = createClient(org.openremote.container.Container.EXECUTOR_SERVICE);
+    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -118,7 +124,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             return;
         }
 
-        forecastSolarClient = WebTargetBuilder.createClient(executorService)
+        forecastSolarTarget = resteasyClient
                 .target("https://api.forecast.solar/" + forecastSolarApiKey + "/estimate");
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
@@ -152,9 +158,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     }
 
     protected void processAttributeEvent(AttributeEvent attributeEvent) {
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.INCLUDE_FORECAST_SOLAR_SERVICE.getName())) {
-            processElectricityProducerSolarAssetAttributeEvent(attributeEvent);
-        }
+        processElectricityProducerSolarAssetAttributeEvent(attributeEvent);
     }
 
     protected synchronized void processElectricityProducerSolarAssetAttributeEvent(AttributeEvent attributeEvent) {
@@ -174,16 +178,26 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                 // Nothing to do here
                 return;
             }
+
+            LOG.info("Processing producer solar asset attribute event: " + attributeEvent);
+            stopProcessing(attributeEvent.getAssetId());
+
+            // Get latest asset from storage
+            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
+
+            if (asset != null && asset.isIncludeForecastSolarService().orElse(false)) {
+                startProcessing(asset);
+            }
         }
 
-        LOG.info("Processing producer solar asset attribute event: " + attributeEvent);
-        stopProcessing(attributeEvent.getAssetId());
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+            // Get latest asset from storage
+            ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
 
-        // Get latest asset from storage
-        ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
-
-        if (asset != null && asset.isIncludeForecastSolarService().orElse(false)) {
-            startProcessing(asset);
+            // Check if power is currently zero and set it if power forecast has an value
+            if (asset.getPower().orElse(0d) == 0d && asset.getPowerForecast().orElse(0d) != 0d) {
+                assetProcessingService.sendAttributeEvent(new AttributeEvent(asset.getId(), ElectricityProducerSolarAsset.POWER, asset.getPowerForecast().orElse(0d)));
+            }
         }
     }
 
@@ -221,7 +235,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         Optional<Integer> azimuth = electricityProducerSolarAsset.getPanelAzimuth();
         Optional<Double> kwp = electricityProducerSolarAsset.getPowerExportMax();
         if (lat.isPresent() && lon.isPresent() && pitch.isPresent() && azimuth.isPresent() && kwp.isPresent()) {
-            try (Response response = forecastSolarClient
+            try (Response response = forecastSolarTarget
                     .path(String.format("%f/%f/%d/%d/%f", lat.get(), lon.get(), pitch.get(), azimuth.get(), kwp.get()))
                     .request()
                     .build("GET")

@@ -24,8 +24,10 @@ import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueType;
 
 import javax.persistence.Entity;
+import java.util.Optional;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.UNITS_KILO;
+import static org.openremote.model.Constants.UNITS_WATT;
 
 @Entity
 public class ElectricityProducerAsset extends ElectricityAsset<ElectricityProducerAsset> {
@@ -54,5 +56,9 @@ public class ElectricityProducerAsset extends ElectricityAsset<ElectricityProduc
 
     public ElectricityProducerAsset(String name) {
         super(name);
+    }
+
+    public Optional<Double> getPowerForecast() {
+        return getAttributes().getOrCreate(POWER_FORECAST).getValue();
     }
 }

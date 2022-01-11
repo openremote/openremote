@@ -2,15 +2,20 @@ import manager, {MapType} from "@openremote/core";
 import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL, Style as StyleGL, LngLat,
     MapMouseEvent,
     NavigationControl,
+    GeolocateControl,
     Control,
-    IControl} from "mapbox-gl";
+    IControl} from "maplibre-gl";
+import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
+import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
+import {debounce} from "lodash";
 import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
 import {getLatLngBounds, getLngLat} from "./util";
 const mapboxJsStyles = require("mapbox.js/dist/mapbox.css");
-const mapboxGlStyles = require("mapbox-gl/dist/mapbox-gl.css");
+const maplibreGlStyles = require("maplibre-gl/dist/maplibre-gl.css");
+const maplibreGeoCoderStyles = require("@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css");
 
 // TODO: fix any type
 const metersToPixelsAtMaxZoom = (meters:number, latitude:number) =>
@@ -29,13 +34,16 @@ export class MapWidget {
     protected _viewSettings?: ViewSettings;
     protected _center?: LngLatLike;
     protected _zoom?: number;
+    protected _showGeoCodingControl: boolean = false;
     protected _controls?: (Control | IControl | [Control | IControl, ControlPosition?])[];
     protected _clickHandlers: Map<OrMapMarker, (ev: MouseEvent) => void> = new Map();
+    protected _geocoder?: any;
 
-    constructor(type: MapType, styleParent: Node, mapContainer: HTMLElement) {
+    constructor(type: MapType, showGeoCodingControl: boolean, styleParent: Node, mapContainer: HTMLElement) {
         this._type = type;
         this._styleParent = styleParent;
         this._mapContainer = mapContainer;
+        this._showGeoCodingControl = showGeoCodingControl;
     }
 
     public setCenter(center?: LngLatLike): this {
@@ -233,12 +241,17 @@ export class MapWidget {
             }
         } else {
             // Add style to shadow root
-            const style = document.createElement("style");
-            style.id = "mapboxGlStyle";
-            style.textContent = mapboxGlStyles;
+            let style = document.createElement("style");
+            style.id = "maplibreGlStyle";
+            style.textContent = maplibreGlStyles;
             this._styleParent.appendChild(style);
 
-            const map: typeof import("mapbox-gl") = await import(/* webpackChunkName: "mapbox-gl" */ "mapbox-gl");
+            style = document.createElement("style");
+            style.id = "maplibreGeoCoderStyles";
+            style.textContent = maplibreGeoCoderStyles;
+            this._styleParent.appendChild(style);
+
+            const map: typeof import("maplibre-gl") = await import(/* webpackChunkName: "maplibre-gl" */ "maplibre-gl");
             const settings = await this.loadViewSettings();
                 
             const options: OptionsGL = {
@@ -294,6 +307,79 @@ export class MapWidget {
             } else {
                 // Add zoom and rotation controls to the map
                 this._mapGl.addControl(new NavigationControl());
+                // Add current location controls to the map
+                this._mapGl.addControl(new GeolocateControl({
+                    positionOptions: {
+                        enableHighAccuracy: true
+                    },
+                    showAccuracyCircle: true,
+                    showUserLocation: true
+                }));
+            }
+
+            if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geoCodeUrl) {
+                this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { marker: false, showResultsWhileTyping: true });
+                // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
+                this._geocoder._onKeyDown = debounce((e: KeyboardEvent) => {
+                    var ESC_KEY_CODE = 27,
+                    TAB_KEY_CODE = 9;
+              
+                  if (e.keyCode === ESC_KEY_CODE && this._geocoder.options.clearAndBlurOnEsc) {
+                    this._geocoder._clear(e);
+                    return this._geocoder._inputEl.blur();
+                  }
+              
+                  // if target has shadowRoot, then get the actual active element inside the shadowRoot
+                  var value = this._geocoder._inputEl.value || e.key;
+              
+                  if (!value) {
+                    this._geocoder.fresh = true;
+                    // the user has removed all the text
+                    if (e.keyCode !== TAB_KEY_CODE) this._geocoder.clear(e);
+                    return (this._geocoder._clearEl.style.display = "none");
+                  }
+              
+                  // TAB, ESC, LEFT, RIGHT, UP, DOWN
+                  if (
+                    e.metaKey ||
+                    [TAB_KEY_CODE, ESC_KEY_CODE, 37, 39, 38, 40].indexOf(e.keyCode) !== -1
+                  )
+                    return;
+              
+                  // ENTER
+                  if (e.keyCode === 13) {
+                    if (!this._geocoder.options.showResultsWhileTyping) {
+                      if (!this._geocoder._typeahead.list.selectingListItem)
+                      this._geocoder._geocode(value);
+                    } else {
+                      if (this._geocoder.options.showResultMarkers) {
+                        this._geocoder._fitBoundsForMarkers();
+                      }
+                      this._geocoder._inputEl.value = this._geocoder._typeahead.query;
+                      this._geocoder.lastSelected = null;
+                      this._geocoder._typeahead.selected = null;
+                      return;
+                    }
+                  }
+              
+                  if (
+                    value.length >= this._geocoder.options.minLength &&
+                    this._geocoder.options.showResultsWhileTyping
+                  ) {
+                    this._geocoder._geocode(value);
+                  }
+                }, 300);
+                this._mapGl!.addControl(this._geocoder);
+
+                // There's no callback parameter in the options of the MaplibreGeocoder,
+                // so this is how we get the selected result.
+                this._geocoder._inputEl.addEventListener("change", () => {
+                    var selected = this._geocoder._typeahead.selected;
+                    if (selected) {
+                        // Set marker by calling _onMapClick and doubleClicked set to true
+                        this._onMapClick(selected.center, true);
+                    }
+                });
             }
         }
 
@@ -507,5 +593,40 @@ export class MapWidget {
             elem.removeEventListener("click", handler);
             this._clickHandlers.delete(marker);
         }
+    }
+
+    protected async _forwardGeocode(config: any) {
+        const features = [];
+        try {
+            let request =  this._viewSettings!.geoCodeUrl + '/search?q=' + config.query + '&format=geojson&polygon_geojson=1&addressdetails=1';
+            const response = await fetch(request);
+            const geojson = await response.json();
+            for (let feature of geojson.features) {
+                let center = [feature.bbox[0] + (feature.bbox[2] - feature.bbox[0]) / 2, feature.bbox[1] + (feature.bbox[3] - feature.bbox[1]) / 2 ];
+                let point = {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: center
+                    },
+                    place_name: feature.properties.display_name,
+                    properties: feature.properties,
+                    text: feature.properties.display_name,
+                    place_type: ['place'],
+                    center: center
+                };
+                features.push(point);
+            }
+        } catch (e) {
+            console.error(`Failed to forwardGeocode with error: ${e}`);
+        }
+
+        return {
+            features: features
+        };
+    }
+
+    protected async _reverseGeocode(config: any) {
+
     }
 }
