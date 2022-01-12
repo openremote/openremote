@@ -180,7 +180,9 @@ export class MapWidget {
                 this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
                 this._mapGl.setMaxBounds(this._viewSettings.bounds);
             }
-            this.setCenter(this._viewSettings.center);
+            if (!this._center) {
+                this.setCenter(this._viewSettings.center);
+            }
         }
 
         return settings;
