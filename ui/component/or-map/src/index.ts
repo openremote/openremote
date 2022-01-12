@@ -40,7 +40,9 @@ export interface MapEventDetail {
     lngLat: LngLat;
     doubleClick: boolean;
 }
-
+export interface MapGeocoderEventDetail {
+    geocode: any;
+}
 export class OrMapLoadedEvent extends CustomEvent<void> {
 
     public static readonly NAME = "or-map-loaded";
@@ -85,11 +87,27 @@ export class OrMapLongPressEvent extends CustomEvent<MapEventDetail> {
     }
 }
 
+export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail> {
+
+    public static readonly NAME = "or-map-geocoder-change";
+
+    constructor(geocode: any) {
+        super(OrMapGeocoderChangeEvent.NAME, {
+            detail: {
+                geocode
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrMapClickedEvent.NAME]: OrMapClickedEvent;
         [OrMapLoadedEvent.NAME]: OrMapLoadedEvent;
         [OrMapLongPressEvent.NAME]: OrMapLongPressEvent;
+        [OrMapGeocoderChangeEvent.NAME]: OrMapGeocoderChangeEvent;
     }
 }
 

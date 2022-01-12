@@ -8,7 +8,7 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 import {debounce} from "lodash";
-import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, OrMapLongPressEvent, ViewSettings} from "./index";
+import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, OrMapLongPressEvent, OrMapGeocoderChangeEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
@@ -375,6 +375,7 @@ export class MapWidget {
                 // so this is how we get the selected result.
                 this._geocoder._inputEl.addEventListener("change", () => {
                     var selected = this._geocoder._typeahead.selected;
+                    this._onGeocodeChange(selected);
                     if (selected) {
                         // Set marker by calling _onMapClick and doubleClicked set to true
                         this._onLongPress(selected.center);
@@ -669,8 +670,10 @@ export class MapWidget {
             this._mapGl.on('gestureend', clearTimeoutFunc);
         }
     };
-    
     protected _onLongPress(lngLat: LngLat) {
         this._mapContainer.dispatchEvent(new OrMapLongPressEvent(lngLat));
+    }
+    protected _onGeocodeChange(geocode:any) {
+        this._mapContainer.dispatchEvent(new OrMapGeocoderChangeEvent(geocode));
     }
 }
