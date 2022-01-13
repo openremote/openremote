@@ -19,9 +19,9 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.12",
     "@fortawesome/free-regular-svg-icons": "^5.6.3",
     "@fortawesome/free-solid-svg-icons": "^5.6.3",
-    "@openremote/core": "^1.0.3",
-    "@openremote/model": "^1.0.3",
-    "@openremote/rest": "^1.0.3",
+    "@openremote/core": "^1.0.4",
+    "@openremote/model": "^1.0.4",
+    "@openremote/rest": "^1.0.4",
     "lit": "^2.0.2",
     "moment": "^2.24.0"
   },

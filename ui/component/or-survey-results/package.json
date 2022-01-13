@@ -16,8 +16,8 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.3",
-    "@openremote/model": "^1.0.3",
+    "@openremote/core": "^1.0.4",
+    "@openremote/model": "^1.0.4",
     "lit": "^2.0.2"
   },
   "devDependencies": {

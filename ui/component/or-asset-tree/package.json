@@ -17,12 +17,12 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@mdi/js": "^5.9.55",
-    "@openremote/core": "^1.0.3",
-    "@openremote/model": "^1.0.3",
-    "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-mwc-components": "^1.0.3",
-    "@openremote/or-translate": "^1.0.3",
-    "@openremote/rest": "^1.0.3",
+    "@openremote/core": "^1.0.4",
+    "@openremote/model": "^1.0.4",
+    "@openremote/or-icon": "^1.0.4",
+    "@openremote/or-mwc-components": "^1.0.4",
+    "@openremote/or-translate": "^1.0.4",
+    "@openremote/rest": "^1.0.4",
     "lit": "^2.0.2",
     "moment": "^2.24.0"
   },

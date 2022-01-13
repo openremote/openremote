@@ -13,7 +13,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/or-thermostat": "^1.0.3",
+    "@openremote/or-thermostat": "^1.0.4",
     "source-map-loader": "^3.0.0"
   },
   "devDependencies": {

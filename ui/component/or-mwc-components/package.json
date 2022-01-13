@@ -41,9 +41,9 @@
     "@material/snackbar": "^9.0.0",
     "@material/switch": "^9.0.0",
     "@material/textfield": "^9.0.0",
-    "@openremote/core": "^1.0.3",
-    "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-translate": "^1.0.3",
+    "@openremote/core": "^1.0.4",
+    "@openremote/or-icon": "^1.0.4",
+    "@openremote/or-translate": "^1.0.4",
     "lit": "^2.0.2"
   },
   "devDependencies": {
