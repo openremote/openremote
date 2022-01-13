@@ -25,9 +25,7 @@
     "moment": "2.29.1"
   },
   "devDependencies": {
-    "typescript": ">=4.5.2",
-    "webpack": "^5.64.3",
-    "webpack-cli": "^4.9.1"
+    "@openremote/util": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"

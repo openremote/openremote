@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-components",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "OpenRemote basic UI components",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -27,9 +27,7 @@
     "simplebar": "^5.3.6"
   },
   "devDependencies": {
-    "typescript": ">=4.5.2",
-    "webpack": "^5.64.3",
-    "webpack-cli": "^4.9.1"
+    "@openremote/util": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"

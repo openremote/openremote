@@ -1,6 +1,6 @@
 {
   "name": "@openremote/model",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "OpenRemote 3.x Model Types",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -21,7 +21,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "typescript": ">=4.5.2"
+    "@openremote/util": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"
