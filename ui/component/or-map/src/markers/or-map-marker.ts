@@ -77,7 +77,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected static _defaultTemplate = (icon: string | undefined, displayText: string | undefined) => `
-        <div class="label"><span>${displayText}</span></div>
+        ${displayText ? `<div class="label"><span>${displayText}</span></div>` : ``}
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `

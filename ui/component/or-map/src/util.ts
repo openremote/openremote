@@ -96,7 +96,8 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
     if (markerConfig) {
         if (descriptor && Object.keys(markerConfig).includes(descriptor.name!)) {
             const overrideConfig = markerConfig[descriptor.name!] as AssetTypeMarkerConfig;
-            colorOverride = overrideConfig[WellknownAttributes.ENERGYEXPORTTOTAL].ranges as AttributeMarkerColoursRange[] || undefined;
+            const attributeName = Object.keys(overrideConfig)[0];
+            colorOverride = overrideConfig[attributeName].ranges as AttributeMarkerColoursRange[] || undefined;
             // todo icon override
         }
     }

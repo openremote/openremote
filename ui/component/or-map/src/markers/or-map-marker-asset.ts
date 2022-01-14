@@ -67,7 +67,6 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
         if (_changedProperties.has("asset")) {
             this.onAssetChanged(this.asset);
-            this.displayText = 'asdf';
         }
 
         return super.shouldUpdate(_changedProperties);
@@ -115,8 +114,9 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
                 }
             });
             asset = result.asset!;
-            if (asset.attributes!.length) {
-                this._updateDisplayValue(asset.attributes![0].value as string);
+            if (asset.attributes && asset.type && this.config && this.config[asset.type]) {
+                const attributeName = Object.keys(this.config[asset.type])[0];
+                this._updateDisplayText(asset.attributes[attributeName].value.toString());
             }
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
@@ -132,8 +132,8 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         this.lng = location && location.coordinates ? (location.coordinates as any)[0] : undefined;
     }
 
-    protected _updateDisplayValue(value: string) {
-        // this.displayValue = value;
+    protected _updateDisplayText(value: string) {
+        this.displayText = value;
     }
 
     protected getColor() {
