@@ -110,8 +110,9 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
 
-            if (this.config && this.config[asset.type!]) {
-                const attributeName = Object.keys(this.config[asset.type!])[0];
+            const assetTypeConfig = this.config![asset.type!];
+            if (this.config && assetTypeConfig) {
+                const attributeName = Object.keys(assetTypeConfig)[0];
                 this.displayValue = await this.getDesiredAttrValue(asset, attributeName);
             }
 

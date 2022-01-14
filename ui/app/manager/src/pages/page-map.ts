@@ -108,6 +108,7 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
             page.config.markers = {
                 ElectricityProducerSolarAsset: {
                     energyExportTotal: {
+                        showLabel: true,
                         type: "range",
                         ranges: [
                             {
@@ -117,6 +118,10 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
                             {
                                 max: 200,
                                 colour: '00FF00'
+                            },
+                            {
+                                max: 201,
+                                colour: '0000FF'
                             }
                         ]
                     } as RangeAttributeMarkerColours

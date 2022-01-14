@@ -109,9 +109,12 @@ export enum MapType {
     RASTER = "RASTER"
 }
 
+//todo: fix the ts problem
 export interface AttributeMarkerColours {
-    type: "string" | "boolean",
+    type: "string" | "boolean";
     [value: string]: string;
+    //@ts-ignore
+    showLabel?: boolean;
 }
 
 export interface AttributeMarkerColoursRange {
@@ -120,8 +123,9 @@ export interface AttributeMarkerColoursRange {
 }
 
 export interface RangeAttributeMarkerColours {
-    type: "range",
-    ranges: AttributeMarkerColoursRange[]
+    type: "range";
+    ranges: AttributeMarkerColoursRange[];
+    showLabel?: boolean;
 }
 
 // todo: could add support for selecting which attr value to show in picker label
