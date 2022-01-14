@@ -36,10 +36,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     protected markerColor?: string;
 
     protected set type(type: string | undefined) {
-        // const rangeValue = this.getDesiredAttrValue(asset) || undefined;
-        const rangeValue = 200;
-        console.log('dpv', this.displayValue);
-        const iconAndColor = getMarkerIconAndColorFromAssetType(type, this.config, rangeValue);
+        const iconAndColor = getMarkerIconAndColorFromAssetType(type, this.config, this.displayValue);
 
         if (!iconAndColor) {
             this.visible = false;
@@ -112,12 +109,14 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         if (asset) {
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
-            this.type = asset.type;
 
             if (this.config && this.config[asset.type!]) {
                 const attributeName = Object.keys(this.config[asset.type!])[0];
                 this.displayValue = await this.getDesiredAttrValue(asset, attributeName);
+                console.log('dpv', this.displayValue);
             }
+            
+            this.type = asset.type;
         } else {
             this.lat = undefined;
             this.lng = undefined;
