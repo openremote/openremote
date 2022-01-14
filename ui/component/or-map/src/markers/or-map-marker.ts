@@ -76,8 +76,8 @@ export class OrMapMarker extends LitElement {
         `;
     }
 
-    protected static _defaultTemplate = (icon: string | undefined, displayText: string | undefined) => `
-        ${displayText ? `<div class="label"><span>${displayText}</span></div>` : ``}
+    protected static _defaultTemplate = (icon: string | undefined, displayValue: string | undefined) => `
+        ${displayValue ? `<div class="label"><span>${displayValue}</span></div>` : ``}
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -91,8 +91,8 @@ export class OrMapMarker extends LitElement {
     @property({type: Number, reflect: true})
     public radius?: number;
 
-    @property({type: String, reflect: true})
-    public displayText?: string;
+    @property({reflect: true})
+    public displayValue?: string | number;
 
     @property({type: Boolean})
     public visible: boolean = true;
@@ -175,7 +175,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("icon") || _changedProperties.has("displayText")) {
+        if (_changedProperties.has("icon") || _changedProperties.has("displayValue")) {
             this.refreshMarkerContent();
         }
 
@@ -292,7 +292,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayText);
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayValue?.toString());
         return div;
     }
 }

@@ -113,6 +113,10 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
                             {
                                 max: 100,
                                 colour: 'FF0000'
+                            },
+                            {
+                                max: 200,
+                                colour: '00FF00'
                             }
                         ]
                     } as RangeAttributeMarkerColours

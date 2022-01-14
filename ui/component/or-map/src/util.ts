@@ -85,19 +85,24 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     }
 }
 
-export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined, markerConfig?: MapMarkerConfig): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
+export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined, markerConfig?: MapMarkerConfig, rangeValue?: number): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
     if (!type) {
         return;
     }
 
     const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
-    let colorOverride: string | AttributeMarkerColoursRange[] | undefined;
+    let colourOverride: string | AttributeMarkerColoursRange[] | undefined;
     if (markerConfig) {
         if (descriptor && Object.keys(markerConfig).includes(descriptor.name!)) {
             const overrideConfig = markerConfig[descriptor.name!] as AssetTypeMarkerConfig;
             const attributeName = Object.keys(overrideConfig)[0];
-            colorOverride = overrideConfig[attributeName].ranges as AttributeMarkerColoursRange[] || undefined;
+            const colourConfig = overrideConfig[attributeName];
+            if (colourConfig.type === 'range' && rangeValue) {
+                const ranges = colourConfig.ranges;
+                const colourFromRange = ranges.find(r => r.max >= rangeValue) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
+                colourOverride = colourFromRange.colour || undefined;
+            }
             // todo icon override
         }
     }
@@ -105,8 +110,8 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
     const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
 
     let color: string | undefined | AttributeMarkerColoursRange[];
-    if (colorOverride) {
-        color = colorOverride as AttributeMarkerColoursRange[];
+    if (colourOverride) {
+        color = colourOverride as AttributeMarkerColoursRange[];
     } else if (descriptor && descriptor.colour) {
         color = descriptor.colour as string;
     }
