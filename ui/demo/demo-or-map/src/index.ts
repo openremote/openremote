@@ -2,8 +2,7 @@ import "@polymer/iron-demo-helpers/demo-pages-shared-styles";
 import "@polymer/iron-demo-helpers/demo-snippet";
 import "@openremote/or-map";
 import manager, {Auth} from "@openremote/core";
-import {OrMapMarkerClickedEvent} from "@openremote/or-map";
-import {OrMap} from "@openremote/or-map";
+import {OrMap, OrMapMarkerClickedEvent} from "@openremote/or-map";
 import {getBuildingAsset} from "../../demo-core/src/util";
 
 manager.init({

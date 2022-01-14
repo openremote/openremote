@@ -23,7 +23,7 @@ import {
     WellknownAttributes,
     WellknownMetaItems
 } from "@openremote/model";
-import {getAssetsRoute} from "./page-assets";
+import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
 
 export interface MapState {
@@ -92,7 +92,7 @@ export interface PageMapConfig {
     markers?: MapMarkerConfig
 }
 
-export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>, config?: PageMapConfig): PageProvider<S> {
+export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
     return {
         name: "map",
         routes: [
@@ -124,17 +124,9 @@ export function pageMapProvider<S extends MapStateKeyed>(store: EnhancedStore<S>
     };
 }
 
-export function getMapRoute(assetId?: string) {
-    let route = "map";
-    if (assetId) {
-        route += "/" + assetId;
-    }
-
-    return route;
-}
 
 @customElement("page-map")
-export class PageMap<S extends MapStateKeyed> extends Page<S> {
+export class PageMap extends Page<MapStateKeyed> {
 
     static get styles() {
         // language=CSS
@@ -182,9 +174,9 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
     @property()
     protected _currentAsset?: Asset;
 
-    protected _assetSelector = (state: S) => state.map.assets;
-    protected _paramsSelector = (state: S) => state.app.params;
-    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+    protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
+    protected _paramsSelector = (state: MapStateKeyed) => state.app.params;
+    protected _realmSelector = (state: MapStateKeyed) => state.app.realm || manager.displayRealm;
 
     protected assetSubscriptionId: string;
     protected attributeSubscriptionId: string;
@@ -320,7 +312,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         return "map";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<MapStateKeyed>) {
         super(store);
         this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this.onLoadAssetEvent);
     }
@@ -376,7 +368,7 @@ export class PageMap<S extends MapStateKeyed> extends Page<S> {
         this.unsubscribeAssets();
     }
 
-    stateChanged(state: S) {
+    stateChanged(state: MapStateKeyed) {
         this._assets = this._getMapAssets(state);
         this._currentAsset = this._getCurrentAsset(state);
         this.getRealmState(state);

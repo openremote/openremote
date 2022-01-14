@@ -51,7 +51,7 @@ public class ArtnetProtocol extends AbstractNettyIOClientProtocol<ArtnetProtocol
     protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
         return () ->
             new ChannelHandler[] {
-                new AbstractNettyIOClient.MessageToByteEncoder<>(ArtnetPacket.class, client.ioClient, ArtnetPacket::toByteBuf)
+                new AbstractNettyIOClient.MessageToByteEncoder<>(ArtnetPacket.class, client, ArtnetPacket::toByteBuf)
             };
     }
 

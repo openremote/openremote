@@ -1,7 +1,7 @@
 import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {until} from "lit/directives/until.js";
-import {ActionTargetType, ActionType, OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
+import {ActionType, OrRulesRuleUnsupportedEvent, RulesConfig} from "../index";
 import {
     AssetQuery,
     AssetQueryOrderBy$Property,
@@ -10,7 +10,8 @@ import {
     RuleAction,
     RuleActionNotification,
     UserQuery,
-    WellknownAssets
+    WellknownAssets,
+    NotificationTargetType
 } from "@openremote/model";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {getTargetTypeMap, OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
@@ -61,20 +62,20 @@ export class OrRuleActionNotification extends LitElement {
     @property({type: Object})
     public config?: RulesConfig;
 
-    protected static getActionTargetTemplate(targetTypeMap: [string, string?][], action: RuleAction, actionType: ActionType, readonly: boolean, config: RulesConfig | undefined, baseAssetQuery: AssetQuery | undefined, onTargetTypeChangedCallback: (type: ActionTargetType) => void, onTargetChangedCallback: (type: ActionTargetType, value: string | undefined) => void): PromiseLike<TemplateResult> | undefined {
+    protected static getActionTargetTemplate(targetTypeMap: [string, string?][], action: RuleAction, actionType: ActionType, readonly: boolean, config: RulesConfig | undefined, baseAssetQuery: AssetQuery | undefined, onTargetTypeChangedCallback: (type: NotificationTargetType) => void, onTargetChangedCallback: (type: NotificationTargetType, value: string | undefined) => void): PromiseLike<TemplateResult> | undefined {
 
-        let allowedTargetTypes: [ActionTargetType, string][] = [
-            [ActionTargetType.USER, i18next.t("user_plural")],
-            [ActionTargetType.ASSET, i18next.t("asset_plural")],
-            [ActionTargetType.TENANT, i18next.t("tenant_plural")],
-            [ActionTargetType.CUSTOM, i18next.t("custom")]
+        let allowedTargetTypes: [NotificationTargetType, string][] = [
+            [NotificationTargetType.USER, i18next.t("user_plural")],
+            [NotificationTargetType.ASSET, i18next.t("asset_plural")],
+            [NotificationTargetType.TENANT, i18next.t("tenant_plural")],
+            [NotificationTargetType.CUSTOM, i18next.t("custom")]
         ];
 
         if (config && config.controls && config.controls.allowedActionTargetTypes) {
             let configTypes: string[] | undefined;
 
             if (config.controls.allowedActionTargetTypes.actions) {
-                configTypes = (config.controls.allowedActionTargetTypes.actions as any)[actionType] as ActionTargetType[];
+                configTypes = (config.controls.allowedActionTargetTypes.actions as any)[actionType] as NotificationTargetType[];
             } else {
                 configTypes = config.controls.allowedActionTargetTypes.default;
             }
@@ -89,13 +90,13 @@ export class OrRuleActionNotification extends LitElement {
             return;
         }
 
-        let targetType: ActionTargetType | undefined = ActionTargetType.ASSET;
+        let targetType: NotificationTargetType | undefined = NotificationTargetType.ASSET;
 
         if (action.target) {
             if (action.target.users && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
-                targetType = ActionTargetType.USER;
+                targetType = NotificationTargetType.USER;
             } else if (action.target.custom !== undefined && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
-                targetType = ActionTargetType.CUSTOM;
+                targetType = NotificationTargetType.CUSTOM;
             }
         }
 
@@ -105,7 +106,7 @@ export class OrRuleActionNotification extends LitElement {
             targetType = undefined;
         }
 
-        if (targetType === ActionTargetType.CUSTOM) {
+        if (targetType === NotificationTargetType.CUSTOM) {
 
             const template = html`
                 <or-mwc-input class="min-width" .type="${InputType.TEXT}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetChangedCallback(targetType!, e.detail.value)}" ?readonly="${readonly}" .value="${action.target!.custom}" ></or-mwc-input>            
@@ -118,7 +119,7 @@ export class OrRuleActionNotification extends LitElement {
             let label: string | undefined;
             let value: string | undefined;
 
-            if (targetType === ActionTargetType.USER) {
+            if (targetType === NotificationTargetType.USER) {
                 targetValuesGenerator = manager.rest.api.UserResource.query({tenant: manager.displayRealm} as UserQuery).then(
                     (usersResponse) => usersResponse.data.map((user) => [user.id!, user.username!])
                 );
@@ -183,7 +184,7 @@ export class OrRuleActionNotification extends LitElement {
             targetValueTemplate = targetValuesGenerator.then((values) => {
 
                 // Add additional options for assets
-                if (targetType === ActionTargetType.ASSET) {
+                if (targetType === NotificationTargetType.ASSET) {
                     const additionalValues: [string, string][] = [["allMatched", i18next.t("matched")]];
                     if (targetTypeMap && targetTypeMap.length > 1) {
                         targetTypeMap.forEach((typeAndTag) => {
@@ -214,7 +215,7 @@ export class OrRuleActionNotification extends LitElement {
                     .options="${allowedTargetTypes}"
                     .value="${targetType}"
                     .label="${i18next.t("recipients")}"
-                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as ActionTargetType)}" 
+                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => onTargetTypeChangedCallback(e.detail.value as NotificationTargetType)}" 
                     ?readonly="${readonly}"></or-mwc-input>
                 ${valueTemplate}
             `;
@@ -287,16 +288,16 @@ export class OrRuleActionNotification extends LitElement {
         return html`${until(targetTemplate,html``)}`;
     }
 
-    protected _onTargetTypeChanged(targetType: ActionTargetType) {
-        if (targetType === ActionTargetType.ASSET) {
+    protected _onTargetTypeChanged(targetType: NotificationTargetType) {
+        if (targetType === NotificationTargetType.ASSET) {
             delete this.action.target;
-        } else if (targetType === ActionTargetType.USER) {
+        } else if (targetType === NotificationTargetType.USER) {
             this.action.target = {
                 users: {
                     ids: []
                 }
             };
-        } else if (targetType === ActionTargetType.CUSTOM) {
+        } else if (targetType === NotificationTargetType.CUSTOM) {
             this.action.target = {
                 custom: ""
             }
@@ -306,20 +307,20 @@ export class OrRuleActionNotification extends LitElement {
         this.requestUpdate();
     }
 
-    protected _onTargetChanged(targetType: ActionTargetType, value: string | undefined) {
+    protected _onTargetChanged(targetType: NotificationTargetType, value: string | undefined) {
         switch (targetType) {
-            case ActionTargetType.USER:
+            case NotificationTargetType.USER:
                 if(value){
                     const users:UserQuery = {ids: [value]}
                     this.action.target = {users: users}
                 }
             break;
-            case ActionTargetType.CUSTOM:
+            case NotificationTargetType.CUSTOM:
                     this.action.target = {
                         custom: value
                     }
                 break;
-            case ActionTargetType.ASSET:
+            case NotificationTargetType.ASSET:
                 if (!value || value === "allMatched") {
                     delete this.action.target;
                 } else if (value.endsWith("Asset")) {

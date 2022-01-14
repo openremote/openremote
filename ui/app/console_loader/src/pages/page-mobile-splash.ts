@@ -1,7 +1,6 @@
 import {css, html} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {AppStateKeyed} from "@openremote/or-app/dist/app";
-import {Page, PageProvider} from "@openremote/or-app/dist/types";
+import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
 export interface SplashConfig {
@@ -10,7 +9,7 @@ export interface SplashConfig {
     logoMobile?: HTMLTemplateElement | string;
 }
 
-export function pageMobileSplashProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: SplashConfig): PageProvider<S> {
+export function pageMobileSplashProvider(store: EnhancedStore<AppStateKeyed>, config?: SplashConfig): PageProvider<AppStateKeyed> {
     return {
         name: "splash",
         routes: [
@@ -25,7 +24,7 @@ export function pageMobileSplashProvider<S extends AppStateKeyed>(store: Enhance
 }
 
 @customElement("page-mobile-splash")
-class PageMobileSplash<S extends AppStateKeyed> extends Page<S> {
+export class PageMobileSplash extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS
@@ -43,7 +42,7 @@ class PageMobileSplash<S extends AppStateKeyed> extends Page<S> {
         return "mobile-splash";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 
@@ -57,7 +56,7 @@ class PageMobileSplash<S extends AppStateKeyed> extends Page<S> {
     }
     
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
     }
 
 

@@ -10,12 +10,12 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import {OrAttributePickerPickedEvent, OrAttributePicker } from "@openremote/or-attribute-picker";
 import { AttributeRef } from "@openremote/model";
 import moment from "moment";
-import { buttonStyle } from "@openremote/or-rules/dist/style";
+import { buttonStyle } from "@openremote/or-rules";
 import {createSelector} from "reselect";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageExportProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+export function pageExportProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "export",
         routes: [
@@ -41,7 +41,7 @@ interface TableRow {
 }
 
 @customElement("page-export")
-class PageExport<S extends AppStateKeyed> extends Page<S> {
+export class PageExport extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS
@@ -203,7 +203,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
     
     private tableRows: TableRow[] = [];
 
-    protected _realmSelector = (state: S) => state.app.realm || manager.displayRealm;
+    protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
     protected getRealmState = createSelector(
         [this._realmSelector],
@@ -217,7 +217,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         return "export";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
     
@@ -437,7 +437,7 @@ class PageExport<S extends AppStateKeyed> extends Page<S> {
         this.isExportBtnDisabled = true;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
         this.getRealmState(state);
     }
     

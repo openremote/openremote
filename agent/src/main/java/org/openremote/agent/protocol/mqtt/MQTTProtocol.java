@@ -20,7 +20,6 @@
 package org.openremote.agent.protocol.mqtt;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.openremote.agent.protocol.io.ProtocolIOClient;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
@@ -54,7 +53,7 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             Consumer<MQTTMessage<String>> messageConsumer = msg -> updateLinkedAttribute(
                 new AttributeState(assetId, attribute.getName(), msg.payload)
             );
-            client.ioClient.addMessageConsumer(topic, messageConsumer);
+            client.addMessageConsumer(topic, messageConsumer);
             protocolMessageConsumers.put(new AttributeRef(assetId, attribute.getName()), messageConsumer);
         });
     }
@@ -65,19 +64,18 @@ public class MQTTProtocol extends AbstractMQTTClientProtocol<MQTTProtocol, MQTTA
             AttributeRef attributeRef = new AttributeRef(assetId, attribute.getName());
             Consumer<MQTTMessage<String>> messageConsumer = protocolMessageConsumers.remove(attributeRef);
             if (messageConsumer != null) {
-                client.ioClient.removeMessageConsumer(topic, messageConsumer);
+                client.removeMessageConsumer(topic, messageConsumer);
             }
         });
     }
 
     @Override
-    protected ProtocolIOClient<MQTTMessage<String>, MQTT_IOClient> createIoClient() throws Exception {
-        MQTT_IOClient client = doCreateIoClient();
-        ProtocolIOClient<MQTTMessage<String>, MQTT_IOClient> protocolIoClient = new ProtocolIOClient<>(client, this::onConnectionStatusChanged, null);
-        this.client = protocolIoClient;
-        return protocolIoClient;
+    protected MQTT_IOClient createIoClient() throws Exception {
+        MQTT_IOClient client = super.createIoClient();
+        // Don't want the default message consumer, topic specific consumers will do the message routing for us
+        client.removeAllMessageConsumers();
+        return client;
     }
-
 
     @Override
     protected MQTT_IOClient doCreateIoClient() throws Exception {

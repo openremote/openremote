@@ -7,7 +7,7 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 
-export function pageAccountProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+export function pageAccountProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "account",
         routes: [
@@ -20,7 +20,7 @@ export function pageAccountProvider<S extends AppStateKeyed>(store: EnhancedStor
 }
 
 @customElement("page-account")
-class PageAccount<S extends AppStateKeyed> extends Page<S>  {
+export class PageAccount extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
@@ -36,7 +36,7 @@ class PageAccount<S extends AppStateKeyed> extends Page<S>  {
         return "account";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 
@@ -59,6 +59,6 @@ class PageAccount<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
     }
 }

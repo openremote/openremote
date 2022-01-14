@@ -7,7 +7,7 @@
     "ui/demo/*"
   ],
   "devDependencies": {
-    "lerna": "^4.0.0"
-  },
-  "resolutions": {}
+    "lerna": "^4.0.0",
+    "@openremote/util": "^1.0.4"
+  }
 }

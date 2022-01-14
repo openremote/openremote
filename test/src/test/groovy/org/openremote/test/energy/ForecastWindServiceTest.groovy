@@ -1,5 +1,6 @@
 package org.openremote.test.energy
 
+import org.junit.Ignore
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.datapoint.AssetPredictedDatapointService
@@ -27,6 +28,7 @@ import java.time.temporal.ChronoUnit
 
 import static org.openremote.manager.energy.ForecastWindService.OPEN_WEATHER_API_APP_ID
 
+@Ignore
 class ForecastWindServiceTest extends Specification implements ManagerContainerTrait {
 
     @Shared

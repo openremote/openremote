@@ -104,7 +104,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
 
     @Override
     protected Supplier<ChannelHandler[]> getEncoderDecoderProvider() {
-        return getGenericStringEncodersAndDecoders(client.ioClient, agent);
+        return getGenericStringEncodersAndDecoders(client, agent);
     }
 
     @Override
@@ -188,7 +188,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
         subscriptions.ifPresent(websocketSubscriptions -> {
             Runnable task = () -> doSubscriptions(clientHeaders, websocketSubscriptions);
             addAttributeConnectedTask(attributeRef, task);
-            if (client.ioClient.getConnectionStatus() == ConnectionStatus.CONNECTED) {
+            if (client.getConnectionStatus() == ConnectionStatus.CONNECTED) {
                 executorService.schedule(task, 1000, TimeUnit.MILLISECONDS);
             }
         });
@@ -236,15 +236,15 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
     }
 
     protected void doSubscriptions(Map<String, List<String>> headers, WebsocketSubscription[] subscriptions) {
-        LOG.info("Executing subscriptions for websocket: " + client.ioClient.getClientUri());
+        LOG.info("Executing subscriptions for websocket: " + client.getClientUri());
 
         // Inject OAuth header
-        if (!TextUtil.isNullOrEmpty(client.ioClient.authHeaderValue)) {
+        if (!TextUtil.isNullOrEmpty(client.authHeaderValue)) {
             if (headers == null) {
                 headers = new MultivaluedHashMap<>();
             }
             headers.remove(HttpHeaders.AUTHORIZATION);
-            headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(client.ioClient.authHeaderValue));
+            headers.put(HttpHeaders.AUTHORIZATION, Collections.singletonList(client.authHeaderValue));
         }
 
         Map<String, List<String>> finalHeaders = headers;
@@ -315,7 +315,7 @@ public class WebsocketAgentProtocol extends AbstractNettyIOClientProtocol<Websoc
                 LOG.warning("WebsocketHttpSubscription returned an un-successful response code: " + response.getStatus());
             }
         } else {
-            client.ioClient.sendMessage(ValueUtil.convert(subscription.body, String.class));
+            client.sendMessage(ValueUtil.convert(subscription.body, String.class));
         }
     }
 }

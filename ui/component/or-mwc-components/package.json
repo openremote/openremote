@@ -1,21 +1,24 @@
 {
   "name": "@openremote/or-mwc-components",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Material Design Components packaged as web components (The official components are hardcoded to use Material Design font which has limited icons)",
-  "scripts": {
-    "build": "npx tsc -b",
-    "test": "echo \"No tests\" && exit 0",
-    "prepublishOnly": "npx tsc -b"
-  },
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
   "exports": {
-    "./*": "./dist/*.js"
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js"
   },
   "typesVersions": {
     "*": {
       "*": [
-        "dist/*"
+        "lib/*"
       ]
     }
+  },
+  "scripts": {
+    "build": "npx tsc -b",
+    "test": "echo \"No tests\" && exit 0",
+    "prepublishOnly": "npx tsc -b"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -38,16 +41,13 @@
     "@material/snackbar": "^9.0.0",
     "@material/switch": "^9.0.0",
     "@material/textfield": "^9.0.0",
-    "@openremote/core": "^1.0.3",
-    "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-translate": "^1.0.3",
+    "@openremote/core": "^1.0.4",
+    "@openremote/or-icon": "^1.0.4",
+    "@openremote/or-translate": "^1.0.4",
     "lit": "^2.0.2"
   },
   "devDependencies": {
-    "tslint": ">=5.11.0",
-    "typescript": ">=4.5.2",
-    "webpack": "^5.64.3",
-    "webpack-cli": "^4.9.1"
+    "@openremote/util": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"

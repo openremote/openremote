@@ -9,7 +9,7 @@ import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 
-export function pageGatewayProvider<S extends AppStateKeyed>(store: EnhancedStore<S>): PageProvider<S> {
+export function pageGatewayProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "gateway",
         routes: [
@@ -22,7 +22,7 @@ export function pageGatewayProvider<S extends AppStateKeyed>(store: EnhancedStor
 }
 
 @customElement("page-gateway")
-class PageGateway<S extends AppStateKeyed> extends Page<S>  {
+export class PageGateway extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
@@ -133,7 +133,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
         return "gatewayConnection";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 
@@ -196,7 +196,7 @@ class PageGateway<S extends AppStateKeyed> extends Page<S>  {
         `;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
         this.realm = state.app.realm;
     }
 

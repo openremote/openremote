@@ -1,18 +1,16 @@
 import {css, html, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {AppStateKeyed} from "@openremote/or-app/dist/app";
-import {Page, PageProvider} from "@openremote/or-app/dist/types";
+import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {NavigationControl} from "maplibre-gl";
 import {EnhancedStore} from "@reduxjs/toolkit";
-import manager from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import {JsonRulesetDefinition} from "@openremote/model";
-import {getGeoNotificationsFromRulesSet} from "@openremote/core/dist/util";
 import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@openremote/or-map";
 
 export interface GeofencesConfig {
 }
 
-export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: GeofencesConfig): PageProvider<S> {
+export function pageMobileGeofencesProvider(store: EnhancedStore<AppStateKeyed>, config?: GeofencesConfig): PageProvider<AppStateKeyed> {
     return {
         name: "geofences",
         routes: [
@@ -28,7 +26,7 @@ export function pageMobileGeofencesProvider<S extends AppStateKeyed>(store: Enha
 const QUERY_VIEW = new URLSearchParams(window.location.search).get("view");
 const APP_ICON_POSITION = new URLSearchParams(window.location.search).get("appIconPosition");
 @customElement("page-mobile-geofences")
-class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
+export class PageMobileGeofences extends Page<AppStateKeyed> {
 
     
     static get styles() {
@@ -204,7 +202,7 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
         return "mobile-geofences";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
         this.getGeoNotifications();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
@@ -220,9 +218,8 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
         this.activeItem = undefined;
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
     }
-
 
     @property()
     public config?: GeofencesConfig;
@@ -334,15 +331,15 @@ class PageMobileGeofences<S extends AppStateKeyed> extends Page<S> {
 
                 });
             }
-            this.mapItems = getGeoNotificationsFromRulesSet(mapItemDefinition);
-            this.listItems = getGeoNotificationsFromRulesSet(listItemtDefinition);
+            this.mapItems = Util.getGeoNotificationsFromRulesSet(mapItemDefinition);
+            this.listItems = Util.getGeoNotificationsFromRulesSet(listItemtDefinition);
         }).catch((reason) => {
             console.log("Error:" + reason);
             const rulesetDefinition: JsonRulesetDefinition = {
                 rules: []
             };
-            this.mapItems = getGeoNotificationsFromRulesSet(rulesetDefinition);
-            this.listItems = getGeoNotificationsFromRulesSet(rulesetDefinition);
+            this.mapItems = Util.getGeoNotificationsFromRulesSet(rulesetDefinition);
+            this.listItems = Util.getGeoNotificationsFromRulesSet(rulesetDefinition);
         });
     }
 

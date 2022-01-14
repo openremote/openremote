@@ -4,26 +4,24 @@
   "description": "Demo",
   "private": true,
   "scripts": {
-    "clean": "npx shx rm -rf dist",
+    "clean": "npx tsc -b --clean && npx shx rm -rf dist",
     "modelBuild": "npx orutil build",
     "modelWatch": "npx orutil watch",
-    "build": "npx tsc -b && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
+    "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
     "serve": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
-    "watch": "npx tsc -b -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.3",
-    "@openremote/or-icon": "^1.0.3",
-    "@openremote/or-translate": "^1.0.3",
+    "@openremote/core": "^1.0.4",
+    "@openremote/or-icon": "^1.0.4",
+    "@openremote/or-translate": "^1.0.4",
     "i18next": "^21.5.3",
     "lit": "^2.0.2"
   },
   "devDependencies": {
     "@openremote/util": "^1.0.4",
-    "tslint": ">=5.11.0",
     "typescript": ">=4.5.2",
     "webpack": "^5.64.3",
     "webpack-cli": "^4.9.1",

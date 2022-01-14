@@ -10,7 +10,7 @@ export interface PageLogsConfig {
     viewer?: ViewerConfig
 }
 
-export function pageLogsProvider<S extends AppStateKeyed>(store: EnhancedStore<S>, config?: PageLogsConfig): PageProvider<S> {
+export function pageLogsProvider(store: EnhancedStore<AppStateKeyed>, config?: PageLogsConfig): PageProvider<AppStateKeyed> {
     return {
         name: "logs",
         routes: [
@@ -25,7 +25,7 @@ export function pageLogsProvider<S extends AppStateKeyed>(store: EnhancedStore<S
 }
 
 @customElement("page-logs")
-class PageLogs<S extends AppStateKeyed> extends Page<S> {
+export class PageLogs extends Page<AppStateKeyed> {
 
     static get styles() {
         // language=CSS
@@ -48,11 +48,11 @@ class PageLogs<S extends AppStateKeyed> extends Page<S> {
         return "logs";
     }
 
-    constructor(store: EnhancedStore<S>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 
-    public stateChanged(state: S) {
+    public stateChanged(state: AppStateKeyed) {
     }
 
     protected render() {
