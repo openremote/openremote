@@ -85,7 +85,7 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     }
 }
 
-export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined, markerConfig?: MapMarkerConfig, rangeValue?: number): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
+export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined, markerConfig?: MapMarkerConfig, attrVal?: number | string): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
     if (!type) {
         return;
     }
@@ -98,10 +98,14 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
             const overrideConfig = markerConfig[descriptor.name!] as AssetTypeMarkerConfig;
             const attributeName = Object.keys(overrideConfig)[0];
             const colourConfig = overrideConfig[attributeName];
-            if (colourConfig.type === 'range' && rangeValue) {
+            console.log(colourConfig, attrVal);
+            if (colourConfig.type === 'range' && attrVal) {
                 const ranges = colourConfig.ranges;
-                const colourFromRange = ranges.find(r => r.max >= rangeValue) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
+                const colourFromRange = ranges.find(r => r.max >= attrVal) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
                 colourOverride = colourFromRange.colour || undefined;
+            } else if (colourConfig.type === 'boolean' && attrVal) {
+                colourOverride = colourConfig[attrVal] || undefined;
+                console.log(colourOverride);
             }
             // todo icon override
         }

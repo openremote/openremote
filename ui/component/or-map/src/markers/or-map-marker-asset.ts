@@ -8,7 +8,7 @@ import {
     AssetEventCause,
     Asset,
     SharedEvent,
-    WellknownAttributes,
+    WellknownAttributes, ReadAttributeEvent,
 } from "@openremote/model";
 import {MapMarkerConfig, subscribe, Util} from "@openremote/core";
 import manager from "@openremote/core";
@@ -36,7 +36,9 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     protected markerColor?: string;
 
     protected set type(type: string | undefined) {
-        const rangeValue = (this.displayValue) ? +this.displayValue : undefined;
+        // const rangeValue = this.getDesiredAttrValue(asset) || undefined;
+        const rangeValue = 200;
+        console.log('dpv', this.displayValue);
         const iconAndColor = getMarkerIconAndColorFromAssetType(type, this.config, rangeValue);
 
         if (!iconAndColor) {
@@ -108,33 +110,36 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
     protected async onAssetChanged(asset?: Asset) {
         if (asset) {
-            const result: AssetEvent = await manager.events!.sendEventWithReply({
-                event: {
-                    eventType: "read-asset",
-                    assetId: asset.id
-                }
-            });
-            asset = result.asset!;
-            if (asset.attributes && asset.type && this.config && this.config[asset.type]) {
-                const attributeName = Object.keys(this.config[asset.type])[0];
-                this._updatedisplayValue(asset.attributes[attributeName].value.toString());
-            }
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
             this.type = asset.type;
+
+            if (this.config && this.config[asset.type!]) {
+                const attributeName = Object.keys(this.config[asset.type!])[0];
+                this.displayValue = await this.getDesiredAttrValue(asset, attributeName);
+            }
         } else {
             this.lat = undefined;
             this.lng = undefined;
         }
     }
+    
+    protected async getDesiredAttrValue(asset: Asset, attributeName: string): Promise<string | number | boolean | undefined> {
+        const currentValue: AttributeEvent = await manager.events!.sendEventWithReply({
+            event: {
+                eventType: "read-asset-attribute",
+                ref: {
+                    id: asset.id,
+                    name: attributeName
+                }
+            } as ReadAttributeEvent
+        });
+        return currentValue.attributeState?.value || undefined;
+    }
 
     protected _updateLocation(location: GeoJSONPoint | null) {
         this.lat = location && location.coordinates ? (location.coordinates as any)[1] : undefined;
         this.lng = location && location.coordinates ? (location.coordinates as any)[0] : undefined;
-    }
-
-    protected _updatedisplayValue(value: string) {
-        this.displayValue = value;
     }
 
     protected getColor() {

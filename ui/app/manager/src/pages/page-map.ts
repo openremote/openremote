@@ -11,7 +11,7 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent
 } from "@openremote/or-map";
-import manager, {MapMarkerConfig, RangeAttributeMarkerColours, Util} from "@openremote/core";
+import manager, {AttributeMarkerColours, MapMarkerConfig, RangeAttributeMarkerColours, Util} from "@openremote/core";
 import {createSelector} from "reselect";
 import {
     Asset,
@@ -120,6 +120,13 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
                             }
                         ]
                     } as RangeAttributeMarkerColours
+                },
+                DoorAsset: {
+                    locked: {
+                        type: "boolean",
+                        true: '00FF00',
+                        false: 'FF0000'
+                    } as AttributeMarkerColours
                 }
             } as MapMarkerConfig;
 
