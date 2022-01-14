@@ -113,9 +113,8 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             if (this.config && this.config[asset.type!]) {
                 const attributeName = Object.keys(this.config[asset.type!])[0];
                 this.displayValue = await this.getDesiredAttrValue(asset, attributeName);
-                console.log('dpv', this.displayValue);
             }
-            
+
             this.type = asset.type;
         } else {
             this.lat = undefined;
@@ -133,7 +132,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
                 }
             } as ReadAttributeEvent
         });
-        return currentValue.attributeState?.value || undefined;
+        return currentValue.attributeState?.value;
     }
 
     protected _updateLocation(location: GeoJSONPoint | null) {

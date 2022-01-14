@@ -90,8 +90,6 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
         return;
     }
 
-    console.log(attrVal);
-
     const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
     let colourOverride: string | AttributeMarkerColoursRange[] | undefined;
