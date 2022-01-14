@@ -175,7 +175,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("icon")) {
+        if (_changedProperties.has("icon") || _changedProperties.has("displayText")) {
             this.refreshMarkerContent();
         }
 
