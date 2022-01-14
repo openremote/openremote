@@ -27,7 +27,7 @@
     "@types/mapbox": "^1.6.42",
     "lit": "^2.0.2",
     "mapbox.js": "^3.2.0",
-    "maplibre-gl": ">=1.15.2",
+    "maplibre-gl": "^1.15.2",
     "@maplibre/maplibre-gl-geocoder": "^1.2.0"
   },
   "devDependencies": {
