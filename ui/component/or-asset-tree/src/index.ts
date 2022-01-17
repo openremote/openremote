@@ -315,7 +315,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected render() {
-
         return html`
             <div id="header">
                 <div id="title-container">
@@ -344,7 +343,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                               .value="${ this._filterValue }"
                               icon="magnify" iconTrailing="${this._filterValue.length > 0 ? 'close' : ''}" 
                               compact="true"
-                              
                               outlined="true"
                               clearOnTrailingClick="true"
                               @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
@@ -563,10 +561,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected _onDeselectClicked() {
         this._onNodeClicked(null, null);
-    }
-
-    protected showClearFilter() {
-        return this._filterValue && this._filterValue.length > 0;
     }
 
     /**
@@ -1025,7 +1019,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected _buildTreeNodes(assets: Asset[], sortFunction: (a: UiAssetTreeNode, b: UiAssetTreeNode) => number) {
-
         if (!assets || assets.length === 0) {
             this._nodes = [];
         } else {
