@@ -33,7 +33,7 @@ import java.security.Principal;
 
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
-import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 public class WebResource implements AuthContext {
 
@@ -68,7 +68,7 @@ public class WebResource implements AuthContext {
     }
 
     public String getRequestRealm() {
-        return request.getHeader(REQUEST_HEADER_REALM);
+        return request.getHeader(REALM_PARAM_NAME);
     }
 
     public boolean isAuthenticated() {
@@ -79,7 +79,7 @@ public class WebResource implements AuthContext {
         // The securityContext is a thread-local proxy, careful when/how you call it
         Principal principal = securityContext.getUserPrincipal();
         if (principal == null) {
-            throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
+            return null;
         }
 
         if (principal instanceof KeycloakPrincipal) {

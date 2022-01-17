@@ -22,6 +22,7 @@ package org.openremote.manager.gateway;
 import io.netty.channel.ChannelHandler;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.http.client.utils.URIBuilder;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.auth.OAuthClientCredentialsGrant;
 import org.openremote.agent.protocol.io.AbstractNettyIOClient;
@@ -95,8 +96,12 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
 
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
-        clientEventService.addSubscriptionAuthorizer((authContext, eventSubscription) -> {
+        clientEventService.addSubscriptionAuthorizer((realm, authContext, eventSubscription) -> {
             if (!eventSubscription.isEventType(GatewayConnectionStatusEvent.class)) {
+                return false;
+            }
+
+            if (authContext == null) {
                 return false;
             }
 
@@ -198,7 +203,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
                     .setHost(connection.getHost())
                     .setPort(connection.getPort() == null ? -1 : connection.getPort())
                 .setPath("websocket/events")
-                .setParameter("Auth-Realm", connection.getRealm()).build(),
+                .setParameter(Constants.REALM_PARAM_NAME, connection.getRealm()).build(),
                 null,
                 new OAuthClientCredentialsGrant(
                     new URIBuilder()

@@ -195,11 +195,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         clientEventService = container.getService(ClientEventService.class);
         EventSubscriptionAuthorizer assetEventAuthorizer = AssetStorageService.assetInfoAuthorizer(identityService, assetStorageService);
 
-        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
+        clientEventService.addSubscriptionAuthorizer((requestedRealm, auth, subscription) -> {
             if (!subscription.isEventType(AttributeEvent.class)) {
                 return false;
             }
-            return assetEventAuthorizer.apply(auth, subscription);
+            return assetEventAuthorizer.authorise(requestedRealm, auth, subscription);
         });
 
         processors.add(gatewayService);
@@ -498,7 +498,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected void publishClientEvent(Asset<?> asset, Attribute<?> attribute) {
         // TODO Catch "queue full" exception (e.g. when producing thousands of INFO messages in rules)?
         clientEventService.publishEvent(
-            attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false),
             new AttributeEvent(
                 asset.getId(),
                 attribute.getName(),

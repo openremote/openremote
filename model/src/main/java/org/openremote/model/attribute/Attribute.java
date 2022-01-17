@@ -323,6 +323,14 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
             "name='" + name + '\'' +
             ", value='" + value + '\'' +
             ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
+            "} ";
+    }
+
+    public String toStringAll() {
+        return getClass().getSimpleName() + "{" +
+            "name='" + name + '\'' +
+            ", value='" + value + '\'' +
+            ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
             ", meta='" + (meta == null ? "" : getMeta().values().stream().map(MetaItem::toString).collect(Collectors.joining(","))) + '\'' +
             "} ";
     }

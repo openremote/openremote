@@ -68,9 +68,13 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
         assetStorageService = container.getService(AssetStorageService.class);
         clientEventService = container.getService(ClientEventService.class);
 
-        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
+        clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
             if (!subscription.isEventType(SimulatorState.class))
                 return false;
+
+            if (auth == null) {
+                return false;
+            }
 
             // Superuser can get all
             if (auth.isSuperUser())

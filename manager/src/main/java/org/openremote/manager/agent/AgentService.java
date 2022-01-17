@@ -395,8 +395,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
     protected void startAgent(Agent<?,?,?> agent) {
         withLock(getClass().getSimpleName() + "::startAgent", () -> {
+            Protocol<?> protocol = null;
+
             try {
-                Protocol<?> protocol = agent.getProtocolInstance();
+                protocol = agent.getProtocolInstance();
                 protocolInstanceMap.put(agent.getId(), protocol);
 
                 LOG.fine("Starting protocol instance: " + protocol);
@@ -429,6 +431,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
 
             } catch (Exception e) {
+                if (protocol != null) {
+                    try {
+                        protocol.stop(container);
+                    } catch (Exception ignored) {
+                    }
+                }
                 protocolInstanceMap.remove(agent.getId());
                 LOG.log(Level.SEVERE, "Failed to start protocol instance for agent: " + agent, e);
                 sendAttributeEvent(new AttributeEvent(agent.getId(), Agent.STATUS.getName(), ConnectionStatus.ERROR));

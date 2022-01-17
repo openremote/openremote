@@ -45,7 +45,7 @@ import java.util.logging.Logger;
 
 import static org.apache.camel.builder.Builder.header;
 import static org.apache.camel.builder.PredicateBuilder.or;
-import static org.openremote.container.web.ConnectionConstants.SESSION;
+import static org.openremote.container.web.ConnectionConstants.SESSION_TERMINATOR;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.
@@ -102,7 +102,6 @@ public class ClientEventService implements ContainerService {
     }
 
     public static final int PRIORITY = ManagerWebService.PRIORITY - 200;
-    public static final String HEADER_ACCESS_RESTRICTED = ClientEventService.class.getName() + ".HEADER_ACCESS_RESTRICTED";
     public static final String HEADER_CONNECTION_TYPE = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE";
     public static final String HEADER_CONNECTION_TYPE_WEBSOCKET = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_WEBSOCKET";
     public static final String HEADER_CONNECTION_TYPE_MQTT = ClientEventService.class.getName() + ".HEADER_CONNECTION_TYPE_MQTT";
@@ -244,14 +243,18 @@ public class ClientEventService implements ContainerService {
                             String sessionKey = getSessionKey(exchange);
                             EventSubscription<?> subscription = exchange.getIn().getBody(EventSubscription.class);
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                            if (authorizeEventSubscription(authContext, subscription)) {
-                                boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
-                                eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, subscription);
+                            boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext);
+                            boolean anonymousUser = authContext == null;
+                            String username = authContext == null ? "anonymous" : authContext.getUsername();
+                            String realm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
+
+                            if (authorizeEventSubscription(realm, authContext, subscription)) {
+                                eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, anonymousUser, subscription);
                                 subscription.setSubscribed(true);
                                 sendToSession(sessionKey, subscription);
                             } else {
                                 LOG.warning("Unauthorized subscription from '"
-                                        + authContext.getUsername() + "' in realm '" + authContext.getAuthenticatedRealm()
+                                        + username + "' in realm '" + realm
                                         + "': " + subscription
                                 );
                                 sendToSession(sessionKey, new UnauthorizedEventSubscription<>(subscription));
@@ -286,7 +289,7 @@ public class ClientEventService implements ContainerService {
         // Add pending internal subscriptions
         if (!pendingInternalSubscriptions.isEmpty()) {
             pendingInternalSubscriptions.forEach(subscription ->
-                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, subscription));
+                eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, false, subscription));
         }
 
         pendingInternalSubscriptions = null;
@@ -299,6 +302,7 @@ public class ClientEventService implements ContainerService {
         return addInternalSubscription(Integer.toString(Objects.hash(eventClass, filter, eventConsumer)), eventClass, filter, eventConsumer);
     }
     public <T extends SharedEvent> String addInternalSubscription(String subscriptionId, Class<T> eventClass, EventFilter<T> filter, Consumer<T> eventConsumer) {
+
         EventSubscription<T> subscription = new EventSubscription<T>(eventClass, filter, subscriptionId, eventConsumer);
         if (eventSubscriptions == null) {
             // Not initialised yet
@@ -307,7 +311,7 @@ public class ClientEventService implements ContainerService {
             }
             pendingInternalSubscriptions.add(subscription);
         } else {
-            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, subscription);
+            eventSubscriptions.createOrUpdate(INTERNAL_SESSION_KEY, false, false, subscription);
         }
         return subscriptionId;
     }
@@ -338,19 +342,12 @@ public class ClientEventService implements ContainerService {
         this.eventSubscriptionAuthorizers.add(authorizer);
     }
 
-    public boolean authorizeEventSubscription(AuthContext authContext, EventSubscription<?> subscription) {
+    public boolean authorizeEventSubscription(String realm, AuthContext authContext, EventSubscription<?> subscription) {
         return eventSubscriptionAuthorizers.stream()
-                .anyMatch(authorizer -> authorizer.apply(authContext, subscription));
+                .anyMatch(authorizer -> authorizer.authorise(realm, authContext, subscription));
     }
 
     public <T extends SharedEvent> void publishEvent(T event) {
-        publishEvent(true, event);
-    }
-
-    /**
-     * @param accessRestricted <code>true</code> if this event can be received by restricted user sessions.
-     */
-    public <T extends SharedEvent> void publishEvent(boolean accessRestricted, T event) {
         // Only publish if service is not stopped
         if (stopped) {
             return;
@@ -362,7 +359,7 @@ public class ClientEventService implements ContainerService {
                 LOG.finer("Publishing: " + event);
             }
             messageBrokerService.getProducerTemplate()
-                .sendBodyAndHeader(CLIENT_EVENT_QUEUE, event, HEADER_ACCESS_RESTRICTED, accessRestricted);
+                .sendBody(CLIENT_EVENT_QUEUE, event);
         }
     }
 
@@ -420,23 +417,8 @@ public class ClientEventService implements ContainerService {
     }
 
     protected static SessionInfo createSessionInfo(String sessionKey, Exchange exchange) {
-
         String connectionType = (String) exchange.getIn().getHeader(HEADER_CONNECTION_TYPE);
-        Runnable closeRunnable = null;
-
-        if (HEADER_CONNECTION_TYPE_WEBSOCKET.equals(connectionType)) {
-            Session session = exchange.getIn().getHeader(SESSION, Session.class);
-            closeRunnable = () -> {
-                try {
-                    session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, ""));
-                } catch (Exception e) {
-                    LOG.log(Level.INFO, "Failed to close client session: " + sessionKey);
-                }
-            };
-        } else if (HEADER_CONNECTION_TYPE_MQTT.equals(connectionType)) {
-            closeRunnable = exchange.getIn().getHeader(SESSION, Runnable.class);
-        }
-
+        Runnable closeRunnable = exchange.getIn().getHeader(SESSION_TERMINATOR, Runnable.class);
         return new SessionInfo(connectionType, closeRunnable);
     }
 }

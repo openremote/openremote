@@ -123,7 +123,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(ConnectionConstants.SESSION_OPEN, true);
         // Put a close connection runnable into the headers for the client event service
         Runnable closeRunnable = () -> mqttBrokerService.forceDisconnect(connection.getClientId());
-        headers.put(ConnectionConstants.SESSION, closeRunnable);
+        headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         LOG.fine("Connected: " + connection);
     }
@@ -247,7 +247,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
             filter
         );
 
-        if (!clientEventService.authorizeEventSubscription(authContext, subscription)) {
+        if (!clientEventService.authorizeEventSubscription(connection.getRealm(), authContext, subscription)) {
             LOG.info("Subscription was not authorised for this user and topic: topic=" + topic + ", connection=" + connection);
             return false;
         }
@@ -510,6 +510,7 @@ public class DefaultMQTTHandler extends MQTTHandler {
         headers.put(ConnectionConstants.SESSION_KEY, connection.getClientId());
         headers.put(ClientEventService.HEADER_CONNECTION_TYPE, ClientEventService.HEADER_CONNECTION_TYPE_MQTT);
         headers.put(Constants.AUTH_CONTEXT, connection.getAuthContext());
+        headers.put(Constants.REALM_PARAM_NAME, connection.getRealm());
         return headers;
     }
 }

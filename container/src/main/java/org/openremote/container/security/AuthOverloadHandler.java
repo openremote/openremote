@@ -26,12 +26,12 @@ import io.undertow.util.HttpString;
 import java.util.Deque;
 
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 /**
  * If a client can't set Authorization header (e.g. Javascript websocket API), use a request
  * parameter. This handler grabs the parameter and sets it as a regular header. This handler
- * will also grab {@link org.openremote.model.Constants#REQUEST_HEADER_REALM} as
+ * will also grab {@link org.openremote.model.Constants#REALM_PARAM_NAME} as
  * a request parameter and set it as a regular header.
  */
 public class AuthOverloadHandler implements HttpHandler {
@@ -49,9 +49,9 @@ public class AuthOverloadHandler implements HttpHandler {
             exchange.getRequestHeaders().put(HttpString.tryFromString(AUTHORIZATION), authParameter.pollFirst());
         }
 
-        Deque<String> authRealmParameter = exchange.getQueryParameters().get(REQUEST_HEADER_REALM);
+        Deque<String> authRealmParameter = exchange.getQueryParameters().get(REALM_PARAM_NAME);
         if (authRealmParameter != null && authRealmParameter.peekFirst() != null) {
-            exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), authRealmParameter.pollFirst());
+            exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), authRealmParameter.pollFirst());
         }
 
         next.handleRequest(exchange);

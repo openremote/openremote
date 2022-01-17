@@ -108,7 +108,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
                 this._subscriptionIds = [];
 
                 if (!isAttributes) {
-                    const assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, undefined, (event) => this._onEvent(event));
+                    const assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onEvent(event));
                     // Check if the same IDs are in place
                     const currentIds: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
                     if (!this._subscriptionIds || !Util.objectsEqual(ids, currentIds)) {

@@ -162,7 +162,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractNettyIOClient.class);
     protected final List<Consumer<T>> messageConsumers = new ArrayList<>();
-    protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
+    protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new CopyOnWriteArrayList<>();
     protected ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
     protected ChannelFuture channelStartFuture;
     protected Channel channel;
@@ -366,25 +366,19 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
 
     @Override
     public void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
-        synchronized (connectionStatusConsumers) {
-            if (!connectionStatusConsumers.contains(connectionStatusConsumer)) {
-                connectionStatusConsumers.add(connectionStatusConsumer);
-            }
+        if (!connectionStatusConsumers.contains(connectionStatusConsumer)) {
+            connectionStatusConsumers.add(connectionStatusConsumer);
         }
     }
 
     @Override
     public void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
-        synchronized (connectionStatusConsumers) {
-            connectionStatusConsumers.remove(connectionStatusConsumer);
-        }
+        connectionStatusConsumers.remove(connectionStatusConsumer);
     }
 
     @Override
     public void removeAllConnectionStatusConsumers() {
-        synchronized (connectionStatusConsumers) {
-            connectionStatusConsumers.clear();
-        }
+        connectionStatusConsumers.clear();
     }
 
     @Override
@@ -456,16 +450,14 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
         this.connectionStatus = connectionStatus;
 
         executorService.submit(() -> {
-            synchronized (connectionStatusConsumers) {
-                connectionStatusConsumers.forEach(
-                    consumer -> {
-                        try {
-                            consumer.accept(connectionStatus);
-                        } catch (Exception e) {
-                            LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
-                        }
-                    });
-            }
+            connectionStatusConsumers.forEach(
+                consumer -> {
+                    try {
+                        consumer.accept(connectionStatus);
+                    } catch (Exception e) {
+                        LOG.log(Level.WARNING, "Connection status change handler threw an exception: " + getClientUri(), e);
+                    }
+                });
         });
     }
 

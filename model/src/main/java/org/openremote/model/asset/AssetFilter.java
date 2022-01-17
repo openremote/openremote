@@ -27,6 +27,7 @@ import org.openremote.model.util.TextUtil;
 import java.util.Arrays;
 import java.util.List;
 
+// TODO: Merge this with AssetQuery and use AssetQueryPredicate to resolve
 public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<T> {
 
     public static final String FILTER_TYPE = "asset";
@@ -36,6 +37,8 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
     protected String[] parentIds;
     protected String[] path;
     protected String[] attributeNames;
+    protected boolean publicEvents;
+    protected boolean restrictedEvents;
 
     public AssetFilter() {
     }
@@ -71,6 +74,10 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return this;
     }
 
+    public String[] getPath() {
+        return path;
+    }
+
     public AssetFilter<T> setPath(String[] path) {
         this.path = path;
         return this;
@@ -85,6 +92,24 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
         return this;
     }
 
+    public boolean isPublicEvents() {
+        return publicEvents;
+    }
+
+    public AssetFilter<T> setPublicEvents(boolean publicEvents) {
+        this.publicEvents = publicEvents;
+        return this;
+    }
+
+    public boolean isRestrictedEvents() {
+        return restrictedEvents;
+    }
+
+    public AssetFilter<T> setRestrictedEvents(boolean restrictedEvents) {
+        this.restrictedEvents = restrictedEvents;
+        return this;
+    }
+
     @Override
     public String getFilterType() {
         return FILTER_TYPE;
@@ -92,6 +117,14 @@ public class AssetFilter<T extends SharedEvent & AssetInfo> extends EventFilter<
 
     @Override
     public boolean apply(T event) {
+
+        if (restrictedEvents && !event.canAccessRestrictedRead()) {
+            return false;
+        }
+
+        if (publicEvents && !event.canAccessPublicRead()) {
+            return false;
+        }
 
         if (assetIds != null && assetIds.length > 0) {
             if (!Arrays.asList(assetIds).contains(event.getAssetId())) {

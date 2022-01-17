@@ -21,9 +21,10 @@ package org.openremote.container.web;
 
 public interface ConnectionConstants {
 
-    String SESSION = "connection.session";
+    String SESSION_TERMINATOR = "connection.sessionTerminator";
     String SESSION_KEY = "connection.sessionKey";
     String SEND_TO_ALL = "connection.sendToAll";
+    String HANDSHAKE_REALM = "connection.realm";
     String HANDSHAKE_AUTH = "connection.auth";
     String SESSION_OPEN = "connection.sessionOpen";
     String SESSION_CLOSE = "connection.sessionClose";

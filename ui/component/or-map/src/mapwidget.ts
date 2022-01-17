@@ -296,7 +296,7 @@ export class MapWidget {
                 this._onMapClick(e.lngLat, true);
             });
 
-            if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geoCodeUrl) {
+            if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geocodeUrl) {
                 this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { marker: false, showResultsWhileTyping: true });
                 // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
                 this._geocoder._onKeyDown = debounce((e: KeyboardEvent) => {
@@ -603,7 +603,7 @@ export class MapWidget {
     protected async _forwardGeocode(config: any) {
         const features = [];
         try {
-            let request =  this._viewSettings!.geoCodeUrl + '/search?q=' + config.query + '&format=geojson&polygon_geojson=1&addressdetails=1';
+            let request =  this._viewSettings!.geocodeUrl + '/search?q=' + config.query + '&format=geojson&polygon_geojson=1&addressdetails=1';
             const response = await fetch(request);
             const geojson = await response.json();
             for (let feature of geojson.features) {

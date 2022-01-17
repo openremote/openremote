@@ -64,7 +64,15 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
     @Override
     public Tenant[] getAccessible(RequestParams requestParams) {
         try {
-            Tenant[] tenants = isSuperUser() ? identityService.getIdentityProvider().getTenants() : new Tenant[] {getAuthenticatedTenant()};
+            Tenant[] tenants;
+
+            if (isSuperUser()) {
+                tenants = identityService.getIdentityProvider().getTenants();
+            } else {
+                tenants = new Tenant[] {
+                    (isAuthenticated() ? getAuthenticatedTenant() : getRequestTenant())
+                };
+            }
             return Arrays.stream(tenants).map(tenant -> new Tenant().setRealm(tenant.getRealm()).setDisplayName(tenant.getDisplayName())).toArray(Tenant[]::new);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());

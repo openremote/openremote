@@ -96,7 +96,6 @@ public abstract class AbstractNameValueHolder<T> implements NameValueHolder<T>, 
     }
 
     @JsonProperty
-    @Override
     public void setValue(T value) {
         this.value = value;
     }

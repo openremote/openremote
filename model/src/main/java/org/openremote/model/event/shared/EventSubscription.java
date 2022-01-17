@@ -117,6 +117,10 @@ public class EventSubscription<E extends SharedEvent> {
         this.internalConsumer = internalConsumer;
     }
 
+    public boolean isInternal() {
+        return internalConsumer != null;
+    }
+
     public String getSubscriptionId() {
         return subscriptionId;
     }

@@ -55,9 +55,7 @@ import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
-import org.openremote.model.security.Role
 import org.openremote.model.security.User
-import org.openremote.model.util.Pair
 
 import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
@@ -502,7 +500,7 @@ trait ContainerTrait {
                 .scheme("ws")
                 .replacePath(DefaultWebsocketComponent.WEBSOCKET_PATH)
                 .path(endpointPath)
-                .queryParam(Constants.REQUEST_HEADER_REALM, realm)
+                .queryParam(Constants.REALM_PARAM_NAME, realm)
                 .queryParam("Authorization", "Bearer " + accessToken)
     }
 

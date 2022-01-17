@@ -6,7 +6,7 @@ const { spawn } = require("child_process");
 
 /* THIS IS JUST A WRAPPER THAT LAUNCHES GRADLE TASKS  */
 
-/* Try and get the gradle openremote project dir */
+/* Try and get the openremote project dir or custom project dir */
 function getWorkingDirectory() {
     let dirs = __dirname.split(path.sep);
     dirs.pop();
@@ -14,6 +14,11 @@ function getWorkingDirectory() {
     // get CWD as the openremote repo root
     let cwd = dirs.join(path.sep);
     cwd = path.join(cwd, "..");
+
+    if (fs.existsSync(path.join(cwd, "..", ".gitmodules"))) {
+        // Assume we're in a custom project
+        cwd = path.join(cwd, "..");
+    }
 
     return cwd;
 }

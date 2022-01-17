@@ -200,24 +200,24 @@ task npmInstall(type: Exec){
 }
 task npmClean(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "clean"
+    commandLine npmCommand("npm"), "run", "clean"
 }
 task npmBuild(type: Exec){
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "build"
+    commandLine npmCommand("npm"), "run", "build"
 }
 task npmTest(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "test"
+    commandLine npmCommand("npm"), "run", "test"
 }
 task npmServe(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "serve"
+    commandLine npmCommand("npm"), "run", "serve"
 }
 task npmPrepare(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "prepublishOnly"
+    commandLine npmCommand("npm"), "run", "prepublishOnly"
 }
 task npmPublish(type: Exec){
     dependsOn getYarnInstallTask()
@@ -225,7 +225,7 @@ task npmPublish(type: Exec){
 }
 task npmServeProduction(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "serveProduction"
+    commandLine npmCommand("npm"), "run", "serveProduction"
 }
 
 // Add typescript tasks

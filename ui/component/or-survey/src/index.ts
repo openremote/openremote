@@ -413,7 +413,7 @@ class OrSurvey extends LitElement {
             ids: [surveyId],
             types: ["SurveyAsset"]
         };
-        manager.rest.api.AssetResource.queryPublicAssets(surveyQuery).then((response) => {
+        manager.rest.api.AssetResource.queryAssets(surveyQuery).then((response) => {
             if (response && response.data) {
                 this.survey = response.data[0];
                 this.requestUpdate();
@@ -431,7 +431,7 @@ class OrSurvey extends LitElement {
             types: ["SurveyQuestionAsset"]
         };
 
-        manager.rest.api.AssetResource.queryPublicAssets(questionQuery).then((response) => {
+        manager.rest.api.AssetResource.queryAssets(questionQuery).then((response) => {
             if (response && response.data) {
                 const questions = response.data;
                 questions.sort((a, b) => a.attributes && b.attributes ? a.attributes.order.value - b.attributes.order.value : 0);

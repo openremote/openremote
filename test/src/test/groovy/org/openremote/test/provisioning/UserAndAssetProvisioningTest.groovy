@@ -24,9 +24,7 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.moquette.BrokerConstants
-import io.netty.channel.ChannelOption
 import io.netty.channel.socket.SocketChannel
-import io.netty.channel.socket.nio.NioSocketChannel
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.container.util.UniqueIdentifierGenerator

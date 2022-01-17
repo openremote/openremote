@@ -47,7 +47,7 @@ export function loadAgents(): PromiseLike<Agent[]> {
             }
         });
         
-        manager.events!.subscribeAssetEvents(undefined, false, undefined, (assetEvent) => {
+        manager.events!.subscribeAssetEvents(undefined, false, (assetEvent) => {
             if (assetEvent.asset && assetEvent.asset.type!.endsWith("Agent")) {
                 agents = undefined;
                 loadingPromise = undefined;

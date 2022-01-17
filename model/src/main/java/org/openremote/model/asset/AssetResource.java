@@ -61,7 +61,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * <ul>
  * <li>{@link #getCurrentUserAssets}</li>
  * <li>{@link #queryAssets}</li>
- * <li>{@link #queryPublicAssets}</li>
  * <li>{@link #get}</li>
  * <li>{@link #update}</li>
  * <li>{@link #writeAttributeValue}</li>
@@ -277,27 +276,5 @@ public interface AssetResource {
     @Path("query")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
     Asset<?>[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
-
-    /**
-     * Retrieve public assets using an {@link AssetQuery}.
-     * <p>
-     * Allows un-authenticated 'public' users to query public assets for a realm.
-     */
-    @POST
-    @Path("public/query")
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    Asset<?>[] queryPublicAssets(@BeanParam RequestParams requestParams, AssetQuery query);
-
-    /**
-     * Retrieve public assets using an {@link AssetQuery} as a JSON serialized query parameter.
-     * <p>
-     * Allows un-authenticated 'public' users to query public assets for a realm.
-     */
-    @GET
-    @Path("public/query")
-    @Produces(APPLICATION_JSON)
-    Asset<?>[] getPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
 }
