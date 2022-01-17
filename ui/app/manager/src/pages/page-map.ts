@@ -8,7 +8,8 @@ import {
     OrMapAssetCardLoadAssetEvent,
     OrMapClickedEvent,
     OrMapMarkerAsset,
-    OrMapMarkerClickedEvent
+    OrMapMarkerClickedEvent,
+    OrMapGeocoderChangeEvent
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -289,6 +290,10 @@ export class PageMap extends Page<MapStateKeyed> {
             return assets.find((asset) => asset.id === currentId);
     });
 
+    protected _setCenter(geocode: any) {
+        this._map!.center = [geocode.geometry.coordinates[0], geocode.geometry.coordinates[1]];
+    }
+
     get name(): string {
         return "map";
     }
@@ -304,7 +309,7 @@ export class PageMap extends Page<MapStateKeyed> {
             
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
             
-            <or-map id="map" class="or-map">
+            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
                     this._assets.filter((asset) => {
                         if (!asset.attributes) {

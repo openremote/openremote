@@ -296,29 +296,6 @@ export class MapWidget {
                 this._onMapClick(e.lngLat, true);
             });
 
-            // Add custom controls
-            if (this._controls) {
-                this._controls.forEach((control) => {
-                    if (Array.isArray(control)) {
-                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
-                        this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
-                    } else {
-                        this._mapGl!.addControl(control);
-                    }
-                });
-            } else {
-                // Add zoom and rotation controls to the map
-                this._mapGl.addControl(new NavigationControl());
-                // Add current location controls to the map
-                this._mapGl.addControl(new GeolocateControl({
-                    positionOptions: {
-                        enableHighAccuracy: true
-                    },
-                    showAccuracyCircle: true,
-                    showUserLocation: true
-                }));
-            }
-
             if (this._showGeoCodingControl && this._viewSettings && this._viewSettings.geoCodeUrl) {
                 this._geocoder = new MaplibreGeocoder({forwardGeocode: this._forwardGeocode.bind(this), reverseGeocode: this._reverseGeocode }, { marker: false, showResultsWhileTyping: true });
                 // Override the _onKeyDown function from MaplibreGeocoder which has a bug getting the value from the input element
@@ -382,10 +359,33 @@ export class MapWidget {
                         // Set marker by calling _onMapClick and doubleClicked set to true
                         this._onLongPress(selected.center);
                     }
-                });
-
-                this._initLongPressEvent();
+                });                
             }
+
+            // Add custom controls
+            if (this._controls) {
+                this._controls.forEach((control) => {
+                    if (Array.isArray(control)) {
+                        const controlAndPosition: [Control | IControl, ControlPosition?] = control;
+                        this._mapGl!.addControl(controlAndPosition[0], controlAndPosition[1]);
+                    } else {
+                        this._mapGl!.addControl(control);
+                    }
+                });
+            } else {
+                // Add zoom and rotation controls to the map
+                this._mapGl.addControl(new NavigationControl());
+                // Add current location controls to the map
+                this._mapGl.addControl(new GeolocateControl({
+                    positionOptions: {
+                        enableHighAccuracy: true
+                    },
+                    showAccuracyCircle: true,
+                    showUserLocation: true
+                }));
+            }
+
+            this._initLongPressEvent();
         }
 
         this._mapContainer.dispatchEvent(new OrMapLoadedEvent());
