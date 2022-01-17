@@ -84,7 +84,7 @@ function getCurrentMenuItemRef(defaultRef?: string): string | undefined {
 }
 
 @customElement("or-header")
-class OrHeader extends LitElement {
+export class OrHeader extends LitElement {
 
     // language=CSS
     static get styles() {
@@ -353,18 +353,11 @@ class OrHeader extends LitElement {
     @query("div[id=mobile-bottom]")
     protected _mobileBottomDiv!: HTMLDivElement;
 
+    @property()
+    public activeMenu: string | undefined;
+
     @state()
     private _drawerOpened = false;
-
-    @state()
-    private activeMenu: string | undefined;
-
-    constructor() {
-        super();
-        router.on("*", (match) => {
-            this.activeMenu = match ? match.url : undefined;
-        });
-    }
 
     public _onRealmSelect(realm: string) {
         this.store.dispatch(updateRealm(realm));
@@ -379,8 +372,12 @@ class OrHeader extends LitElement {
 
     protected render() {
 
-        const mainItems = this.config ? this.config.mainMenu : undefined;
-        const secondaryItems = this.config ? this.config.secondaryMenu : undefined;
+        if (!this.config) {
+            return html``;
+        }
+
+        const mainItems = this.config.mainMenu;
+        const secondaryItems = this.config.secondaryMenu;
 
         return html`
            <!-- Header -->
