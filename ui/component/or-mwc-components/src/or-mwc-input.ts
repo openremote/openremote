@@ -125,8 +125,7 @@ export enum InputType {
     CRON = "cron",
     DURATION = "duration",
     DURATION_TIME = "duration-time",
-    DURATION_PERIOD = "duration-period",
-    FILTER = "filter"
+    DURATION_PERIOD = "duration-period"
 }
 
 export interface ValueInputProviderOptions {
@@ -165,8 +164,7 @@ function inputTypeSupportsButton(inputType: InputType): boolean {
         || inputType === InputType.TEXTAREA
         || inputType === InputType.TIME
         || inputType === InputType.URL
-        || inputType === InputType.WEEK
-        || inputType === InputType.FILTER;
+        || inputType === InputType.WEEK;
 }
 
 function inputTypeSupportsHelperText(inputType: InputType) {
@@ -682,6 +680,9 @@ export class OrMwcInput extends LitElement {
     public iconTrailing?: string;
 
     @property({type: Boolean})
+    public clearOnTrailingClick: boolean = false;
+
+    @property({type: Boolean})
     public compact: boolean = false;
 
     @property({type: Boolean})
@@ -1140,7 +1141,6 @@ export class OrMwcInput extends LitElement {
                 case InputType.URL:
                 case InputType.TEXT:
                 case InputType.TEXTAREA:
-                case InputType.FILTER:
                 case InputType.JSON: {
                     // The following HTML input types require the values as specially formatted strings
                     let valMinMax: [any, any, any] = [this.value === undefined || this.value === null ? undefined : this.value, this.min, this.max];
@@ -1209,10 +1209,6 @@ export class OrMwcInput extends LitElement {
                     }
 
                     if (!(this.type === InputType.RANGE && this.disableSliderNumberInput)) {
-                        if (type === InputType.FILTER) {
-                            outlined = true;
-                        }
-
                         const classes = {
                             "mdc-text-field": true,
                             "mdc-text-field--invalid": !this.valid,
@@ -1248,15 +1244,19 @@ export class OrMwcInput extends LitElement {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
-                            @input="${(e: Event) => { 
-                                if ( this.eventOnInput ) {
-                                    this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value);
-                                }}}"
+                                   @input="${(e: Event) => {
+                                       //if (!this.eventOnInput) {
+                                       this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)
+                                   }
+                                           //}
+                                   }"
                             @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}" 
                             @change="${(e: Event) => { 
-                                if (!this.eventOnInput) {
+                                //if (!this.eventOnInput) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)
-                                }}}" />`;
+                                }
+                                //}
+                            }" />`;
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
@@ -1265,8 +1265,8 @@ export class OrMwcInput extends LitElement {
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                 ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
-                                ${this.iconTrailing && this.type !== InputType.FILTER ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
-                                ${this.iconTrailing && this.type === InputType.FILTER ? html`<or-icon style="pointer-events:auto !important;" @click="${ () => this.dispatchEvent(new OrInputChangedEvent('', null)) }" class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>`: ``}
+                                ${this.iconTrailing && !this.clearOnTrailingClick ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
+                                ${this.iconTrailing && this.clearOnTrailingClick ? html`<or-icon style="pointer-events:auto !important;" @click="${ () => this.dispatchEvent(new OrInputChangedEvent('', null)) }" class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>`: ``}
                             </label>
                             ${hasHelper || showValidationMessage ? html`
                                 <div class="mdc-text-field-helper-line">

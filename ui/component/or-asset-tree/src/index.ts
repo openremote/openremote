@@ -1,5 +1,5 @@
 import {html, LitElement, PropertyValues, TemplateResult} from "lit";
-import {customElement, property} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-icon";
@@ -72,6 +72,7 @@ export interface UiAssetTreeNode extends AssetTreeNode {
     children: UiAssetTreeNode[];
     someChildrenSelected: boolean;
     allChildrenSelected: boolean;
+    notMatchingFilter: boolean;
 }
 
 export interface NodeSelectEventDetail {
@@ -271,12 +272,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _expandedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
 
-    @property({attribute: false})
+    @state()
     protected _filterValue: string = '';
-    @property({type: Boolean})
+    @state()
     protected _isFiltering: boolean = false;
-    protected _foundAssets: string[] = [];
-    protected _searchInputTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+    protected _searchInputTimer?: number = undefined;
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -314,10 +314,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return false;
     }
 
-    protected isFilteringAndNotMatching(assetId: string | undefined): boolean {
-        return assetId !== undefined && this._filterValue.length > 0 && this._foundAssets.length > 0 && this._foundAssets.indexOf(assetId) === -1;
-    }
-
     protected render() {
         return html`
             <div id="header">
@@ -343,23 +339,23 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             <div id="asset-tree-filter">
                 <or-mwc-input id="filterInput"
                               style="width: 100%;"
-                              type="${ InputType.FILTER }"
+                              type="${ InputType.TEXT }"
                               .value="${ this._filterValue }"
                               icon="magnify" iconTrailing="${this._filterValue.length > 0 ? 'close' : ''}" 
                               compact="true"
-                              eventOnInput="true"
+                              
+                              outlined="true"
+                              clearOnTrailingClick="true"
                               @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
                                 this._onFilterValueChange(e);
                               } }">
                               </or-mwc-input>
             </div>
             
-            ${!this._nodes
+            ${(!this._nodes || (this._nodes.length === 0 && this._isFiltering) )
                 ? html`
                     <span id="loading"><or-translate value="loading"></or-translate></span>`
-                : (this._nodes.length === 0 && this._isFiltering
-                            ? html `<span id="loading"><or-translate value="loading"></or-translate></span>`
-                            : (this._nodes.length === 0
+                : (this._nodes.length === 0
                             ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
                             : html`
                     <div id="list-container">
@@ -367,7 +363,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             ${this._nodes.map((treeNode) => this._treeNodeTemplate(treeNode, 0))}
                         </ol>
                     </div>
-                `))
+                `)
             }
 
             <div id="footer">
@@ -576,7 +572,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
      */
     protected _onCancelFilterChange() {
         this._filterValue = '';
-        this._foundAssets = [];
 
         this._loadAssets();
     }
@@ -593,8 +588,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             clearTimeout(this._searchInputTimer);
         }
 
-        this._searchInputTimer = setTimeout(async () => {
-            if (this._nodes && this._filterValue.length > 2) {
+        this._searchInputTimer = window.setTimeout(async () => {
+            if (this._nodes && this._filterValue.length > 2 && this.isConnected) {
                 let newNodes: UiAssetTreeNode[] = this._nodes;
                 this._nodes = [];
                 this._isFiltering = true;
@@ -615,13 +610,13 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                 const response = await manager.rest.api.AssetResource.queryAssets(query);
 
-                this._foundAssets = response.data.map<string>((asset: Asset) => asset.id ? asset.id : '' );
+                const foundAssets: string[] = response.data.map<string>((asset: Asset) => asset.id ? asset.id : '' );
 
                 //Timeout to ensure a little visual effect for the user on filtering
                 setTimeout(() => {
                     this._nodes = [];
                     newNodes.forEach((asset: UiAssetTreeNode) => {
-                        let answer: boolean = this.filterTreeNode(asset, false);
+                        let answer: boolean = this.filterTreeNode(asset, foundAssets);
 
                         if (answer) {
                             asset.expanded = true;
@@ -634,8 +629,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }, 1500);
     }
 
-    protected filterTreeNode(currentNode: UiAssetTreeNode, keep: boolean): boolean {
-        if (currentNode.asset && currentNode.asset.id && this._foundAssets.includes(currentNode.asset.id)) {
+    protected filterTreeNode(currentNode: UiAssetTreeNode, foundAssets: string[]): boolean {
+        if (currentNode.asset && currentNode.asset.id && foundAssets.includes(currentNode.asset.id)) {
+            currentNode.notMatchingFilter = false;
             return true;
         }
 
@@ -644,10 +640,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let newChildren: UiAssetTreeNode[] = [];
 
         currentNode.children.forEach((childrenAsset: UiAssetTreeNode) => {
-            let result: boolean = this.filterTreeNode(childrenAsset, false);
+            let result: boolean = this.filterTreeNode(childrenAsset, foundAssets);
 
             if (result) {
                 currentNode.expanded = true;
+                currentNode.notMatchingFilter = true;
                 childrenMatching = true;
                 newChildren.push(childrenAsset);
             }
@@ -1125,9 +1122,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             parentCheckboxIcon = 'checkbox-multiple-blank-outline';
         }
 
-        let filterColor: boolean = false;
-        if (treeNode.asset && this.isFilteringAndNotMatching(treeNode.asset.id)) {
-            filterColor = true;
+        let filterColorForNonMatchingAsset: boolean = false;
+        if (treeNode.asset && treeNode.notMatchingFilter) {
+            filterColorForNonMatchingAsset = true;
         }
 
         return html`
@@ -1135,8 +1132,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div class="node-container" style="padding-left: ${level * 22}px">
                     <div class="node-name">
                         <div class="expander" ?data-expandable="${treeNode.expandable}"></div>
-                        ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColor ? '#d3d3d3;' : undefined))}
-                        <span style="color: ${filterColor ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
+                        ${getAssetDescriptorIconTemplate(descriptor, undefined, undefined, (filterColorForNonMatchingAsset ? '#d3d3d3;' : undefined))}
+                        <span style="color: ${filterColorForNonMatchingAsset ? '#d3d3d3;' : ''}">${treeNode.asset!.name}</span>
                         ${this.checkboxes ? html`
                             <span class="mdc-list-item__graphic">
                                 ${treeNode.expandable 
