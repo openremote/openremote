@@ -10,6 +10,10 @@
   },
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
+    "typescript": ">=4.5.2",
+    "webpack": "^5.64.3",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.5.0",
     "@babel/core": "^7.16.0",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/plugin-syntax-object-rest-spread": "^7.8.3",
@@ -27,8 +31,17 @@
     "shx": "^0.3.3",
     "source-map-loader": "^3.0.0",
     "style-loader": "^3.3.1",
-    "webpack": "^5.64.3",
-    "webpack-cli": "^4.9.1",
-    "webpack-dev-server": "^4.5.0"
+    "ts-loader": "^9.2.6",
+    "@typescript-eslint/eslint-plugin": "^5.9.0",
+    "@typescript-eslint/parser": "^5.9.0",
+    "eslint": "^8.6.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "fork-ts-checker-notifier-webpack-plugin": "^4.0.0",
+    "fork-ts-checker-webpack-plugin": "^6.5.0",
+    "prettier": "^2.5.1"
   }
 }

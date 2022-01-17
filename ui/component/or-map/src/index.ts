@@ -40,7 +40,9 @@ export interface MapEventDetail {
     lngLat: LngLat;
     doubleClick: boolean;
 }
-
+export interface MapGeocoderEventDetail {
+    geocode: any;
+}
 export class OrMapLoadedEvent extends CustomEvent<void> {
 
     public static readonly NAME = "or-map-loaded";
@@ -69,10 +71,43 @@ export class OrMapClickedEvent extends CustomEvent<MapEventDetail> {
     }
 }
 
+export class OrMapLongPressEvent extends CustomEvent<MapEventDetail> {
+
+    public static readonly NAME = "or-map-long-press";
+
+    constructor(lngLat: LngLat) {
+        super(OrMapLongPressEvent.NAME, {
+            detail: {
+                doubleClick: false,
+                lngLat: lngLat
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrMapGeocoderChangeEvent extends CustomEvent<MapGeocoderEventDetail> {
+
+    public static readonly NAME = "or-map-geocoder-change";
+
+    constructor(geocode: any) {
+        super(OrMapGeocoderChangeEvent.NAME, {
+            detail: {
+                geocode
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrMapClickedEvent.NAME]: OrMapClickedEvent;
         [OrMapLoadedEvent.NAME]: OrMapLoadedEvent;
+        [OrMapLongPressEvent.NAME]: OrMapLongPressEvent;
+        [OrMapGeocoderChangeEvent.NAME]: OrMapGeocoderChangeEvent;
     }
 }
 
@@ -277,7 +312,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                     margin: 3px 0;
                 }
             </style>
-            <or-map id="geo-json-point-map" class="or-map" @or-map-clicked="${(ev: OrMapClickedEvent) => {if (ev.detail.doubleClick) {setPos(ev.detail.lngLat);}}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
+            <or-map id="geo-json-point-map" class="or-map" @or-map-long-press="${(ev: OrMapLongPressEvent) => {setPos(ev.detail.lngLat);}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
                 <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .colour="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
         `;

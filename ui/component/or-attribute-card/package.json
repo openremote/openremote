@@ -17,17 +17,15 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.3",
+    "@openremote/core": "^1.0.4",
     "@openremote/or-attribute-picker": "^1.0.4",
     "@openremote/or-chart": "^1.0.4",
-    "@openremote/or-mwc-components": "^1.0.3",
+    "@openremote/or-mwc-components": "^1.0.4",
     "lit": "^2.0.2",
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "typescript": ">=4.5.2",
-    "webpack": "^5.64.3",
-    "webpack-cli": "^4.9.1"
+    "@openremote/util": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"

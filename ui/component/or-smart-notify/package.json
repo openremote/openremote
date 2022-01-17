@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-smart-notify",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "OpenRemote Smarty Notify element",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -19,16 +19,14 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.12",
     "@fortawesome/free-regular-svg-icons": "^5.6.3",
     "@fortawesome/free-solid-svg-icons": "^5.6.3",
-    "@openremote/core": "^1.0.3",
-    "@openremote/model": "^1.0.3",
-    "@openremote/rest": "^1.0.3",
+    "@openremote/core": "^1.0.4",
+    "@openremote/model": "^1.0.4",
+    "@openremote/rest": "^1.0.4",
     "lit": "^2.0.2",
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "typescript": ">=4.5.2",
-    "webpack": "^5.64.3",
-    "webpack-cli": "^4.9.1"
+    "@openremote/util": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"

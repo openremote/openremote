@@ -8,7 +8,7 @@ import {LngLatLike, Map as MapGL, MapboxOptions as OptionsGL, Marker as MarkerGL
 import MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder";
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css';
 import {debounce} from "lodash";
-import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, ViewSettings} from "./index";
+import {ControlPosition, OrMapClickedEvent, OrMapLoadedEvent, OrMapLongPressEvent, OrMapGeocoderChangeEvent, ViewSettings} from "./index";
 import {
     OrMapMarker
 } from "./markers/or-map-marker";
@@ -180,7 +180,9 @@ export class MapWidget {
                 this._mapGl.setMaxZoom(this._viewSettings.maxZoom);
                 this._mapGl.setMaxBounds(this._viewSettings.bounds);
             }
-            this.setCenter(this._viewSettings.center);
+            if (!this._center) {
+                this.setCenter(this._viewSettings.center);
+            }
         }
 
         return settings;
@@ -375,11 +377,14 @@ export class MapWidget {
                 // so this is how we get the selected result.
                 this._geocoder._inputEl.addEventListener("change", () => {
                     var selected = this._geocoder._typeahead.selected;
+                    this._onGeocodeChange(selected);
                     if (selected) {
                         // Set marker by calling _onMapClick and doubleClicked set to true
-                        this._onMapClick(selected.center, true);
+                        this._onLongPress(selected.center);
                     }
                 });
+
+                this._initLongPressEvent();
             }
         }
 
@@ -628,5 +633,49 @@ export class MapWidget {
 
     protected async _reverseGeocode(config: any) {
 
+    }
+
+    protected _initLongPressEvent() {
+        if (this._mapGl) {
+            let pressTimeout: NodeJS.Timeout | null; 
+            let pos: LngLat;
+            let clearTimeoutFunc = () => { if (pressTimeout) clearTimeout(pressTimeout); pressTimeout = null; };
+
+            this._mapGl.on('touchstart', (e) => {
+                if (e.originalEvent.touches.length > 1) {
+                    return;
+                }
+                pos = e.lngLat;
+                pressTimeout = setTimeout(() => {
+                    this._onLongPress(pos!);
+                }, 500);
+            });
+
+            this._mapGl.on('mousedown', (e) => {
+                if (!pressTimeout) {
+                    pos = e.lngLat;
+                    pressTimeout = setTimeout(() => {
+                        this._onLongPress(pos!);
+                        pressTimeout = null;
+                    }, 500);
+                }
+            });
+           
+            this._mapGl.on('dragstart', clearTimeoutFunc);
+            this._mapGl.on('mouseup', clearTimeoutFunc);
+            this._mapGl.on('touchend', clearTimeoutFunc);
+            this._mapGl.on('touchcancel', clearTimeoutFunc);
+            this._mapGl.on('touchmove', clearTimeoutFunc);
+            this._mapGl.on('moveend', clearTimeoutFunc);
+            this._mapGl.on('gesturestart', clearTimeoutFunc);
+            this._mapGl.on('gesturechange', clearTimeoutFunc);
+            this._mapGl.on('gestureend', clearTimeoutFunc);
+        }
+    };
+    protected _onLongPress(lngLat: LngLat) {
+        this._mapContainer.dispatchEvent(new OrMapLongPressEvent(lngLat));
+    }
+    protected _onGeocodeChange(geocode:any) {
+        this._mapContainer.dispatchEvent(new OrMapGeocoderChangeEvent(geocode));
     }
 }
