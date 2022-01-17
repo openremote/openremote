@@ -1,0 +1,110 @@
+# This workflow will build a Java project with Gradle
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+
+name: CI/CD
+concurrency: ci
+
+on:
+  push:
+    branches: [Java17_migration]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  PLATFORM: linux/amd64,linux/aarch64
+
+jobs:
+  test_ui:
+    runs-on: ubuntu-latest
+    needs: [image_manager]
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: install openremote-cli
+        run: |
+          pip3 install openremote-cli
+          openremote-cli -V -t
+      - name: deploy openremote stack on localhost and run UI test
+        run: |
+          wget -nc https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml
+          MANAGER_VERSION=Java17 docker-compose up -d
+          sleep 60
+          docker ps
+          # Login to manager and add weather agent asset
+          or-test-http-rest --dnsname localhost --password secret -vv
+        timeout-minutes: 30
+        continue-on-error: true
+
+
+  test_staging_demo:
+    runs-on: ubuntu-latest
+    needs: [image_manager]
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: install openremote-cli
+        run: |
+          pip3 install openremote-cli
+          openremote-cli -V -t
+      - name: wait 10m for staging.demo new image update
+        run: sleep 600
+      - name: login staging.demo.openremote.io and wait for map
+        run: openremote-cli manager --open -t --quit --quiet -v --dnsname staging.demo.openremote.io --password "${{ secrets.STAGING_DEMO_PASSWORD }}"
+        continue-on-error: false
+
+  image_manager:
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+      - name: available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: login to docker hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+      - name: Download build artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-build
+      - name: build and push images
+        run: |
+          docker build --push --platform $PLATFORM -t openremote/manager:Java17 manager/build/install/manager
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up JDK 17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+      - name: grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: build with Gradle
+        run: ./gradlew installDist
+      - name: Share build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-build
+          path: |
+            manager/build
+            deployment/build
+            !dist/**/*.md
+          retention-days: 1
