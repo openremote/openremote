@@ -72,7 +72,12 @@ public class NotificationProcessingException extends RuntimeException {
         /**
          * {@link NotificationHandler} failed to return any results.
          */
-        SEND_FAILURE
+        SEND_FAILURE,
+
+        /**
+         * {@link NotificationHandler#isValid} returned false indicating a configuration error with the handler.
+         */
+        NOTIFICATION_HANDLER_CONFIG_ERROR
     }
 
     final protected Reason reason;
