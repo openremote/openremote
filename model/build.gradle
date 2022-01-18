@@ -1,41 +1,41 @@
-apply plugin: "java"
+apply plugin: "java-library"
 
 compileJava.options.compilerArgs.add '-parameters'
 compileTestJava.options.compilerArgs.add '-parameters'
 
 dependencies {
-    compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
+    api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    api "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 
-    compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:$javaxPersistenceVersion"
-    compile "org.hibernate:hibernate-core:$hibernateVersion"
-    compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
-    compile "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
-    compile "org.glassfish.web:javax.el:$javaxELVersion"
-    compile "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
+    api "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:$javaxPersistenceVersion"
+    api "org.hibernate:hibernate-core:$hibernateVersion"
+    api "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
+    api "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
+    api "org.glassfish.web:javax.el:$javaxELVersion"
+    api "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
 
-    compile "org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec:$javaxAnnotationsVersion"
-    compile "org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec:$jaxrsSpecVersion"
+    api "org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec:$javaxAnnotationsVersion"
+    api "org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec:$jaxrsSpecVersion"
 
-    compile "org.keycloak:keycloak-core:$keycloakVersion"
-    compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
+    api "org.keycloak:keycloak-core:$keycloakVersion"
+    api "org.keycloak:keycloak-core:$keycloakVersion:sources"
 
-    compile "org.geotools:gt-main:$geotoolsVersion"
-    compile "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
-    compile "org.jeasy:easy-rules-core:$easyRulesVersion"
-    compile "org.mnode.ical4j:ical4j:$ical4jVersion"
-    compile "org.reflections:reflections:$reflectionsVersion"
-    compile "com.google.guava:guava:$guavaVersion"
+    api "org.geotools:gt-main:$geotoolsVersion"
+    api "com.jayway.jsonpath:json-path:$jaywayJsonPathVersion"
+    api "org.jeasy:easy-rules-core:$easyRulesVersion"
+    api "org.mnode.ical4j:ical4j:$ical4jVersion"
+    api "org.reflections:reflections:$reflectionsVersion"
+    api "com.google.guava:guava:$guavaVersion"
 
-    compile "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
+    api "io.swagger.core.v3:swagger-annotations:$swaggerVersion"
 
     // Custom build from https://github.com/richturner/mbknor-jackson-jsonSchema
-    compile files("libs/mbknor-jackson-jsonschema_2.12-1.0.40-SNAPSHOT.jar")
-    implementation "org.scala-lang:scala-library:2.12.10"
-    implementation "io.github.classgraph:classgraph:4.8.21"
-    //compile "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
+    api files("libs/mbknor-jackson-jsonschema_2.12-1.0.40-SNAPSHOT.jar")
+    api "org.scala-lang:scala-library:2.12.10"
+    api "io.github.classgraph:classgraph:4.8.21"
+    //api "com.kjetland:mbknor-jackson-jsonschema_2.12:1.0.39"
 }
 
 jar {

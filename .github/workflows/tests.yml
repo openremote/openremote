@@ -30,7 +30,7 @@ jobs:
       - name: set up JDK
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 17
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -44,7 +44,7 @@ jobs:
       - name: Save docker images to cache
         if: steps.cache-images.outputs.cache-hit != 'true'
         run: |
-          docker pull gradle:6.9.0-jdk8-hotspot
+          docker pull gradle:7.3.3-jdk17
           docker-compose -f profile/dev-testing.yml pull
           docker images --filter 'reference=openremote/*' --format "{{.Repository}}:{{.Tag}}"
           postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")

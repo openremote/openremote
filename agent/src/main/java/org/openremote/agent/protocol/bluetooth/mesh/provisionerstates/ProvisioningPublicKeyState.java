@@ -162,7 +162,7 @@ public class ProvisioningPublicKeyState extends ProvisioningState {
 
         final ECParameterSpec ecParameters = ECNamedCurveTable.getParameterSpec("secp256r1");
         ECCurve curve = ecParameters.getCurve();
-        ECPoint ecPoint = curve.validatePoint(x, y);
+        ECPoint ecPoint = curve.createPoint(x, y);
 
 
         ECPublicKeySpec keySpec = new ECPublicKeySpec(ecPoint, ecParameters);

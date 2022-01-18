@@ -1,62 +1,62 @@
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "groovy"
 
 dependencies {
 
-    compile resolveProject(":model")
+    api resolveProject(":model")
 
-    compile "org.codehaus.groovy:groovy:$groovyVersion"
-    compile "org.kohsuke:groovy-sandbox:$groovySandboxVersion"
+    api "org.codehaus.groovy:groovy-all:$groovyVersion"
+    api "org.kohsuke:groovy-sandbox:$groovySandboxVersion"
 
-    compile "org.slf4j:slf4j-api:$slf4jVersion"
-    compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
-    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+    api "org.slf4j:slf4j-api:$slf4jVersion"
+    api "org.slf4j:slf4j-jdk14:$slf4jVersion"
+    api "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    api "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    compile "com.google.guava:guava:$guavaVersion"
-    compile "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
+    api "com.google.guava:guava:$guavaVersion"
+    api "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
 
-    compile "io.undertow:undertow-servlet:$undertowVersion"
-    compile "io.undertow:undertow-websockets-jsr:$undertowVersion"
+    api "io.undertow:undertow-servlet:$undertowVersion"
+    api "io.undertow:undertow-websockets-jsr:$undertowVersion"
 
-    compile "org.jboss.resteasy:resteasy-jaxrs:$resteasyVersion"
-    compile "org.jboss.resteasy:resteasy-client:$resteasyVersion"
-    compile "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
-    compile "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
-    compile("org.jboss.resteasy:resteasy-cache-core:$resteasyVersion") {
+    api "org.jboss.resteasy:resteasy-jaxrs:$resteasyVersion"
+    api "org.jboss.resteasy:resteasy-client:$resteasyVersion"
+    api "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
+    api "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
+    api("org.jboss.resteasy:resteasy-cache-core:$resteasyVersion") {
         exclude group: "org.infinispan"
     }
-    compile "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
-    compile "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersionAsyncHttpServlet"
+    api "org.jboss.resteasy:resteasy-validator-provider:$resteasyVersion"
+    api "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersionAsyncHttpServlet"
 
-    compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"
-    compile "org.keycloak:keycloak-admin-client:$keycloakVersion"
+    api "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
+    api "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"
+    api "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
-    compile "org.postgresql:postgresql:$postgresJdbcVersion"
-    compile "org.flywaydb:flyway-core:$flywaydbVersion"
-    compile "com.zaxxer:HikariCP:$hikaricpVersion"
-    compile "org.hibernate:hibernate-core:$hibernateVersion"
-    compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
+    api "org.postgresql:postgresql:$postgresJdbcVersion"
+    api "org.flywaydb:flyway-core:$flywaydbVersion"
+    api "com.zaxxer:HikariCP:$hikaricpVersion"
+    api "org.hibernate:hibernate-core:$hibernateVersion"
+    api "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
 
-    compile "javax.el:javax.el-api:3.0.0"
+    api "javax.el:javax.el-api:3.0.0"
 
-    compile "org.apache.camel:camel-core:$camelVersion"
-    compile "org.apache.camel:camel-jackson:$camelVersion"
-    compile "org.apache.camel:camel-snmp:$camelVersion"
+    api "org.apache.camel:camel-core:$camelVersion"
+    api "org.apache.camel:camel-jackson:$camelVersion"
+    api "org.apache.camel:camel-snmp:$camelVersion"
 
-    compile("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
+    api("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
         exclude group: "log4j"
     }
 
-    compile("org.cyclopsgroup:jmxterm:$jmxtermVersion") {
+    api("org.cyclopsgroup:jmxterm:$jmxtermVersion") {
         exclude group: "javax.servlet"
         exclude group: "log4j"
         exclude group: "logkit"
         exclude group: "commons-logging"
     }
 
-    compile "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
+    api "com.vladmihalcea:hibernate-types-52:$hibernateTypesVersion"
 }
 
 jar {

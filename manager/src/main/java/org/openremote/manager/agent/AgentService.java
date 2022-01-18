@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.agent;
 
+import groovy.util.MapEntry;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.message.MessageBrokerService;
@@ -592,7 +593,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             .filter(agentAttribute -> agentAttribute.key != null)
             .collect(Collectors.groupingBy(
                 agentAttribute -> agentAttribute.key,
-                mapping(agentAttribute -> agentAttribute.value, toList())
+                    Collectors.collectingAndThen(Collectors.toList(), agentAttribute -> agentAttribute.stream().map(item->item.value).collect(toList())) //TODO had to change to this because compiler has issues with inferring types, need to check for a better solution
             ));
     }
 
@@ -707,7 +708,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             }
 
             try {
-                ProtocolInstanceDiscovery instanceDiscovery = instanceDiscoveryProviderClass.newInstance();
+                ProtocolInstanceDiscovery instanceDiscovery = instanceDiscoveryProviderClass.getDeclaredConstructor().newInstance();
                 Future<Void> discoveryFuture = instanceDiscovery.startInstanceDiscovery(onDiscovered);
                 discoveryFuture.get();
             } catch (InterruptedException e) {
