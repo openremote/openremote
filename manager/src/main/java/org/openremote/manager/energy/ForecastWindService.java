@@ -179,7 +179,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 .map(asset -> (ElectricityProducerWindAsset) asset)
                 .filter(electricityProducerWindAsset -> electricityProducerWindAsset.isIncludeForecastWindService().orElse(false)
                         && electricityProducerWindAsset.getLocation().isPresent())
-                .collect(Collectors.toList());
+                .toList();
 
         LOG.fine("Found includes producer wind asset count = " + electricityProducerWindAssets.size());
 

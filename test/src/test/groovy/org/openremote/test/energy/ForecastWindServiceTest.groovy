@@ -622,7 +622,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
                             "        }\n" +
                             "      ],\n" +
                             "      \"pop\": 0.05\n" +
-                            "    },\n" +
+                            "    }\n" +
                             "  ]\n" +
                             "}"
                     def responseBody = ValueUtil.JSON.readValue(content, ForecastWindService.WeatherForecastResponseModel.class)

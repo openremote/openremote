@@ -140,7 +140,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                 .stream()
                 .map(asset -> (ElectricityProducerSolarAsset) asset)
                 .filter(electricityProducerSolarAsset -> electricityProducerSolarAsset.isIncludeForecastSolarService().orElse(false))
-                .collect(Collectors.toList());
+                .toList();
 
         LOG.fine("Found includes producer solar asset count = " + electricityProducerSolarAssets.size());
 
