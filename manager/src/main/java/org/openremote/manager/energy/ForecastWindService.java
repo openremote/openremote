@@ -19,6 +19,7 @@ import org.openremote.model.asset.impl.ElectricityProducerSolarAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.syslog.SyslogCategory;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -34,13 +35,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.syslog.SyslogCategory.DATA;
 
 /**
  * Calculates power generation for {@link ElectricityProducerWindAsset}.
@@ -109,7 +110,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
     public static final String OPEN_WEATHER_API_APP_ID = "OPEN_WEATHER_API_APP_ID";
 
-    protected static final Logger LOG = Logger.getLogger(ForecastWindService.class.getName());
+    protected static final Logger LOG = SyslogCategory.getLogger(DATA, ForecastWindService.class.getName());
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected GatewayService gatewayService;
