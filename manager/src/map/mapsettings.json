@@ -6,7 +6,7 @@
       "zoom": 14,
       "maxZoom": 19,
       "boxZoom": false,
-      "geoCodeUrl": "https://nominatim.openstreetmap.org"
+      "geocodeUrl": "https://nominatim.openstreetmap.org"
     }
   },
   "version": 8,
