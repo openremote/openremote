@@ -68,6 +68,7 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
     private final MainThreadManager mainThreadManager;
     private final Consumer<ConnectionStatus> statusConsumer;
     private final NetworkKey networkKey;
+    private final String proxyAddress;
     private final int sourceUnicastAddress;
     private final Map<Integer, ApplicationKey> applicationKeyMap;
     private final Integer mtu;
@@ -77,12 +78,13 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
     // Constructors -------------------------------------------------------------------------------
 
     public BluetoothMeshNetwork(BluetoothCentralManager bluetoothCentral, SequenceNumberPersistencyManager sequenceNumberManager, MainThreadManager mainThread,
-                                int unicastAddress, NetworkKey networkKey, Map<Integer, ApplicationKey> applicationKeyMap,
+                                String proxyAddress, int unicastAddress, NetworkKey networkKey, Map<Integer, ApplicationKey> applicationKeyMap,
                                 int mtu, int sequenceNumber, ScheduledExecutorService executorService, Consumer<ConnectionStatus> statusConsumer) {
         this.bluetoothCentral = bluetoothCentral;
         this.sequenceNumberManager = sequenceNumberManager;
         this.mainThreadManager = mainThread;
         this.networkKey = networkKey;
+        this.proxyAddress = proxyAddress;
         this.sourceUnicastAddress = unicastAddress;
         this.applicationKeyMap = applicationKeyMap;
         this.mtu = mtu;
@@ -456,7 +458,7 @@ public class BluetoothMeshNetwork extends BluetoothCentralManagerCallback implem
         }
         executorService.execute(() -> statusConsumer.accept(ConnectionStatus.CONNECTING));
         proxyScanner = new BluetoothMeshProxyScanner(mainThreadManager, bluetoothCentral, executorService);
-        proxyScanner.start(networkKey, SCAN_DURATION, new BluetoothMeshProxyScannerCallback() {
+        proxyScanner.start(networkKey, proxyAddress, SCAN_DURATION, new BluetoothMeshProxyScannerCallback() {
             @Override
             public void onMeshProxiesScanned(List<BluetoothMeshProxy> meshProxies, Integer errorCode) {
                 LOG.info("Finished scanning Bluetooth mesh proxies.");

@@ -67,6 +67,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     public static final int DEFAULT_NETWORK_KEY_INDEX = 0;
     public static final int DEFAULT_APPLICATION_KEY_INDEX = 0;
     public static final String REGEXP_INDEX_AND_KEY = "^(\\s*(0|([1-9]+[0-9]*))\\s*:)?(\\s*[0-9A-Fa-f]{32}\\s*)";
+    public static final String REGEXP_PROXY_ADDRESS = "^(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$";
 
 
     // Class Members --------------------------------------------------------------------------------
@@ -208,6 +209,14 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         }
         ApplicationKey applicationKey = new ApplicationKey(appKeyIndex, MeshParserUtils.toByteArray(appKeyAsString));
 
+        String proxyAddress = agent.getProxyAddress().orElse(null);
+        proxyAddress = proxyAddress != null ? proxyAddress.trim() : null;
+        if (proxyAddress != null && !proxyAddress.matches(REGEXP_PROXY_ADDRESS)) {
+            String msg = "Format of proxy address '" + proxyAddress + "' is invalid for protocol: " + this;
+            LOG.warning(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         String sourceAddressParam = agent.getSourceAddress().orElseThrow(() -> {
             String msg = "No Bluetooth Mesh unicast source address provided for protocol: " + this;
             LOG.warning(msg);
@@ -242,8 +251,8 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         }
         BluetoothMeshProtocol.initMainThread(executorService);
         meshNetwork = new BluetoothMeshNetwork(
-            BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread, sourceAddress, networkKey,
-            applicationKeyMap, mtuParam, oldSequenceNumber, executorService, statusConsumer
+            BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread,
+            proxyAddress, sourceAddress, networkKey, applicationKeyMap, mtuParam, oldSequenceNumber, executorService, statusConsumer
         );
         BluetoothMeshProtocol.addNetwork(meshNetwork);
         BluetoothMeshProtocol.mainThread.enqueue(() -> meshNetwork.start());

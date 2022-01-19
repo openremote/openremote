@@ -62,6 +62,7 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
     private final ScheduledExecutorService executorService;
     private volatile BluetoothMeshProxyScannerCallback callback;
     private volatile NetworkKey networkKey;
+    private volatile String address;
     private volatile boolean isStarted = false;
 
     private ScheduledFuture<?> timeoutFuture;
@@ -77,13 +78,14 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
         this.executorService = executorService;
     }
 
-    public synchronized void start(final NetworkKey networkKey, int duration, final BluetoothMeshProxyScannerCallback callback) {
+    public synchronized void start(final NetworkKey networkKey, String address, int duration, final BluetoothMeshProxyScannerCallback callback) {
         LOG.info("Starting mesh proxy scanner");
         if (isStarted) {
             stop();
         }
         this.callback = callback;
         this.networkKey = networkKey;
+        this.address = address;
         meshProxyMap.clear();
         isStarted = true;
         Runnable runnable = () -> {
@@ -91,22 +93,13 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
             bluetoothCentral.scanForPeripheralsWithServices(new UUID[] {MESH_PROXY_UUID});
         };
         bluetoothCommandSerializer.enqueue(runnable);
-        timeoutFuture = executorService.schedule(new Runnable() {
-            @Override
-            public void run() {
+        timeoutFuture = executorService.schedule(() -> {
                 synchronized (BluetoothMeshProxyScanner.this) {
-                    if (isStarted && callback != null) {
-                        final List<BluetoothMeshProxy> proxies = meshProxyMap.values()
-                            .stream()
-                            .sorted(Comparator.comparingInt(BluetoothMeshProxy::getRssi).reversed())
-                            .collect(Collectors.toList());
-                        executorService.execute(() -> callback.onMeshProxiesScanned(proxies, null));
-                    }
                     timeoutFuture = null;
-                    stop();
+                    executeCallbackAndStopScanner();
                 }
-            }
-        }, duration, TimeUnit.MILLISECONDS);
+            }, duration, TimeUnit.MILLISECONDS
+        );
     }
 
 
@@ -160,7 +153,7 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
                     LOG.info("Checking network identity of scanned Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
                     if (networkIdMatches(serviceData, networkKey)) {
                         LOG.info("Network identity of scanned Bluetooth mesh proxy matches: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
-                        meshProxyMap.put(peripheral.getAddress(), new BluetoothMeshProxy(bluetoothCommandSerializer, executorService, bluetoothCentral, peripheral, scanResult));
+                        handleScannedPeripheral(peripheral, scanResult);
                     } else {
                         LOG.info("Network identity of scanned Bluetooth mesh proxy does NOT match: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
                     }
@@ -168,7 +161,7 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
                     LOG.info("Checking node identity of scanned Bluetooth mesh proxy: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
                     if (checkIfNodeIdentityMatches(serviceData)) {
                         LOG.info("Node identity of scanned Bluetooth mesh proxy matches: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
-                        meshProxyMap.put((peripheral.getAddress()), new BluetoothMeshProxy(bluetoothCommandSerializer, executorService, bluetoothCentral, peripheral, scanResult));
+                        handleScannedPeripheral(peripheral, scanResult);
                     } else {
                         LOG.info("Node identity of scanned Bluetooth mesh proxy does NOT match: [Name=" + peripheral.getName() + ", Address=" + peripheral.getAddress() + "]");
                     }
@@ -194,6 +187,29 @@ public class BluetoothMeshProxyScanner extends BluetoothCentralManagerCallback {
     }
 
     // Private Instance Methods -------------------------------------------------------------------
+
+    private void handleScannedPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
+        if (address == null || (address != null && address.equalsIgnoreCase(peripheral.getAddress()))) {
+            meshProxyMap.put(
+                peripheral.getAddress(),
+                new BluetoothMeshProxy(bluetoothCommandSerializer, executorService, bluetoothCentral, peripheral, scanResult)
+            );
+        }
+        if (address != null && meshProxyMap.size() == 1) {
+            executeCallbackAndStopScanner();
+        }
+    }
+
+    private void executeCallbackAndStopScanner() {
+        if (isStarted && callback != null) {
+            final List<BluetoothMeshProxy> proxies = meshProxyMap.values()
+                .stream()
+                .sorted(Comparator.comparingInt(BluetoothMeshProxy::getRssi).reversed())
+                .collect(Collectors.toList());
+            executorService.execute(() -> callback.onMeshProxiesScanned(proxies, null));
+        }
+        stop();
+    }
 
     private boolean isAdvertisingWithNetworkIdentity(final byte[] serviceData) {
         return serviceData != null &&
