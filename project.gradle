@@ -223,7 +223,7 @@ task npmPublish(type: Exec){
     dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "publish"
 }
-task npmServeProduction(type: Exec){
+task npmServeProduction(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run", "serveProduction"
 }
@@ -231,6 +231,23 @@ task npmServeProduction(type: Exec){
 // Add typescript tasks
 task tscWatch(type: Exec) {
     commandLine npmCommand("npx"), "tsc", "-b", "--watch"
+}
+
+// A task for copying a custom java projects libs that aren't part of the manager dependencies
+task copyLibs {
+    doLast {
+
+        if (project.configurations.find { it.name == "runtimeClasspath" } != null) {
+            // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
+            // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
+            def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
+            def customLibs = project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll { dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect { it.file }
+            copy {
+                from customLibs
+                into "${project.buildDir}/image/manager/extensions"
+            }
+        }
+    }
 }
 
 // Configure Java build
