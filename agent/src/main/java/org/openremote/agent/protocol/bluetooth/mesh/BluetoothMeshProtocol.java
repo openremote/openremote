@@ -57,7 +57,7 @@ import java.util.logging.Logger;
 import static org.openremote.model.asset.agent.AgentLink.getOrThrowAgentLinkProperty;
 import static org.openremote.model.value.MetaItemType.AGENT_LINK;
 
-public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> implements ProtocolAssetDiscovery {
+public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, BluetoothMeshAgentLink> {
 
     // Constants ------------------------------------------------------------------------------------
 
@@ -67,6 +67,7 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
     public static final int DEFAULT_NETWORK_KEY_INDEX = 0;
     public static final int DEFAULT_APPLICATION_KEY_INDEX = 0;
     public static final String REGEXP_INDEX_AND_KEY = "^(\\s*(0|([1-9]+[0-9]*))\\s*:)?(\\s*[0-9A-Fa-f]{32}\\s*)";
+    public static final String REGEXP_PROXY_ADDRESS = "^(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$";
 
 
     // Class Members --------------------------------------------------------------------------------
@@ -208,6 +209,14 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         }
         ApplicationKey applicationKey = new ApplicationKey(appKeyIndex, MeshParserUtils.toByteArray(appKeyAsString));
 
+        String proxyAddress = agent.getProxyAddress().orElse(null);
+        proxyAddress = proxyAddress != null ? proxyAddress.trim() : null;
+        if (proxyAddress != null && !proxyAddress.matches(REGEXP_PROXY_ADDRESS)) {
+            String msg = "Format of proxy address '" + proxyAddress + "' is invalid for protocol: " + this;
+            LOG.warning(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
         String sourceAddressParam = agent.getSourceAddress().orElseThrow(() -> {
             String msg = "No Bluetooth Mesh unicast source address provided for protocol: " + this;
             LOG.warning(msg);
@@ -242,21 +251,18 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
         }
         BluetoothMeshProtocol.initMainThread(executorService);
         meshNetwork = new BluetoothMeshNetwork(
-            BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread, sourceAddress, networkKey,
-            applicationKeyMap, mtuParam, oldSequenceNumber, executorService, statusConsumer
+            BluetoothMeshProtocol.bluetoothCentral, BluetoothMeshProtocol.sequenceNumberManager, BluetoothMeshProtocol.mainThread,
+            proxyAddress, sourceAddress, networkKey, applicationKeyMap, mtuParam, oldSequenceNumber, executorService, statusConsumer
         );
         BluetoothMeshProtocol.addNetwork(meshNetwork);
-        Runnable runnable = () -> {
-            meshNetwork.connect();
-        };
-        BluetoothMeshProtocol.mainThread.enqueue(runnable);
+        BluetoothMeshProtocol.mainThread.enqueue(() -> meshNetwork.start());
     }
 
     @Override
     protected synchronized void doStop(Container container) throws Exception {
         LOG.info("Stopping Bluetooth Mesh protocol.");
         if (meshNetwork != null) {
-            meshNetwork.disconnect();
+            meshNetwork.stop();
             meshNetwork = null;
         }
     }
@@ -342,37 +348,6 @@ public class BluetoothMeshProtocol extends AbstractProtocol<BluetoothMeshAgent, 
 
         meshNetwork.sendMeshSetCommand(address, modelId, processedValue);
         meshNetwork.sendMeshGetCommand(address, modelId);
-    }
-
-
-    // Implements ProtocolAssetDiscovery -----------------------------------------------------------
-
-    @Override
-    public Future<Void> startAssetDiscovery(final Consumer<AssetTreeNode[]> assetConsumer) {
-        return executorService.submit(() -> {
-            Asset<?> device = new ThingAsset("ESP32");
-
-            Attribute<?> attribute = new Attribute<>("genericOnOff_0002", ValueType.BOOLEAN);
-            attribute.addMeta(new MetaItem<>(MetaItemType.FORMAT, ValueFormat.BOOLEAN_ON_OFF()));
-
-            int appKeyIndex = 0;
-            String address = "0002";
-            String modelName = "GenericOnOff";
-            BluetoothMeshAgentLink agentLink = new BluetoothMeshAgentLink(agent.getId(), appKeyIndex, address, modelName);
-
-            attribute.addOrReplaceMeta(
-                new MetaItem<>(AGENT_LINK, agentLink),
-                new MetaItem<>(MetaItemType.LABEL, "Generic On Off")
-            );
-
-            device.getAttributes().addOrReplace(attribute);
-
-            AssetTreeNode treeNode = new AssetTreeNode(device);
-            AssetTreeNode[] assetTreeNodes = new AssetTreeNode[1];
-            assetTreeNodes[0] = treeNode;
-
-            assetConsumer.accept(assetTreeNodes);
-        }, null );
     }
 
 
