@@ -15,7 +15,6 @@ import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
-import org.openremote.model.asset.impl.ElectricityProducerSolarAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
@@ -230,7 +229,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
             ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
 
@@ -284,7 +283,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower));
 
-                if (electricityProducerWindAsset.isSetActualValueWithForecast().orElse(false)) {
+                if (electricityProducerWindAsset.isSetActualWindValueWithForecast().orElse(false)) {
                     assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower));
                 }
 

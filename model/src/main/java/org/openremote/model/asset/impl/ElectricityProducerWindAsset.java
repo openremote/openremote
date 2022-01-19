@@ -47,7 +47,7 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
 
     public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_WIND_SERVICE = new AttributeDescriptor<>("includeForecastWindService", BOOLEAN);
 
-    public static final AttributeDescriptor<Boolean> SET_ACTUAL_VALUE_WITH_FORECAST = new AttributeDescriptor<>("setActualValueWithForecast", BOOLEAN);
+    public static final AttributeDescriptor<Boolean> SET_ACTUAL_WIND_VALUE_WITH_FORECAST = new AttributeDescriptor<>("setWindActualValueWithForecast", BOOLEAN);
 
     public static final AssetDescriptor<ElectricityProducerWindAsset> DESCRIPTOR = new AssetDescriptor<>("wind-turbine", "4B87EA", ElectricityProducerWindAsset.class);
 
@@ -77,8 +77,8 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
         return getAttribute(INCLUDE_FORECAST_WIND_SERVICE).flatMap(AbstractNameValueHolder::getValue);
     }
 
-    public Optional<Boolean> isSetActualValueWithForecast() {
-        return getAttribute(SET_ACTUAL_VALUE_WITH_FORECAST).flatMap(AbstractNameValueHolder::getValue);
+    public Optional<Boolean> isSetActualWindValueWithForecast() {
+        return getAttribute(SET_ACTUAL_WIND_VALUE_WITH_FORECAST).flatMap(AbstractNameValueHolder::getValue);
     }
 
     @Override
@@ -263,8 +263,8 @@ public class ElectricityProducerWindAsset extends ElectricityProducerAsset {
         return this;
     }
 
-    public ElectricityProducerWindAsset setSetActualValueWithForecast(boolean value) {
-        getAttributes().getOrCreate(SET_ACTUAL_VALUE_WITH_FORECAST).setValue(value);
+    public ElectricityProducerWindAsset setSetActualWindValueWithForecast(boolean value) {
+        getAttributes().getOrCreate(SET_ACTUAL_WIND_VALUE_WITH_FORECAST).setValue(value);
         return this;
     }
 }

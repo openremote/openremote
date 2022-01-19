@@ -191,7 +191,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
             ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
 
@@ -247,7 +247,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                         // Forecast date time is ISO8601 without 'T' so needs special formatter
                         LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
                         LocalDateTime previousTimestamp = null;
-                        boolean setActualValuePower = electricityProducerSolarAsset.isSetActualValueWithForecast().orElse(false);
+                        boolean setActualValuePower = electricityProducerSolarAsset.isSetActualSolarValueWithForecast().orElse(false);
                         boolean setActualValueForecastPower = true;
 
                         for (Map.Entry<String, Double> wattItem : responseModel.result.watts.entrySet()) {
