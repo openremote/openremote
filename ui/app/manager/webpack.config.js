@@ -7,7 +7,7 @@ module.exports = (env, argv) => {
     const customConfigDir = env.config;
     const managerUrl = env.managerUrl;
     const keycloakUrl = env.keycloakUrl;
-    const IS_DEV_SERVER = process.argv.find(arg => arg.includes("serve"));
+    const IS_DEV_SERVER = !!process.argv.find(arg => arg.includes("serve"));
     const config = util.getAppConfig(argv.mode, IS_DEV_SERVER, __dirname, managerUrl, keycloakUrl);
 
     if (IS_DEV_SERVER && customConfigDir) {
@@ -21,6 +21,12 @@ module.exports = (env, argv) => {
                 }
             ]
         }));
+    }
+
+    if (IS_DEV_SERVER) {
+        config.performance = {
+            hints: false
+        };
     }
 
     // Add a custom base URL to resolve the config dir to the path of the dev server not root
