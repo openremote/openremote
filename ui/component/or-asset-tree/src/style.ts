@@ -221,6 +221,25 @@ export const style = css`
     #asset-tree-filter {
         display: flex;
         align-items: center;
+        position: relative;
+    }
+    
+    #filterInput {
+        padding: 5px;
+    }
+    
+    #clearIcon {
+        width: 16px;
+        height: 16px;
+        position: absolute;
+        right: 0;
+        padding-right: 14px;
+        cursor: pointer;
+        display: none;
+    }
+    
+    #clearIcon.visible {
+        display: block;
     }
 
     #noAssetsFound {

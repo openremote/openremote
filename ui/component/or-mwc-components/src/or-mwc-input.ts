@@ -665,9 +665,6 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public autoSelect?: boolean;
 
-    @property({type: Boolean})
-    public eventOnInput?: boolean;
-
     /* STYLING PROPERTIES BELOW */
 
     @property({type: String})
@@ -678,9 +675,6 @@ export class OrMwcInput extends LitElement {
 
     @property({type: String})
     public iconTrailing?: string;
-
-    @property({type: Boolean})
-    public clearOnTrailingClick: boolean = false;
 
     @property({type: Boolean})
     public compact: boolean = false;
@@ -1244,19 +1238,8 @@ export class OrMwcInput extends LitElement {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
-                                   @input="${(e: Event) => {
-                                       //if (!this.eventOnInput) {
-                                       this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)
-                                   }
-                                           //}
-                                   }"
-                            @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}" 
-                            @change="${(e: Event) => { 
-                                //if (!this.eventOnInput) {
-                                    this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)
-                                }
-                                //}
-                            }" />`;
+                            @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}"
+                            @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
@@ -1265,8 +1248,7 @@ export class OrMwcInput extends LitElement {
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
                                 ${outlined ? `` : html`<span class="mdc-line-ripple"></span>`}
-                                ${this.iconTrailing && !this.clearOnTrailingClick ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
-                                ${this.iconTrailing && this.clearOnTrailingClick ? html`<or-icon style="pointer-events:auto !important;" @click="${ () => this.dispatchEvent(new OrInputChangedEvent('', null)) }" class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>`: ``}
+                                ${this.iconTrailing ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--trailing" aria-hidden="true" icon="${this.iconTrailing}"></or-icon>` : ``}
                             </label>
                             ${hasHelper || showValidationMessage ? html`
                                 <div class="mdc-text-field-helper-line">
