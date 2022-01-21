@@ -6,6 +6,7 @@ import {
     TemplateResult
 } from "lit";
 import {customElement, property} from "lit/decorators.js";
+import { classMap } from 'lit-html/directives/class-map.js';
 import {
     Asset,
     AssetEvent,
@@ -15,7 +16,7 @@ import {
     WellknownAttributes,
     WellknownMetaItems
 } from "@openremote/model";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import manager, {AssetModelUtil, MapMarkerConfig, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
@@ -72,6 +73,9 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
 
     @property({type: Object})
     public config?: MapAssetCardConfig;
+
+    @property({type: Object})
+    public markerconfig?: MapMarkerConfig;
 
     @property({type: Boolean, attribute: true})
     public useAssetColor: boolean = true;
@@ -160,7 +164,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                              const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr.name, attr);
                              const label = Util.getAttributeLabel(attr, descriptors[0], this.asset!.type, true);
                              const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset!.type, false, "-");
-                             return html`<li><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`; 
+                             const classes = {highlighted: attr.name === this.markerconfig![this.asset!.type!][0].attributeName};
+                             return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`; 
                         })}
                     </ul>
                 </div>

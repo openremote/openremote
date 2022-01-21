@@ -323,7 +323,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
         return html`
             
-            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
