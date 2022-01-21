@@ -10,7 +10,7 @@ import {
     SharedEvent,
     WellknownAttributes, ReadAttributeEvent,
 } from "@openremote/model";
-import {MapMarkerConfig, subscribe, Util} from "@openremote/core";
+import {AssetModelUtil, MapMarkerConfig, subscribe, Util} from "@openremote/core";
 import manager from "@openremote/core";
 import { getMarkerIconAndColorFromAssetType } from "../util";
 
@@ -122,9 +122,15 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             if (this.config && asset.type && this.config[asset.type]) {
                 const assetTypeConfig = this.config[asset.type][0] || undefined;
                 if (assetTypeConfig) {
-                    this.displayValue = await this.getDesiredAttrValue(asset, assetTypeConfig.attributeName);
                     if (assetTypeConfig.showLabel) {
                         this.showLabel = assetTypeConfig.showLabel;
+                    }
+                    if (this.showLabel) {
+                        this.displayValue = await this.getDesiredAttrValue(asset, assetTypeConfig.attributeName);
+                        if (assetTypeConfig.showUnits !== false && attr) {
+                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type);
+                            this.unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
+                        }
                     }
                 }
             }

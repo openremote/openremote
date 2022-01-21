@@ -74,11 +74,17 @@ export class OrMapMarker extends LitElement {
             -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
             box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
           }
+          .label > span {
+            white-space: nowrap;
+          }
         `;
     }
 
-    protected static _defaultTemplate = (icon: string | undefined, displayValue?: string | number | boolean, showLabel?: boolean) => `
-        ${displayValue !== undefined && !!showLabel ? `<div class="label"><span>${displayValue.toString()}</span></div>` : ``}
+    protected static _defaultTemplate = (icon: string | undefined, displayValue?: string | number | boolean, showLabel?: boolean, unit?: string) => `
+        ${displayValue !== undefined && !!showLabel ? `<div class="label"><span>
+            ${displayValue.toString()}
+            ${unit ? `${unit.toString()}` : ``}
+        </span></div>` : ``}
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -97,6 +103,9 @@ export class OrMapMarker extends LitElement {
 
     @property({reflect: true})
     public showLabel: boolean = true;
+
+    @property({reflect: true})
+    public unit?: string = undefined;
 
     @property({type: Boolean})
     public visible: boolean = true;
@@ -179,7 +188,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("icon") || _changedProperties.has("displayValue") || _changedProperties.has("showLabel")) {
+        if (_changedProperties.has("icon") || _changedProperties.has("displayValue") || _changedProperties.has("showLabel") || _changedProperties.has("unit")) {
             this.refreshMarkerContent();
         }
 
@@ -296,7 +305,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayValue, this.showLabel);
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayValue, this.showLabel, this.unit);
         return div;
     }
 }
