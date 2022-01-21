@@ -10,6 +10,15 @@ module.exports = (env, argv) => {
     const IS_DEV_SERVER = !!process.argv.find(arg => arg.includes("serve"));
     const config = util.getAppConfig(argv.mode, IS_DEV_SERVER, __dirname, managerUrl, keycloakUrl);
 
+    if (IS_DEV_SERVER) {
+        console.log("")
+        console.log("To set a path to a custom manager_config.json use the config environment argument with a path")
+        console.log("relative to this app e.g: ")
+        console.log("")
+        console.log("npm run serve -- --env config=../../../manager_config.json")
+        console.log("")
+    }
+
     if (IS_DEV_SERVER && customConfigDir) {
         console.log("CUSTOM_CONFIG_DIR: " + customConfigDir);
 
