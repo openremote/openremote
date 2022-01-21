@@ -36,18 +36,24 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     protected markerColor?: string;
 
     protected set type(type: string | undefined) {
-        const iconAndColor = getMarkerIconAndColorFromAssetType(type, this.config, this.displayValue);
 
-        if (!iconAndColor) {
+        let iconAndcolour;
+        if (this.config && type && this.config[type] && this.displayValue) {
+            const markerConfig = this.config[type][0] || undefined;
+            const overrideOpts = {markerConfig: markerConfig, attributeValue: this.displayValue};
+            iconAndcolour = getMarkerIconAndColorFromAssetType(type, overrideOpts);
+        }
+
+        if (!iconAndcolour) {
             this.visible = false;
             return;
         }
 
         if (this.assetTypeAsIcon) {
-            this.icon = iconAndColor.icon;
+            this.icon = iconAndcolour.icon;
         }
 
-        this.markerColor = (Array.isArray(iconAndColor.color)) ? iconAndColor.color[0].colour : iconAndColor.color || undefined;
+        this.markerColor = (Array.isArray(iconAndcolour.color)) ? iconAndcolour.color[0].colour : iconAndcolour.color || undefined;
         this.updateColor(this.markerContainer);
         this.visible = true;
     }

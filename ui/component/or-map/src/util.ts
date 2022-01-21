@@ -84,10 +84,14 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     }
 }
 
+interface OverrideConfigSettings {
+    markerConfig: AttributeMarkerColours | RangeAttributeMarkerColours;
+    attributeValue: number | string | boolean;
+}
+
 export function getMarkerIconAndColorFromAssetType(
     type: AssetDescriptor | string | undefined,
-    markerConfig?: MapMarkerConfig,
-    attrVal?: number | string | boolean
+    configOverrideSettings?: OverrideConfigSettings
 ): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
 
     if (!type) {
@@ -97,16 +101,19 @@ export function getMarkerIconAndColorFromAssetType(
     const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
     let colourOverride: string | AttributeMarkerColoursRange[] | undefined;
-    if (markerConfig && descriptor && markerConfig[descriptor.name!]) {
-        // todo only take the first config for now
-        const overrideConfig = markerConfig[descriptor.name!][0] as AttributeMarkerColours | RangeAttributeMarkerColours;
-        if (overrideConfig.type === 'range' && attrVal) {
-            const ranges = overrideConfig.ranges;
-            const colourFromRange = ranges.find(r => r.max >= attrVal) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
-            colourOverride = colourFromRange.colour || undefined;
-        } else if (overrideConfig.type === 'boolean') {
-            const value = attrVal ? 'true' : 'false';
-            colourOverride = overrideConfig[value] || undefined;
+    if (configOverrideSettings) {
+        if (configOverrideSettings.markerConfig && descriptor) {
+            const markerConfig = configOverrideSettings.markerConfig;
+            const attrVal = configOverrideSettings.attributeValue;
+            if (markerConfig.type === 'range' && attrVal) {
+                const ranges = markerConfig.ranges;
+                // see in what range the attrVal fits and if not, what the setting for the highest range is
+                const colourFromRange = ranges.find(r => attrVal < r.max) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
+                colourOverride = colourFromRange.colour || undefined;
+            } else if (markerConfig.type === 'boolean') {
+                const value = attrVal ? 'true' : 'false';
+                colourOverride = markerConfig[value] || undefined;
+            }
         }
         // todo icon override
     }
