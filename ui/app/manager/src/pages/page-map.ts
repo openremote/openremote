@@ -117,9 +117,13 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
             page.config = config || {};
 
             // todo: remove stub
+            // console.log(page.config);
             page.config.markers = {
-                ElectricityProducerSolarAsset: {
-                    energyExportTotal: {
+                ElectricityProducerSolarAsset: [
+                    {
+                        attributeName: "energyExportTotal",
+                        showUnits: true,
+                        showDirection: false,
                         showLabel: true,
                         type: "range",
                         ranges: [
@@ -137,14 +141,15 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
                             }
                         ]
                     } as RangeAttributeMarkerColours
-                },
-                DoorAsset: {
-                    locked: {
+                ],
+                DoorAsset: [
+                    {
+                        attributeName: "locked",
                         type: "boolean",
                         true: '00FF00',
                         false: 'FF0000'
                     } as AttributeMarkerColours
-                }
+                ]
             } as MapMarkerConfig;
 
             return page

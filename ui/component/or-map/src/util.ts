@@ -1,10 +1,9 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
 import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownAttributes} from "@openremote/model";
 import {
-    AssetModelUtil,
-    AssetTypeMarkerConfig,
-    AttributeMarkerColoursRange,
-    MapMarkerConfig,
+    AssetModelUtil, AttributeMarkerColours,
+    AttributeMarkerColoursRange, BaseMapMarkerConfig,
+    MapMarkerConfig, RangeAttributeMarkerColours,
 } from "@openremote/core";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
@@ -85,7 +84,12 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     }
 }
 
-export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | string | undefined, markerConfig?: MapMarkerConfig, attrVal?: number | string | boolean): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
+export function getMarkerIconAndColorFromAssetType(
+    type: AssetDescriptor | string | undefined,
+    markerConfig?: MapMarkerConfig,
+    attrVal?: number | string | boolean
+): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
+
     if (!type) {
         return;
     }
@@ -93,21 +97,19 @@ export function getMarkerIconAndColorFromAssetType(type: AssetDescriptor | strin
     const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
 
     let colourOverride: string | AttributeMarkerColoursRange[] | undefined;
-    if (markerConfig) {
-        if (descriptor && Object.keys(markerConfig).includes(descriptor.name!)) {
-            const overrideConfig = markerConfig[descriptor.name!] as AssetTypeMarkerConfig;
-            const attributeName = Object.keys(overrideConfig)[0];
-            const colourConfig = overrideConfig[attributeName];
-            if (colourConfig.type === 'range' && attrVal) {
-                const ranges = colourConfig.ranges;
-                const colourFromRange = ranges.find(r => r.max >= attrVal) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
-                colourOverride = colourFromRange.colour || undefined;
-            } else if (colourConfig.type === 'boolean') {
-                const value = attrVal ? 'true' : 'false';
-                colourOverride = colourConfig[value] || undefined;
-            }
-            // todo icon override
+    if (markerConfig && descriptor && markerConfig[descriptor.name!]) {
+        // todo only take the first config for now
+        const overrideConfig = markerConfig[descriptor.name!][0] as AttributeMarkerColours | RangeAttributeMarkerColours;
+        console.log('friet', overrideConfig);
+        if (overrideConfig.type === 'range' && attrVal) {
+            const ranges = overrideConfig.ranges;
+            const colourFromRange = ranges.find(r => r.max >= attrVal) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
+            colourOverride = colourFromRange.colour || undefined;
+        } else if (overrideConfig.type === 'boolean') {
+            const value = attrVal ? 'true' : 'false';
+            colourOverride = overrideConfig[value] || undefined;
         }
+        // todo icon override
     }
 
     const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
