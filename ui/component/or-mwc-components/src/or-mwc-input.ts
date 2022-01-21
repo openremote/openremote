@@ -660,7 +660,7 @@ export class OrMwcInput extends LitElement {
     public placeHolder?: string;
 
     @property({type: Array})
-    public options?: string[] | [string, string][];
+    public options?: (string | [string, string])[];
 
     @property({type: Boolean})
     public autoSelect?: boolean;
@@ -1625,15 +1625,17 @@ export class OrMwcInput extends LitElement {
         }
     }
 
-    protected resolveOptions(options: string[] | [string, string][] | undefined): [string, string][] | undefined {
+    protected resolveOptions(options: (string | [string, string])[] | undefined): [string, string][] | undefined {
         let resolved: [string, string][] | undefined;
 
         if (options && options.length > 0) {
-            if (Array.isArray(options[0])) {
-                resolved = options as [string, string][];
-            } else {
-                resolved = (options as string[]).map((option) => [option, i18next.t(option, {defaultValue: Util.camelCaseToSentenceCase(option)})]);
-            }
+            resolved = options.map(opt => {
+                if (Array.isArray(opt)) {
+                    return opt as [string, string];
+                } else {
+                    return [opt, i18next.t(opt, {defaultValue: Util.camelCaseToSentenceCase(opt)})]
+                }
+            });
         }
 
         return resolved;

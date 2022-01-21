@@ -32,6 +32,7 @@ public class BluetoothMeshAgent extends Agent<BluetoothMeshAgent, BluetoothMeshP
 
     public static final AttributeDescriptor<String> NETWORK_KEY = new AttributeDescriptor<String>("networkKey", ValueType.TEXT);
     public static final AttributeDescriptor<String> APPLICATION_KEY = new AttributeDescriptor<String>("applicationKey", ValueType.TEXT);
+    public static final AttributeDescriptor<String> PROXY_ADDRESS = new AttributeDescriptor<String>("proxyAddress", ValueType.TEXT);
     public static final AttributeDescriptor<String> SOURCE_ADDRESS = new AttributeDescriptor<String>("sourceAddress", ValueType.TEXT);
     public static final AttributeDescriptor<Integer> SEQUENCE_NUMBER = new AttributeDescriptor<Integer>("sequenceNumber", ValueType.POSITIVE_INTEGER);
     public static final AttributeDescriptor<Integer> MTU = new AttributeDescriptor<Integer>("mtu", ValueType.POSITIVE_INTEGER);
@@ -72,6 +73,15 @@ public class BluetoothMeshAgent extends Agent<BluetoothMeshAgent, BluetoothMeshP
 
     public BluetoothMeshAgent setApplicationKey(String value) {
         getAttributes().getOrCreate(APPLICATION_KEY).setValue(value);
+        return this;
+    }
+
+    public Optional<String> getProxyAddress() {
+        return getAttributes().getValue(PROXY_ADDRESS);
+    }
+
+    public BluetoothMeshAgent setProxyAddress(String value) {
+        getAttributes().getOrCreate(PROXY_ADDRESS).setValue(value);
         return this;
     }
 

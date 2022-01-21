@@ -22,6 +22,7 @@ package org.openremote.container.persistence;
 import org.apache.camel.ExchangePattern;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.output.MigrateResult;
 import org.hibernate.Session;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -488,8 +489,8 @@ public class PersistenceService implements ContainerService {
         for (MigrationInfo i : flyway.info().pending()) {
             LOG.info("Pending task: " + i.getVersion() + ", " + i.getDescription() + ", " + i.getScript());
         }
-        int applied = flyway.migrate();
-        LOG.info("Applied database schema migrations: " + applied);
+        MigrateResult result = flyway.migrate();
+        LOG.info("Applied database schema migrations: " + result.migrationsExecuted);
         flyway.validate();
     }
 

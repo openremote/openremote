@@ -229,7 +229,7 @@ public class ManagerTestSetup extends ManagerSetup {
         electricitySolarAsset.setEfficiencyExport(100);
         electricitySolarAsset.setPowerExportMax(2.5);
         electricitySolarAsset.setLocation(new GeoJSONPoint(9.195285, 48.787418));
-        electricitySolarAsset.setSetActualValueWithForecast(true);
+        electricitySolarAsset.setSetActualSolarValueWithForecast(true);
         electricitySolarAsset.setIncludeForecastSolarService(true);
         electricitySolarAsset = assetStorageService.merge(electricitySolarAsset);
         electricitySolarAssetId = electricitySolarAsset.getId();
@@ -246,7 +246,7 @@ public class ManagerTestSetup extends ManagerSetup {
         electricityWindAsset.setEfficiencyExport(100);
         electricityWindAsset.setPowerExportMax(2.5);
         electricityWindAsset.setLocation(new GeoJSONPoint(9.195285, 48.787418));
-        electricityWindAsset.setSetActualValueWithForecast(true);
+        electricityWindAsset.setSetActualWindValueWithForecast(true);
         electricityWindAsset.setIncludeForecastWindService(true);
         electricityWindAsset = assetStorageService.merge(electricityWindAsset);
         electricityWindAssetId = electricityWindAsset.getId();

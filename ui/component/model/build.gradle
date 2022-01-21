@@ -18,15 +18,15 @@ dependencies {
     if (isCustomProject()) {
         def customModel = findProject(":model")
         if (customModel != null) {
-            compile customModel
+            implementation customModel
         }
     }
-    compile resolveProject(":model")
-    compile resolveProject(":agent")
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
-    compile "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
+    implementation resolveProject(":model")
+    implementation resolveProject(":agent")
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
+    implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
 }
 
 generateTypeScript {

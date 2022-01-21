@@ -143,7 +143,7 @@ class OrSurveyResults extends LitElement {
             ids: [surveyId]
         };
 
-        manager.rest.api.AssetResource.queryPublicAssets(surveyQuery).then((response) => {
+        manager.rest.api.AssetResource.queryAssets(surveyQuery).then((response) => {
             if (response && response.data) {
                 this.survey = response.data[0];
                 this.requestUpdate();
@@ -156,7 +156,7 @@ class OrSurveyResults extends LitElement {
             parents: [{id:surveyId}]
         };
 
-        manager.rest.api.AssetResource.queryPublicAssets(surveyQuestQuery).then((response) => {
+        manager.rest.api.AssetResource.queryAssets(surveyQuestQuery).then((response) => {
             if (response && response.data) {
                 this.questions = response.data;
                 this.requestUpdate();

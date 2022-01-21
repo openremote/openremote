@@ -69,9 +69,9 @@ public class SystemHealthStatusProvider implements HealthStatusProvider, Contain
         com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         File[] roots = File.listRoots();
 
-        objectValue.put("systemLoadPercentage", operatingSystemMXBean.getSystemCpuLoad()*100);
-        objectValue.put("totalPhysicalMemoryMB", operatingSystemMXBean.getTotalPhysicalMemorySize() / (1024F*1024F));
-        objectValue.put("freePhysicalMemoryMB", operatingSystemMXBean.getFreePhysicalMemorySize() / (1024F*1024F));
+        objectValue.put("systemLoadPercentage", operatingSystemMXBean.getCpuLoad()*100);
+        objectValue.put("totalPhysicalMemoryMB", operatingSystemMXBean.getTotalMemorySize() / (1024F*1024F));
+        objectValue.put("freePhysicalMemoryMB", operatingSystemMXBean.getFreeMemorySize() / (1024F*1024F));
         objectValue.put("committedVirtualMemoryMB", operatingSystemMXBean.getCommittedVirtualMemorySize() / (1024F*1024F));
         objectValue.put("totalSwapSpaceMB", operatingSystemMXBean.getTotalSwapSpaceSize() / (1024F*1024F));
         objectValue.put("freeSwapSpaceMB", operatingSystemMXBean.getFreeSwapSpaceSize() / (1024F*1024F));

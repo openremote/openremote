@@ -94,6 +94,9 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     @state()
     protected _realm?: string;
 
+    @state()
+    protected _activeMenu?: string;
+
     protected _realms!: Tenant[];
     protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
     protected _storeUnsubscribe!: Unsubscribe;
@@ -238,6 +241,17 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
 
                 this._initialised = true;
 
+                // Create route listener to set header active item (this must be done before any routes added)
+                const headerUpdater = (activeMenu: string | undefined) => {
+                    this._activeMenu = activeMenu;
+                };
+                router.hooks({
+                    before(done, match) {
+                        headerUpdater(match ? match.url.split('/')[0] : undefined);
+                        done();
+                    }
+                });
+
                 // Configure routes
                 this.appConfig.pages.forEach((pageProvider, index) => {
                     if (pageProvider.routes) {
@@ -339,7 +353,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             ${this._config.styles ? typeof(this._config.styles) === "string" ? html`<style>${this._config.styles}</style>` : this._config.styles.strings : ``}
             ${consoleStyles}
             ${this._config.header ? html`
-                <or-header .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
+                <or-header .activeMenu="${this._activeMenu}" .store="${this._store}" .realm="${this._realm}" .realms="${this._realms}" .logo="${this._config.logo}" .logoMobile="${this._config.logoMobile}" .config="${this._config.header}"></or-header>
             ` : ``}
             
             <!-- Main content -->

@@ -29,7 +29,7 @@ import java.util.Arrays;
 
 /**
  * This event is used when an {@link Asset} is created, read, updated or deleted (updates are only fired when one or more top
- * level {@link Asset} properties are changed (excluding {@link Asset#getAttributes}. Attribute changes are handled via
+ * level {@link Asset} properties are changed (including attributes). Attribute changes are handled via
  * the {@link org.openremote.model.attribute.AttributeEvent}. When the cause is {@link Cause#READ} then the asset's
  * {@link org.openremote.model.attribute.Attribute}s will be included in the asset otherwise they are not.
  */

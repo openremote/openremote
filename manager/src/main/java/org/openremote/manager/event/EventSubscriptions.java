@@ -43,8 +43,8 @@ public class EventSubscriptions {
     final protected TimerService timerService;
     final protected Map<String, SessionSubscriptions> sessionSubscriptionIdMap = new HashMap<>();
 
-    class SessionSubscriptions extends HashSet<SessionSubscription> {
-        public void createOrUpdate(boolean restrictedUser, EventSubscription<?> eventSubscription) {
+    class SessionSubscriptions extends HashSet<SessionSubscription<?>> {
+        protected void createOrUpdate(boolean restrictedUser, boolean anonymousUser, EventSubscription<?> eventSubscription) {
 
             if (TextUtil.isNullOrEmpty(eventSubscription.getSubscriptionId())) {
                 cancelByType(eventSubscription.getEventType());
@@ -52,43 +52,35 @@ public class EventSubscriptions {
                 cancelById(eventSubscription.getSubscriptionId());
             }
 
-            add(new SessionSubscription(restrictedUser, timerService.getCurrentTimeMillis(), eventSubscription));
+            add(new SessionSubscription<>(restrictedUser, anonymousUser, timerService.getCurrentTimeMillis(), eventSubscription));
         }
 
-        public void update(boolean resstrictedUser, String[] subscriptionIds) {
-            List<String> ids = Arrays.asList(subscriptionIds);
-            forEach(sessionSubscription -> {
-                if (ids.contains(sessionSubscription.subscriptionId)) {
-                    sessionSubscription.restrictedUser = resstrictedUser;
-                    sessionSubscription.timestamp = timerService.getCurrentTimeMillis();
-                }
-            });
-        }
-
-        public void cancelByType(String eventType) {
+        protected void cancelByType(String eventType) {
             removeIf(sessionSubscription -> sessionSubscription.subscriptionId == null && sessionSubscription.subscription.getEventType().equals(eventType));
         }
 
-        public void cancelById(String subscriptionId) {
+        protected void cancelById(String subscriptionId) {
             removeIf(sessionSubscription -> sessionSubscription.subscription.getSubscriptionId().equals(subscriptionId));
         }
     }
 
-    class SessionSubscription {
+    static class SessionSubscription<T extends SharedEvent> {
         boolean restrictedUser;
+        boolean anonymousUser;
         long timestamp;
-        final EventSubscription subscription;
+        final EventSubscription<T> subscription;
         final String subscriptionId;
 
-        public SessionSubscription(boolean restrictedUser, long timestamp, EventSubscription subscription) {
+        public SessionSubscription(boolean restrictedUser, boolean anonymousUser, long timestamp, EventSubscription<T> subscription) {
             this.restrictedUser = restrictedUser;
+            this.anonymousUser = anonymousUser;
             this.timestamp = timestamp;
             this.subscription = subscription;
             this.subscriptionId = subscription.getSubscriptionId();
         }
 
-        public boolean matches(boolean accessibleForRestrictedUsers, SharedEvent event) {
-            return (!restrictedUser || accessibleForRestrictedUsers) && subscription.getEventType().equals(event.getEventType());
+        public boolean matches(SharedEvent event) {
+            return (!restrictedUser || event.canAccessRestrictedRead()) && (!anonymousUser || event.canAccessPublicRead()) && subscription.getEventType().equals(event.getEventType());
         }
     }
 
@@ -97,27 +89,16 @@ public class EventSubscriptions {
         this.timerService = timerService;
     }
 
-    public void createOrUpdate(String sessionKey, boolean restrictedUser, EventSubscription<?> subscription) {
+    protected void createOrUpdate(String sessionKey, boolean restrictedUser, boolean anonymousUser, EventSubscription<?> subscription) {
         synchronized (this.sessionSubscriptionIdMap) {
-            // TODO Check if the user can actually subscribe to the events it wants, how do we do that?
             LOG.finer("For session '" + sessionKey + "', creating/updating: " + subscription);
             SessionSubscriptions sessionSubscriptions =
                 this.sessionSubscriptionIdMap.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
-            sessionSubscriptions.createOrUpdate(restrictedUser, subscription);
+            sessionSubscriptions.createOrUpdate(restrictedUser, anonymousUser, subscription);
         }
     }
 
-    public void update(String sessionKey, boolean restrictedUser, String[] subscriptionIds) {
-        synchronized (this.sessionSubscriptionIdMap) {
-            SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
-            if (sessionSubscriptions != null) {
-                LOG.finer("For session '" + sessionKey + "', updating: " + Arrays.toString(subscriptionIds));
-                sessionSubscriptions.update(restrictedUser, subscriptionIds);
-            }
-        }
-    }
-
-    public void cancel(String sessionKey, CancelEventSubscription subscription) {
+    protected void cancel(String sessionKey, CancelEventSubscription subscription) {
         synchronized (this.sessionSubscriptionIdMap) {
             if (!this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
                 return;
@@ -138,7 +119,7 @@ public class EventSubscriptions {
         }
     }
 
-    public void cancelAll(String sessionKey) {
+    protected void cancelAll(String sessionKey) {
         synchronized (this.sessionSubscriptionIdMap) {
             if (this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
                 LOG.finer("Cancelling all subscriptions for session: " + sessionKey);
@@ -147,16 +128,16 @@ public class EventSubscriptions {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public <T extends SharedEvent> List<Message> splitForSubscribers(Exchange exchange) {
         List<Message> messageList = new ArrayList<>();
-        SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+        T event = (T)exchange.getIn().getBody(SharedEvent.class);
+
         if (event == null)
             return messageList;
 
-        boolean accessibleForRestrictedUsers = exchange.getIn().getHeader(ClientEventService.HEADER_ACCESS_RESTRICTED, false, Boolean.class);
-
         Set<Map.Entry<String, SessionSubscriptions>> sessionSubscriptionsSet;
+
         synchronized (this.sessionSubscriptionIdMap) {
             sessionSubscriptionsSet = new HashSet<>(sessionSubscriptionIdMap.entrySet());
         }
@@ -165,18 +146,20 @@ public class EventSubscriptions {
             String sessionKey = entry.getKey();
             SessionSubscriptions subscriptions = entry.getValue();
 
-            for (SessionSubscription sessionSubscription : subscriptions) {
+            for (SessionSubscription<?> sessionSubscription : subscriptions) {
 
-                if (!sessionSubscription.matches(accessibleForRestrictedUsers, event))
+                if (!sessionSubscription.matches(event))
                     continue;
 
-                if (sessionSubscription.subscription.getFilter() == null
-                    || sessionSubscription.subscription.getFilter().apply(event)) {
-                    LOG.finer("Creating message for subscribed session '" + sessionKey + "': " + event);
-                    List<SharedEvent> events = Collections.singletonList(event);
-                    TriggeredEventSubscription<?> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSubscription.subscriptionId);
+                SessionSubscription<T> sessionSub = (SessionSubscription<T>) sessionSubscription;
 
-                    if (sessionSubscription.subscription.getInternalConsumer() == null) {
+                if (sessionSub.subscription.getFilter() == null
+                    || sessionSub.subscription.getFilter().apply(event)) {
+                    LOG.finer("Creating message for subscribed session '" + sessionKey + "': " + event);
+                    List<T> events = Collections.singletonList(event);
+                    TriggeredEventSubscription<T> triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSub.subscriptionId);
+
+                    if (sessionSub.subscription.getInternalConsumer() == null) {
                         Message msg = new DefaultMessage();
                         msg.setBody(triggeredEventSubscription); // Don't copy the event, use same reference
                         msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
@@ -184,8 +167,8 @@ public class EventSubscriptions {
                         messageList.add(msg);
                     } else {
                         if (triggeredEventSubscription.getEvents() != null) {
-                            triggeredEventSubscription.getEvents().forEach(ev ->
-                                sessionSubscription.subscription.getInternalConsumer().accept(ev));
+                            triggeredEventSubscription.getEvents().forEach(e ->
+                                sessionSub.subscription.getInternalConsumer().accept(e));
                         }
                     }
                 }

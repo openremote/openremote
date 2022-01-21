@@ -17,19 +17,16 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@jsonforms/core": "^3.0.0-beta.1",
     "@openremote/or-mwc-components": "^1.0.4",
     "@polymer/polymer": "^3.3.1",
-    "lit": "^2.0.2",
-    "ajv": "^8.8.2"
+    "ajv": "^8.8.2",
+    "lit": "^2.0.2"
   },
   "devDependencies": {
-    "@jsonforms/core": "^3.0.0-alpha.1",
     "@openremote/util": "^1.0.4"
   },
   "publishConfig": {
     "access": "public"
-  },
-  "resolutions": {
-    "ajv": "8.8.2"
   }
 }

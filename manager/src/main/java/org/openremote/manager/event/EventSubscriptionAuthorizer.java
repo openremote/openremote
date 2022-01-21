@@ -31,6 +31,7 @@ import java.util.function.BiFunction;
  * permissions. It might also fail if the subscription is invalid, for example, if
  * a required filter is not supplied or if the filter is not valid.
  */
-public interface EventSubscriptionAuthorizer extends BiFunction<AuthContext, EventSubscription<?>, Boolean> {
-
+@FunctionalInterface
+public interface EventSubscriptionAuthorizer {
+    boolean authorise(String requestRealm, AuthContext authContext, EventSubscription<?> eventSubscription);
 }

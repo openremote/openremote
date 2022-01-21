@@ -121,11 +121,6 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         return ValueUtil.getValueCoerced(value, valueType);
     }
 
-    @Override
-    public void setValue(Object value) {
-        throw new UnsupportedOperationException("Cannot set value of Asset State");
-    }
-
     public long getTimestamp() {
         return timestamp;
     }

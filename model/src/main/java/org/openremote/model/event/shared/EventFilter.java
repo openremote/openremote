@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.AssetFilter;
-import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.syslog.SyslogEvent;
 
 /**
@@ -36,7 +35,6 @@ import org.openremote.model.syslog.SyslogEvent;
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
     property = "filterType"
 )
 @JsonAutoDetect(

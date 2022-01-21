@@ -8,8 +8,6 @@ import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
 import "@openremote/or-attribute-history";
 import "@openremote/or-chart";
-import "@openremote/or-survey";
-import "@openremote/or-survey-results";
 import "@openremote/or-mwc-components/or-mwc-table";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-mwc-components/or-mwc-dialog";
@@ -518,16 +516,20 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         
     }
 
+    // This is not something that should be part of the standard asset-viewer
     if (panelConfig && panelConfig.type === "survey") {
-        return html`      
-            <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
-        `;
+        return html``;
+        // return html`
+        //     <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
+        // `;
     }
 
+    // This is not something that should be part of the standard asset-viewer
     if (panelConfig && panelConfig.type === "survey-results") {
-        return html`     
-            <or-survey-results id="survey-results" .survey="${asset}"></or-survey-results>
-        `;
+        return html``;
+        // return html`
+        //     <or-survey-results id="survey-results" .survey="${asset}"></or-survey-results>
+        // `;
     }
 
     if (panelConfig && panelConfig.type === "history") {

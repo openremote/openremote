@@ -386,7 +386,7 @@ public class MapService implements ContainerService {
 
     public byte[] getMapTile(int zoom, int column, int row) {
         // Flip y, oh why
-        row = new Double(Math.pow(2, zoom) - 1 - row).intValue();
+        row = Double.valueOf(Math.pow(2, zoom) - 1 - row).intValue();
 
         PreparedStatement query = null;
         ResultSet result = null;

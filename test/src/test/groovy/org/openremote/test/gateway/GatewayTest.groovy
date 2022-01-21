@@ -110,7 +110,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "the Gateway client is created"
         def gatewayClient = new WebsocketIOClient<String>(
-            new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=$managerTestSetup.realmBuildingTenant").build(),
+            new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmBuildingTenant").build(),
             null,
             new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingTenant/protocol/openid-connect/token",
                 gateway.getClientId().orElse(""),
@@ -152,12 +152,12 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert clientReceivedMessages[0].startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
             def response = ValueUtil.JSON.readValue(clientReceivedMessages[0].substring(EventRequestResponseWrapper.MESSAGE_PREFIX.length()), EventRequestResponseWrapper.class)
             assert response.messageId == GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL
-            def readAssetsEvent = response.event as ReadAssetsEvent
-            assert readAssetsEvent.assetQuery != null
-            assert readAssetsEvent.assetQuery.select.excludeAttributes
-            assert readAssetsEvent.assetQuery.select.excludePath
-            assert readAssetsEvent.assetQuery.select.excludeParentInfo
-            assert readAssetsEvent.assetQuery.recursive
+            def localReadAssetsEvent = response.event as ReadAssetsEvent
+            assert localReadAssetsEvent.assetQuery != null
+            assert localReadAssetsEvent.assetQuery.select.excludeAttributes
+            assert localReadAssetsEvent.assetQuery.select.excludePath
+            assert localReadAssetsEvent.assetQuery.select.excludeParentInfo
+            assert localReadAssetsEvent.assetQuery.recursive
         }
 
         when: "the previously received messages are cleared"
@@ -601,7 +601,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         when: "the gateway client reconnects with the new secret"
         gatewayClient = new WebsocketIOClient<String>(
-                new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Auth-Realm=$managerTestSetup.realmBuildingTenant").build(),
+                new URIBuilder("ws://127.0.0.1:$serverPort/websocket/events?Realm=$managerTestSetup.realmBuildingTenant").build(),
                 null,
                 new OAuthClientCredentialsGrant("http://127.0.0.1:$serverPort/auth/realms/$managerTestSetup.realmBuildingTenant/protocol/openid-connect/token",
                         gateway.getClientId().orElse(""),

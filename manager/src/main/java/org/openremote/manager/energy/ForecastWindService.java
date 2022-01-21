@@ -15,10 +15,10 @@ import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
-import org.openremote.model.asset.impl.ElectricityProducerSolarAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.syslog.SyslogCategory;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -34,13 +34,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.syslog.SyslogCategory.DATA;
 
 /**
  * Calculates power generation for {@link ElectricityProducerWindAsset}.
@@ -109,7 +109,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
     public static final String OPEN_WEATHER_API_APP_ID = "OPEN_WEATHER_API_APP_ID";
 
-    protected static final Logger LOG = Logger.getLogger(ForecastWindService.class.getName());
+    protected static final Logger LOG = SyslogCategory.getLogger(DATA, ForecastWindService.class.getName());
     protected AssetStorageService assetStorageService;
     protected AssetProcessingService assetProcessingService;
     protected GatewayService gatewayService;
@@ -179,7 +179,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
                 .map(asset -> (ElectricityProducerWindAsset) asset)
                 .filter(electricityProducerWindAsset -> electricityProducerWindAsset.isIncludeForecastWindService().orElse(false)
                         && electricityProducerWindAsset.getLocation().isPresent())
-                .collect(Collectors.toList());
+                .toList();
 
         LOG.fine("Found includes producer wind asset count = " + electricityProducerWindAssets.size());
 
@@ -229,7 +229,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
             ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
 
@@ -283,7 +283,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower));
 
-                if (electricityProducerWindAsset.isSetActualValueWithForecast().orElse(false)) {
+                if (electricityProducerWindAsset.isSetActualWindValueWithForecast().orElse(false)) {
                     assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower));
                 }
 

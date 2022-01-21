@@ -1,6 +1,7 @@
 package org.openremote.test.assets
 
 import org.openremote.manager.setup.SetupService
+import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.AttributeState
 import org.openremote.model.attribute.AttributeWriteFailure
 import org.openremote.model.util.ValueUtil
@@ -20,6 +21,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.ws.rs.BadRequestException
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
@@ -282,15 +284,16 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].id == managerTestSetup.smartOfficeId
         assets[0].realm == keycloakTestSetup.masterTenant.realm
 
-        when: "the root assets of the given realm are retrieved"
+        when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
                         .parents(new ParentPredicate(true))
         )
 
-        then: "result should match"
-        assets.length == 0
+        then: "a bad request exception should be thrown"
+        WebApplicationException ex = thrown()
+        assert ex instanceof BadRequestException
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -311,7 +314,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetResource.get(null, managerTestSetup.smartBuildingId)
 
         then: "access should be forbidden"
-        WebApplicationException ex = thrown()
+        ex = thrown()
         ex.response.status == 403
 
         /* ############################################## WRITE ####################################### */
@@ -422,8 +425,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                         .parents(new ParentPredicate(true))
         )
 
-        then: "result should match"
-        assets.length == 0
+        then: "a bad request exception should be thrown"
+        thrown(BadRequestException)
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -436,7 +439,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].id == managerTestSetup.smartBuildingId
         assets[0].realm == keycloakTestSetup.tenantBuilding.realm
 
-        when: "the root assets of the given realm are retrieved"
+        when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.tenantCity.realm))
@@ -444,7 +447,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         )
 
         then: "result should match"
-        assets.length == 0
+        thrown(BadRequestException)
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -524,7 +527,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         response.status == 403
     }
 
-    def "Access assets as testuser3"() {
+    def "Access assets as testuser3 (restricted user)"() {
         given: "the server container is started"
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
@@ -587,8 +590,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                         .parents(new ParentPredicate(true))
         )
 
-        then: "result should match"
-        assets.length == 0
+        then: "a bad request exception should be thrown"
+        thrown(BadRequestException)
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -599,15 +602,15 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         assets.length == 0
 
-        when: "the root assets of the given realm are retrieved"
+        when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.tenantCity.realm))
                         .parents(new ParentPredicate(true))
         )
 
-        then: "result should match"
-        assets.length == 0
+        then: "a bad request exception should be thrown"
+        thrown(BadRequestException)
 
         when: "the child assets of linked asset are retrieved"
         assets = assetResource.queryAssets(null,
@@ -670,6 +673,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
+
+        when: "all linked assets of the user are retrieved"
+        assets = assetResource.queryAssets(null, null)
+
+        then: "result should contain all linked assets"
+        assets.length == 6
 
         /* ############################################## WRITE ####################################### */
 
@@ -838,26 +847,17 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def assetResource = getClientApiTarget(serverUri(serverPort), keycloakTestSetup.tenantBuilding.realm).proxy(AssetResource.class)
 
-        when: "the public assets are retrieved using the query parameter endpoint"
-        def assets = assetResource.getPublicAssets(null, ValueUtil.asJSON(
-                new AssetQuery().tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
-        ).get())
+        when: "the public assets are retrieved"
+        def assets = assetResource.queryAssets(null, new AssetQuery()
+                .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm)))
 
         then: "the public assets should be retrieved"
         assert assets.size() == 2
         assert assets.find {it.id == managerTestSetup.apartment1Id} != null
         assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
 
-        when: "the public assets are retrieved using the query parameter endpoint without a query"
-        assets = assetResource.getPublicAssets(null, null)
-
-        then: "the public assets should be retrieved"
-        assert assets.size() == 2
-        assert assets.find {it.id == managerTestSetup.apartment1Id} != null
-        assert assets.find {it.id == managerTestSetup.apartment2LivingroomId} != null
-
-        when: "the public assets are retrieved using the post endpoint"
-        assets = assetResource.queryPublicAssets(null, new AssetQuery().tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm)))
+        when: "the public assets are retrieved without a query"
+        assets = assetResource.queryAssets(null, null)
 
         then: "the public assets should be retrieved"
         assert assets.size() == 2

@@ -27,18 +27,15 @@ import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.TenantRuleset;
-import org.openremote.model.security.Role;
 import org.openremote.model.security.User;
-import org.openremote.model.util.Pair;
-import org.spockframework.runtime.extension.AbstractGlobalExtension;
+import org.spockframework.runtime.extension.IGlobalExtension;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Used to store state for tests to help improve test performance
  */
-public class TestFixture extends AbstractGlobalExtension {
+public class TestFixture implements IGlobalExtension {
 
     // Store the container here to allow stopping it after all tests run
     protected static Container container;
@@ -56,7 +53,6 @@ public class TestFixture extends AbstractGlobalExtension {
         AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = 50;
         AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS = 0;
         AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS = 50;
-        super.start();
     }
 
     @Override

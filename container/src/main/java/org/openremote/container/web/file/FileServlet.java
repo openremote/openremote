@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
 
 public class FileServlet extends AbstractFileServlet {
 
@@ -98,11 +98,11 @@ public class FileServlet extends AbstractFileServlet {
         // If secured, serve files from a sub-directory that represents the authenticated realm
         if (isSecured()) {
 
-            String realm = request.getHeader(REQUEST_HEADER_REALM);
+            String realm = request.getHeader(REALM_PARAM_NAME);
 
             // If we are missing the auth realm header, ignore...
             if (realm == null || realm.length() ==0) {
-                LOG.fine("Ignoring request, secured service needs request header: " + REQUEST_HEADER_REALM);
+                LOG.fine("Ignoring request, secured service needs request header: " + REALM_PARAM_NAME);
                 return null;
             }
 

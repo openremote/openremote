@@ -622,7 +622,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
                             "        }\n" +
                             "      ],\n" +
                             "      \"pop\": 0.05\n" +
-                            "    },\n" +
+                            "    }\n" +
                             "  ]\n" +
                             "}"
                     def responseBody = ValueUtil.JSON.readValue(content, ForecastWindService.WeatherForecastResponseModel.class)
@@ -674,7 +674,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         newWindAsset.setEfficiencyExport(100);
         newWindAsset.setPowerExportMax(2.5);
         newWindAsset.setLocation(new GeoJSONPoint(9.195295, 48.787418));
-        newWindAsset.setSetActualValueWithForecast(true);
+        newWindAsset.setSetActualWindValueWithForecast(true);
         newWindAsset.setIncludeForecastWindService(true);
         newWindAsset = assetStorageService.merge(newWindAsset)
 
@@ -698,7 +698,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         newWindAsset2.setEfficiencyExport(100);
         newWindAsset2.setPowerExportMax(2.5);
         newWindAsset2.setLocation(new GeoJSONPoint(9.195275, 48.787418));
-        newWindAsset2.setSetActualValueWithForecast(false);
+        newWindAsset2.setSetActualWindValueWithForecast(false);
         newWindAsset2.setIncludeForecastWindService(false);
         newWindAsset2 = assetStorageService.merge(newWindAsset2)
 
@@ -721,7 +721,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         }
 
         when: "an asset updated it's setActualValueWithForecast to true"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.SET_ACTUAL_VALUE_WITH_FORECAST.name, true))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newWindAsset2.getId(), ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.name, true))
 
         then: "it power should be updated too"
         conditions.eventually {
@@ -746,7 +746,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         newWindAsset3.setWindSpeedReference(12d);
         newWindAsset3.setEfficiencyExport(100);
         newWindAsset3.setPowerExportMax(2.5);
-        newWindAsset3.setSetActualValueWithForecast(true);
+        newWindAsset3.setSetActualWindValueWithForecast(true);
         newWindAsset3.setIncludeForecastWindService(true);
         newWindAsset3 = assetStorageService.merge(newWindAsset3)
 

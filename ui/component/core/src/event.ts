@@ -41,7 +41,7 @@ export interface EventProvider {
     /**
      * Subscribe to {@link AssetEvent}s for the specified {@link Asset}s for all {@link Asset}s
      */
-    subscribeAssetEvents(ids: string[] | AttributeRef[] | undefined, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string>;
+    subscribeAssetEvents(ids: string[] | AttributeRef[] | undefined, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string>;
 
     /**
      * Subscribe to {@link AttributeEvent}s for the specified {@link Asset}s and if {@link AttributeRef}s are provided
@@ -267,7 +267,7 @@ abstract class EventProviderImpl implements EventProvider {
         return this._doSendWithReply(event);
     }
 
-    public async subscribeAssetEvents(ids: string[] | AttributeRef[] | undefined, requestCurrentValues: boolean, filter: AssetFilter | undefined, callback: (event: AssetEvent) => void): Promise<string> {
+    public async subscribeAssetEvents(ids: string[] | AttributeRef[] | undefined, requestCurrentValues: boolean, callback: (event: AssetEvent) => void): Promise<string> {
 
         const isAttributeRef = ids && typeof ids[0] !== "string";
         const assetIds = isAttributeRef ? (ids as AttributeRef[]).map((ref) => ref.id!) : ids as string[] | undefined;
@@ -276,15 +276,26 @@ abstract class EventProviderImpl implements EventProvider {
         // If not already done then create a single global subscription for asset events and filter for each callback
         if (!this._assetEventPromise) {
 
+            let assetFilter: AssetFilter | undefined;
+
+            if (!manager.authenticated) {
+                // Need to set the filter realm when anonymous
+                assetFilter = {
+                    filterType: "asset",
+                    realm: manager.displayRealm
+                }
+            }
+
             const subscription: EventSubscription<AssetEvent> = {
                 eventType: "asset",
+                filter: assetFilter
             };
-            if (assetIds) {
-                subscription.filter = {
-                    filterType: "asset",
-                    assetIds: assetIds
-                };
-            }
+            // if (assetIds) {
+            //     subscription.filter = {
+            //         filterType: "asset",
+            //         assetIds: assetIds
+            //     };
+            // }
             this._assetEventPromise = this.subscribe(subscription, (event) => {
                 this._assetEventCallbackMap.forEach((callback) => callback(event));
             });
@@ -361,8 +372,19 @@ abstract class EventProviderImpl implements EventProvider {
         // If not already done then create a single global subscription for attribute events and filter for each callback
         if (!this._attributeEventPromise) {
 
+            let assetFilter: AssetFilter | undefined;
+
+            if (!manager.authenticated) {
+                // Need to set the filter realm when anonymous
+                assetFilter = {
+                    filterType: "asset",
+                    realm: manager.displayRealm
+                }
+            }
+
             const subscription: EventSubscription<AttributeEvent> = {
-                eventType: "attribute"
+                eventType: "attribute",
+                filter: assetFilter
             };
             this._attributeEventPromise = this.subscribe(subscription, (event) => {
                 this._attributeEventCallbackMap.forEach((callback) => callback(event));
@@ -500,8 +522,6 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onConnect() {
-        console.debug("Event provider connected: " + this.constructor.name);
-
         if (Object.keys(this._subscriptionMap).length > 0) {
             for (const subscriptionId in this._subscriptionMap) {
                 if (this._subscriptionMap.has(subscriptionId)) {
@@ -515,7 +535,6 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onDisconnect() {
-        console.debug("Event provider disconnected");
         this._onStatusChanged(EventProviderStatus.DISCONNECTED);
         if (this._pendingSubscription) {
             this._queuedSubscriptions.unshift(this._pendingSubscription);
@@ -595,7 +614,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
     }
 
     protected _doConnect(): Promise<boolean> {
-        let authorisedUrl = this._endpointUrl + "?Auth-Realm=" + manager.config.realm;
+        let authorisedUrl = this._endpointUrl + "?Realm=" + manager.config.realm;
 
         if (manager.authenticated) {
             authorisedUrl += "&Authorization=" + manager.getAuthorizationHeader();
@@ -612,7 +631,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
             }
         };
 
-        this._webSocket!.onerror = () => {
+        this._webSocket!.onerror = (err) => {
             if (this._connectDeferred) {
                 const deferred = this._connectDeferred;
                 this._connectDeferred = null;
@@ -653,7 +672,7 @@ export class WebSocketEventProvider extends EventProviderImpl {
                 const deferred = this._subscribeDeferred;
                 this._subscribeDeferred = null;
                 if (deferred) {
-                    console.warn("Unauthorized event subscription: " + subscription);
+                    console.warn("Unauthorized event subscription: " + JSON.stringify(subscription, null, 2));
                     deferred.reject("Unauthorized");
                 }
             } else if (msg.startsWith(TRIGGERED_MESSAGE_PREFIX)) {

@@ -57,9 +57,9 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
         @SuppressWarnings({"unchecked", "rawtypes"})
         @Override
         public Attribute<?> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-
             // Need to find the type field to know how to deserialise the value
-            TokenBuffer tokenBuffer = TokenBuffer.asCopyOfValue(jp);
+            TokenBuffer tokenBuffer = new TokenBuffer(jp);
+            tokenBuffer.copyCurrentStructure(jp);
             JsonParser jp2 = tokenBuffer.asParser();
             JsonParser jp3 = tokenBuffer.asParser();
             String attributeValueType = null;
@@ -319,6 +319,14 @@ public class Attribute<T> extends AbstractNameValueHolder<T> implements MetaHold
 
     @Override
     public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "name='" + name + '\'' +
+            ", value='" + value + '\'' +
+            ", timestamp='" + getTimestamp().orElse(0L) + '\'' +
+            "} ";
+    }
+
+    public String toStringAll() {
         return getClass().getSimpleName() + "{" +
             "name='" + name + '\'' +
             ", value='" + value + '\'' +
