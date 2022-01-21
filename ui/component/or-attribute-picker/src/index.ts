@@ -44,6 +44,7 @@ export class OrAttributePicker extends OrMwcDialog {
     public multiSelect?: boolean = false;
 
     public selectedAttributes: AttributeRef[] = [];
+    public selectedAssets: string[] = [];
 
     @state()
     protected assetAttributes?: (Attribute<any>)[];
@@ -97,6 +98,12 @@ export class OrAttributePicker extends OrMwcDialog {
 
     public setSelectedAttributes(selectedAttributes: AttributeRef[]): OrAttributePicker {
         this.selectedAttributes = selectedAttributes;
+        return this;
+    }
+
+    public setSelectedAssets(selectedAssets: string[]): OrAttributePicker {
+        this.selectedAssets = selectedAssets;
+        this.setDialogContent();
         return this;
     }
 
@@ -166,11 +173,21 @@ export class OrAttributePicker extends OrMwcDialog {
             });
         };
 
+        let selectedAttribute: ListItem | undefined = undefined;
+        if (!this.multiSelect && this.selectedAttributes.length === 1 && this.selectedAttributes[0].name) {
+            console.log('here');
+            selectedAttribute = {
+                text: Util.getAttributeLabel(undefined, this.selectedAttributes[0], undefined, true),
+                value: this.selectedAttributes[0].name
+            };
+        }
+        console.log(selectedAttribute);
 
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
                 <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
                     <or-asset-tree id="chart-asset-tree" readonly
+                                   .selectedIds="${ this.selectedAssets.length > 0 ? this.selectedAssets : null }"
                                    @or-asset-tree-selection="${(ev: OrAssetTreeSelectionEvent) => this._onAssetSelectionChanged(ev)}">
                     </or-asset-tree>
                 </div>

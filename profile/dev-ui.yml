@@ -49,8 +49,8 @@ services:
     volumes:
       - temp-data:/tmp
     environment:
-      SETUP_WIPE_CLEAN_INSTALL: true
+      SETUP_WIPE_CLEAN_INSTALL: "true"
       EXTERNAL_URL: http://localhost:8080
-      DEV_MODE: true
+      DEV_MODE: "true"
     ports:
       - "8080:8080"
