@@ -94,6 +94,16 @@ public class AssetEvent extends SharedEvent implements AssetInfo {
     }
 
     @Override
+    public boolean canAccessPublicRead() {
+        return asset.isAccessPublicRead();
+    }
+
+    @Override
+    public boolean canAccessRestrictedRead() {
+        return true;
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
                 "cause=" + cause +
