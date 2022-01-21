@@ -117,7 +117,6 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
             page.config = config || {};
 
             // todo: remove stub
-            // console.log(page.config);
             page.config.markers = {
                 ElectricityProducerSolarAsset: [
                     {

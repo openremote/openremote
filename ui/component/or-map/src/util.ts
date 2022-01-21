@@ -100,7 +100,6 @@ export function getMarkerIconAndColorFromAssetType(
     if (markerConfig && descriptor && markerConfig[descriptor.name!]) {
         // todo only take the first config for now
         const overrideConfig = markerConfig[descriptor.name!][0] as AttributeMarkerColours | RangeAttributeMarkerColours;
-        console.log('friet', overrideConfig);
         if (overrideConfig.type === 'range' && attrVal) {
             const ranges = overrideConfig.ranges;
             const colourFromRange = ranges.find(r => r.max >= attrVal) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
