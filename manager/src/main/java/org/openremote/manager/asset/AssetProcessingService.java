@@ -503,7 +503,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 attribute.getName(),
                 attribute.getValue().orElse(null),
                 timerService.getCurrentTimeMillis()
-            ).setParentId(asset.getParentId()).setRealm(asset.getRealm()).setPath(asset.getPath())
+            )
+                .setParentId(asset.getParentId())
+                .setRealm(asset.getRealm())
+                .setPath(asset.getPath())
+                .setAccessRestrictedRead(attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false))
+                .setAccessPublicRead(attribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false))
         );
     }
 

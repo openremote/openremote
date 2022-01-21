@@ -72,6 +72,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     public void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException {
         persistenceService.doTransaction(em ->
                 em.unwrap(Session.class).doWork(connection -> {
+
+                    getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
                     PreparedStatement st;
 
                     try {

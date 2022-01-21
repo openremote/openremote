@@ -336,6 +336,7 @@ class EnergyOptimisationAssetTest extends Specification implements ManagerContai
         batteryAsset.setEnergyLevel(130d)
         batteryAsset = assetStorageService.merge(batteryAsset)
         optimisationService.runOptimisation(managerTestSetup.electricityOptimisationAssetId, optimisationTime.plus((long)optimiser.intervalSize*60*3, ChronoUnit.MINUTES))
+        println("DONE")
 
         then: "the optimisation saving should have decreased by the same amount (i.e. cost)"
         conditions.eventually {

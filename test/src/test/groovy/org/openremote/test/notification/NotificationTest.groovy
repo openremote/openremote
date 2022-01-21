@@ -195,9 +195,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "a regular user sends a push notification to an entire realm"
         testuser2NotificationResource.sendNotification(null, notification)
 
-        then: "access should be forbidden"
+        then: "no notification should have been sent"
         WebApplicationException ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 400
 
         when: "the admin user sends a notification to a user in a different realm with emailNotificationsDisabled set to true"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
@@ -223,24 +223,24 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
         testuser1NotificationResource.sendNotification(null, notification)
 
-        then: "access should be forbidden"
+        then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 400
 
         when: "a restricted user sends a push notification to another user in the same realm"
         notification.targets = [new Notification.Target(Notification.TargetType.USER, keycloakTestSetup.testuser2Id)]
         testuser3NotificationResource.sendNotification(null, notification)
 
-        then: "access should be forbidden"
+        then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 400
 
         when: "an anonymous user sends a push notification to a user"
         anonymousNotificationResource.sendNotification(null, notification)
 
-        then: "access should be forbidden"
+        then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 400
 
         when: "the admin user sends a push notification to the console assets in building realm"
         notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser2Console.id),
@@ -259,9 +259,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "a regular user sends a push notification to the console assets in a different realm"
         testuser1NotificationResource.sendNotification(null, notification)
 
-        then: "access should be forbidden"
+        then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 400
 
         when: "a regular user sends a push notification to the console assets in the same realm"
         advancePseudoClock(1, TimeUnit.HOURS, container)
@@ -285,9 +285,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "a restricted user sends a push notification to the console assets in the same realm"
         testuser3NotificationResource.sendNotification(null, notification)
 
-        then: "access should be forbidden"
+        then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 400
 
         when: "a restricted user sends a push notification to some consoles linked to them and some not linked to them"
         notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser2Console.id),
@@ -296,9 +296,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                 new Notification.Target(Notification.TargetType.ASSET, anonymousConsole.id)]
         testuser3NotificationResource.sendNotification(null, notification)
 
-        then: "access should be forbidden"
+        then: "no notification should have been sent"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 400
 
         and: "no new notifications should have been sent"
         notificationIds.size() == 14
