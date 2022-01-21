@@ -107,7 +107,7 @@ public class KeycloakTestSetup extends AbstractKeycloakSetup {
         serviceUser = new User()
             .setServiceAccount(true)
             .setEnabled(true)
-            .setUsername("test");
+            .setUsername("org/openremote/test");
         serviceUser = keycloakProvider.createUpdateUser(tenantBuilding.getRealm(), serviceUser, UniqueIdentifierGenerator.generateId("serviceusertest"));
         keycloakProvider.updateUserRoles(
             tenantBuilding.getRealm(),

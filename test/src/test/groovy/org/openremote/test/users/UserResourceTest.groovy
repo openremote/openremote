@@ -39,7 +39,6 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
-import static org.openremote.model.Constants.RESTRICTED_USER_REALM_ROLE
 
 class UserResourceTest extends Specification implements ManagerContainerTrait {
 
