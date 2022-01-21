@@ -10,7 +10,7 @@ import {
     SharedEvent,
     WellknownAttributes, ReadAttributeEvent,
 } from "@openremote/model";
-import {AttributeMarkerColours, MapMarkerConfig, RangeAttributeMarkerColours, subscribe, Util} from "@openremote/core";
+import {MapMarkerConfig, subscribe, Util} from "@openremote/core";
 import manager from "@openremote/core";
 import { getMarkerIconAndColorFromAssetType } from "../util";
 
@@ -40,6 +40,9 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         let iconAndcolour;
         if (this.config && type && this.config[type] && this.displayValue) {
             const markerConfig = this.config[type][0] || undefined;
+            if (markerConfig.showLabel) {
+                this.showLabel = markerConfig.showLabel;
+            }
             const overrideOpts = {markerConfig: markerConfig, attributeValue: this.displayValue};
             iconAndcolour = getMarkerIconAndColorFromAssetType(type, overrideOpts);
         }
@@ -116,9 +119,14 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
 
-            const assetTypeConfig = this.config![asset.type!];
-            if (this.config && assetTypeConfig) {
-                this.displayValue = await this.getDesiredAttrValue(asset, assetTypeConfig[0].attributeName);
+            if (this.config && asset.type && this.config[asset.type]) {
+                const assetTypeConfig = this.config[asset.type][0] || undefined;
+                if (assetTypeConfig) {
+                    this.displayValue = await this.getDesiredAttrValue(asset, assetTypeConfig.attributeName);
+                    if (assetTypeConfig.showLabel) {
+                        this.showLabel = assetTypeConfig.showLabel;
+                    }
+                }
             }
 
             this.type = asset.type;

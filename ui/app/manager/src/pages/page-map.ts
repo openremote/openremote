@@ -12,7 +12,7 @@ import {
     OrMapMarkerClickedEvent,
     OrMapGeocoderChangeEvent
 } from "@openremote/or-map";
-import manager, {AttributeMarkerColours, MapMarkerConfig, RangeAttributeMarkerColours, Util} from "@openremote/core";
+import manager, {MapMarkerConfig, Util} from "@openremote/core";
 import {createSelector} from "reselect";
 import {
     Asset,
@@ -27,7 +27,7 @@ import {
 } from "@openremote/model";
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {GenericAxiosResponse, RestResponse } from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
 
 export interface MapState {
     assets: Asset[];
@@ -113,44 +113,7 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
         ],
         pageCreator: () => {
             const page = new PageMap(store);
-
             page.config = config || {};
-
-            // todo: remove stub
-            page.config.markers = {
-                ElectricityProducerSolarAsset: [
-                    {
-                        attributeName: "energyExportTotal",
-                        showUnits: true,
-                        showDirection: false,
-                        showLabel: true,
-                        type: "range",
-                        ranges: [
-                            {
-                                max: 100,
-                                colour: 'FF0000'
-                            },
-                            {
-                                max: 200,
-                                colour: '00FF00'
-                            },
-                            {
-                                max: 201,
-                                colour: '0000FF'
-                            }
-                        ]
-                    } as RangeAttributeMarkerColours
-                ],
-                DoorAsset: [
-                    {
-                        attributeName: "locked",
-                        type: "boolean",
-                        true: '00FF00',
-                        false: 'FF0000'
-                    } as AttributeMarkerColours
-                ]
-            } as MapMarkerConfig;
-
             return page
         }
     };
