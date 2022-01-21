@@ -6,7 +6,7 @@ apply plugin: "groovy"
 
 dependencies {
 
-    api resolveProject(":manager")
+    api resolveProject(":setup")
 
     api "org.codehaus.groovy:groovy-all:$groovyVersion"
 
