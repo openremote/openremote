@@ -440,8 +440,10 @@ export class OrHeader extends LitElement {
 
         let realmTemplate = html`
             <div id="realm-picker">
-                <span>${currentRealm ? currentRealm.displayName : ""}</span>
-                ${this.realms.length > 1 ? html`<or-icon icon="chevron-down"></or-icon>` : ``}
+                ${this.realms.length > 1 ? html`
+                    <span>${currentRealm ? currentRealm.displayName : ""}</span>
+                    <or-icon icon="chevron-down"></or-icon>
+                ` : ``}
             </div>
         `;
 
