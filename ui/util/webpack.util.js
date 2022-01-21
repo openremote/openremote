@@ -47,6 +47,19 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
     managerUrl = managerUrl || (production && !isDevServer ? undefined : "http://localhost:8080");
     const OUTPUT_PATH = isDevServer ? 'src' : 'dist';
 
+    if (isDevServer) {
+        console.log("");
+        console.log("To customise the URL of the manager and/or keycloak use the managerUrl and/or keycloakUrl");
+        console.log(" environment arguments e.g: ");
+        console.log("");
+        console.log("npm run serve -- --env managerUrl=https://localhost");
+        console.log("npm run serve -- --env keycloakUrl=https://localhost/auth");
+        console.log("");
+        console.log("MANAGER URL: " + managerUrl || "");
+        console.log("KEYCLOAK URL: " + keycloakUrl || (managerUrl + "/auth"));
+        console.log("");
+    }
+
     const config = {
         entry: {
             'bundle': './src/index.ts'
