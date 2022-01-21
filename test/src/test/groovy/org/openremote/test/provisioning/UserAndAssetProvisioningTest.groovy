@@ -24,9 +24,7 @@ import com.hivemq.client.internal.mqtt.mqtt3.Mqtt3ClientConfigView
 import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.moquette.BrokerConstants
-import io.netty.channel.ChannelOption
 import io.netty.channel.socket.SocketChannel
-import io.netty.channel.socket.nio.NioSocketChannel
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
 import org.openremote.container.util.UniqueIdentifierGenerator
@@ -174,10 +172,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
-            def asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
-            assert asset != null
-            assert asset instanceof WeatherAsset
-            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert weatherAsset != null
+            assert weatherAsset instanceof WeatherAsset
+            assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
         when: "the client gets abruptly disconnected"
@@ -211,10 +209,10 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
             assert device1Responses.size() == 1
             assert device1Responses.get(0) instanceof SuccessResponseMessage
             assert ((SuccessResponseMessage)device1Responses.get(0)).realm == managerTestSetup.realmBuildingTenant
-            def asset = ((SuccessResponseMessage)device1Responses.get(0)).asset
-            assert asset != null
-            assert asset instanceof WeatherAsset
-            assert asset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
+            def weatherAsset = ((SuccessResponseMessage)device1Responses.get(0)).asset
+            assert weatherAsset != null
+            assert weatherAsset instanceof WeatherAsset
+            assert weatherAsset.getAttribute("serialNumber").flatMap{it.getValue()}.orElse(null) == device1UniqueId
         }
 
         when: "the client then subscribes to attribute events for the generated asset and asset events for all assets"

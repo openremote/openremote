@@ -44,7 +44,7 @@ const onboardingConfig:OnboardingConfig  = {
             image: require("../images/onboarding-geofence.svg")
         }
     ],
-    redirect: "/main/?realm=smartcity&consoleProviders=geofence push storage"
+    redirect: "/manager/?realm=smartcity&consoleProviders=geofence push storage"
 }
 
 const splashConfig:SplashConfig  = {

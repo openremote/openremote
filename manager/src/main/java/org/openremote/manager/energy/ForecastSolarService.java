@@ -20,6 +20,7 @@ import org.openremote.model.asset.impl.ElectricityProducerSolarAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.syslog.SyslogCategory;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -34,7 +35,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
@@ -43,6 +43,7 @@ import static org.openremote.container.persistence.PersistenceEvent.isPersistenc
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
+import static org.openremote.model.syslog.SyslogCategory.DATA;
 
 /**
  * Fills in power forecast from ForecastSolar (https://forecast.solar) for {@link ElectricityProducerSolarAsset}.
@@ -81,7 +82,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
     protected RulesService rulesService;
     protected TimerService timerService;
 
-    protected static final Logger LOG = Logger.getLogger(ForecastSolarService.class.getName());
+    protected static final Logger LOG = SyslogCategory.getLogger(DATA, ForecastSolarService.class.getName());
 
     protected static ResteasyClient resteasyClient;
     protected ResteasyWebTarget forecastSolarTarget;
@@ -140,7 +141,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                 .stream()
                 .map(asset -> (ElectricityProducerSolarAsset) asset)
                 .filter(electricityProducerSolarAsset -> electricityProducerSolarAsset.isIncludeForecastSolarService().orElse(false))
-                .collect(Collectors.toList());
+                .toList();
 
         LOG.fine("Found includes producer solar asset count = " + electricityProducerSolarAssets.size());
 
@@ -190,7 +191,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
             ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
 
@@ -246,7 +247,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                         // Forecast date time is ISO8601 without 'T' so needs special formatter
                         LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
                         LocalDateTime previousTimestamp = null;
-                        boolean setActualValuePower = electricityProducerSolarAsset.isSetActualValueWithForecast().orElse(false);
+                        boolean setActualValuePower = electricityProducerSolarAsset.isSetActualSolarValueWithForecast().orElse(false);
                         boolean setActualValueForecastPower = true;
 
                         for (Map.Entry<String, Double> wattItem : responseModel.result.watts.entrySet()) {

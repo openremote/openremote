@@ -63,7 +63,7 @@ import static io.undertow.util.RedirectBuilder.redirect;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
+import static org.openremote.model.Constants.REALM_PARAM_NAME;
 import static org.openremote.model.util.ValueUtil.configureObjectMapper;
 
 public class ManagerWebService extends WebService {
@@ -166,7 +166,7 @@ public class ManagerWebService extends WebService {
                 String realm = realmSubMatcher.group(1);
 
                 // Move the realm from path segment to header
-                exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), realm);
+                exchange.getRequestHeaders().put(HttpString.tryFromString(REALM_PARAM_NAME), realm);
 
                 URI url = fromUri(exchange.getRequestURL())
                         .replacePath(realmSubMatcher.group(2))

@@ -9,7 +9,8 @@ import {
     OrMapAssetCardLoadAssetEvent,
     OrMapClickedEvent,
     OrMapMarkerAsset,
-    OrMapMarkerClickedEvent
+    OrMapMarkerClickedEvent,
+    OrMapGeocoderChangeEvent
 } from "@openremote/or-map";
 import manager, {AttributeMarkerColours, MapMarkerConfig, RangeAttributeMarkerColours, Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -17,6 +18,7 @@ import {
     Asset,
     AssetEvent,
     AssetEventCause,
+    AssetQuery,
     Attribute,
     AttributeEvent,
     GeoJSONPoint,
@@ -25,6 +27,7 @@ import {
 } from "@openremote/model";
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
+import {GenericAxiosResponse, RestResponse } from "@openremote/rest";
 
 export interface MapState {
     assets: Asset[];
@@ -52,7 +55,10 @@ const pageMapSlice = createSlice({
                 const asset = action.payload.asset;
                 const locationAttr = asset.attributes && asset.attributes.hasOwnProperty(WellknownAttributes.LOCATION) ? asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint> : undefined;
                 if (locationAttr && (!locationAttr.meta || locationAttr.meta && (!locationAttr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!locationAttr.meta[WellknownMetaItems.SHOWONDASHBOARD]))) {
-                    state.assets.push(action.payload.asset);
+                    return {
+                        ...state,
+                        assets: [...this.state.assets, action.payload.asset]
+                    };
                 }
             }
 
@@ -69,10 +75,13 @@ const pageMapSlice = createSlice({
             }
 
             if (action.payload.attributeState.deleted) {
-                assets.splice(index, 1);
-            } else {
-                assets[index] = Util.updateAsset({...asset}, action.payload);
+                return {
+                    ...state,
+                    assets: [...assets.splice(index, 1)]
+                };
             }
+
+            assets[index] = Util.updateAsset({...asset}, action.payload);
             return state;
         },
         setAssets(state, action: PayloadAction<Asset[]>) {
@@ -87,8 +96,11 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
+
+
 export interface PageMapConfig {
     card?: MapAssetCardConfig,
+    assetQuery?: AssetQuery,
     markers?: MapMarkerConfig
 }
 
@@ -198,59 +210,62 @@ export class PageMap extends Page<MapStateKeyed> {
     protected attributeSubscriptionId: string;
 
     protected subscribeAssets = async (realm: string) => {
+        let response: GenericAxiosResponse<Asset[]>;
+
+        const assetQuery: AssetQuery = this.config && this.config.assetQuery ? this.config.assetQuery : {
+            tenant: {
+                realm: realm
+            },
+            select: {
+                attributes: [WellknownAttributes.LOCATION],
+                excludeParentInfo: true,
+                excludePath: true
+            },
+            attributes: {
+                items: [
+                    {
+                        name: {
+                            predicateType: "string",
+                            value: WellknownAttributes.LOCATION
+                        },
+                        meta: [
+                            {
+                                name: {
+                                    predicateType: "string",
+                                    value: WellknownMetaItems.SHOWONDASHBOARD
+                                },
+                                negated: true
+                            },
+                            {
+                                name: {
+                                    predicateType: "string",
+                                    value: WellknownMetaItems.SHOWONDASHBOARD
+                                },
+                                value: {
+                                    predicateType: "boolean",
+                                    value: true
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
 
         try {
-            const result = await manager.rest.api.AssetResource.queryAssets({
-                tenant: {
-                    realm: realm
-                },
-                select: {
-                    attributes: [WellknownAttributes.LOCATION],
-                    excludeParentInfo: true,
-                    excludePath: true
-                },
-                attributes: {
-                    items: [
-                        {
-                            name: {
-                                predicateType: "string",
-                                value: WellknownAttributes.LOCATION
-                            },
-                            meta: [
-                                {
-                                    name: {
-                                        predicateType: "string",
-                                        value: WellknownMetaItems.SHOWONDASHBOARD
-                                    },
-                                    negated: true
-                                },
-                                {
-                                    name: {
-                                        predicateType: "string",
-                                        value: WellknownMetaItems.SHOWONDASHBOARD
-                                    },
-                                    value: {
-                                        predicateType: "boolean",
-                                        value: true
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                }
-            });
+            response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
 
             if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
                 // No longer connected or realm has changed
                 return;
             }
 
-            if (result.data) {
-                const assets = result.data;
+            if (response.data) {
+                const assets = response.data;
 
                 this._store.dispatch(setAssets(assets));
 
-                const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, undefined, (event) => {
+                const assetSubscriptionId = await manager.events.subscribeAssetEvents(undefined, false, (event) => {
                     this._store.dispatch(assetEventReceived(event));
                 });
 
@@ -324,6 +339,10 @@ export class PageMap extends Page<MapStateKeyed> {
             return assets.find((asset) => asset.id === currentId);
     });
 
+    protected _setCenter(geocode: any) {
+        this._map!.center = [geocode.geometry.coordinates[0], geocode.geometry.coordinates[1]];
+    }
+
     get name(): string {
         return "map";
     }
@@ -339,7 +358,7 @@ export class PageMap extends Page<MapStateKeyed> {
             
             ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
             
-            <or-map id="map" class="or-map">
+            <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
                     this._assets.filter((asset) => {
                         if (!asset.attributes) {

@@ -47,6 +47,7 @@ import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -98,8 +99,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 logger.log(Level.WARNING, error.toString(), exception);
             }
 
-            // Make the exception available if MEP is InOut
-            exchange.getOut().setBody(exception);
+            exchange.getOut().setBody(false);
         };
     }
 
@@ -167,6 +167,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     NotificationHandler handler = notificationHandlerMap.get(notification.getMessage().getType());
                     if (handler == null) {
                         throw new NotificationProcessingException(UNSUPPORTED_MESSAGE_TYPE, "No handler for message type: " + notification.getMessage().getType());
+                    }
+                    if (!handler.isValid()) {
+                        throw new NotificationProcessingException(NOTIFICATION_HANDLER_CONFIG_ERROR, "Handler is not valid: " + handler.getTypeName());
                     }
                     if (!handler.isMessageValid(notification.getMessage())) {
                         throw new NotificationProcessingException(INVALID_MESSAGE);
@@ -237,9 +240,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     }
 
                     // Send message to each applicable target
+                    AtomicBoolean success = new AtomicBoolean(true);
+
                     mappedTargetsList.forEach(
-                        target ->
-                            persistenceService.doTransaction(em -> {
+                        target -> {
+                            boolean targetSuccess = persistenceService.doReturningTransaction(em -> {
 
                                 // commit the notification first to get the ID
                                 SentNotification sentNotification = new SentNotification()
@@ -279,23 +284,30 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                     sentNotification.setError(TextUtil.isNullOrEmpty(e.getMessage()) ? "Unknown error" : e.getMessage());
                                     em.merge(sentNotification);
                                 }
-                            })
+                                return sentNotification.getError() == null;
+                            });
+                            if (!targetSuccess) {
+                                success.set(false);
+                            }
+                        }
                     );
+
+                    exchange.getOut().setBody(success.get());
                 })
                 .endDoTry()
                 .doCatch(NotificationProcessingException.class)
                 .process(handleNotificationProcessingException(LOG));
     }
 
-    public void sendNotification(Notification notification) throws NotificationProcessingException {
-        sendNotification(notification, INTERNAL, "");
+    public boolean sendNotification(Notification notification) {
+        return sendNotification(notification, INTERNAL, "");
     }
 
-    public void sendNotification(Notification notification, Notification.Source source, String sourceId) throws NotificationProcessingException {
+    public boolean sendNotification(Notification notification, Notification.Source source, String sourceId) {
         Map<String, Object> headers = new HashMap<>();
         headers.put(Notification.HEADER_SOURCE, source);
         headers.put(Notification.HEADER_SOURCE_ID, sourceId);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(NotificationService.NOTIFICATION_QUEUE, notification, headers);
+        return messageBrokerService.getProducerTemplate().requestBodyAndHeaders(NotificationService.NOTIFICATION_QUEUE, notification, headers, Boolean.class);
     }
 
     public void setNotificationDelivered(long id) {

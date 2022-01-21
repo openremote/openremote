@@ -25,6 +25,7 @@ import { getMarkerIconAndColorFromAssetType } from "./util";
 export interface MapAssetCardTypeConfig {
     include?: string[];
     exclude?: string[];
+    hideViewAsset?: boolean;
 }
 
 export interface MapAssetCardConfig {
@@ -163,9 +164,11 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                         })}
                     </ul>
                 </div>
-                <div id="footer">
-                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @click="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>          
-                </div>
+                ${cardConfig && cardConfig.hideViewAsset ? html`` : html`
+                    <div id="footer">
+                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("viewAsset")}" @click="${(e: MouseEvent) => {e.preventDefault(); this._loadAsset(this.asset!.id!);}}"></or-mwc-input>
+                    </div>
+                `}
             </div>
         `;
     }

@@ -629,13 +629,13 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         messages.clear()
 
         and: "another 10 consoles are added to the system"
-        def id = testUser3Console1.id
+        def testUser3Console1Id = testUser3Console1.id
         def extraConsoles = IntStream.rangeClosed(3, 12).mapToObj({
             testUser3Console1.id = null
             testUser3Console1.name = "Test Console $it"
             return assetStorageService.merge(testUser3Console1)
         }).collect({ it })
-        testUser3Console1.id = id
+        testUser3Console1.id = testUser3Console1Id
 
         then: "the extra consoles should have been added"
         assert extraConsoles.size() == 10

@@ -38,10 +38,7 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.impl.GatewayAsset;
-import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeMap;
-import org.openremote.model.attribute.AttributeWriteFailure;
+import org.openremote.model.attribute.*;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.gateway.GatewayDisconnectEvent;
 import org.openremote.model.query.AssetQuery;
@@ -52,7 +49,6 @@ import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import javax.persistence.EntityManager;
-import javax.websocket.Session;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -272,9 +268,8 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         }
 
         if (header(ConnectionConstants.SESSION_OPEN).matches(exchange)) {
-            Session session = exchange.getIn().getHeader(ConnectionConstants.SESSION, Session.class);
             String sessionKey = ClientEventService.getSessionKey(exchange);
-            processGatewayConnected(clientId, sessionKey, session);
+            processGatewayConnected(clientId, sessionKey);
             return;
         }
 
@@ -455,7 +450,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
         return null;
     }
 
-    protected void processGatewayConnected(String gatewayClientId, String sessionId, Session session) {
+    protected void processGatewayConnected(String gatewayClientId, String sessionId) {
 
         if (!active) {
             return;

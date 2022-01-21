@@ -763,7 +763,7 @@ abstract class LowerTransportLayer extends UpperTransportLayer {
                     LOG.info("Acknowledgement timer expiring");
                     sendBlockAck(seqZero, ttl, src, dst, segN);
 
-                }}, new Integer(duration).longValue()
+                }}, Integer.valueOf(duration).longValue()
             );
         }
     }
@@ -787,7 +787,7 @@ abstract class LowerTransportLayer extends UpperTransportLayer {
                 () -> {
                     synchronized (LowerTransportLayer.this) {
                         sendBlockAck(seqZero, ttl, src, dst, segN);
-                    }}, new Integer(duration).longValue()
+                    }}, Integer.valueOf(duration).longValue()
             );
         }
     }

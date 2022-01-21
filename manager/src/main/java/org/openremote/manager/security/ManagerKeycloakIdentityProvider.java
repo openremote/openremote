@@ -1023,8 +1023,14 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      */
     @Override
     public boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant) {
-        return tenant != null && (authContext.isSuperUser()
-            || (tenant.isActive(timerService.getCurrentTimeMillis()) && authContext.isRealmAccessibleByUser(tenant.getRealm())));
+        if (tenant == null) {
+            return false;
+        }
+
+        boolean isSuperUser = authContext != null && authContext.isSuperUser();
+        boolean isUsersRealm = isSuperUser || authContext == null || authContext.isRealmAccessibleByUser(tenant.getRealm());
+
+        return isSuperUser || (isUsersRealm && tenant.isActive(timerService.getCurrentTimeMillis()));
     }
 
     /**
@@ -1043,7 +1049,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isRestrictedUser(AuthContext authContext) {
-        return authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
+        return authContext != null && authContext.hasRealmRole(RESTRICTED_USER_REALM_ROLE);
     }
 
     @Override

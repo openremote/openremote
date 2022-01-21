@@ -19,8 +19,10 @@
  */
 package org.openremote.container.web.socket;
 
+import org.apache.camel.Exchange;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.web.ConnectionConstants;
+import org.openremote.model.Constants;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
@@ -44,29 +46,29 @@ public class WebsocketAdapter extends Endpoint {
     public void onOpen(Session session, EndpointConfig config) {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session open: " + session.getId());
-        // TODO We never expire idle websocket sessions, the assumption is that only authenticate clients can
+        // TODO We never expire idle websocket sessions, the assumption is that only authenticated clients can
         // open a session and if their SSO (managed by Keycloak) expires, they are logged out
         session.setMaxIdleTimeout(0);
         consumer.getEndpoint().getWebsocketSessions().add(session);
-        this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), null, exchange -> {
-            exchange.getIn().setHeader(ConnectionConstants.SESSION, session);
+        this.consumer.sendMessage(null, exchange -> {
+            this.prepareExchange(exchange, session);
             exchange.getIn().setHeader(ConnectionConstants.SESSION_OPEN, true);
         });
         session.addMessageHandler(String.class, message -> {
-            if (LOG.isLoggable(Level.FINE))
+            if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Websocket session " + session.getId() + " message received: " + message);
-            this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), message, exchange -> {
-                exchange.getIn().setHeader(ConnectionConstants.SESSION, session);
-            });
+            }
+            this.consumer.sendMessage(message, exchange -> this.prepareExchange(exchange, session));
         });
     }
 
     @Override
     public void onClose(Session session, CloseReason closeReason) {
-        if (LOG.isLoggable(Level.FINE))
+        if (LOG.isLoggable(Level.FINE)) {
             LOG.fine("Websocket session close: " + session.getId() + " " + closeReason);
-        this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), closeReason, exchange -> {
-            exchange.getIn().setHeader(ConnectionConstants.SESSION, session);
+        }
+        this.consumer.sendMessage(closeReason, exchange -> {
+            this.prepareExchange(exchange, session);
             exchange.getIn().setHeader(ConnectionConstants.SESSION_CLOSE, true);
         });
         consumer.getEndpoint().getWebsocketSessions().remove(session);
@@ -81,17 +83,35 @@ public class WebsocketAdapter extends Endpoint {
             if (LOG.isLoggable(Level.INFO))
                 LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
         }
-        this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), thr, exchange -> {
-            exchange.getIn().setHeader(ConnectionConstants.SESSION, session);
+        this.consumer.sendMessage(thr, exchange -> {
+            this.prepareExchange(exchange, session);
             exchange.getIn().setHeader(ConnectionConstants.SESSION_CLOSE_ERROR, true);
         });
         consumer.getEndpoint().getWebsocketSessions().remove(session);
     }
 
+    protected void prepareExchange(Exchange exchange, Session session) {
+        exchange.getIn().setHeader(ConnectionConstants.SESSION_KEY, session.getId());
+        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, getHandshakeAuth(session));
+        exchange.getIn().setHeader(Constants.REALM_PARAM_NAME, getHandshakeRealm(session));
+        exchange.getIn().setHeader(ConnectionConstants.SESSION_TERMINATOR, getSessionTerminator(session));
+    }
+
     protected AuthContext getHandshakeAuth(Session session) {
-        AuthContext auth = (AuthContext) session.getUserProperties().get(ConnectionConstants.HANDSHAKE_AUTH);
-        if (auth == null)
-            throw new IllegalStateException("No authorization details in websocket session: " + session.getId());
-        return auth;
+        return (AuthContext) session.getUserProperties().get(ConnectionConstants.HANDSHAKE_AUTH);
+    }
+
+    protected String getHandshakeRealm(Session session) {
+        return (String) session.getUserProperties().get(ConnectionConstants.HANDSHAKE_REALM);
+    }
+
+    protected Runnable getSessionTerminator(Session session) {
+        return () -> {
+            try {
+                session.close();
+            } catch (IOException ignored) {
+                LOG.log(Level.INFO, "Failed to close client session: " + session.getId());
+            }
+        };
     }
 }

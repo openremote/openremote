@@ -33,6 +33,7 @@ import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.*;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
@@ -49,7 +50,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
-import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
@@ -290,7 +290,7 @@ public abstract class AbstractHTTPServerProtocol<T extends AbstractHTTPServerPro
 
             // Wrap the handler to inject the realm
             HttpHandler handlerWrapper = exchange -> {
-                exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), agentRealm);
+                exchange.getRequestHeaders().put(HttpString.tryFromString(Constants.REALM_PARAM_NAME), agentRealm);
                 httpHandler.handleRequest(exchange);
             };
             WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), handlerWrapper);

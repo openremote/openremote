@@ -51,14 +51,11 @@ import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.value.MetaItemType.*;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
-
-    protected final static Asset<?>[] EMPTY_ASSETS = new Asset<?>[0];
     protected final AssetStorageService assetStorageService;
     protected final MessageBrokerService messageBrokerService;
 
@@ -558,35 +555,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public Asset<?>[] queryAssets(RequestParams requestParams, AssetQuery query) {
         try {
-            if (query == null) {
-                return EMPTY_ASSETS;
-            }
-
-            if (isRestrictedUser()) {
-                // A restricted user can only query linked assets
-                query = query.userIds(getUserId());
-
-                // A restricted user may not query private asset data, only restricted or public
-                if (query.access == null || query.access == Access.PRIVATE)
-                    query.access(Access.PROTECTED);
-            }
-
-            String realm = query.tenant != null && !isNullOrEmpty(query.tenant.realm)
-                ? query.tenant.realm
-                : getAuthenticatedRealm();
-
-            if (TextUtil.isNullOrEmpty(realm)) {
-                throw new WebApplicationException(NOT_FOUND);
-            }
-
-            if (!isTenantActiveAndAccessible(realm)) {
-                return EMPTY_ASSETS;
-            }
-
-            // This replicates behaviour of old getRoot and getChildren methods
-            if (!isSuperUser()) {
-                query.tenant(new TenantPredicate(realm));
-            }
+            query = assetStorageService.prepareAssetQuery(query, getAuthContext(), getRequestRealm());
 
             List<Asset<?>> result = assetStorageService.findAll(query);
 
@@ -596,60 +565,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             return result.toArray(new Asset[0]);
 
         } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+            throw new BadRequestException(ex);
         }
-    }
-
-    @Override
-    public Asset<?>[] queryPublicAssets(RequestParams requestParams, AssetQuery query) {
-
-        String requestRealm = getRequestRealm();
-
-        if (TextUtil.isNullOrEmpty(requestRealm)) {
-            return EMPTY_ASSETS;
-        }
-
-        if (query == null) {
-            query = new AssetQuery();
-        }
-
-        // Force realm to be request realm
-        if (query.tenant == null) {
-            query.tenant(new TenantPredicate(requestRealm));
-        } else {
-            query.tenant.realm = requestRealm;
-        }
-
-        // Force public access filter on query
-        if (query.access == null) {
-            query.access(Access.PUBLIC);
-        } else {
-            query.access(Access.PUBLIC);
-        }
-
-        try {
-            List<Asset<?>> result = assetStorageService.findAll(query);
-
-            // Compress response (the request attribute enables the interceptor)
-            request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-
-            return result.toArray(new Asset[0]);
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public Asset<?>[] getPublicAssets(RequestParams requestParams, String q) {
-        AssetQuery assetQuery = TextUtil.isNullOrEmpty(q) ? null : ValueUtil.parse(q, AssetQuery.class)
-            .orElseThrow(() -> new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST));
-
-        Asset<?>[] result = queryPublicAssets(requestParams, assetQuery);
-
-        // Compress response (the request attribute enables the interceptor)
-        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-
-        return result;
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeRef ref, Object value, Map<String, Object> headers) {

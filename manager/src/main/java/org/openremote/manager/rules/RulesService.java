@@ -154,9 +154,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             return;
         }
 
-        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
+        clientEventService.addSubscriptionAuthorizer((realm, auth, subscription) -> {
 
             if (subscription.isEventType(RulesEngineStatusEvent.class) || subscription.isEventType(RulesetChangedEvent.class)) {
+
+                if (auth == null) {
+                    return false;
+                }
 
                 if (auth.isSuperUser()) {
                     return true;

@@ -1276,15 +1276,14 @@ export class Manager implements EventProviderFactory {
     // TODO: Remove events logic once websocket supports anonymous connections
     protected _setAuthenticated(authenticated: boolean) {
         this._authenticated = authenticated;
-        if (authenticated) {
-            if (!this._events) {
-                this.doEventsSubscriptionInit();
-            }
-        } else {
-            if (this._events) {
-                this._events.disconnect();
-            }
-            this._events = undefined;
+
+        // Reconnect to websocket
+        if (this._events) {
+            this._events.disconnect();
+        }
+
+        if (!this._events) {
+            this.doEventsSubscriptionInit();
         }
     }
 }

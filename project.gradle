@@ -200,32 +200,32 @@ task npmInstall(type: Exec){
 }
 task npmClean(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "clean"
+    commandLine npmCommand("npm"), "run", "clean"
 }
 task npmBuild(type: Exec){
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "build"
+    commandLine npmCommand("npm"), "run", "build"
 }
 task npmTest(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "test"
+    commandLine npmCommand("npm"), "run", "test"
 }
 task npmServe(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "serve"
+    commandLine npmCommand("npm"), "run", "serve"
 }
 task npmPrepare(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "prepublishOnly"
+    commandLine npmCommand("npm"), "run", "prepublishOnly"
 }
 task npmPublish(type: Exec){
     dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "publish"
 }
-task npmServeProduction(type: Exec){
+task npmServeProduction(type: Exec) {
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run-script", "serveProduction"
+    commandLine npmCommand("npm"), "run", "serveProduction"
 }
 
 // Add typescript tasks
@@ -233,13 +233,30 @@ task tscWatch(type: Exec) {
     commandLine npmCommand("npx"), "tsc", "-b", "--watch"
 }
 
+// A task for copying a custom java projects libs that aren't part of the manager dependencies
+task copyLibs {
+    doLast {
+
+        if (project.configurations.find { it.name == "runtimeClasspath" } != null) {
+            // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
+            // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
+            def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
+            def customLibs = project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll { dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect { it.file }
+            copy {
+                from customLibs
+                into "${project.buildDir}/image/manager/extensions"
+            }
+        }
+    }
+}
+
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
 
-    // Use Java 8
+    // Use Java 17
     tasks.withType(JavaCompile) {
-        sourceCompatibility = "1.8"
-        targetCompatibility = "1.8"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         def warnLogFile = file("$buildDir/${name}Warnings.log")
         logging.addStandardErrorListener(new StandardOutputListener() {
             void onOutput(CharSequence output) {

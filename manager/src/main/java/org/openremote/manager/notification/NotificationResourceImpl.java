@@ -113,23 +113,11 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             headers.put(Constants.AUTH_CONTEXT, getAuthContext());
         }
 
-        Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
-            NotificationService.NOTIFICATION_QUEUE, notification, headers);
+        boolean success = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
+            NotificationService.NOTIFICATION_QUEUE, notification, headers, Boolean.class);
 
-        if (result instanceof NotificationProcessingException) {
-            NotificationProcessingException processingException = (NotificationProcessingException) result;
-            switch (processingException.getReason()) {
-
-                case INSUFFICIENT_ACCESS:
-                    throw new WebApplicationException(processingException.getMessage(), FORBIDDEN);
-                case MISSING_SOURCE:
-                case MISSING_NOTIFICATION:
-                case MISSING_MESSAGE:
-                case MISSING_TARGETS:
-                    throw new WebApplicationException(processingException.getMessage(), BAD_REQUEST);
-                case UNSUPPORTED_MESSAGE_TYPE:
-                    throw new IllegalStateException(processingException);
-            }
+        if (!success) {
+            throw new WebApplicationException(BAD_REQUEST);
         }
     }
 

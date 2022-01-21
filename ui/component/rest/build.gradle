@@ -15,15 +15,15 @@ dependencies {
     if (isCustomProject()) {
         def customModel = findProject(":model")
         if (customModel != null) {
-            compile customModel
+            implementation customModel
         }
     }
-    compile resolveProject(":model")
-    compile resolveProject(":ui:component:model")
-    compile "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    compile "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
+    implementation resolveProject(":model")
+    implementation resolveProject(":ui:component:model")
+    implementation "cz.habarta.typescript-generator:typescript-generator-core:$typescriptGeneratorVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-parameter-names:$jacksonVersion"
 }
 
 task generateTypescriptModelInfo(type: cz.habarta.typescript.generator.gradle.GenerateTask) {

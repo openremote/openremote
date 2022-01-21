@@ -60,6 +60,7 @@ public class BluetoothMeshProxyStateMachine {
     private volatile BluetoothGattCharacteristic dataInCharacteristic;
     private volatile BluetoothGattCharacteristic dataOutCharacteristic;
     private volatile int retryCount = 0;
+    private volatile boolean isInitialConnectionSuccessful = false;
 
     private final BlockingQueue<SendDataCommand> sendDataQueue = new LinkedBlockingQueue<>();
     private final QueueWorker queueWorker = new QueueWorker(sendDataQueue);
@@ -293,7 +294,8 @@ public class BluetoothMeshProxyStateMachine {
     }
 
     void notifyListeners(boolean isSuccess, ConnectionStatus status) {
-        executorService.execute(() -> connectCallback.onMeshProxyConnected(peripheral, isSuccess));
+        boolean isConnectionLoss = !isSuccess ? isInitialConnectionSuccessful : false;
+        executorService.execute(() -> connectCallback.onMeshProxyConnected(peripheral, isSuccess, isConnectionLoss));
         executorService.execute(() -> statusConsumer.accept(status));
     }
 
@@ -912,6 +914,7 @@ public class BluetoothMeshProxyStateMachine {
         public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, BluetoothCommandStatus status) {
             if (isExpectedPeripheral(peripheral) && getDataOutCharacteristic().getUuid().equals(characteristic.getUuid())) {
                 if (status == BluetoothCommandStatus.COMMAND_SUCCESS) {
+                    isInitialConnectionSuccessful = true;
                     setRetryCount(0);
                     notifyListeners(true, ConnectionStatus.CONNECTED);
                     setState(getEndState());
@@ -1013,6 +1016,7 @@ public class BluetoothMeshProxyStateMachine {
                 startTimeout(SCAN_TIMEOUT);
                 setState(getScanState());
                 scanOn();
+                executorService.execute(() -> statusConsumer.accept(ConnectionStatus.DISCONNECTED));
             }
         }
 
@@ -1068,6 +1072,7 @@ public class BluetoothMeshProxyStateMachine {
         @Override
         public void disconnect() {
             stopTimeout();
+            scanOff();
             setState(getDisconnectedState());
             notifyStatusConsumer(ConnectionStatus.DISCONNECTED);
             stopQueueWorker();
@@ -1125,6 +1130,7 @@ public class BluetoothMeshProxyStateMachine {
                 stopTimeout();
                 scanOff();
                 setState(getRetryToConnectState());
+                executorService.execute(() -> statusConsumer.accept(ConnectionStatus.CONNECTING));
             }
         }
 

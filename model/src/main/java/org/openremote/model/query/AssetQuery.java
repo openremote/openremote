@@ -214,7 +214,7 @@ public class AssetQuery implements Serializable {
     // Projection
     public Select select;
     // Restriction predicates
-    public Access access = Access.PRIVATE;
+    public Access access;
     public String[] ids;
     public StringPredicate[] names;
     public ParentPredicate[] parents;

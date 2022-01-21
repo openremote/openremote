@@ -162,7 +162,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         newSolarAsset.setEfficiencyExport(100);
         newSolarAsset.setPowerExportMax(2.5);
         newSolarAsset.setLocation(new GeoJSONPoint(9.195295, 48.787418));
-        newSolarAsset.setSetActualValueWithForecast(true);
+        newSolarAsset.setSetActualSolarValueWithForecast(true);
         newSolarAsset.setIncludeForecastSolarService(true);
         newSolarAsset = assetStorageService.merge(newSolarAsset)
 
@@ -185,7 +185,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         newSolarAsset2.setEfficiencyExport(100);
         newSolarAsset2.setPowerExportMax(2.5);
         newSolarAsset2.setLocation(new GeoJSONPoint(9.195275, 48.787418));
-        newSolarAsset2.setSetActualValueWithForecast(false);
+        newSolarAsset2.setSetActualSolarValueWithForecast(false);
         newSolarAsset2.setIncludeForecastSolarService(false);
         newSolarAsset2 = assetStorageService.merge(newSolarAsset2)
 
@@ -208,7 +208,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         }
 
         when: "an asset updated it's setActualValueWithForecast to true"
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.name, true))
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(newSolarAsset2.getId(), ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.name, true))
 
         then: "it power should be updated too"
         conditions.eventually {

@@ -35,9 +35,10 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.lang.reflect.Field;
 import java.time.Instant;
-import java.util.*;
-
-import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
@@ -86,13 +87,6 @@ public class User {
     @JoinColumn(name = "USER_ID")
     @JsonIgnore
     protected List<UserAttribute> attributes;
-
-    public User(String id, String username, String firstName, String lastName) {
-        this.id = id;
-        this.username = username;
-        this.firstName = firstName;
-        this.lastName = lastName;
-    }
 
     public User() {
     }

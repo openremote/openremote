@@ -67,4 +67,13 @@ public abstract class SharedEvent extends Event {
 
     public SharedEvent() {
     }
+
+    public boolean canAccessPublicRead() {
+        return false;
+    }
+
+    public boolean canAccessRestrictedRead() {
+        return false;
+    }
+
 }

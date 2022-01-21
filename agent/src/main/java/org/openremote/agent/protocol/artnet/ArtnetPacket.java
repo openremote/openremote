@@ -1,7 +1,7 @@
 package org.openremote.agent.protocol.artnet;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Collections;
 import java.util.Comparator;

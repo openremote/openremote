@@ -27,13 +27,13 @@ export {Control, IControl} from "maplibre-gl";
 export * from "./or-map-asset-card";
 
 export interface ViewSettings {
-    "center": LngLatLike;
-    "bounds": LngLatBoundsLike;
-    "zoom": number;
-    "maxZoom": number;
-    "minZoom": number;
-    "boxZoom": boolean;
-    "geoCodeUrl": String;
+    center: LngLatLike;
+    bounds: LngLatBoundsLike;
+    zoom: number;
+    maxZoom: number;
+    minZoom: number;
+    boxZoom: boolean;
+    geocodeUrl: String;
 }
 
 export interface MapEventDetail {
