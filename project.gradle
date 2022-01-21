@@ -50,7 +50,7 @@ if (project == rootProject) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                 }
                 "Test Setup"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.test" : ".test.test")
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.main" : ".test.main")
                 }
                 "Empty with Proxy"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
