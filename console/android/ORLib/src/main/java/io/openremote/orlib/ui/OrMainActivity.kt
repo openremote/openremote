@@ -195,12 +195,21 @@ open class OrMainActivity : Activity() {
                 floatingActionButton.layoutParams = layoutParams
                 floatingActionButton.setImageResource(R.drawable.ic_menu)
                 if (!appConfig!!.primaryColor.isNullOrBlank()) {
-                    floatingActionButton.backgroundTintList =
-                        ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
+                    try {
+                        floatingActionButton.backgroundTintList =
+                            ColorStateList.valueOf(Color.parseColor(appConfig!!.primaryColor!!))
+                    } catch (ex: java.lang.Exception) {
+                        ex.printStackTrace()
+                    }
                 }
                 if (!appConfig!!.secondaryColor.isNullOrBlank()) {
-                    floatingActionButton.imageTintList =
-                        ColorStateList.valueOf(Color.parseColor(appConfig!!.secondaryColor!!))
+                    try {
+                        floatingActionButton.imageTintList =
+                            ColorStateList.valueOf(Color.parseColor(appConfig!!.secondaryColor!!))
+                    } catch (ex: Exception) {
+                        floatingActionButton.imageTintList = ColorStateList.valueOf(Color.DKGRAY)
+                        ex.printStackTrace()
+                    }
                 } else {
                     floatingActionButton.imageTintList = ColorStateList.valueOf(Color.DKGRAY)
                 }
