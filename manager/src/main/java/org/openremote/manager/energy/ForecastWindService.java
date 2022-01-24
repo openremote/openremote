@@ -303,7 +303,15 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerWindAsset.getId());
             } else {
-                LOG.warning("Request failed: " + response);
+                StringBuilder message = new StringBuilder("Unknown");
+                if (response != null) {
+                    message.setLength(0);
+                    message.append("Status ");
+                    message.append(response.getStatus());
+                    message.append(" - ");
+                    message.append(response.readEntity(String.class));
+                }
+                LOG.warning("Request failed: " + message);
             }
         } catch (Throwable e) {
             if (e.getCause() != null && e.getCause() instanceof IOException) {
