@@ -1396,6 +1396,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                                     newOrModifiedAttribute.getValue().orElse(null),
                                     newOrModifiedAttribute.getTimestamp().orElse(0L))
                                     .setParentId(asset.getParentId()).setRealm(asset.getRealm())
+                                    .setAccessRestrictedRead(newOrModifiedAttribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false))
+                                    .setAccessPublicRead(newOrModifiedAttribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false))
                             ));
                 }
                 break;

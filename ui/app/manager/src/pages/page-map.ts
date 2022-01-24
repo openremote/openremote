@@ -56,7 +56,7 @@ const pageMapSlice = createSlice({
                 if (locationAttr && (!locationAttr.meta || locationAttr.meta && (!locationAttr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!locationAttr.meta[WellknownMetaItems.SHOWONDASHBOARD]))) {
                     return {
                         ...state,
-                        assets: [...this.state.assets, action.payload.asset]
+                        assets: [...state.assets, action.payload.asset]
                     };
                 }
             }
