@@ -608,8 +608,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (this.isConnected && this._nodes) {
 
-            if (this._filterValue === value) {
-                // This value has already been filtered so ignore
+            if (this._filterValue === value || ( value && value.length < 3 )) {
+                // This value has already been filtered so ignore or is not having the minimal number of characters
                 return;
             }
 
@@ -667,7 +667,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         });
 
         nodeOrDescendantMatches = nodeOrDescendantMatches || childOrDescendantMatches.some(m => m);
-        currentNode.expanded = nodeOrDescendantMatches;
+        currentNode.expanded = nodeOrDescendantMatches && currentNode.children.length > 0;
         currentNode.hidden = !nodeOrDescendantMatches;
         return nodeOrDescendantMatches;
     }
