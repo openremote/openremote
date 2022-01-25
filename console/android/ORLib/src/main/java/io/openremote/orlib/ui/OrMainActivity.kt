@@ -310,6 +310,7 @@ open class OrMainActivity : Activity() {
         LOG.fine("Initializing web view")
         val webAppInterface = WebAppInterface(this)
         binding.webView.apply {
+            clearCache(true)
             addJavascriptInterface(webAppInterface, "MobileInterface")
             settings.javaScriptEnabled = true
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
