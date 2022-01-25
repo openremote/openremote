@@ -275,7 +275,7 @@ export class Console {
         let promiseName = message.provider + message.action;
 
         if (this._pendingProviderPromises[promiseName]) {
-            throw new Error("Message already pending for provider '" + name + "' with action '" + message.action + "'");
+            throw new Error("Message already pending for provider '" + message.provider + "' with action '" + message.action + "'");
         }
 
         return await new Promise(resolve => {
