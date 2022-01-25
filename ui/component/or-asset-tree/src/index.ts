@@ -608,7 +608,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (this.isConnected && this._nodes) {
 
-            if (this._filterValue === value || ( value && value.length < 3 )) {
+            if (this._filterValue === value) {
                 // This value has already been filtered so ignore or is not having the minimal number of characters
                 return;
             }
