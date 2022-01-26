@@ -39,6 +39,8 @@ open class ORViewcontroller : UIViewController {
     public var pushProvider: PushNotificationProvider?
     public var storageProvider: StorageProvider?
     public var qrProvider: QrScannerProvider?
+    
+    public var baseUrl: String?
 
     var popoverOptions: [PopoverOption]?
     
@@ -51,7 +53,11 @@ open class ORViewcontroller : UIViewController {
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if let applicationConfig = appConfig {
-            loadURL(url: URL(string: applicationConfig.initialUrl.stringByURLEncoding()!)!)
+            var url = applicationConfig.initialUrl ?? applicationConfig.url
+            if !url.starts(with: "http") {
+                url = baseUrl!.appending(url)
+            }
+            loadURL(url: URL(string: url.stringByURLEncoding()!)!)
         }
     }
 
@@ -217,7 +223,11 @@ open class ORViewcontroller : UIViewController {
         self.present(alertView, animated: true, completion: nil)
 
         if let applicationConfig = appConfig {
-            self.myWebView?.load(URLRequest(url: URL(string: applicationConfig.url.stringByURLEncoding()!)!))
+            var url = applicationConfig.url
+            if !url.starts(with: "http") {
+                url = baseUrl!.appending(url)
+            }
+            self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
         }
     }
 
@@ -414,7 +424,11 @@ extension ORViewcontroller: WKNavigationDelegate {
                 }
             } else {
                 if let config = appConfig, let button = menuButton {
-                    if config.url.stringByURLEncoding() == navigationAction.request.url?.absoluteString {
+                    var url = config.url
+                    if !url.starts(with: "http") {
+                        url = baseUrl!.appending(url)
+                    }
+                    if url == navigationAction.request.url?.absoluteString {
                         button.isHidden = false
                     }
                 }

@@ -12,20 +12,21 @@ import ORLib
 class SplashViewController: UIViewController {
 
     var appconfig: ORAppConfig?
+    var host: String?
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
         if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-           let project = userDefaults.string(forKey: DefaultsKey.projectKey),
+           let savedHost = userDefaults.string(forKey: DefaultsKey.hostKey),
            let realm = userDefaults.string(forKey: DefaultsKey.realmKey) {
-            let apiManager = ApiManager(baseUrl: "https://\(project).openremote.io/api/\(realm)")
+            host = savedHost
+            let url = host!.appending("/api/\(realm)")
+
+            let apiManager = ApiManager(baseUrl: url)
             apiManager.getAppConfig(callback: { statusCode, orAppConfig, error in
                 DispatchQueue.main.async {
                     if statusCode == 200 && error == nil {
-                        let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
-                        userDefaults?.set(project, forKey: DefaultsKey.projectKey)
-                        userDefaults?.set(realm, forKey: DefaultsKey.realmKey)
                         self.appconfig = orAppConfig
 
                         self.performSegue(withIdentifier: "goToWebView", sender: self)
@@ -43,6 +44,7 @@ class SplashViewController: UIViewController {
         if segue.identifier == "goToWebView" {
             let orViewController = segue.destination as! ORViewcontroller
             orViewController.appConfig = self.appconfig
+            orViewController.baseUrl = host
         }
     }
 }
