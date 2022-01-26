@@ -915,13 +915,10 @@ export class Manager implements EventProviderFactory {
     protected async getConsoleAppConfig(): Promise<boolean> {
         try {
             const consoleAppConfigResponse = await this.rest.api.ConsoleAppResource.getAppConfig();
-            if (consoleAppConfigResponse.status === 200) {
-                this._consoleAppConfig = consoleAppConfigResponse.data;
-            }
+            this._consoleAppConfig = consoleAppConfigResponse.data;
             return true;
         } catch (e) {
-            this._setError(ORError.CONSOLE_ERROR);
-            return false;
+            return true;
         }
     }
 
