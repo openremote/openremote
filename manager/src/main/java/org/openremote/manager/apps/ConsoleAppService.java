@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.apps;
 
+import jline.internal.Log;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -26,20 +27,36 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.apps.ConsoleAppConfig;
+import org.openremote.model.util.ValueUtil;
 
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+
+import static org.openremote.container.util.MapAccess.getString;
 
 public class ConsoleAppService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(ConsoleAppService.class.getName());
 
+    public static final String CONSOLE_APP_CONFIG_ROOT = "CONSOLE_APP_CONFIG_ROOT";
+    public static final String CONSOLE_APP_CONFIG_ROOT_DEFAULT = "manager/src/consoleappconfig";
+
     protected TimerService timerService;
     protected ManagerWebService managerWebService;
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
+    protected Path consoleAppDocRoot;
+    protected Map<String, ConsoleAppConfig> consoleAppConfigMap;
 
     @Override
     public int getPriority() {
@@ -57,6 +74,9 @@ public class ConsoleAppService implements ContainerService {
         container.getService(ManagerWebService.class).getApiSingletons().add(
             new ConsoleAppResourceImpl(this)
         );
+
+        consoleAppDocRoot = Paths.get(getString(container.getConfig(), CONSOLE_APP_CONFIG_ROOT, CONSOLE_APP_CONFIG_ROOT_DEFAULT));
+        consoleAppConfigMap = new HashMap<>();
     }
 
     @Override
@@ -77,18 +97,28 @@ public class ConsoleAppService implements ContainerService {
     }
 
     public ConsoleAppConfig getAppConfig(String realm) {
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery(
-                        "select ac from ConsoleAppConfig ac " +
-                                "where ac.realm = :realm",
-                        ConsoleAppConfig.class)
-                        .setParameter("realm", realm)
-                        .getResultList()).stream().findFirst().orElse(null);
+        return consoleAppConfigMap.computeIfAbsent(realm, key -> {
+            try {
+                return Files.list(consoleAppDocRoot)
+                        .filter(dir -> dir.getFileName().toString().startsWith(key))
+                        .map(dir -> {
+                            try {
+                                return ValueUtil.JSON.readValue(dir.toFile(), ConsoleAppConfig.class);
+                            } catch (IOException e) {
+                                throw new WebApplicationException(e);
+                            }
+                        })
+                        .findFirst().orElseThrow(NotFoundException::new);
+            } catch (IOException e) {
+                throw new WebApplicationException(e);
+            }
+        });
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
+                "consoleAppDocRoot=" + consoleAppDocRoot +
             '}';
     }
 }

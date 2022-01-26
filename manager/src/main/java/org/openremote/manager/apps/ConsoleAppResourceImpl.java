@@ -50,10 +50,6 @@ public class ConsoleAppResourceImpl extends WebResource implements ConsoleAppRes
 
     @Override
     public ConsoleAppConfig getAppConfig(RequestParams requestParams) {
-        try {
-            return consoleAppService.getAppConfig(getRequestRealm());
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        return consoleAppService.getAppConfig(getRequestRealm());
     }
 }

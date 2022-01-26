@@ -76,7 +76,8 @@ if (project == rootProject) {
                     envs = [
                         MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
                         MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
-                        CUSTOM_APP_DOCROOT: "../deployment/manager/app"
+                        CUSTOM_APP_DOCROOT: "../deployment/manager/app",
+                        CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
                     ]
                 }
             }
