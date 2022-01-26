@@ -39,13 +39,11 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 margin: 0;
                 display: flex;
                 flex-direction: column;
+                --or-app-color4: var(--or-mwc-input-color);
             }`,
             PickerStyle,
             css`.attribute-label-white {
                 background: #ffffff;
-            }
-            .attribute-label-primary {
-                color: var(--mdc-theme-primary, #6200ee);
             }
             .selected-asset-container {
                 display: flex;
@@ -59,13 +57,20 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 padding: 5px;
                 display: flex;
                 flex-direction: column;
+                line-height: 16px;
                 justify-content: flex-start;
+                font-size: 14px;
+                text-align: left;
+            }
+            .selected-asset-label .asset {
+                color: rgb(76, 76, 76);
             }
             .selected-asset-label .asset-attribute {
-                font-size: 70%;
+                color: grey;
             }
             .selected-asset-icon {
-                padding: 5px;
+                margin-right: 10px;
+                --or-icon-width: 20px;
             }`];
     }
 
@@ -158,9 +163,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             let _selectedAttributes : AttributeRef[] = [];
             let _selectedAssets: string[] = [];
             let val = this.node.internals![this.internalIndex].value;
-            console.log('-----');
-            console.log(val);
-            console.log(this.internal?.value);
+
             if (val){
                 _selectedAttributes = [{
                     id: val.assetId,
@@ -206,8 +209,14 @@ export class InternalPicker extends translate(i18next)(LitElement) {
 
         return html`<div>
             ${(this.selectedAsset ? 
-                    html`<div class="attribute-label attribute-label-white selected-asset-container" @click="${() => openDialog()}"><div class="selected-asset-icon">${myIcon}</div><div class="selected-asset-label"><div style="text-align: left;">${this.selectedAsset.name}</div><div style="text-align: left;" class="asset-attribute">${selectedAttrLabel}</div></div></div>` : 
-                    html`<or-mwc-input class="button attribute-label-white attribute-label-primary" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="plus" @click="${() => openDialog()}"></or-mwc-input>`
+                    html`<div class="attribute-label attribute-label-white selected-asset-container" @click="${() => openDialog()}">
+                        <div class="selected-asset-icon">${myIcon}</div>
+                        <div class="selected-asset-label">
+                            <div class="asset">${this.selectedAsset.name}</div>
+                            <div class="asset-attribute">${selectedAttrLabel}</div>
+                        </div>
+                    </div>` : 
+                    html`<or-mwc-input class="attribute-label-white my-test" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="plus" @click="${() => openDialog()}"></or-mwc-input>`
             )}
         </div>`;
     }
