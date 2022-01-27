@@ -61,7 +61,6 @@ public class ConsoleAppService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
 
-        boolean devMode = container.isDevMode();
         this.timerService = container.getService(TimerService.class);
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
@@ -100,6 +99,28 @@ public class ConsoleAppService implements ContainerService {
             .filter(Files::isDirectory)
             .map(dir -> dir.getFileName().toString())
             .toArray(String[]::new);
+    }
+
+    @Deprecated
+    public ConsoleAppConfig getAppConfig(String realm) {
+        try {
+            if (!Files.isDirectory(consoleAppDocRoot)) {
+                return null;
+            }
+            
+            return Files.list(consoleAppDocRoot)
+                .filter(dir -> dir.getFileName().toString().startsWith(realm))
+                .map(dir -> {
+                    try {
+                        return ValueUtil.JSON.readValue(dir.toFile(), ConsoleAppConfig.class);
+                    } catch (IOException e) {
+                        throw new WebApplicationException(e);
+                    }
+                })
+                .findFirst().orElseThrow(NotFoundException::new);
+        } catch (IOException e) {
+            throw new WebApplicationException(e);
+        }
     }
 
     @Override

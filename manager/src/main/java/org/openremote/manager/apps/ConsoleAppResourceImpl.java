@@ -21,6 +21,7 @@ package org.openremote.manager.apps;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.model.Constants;
+import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.apps.ConsoleAppResource;
 import org.openremote.model.http.RequestParams;
 
@@ -50,9 +51,11 @@ public class ConsoleAppResourceImpl extends WebResource implements ConsoleAppRes
         }
     }
 
+    // Left here as android console stops working once this is removed
     @Override
-    public Response getAppConfig(RequestParams requestParams) {
-        String realm = getRequestRealm() != null ? getRequestRealm() : Constants.MASTER_REALM;
-        return Response.seeOther(URI.create("../" + ConsoleAppService.CONSOLE_APP_CONFIG_PATH + "/" + realm + ".json")).build();
+    public ConsoleAppConfig getAppConfig(RequestParams requestParams) {
+        return consoleAppService.getAppConfig(getRequestRealm());
+//        String realm = getRequestRealm() != null ? getRequestRealm() : Constants.MASTER_REALM;
+//        return Response.seeOther(URI.create("../" + ConsoleAppService.CONSOLE_APP_CONFIG_PATH + "/" + realm + ".json")).build();
     }
 }

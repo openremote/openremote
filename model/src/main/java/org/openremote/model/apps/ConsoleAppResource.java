@@ -24,8 +24,10 @@ import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 
 import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -43,9 +45,10 @@ public interface ConsoleAppResource {
     String[] getInstalledApps(@BeanParam RequestParams requestParams);
 
     // TODO: Remove this once console updated to use file path
+    // Left here as android console stops working once this is removed
     @Deprecated
     @GET
     @Path("config")
     @Produces(APPLICATION_JSON)
-    Response    getAppConfig(@BeanParam RequestParams requestParams);
+    ConsoleAppConfig getAppConfig(@BeanParam RequestParams requestParams);
 }
