@@ -391,15 +391,12 @@ export class PageExport extends Page<AppStateKeyed> {
     
     protected async loadConfig() {
 
-        const configStr = await manager.console.retrieveData("OrExportConfig") || "[]";
-
-        const parsedConfig = JSON.parse(configStr);
-        if (!parsedConfig.length || !Object.getOwnPropertyNames(parsedConfig[0]).includes("realm")) {
-            manager.console.storeData("OrExportConfig", "[]");
+        let configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
+        if (!configs.length || !Object.getOwnPropertyNames(configs[0]).includes("realm")) {
+            manager.console.storeData("OrExportConfig", null);
         }
             
-        this.config = parsedConfig.find(e => e.realm === this.realm) || {realm:this.realm,selectedAttributes:[]};
-
+        this.config = configs.find(e => e.realm === this.realm) || {realm:this.realm,selectedAttributes:[]};
 
         // prune removed assets that still exist in localstorage
         const response = await manager.rest.api.AssetResource.queryAssets({
@@ -414,15 +411,13 @@ export class PageExport extends Page<AppStateKeyed> {
     }
     
     protected async saveConfig() {
-        const configStr = await manager.console.retrieveData("OrExportConfig");
-        let config = JSON.parse(configStr);
 
-        try {
-            config.find(c => c.realm === this.realm).selectedAttributes = this.config.selectedAttributes;
-        } catch (e) {
-            config = [...config, this.config];
+        let configs: OrExportConfig[] = await manager.console.retrieveData("OrExportConfig") || [];
+        let config = configs.find(c => c.realm === this.realm);
+        if (config) {
+            config.selectedAttributes = this.config.selectedAttributes;
         }
-        manager.console.storeData("OrExportConfig", JSON.stringify(config));
+        manager.console.storeData("OrExportConfig", [...configs, this.config]);
     }
     
     protected clearSelection = () => {

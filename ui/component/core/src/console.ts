@@ -321,7 +321,7 @@ export class Console {
         });
     }
 
-    public storeData(key: string, value: string | null) {
+    public storeData(key: string, value: any) {
         this.sendProviderMessage({
             provider: "storage",
             action: "STORE",
@@ -331,7 +331,7 @@ export class Console {
     }
 
 
-    public async retrieveData(key: string): Promise<string | undefined> {
+    public async retrieveData<T>(key: string): Promise<T | undefined> {
         let response = await this.sendProviderMessage({
             provider: "storage",
             action: "RETRIEVE",
@@ -339,7 +339,7 @@ export class Console {
         }, true);
 
         if (response && response.value) {
-            return response.value;
+            return response.value as T;
         }
     }
 
@@ -426,12 +426,10 @@ export class Console {
                                     throw new Error("Storage provider 'store' action requires a `key`");
                                 }
 
-                                if (msg.value) {
-                                    if (msg.value === null) {
-                                        window.localStorage.removeItem(keyValue);
-                                    } else {
-                                        window.localStorage.setItem(keyValue, msg.value);
-                                    }
+                                if (msg.value === null) {
+                                    window.localStorage.removeItem(keyValue);
+                                } else {
+                                    window.localStorage.setItem(keyValue, JSON.stringify(msg.value));
                                 }
                             }
                             break;
@@ -442,11 +440,20 @@ export class Console {
                                     throw new Error("Storage provider 'retrieve' action requires a `key`");
                                 }
 
+                                let val = window.localStorage.getItem(keyValue);
+                                if (val !== null) {
+                                    try {
+                                        val = JSON.parse(val);
+                                    } catch (e) {
+                                        // Fallback to just returning the val as it might not be JSON
+                                    }
+                                }
+
                                 this._handleProviderResponse(JSON.stringify({
                                     action: "RETRIEVE",
                                     provider: "storage",
                                     key: keyValue,
-                                    value: window.localStorage.getItem(keyValue)
+                                    value: val
                                 }));
                             }
                             break;

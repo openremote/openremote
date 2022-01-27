@@ -74,13 +74,15 @@ public class ConsoleAppService implements ContainerService {
         consoleAppDocRoot = Paths.get(getString(container.getConfig(), CONSOLE_APP_CONFIG_DOCROOT, CONSOLE_APP_CONFIG_DOCROOT_DEFAULT));
 
         // Serve console app config files
-        HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, consoleAppDocRoot, null);
+        if (Files.isDirectory(consoleAppDocRoot)) {
+            HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, consoleAppDocRoot, null);
 
-        HttpHandler pathHandler = new PathHandler().addPrefixPath(CONSOLE_APP_CONFIG_PATH, customBaseFileHandler);
-        managerWebService.getRequestHandlers().add(0, pathStartsWithHandler(
-            "Console app config files",
-            CONSOLE_APP_CONFIG_PATH,
-            pathHandler));
+            HttpHandler pathHandler = new PathHandler().addPrefixPath(CONSOLE_APP_CONFIG_PATH, customBaseFileHandler);
+            managerWebService.getRequestHandlers().add(0, pathStartsWithHandler(
+                "Console app config files",
+                CONSOLE_APP_CONFIG_PATH,
+                pathHandler));
+        }
     }
 
     @Override

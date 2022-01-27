@@ -686,29 +686,24 @@ export class OrChart extends translate(i18next)(LitElement) {
             this.realm = manager.getRealm();
         }
 
-        const configStr = await manager.console.retrieveData("OrChartConfig");
-
-        if (!configStr || !this.panelName) {
+        if (!this.panelName) {
             return;
         }
 
         const viewSelector = window.location.hash;
-        let allConfigs: OrChartConfig[] = [];
-        let config: OrChartConfig;
+        const allConfigs: OrChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
 
-        try {
-            allConfigs = JSON.parse(configStr);
-            if (!Array.isArray(allConfigs)) {
-                manager.console.storeData("OrChartConfig", JSON.stringify([allConfigs]));
-            }
-            config = allConfigs.find(e => e.realm === this.realm) as OrChartConfig;
-        } catch (e) {
-            console.error("Failed to load chart config", e);
-            manager.console.storeData("OrChartConfig", null);
+        if (!Array.isArray(allConfigs)) {
+            manager.console.storeData("OrChartConfig", [allConfigs]);
+        }
+
+        let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
+
+        if (!config) {
             return;
         }
 
-        const view = config && config.views && config.views[viewSelector] ? config.views[viewSelector][this.panelName] : undefined;
+        const view = config.views && config.views[viewSelector] ? config.views[viewSelector][this.panelName] : undefined;
 
         if (!view) {
             return;
@@ -718,7 +713,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             // Old/invalid config format remove it
             delete config.views[viewSelector][this.panelName];
             const cleanData = [...allConfigs.filter(e => e.realm !== this.realm), config];
-            manager.console.storeData("OrChartConfig", JSON.stringify(cleanData));
+            manager.console.storeData("OrChartConfig", cleanData);
             return;
         }
 
@@ -744,8 +739,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 const assets = response.data || [];
                 view.attributeRefs = view.attributeRefs.filter((attrRef) => !!assets.find((asset) => asset.id === attrRef.id && asset.attributes && asset.attributes.hasOwnProperty(attrRef.name!)));
 
-                allConfigs = [...allConfigs.filter(e => e.realm !== this.realm), config];
-                manager.console.storeData("OrChartConfig", JSON.stringify(allConfigs));
+                manager.console.storeData("OrChartConfig", [...allConfigs.filter(e => e.realm !== this.realm), config]);
                 this.assets = assets.filter((asset) => view.attributeRefs!.find((attrRef) => attrRef.id === asset.id));
             } catch (e) {
                 console.error("Failed to get assets requested in settings", e);
@@ -773,19 +767,9 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
 
         const viewSelector = window.location.hash;        
-        const configStr = await manager.console.retrieveData("OrChartConfig");
-        let allConfigs: OrChartConfig[] = [];
-        let config: OrChartConfig | undefined;
+        const allConfigs: OrChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
+        let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
-        if (configStr) {
-            try {
-                allConfigs = JSON.parse(configStr);
-                config = allConfigs.find(e => e.realm === this.realm);
-            } catch (e) {
-                console.error("Failed to load chart config", e);
-            }
-        }
-        
         if (!config) {
             config = {
                 realm: this.realm,
@@ -812,8 +796,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             };
         }
 
-        allConfigs = [...allConfigs.filter(e => e.realm !== this.realm), config];
-        manager.console.storeData("OrChartConfig", JSON.stringify(allConfigs));
+        manager.console.storeData("OrChartConfig", [...allConfigs.filter(e => e.realm !== this.realm), config]);
     }
     
     _openDialog() {

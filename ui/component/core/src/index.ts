@@ -755,7 +755,7 @@ export class Manager implements EventProviderFactory {
         });
 
         // Look for language preference in local storage
-        const language = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
+        const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: InitOptions = {
             lng: language,
             fallbackLng: "en",
