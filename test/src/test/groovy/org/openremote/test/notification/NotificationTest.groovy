@@ -3,7 +3,6 @@ package org.openremote.test.notification
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import com.google.firebase.messaging.Message
-import org.openremote.container.web.WebService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.console.ConsoleResourceImpl
@@ -13,17 +12,18 @@ import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.query.UserQuery
-import org.openremote.model.query.filter.TenantPredicate
-import org.openremote.model.util.TextUtil
-import org.openremote.test.setup.KeycloakTestSetup
-import org.openremote.test.setup.ManagerTestSetup
+import org.openremote.manager.web.ManagerWebService
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.notification.*
+import org.openremote.model.query.UserQuery
+import org.openremote.model.query.filter.TenantPredicate
+import org.openremote.model.util.TextUtil
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.setup.KeycloakTestSetup
+import org.openremote.test.setup.ManagerTestSetup
 import org.simplejavamail.email.Email
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -56,7 +56,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
-        def consoleResource = (ConsoleResourceImpl)container.getService(WebService.class).getApiSingletons().find {it instanceof ConsoleResourceImpl}
+        def consoleResource = (ConsoleResourceImpl)container.getService(ManagerWebService.class).apiSingletons.find {it instanceof ConsoleResourceImpl}
 
         and: "the clock is stopped for testing purposes"
         stopPseudoClock()
