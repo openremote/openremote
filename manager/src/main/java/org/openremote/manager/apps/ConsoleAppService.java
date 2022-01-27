@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.apps;
 
-import jline.internal.Log;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.PathHandler;
+import org.openremote.container.web.WebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -35,48 +37,50 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
 
 public class ConsoleAppService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(ConsoleAppService.class.getName());
 
-    public static final String CONSOLE_APP_CONFIG_ROOT = "CONSOLE_APP_CONFIG_ROOT";
-    public static final String CONSOLE_APP_CONFIG_ROOT_DEFAULT = "manager/src/consoleappconfig";
+    public static final String CONSOLE_APP_CONFIG_PATH = "/consoleappconfig";
+    public static final String CONSOLE_APP_CONFIG_DOCROOT = "CONSOLE_APP_CONFIG_DOCROOT";
+    public static final String CONSOLE_APP_CONFIG_DOCROOT_DEFAULT = "manager/src/consoleappconfig";
 
     protected TimerService timerService;
     protected ManagerWebService managerWebService;
     protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
     protected Path consoleAppDocRoot;
-    protected Map<String, ConsoleAppConfig> consoleAppConfigMap;
-
-    @Override
-    public int getPriority() {
-        return ContainerService.DEFAULT_PRIORITY;
-    }
 
     @Override
     public void init(Container container) throws Exception {
 
+        boolean devMode = container.isDevMode();
         this.timerService = container.getService(TimerService.class);
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.persistenceService = container.getService(PersistenceService.class);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new ConsoleAppResourceImpl(this)
         );
 
-        consoleAppDocRoot = Paths.get(getString(container.getConfig(), CONSOLE_APP_CONFIG_ROOT, CONSOLE_APP_CONFIG_ROOT_DEFAULT));
-        consoleAppConfigMap = new HashMap<>();
+        consoleAppDocRoot = Paths.get(getString(container.getConfig(), CONSOLE_APP_CONFIG_DOCROOT, CONSOLE_APP_CONFIG_DOCROOT_DEFAULT));
+
+        // Serve console app config files
+        HttpHandler customBaseFileHandler = ManagerWebService.createFileHandler(container, consoleAppDocRoot, null);
+
+        HttpHandler pathHandler = new PathHandler().addPrefixPath(CONSOLE_APP_CONFIG_PATH, customBaseFileHandler);
+        managerWebService.getRequestHandlers().add(0, pathStartsWithHandler(
+            "Console app config files",
+            CONSOLE_APP_CONFIG_PATH,
+            pathHandler));
     }
 
     @Override
@@ -94,25 +98,6 @@ public class ConsoleAppService implements ContainerService {
             .filter(Files::isDirectory)
             .map(dir -> dir.getFileName().toString())
             .toArray(String[]::new);
-    }
-
-    public ConsoleAppConfig getAppConfig(String realm) {
-        return consoleAppConfigMap.computeIfAbsent(realm, key -> {
-            try {
-                return Files.list(consoleAppDocRoot)
-                        .filter(dir -> dir.getFileName().toString().startsWith(key))
-                        .map(dir -> {
-                            try {
-                                return ValueUtil.JSON.readValue(dir.toFile(), ConsoleAppConfig.class);
-                            } catch (IOException e) {
-                                throw new WebApplicationException(e);
-                            }
-                        })
-                        .findFirst().orElseThrow(NotFoundException::new);
-            } catch (IOException e) {
-                throw new WebApplicationException(e);
-            }
-        });
     }
 
     @Override

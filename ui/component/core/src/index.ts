@@ -914,8 +914,8 @@ export class Manager implements EventProviderFactory {
 
     protected async getConsoleAppConfig(): Promise<boolean> {
         try {
-            const consoleAppConfigResponse = await this.rest.api.ConsoleAppResource.getAppConfig();
-            this._consoleAppConfig = consoleAppConfigResponse.data;
+            const response = await fetch(manager.config.managerUrl + "/consoleappconfig/" + manager.displayRealm + ".json");
+            this._consoleAppConfig = await response.json() as ConsoleAppConfig;
             return true;
         } catch (e) {
             return true;
