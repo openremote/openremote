@@ -627,35 +627,54 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             this.disabled = true;
 
-
             // Use a matcher function - this can be altered independent of the filtering logic
             // Maybe we should just filter in memory for basic matches like name
-            const query: AssetQuery = {
-                select: {
-                    excludePath: true,
-                    excludeAttributes: true,
-                    excludeParentInfo: true
-                },
-                names: [{
-                    predicateType: "string",
-                    match: AssetQueryMatch.CONTAINS,
-                    value: this._filterValue,
-                    caseSensitive: false
-                }]
-            };
-
-            const response = await manager.rest.api.AssetResource.queryAssets(query);
-            const foundAssetIds: string[] = response.data.map((asset: Asset) => asset.id!);
-
-            const matcher: (asset: Asset) => boolean = (asset) => {
-                return foundAssetIds.includes(asset.id!);
-            };
-
-            this._nodes.forEach((node: UiAssetTreeNode) => {
-                this.filterTreeNode(node, matcher);
+            this.getMatcher(false).then((matcher: (asset: Asset) => boolean) => {
+                if (this._nodes) {
+                    this._nodes.forEach((node: UiAssetTreeNode) => {
+                        this.filterTreeNode(node, matcher);
+                    });
+                    this.disabled = false;
+                }
             });
-            this.disabled = false;
         }
+    }
+
+    protected getMatcher(requireQuery: boolean): Promise<((asset: Asset) => boolean)> {
+        if (requireQuery) {
+            return this.getMatcherFromQuery();
+        } else {
+            return this.getSimpleNameMatcher();
+        }
+    }
+
+    protected async getSimpleNameMatcher(): Promise<((asset: Asset) => boolean)> {
+        return (asset) => {
+            return asset.name!.toLowerCase().includes(this._filterValue!.toLowerCase());
+        };
+    }
+
+    protected async getMatcherFromQuery(): Promise<((asset: Asset) => boolean)> {
+        const query: AssetQuery = {
+            select: {
+                excludePath: true,
+                excludeAttributes: true,
+                excludeParentInfo: true
+            },
+            names: [{
+                predicateType: "string",
+                match: AssetQueryMatch.CONTAINS,
+                value: this._filterValue,
+                caseSensitive: false
+            }]
+        };
+
+        const response = await manager.rest.api.AssetResource.queryAssets(query);
+        const foundAssetIds: string[] = response.data.map((asset: Asset) => asset.id!);
+
+        return (asset) => {
+            return foundAssetIds.includes(asset.id!);
+        };
     }
 
     protected filterTreeNode(currentNode: UiAssetTreeNode, matcher: (asset: Asset) => boolean): boolean {
