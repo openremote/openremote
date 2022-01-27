@@ -71,7 +71,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService 
         clientEventService = container.getService(ClientEventService.class);
         gatewayService = container.getService(GatewayService.class);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AssetModelResourceImpl(
                 container.getService(TimerService.class),
                 identityService,

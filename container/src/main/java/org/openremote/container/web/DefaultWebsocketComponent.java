@@ -30,12 +30,12 @@ import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.keycloak.KeycloakPrincipal;
 import org.openremote.container.security.AuthContext;
-import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.web.socket.WebsocketAdapter;
 import org.openremote.container.web.socket.WebsocketComponent;
 import org.openremote.model.Constants;
+import org.openremote.model.Container;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.Xnio;
@@ -43,13 +43,10 @@ import org.xnio.Xnio;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
-import javax.ws.rs.WebApplicationException;
 import java.security.Principal;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
@@ -61,15 +58,15 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         UndertowContainerProvider.disableDefaultContainer();
     }
 
-    final protected IdentityService identityService;
+    final protected Container container;
     final protected WebService webService;
     final protected String allowedOrigin;
     protected DeploymentInfo deploymentInfo;
     protected WebService.RequestHandler websocketHttpHandler;
 
-    public DefaultWebsocketComponent(IdentityService identityService, WebService webService, String allowedOrigin) {
-        this.identityService = identityService;
-        this.webService = webService;
+    public DefaultWebsocketComponent(Container container, String allowedOrigin) {
+        this.container = container;
+        this.webService = container.getService(WebService.class);
         this.allowedOrigin = allowedOrigin;
     }
 
@@ -152,12 +149,9 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         constraint.addWebResourceCollection(resourceCollection);
         deploymentInfo.addSecurityConstraints(constraint);
 
-        HttpHandler handler = webService.addServletDeployment(identityService, deploymentInfo, true);
+        HttpHandler handler = WebService.addServletDeployment(container, deploymentInfo, true);
 
-        HttpHandler tempHandler = (exchange) -> {
-            handler.handleRequest(exchange);
-        };
-        websocketHttpHandler = pathStartsWithHandler(deploymentName, WEBSOCKET_PATH, tempHandler);
+        websocketHttpHandler = pathStartsWithHandler(deploymentName, WEBSOCKET_PATH, handler);
 
         // Give web socket handler higher priority than any other handlers already added
         webService.getRequestHandlers().add(0, websocketHttpHandler);

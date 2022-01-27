@@ -125,7 +125,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return;
         }
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AgentResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),

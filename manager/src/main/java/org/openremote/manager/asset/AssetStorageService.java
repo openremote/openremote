@@ -327,7 +327,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assetEventAuthorizer.authorise(realm, auth, subscription);
         });
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
                 identityService,
@@ -336,7 +336,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             )
         );
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new ConsoleResourceImpl(container.getService(TimerService.class),
                 identityService,
                 this,

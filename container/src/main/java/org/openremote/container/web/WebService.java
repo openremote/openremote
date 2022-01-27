@@ -29,11 +29,11 @@ import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
+import org.openremote.model.Container;
+import org.openremote.model.ContainerService;
 import org.xnio.Options;
 
 import javax.servlet.DispatcherType;
@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -91,13 +92,13 @@ public abstract class WebService implements ContainerService {
     public static final String WEBSERVER_WORKER_THREADS_MAX = "WEBSERVER_WORKER_THREADS_MAX";
     public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
+    protected static AtomicReference<CORSFilter> corsFilterRef;
     protected boolean devMode;
     protected String host;
     protected int port;
     protected Undertow undertow;
     protected List<RequestHandler> httpHandlers = new ArrayList<>();
     protected URI containerHostUri;
-    protected FilterInfo corsFilterInfo;
 
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
@@ -115,8 +116,6 @@ public abstract class WebService implements ContainerService {
         String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
                 ? getLocalIpAddress()
                 : host;
-
-        createCorsFilter(container);
 
         containerHostUri =
                 UriBuilder.fromPath("/")
@@ -153,12 +152,12 @@ public abstract class WebService implements ContainerService {
 
     /**
      * Adds a deployment to the default servlet container and returns the started handler.
-     *
-     * @param identityService Must not be null if secure deployment is used
-     * @param deploymentInfo  The deployment to add to the default container
-     * @param secure          If authentication/authorization should be enabled for this deployment
      */
-    public HttpHandler addServletDeployment(IdentityService identityService, DeploymentInfo deploymentInfo, boolean secure) {
+    public static HttpHandler addServletDeployment(Container container, DeploymentInfo deploymentInfo, boolean secure) {
+
+        IdentityService identityService = container.getService(IdentityService.class);
+        boolean devMode = container.isDevMode();
+
         try {
             if (secure) {
                 if (identityService == null)
@@ -174,6 +173,8 @@ public abstract class WebService implements ContainerService {
             deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
 
             // Add CORS filter that works for any servlet deployment
+            FilterInfo corsFilterInfo = getCorsFilterInfo(container);
+
             if (corsFilterInfo != null) {
                 deploymentInfo.addFilter(corsFilterInfo);
                 deploymentInfo.addFilterUrlMapping(corsFilterInfo.getName(), "*", DispatcherType.REQUEST);
@@ -270,33 +271,41 @@ public abstract class WebService implements ContainerService {
 
         return resteasyDeployment;
     }
-    protected void createCorsFilter(Container container) {
-        CORSFilter corsFilter = null;
 
-        if (!devMode) {
-            String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
-            if (allowedOriginsStr != null) {
+    public static synchronized FilterInfo getCorsFilterInfo(Container container) {
+
+        if (corsFilterRef == null) {
+            CORSFilter corsFilter = null;
+
+            if (!container.isDevMode()) {
+                String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
+                if (allowedOriginsStr != null) {
+                    corsFilter = new CORSFilter();
+                    corsFilter.setAllowCredentials(true);
+                    corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+                    corsFilter.setExposedHeaders("*");
+                    corsFilter.setCorsMaxAge(1209600);
+                    String[] allowedOrigins = allowedOriginsStr.split(";");
+                    corsFilter.getAllowedOrigins().addAll(Arrays.asList(allowedOrigins));
+                }
+            } else {
                 corsFilter = new CORSFilter();
+                corsFilter.getAllowedOrigins().add("*");
                 corsFilter.setAllowCredentials(true);
-                corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
                 corsFilter.setExposedHeaders("*");
+                corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
                 corsFilter.setCorsMaxAge(1209600);
-                String[] allowedOrigins = allowedOriginsStr.split(";");
-                corsFilter.getAllowedOrigins().addAll(Arrays.asList(allowedOrigins));
             }
-        } else {
-            corsFilter = new CORSFilter();
-            corsFilter.getAllowedOrigins().add("*");
-            corsFilter.setAllowCredentials(true);
-            corsFilter.setExposedHeaders("*");
-            corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
-            corsFilter.setCorsMaxAge(1209600);
+
+            corsFilterRef = new AtomicReference<>(corsFilter);
         }
 
-        if (corsFilter != null) {
-            CORSFilter finalCorsFilter = corsFilter;
-            corsFilterInfo = Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter))
-            .setAsyncSupported(true);
+        if (corsFilterRef.get() != null) {
+            CORSFilter finalCorsFilter = corsFilterRef.get();
+            return Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(finalCorsFilter))
+                .setAsyncSupported(true);
         }
+
+        return null;
     }
 }

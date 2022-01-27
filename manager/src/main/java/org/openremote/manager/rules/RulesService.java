@@ -189,7 +189,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
         configEventExpires = getString(container.getConfig(), RULE_EVENT_EXPIRES, RULE_EVENT_EXPIRES_DEFAULT);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new FlowResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class)
