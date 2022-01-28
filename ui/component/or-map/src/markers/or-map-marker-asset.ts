@@ -23,6 +23,9 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     @property({type: Object, attribute: true})
     public asset?: Asset;
 
+    @property({reflect: true})
+    public showLabel?: boolean;
+
     @property()
     public config?: MapMarkerConfig;
 
@@ -121,16 +124,19 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
             if (this.config && asset.type && this.config[asset.type]) {
                 const assetTypeConfig = this.config[asset.type][0] || undefined;
-                if (assetTypeConfig) {
-                    if (assetTypeConfig.showLabel) {
-                        this.showLabel = assetTypeConfig.showLabel;
-                    }
-                    if (this.showLabel) {
-                        this.displayValue = await this.getDesiredAttrValue(asset, assetTypeConfig.attributeName);
-                        if (assetTypeConfig.showUnits !== false && attr) {
-                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type);
-                            this.unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
-                        }
+
+                if (assetTypeConfig && assetTypeConfig.showLabel) {
+                    this.showLabel = assetTypeConfig.showLabel;
+
+                    const attrVal = await this.getDesiredAttrValue(asset, assetTypeConfig.attributeName);
+                    if (attrVal === undefined) return;
+
+                    this.displayValue = attrVal.toString();
+
+                    if (assetTypeConfig.showUnits !== false && attr) {
+                        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type);
+                        const unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
+                        this.displayValue = `${this.displayValue} ${unit}`;
                     }
                 }
             }

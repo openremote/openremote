@@ -80,11 +80,11 @@ export class OrMapMarker extends LitElement {
         `;
     }
 
-    protected static _defaultTemplate = (icon: string | undefined, displayValue?: string | number | boolean, showLabel?: boolean, unit?: string) => `
-        ${displayValue !== undefined && !!showLabel ? `<div class="label"><span>
-            ${displayValue.toString()}
-            ${unit ? `${unit.toString()}` : ``}
-        </span></div>` : ``}
+    protected static _defaultTemplate = (icon: string | undefined, displayValue?: string) => `
+        ${displayValue !== undefined 
+            ? `<div class="label"><span>${displayValue}</span></div>` 
+            : ``
+        }
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -99,13 +99,7 @@ export class OrMapMarker extends LitElement {
     public radius?: number;
 
     @property({reflect: true})
-    public displayValue?: string | number | boolean;
-
-    @property({reflect: true})
-    public showLabel: boolean = true;
-
-    @property({reflect: true})
-    public unit?: string = undefined;
+    public displayValue?: string;
 
     @property({type: Boolean})
     public visible: boolean = true;
@@ -188,7 +182,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("icon") || _changedProperties.has("displayValue") || _changedProperties.has("showLabel") || _changedProperties.has("unit")) {
+        if (_changedProperties.has("icon") || _changedProperties.has("displayValue")) {
             this.refreshMarkerContent();
         }
 
@@ -305,7 +299,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayValue, this.showLabel, this.unit);
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayValue);
         return div;
     }
 }
