@@ -42,6 +42,11 @@ export interface OrMapMarkerChangedEventDetail extends OrMapMarkerEventDetail {
     property: string;
 }
 
+export interface TemplateOptions {
+    displayValue?: string;
+    direction?: string;
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrMapMarkerChangedEvent.NAME]: OrMapMarkerChangedEvent;
@@ -77,12 +82,26 @@ export class OrMapMarker extends LitElement {
           .label > span {
             white-space: nowrap;
           }
+          
+          .icon-direction {
+            position: absolute;
+            top: 13px;
+            left: 4px;
+            width: 24px;
+            fill: white;
+            stroke: black;
+            stroke-width: 1px;
+          }
         `;
     }
 
-    protected static _defaultTemplate = (icon: string | undefined, displayValue?: string) => `
-        ${displayValue !== undefined 
-            ? `<div class="label"><span>${displayValue}</span></div>` 
+    protected static _defaultTemplate = (icon: string | undefined, options?: TemplateOptions) => `
+        ${options && options.displayValue !== undefined 
+            ? `<div class="label"><span>${options.displayValue}</span></div>` 
+            : ``
+        }
+        ${options && options.direction
+            ? `<or-icon class="icon-direction" icon="navigation" style="transform: rotate(${options.direction}deg);"></or-icon>`
             : ``
         }
         <or-icon icon="or:marker"></or-icon>
@@ -100,6 +119,9 @@ export class OrMapMarker extends LitElement {
 
     @property({reflect: true})
     public displayValue?: string;
+
+    @property({reflect: true})
+    public direction?: string;
 
     @property({type: Boolean})
     public visible: boolean = true;
@@ -182,7 +204,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("icon") || _changedProperties.has("displayValue")) {
+        if (_changedProperties.has("icon") || _changedProperties.has("displayValue") || _changedProperties.has("direction")) {
             this.refreshMarkerContent();
         }
 
@@ -299,7 +321,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, this.displayValue);
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
         return div;
     }
 }

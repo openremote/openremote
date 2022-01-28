@@ -23,9 +23,6 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     @property({type: Object, attribute: true})
     public asset?: Asset;
 
-    @property({reflect: true})
-    public showLabel?: boolean;
-
     @property()
     public config?: MapMarkerConfig;
 
@@ -40,15 +37,16 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
     protected set type(type: string | undefined) {
 
-        let iconAndcolour;
-        if (this.config && type && this.config[type] && this.displayValue) {
+        let overrideOpts;
+        if (this.config && type && this.config[type]) {
             const markerConfig = this.config[type][0] || undefined;
-            if (markerConfig.showLabel) {
-                this.showLabel = markerConfig.showLabel;
+
+            if (this.displayValue) {
+                overrideOpts = {markerConfig: markerConfig, attributeValue: this.displayValue};
             }
-            const overrideOpts = {markerConfig: markerConfig, attributeValue: this.displayValue};
-            iconAndcolour = getMarkerIconAndColorFromAssetType(type, overrideOpts);
         }
+
+        const iconAndcolour = getMarkerIconAndColorFromAssetType(type, overrideOpts);
 
         if (!iconAndcolour) {
             this.visible = false;
@@ -125,19 +123,23 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             if (this.config && asset.type && this.config[asset.type]) {
                 const assetTypeConfig = this.config[asset.type][0] || undefined;
 
-                if (assetTypeConfig && assetTypeConfig.showLabel) {
-                    this.showLabel = assetTypeConfig.showLabel;
+                if (assetTypeConfig.showLabel) {
+                    if (assetTypeConfig.showLabel) {
+                        const attrVal = await this.getAttrValue(asset, assetTypeConfig.attributeName);
+                        if (attrVal === undefined) return;
 
-                    const attrVal = await this.getDesiredAttrValue(asset, assetTypeConfig.attributeName);
-                    if (attrVal === undefined) return;
+                        this.displayValue = attrVal.toString();
 
-                    this.displayValue = attrVal.toString();
-
-                    if (assetTypeConfig.showUnits !== false && attr) {
-                        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type);
-                        const unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
-                        this.displayValue = `${this.displayValue} ${unit}`;
+                        if (assetTypeConfig.showUnits !== false && attr) {
+                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type);
+                            const unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
+                            this.displayValue = `${this.displayValue} ${unit}`;
+                        }
                     }
+                }
+
+                if (assetTypeConfig.showDirection) {
+                    this.direction = (await this.getAttrValue(asset, WellknownAttributes.DIRECTION))!.toString() || undefined;
                 }
             }
 
@@ -148,7 +150,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         }
     }
     
-    protected async getDesiredAttrValue(asset: Asset, attributeName: string): Promise<string | number | boolean | undefined> {
+    protected async getAttrValue(asset: Asset, attributeName: string): Promise<string | number | boolean | undefined> {
         const currentValue: AttributeEvent = await manager.events!.sendEventWithReply({
             event: {
                 eventType: "read-asset-attribute",
