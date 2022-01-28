@@ -22,9 +22,7 @@ package org.openremote.model.asset.impl;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.AttributeDescriptor;
-import org.openremote.model.value.MetaItemType;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import javax.persistence.Entity;
 import java.util.Optional;
@@ -35,10 +33,12 @@ import static org.openremote.model.Constants.UNITS_METRE;
 @Entity
 public class ShipAsset extends Asset<ShipAsset> {
 
-    public static final AttributeDescriptor<Integer> MSSI_NUMBER = new AttributeDescriptor<>("mSSINumber", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.LABEL, "MSSI number"));
-    public static final AttributeDescriptor<Integer> IMO_NUMBER = new AttributeDescriptor<>("iMONumber", ValueType.POSITIVE_INTEGER,
-        new MetaItem<>(MetaItemType.LABEL, "IMO number"));
+    public static final AttributeDescriptor<Integer> MSSI_NUMBER = new AttributeDescriptor<>("MSSINumber", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.FORMAT, new ValueFormat().setUseGrouping(false)));
+    public static final AttributeDescriptor<Integer> IMO_NUMBER = new AttributeDescriptor<>("IMONumber", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.FORMAT, new ValueFormat().setUseGrouping(false)));
+    public static final AttributeDescriptor<Integer> ENI_NUMBER = new AttributeDescriptor<>("ENINumber", ValueType.POSITIVE_INTEGER,
+        new MetaItem<>(MetaItemType.FORMAT, new ValueFormat().setUseGrouping(false)));
     public static final AttributeDescriptor<Integer> DIRECTION = new AttributeDescriptor<>("direction", ValueType.DIRECTION);
     public static final AttributeDescriptor<Integer> LENGTH = new AttributeDescriptor<>("length", ValueType.POSITIVE_INTEGER)
         .withUnits(UNITS_METRE);
@@ -71,9 +71,17 @@ public class ShipAsset extends Asset<ShipAsset> {
         return getAttributes().getValue(IMO_NUMBER);
     }
 
-    @SuppressWarnings("unchecked")
     public ShipAsset setIMONumber(Integer value) {
         getAttributes().getOrCreate(IMO_NUMBER).setValue(value);
+        return this;
+    }
+
+    public Optional<Integer> getENINumber() {
+        return getAttributes().getValue(ENI_NUMBER);
+    }
+
+    public ShipAsset setENINumber(Integer value) {
+        getAttributes().getOrCreate(ENI_NUMBER).setValue(value);
         return this;
     }
 
