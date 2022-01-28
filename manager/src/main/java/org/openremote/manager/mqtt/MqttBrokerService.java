@@ -297,7 +297,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         return sessionRegistry;
     }
 
-    protected Object getSession(String clientId) {
+    Object getSession(String clientId) {
         if (mqttBroker == null) {
             return null;
         }
@@ -314,9 +314,20 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         return null;
     }
 
+    public Runnable getForceDisconnectRunnable(String clientId) {
+        MqttConnection connection = getConnection(clientId);
+        Object session = getSession(clientId);
+
+        return () -> doForceDisconnect(connection, session);
+    }
+
     public void forceDisconnect(String clientId) {
         MqttConnection connection = getConnection(clientId);
         Object session = getSession(clientId);
+        doForceDisconnect(connection, session);
+    }
+
+    protected void doForceDisconnect(MqttConnection connection, Object session) {
 
         if (connection == null || session == null) {
             return;
