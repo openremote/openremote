@@ -159,7 +159,13 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the connection to the server is restored"
-        echoServer.start()
+        // need to retry here as the previous connected socket might not have been released
+        def retries = 0
+        while (echoServer.connectionStatus != ConnectionStatus.CONNECTED && retries < 10) {
+            echoServer.start()
+            Thread.sleep(500)
+            retries++
+        }
 
         then: "the client status should become CONNECTED"
         conditions.eventually {
