@@ -191,6 +191,9 @@ services:
       # Location for the provisioning files
       PROVISIONING_DOCROOT: ${PROVISIONING_DOCROOT:-/deployment/manager/provisioning}
 
+      # Location of the console app config files.
+      CONSOLE_APP_CONFIG_ROOT: ${CONSOLE_APP_CONFIG_ROOT:-/deployment/manager/consoleappconfig}
+
       # Redirect path when root URI is requested
       ROOT_REDIRECT_PATH: ${ROOT_REDIRECT_PATH:-/manager}
 

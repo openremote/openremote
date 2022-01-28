@@ -92,7 +92,6 @@ public class ManagerSetup implements Setup {
             return;
         }
 
-        provisionConsoleAppConfig();
         provisionAssets();
     }
 
@@ -454,28 +453,6 @@ public class ManagerSetup implements Setup {
         shipAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
 
         return shipAsset;
-    }
-
-    protected void provisionConsoleAppConfig() throws IOException {
-
-        if (!Files.exists(Paths.get(provisionDocRoot.toString(), "consoleappconfig"))) {
-            return;
-        }
-
-        Log.info("Provisioning console app configs");
-
-        Files.list(Paths.get(provisionDocRoot.toString(), "consoleappconfig")).filter(Files::isRegularFile)
-                .forEach(file -> {
-                    try {
-                        ConsoleAppConfig config = ValueUtil.JSON.readValue(file.toFile(), ConsoleAppConfig.class);
-                        persistenceService.doTransaction(entityManager -> entityManager.merge(config));
-
-                        Log.info("Console app config added for realm: " + config.getRealm());
-                    } catch (IOException e) {
-                        Log.warn("Processing of file " + file.getFileName() + " went wrong", e);
-                    }
-                });
-
     }
 
     protected void provisionAssets() throws IOException {

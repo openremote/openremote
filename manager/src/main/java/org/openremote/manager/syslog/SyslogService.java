@@ -85,7 +85,7 @@ public class SyslogService extends Handler implements ContainerService {
         }
 
         if (container.hasService(ManagerWebService.class)) {
-            container.getService(ManagerWebService.class).getApiSingletons().add(
+            container.getService(ManagerWebService.class).addApiSingleton(
                 new SyslogResourceImpl(this)
             );
         }

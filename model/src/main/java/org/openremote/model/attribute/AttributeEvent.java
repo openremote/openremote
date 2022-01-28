@@ -20,6 +20,7 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.AssetInfo;
 import org.openremote.model.event.shared.SharedEvent;
@@ -73,6 +74,10 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
     protected String realm;
     protected String parentId;
     protected String[] path;
+    @JsonIgnore
+    protected boolean publicRead;
+    @JsonIgnore
+    protected boolean restrictedRead;
 
     public <T> AttributeEvent(String assetId, AttributeDescriptor<T> attributeDescriptor, T value) {
         this(assetId, attributeDescriptor.getName(), value);
@@ -165,6 +170,26 @@ public class AttributeEvent extends SharedEvent implements AssetInfo {
 
     public <T> Optional<T> getValue() {
         return getAttributeState().getValue();
+    }
+
+    public AttributeEvent setAccessPublicRead(boolean publicRead) {
+        this.publicRead = publicRead;
+        return this;
+    }
+
+    public AttributeEvent setAccessRestrictedRead(boolean restrictedRead) {
+        this.restrictedRead = restrictedRead;
+        return this;
+    }
+
+    @Override
+    public boolean canAccessPublicRead() {
+        return publicRead;
+    }
+
+    @Override
+    public boolean canAccessRestrictedRead() {
+        return restrictedRead;
     }
 
     @Override

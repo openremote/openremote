@@ -50,7 +50,7 @@ if (project == rootProject) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                 }
                 "Test Setup"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.main" : ".test.main")
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                 }
                 "Empty with Proxy"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
@@ -60,7 +60,7 @@ if (project == rootProject) {
                     ]
                 }
                 "Test Setup with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.main" : ".test.main")
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                     envs = [
                             WEBSERVER_LISTEN_HOST: "0.0.0.0",
                             EXTERNAL_URL: "https://localhost:8443"
@@ -76,7 +76,8 @@ if (project == rootProject) {
                     envs = [
                         MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
                         MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
-                        CUSTOM_APP_DOCROOT: "../deployment/manager/app"
+                        CUSTOM_APP_DOCROOT: "../deployment/manager/app",
+                        CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
                     ]
                 }
             }

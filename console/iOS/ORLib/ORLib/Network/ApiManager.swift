@@ -87,6 +87,13 @@ public class ApiManager: NSObject {
                 callback?(httpStatusCode, nil, error);
                 return
             }
+            do {
+                let i  = try self.decoder.decode(T.self, from: responseData)
+            } catch {
+                    print("Unexpected error: \(error).")
+                }
+                
+            
 
             guard let responseModel = try? self.decoder.decode(T.self, from: responseData) else {
                 print("Couldn't parse response: \(String(data: responseData, encoding: .utf8)!)")

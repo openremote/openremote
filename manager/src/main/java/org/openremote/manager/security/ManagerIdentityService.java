@@ -41,10 +41,10 @@ public class ManagerIdentityService extends IdentityService {
         super.init(container);
         persistenceService = container.getService(PersistenceService.class);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new TenantResourceImpl(container.getService(TimerService.class), this, container)
         );
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new UserResourceImpl(container.getService(TimerService.class), this)
         );
     }

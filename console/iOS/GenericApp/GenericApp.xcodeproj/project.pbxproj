@@ -13,6 +13,7 @@
 		4CEDA25D25405B1E00C47E3B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */; };
 		4CEDA2A7254074D100C47E3B /* Storyboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */; };
 		4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEDA2CD254075D400C47E3B /* SplashViewController.swift */; };
+		4CF3439127A13F2200EB5A0E /* String+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF3439027A13F2200EB5A0E /* String+Utils.swift */; };
 		5952998DA2B50AFF73DDCAE1 /* Pods_NotificationService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 570B5A477F4AA747A62A45EF /* Pods_NotificationService.framework */; };
 		756FA8BF24545CB0CC18CA6E /* Pods_GenericApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E012F268F107177E6B242E8 /* Pods_GenericApp.framework */; };
 		878D2D0D249A490300011484 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 878D2D0C249A490300011484 /* AppDelegate.swift */; };
@@ -58,6 +59,7 @@
 		4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		4CEDA2A6254074D100C47E3B /* Storyboard.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Storyboard.storyboard; sourceTree = "<group>"; };
 		4CEDA2CD254075D400C47E3B /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
+		4CF3439027A13F2200EB5A0E /* String+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Utils.swift"; sourceTree = "<group>"; };
 		4E012F268F107177E6B242E8 /* Pods_GenericApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GenericApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		570B5A477F4AA747A62A45EF /* Pods_NotificationService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NotificationService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		878D2D09249A490300011484 /* OpenRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +98,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4CF3438F27A13F0400EB5A0E /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				4CF3439027A13F2200EB5A0E /* String+Utils.swift */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
 		6E621588C821060939F236DC /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -133,6 +143,7 @@
 				4C38E9C02548089A00E381C6 /* OpenRemote.entitlements */,
 				4CEDA25C25405B1E00C47E3B /* GoogleService-Info.plist */,
 				878D2D34249A50E500011484 /* UI */,
+				4CF3438F27A13F0400EB5A0E /* Utils */,
 				878D2D0C249A490300011484 /* AppDelegate.swift */,
 				878D2D12249A490400011484 /* Assets.xcassets */,
 				878D2D17249A490400011484 /* LaunchScreen.storyboard */,
@@ -352,6 +363,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4CF3439127A13F2200EB5A0E /* String+Utils.swift in Sources */,
 				4C81AA642546B251006ED5DD /* ProjectViewController.swift in Sources */,
 				878D2D0D249A490300011484 /* AppDelegate.swift in Sources */,
 				4CEDA2CE254075D400C47E3B /* SplashViewController.swift in Sources */,
@@ -508,11 +520,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = A994B3D3E3853BA4D16AA5A8 /* Pods-GenericApp.debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = "$(inherited)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
@@ -522,7 +534,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app;
 				PRODUCT_NAME = OpenRemote;
 				SWIFT_VERSION = 5.0;
@@ -534,11 +546,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D61E1E0434CC1446EAF20BA0 /* Pods-GenericApp.release.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = "$(inherited)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = GenericApp/OpenRemote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 27;
+				CURRENT_PROJECT_VERSION = 28;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 4AC88KZHJZ;
 				ENABLE_PREVIEWS = YES;
@@ -548,7 +560,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = io.openremote.app;
 				PRODUCT_NAME = OpenRemote;
 				SWIFT_VERSION = 5.0;
@@ -560,6 +572,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 3B0E05618605D241D5A82AA3 /* Pods-NotificationService.debug.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 27;
@@ -584,6 +597,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 46FD90D41833A0E2C4C7DDA6 /* Pods-NotificationService.release.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 27;

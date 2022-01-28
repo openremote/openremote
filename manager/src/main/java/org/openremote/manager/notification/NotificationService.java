@@ -120,7 +120,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         container.getServices(NotificationHandler.class).forEach(notificationHandler ->
                 notificationHandlerMap.put(notificationHandler.getTypeName(), notificationHandler));
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
                 new NotificationResourceImpl(this,
                         container.getService(MessageBrokerService.class),
                         container.getService(AssetStorageService.class),

@@ -54,6 +54,7 @@ import org.openremote.model.security.User;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
+import org.openremote.model.value.MetaItemType;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
@@ -190,7 +191,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                  filter.setRestrictedEvents(true);
              }
 
-             // Restricted user can only subscribe to assets they are linked to
+             // Restricted user can only subscribe to assets they are linked to so go fetch these
+             // TODO: Update asset IDs when user asset links are modified
              boolean skipAssetIdCheck = false;
              if (isRestricted && (filter.getAssetIds() == null || filter.getAssetIds().length == 0)) {
                  filter.setAssetIds(
@@ -213,7 +215,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                          // Restricted users can only get events for their linked assets
                          if (!assetStorageService.isUserAsset(userId, assetId))
                              return false;
-                         // TODO Restricted clients should only receive events for PROTECTED attributes!
                      } else {
                          // Regular users can only get events for assets in their realm
                          if (!asset.getRealm().equals(realm))
@@ -326,7 +327,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return assetEventAuthorizer.authorise(realm, auth, subscription);
         });
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
                 identityService,
@@ -335,7 +336,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             )
         );
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new ConsoleResourceImpl(container.getService(TimerService.class),
                 identityService,
                 this,
@@ -392,26 +393,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         String sessionKey = ClientEventService.getSessionKey(exchange);
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                         boolean isAttributeRead = !TextUtil.isNullOrEmpty(attributeName);
-                        boolean isAnonymous = authContext == null;
-                        boolean isSuperUser = authContext != null && authContext.isSuperUser();
-                        boolean isRestricted = identityService.getIdentityProvider().isRestrictedUser(authContext);
-
-                        Access access = isAnonymous ? PUBLIC : isRestricted ? PROTECTED : PRIVATE;
-
-                        // Superuser can get all, User must have role
-                        if (!isSuperUser && access != PUBLIC && !authContext.hasResourceRole(ClientRole.READ_ASSETS.getValue(), authContext.getClientId())) {
-                            LOG.fine("User must have '" + ClientRole.READ_ASSETS.getValue() + "' role to read assets and/or attributes");
-                            return;
-                        }
+                        String requestRealm = exchange.getIn().getHeader(Constants.REALM_PARAM_NAME, String.class);
 
                         AssetQuery assetQuery = new AssetQuery()
                             .ids(assetId)
-                            .select(new Select().excludePath(false).excludeParentInfo(true))
-                            .access(access);
+                            .select(new Select().excludePath(false).excludeParentInfo(true));
 
-                        if (access == PROTECTED) {
-                            assetQuery.userIds(authContext.getUserId());
-                        }
+                        assetQuery = prepareAssetQuery(assetQuery, authContext, requestRealm);
 
                         Asset<?> asset = find(assetQuery);
 
@@ -422,10 +410,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                             if (isAttributeRead) {
                                 Attribute<?> assetAttribute = asset.getAttributes().get(attributeName).orElse(null);
                                 if (assetAttribute != null) {
-                                    response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
+
+                                    // Check access constraints
+                                    if (assetQuery.access == null
+                                        || assetQuery.access == PRIVATE
+                                        || (assetQuery.access == PUBLIC && assetAttribute.getMetaValue(ACCESS_PUBLIC_READ).orElse(false))
+                                        || (assetQuery.access == PROTECTED && assetAttribute.getMetaValue(ACCESS_RESTRICTED_READ).orElse(false))) {
+                                        response = new AttributeEvent(assetId, attributeName, assetAttribute.getValue().orElse(null), assetAttribute.getTimestamp().orElse(0L));
+                                    }
                                 }
                             } else {
-                                response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+
+                                // Check access constraints
+                                if (assetQuery.access != PUBLIC  || asset.isAccessPublicRead()) {
+                                    response = new AssetEvent(AssetEvent.Cause.READ, asset, null);
+                                }
                             }
 
                             if (response != null) {
@@ -834,19 +833,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 updatedAsset = gatewayService.mergeGatewayAsset(gatewayId, asset);
             } else {
                 updatedAsset = em.merge(asset);
-                if (existingAsset == null) {
-                    if (LOG.isLoggable(Level.FINER)) {
-                        LOG.finer("Asset created: " + updatedAsset.toStringAll());
-                    } else {
-                        LOG.fine("Asset created: " + updatedAsset);
-                    }
-                } else {
-                    if (LOG.isLoggable(Level.FINER)) {
-                        LOG.finer("Asset updated: new = " + updatedAsset.toStringAll() + ", old = " + existingAsset.toStringAll());
-                    } else {
-                        LOG.fine("Asset updated: " + updatedAsset);
-                    }
-                }
             }
 
             if (user != null) {
@@ -947,10 +933,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
 
                 assets.sort(Comparator.comparingInt((Asset<?> asset) -> asset.getPath() == null ? 0 : asset.getPath().length).reversed());
-                assets.forEach(asset -> {
-                    em.remove(asset);
-                    LOG.fine("Asset deleted: " + asset);
-                });
+                assets.forEach(em::remove);
                 em.flush();
             });
         } catch (Exception e) {
@@ -1342,6 +1325,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     return;
                 }
 
+                if (LOG.isLoggable(Level.FINER)) {
+                    LOG.finer("Asset created: " + loadedAsset.toStringAll());
+                } else {
+                    LOG.fine("Asset created: " + loadedAsset);
+                }
+
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.CREATE, loadedAsset, null)
                 );
@@ -1369,6 +1358,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 // Fully load the asset
                 loadedAsset = find(new AssetQuery().ids(asset.getId()));
+
+                if (loadedAsset == null) {
+                    return;
+                }
+
+                LOG.finer("Asset updated: " + persistenceEvent);
 
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.UPDATE, loadedAsset, updatedProperties)
@@ -1401,10 +1396,18 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                                     newOrModifiedAttribute.getValue().orElse(null),
                                     newOrModifiedAttribute.getTimestamp().orElse(0L))
                                     .setParentId(asset.getParentId()).setRealm(asset.getRealm())
+                                    .setAccessRestrictedRead(newOrModifiedAttribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false))
+                                    .setAccessPublicRead(newOrModifiedAttribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false))
                             ));
                 }
                 break;
             case DELETE:
+
+                if (LOG.isLoggable(Level.FINER)) {
+                    LOG.finer("Asset deleted: " + asset.toStringAll());
+                } else {
+                    LOG.fine("Asset deleted: " + asset);
+                }
 
                 clientEventService.publishEvent(
                     new AssetEvent(AssetEvent.Cause.DELETE, asset, null)

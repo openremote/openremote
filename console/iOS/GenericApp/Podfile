@@ -20,10 +20,11 @@ target 'GenericApp' do
 end
 
 target 'NotificationService' do
+  project 'GenericApp'
+  shared_pods
   pod 'Firebase/Messaging'
   pod 'Firebase/Crashlytics'
   pod 'Firebase/Analytics'
-  project 'GenericApp'
 end
 
 target 'ORLib' do

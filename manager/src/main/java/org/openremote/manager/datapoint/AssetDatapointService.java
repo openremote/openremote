@@ -65,7 +65,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public void init(Container container) throws Exception {
         super.init(container);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AssetDatapointResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),

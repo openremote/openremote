@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Looper
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -163,8 +164,8 @@ class GeofenceProvider(val context: Context) {
 
     private val locationUpdateCallback: LocationCallback by lazy {
         object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult?) {
-                locationResult?.lastLocation?.let {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationResult.lastLocation.let {
                     locationClient.removeLocationUpdates(this)
                     locationCallback?.accept(
                         hashMapOf(
@@ -273,7 +274,7 @@ class GeofenceProvider(val context: Context) {
             locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
             locationRequest.numUpdates = 1
 
-            locationClient.requestLocationUpdates(locationRequest, locationUpdateCallback, null)
+            locationClient.requestLocationUpdates(locationRequest, locationUpdateCallback, Looper.getMainLooper())
         } else {
             registerPermissions(activity)
             locationCallback?.accept(

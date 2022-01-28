@@ -47,7 +47,6 @@ import {
 } from "@openremote/model";
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
-import { MDCMenu } from "@material/menu";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -507,6 +506,15 @@ const style = css`
         border-radius: 50% !important;
     }
 
+    #select-searchable {
+        background-color: transparent; 
+        border: 1px solid var(--or-app-color5); 
+        margin: 16px 16px 8px; 
+        width: calc(100% - 66px); 
+        border-radius: 4px; 
+        padding: 4px 16px;
+    }
+
     .mdc-text-field__input::-webkit-calendar-picker-indicator {
         display: block;
     }
@@ -665,6 +673,14 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public autoSelect?: boolean;
 
+    /* SELECT SEARCH PROPERTIES BELOW */
+    
+    @property({type: String})
+    public searchableValue?: string;
+
+    @property({type: Boolean})
+    public searchable?: boolean;
+
     /* STYLING PROPERTIES BELOW */
 
     @property({type: String})
@@ -820,7 +836,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = this.value || this.value === false;
-            const labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
+            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
                 case InputType.RADIO:
@@ -920,8 +936,10 @@ export class OrMwcInput extends LitElement {
                         "mdc-select--with-leading-icon": !!this.icon
                     };
 
-                    const opts = this.resolveOptions(this.options);
-
+                    let opts = this.resolveOptions(this.options);
+                    if(this.searchableValue && opts) {
+                        opts = opts.filter(([optValue, optDisplay]) => optDisplay.toLowerCase().includes((this.searchableValue as string).toLowerCase()));
+                    }
                     const itemClickHandler: (ev: MouseEvent, item: ListItem) => void = (ev, item) => {
                         const value = item.value;
 
@@ -971,7 +989,7 @@ export class OrMwcInput extends LitElement {
                     return html`
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
-                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
+                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(opts![e.detail.index]) ? opts![e.detail.index][0] : opts![e.detail.index])}">
                                 <div class="mdc-select__anchor" role="button"
                                      aria-haspopup="listbox"
                                      aria-expanded="false"
@@ -1002,25 +1020,32 @@ export class OrMwcInput extends LitElement {
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
                                 <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}">
-                                ${getListTemplate(
-                                    this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                    opts ? html`${opts.map(([optValue, optDisplay], index) => {
-                                        return getItemTemplate(
-                                            {
-                                                text: optDisplay,
-                                                value: optValue                                                
-                                            },
-                                            index,
-                                            Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
-                                            this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                            false,    
-                                            itemClickHandler
-                                        )
-                                    })}` : html``,
-                                    false,
-                                    undefined
-                                )}
-                            </div>
+                                    ${this.searchable ? html`
+                                        <input class="mdc-text-field__input" 
+                                            autofocus
+                                            id="select-searchable" 
+                                            type="text"
+                                            @keyup="${(e:MDCSelectEvent) =>  this.searchableValue = (e.target as HTMLInputElement).value}"/>   
+                                    ` : ``}
+                                    ${getListTemplate(
+                                        this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                        opts ? html`${opts.map(([optValue, optDisplay], index) => {
+                                            return getItemTemplate(
+                                                {
+                                                    text: optDisplay,
+                                                    value: optValue                                                
+                                                },
+                                                index,
+                                                Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
+                                                this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                                false,    
+                                                itemClickHandler
+                                            )
+                                        })}` : html``,
+                                        false,
+                                        undefined
+                                    )}
+                                </div>
                                 ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
                                         ${showValidationMessage ? this.errorMessage || this.validationMessage : this.helperText}
@@ -1589,6 +1614,14 @@ export class OrMwcInput extends LitElement {
                 }
             }
             this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue, enterPressed));
+        }
+
+        if(this.searchable) {
+            const searchableElement = this.shadowRoot?.getElementById('select-searchable');
+            if(searchableElement) {
+                this.searchableValue = undefined;
+                (searchableElement as HTMLInputElement).value = "";
+            }
         }
     }
 

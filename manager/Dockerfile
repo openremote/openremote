@@ -5,6 +5,7 @@ ARG GIT_COMMIT=unknown
 
 LABEL git-commit=$GIT_COMMIT
 
+USER root
 ENV JAVA_TOOL_OPTIONS ${JAVA_TOOL_OPTIONS}
 
 ENV TZ ${TZ:-Europe/Amsterdam}
@@ -38,6 +39,7 @@ ENV KEYCLOAK_PORT ${KEYCLOAK_PORT:-8080}
 ENV KEYCLOAK_GRANT_FILE ${KEYCLOAK_GRANT_FILE:-/deployment/manager/keycloak.json}
 ENV APP_DOCROOT ${APP_DOCROOT:-/opt/web}
 ENV CUSTOM_APP_DOCROOT ${CUSTOM_APP_DOCROOT:-/deployment/manager/app}
+ENV CONSOLE_APP_CONFIG_DOCROOT ${CONSOLE_APP_CONFIG_DOCROOT:-/deployment/manager/consoleappconfig}
 ENV PROVISIONING_DOCROOT ${PROVISIONING_DOCROOT:-/deployment/manager/provisioning}
 ENV ROOT_REDIRECT_PATH ${ROOT_REDIRECT_PATH:-/manager}
 ENV MAP_TILES_PATH ${MAP_TILES_PATH:-/deployment/map/mapdata.mbtiles}
@@ -57,6 +59,8 @@ ENV MANAGER_JAVA_OPTS ${MANAGER_JAVA_OPTS:--Xms400m -Xmx400m \
     -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m \
     -XX:MaxDirectMemorySize=25m -XX:NativeMemoryTracking=summary \
     -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof}
+
+RUN mkdir -p /deployment/manager/extensions
 
 WORKDIR /opt/app
 

@@ -633,8 +633,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         and: "the local manager should have sent an asset read request"
         conditions.eventually {
             assert clientReceivedMessages.size() >= 1
-            assert clientReceivedMessages[0].startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX)
-            assert clientReceivedMessages[0].contains("read-assets")
+            assert clientReceivedMessages.find {it.startsWith(EventRequestResponseWrapper.MESSAGE_PREFIX) && it.contains("read-assets")} != null
         }
 
         when: "the previously received messages are cleared"

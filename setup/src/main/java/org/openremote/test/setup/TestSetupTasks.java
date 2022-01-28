@@ -26,30 +26,10 @@ import org.openremote.model.Container;
 
 import java.util.List;
 
-import static org.openremote.container.util.MapAccess.getBoolean;
-
 /**
  * Test setup tasks.
  */
 public class TestSetupTasks extends EmptySetupTasks {
-
-    public static final String SETUP_CREATE_USERS = "SETUP_CREATE_USERS";
-    public static final String SETUP_CREATE_ASSETS = "SETUP_CREATE_ASSETS";
-    public static final String SETUP_CREATE_RULES = "SETUP_CREATE_RULES";
-
-    static boolean isImportUsers(Container container) {
-        return isImportAssets(container)
-            || getBoolean(container.getConfig(), SETUP_CREATE_USERS, container.isDevMode());
-    }
-
-    static boolean isImportAssets(Container container) {
-        return isImportRules(container)
-            || getBoolean(container.getConfig(), SETUP_CREATE_ASSETS, container.isDevMode());
-    }
-
-    static boolean isImportRules(Container container) {
-        return getBoolean(container.getConfig(), SETUP_CREATE_RULES, container.isDevMode());
-    }
 
     @Override
     public List<Setup> createTasks(Container container) {
@@ -58,17 +38,9 @@ public class TestSetupTasks extends EmptySetupTasks {
         // Basic vs Keycloak identity provider
         if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
 
-            if (isImportUsers(container)) {
-                addTask(new KeycloakTestSetup(container));
-            }
-
-            if (isImportAssets(container)) {
-                addTask(new ManagerTestSetup(container));
-            }
-
-            if (isImportRules(container)) {
-                addTask(new RulesTestSetup(container));
-            }
+            addTask(new KeycloakTestSetup(container));
+            addTask(new ManagerTestSetup(container));
+            //addTask(new RulesTestSetup(container));
 
             addTask(new ManagerTestAgentSetup(container));
         }
