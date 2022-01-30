@@ -228,12 +228,13 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 LOG.fine("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
             .onFailedAttempt((execution) ->
                 LOG.fine("Re-connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri()))
-            .onRetry((execution) ->
-                LOG.fine("Re-connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri()))
             .withMaxRetries(Integer.MAX_VALUE)
             .build();
 
         connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
+
+            LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
+
             boolean success = doConnect().get();
 
             if (connectRetry.isCancelled()) {

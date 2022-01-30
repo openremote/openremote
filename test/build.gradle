@@ -24,6 +24,10 @@ dependencies {
     }
 }
 
+tasks.withType(Test) {
+    environment("LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
+}
+
 test {
     workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
     outputs.upToDateWhen {false}
