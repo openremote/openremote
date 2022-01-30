@@ -75,13 +75,6 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
-        and: "the IO client reconnect time is set low for test purposes"
-        def initialMillis = AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS
-        def maxMillis = AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS
-        def jitterMillis = AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS
-        AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = 500
-        AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS = 500
-        AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS = 0
 
         and: "the container is started"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -216,9 +209,6 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         }
 
         cleanup: "the server should be stopped"
-        AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = initialMillis
-        AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS = maxMillis
-        AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS = jitterMillis
         if (client != null) {
             client.disconnect()
         }

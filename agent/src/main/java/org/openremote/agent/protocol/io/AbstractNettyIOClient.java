@@ -211,15 +211,27 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
-        scheduleDoConnect();
+        scheduleDoConnect(true);
     }
 
-    protected void scheduleDoConnect() {
-        RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
-            .withJitter(Duration.ofMillis(Math.max(50, RECONNECT_DELAY_JITTER_MILLIS)))
-            .withBackoff(Duration.ofMillis(Math.max(50, RECONNECT_DELAY_INITIAL_MILLIS)), Duration.ofMillis(Math.max(100, RECONNECT_DELAY_MAX_MILLIS)))
-            .build();
+    protected void scheduleDoConnect(boolean immediate) {
+        long jitter = immediate ? 50 : Math.max(50, RECONNECT_DELAY_JITTER_MILLIS);
+        long delay = immediate ? 50 : Math.max(50, RECONNECT_DELAY_INITIAL_MILLIS);
+        long maxDelay = immediate ? 51 : Math.max(delay+1, Math.max(50, RECONNECT_DELAY_MAX_MILLIS));
 
+        RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
+            .withJitter(Duration.ofMillis(jitter))
+            .withDelay(Duration.ofMillis(delay))
+            .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
+            .handle(RuntimeException.class)
+            .onRetryScheduled((execution) ->
+                LOG.fine("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
+            .onFailedAttempt((execution) ->
+                LOG.fine("Re-connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri()))
+            .onRetry((execution) ->
+                LOG.fine("Re-connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri()))
+            .withMaxRetries(Integer.MAX_VALUE)
+            .build();
 
         connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
             boolean success = doConnect().get();
@@ -235,6 +247,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             } else {
                 // Cleanup resources ready for next connection attempt
                 doDisconnect();
+                execution.recordFailure(new RuntimeException("Connection attempt failed"));
             }
         });
     }
@@ -274,7 +287,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                     LOG.info("Connection closed un-expectedly: " + getClientUri());
                     onConnectionStatusChanged(ConnectionStatus.CONNECTING);
                     doDisconnect();
-                    scheduleDoConnect();
+                    scheduleDoConnect(false);
                 }
             }
         });
@@ -313,7 +326,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                 return;
             }
 
-            LOG.finest("Disconnecting IO client: " + getClientUri());
+            LOG.fine("Disconnecting IO client: " + getClientUri());
             onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
@@ -321,8 +334,9 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             connectRetry.cancel(false);
             try {
                 connectRetry.get();
-            } catch (InterruptedException | ExecutionException e) {
-                LOG.log(Level.INFO, "Failed to wait for connection retry future: " + getClientUri());
+            } catch (CancellationException | InterruptedException | ExecutionException ignored) {
+            } catch (Exception e) {
+                LOG.log(Level.FINE, "Failed to wait for connection retry future: " + getClientUri());
             }
             connectRetry = null;
         }
