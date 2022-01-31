@@ -635,12 +635,12 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
             selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
         }
-        const configStr = window.localStorage.getItem('OrAssetConfig')
+        const config: any = manager.console.retrieveData("OrAssetConfig");
         const viewSelector = asset.id ? asset.id : window.location.hash;
-        if(configStr) {
-            const config = JSON.parse(configStr);
+
+        if (config) {
             const view = config.views[viewSelector];
-            if(view) {
+            if (view) {
                 selectedAttributes = [...view]
             }
         }
@@ -718,11 +718,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 return arr;
             });
 
-            let config;
-            const configStr = window.localStorage.getItem('OrAssetConfig')
-            if(configStr) {
-                config = JSON.parse(configStr);
-                if(asset.id) {
+            let config: any = manager.console.retrieveData("OrAssetConfig");
+
+            if (config) {
+                if (asset.id) {
                     config.views[asset.id] = selectedAttributes;
                 }
             } else {
@@ -732,16 +731,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     }
                 }
             }
-           
 
-            const message = {
-                provider: "STORAGE",
-                action: "STORE",
-                key: "OrAssetConfig",
-                value: JSON.stringify(config)
-    
-            }
-            manager.console._doSendProviderMessage(message)
+            manager.console.storeData("OrAssetConfig", config);
             window.setTimeout(() => OrAssetViewer.generateGrid(hostElement.shadowRoot), 0);
         };
 

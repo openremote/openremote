@@ -123,7 +123,6 @@ export const jsonFormsInputTemplateProvider: (fallback: ValueInputProvider) => V
     const label = options.label;
 
     // Agent link needs some special handling as we need an agent picker no matter what
-    return fallback;
     if (valueDescriptor.name === WellknownValueTypes.AGENTLINK) {
 
         // Apply a custom UI schema to remove the outer VerticalLayout
