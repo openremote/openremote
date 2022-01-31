@@ -1,6 +1,10 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
+plugins {
+    id 'com.adarshr.test-logger' version '3.1.0'
+}
+
 apply plugin: "java-library"
 apply plugin: "groovy"
 
@@ -54,9 +58,9 @@ test {
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat
 
-        afterTest { desc, result ->
-            logger.quiet "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-        }
+//        afterTest { desc, result ->
+//            logger.quiet "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
+//        }
 
         afterSuite { desc, result ->
             if (!desc.parent) { // will match the outermost suite

@@ -29,6 +29,7 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -109,6 +110,7 @@ public class WebsocketAdapter extends Endpoint {
         return () -> {
             try {
                 session.close();
+            } catch (RejectedExecutionException ignored) {
             } catch (IOException ignored) {
                 LOG.log(Level.INFO, "Failed to close client session: " + session.getId());
             }
