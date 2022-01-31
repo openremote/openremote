@@ -33,7 +33,7 @@ public class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
         " supplied a new header will be added with the key name and specified string value")
     protected Map<String, List<String>> headers;
     @JsonPropertyDescription("A JSON object of query parameters to be added to HTTP request URL; the key represents the name of the query parameter and for each string value" +
-        " supplied a new query parameter will be added with the key name and specified string value (e.g. 'https://..../?test=1&test2'")
+        " supplied a new query parameter will be added with the key name and specified string value (e.g. 'https://..../?test=1&test=2')")
     protected Map<String, List<String>> queryParameters;
     @JsonPropertyDescription("Indicates that this HTTP request is used to update the linked attribute; this value indicates how frequently the HTTP request is made in order" +
         " to update the linked attribute value")
