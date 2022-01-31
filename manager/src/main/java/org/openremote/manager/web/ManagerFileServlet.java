@@ -61,7 +61,7 @@ public class ManagerFileServlet extends FileServlet {
         {
             put("image/png", 60 * 60 * 12); // 12 hours
             put("image/jpg", 60 * 60 * 12); // 12 hours
-            put("text/html", 60 * 60 * 12); // 12 hours
+            put("text/html", 0); // No cache
             put("text/xml", 1800);
             put("text/css", 1800);
             put("text/javascript", 60 * 60 * 12); // 12 hours
