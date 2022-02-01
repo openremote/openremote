@@ -382,7 +382,7 @@ export class OrAttributeCard extends LitElement {
                             }
                         ],
                         undefined,
-                        (option: string | string[]) => this.handleMenuSelect(option as ContextMenuOption))}
+                        (option) => this.handleMenuSelect(option as ContextMenuOption))}
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">

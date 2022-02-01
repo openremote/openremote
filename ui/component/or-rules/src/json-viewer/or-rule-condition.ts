@@ -188,7 +188,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
                         getWhenTypesMenu(this.config, this.assetInfos),
                         type,
-                        (values: string[] | string) => this.type = values as ConditionType)}
+                        (value) => this.type = value as ConditionType)}
                 </div>
             `;
             }

@@ -504,7 +504,7 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     @property({type: Boolean})
     public disableButton?: boolean;
 
-    @property({type: Boolean})
+    @property({type: Boolean, attribute: true})
     public disableSubscribe: boolean = false;
 
     @property({type: Boolean})

@@ -24,7 +24,7 @@ export interface ListItem {
     text?: string;
     translate?: boolean;
     secondaryText?: string;
-    value: string;
+    value: any;
     data?: any;
     styleMap?: {[style: string]: string};
 }
@@ -93,7 +93,7 @@ export function getListTemplate(type: ListType, content: TemplateResult, isTwoLi
     `;
 }
 
-export function getItemTemplate(item: ListItem | null, index: number, selectedValues: string | string[] | undefined, type: ListType, translate?: boolean, itemClickCallback?: (e: MouseEvent, item: ListItem) => void): TemplateResult {
+export function getItemTemplate(item: ListItem | null, index: number, selectedValues: any[], type: ListType, translate?: boolean, itemClickCallback?: (e: MouseEvent, item: ListItem) => void): TemplateResult {
 
     if (item === null) {
         // Divider
@@ -103,7 +103,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
     const listItem = item as ListItem;
     const multiSelect = type === ListType.MULTI_CHECKBOX || type === ListType.MULTI_TICK;
     const value = listItem.value;
-    const isSelected = type !== ListType.PLAIN && (selectedValues === value || (Array.isArray(selectedValues) && selectedValues.length > 0 && ((multiSelect && selectedValues.some((v) => v === value)) || (!multiSelect && selectedValues[0] === value))));
+    const isSelected = type !== ListType.PLAIN && selectedValues.length > 0 && selectedValues.some((v) => v === value);
     const text = listItem.text !== undefined ? listItem.text : listItem.value;
     const secondaryText = listItem.secondaryText;
     let role: string | undefined = "menuitem";
@@ -280,7 +280,7 @@ export class OrMwcList extends LitElement {
     }
 
     protected render() {
-        const content = !this.listItems ? html`` : html`${this.listItems.map((listItem, index) => getItemTemplate(listItem, index, this.values, this.type))}`;
+        const content = !this.listItems ? html`` : html`${this.listItems.map((listItem, index) => getItemTemplate(listItem, index, (Array.isArray(this.values) ? this.values : this.values ? [this.values] : []), this.type))}`;
         const isTwoLine = this.listItems && this.listItems.some((item) => item && !!item.secondaryText);
         return getListTemplate(this.type, content, isTwoLine, undefined, (ev) => this._onSelected(ev));
     }

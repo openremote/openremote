@@ -312,7 +312,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                             html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
                             getActionTypesMenu(this.config, this.assetInfos),
                             action.action,
-                            (values: string[] | string) => this.setActionType(actions, action, values as string))}
+                            (value) => this.setActionType(actions, action, value as string))}
                     </div>
                 `;
             }
@@ -362,7 +362,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                                 html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                                 getActionTypesMenu(this.config, this.assetInfos),
                                 undefined,
-                                (values: string[] | string) => this.addAction(values as string))}
+                                (value) => this.addAction(value as string))}
                             <span>${i18next.t("rulesEditorAddAction")}</span>
                         </span>
                     ` : ``}
