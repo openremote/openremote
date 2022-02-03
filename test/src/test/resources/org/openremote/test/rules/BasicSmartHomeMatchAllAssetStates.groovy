@@ -89,19 +89,6 @@ rules.add()
         })
 
 rules.add()
-        .name("Parent Type Residence")
-        .when(
-        { facts ->
-            !facts.matchFirst("Parent Type Residence").isPresent() &&
-                    facts.matchAssetState(new AssetQuery().parents(BuildingAsset))
-                            .findFirst().isPresent()
-        })
-        .then(
-        { facts ->
-            facts.put("Parent Type Residence", "fired")
-        })
-
-rules.add()
         .name("Asset Type Room")
         .when(
         { facts ->
@@ -119,10 +106,15 @@ rules.add()
         .name("Living Room as Parent")
         .when(
         { facts ->
-            !facts.matchFirst("Living Room as Parent").isPresent() &&
-                    facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.parentName == "Living Room"})
-                            .findFirst().isPresent()
+
+            facts.matchAssetState(new AssetQuery().names("Living Room")).findFirst()
+                    .map{livingRoomState ->
+                            !facts.matchFirst("Living Room as Parent").isPresent() &&
+                                    facts.matchAssetState(new AssetQuery())
+                                            .filter({ assetState -> assetState.parentId == livingRoomState.id})
+                                            .findFirst().isPresent()
+                    }.orElse(false)
+
         })
         .then(
         { facts ->

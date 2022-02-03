@@ -19,20 +19,9 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetDescriptor;
-import org.openremote.model.query.AssetQuery;
-
 public class ParentPredicate {
 
     public String id;
-    @JsonSerialize(converter = AssetQuery.AssetClassToStringConverter.class)
-    @JsonDeserialize(converter = AssetQuery.StringToAssetClassConverter.class)
-    public Class<? extends Asset<?>> type;
-    public String name;
-    public boolean noParent;
 
     public ParentPredicate() {
     }
@@ -41,31 +30,8 @@ public class ParentPredicate {
         this.id = id;
     }
 
-    public ParentPredicate(boolean noParent) {
-        this.noParent = noParent;
-    }
-
     public ParentPredicate id(String id) {
         this.id = id;
-        return this;
-    }
-
-    public ParentPredicate type(Class<? extends Asset<?>> type) {
-        this.type = type;
-        return this;
-    }
-
-    public ParentPredicate type(AssetDescriptor<?> type) {
-        return type(type.getType());
-    }
-
-    public ParentPredicate name(String name) {
-        this.name = name;
-        return this;
-    }
-
-    public ParentPredicate noParent(boolean noParent) {
-        this.noParent = noParent;
         return this;
     }
 
@@ -73,8 +39,6 @@ public class ParentPredicate {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
-            ", type='" + type + '\'' +
-            ", noParent=" + noParent +
             '}';
     }
 }

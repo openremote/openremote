@@ -36,62 +36,26 @@ import java.util.stream.Collectors;
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
  */
-// TODO: Add AssetQuery support for arbitrary attribute property path and value (e.g. attributes.consoleProviders.geofence.version == "ORConsole")
+// TODO: Add AssetQuery support for arbitrary attribute property path and value (e.g. consoleProviders.geofence.version == "ORConsole")
 public class AssetQuery implements Serializable {
 
     public static class Select {
-
+        protected static final String[] EMPTY_ATTRIBUTES = new String[0];
         public String[] attributes;
-        public boolean excludePath;
-        public boolean excludeAttributes;
-        public boolean excludeParentInfo;
-
-        public static Select selectExcludePathAndParentInfo() {
-            return new Select()
-                    .excludeAttributes(false)
-                    .excludePath(true)
-                    .excludeParentInfo(true);
-        }
-
-        public static Select selectExcludePathAndAttributes() {
-            return new Select()
-                    .excludePath(true)
-                    .excludeAttributes(true);
-        }
-
-        public static Select selectExcludeAll() {
-            return new Select()
-                    .excludeAttributes(true)
-                    .excludePath(true)
-                    .excludeParentInfo(true);
-        }
 
         public Select attributes(String... attributeNames) {
             this.attributes = attributeNames;
             return this;
         }
 
-        public Select excludeAttributes(boolean exclude) {
-            this.excludeAttributes = exclude;
-            return this;
-        }
-
-        public Select excludePath(boolean exclude) {
-            this.excludePath = exclude;
-            return this;
-        }
-
-        public Select excludeParentInfo(boolean exclude) {
-            this.excludeParentInfo = exclude;
+        public Select excludeAttributes() {
+            this.attributes = EMPTY_ATTRIBUTES;
             return this;
         }
 
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                    "excludeAttributes=" + excludeAttributes +
-                    ", excludePath=" + excludePath +
-                    ", excludeParentInfo=" + excludeParentInfo +
                     ", attributeNames=" + Arrays.toString(attributes) +
                     '}';
         }
@@ -300,25 +264,6 @@ public class AssetQuery implements Serializable {
             return this;
         }
         this.parents = Arrays.stream(ids).map(ParentPredicate::new).toArray(ParentPredicate[]::new);
-        return this;
-    }
-
-    @SafeVarargs
-    public final AssetQuery parents(Class<? extends Asset<?>>...assetTypes) {
-        if (assetTypes == null || assetTypes.length == 0) {
-            this.names = null;
-            return this;
-        }
-        this.parents = Arrays.stream(assetTypes).map(assetType -> new ParentPredicate().type(assetType)).toArray(ParentPredicate[]::new);
-        return this;
-    }
-
-    public AssetQuery parents(AssetDescriptor<?>... assetTypes) {
-        if (assetTypes == null || assetTypes.length == 0) {
-            this.names = null;
-            return this;
-        }
-        this.parents = Arrays.stream(assetTypes).map(assetType -> new ParentPredicate().type(assetType)).toArray(ParentPredicate[]::new);
         return this;
     }
 

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.*;
 
@@ -116,5 +117,14 @@ public class MetaMap extends NamedMap<MetaItem<?>> {
     public <T> void set(MetaItemDescriptor<T> descriptor, T value) {
         MetaItem<T> metaItem = get(descriptor).orElse(new MetaItem<>(descriptor, null));
         metaItem.setValue(value);
+    }
+
+    /**
+     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonTypeDescriptor} uses
+     * {@link Class#getDeclaredMethod} to find it...
+     */
+    @Override
+    public boolean equals(@Nullable Object object) {
+        return super.equals(object);
     }
 }

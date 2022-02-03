@@ -125,7 +125,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         globalRuleset.id == rulesetId
         globalRuleset.version > 0
         globalRuleset.createdOn.time < System.currentTimeMillis()
-        globalRuleset.lastModified.time > lastModified.time
+        globalRuleset.lastModified.time >= lastModified.time
         globalRuleset.name == "Renamed test global definition"
         globalRuleset.rules == "SomeRulesCodeModified"
 

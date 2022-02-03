@@ -151,9 +151,9 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         // Look for a group asset with a child type of console in the realm root
         GroupAsset consoleParent = (GroupAsset) assetStorageService.find(
             new AssetQuery()
-                .select(AssetQuery.Select.selectExcludeAll())
+                .select(new AssetQuery.Select().excludeAttributes())
                 .names(CONSOLE_PARENT_ASSET_NAME)
-                .parents(new ParentPredicate(true))
+                .parents(new ParentPredicate(null))
                 .types(GroupAsset.class)
                 .tenant(new TenantPredicate(tenant.getRealm()))
                 .attributes(new AttributePredicate("childAssetType", new StringPredicate(ConsoleAsset.DESCRIPTOR.getName())))

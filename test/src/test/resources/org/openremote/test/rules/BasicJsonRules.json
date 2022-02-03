@@ -73,8 +73,7 @@
             "assets": {
               "parents": [
                 {
-                  "type": "BuildingAsset",
-                  "name": "Apartment 2"
+                  "id": "3jm23JN24m6Yk9oviNro3f"
                 }
               ],
               "types": [
@@ -91,8 +90,7 @@
             "assets": {
               "parents": [
                 {
-                  "type": "BuildingAsset",
-                  "name": "Apartment 2"
+                  "id": "3jm23JN24m6Yk9oviNro3f"
                 }
               ],
               "types": [
@@ -117,8 +115,7 @@
             "assets": {
               "parents": [
                 {
-                  "type": "BuildingAsset",
-                  "name": "Apartment 2"
+                  "id": "3jm23JN24m6Yk9oviNro3f"
                 }
               ],
               "types": [

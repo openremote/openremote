@@ -83,8 +83,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
-            assertRulesFired(smartHomeEngine, 8)
-            assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Parent Type Residence", "Asset Type Room", "Boolean attributes", "String attributes", "Number value types"])
+            assertRulesFired(smartHomeEngine, 7)
+            assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Asset Type Room", "Boolean attributes", "String attributes", "Number value types"])
         }
 
         when: "an attribute event occurs"
@@ -103,8 +103,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
-            assertRulesFired(smartHomeEngine, 8)
-            assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Parent Type Residence", "Asset Type Room", "Boolean Attributes", "String attributes", "Number value types"])
+            assertRulesFired(smartHomeEngine, 7)
+            assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Asset Type Room", "Boolean Attributes", "String attributes", "Number value types"])
         }
 
         cleanup: "the static rules time variable is reset"
