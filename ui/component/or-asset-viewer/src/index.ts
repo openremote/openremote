@@ -15,7 +15,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import manager, {subscribe, Util} from "@openremote/core";
 import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
@@ -30,7 +30,8 @@ import {
     SharedEvent,
     WellknownAssets,
     WellknownAttributes,
-    WellknownMetaItems
+    WellknownMetaItems,
+    AssetModelUtil
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
@@ -855,9 +856,7 @@ export function getField(name: string, itemConfig?: InfoPanelItemConfig, content
 async function getAssetNames(ids: string[]): Promise<string[]> {
     const response = await manager.rest.api.AssetResource.queryAssets({
         select: {
-            excludePath: true,
-            excludeParentInfo: true,
-            excludeAttributes: true
+            attributes: []
         },
         ids: ids
     });
@@ -874,10 +873,6 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
 
     try {
         response = await manager.rest.api.AssetResource.queryAssets({
-            select: {
-                excludePath: true,
-                excludeParentInfo: true
-            },
             parents: [
                 {
                     id: id

@@ -21,6 +21,7 @@
     "modelWatch": "npx orutil watch",
     "build": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack --mode production",
     "serve": "npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
+    "serveNoModelBuild": "npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

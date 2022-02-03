@@ -15,9 +15,10 @@ import {
     SharedEvent,
     ValueDescriptor,
     WellknownMetaItems,
-    WellknownValueTypes
+    WellknownValueTypes,
+    AssetModelUtil
 } from "@openremote/model";
-import manager, {AssetModelUtil, DefaultColor4, subscribe, Util} from "@openremote/core";
+import manager, {DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-loading-wrapper";
 import {OrLoadingWrapper} from "@openremote/or-components/or-loading-wrapper";

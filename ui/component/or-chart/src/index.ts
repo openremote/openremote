@@ -9,9 +9,8 @@ import {
 import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {Asset, Attribute, AttributeRef, DatapointInterval, WellknownMetaItems, ReadAssetEvent, AssetEvent, ValueDatapoint, AssetQuery} from "@openremote/model";
+import {AssetModelUtil, Asset, Attribute, AttributeRef, DatapointInterval, WellknownMetaItems, ReadAssetEvent, AssetEvent, ValueDatapoint, AssetQuery} from "@openremote/model";
 import manager, {
-    AssetModelUtil,
     DefaultColor2,
     DefaultColor3,
     DefaultColor4,
@@ -727,10 +726,6 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         if (!assetIds.every(id => !!this.assets.find(asset => asset.id === id))) {
             const query = {
-                select: {
-                    excludePath: true,
-                    excludeParentInfo: true
-                },
                 ids: assetIds
             } as AssetQuery;
 

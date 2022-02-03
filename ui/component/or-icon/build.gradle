@@ -1,5 +1,9 @@
 buildDir = "dist"
 
+task copyMdiFont(type: Exec) {
+    commandLine npmCommand("npm"), "run-script", "copyMdiFont"
+}
+
 task clean() {
     doLast {
         delete "dist"
@@ -12,4 +16,11 @@ task prepareUi() {
 
 task publishUi() {
     dependsOn clean, npmPublish
+}
+
+task installDist(type: Copy) {
+    dependsOn copyMdiFont
+    resolveTask(":manager:installDist").dependsOn it
+    from "${buildDir}/Material Design Icons"
+    into "${resolveProject(':manager').projectDir}/src/web/shared/fonts/Material Design Icons"
 }

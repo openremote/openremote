@@ -10,13 +10,14 @@ import {
     RuleActionNotification,
     RuleActionUnion,
     RuleRecurrence,
-    WellknownAssets
+    WellknownAssets,
+    AssetModelUtil
 } from "@openremote/model";
 import i18next from "i18next";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
 import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-menu";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
-import {AssetModelUtil, Util} from "@openremote/core";
+import {Util} from "@openremote/core";
 import "./or-rule-action-attribute";
 import "./or-rule-action-notification";
 import {translate} from "@openremote/or-translate";

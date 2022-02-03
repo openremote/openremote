@@ -183,8 +183,6 @@ export class PageMap extends Page<MapStateKeyed> {
             },
             select: {
                 attributes: [WellknownAttributes.LOCATION],
-                excludeParentInfo: true,
-                excludePath: true
             },
             attributes: {
                 items: [
