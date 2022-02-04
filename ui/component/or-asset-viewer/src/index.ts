@@ -45,7 +45,7 @@ import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PanelConfig {
-    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results";
+    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers";
     title?: string;
     hide?: boolean;
     hideOnMobile?: boolean;
@@ -291,7 +291,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
     }
 
-    if (panelConfig && panelConfig.type === "info") {
+    if (!panelConfig) return undefined;
+
+    if (panelConfig.type === "info") {
 
         // This type of panel shows attributes and/or properties of the asset
         const infoConfig = panelConfig as InfoPanelConfig;
@@ -359,7 +361,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         })}`;
     }
 
-    if (panelConfig && panelConfig.type === "setup") {
+    if (panelConfig.type === "setup") {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
         
@@ -518,7 +520,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     }
 
     // This is not something that should be part of the standard asset-viewer
-    if (panelConfig && panelConfig.type === "survey") {
+    if (panelConfig.type === "survey") {
         return html``;
         // return html`
         //     <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
@@ -526,14 +528,14 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     }
 
     // This is not something that should be part of the standard asset-viewer
-    if (panelConfig && panelConfig.type === "survey-results") {
+    if (panelConfig.type === "survey-results") {
         return html``;
         // return html`
         //     <or-survey-results id="survey-results" .survey="${asset}"></or-survey-results>
         // `;
     }
 
-    if (panelConfig && panelConfig.type === "history") {
+    if (panelConfig.type === "history") {
         // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
         const historyConfig = panelConfig as HistoryPanelConfig;
         const includedAttributes = historyConfig.include ? historyConfig.include : undefined;
@@ -611,7 +613,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         `;
     }
 
-    if (panelConfig && panelConfig.type === "group") {
+    if (panelConfig.type === "group") {
 
         if (asset.type !== "GroupAsset") {
             return;
@@ -763,7 +765,18 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             `;
     }
 
-    return undefined;
+    if (panelConfig.type === "linkedUsers") {
+
+        return html`
+            <style>
+                p {
+                     color: red;
+                }
+            </style>
+            
+            <p>asdf</p>
+        `;
+    }
 }
 
 export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, itemConfig: InfoPanelItemConfig) {
@@ -980,6 +993,10 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
         },
         history: {
             type: "history"
+        },
+        linkedUsers: {
+            type: "linkedUsers",
+            title: "linkedUsers",
         }
     }
 };
@@ -1148,7 +1165,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 content = html`                
                     <div id="view-container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                         ${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-        
                             if (panelConfig.hide) {
                                 return ``;
                             }

@@ -178,6 +178,7 @@
   "matchedOfType": "Matched of type {{type}}",
   "unmatched": "Unmatched",
   "wait": "Wait",
+  "linkedUsers": "Linked users",
   "setup": "Setup",
   "selectFile": "Select file",
   "discoverAssets": "Discover assets",
