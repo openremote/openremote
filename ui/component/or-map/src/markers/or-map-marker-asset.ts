@@ -40,11 +40,6 @@ export type AttributeMarkerColoursRange = {
     colour: string;
 }
 
-// todo: could add support for selecting which attr value to show in picker label
-// export interface AssetTypeMarkerConfig {
-//     [attributeName: string]: ;
-// }
-
 @customElement("or-map-marker-asset")
 export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
