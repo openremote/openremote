@@ -168,6 +168,7 @@ ext {
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
     isCustomProject = this.&isCustomProject
+    getYarnInstallTask = this.&getYarnInstallTask
 }
 
 if (project.convention.findPlugin(JavaPluginConvention)) {

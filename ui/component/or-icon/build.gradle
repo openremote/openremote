@@ -19,7 +19,7 @@ task publishUi() {
 }
 
 task installDist(type: Copy) {
-    dependsOn copyMdiFont
+    dependsOn getYarnInstallTask(), copyMdiFont
     resolveTask(":manager:installDist").dependsOn it
     from "${buildDir}/Material Design Icons"
     into "${resolveProject(':manager').projectDir}/src/web/shared/fonts/Material Design Icons"
