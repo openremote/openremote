@@ -69,7 +69,7 @@ rules.add()
         .then(
         { facts ->
             AssetState room = facts.bound("room")
-            LOG.info("Presence detected in residence '" + room.parentName + "', room: " + room.assetName + " [" + room.id + "]")
+            LOG.info("Presence detected in room: " + room.assetName + " [" + room.id + "]")
             facts.updateAssetState(room.id, "presenceDetected", true)
         })
 
@@ -108,7 +108,7 @@ rules.add()
         .then(
         { facts ->
             AssetState room = facts.bound("room")
-            LOG.info("Presence gone in residence '" + room.parentName + "', room: " + room.assetName + " [" + room.id + "]")
+            LOG.info("Presence gone in residence room: " + room.assetName + " [" + room.id + "]")
             facts.updateAssetState(room.id, "presenceDetected", false)
         })
 
@@ -144,7 +144,7 @@ rules.add()
         .then(
         { facts ->
             AssetState room = facts.bound("room")
-            LOG.info("Motion sensor triggered, updating last presence in residence '" + room.parentName + "', room: " + room.assetName + " [" + room.id + "]")
+            LOG.info("Motion sensor triggered, updating last presence in residence room: " + room.assetName + " [" + room.id + "]")
             facts.updateAssetState(room.id, "lastPresenceDetected", facts.bound("lastPresenceTimestamp") as Double)
         })
 

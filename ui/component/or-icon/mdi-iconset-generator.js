@@ -1,3 +1,4 @@
+// Script for collating mdi svg icons (@mdi/svg) into a single JSON file
 var fs = require('fs');
 var path = require("path");
 var xpath = require('xpath');

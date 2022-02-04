@@ -402,7 +402,7 @@ export class OrHeader extends LitElement {
                         `,
                         getHeaderMenuItems(secondaryItems),
                         undefined,
-                        (values: string | string[]) => this._onSecondaryMenuSelect(values as string)) : ``}
+                        (value) => this._onSecondaryMenuSelect(value as string)) : ``}
                     </div>
                     <div id="menu-btn-mobile">
                         <button id="menu-btn" class="menu-btn" title="Menu" @click="${this._toggleDrawer}"><or-icon icon="${this._drawerOpened ? "close" : "menu"}"></or-icon></button>
@@ -460,7 +460,7 @@ export class OrHeader extends LitElement {
                         realmTemplate,
                         menuItems,
                         currentRealm ? currentRealm.realm : undefined,
-                        (values: string | string[]) => callback(values as string))}
+                        (value) => callback(value as string))}
             `;
         }
 

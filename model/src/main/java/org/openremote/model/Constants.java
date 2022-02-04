@@ -47,6 +47,7 @@ public interface Constants {
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
     String PERSISTENCE_JSON_VALUE_TYPE = "jsonb";
     String PERSISTENCE_STRING_ARRAY_TYPE = "string-array";
+    String PERSISTENCE_LTREE_TYPE = "ltree";
 
     String SETUP_EMAIL_USER = "SETUP_EMAIL_USER";
     String SETUP_EMAIL_HOST = "SETUP_EMAIL_HOST";

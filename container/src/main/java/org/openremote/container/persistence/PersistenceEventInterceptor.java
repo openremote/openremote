@@ -26,12 +26,14 @@ import org.hibernate.EmptyInterceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.model.PersistenceEvent;
 
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,16 +43,14 @@ import java.util.logging.Logger;
 public class PersistenceEventInterceptor extends EmptyInterceptor {
 
     private static final Logger LOG = Logger.getLogger(PersistenceEventInterceptor.class.getName());
-
-    protected MessageBrokerService messageBrokerService;
+    protected Consumer<PersistenceEvent<?>> eventConsumer;
     protected Set<PersistenceEvent<?>> persistenceEvents = new HashSet<>();
 
-    public void setMessageBrokerService(MessageBrokerService messageBrokerService) {
-        this.messageBrokerService = messageBrokerService;
+    public void setEventConsumer(Consumer<PersistenceEvent<?>> eventConsumer) {
+        this.eventConsumer = eventConsumer;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public boolean onSave(Object entity, Serializable id,
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
@@ -64,7 +64,6 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public boolean onFlushDirty(Object entity, Serializable id,
                                 Object[] currentState, Object[] previousState,
                                 String[] propertyNames, Type[] types)
@@ -80,7 +79,6 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void onDelete(Object entity, Serializable id,
                          Object[] state,
                          String[] propertyNames,
@@ -106,20 +104,14 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                     if (status != Status.STATUS_COMMITTED)
                         return;
 
-                    if (messageBrokerService.getProducerTemplate() == null) {
-                        // Message broker not started yet
+                    if (eventConsumer == null) {
+                        // Event consumer not set
                         return;
                     }
 
                     for (PersistenceEvent<?> persistenceEvent : persistenceEvents) {
                         try {
-                            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                                PersistenceEvent.PERSISTENCE_TOPIC,
-                                ExchangePattern.InOnly,
-                                persistenceEvent,
-                                PersistenceEvent.HEADER_ENTITY_TYPE,
-                                persistenceEvent.getEntity().getClass()
-                            );
+                            eventConsumer.accept(persistenceEvent);
                         } catch (CamelExecutionException ex) {
                             // TODO Better error handling?
                             LOG.log(Level.SEVERE, "Error dispatching: " + persistenceEvent + " - " + ex, ex);
@@ -134,10 +126,5 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
 
     @Override
     public void afterTransactionCompletion(Transaction tx) {
-    }
-
-    @Override
-    public int[] findDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
-        return super.findDirty(entity, id, currentState, previousState, propertyNames, types);
     }
 }

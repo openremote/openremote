@@ -119,10 +119,22 @@ public class DefaultMQTTHandler extends MQTTHandler {
     public void onConnect(MqttConnection connection, InterceptConnectMessage msg) {
         super.onConnect(connection, msg);
 
+        // Moquette is awful and client ID rather than socket descriptors are used everywhere so cannot distinguish
+        // between multiple connections using the same client ID
+        // Force disconnect any existing session that is using this client ID
+        clientEventService.closeSession(connection.getClientId());
+
+        // Clear existing subscriptions by sending session close message
         Map<String, Object> headers = prepareHeaders(connection);
+        headers.put(ConnectionConstants.SESSION_CLOSE, true);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
+
+        headers.remove(ConnectionConstants.SESSION_CLOSE);
         headers.put(ConnectionConstants.SESSION_OPEN, true);
+
         // Put a close connection runnable into the headers for the client event service
-        Runnable closeRunnable = () -> mqttBrokerService.forceDisconnect(connection.getClientId());
+        // Get the current session which is specific to the current connection
+        Runnable closeRunnable = mqttBrokerService.getForceDisconnectRunnable(connection.getClientId());
         headers.put(ConnectionConstants.SESSION_TERMINATOR, closeRunnable);
         messageBrokerService.getProducerTemplate().sendBodyAndHeaders(ClientEventService.CLIENT_EVENT_QUEUE, null, headers);
         LOG.fine("Connected: " + connection);

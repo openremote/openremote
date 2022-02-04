@@ -142,10 +142,6 @@ export class OrRuleActionNotification extends LitElement {
                 }
             } else {
                 const assetQuery = baseAssetQuery ? {...baseAssetQuery} : {};
-                assetQuery.select = {
-                    excludeParentInfo: true,
-                    excludePath: true
-                };
                 assetQuery.orderBy = {
                     property: AssetQueryOrderBy$Property.NAME
                 };

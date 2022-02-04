@@ -58,9 +58,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def consoleResource = (ConsoleResourceImpl)container.getService(ManagerWebService.class).apiSingletons.find {it instanceof ConsoleResourceImpl}
 
-        and: "the clock is stopped for testing purposes"
-        stopPseudoClock()
-
         and: "a mock push notification handler"
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
         mockPushNotificationHandler.isValid() >> true

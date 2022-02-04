@@ -438,7 +438,9 @@ public class ManagerTestSetup extends ManagerSetup {
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
+        apartment2Id = UniqueIdentifierGenerator.generateId(tenantBuilding.getRealm() + "Apartment 2");
         BuildingAsset apartment2 = new BuildingAsset("Apartment 2");
+        apartment2.setId(apartment2Id);
         apartment2.setParent(smartBuilding);
         apartment2.getAttributes().addOrReplace(
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(5.454053, 51.446603)),
@@ -450,7 +452,6 @@ public class ManagerTestSetup extends ManagerSetup {
                         )
         );
         apartment2 = assetStorageService.merge(apartment2);
-        apartment2Id = apartment2.getId();
 
         RoomAsset apartment2Livingroom = new RoomAsset("Living Room 2");
         apartment2Livingroom.setAccessPublicRead(true);

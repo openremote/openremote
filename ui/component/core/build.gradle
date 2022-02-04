@@ -1,9 +1,5 @@
 buildDir = "dist"
 
-task generate(type: Exec) {
-    commandLine npmCommand("npm"), "run-script", "generate"
-}
-
 task clean() {
     doLast {
         delete "dist"
@@ -16,11 +12,4 @@ task prepareUi() {
 
 task publishUi() {
     dependsOn clean, npmPublish
-}
-
-task installDist(type: Copy) {
-    dependsOn generate
-    mustRunAfter(resolveProject(":manager").getTasksByName('installDist', true))
-    from "${buildDir}/mdi-icons.json"
-    into "${resolveProject(':manager').projectDir}/src/web/shared"
 }

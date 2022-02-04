@@ -14,7 +14,6 @@
     "dist"
   ],
   "scripts": {
-    "generate": "node mdi-iconset-generator.js",
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx webpack"
   },
@@ -32,7 +31,6 @@
   },
   "devDependencies": {
     "@openremote/util": "^1.0.4",
-    "@mdi/svg": ">=6.5.95",
     "@types/qs": "^6.9.7",
     "xmldom": "^0.6.0",
     "xpath": "^0.0.32"

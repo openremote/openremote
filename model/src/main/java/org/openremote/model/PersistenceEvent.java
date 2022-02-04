@@ -17,29 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.persistence;
-
-import org.apache.camel.Predicate;
+package org.openremote.model;
 
 import java.util.Arrays;
 
 public class PersistenceEvent<T> {
 
-    // TODO: Make configurable
-    public static final String PERSISTENCE_TOPIC =
-        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=25000";
-
-    public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
-
     public enum Cause {
         CREATE, UPDATE, DELETE
-    }
-
-    public static Predicate isPersistenceEventForEntityType(Class<?> type) {
-        return exchange -> {
-            Class<?> entityType = exchange.getIn().getHeader(PersistenceEvent.HEADER_ENTITY_TYPE, Class.class);
-            return type.isAssignableFrom(entityType);
-        };
     }
 
     final protected Cause cause;

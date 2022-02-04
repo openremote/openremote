@@ -76,9 +76,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def identityProvider = container.getService(ManagerIdentityService.class).identityProvider as ManagerKeycloakIdentityProvider
 
-        and: "the clock is stopped for testing purposes"
-        stopPseudoClock()
-
         expect: "the system should settle down"
         conditions.eventually {
             assert noEventProcessedIn(assetProcessingService, 300)
@@ -154,9 +151,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             assert response.messageId == GatewayConnector.ASSET_READ_EVENT_NAME_INITIAL
             def localReadAssetsEvent = response.event as ReadAssetsEvent
             assert localReadAssetsEvent.assetQuery != null
-            assert localReadAssetsEvent.assetQuery.select.excludeAttributes
-            assert localReadAssetsEvent.assetQuery.select.excludePath
-            assert localReadAssetsEvent.assetQuery.select.excludeParentInfo
             assert localReadAssetsEvent.assetQuery.recursive
         }
 
@@ -171,14 +165,14 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
 
         IntStream.rangeClosed(1, 5).forEach {i ->
             agentAssetIds.add(UniqueIdentifierGenerator.generateId("Test Agent $i"))
-            agentAssets.add(
-                new HTTPAgent("Test Agent $i")
+            def agent = new HTTPAgent("Test Agent $i")
                     .setId(agentAssetIds[i-1])
                     .setBaseURI("https://google.co.uk")
                     .setRealm(MASTER_REALM)
                     .setCreatedOn(Date.from(timerService.getNow()))
-                    .setPath((String[])[agentAssetIds[i-1]].toArray(new String[0]))
-                )
+            agent.path = (String[])[agentAssetIds[i-1]].toArray(new String[0])
+
+            agentAssets.add(agent)
 
             assetIds.add(UniqueIdentifierGenerator.generateId("Test Building $i"))
 
@@ -192,7 +186,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                     .setCreatedOn(Date.from(timerService.getNow()))
                     .setParentId(assetIds[(i-1)*5])
                     .setRealm(MASTER_REALM)
-                    .setPath((String[])[assetIds[(i-1)*5+j], assetIds[(i-1)*5]].toArray(new String[0]))
+
+                roomAsset.path = (String[])[assetIds[(i-1)*5+j], assetIds[(i-1)*5]].toArray(new String[0])
 
                 roomAsset.addOrReplaceAttributes(
                     new Attribute<>(Asset.LOCATION, new GeoJSONPoint(10,11)).addOrReplaceMeta(
@@ -217,7 +212,8 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
                 .setId(assetIds[(i-1)*5])
                 .setCreatedOn(Date.from(timerService.getNow()))
                 .setRealm(MASTER_REALM)
-                .setPath((String[])[assetIds[(i-1)*5]].toArray(new String[0]))
+
+            buildingAsset.path = (String[])[assetIds[(i-1)*5]].toArray(new String[0])
 
             buildingAsset.addOrReplaceAttributes(
                 new Attribute<>(Asset.LOCATION, new GeoJSONPoint(10,11)).addMeta(
@@ -249,8 +245,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             readAssetsEvent = response.event as ReadAssetsEvent
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + "0"
             assert readAssetsEvent.assetQuery != null
-            assert readAssetsEvent.assetQuery.select.excludePath
-            assert readAssetsEvent.assetQuery.select.excludeParentInfo
             assert readAssetsEvent.assetQuery.ids != null
             assert readAssetsEvent.assetQuery.ids.length == GatewayConnector.SYNC_ASSET_BATCH_SIZE
             assert agentAssetIds.stream().filter{readAssetsEvent.assetQuery.ids.contains(it)}.count() == agentAssetIds.size()
@@ -318,8 +312,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             readAssetsEvent = response.event as ReadAssetsEvent
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + GatewayConnector.SYNC_ASSET_BATCH_SIZE
             assert readAssetsEvent.assetQuery != null
-            assert readAssetsEvent.assetQuery.select.excludePath
-            assert readAssetsEvent.assetQuery.select.excludeParentInfo
             assert readAssetsEvent.assetQuery.ids != null
             assert readAssetsEvent.assetQuery.ids.length == agentAssetIds.size() + assetIds.size() - GatewayConnector.SYNC_ASSET_BATCH_SIZE
             assert assetIds.stream().filter{id -> sendAssets.stream().noneMatch{it.id == id}}.count() == readAssetsEvent.assetQuery.ids.length
@@ -383,7 +375,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             .setCreatedOn(Date.from(timerService.getNow()))
             .setParentId(assetIds[0])
             .setRealm(MASTER_REALM)
-            .setPath((String[])[building1Room5AssetId, assetIds[0]])
+        building1Room5Asset.path = (String[])[building1Room5AssetId, assetIds[0]]
 
         building1Room5Asset.addOrReplaceAttributes(
             new Attribute<>(Asset.LOCATION, new GeoJSONPoint(10,11)).addOrReplaceMeta(
@@ -555,7 +547,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             .setCreatedOn(Date.from(timerService.getNow()))
             .setParentId(gateway.id)
             .setRealm(managerTestSetup.realmBuildingTenant)
-            .setPath((String[])[UniqueIdentifierGenerator.generateId("Failed asset")].toArray(new String[0]))
+        failedAsset.path = (String[])[UniqueIdentifierGenerator.generateId("Failed asset")].toArray(new String[0])
         failedAsset.addOrReplaceAttributes(
             new Attribute<>(Asset.LOCATION, new GeoJSONPoint(10,11)).addMeta(
                     new MetaItem<>(ACCESS_PUBLIC_READ)
@@ -659,8 +651,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             readAssetsEvent = request.event as ReadAssetsEvent
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + "0"
             assert readAssetsEvent.assetQuery != null
-            assert readAssetsEvent.assetQuery.select.excludePath
-            assert readAssetsEvent.assetQuery.select.excludeParentInfo
             assert readAssetsEvent.assetQuery.ids != null
             assert readAssetsEvent.assetQuery.ids.length == GatewayConnector.SYNC_ASSET_BATCH_SIZE
             assert agentAssetIds.stream().filter{readAssetsEvent.assetQuery.ids.contains(it)}.count() == agentAssetIds.size()
@@ -673,7 +663,7 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             .setCreatedOn(Date.from(timerService.getNow()))
             .setParentId(assetIds[5])
             .setRealm(MASTER_REALM)
-            .setPath((String[])[UniqueIdentifierGenerator.generateId("Test Building 2 Room 5"), assetIds[5]])
+        building2Room5Asset.path = (String[])[UniqueIdentifierGenerator.generateId("Test Building 2 Room 5"), assetIds[5]]
 
         building2Room5Asset.addOrReplaceAttributes(
             new Attribute<>(Asset.LOCATION, new GeoJSONPoint(10,11)).addOrReplaceMeta(
@@ -714,8 +704,6 @@ class GatewayTest extends Specification implements ManagerContainerTrait {
             readAssetsEvent = request.event as ReadAssetsEvent
             assert messageId == GatewayConnector.ASSET_READ_EVENT_NAME_BATCH + (GatewayConnector.SYNC_ASSET_BATCH_SIZE - 1)
             assert readAssetsEvent.assetQuery != null
-            assert readAssetsEvent.assetQuery.select.excludePath
-            assert readAssetsEvent.assetQuery.select.excludeParentInfo
             assert readAssetsEvent.assetQuery.ids != null
             assert readAssetsEvent.assetQuery.ids.length == agentAssetIds.size() + assets.size() + 1 - GatewayConnector.SYNC_ASSET_BATCH_SIZE + 1
             assert assets.stream().filter{asset -> sendAssets.stream().noneMatch{it.id == asset.id}}.count() == readAssetsEvent.assetQuery.ids.length

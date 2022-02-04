@@ -39,9 +39,10 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.auth.OAuthGrant
 import org.openremote.model.auth.OAuthPasswordGrant
 import org.openremote.model.auth.OAuthRefreshTokenGrant
-import org.openremote.model.value.RegexValueFilter
-import org.openremote.model.value.ValueFilter
 import org.openremote.model.util.ValueUtil
+import org.openremote.model.value.RegexValueFilter
+import org.openremote.model.value.SubStringValueFilter
+import org.openremote.model.value.ValueFilter
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -213,6 +214,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 case "https://mockapi/redirect":
                     requestContext.abortWith(Response.temporaryRedirect(new URI("https://redirected.mockapi/get_success_200")).build())
                     return
+                case "https://mockapi/binary":
+                    requestContext.abortWith(
+                            Response.ok(
+                                    new byte[] {(byte)0x1F & 0xFF, (byte)0x56 & 0xFF, (byte)0x01 & 0xFF, (byte)0xAE & 0xFF, (byte)0x12 & 0xFF}, MediaType.APPLICATION_OCTET_STREAM_TYPE
+                            ).build()
+                    )
+                    return
             }
 
             requestContext.abortWith(Response.serverError().build())
@@ -321,7 +329,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("get_poll_slow")
-                        .setPollingMillis(50)
+                        .setPollingMillis(200)
                             .setValueFilters(
                                 [
                                     new RegexValueFilter(Pattern.compile("\\d+"))
@@ -334,11 +342,47 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
                             .setPath("get_poll_fast")
-                            .setPollingMillis(40)
+                            .setPollingMillis(100)
                             .setValueFilters(
                                 [
                                     new RegexValueFilter(Pattern.compile("\\d+")).setMatchIndex(1)
                                 ] as ValueFilter[]
+                            )
+                        )
+                    ),
+                // attribute that expects binary data using GET and uses sub string on response
+                new Attribute<>("getBinary", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
+                            .setPath("binary")
+                            .setPollingMillis(100)
+                            .setMessageConvertBinary(true)
+                            .setValueFilters(
+                                [
+                                    new SubStringValueFilter(22, 24)
+                                ] as ValueFilter[]
+                            )
+                            .setValueConverter(ValueUtil.JSON.createObjectNode()
+                                    .put("00", "OFF")
+                                    .put("01", "ON")
+                            )
+                        )
+                    ),
+                // attribute that expects HEX data using GET and uses sub string on response
+                new Attribute<>("getHex", TEXT)
+                    .addMeta(
+                        new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent.id)
+                            .setPath("binary")
+                            .setPollingMillis(100)
+                            .setMessageConvertHex(true)
+                            .setValueFilters(
+                                [
+                                    new SubStringValueFilter(4, 6)
+                                ] as ValueFilter[]
+                            )
+                            .setValueConverter(ValueUtil.JSON.createObjectNode()
+                                    .put("00", "OFF")
+                                    .put("01", "ON")
                             )
                         )
                     )
@@ -349,7 +393,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
 
         then: "new request maps should be created in the HTTP client protocol for the linked attributes"
         conditions.eventually {
-            assert ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).requestMap.size() == 4
+            assert ((HTTPProtocol)agentService.getProtocolInstance(agent.id)).requestMap.size() == 6
         }
 
         and: "the polling attributes should be polling the server"
@@ -364,6 +408,8 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             asset = assetStorageService.find(asset.getId(), true)
             assert asset.getAttribute("getPollSlow").flatMap({it.value}).orElse(null) == 100
             assert asset.getAttribute("getPollFast").flatMap({it.value}).orElse(null) == 60
+            assert asset.getAttribute("getBinary").flatMap({it.value}).orElse(null) == "ON"
+            assert asset.getAttribute("getHex").flatMap({it.value}).orElse(null) == "ON"
         }
 
         when: "a linked attribute value is updated"
@@ -445,7 +491,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     .addMeta(
                         new MetaItem<>(AGENT_LINK, new HTTPAgentLink(agent3.id)
                             .setPath("get_failure_401")
-                            .setPollingMillis(50)
+                            .setPollingMillis(100)
                         )
                     ),
                 new Attribute<>("getSuccess2", TEXT)

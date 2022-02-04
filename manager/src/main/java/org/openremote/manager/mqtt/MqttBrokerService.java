@@ -32,7 +32,7 @@ import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -57,8 +57,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static java.util.stream.StreamSupport.stream;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -297,7 +297,7 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         return sessionRegistry;
     }
 
-    protected Object getSession(String clientId) {
+    Object getSession(String clientId) {
         if (mqttBroker == null) {
             return null;
         }
@@ -314,9 +314,20 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         return null;
     }
 
+    public Runnable getForceDisconnectRunnable(String clientId) {
+        MqttConnection connection = getConnection(clientId);
+        Object session = getSession(clientId);
+
+        return () -> doForceDisconnect(connection, session);
+    }
+
     public void forceDisconnect(String clientId) {
         MqttConnection connection = getConnection(clientId);
         Object session = getSession(clientId);
+        doForceDisconnect(connection, session);
+    }
+
+    protected void doForceDisconnect(MqttConnection connection, Object session) {
 
         if (connection == null || session == null) {
             return;

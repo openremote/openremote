@@ -102,12 +102,13 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
          */
         public async _addEventSubscriptions(): Promise<void> {
             const isAttributes = !!this._attributeRefs;
+            const isAsset = !!this._assetIds;
             const ids: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
 
             if (ids && ids.length > 0) {
                 this._subscriptionIds = [];
 
-                if (!isAttributes) {
+                if (isAsset) {
                     const assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(ids, true, (event) => this._onEvent(event));
                     // Check if the same IDs are in place
                     const currentIds: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
@@ -117,13 +118,15 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
                     }
                     this._subscriptionIds.push(assetSubscriptionId);
                 }
+
                 const subscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(ids, isAttributes, (event) => this._onEvent(event));
+                // Check if the same IDs are in place
                 const currentIds: string[] | AttributeRef[] | undefined = this._attributeRefs ? this._attributeRefs : this._assetIds;
                 if (!this._subscriptionIds || !Util.objectsEqual(ids, currentIds)) {
                     eventProviderFactory.getEventProvider()!.unsubscribe(subscriptionId);
-                } else {
-                    this._subscriptionIds.push(subscriptionId);
+                    return;
                 }
+                this._subscriptionIds.push(subscriptionId);
             }
         }
 

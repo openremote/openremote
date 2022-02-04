@@ -25,6 +25,7 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -44,7 +45,7 @@ import java.util.logging.Logger
 open class OrMainActivity : Activity() {
 
     private lateinit var binding: ActivityOrMainBinding
-
+    private var mapper = jacksonObjectMapper()
     private val connectivityChangeReceiver: ConnectivityChangeReceiver =
         ConnectivityChangeReceiver()
     private var timeOutHandler: Handler? = null
@@ -114,7 +115,7 @@ open class OrMainActivity : Activity() {
         progressBar?.progress = 1
 
         if (intent.hasExtra(APP_CONFIG_KEY)) {
-            appConfig = jacksonObjectMapper().readValue(
+            appConfig = mapper.readValue(
                 intent.getStringExtra(APP_CONFIG_KEY),
                 ORAppConfig::class.java
             )
@@ -773,9 +774,13 @@ open class OrMainActivity : Activity() {
     }
 
     private fun notifyClient(data: Map<String, Any?>?) {
-        LOG.info("notifyClient with message: $data")
         try {
-            val jsonString = ObjectMapper().writeValueAsString(data)
+            var jsonString = mapper.writeValueAsString(data)
+
+            // Double escape quotes (this is needed for browsers to be able to parse the response)
+            jsonString = jsonString.replace("\\\"", "\\\\\"")
+
+            LOG.info("notifyClient with message: $jsonString")
             runOnUiThread {
                 binding.webView.evaluateJavascript(
                     String.format(
@@ -799,8 +804,14 @@ open class OrMainActivity : Activity() {
         editor.apply()
     }
 
-    private fun retrieveData(key: String?): String? {
-        return sharedPreferences!!.getString(key, null)
+    private fun retrieveData(key: String?): Any? {
+        var str = sharedPreferences!!.getString(key, null) ?: return null
+        // Parse data JSON
+        return try {
+            mapper.readTree(str)
+        } catch (e: JsonProcessingException) {
+            str
+        }
     }
 
     private fun onConnectivityChanged(connectivity: Boolean) {

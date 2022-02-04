@@ -1,7 +1,6 @@
 import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import manager, {
-    AssetModelUtil,
     DefaultBoxShadow,
     DefaultColor1,
     DefaultColor2,
@@ -14,6 +13,7 @@ import manager, {
 import i18next from "i18next";
 import "@openremote/or-icon";
 import {
+    AssetModelUtil,
     AssetDescriptor,
     AssetQuery,
     AssetTypeInfo,
@@ -371,9 +371,7 @@ export const getAssetTypes: () => Promise<string[]> = async () => {
     return AssetModelUtil.getAssetTypeInfos().filter((ati) => ati.assetDescriptor!.name !== WellknownAssets.UNKNOWNASSET).map(ati => ati.assetDescriptor!.name!);
     // const response = await manager.rest.api.AssetResource.queryAssets({
     //     select: {
-    //         excludeAttributes: true,
-    //         excludeParentInfo: true,
-    //         excludePath: true
+    //         attributes: []
     //     },
     //     tenant: {
     //         realm: manager.displayRealm

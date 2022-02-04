@@ -284,12 +284,6 @@ public class ElectricVehicleAsset extends ElectricityBatteryAsset {
     }
 
     @Override
-    protected ElectricityStorageAsset setPath(String[] path) {
-        super.setPath(path);
-        return this;
-    }
-
-    @Override
     public ElectricVehicleAsset setAttributes(AttributeMap attributes) {
         super.setAttributes(attributes);
         return this;

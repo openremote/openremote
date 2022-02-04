@@ -1,6 +1,7 @@
 import {ConsoleRegistration} from "@openremote/model";
 import manager from "./index";
 import {AxiosResponse} from "axios";
+import {Deferred} from "./util";
 
 // No ES6 module support in platform lib
 let platform = require('platform');
@@ -37,7 +38,7 @@ export class Console {
     protected _autoEnable: boolean = false;
     protected _initialised: boolean = false;
     protected _initialiseInProgress: boolean = false;
-    protected _pendingProviderPromises: { [name: string]: ((response: any) => void) | null } = {};
+    protected _pendingProviderPromises: { [name: string]: [Deferred<any>, number] } = {};
     protected _pendingProviderEnables: string[] = [];
     protected _enableCompleteCallback: (() => void) | null;
     protected _registrationTimer: number | null = null;
@@ -278,10 +279,14 @@ export class Console {
             throw new Error("Message already pending for provider '" + message.provider + "' with action '" + message.action + "'");
         }
 
-        return await new Promise(resolve => {
-            this._pendingProviderPromises[promiseName] = resolve;
-            this._doSendProviderMessage(message);
-        });
+        const deferred = new Deferred();
+        const cancel = () => {
+            delete this._pendingProviderPromises[promiseName];
+            deferred.reject("No response");
+        };
+        this._pendingProviderPromises[promiseName] = [deferred, window.setTimeout(cancel, 5000)];
+        this._doSendProviderMessage(message);
+        return deferred.promise;
     }
 
     // Uses a delayed mechanism to avoid excessive calls to the server during enabling providers
@@ -475,11 +480,12 @@ export class Console {
         let name = msgJson.provider;
         let action = msgJson.action;
 
-        let resolve = this._pendingProviderPromises[name + action];
+        let deferredAndTimeout = this._pendingProviderPromises[name + action];
 
-        if (resolve != null) {
-            this._pendingProviderPromises[name + action] = null;
-            resolve(msgJson);
+        if (deferredAndTimeout) {
+            window.clearTimeout(deferredAndTimeout[1]);
+            delete this._pendingProviderPromises[name + action];
+            deferredAndTimeout[0].resolve(msgJson);
         }
     }
 

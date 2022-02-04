@@ -81,9 +81,6 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def assetProcessingService = container.getService(AssetProcessingService.class)
         RulesEngine tenantBuildingEngine
 
-        and: "the clock is stopped for testing purposes"
-        stopPseudoClock()
-
         and: "a mock push notification handler"
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
         mockPushNotificationHandler.isValid() >> true

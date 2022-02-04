@@ -14,9 +14,10 @@ import {
     AttributeEvent,
     SharedEvent,
     WellknownAttributes,
-    WellknownMetaItems
+    WellknownMetaItems,
+    AssetModelUtil
 } from "@openremote/model";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import manager, {subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";

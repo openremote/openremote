@@ -32,10 +32,7 @@ import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaHolder;
 import org.openremote.model.value.NameValueHolder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -123,10 +120,7 @@ public class AssetQueryPredicate implements Predicate<AssetState<?>> {
 
     public static Predicate<AssetState<?>> asPredicate(ParentPredicate predicate) {
         return assetState ->
-            (predicate.id == null || predicate.id.equals(assetState.getParentId()))
-                && (predicate.type == null || predicate.type.getSimpleName().equals(assetState.getParentType()))
-                && (predicate.name == null || predicate.name.equals(assetState.getParentName()))
-                && (!predicate.noParent || assetState.getParentId() == null);
+            Objects.equals(predicate.id, assetState.getParentId());
     }
 
     public static Predicate<String[]> asPredicate(PathPredicate predicate) {

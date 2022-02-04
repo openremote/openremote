@@ -174,7 +174,6 @@ export class OrJSONForms extends LitElement implements OwnPropsOfJsonFormsRender
     }
 
     render() {
-
         if (!this.contextValue) {
             return html``;
         }

@@ -139,8 +139,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     .attributes(
                         new AttributePredicate().meta(
                             new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                        ))
-                    .select(AssetQuery.Select.selectExcludePathAndParentInfo()));
+                        )));
 
             List<Pair<String, Attribute<?>>> attributes = assets.stream()
                 .map(asset -> asset

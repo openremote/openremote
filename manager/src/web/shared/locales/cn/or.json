@@ -97,6 +97,7 @@
   "showOnMap": "在地图显示",
   "noAssetSelected": "请选择左列资源",
   "loading": "加载中...",
+  "noAssetsFound": "No assets found",
   "location": "位置",
   "hour": "时",
   "day": "日",

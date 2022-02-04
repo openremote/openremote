@@ -10,9 +10,9 @@ import {
     ReadAttributeEvent,
     SharedEvent,
     WellknownAttributes,
+    AssetModelUtil
 } from "@openremote/model";
-import {AssetModelUtil, subscribe, Util} from "@openremote/core";
-import manager from "@openremote/core";
+import manager, {subscribe, Util} from "@openremote/core";
 import { getMarkerIconAndColorFromAssetType } from "../util";
 
 export type BaseMapMarkerConfig = {

@@ -71,10 +71,6 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
 
     final protected String parentId;
 
-    final protected String parentName;
-
-    final protected String parentType;
-
     final protected String realm;
 
     final protected MetaMap meta;
@@ -93,8 +89,6 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         this.createdOn = asset.getCreatedOn();
         this.path = asset.getPath();
         this.parentId = asset.getParentId();
-        this.parentName = asset.getParentName();
-        this.parentType = asset.getParentType();
         this.realm = asset.getRealm();
         this.meta = attribute.getMeta();
     }
@@ -161,14 +155,6 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         return parentId;
     }
 
-    public String getParentName() {
-        return parentName;
-    }
-
-    public String getParentType() {
-        return parentType;
-    }
-
     public String getRealm() {
         return realm;
     }
@@ -232,7 +218,6 @@ public class AssetState<T> implements Comparable<AssetState<?>>, NameValueHolder
         return getClass().getSimpleName() + "{" +
             "id='" + getId() + '\'' +
             ", name='" + getAssetName() + '\'' +
-            ", parentName='" + getParentName() + '\'' +
             ", type='" + getAssetType() + '\'' +
             ", attributeName='" + getName() + '\'' +
             ", attributeValueDescriptor=" + getType() +

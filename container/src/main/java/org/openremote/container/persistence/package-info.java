@@ -10,6 +10,10 @@
     @TypeDef(
         name = EpochMillisInstantType.TYPE_NAME,
         typeClass = EpochMillisInstantType.class
+    ),
+    @TypeDef(
+        name = LTreeType.TYPE,
+        typeClass = LTreeType.class
     )
 })
 
