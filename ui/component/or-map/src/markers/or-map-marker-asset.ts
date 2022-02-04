@@ -2,13 +2,14 @@ import {PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {OrMapMarker} from "./or-map-marker";
 import {
-    AttributeEvent,
-    GeoJSONPoint,
+    Asset,
     AssetEvent,
     AssetEventCause,
-    Asset,
+    AttributeEvent,
+    GeoJSONPoint,
+    ReadAttributeEvent,
     SharedEvent,
-    WellknownAttributes, ReadAttributeEvent,
+    WellknownAttributes,
 } from "@openremote/model";
 import {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import manager from "@openremote/core";
@@ -72,18 +73,18 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             }
         }
 
-        const iconAndcolour = getMarkerIconAndColorFromAssetType(type, overrideOpts);
+        const iconAndColour = getMarkerIconAndColorFromAssetType(type, overrideOpts);
 
-        if (!iconAndcolour) {
+        if (!iconAndColour) {
             this.visible = false;
             return;
         }
 
         if (this.assetTypeAsIcon) {
-            this.icon = iconAndcolour.icon;
+            this.icon = iconAndColour.icon;
         }
 
-        this.markerColor = (Array.isArray(iconAndcolour.color)) ? iconAndcolour.color[0].colour : iconAndcolour.color || undefined;
+        this.markerColor = (Array.isArray(iconAndColour.color)) ? iconAndColour.color[0].colour : iconAndColour.color || undefined;
         this.updateColor(this.markerContainer);
         this.visible = true;
     }
