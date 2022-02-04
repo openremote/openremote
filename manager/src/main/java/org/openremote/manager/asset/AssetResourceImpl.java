@@ -107,6 +107,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!(isSuperUser() || getAuthenticatedRealm().equals(realm)))
                 throw new WebApplicationException(FORBIDDEN);
 
+            if (!isSuperUser() && userId != null && !userId.equals(getAuthContext().getUserId())) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
             if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realm))
                 throw new WebApplicationException(BAD_REQUEST);
 
