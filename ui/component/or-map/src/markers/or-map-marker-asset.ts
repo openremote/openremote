@@ -10,9 +10,40 @@ import {
     SharedEvent,
     WellknownAttributes, ReadAttributeEvent,
 } from "@openremote/model";
-import {AssetModelUtil, MapMarkerConfig, subscribe, Util} from "@openremote/core";
+import {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import manager from "@openremote/core";
 import { getMarkerIconAndColorFromAssetType } from "../util";
+
+export type BaseMapMarkerConfig = {
+    attributeName: string;
+    showLabel?: boolean;
+    showUnits?: boolean;
+    showDirection?: boolean;
+}
+
+export type MapMarkerConfig = {
+    [assetType: string]: AttributeMarkerColours[] | RangeAttributeMarkerColours[];
+}
+
+export type AttributeMarkerColours = BaseMapMarkerConfig & {
+    type: "string" | "boolean";
+    [value: string]: string;
+}
+
+export type RangeAttributeMarkerColours = BaseMapMarkerConfig & {
+    type: "range";
+    ranges: AttributeMarkerColoursRange[];
+}
+
+export type AttributeMarkerColoursRange = {
+    max: number;
+    colour: string;
+}
+
+// todo: could add support for selecting which attr value to show in picker label
+// export interface AssetTypeMarkerConfig {
+//     [attributeName: string]: ;
+// }
 
 @customElement("or-map-marker-asset")
 export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {

@@ -109,37 +109,6 @@ export enum MapType {
     RASTER = "RASTER"
 }
 
-export type BaseMapMarkerConfig = {
-    attributeName: string;
-    showLabel?: boolean;
-    showUnits?: boolean;
-    showDirection?: boolean;
-}
-
-export type MapMarkerConfig = {
-    [assetType: string]: AttributeMarkerColours[] | RangeAttributeMarkerColours[];
-}
-
-export type AttributeMarkerColours = BaseMapMarkerConfig & {
-    type: "string" | "boolean";
-    [value: string]: string;
-}
-
-export type RangeAttributeMarkerColours = BaseMapMarkerConfig & {
-    type: "range";
-    ranges: AttributeMarkerColoursRange[];
-}
-
-export type AttributeMarkerColoursRange = {
-    max: number;
-    colour: string;
-}
-
-// todo: could add support for selecting which attr value to show in picker label
-// export interface AssetTypeMarkerConfig {
-//     [attributeName: string]: ;
-// }
-
 export interface ManagerConfig {
     managerUrl?: string;
     keycloakUrl?: string;
@@ -154,7 +123,6 @@ export interface ManagerConfig {
     pollingIntervalMillis?: number;
     loadIcons?: boolean;
     loadDescriptors?: boolean;
-    map?: any;
     mapType?: MapType;
     loadTranslations?: string[];
     translationsLoadPath?: string;

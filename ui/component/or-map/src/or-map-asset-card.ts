@@ -16,12 +16,13 @@ import {
     WellknownAttributes,
     WellknownMetaItems
 } from "@openremote/model";
-import manager, {AssetModelUtil, MapMarkerConfig, subscribe, Util} from "@openremote/core";
+import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { getMarkerIconAndColorFromAssetType } from "./util";
+import { MapMarkerConfig } from "./markers/or-map-marker-asset";
 
 export interface MapAssetCardTypeConfig {
     include?: string[];

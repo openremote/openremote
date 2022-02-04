@@ -1,10 +1,7 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
 import {Asset, AssetDescriptor, Attribute, GeoJSONPoint, ValueHolder, WellknownAttributes} from "@openremote/model";
-import {
-    AssetModelUtil, AttributeMarkerColours,
-    AttributeMarkerColoursRange, BaseMapMarkerConfig,
-    MapMarkerConfig, RangeAttributeMarkerColours,
-} from "@openremote/core";
+import { AssetModelUtil } from "@openremote/core";
+import { AttributeMarkerColours, AttributeMarkerColoursRange, RangeAttributeMarkerColours } from "./markers/or-map-marker-asset";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
