@@ -147,10 +147,14 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
 
+            if (asset.attributes && asset.attributes[WellknownAttributes.DIRECTION]) {
+                this.direction = (await this.getAttrValue(asset, WellknownAttributes.DIRECTION))!.toString() || undefined;
+            }
+
             if (this.config && asset.type && this.config[asset.type]) {
                 const assetTypeConfig = this.config[asset.type][0] || undefined;
 
-                if (assetTypeConfig.showLabel) {
+                if (assetTypeConfig && assetTypeConfig.showLabel) {
                     if (assetTypeConfig.showLabel) {
                         const attrVal = await this.getAttrValue(asset, assetTypeConfig.attributeName);
                         if (attrVal === undefined) return;
@@ -165,8 +169,8 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
                     }
                 }
 
-                if (assetTypeConfig.showDirection) {
-                    this.direction = (await this.getAttrValue(asset, WellknownAttributes.DIRECTION))!.toString() || undefined;
+                if (assetTypeConfig && assetTypeConfig.showDirection === false) {
+                    this.direction = undefined;
                 }
             }
 
