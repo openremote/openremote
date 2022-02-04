@@ -364,7 +364,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     if (panelConfig.type === "setup") {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
-        
+
         if (!descriptor || !asset.id || descriptor.descriptorType !== "agent" || !descriptor.assetDiscovery && !descriptor.assetImport) {
             return;
         }
@@ -374,13 +374,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement,
                 fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput,
                 str = fileInputElem.value;
-            
+
             if (!str) {
                 return;
             }
-            
+
             fileUploadBtn.disabled = false;
-            
+
             let i;
             if (str.lastIndexOf('\\')) {
                 i = str.lastIndexOf('\\') + 1;
@@ -393,7 +393,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         const discoverAssets = () => {
             const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
                 cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
-            
+
             if (!discoverBtn || !cancelBtn) {
                 return false;
             }
@@ -401,7 +401,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             cancelBtn.hidden = false;
             discoverBtn.disabled = true;
             discoverBtn.label = i18next.t("discovering") + '...';
-            
+
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => {
                     if (response.status !== 200) {
@@ -421,15 +421,15 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     discoverBtn.label = i18next.t("discoverAssets");
                 });
         }
-        
+
         const cancelDiscovery = () => {
             const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
                 cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
-            
+
             discoverBtn.disabled = false;
             discoverBtn.label = i18next.t("discoverAssets");
             cancelBtn.hidden = true;
-            
+
             // TODO: cancel the request to the manager
         }
 
@@ -441,14 +441,14 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             }
 
             fileUploadBtn.disabled = true;
-            
+
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             if (fileInputElem) {
                 const reader = new FileReader();
                 if (fileInputElem.files && fileInputElem.files.length) {
                     reader.readAsDataURL(fileInputElem.files[0]); //convert to base64
                 }
-                
+
                 reader.onload = () => {
                     if (!reader.result) {
                         showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
@@ -480,12 +480,12 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                             .finally(() => {
                                 fileUploadBtn.disabled = false;
                             });
-                  
+
                     }
                 }
             }
         }
-        
+
         let content: TemplateResult = html``;
 
         if (descriptor.assetImport) {
@@ -507,7 +507,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
-        
+
         return html`
             <style>
                 [hidden] {
@@ -516,7 +516,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             </style>
             ${content}
         `;
-        
+
     }
 
     // This is not something that should be part of the standard asset-viewer
@@ -633,7 +633,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
 
-      
+
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
             selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
@@ -772,30 +772,45 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
         // const tableElem = hostElement.shadowRoot!.getElementById("linked-users") as HTMLTableElement;
 
-        const updateTable = () => {
+        const updateTable = (rows?: string[][]) => {
+            console.log('updatetable', rows);
             const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName+"-user-table") as OrMwcTable;
+            userTable.options = {stickyFirstColumn:false};
             // let content: TemplateResult = html``;
             userTable.headers = ['Username', 'Roles', 'Restricted user'];
+            if (rows) userTable.rows = rows;
         };
 
+        let rows: string[][] = [];
         manager.rest.api.AssetResource.getUserAssetLinks({realm: manager.displayRealm, assetId: asset.id})
             .then((userAssetLinksRes) => {
                 const userIds = userAssetLinksRes.data.map(e => e.id!.userId);
-                console.log(userIds)
-                // manager.rest.api.UserResource.getRoles(manager.displayRealm)
-                //     .then((rolesRes) => {
-                //         const compositeRoles = rolesRes.data.filter(role => role.composite);
-                //         console.log(compositeRoles)
-                //     })
-                userIds.forEach((userId) => {
 
-                    updateTable();
-                    // userTable.insertRow(1);
-                    manager.rest.api.UserResource.get(manager.displayRealm, userId!)
+                userIds.forEach(async (userId) => {
+
+                    let row: string[] = [];
+
+                    await manager.rest.api.UserResource.get(manager.displayRealm, userId!)
                         .then((usersRes) => {
-                            console.log('users result', usersRes)
+                            row.push(usersRes.data.username!);
                         });
-                })
+
+                    await manager.rest.api.UserResource.getRoles(manager.displayRealm)
+                        .then((rolesRes) => {
+                            const compositeRoles = rolesRes.data.filter(role => role.composite).map(r => r.name);
+                            const roleNames = compositeRoles.join(', ');
+                            row.push(roleNames!);
+                        });
+
+                    let restrictedUser = '';
+                    row.push(restrictedUser);
+                    console.log(row);
+
+                    rows.push(row);
+                });
+
+                console.log(rows);
+                updateTable(rows);
             });
 
         // if (!this.responseAndStateOK(() => true, userAssetLinksResponse, i18next.t("loadFailedUserInfo"))) {
