@@ -31,7 +31,7 @@ import {
     WellknownAssets,
     WellknownAttributes,
     WellknownMetaItems,
-    AssetModelUtil
+    AssetModelUtil,
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
@@ -767,14 +767,50 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
     if (panelConfig.type === "linkedUsers") {
 
+        // manager.rest.api.UserResource.query({tenantPredicate: {realm: manager.displayRealm}} as UserQuery)
+        //     .then((usersRes) => console.log('users result', usersRes));
+
+        // const tableElem = hostElement.shadowRoot!.getElementById("linked-users") as HTMLTableElement;
+
+        const updateTable = () => {
+            const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName+"-user-table") as OrMwcTable;
+            // let content: TemplateResult = html``;
+            userTable.headers = ['Username', 'Roles', 'Restricted user'];
+        };
+
+        manager.rest.api.AssetResource.getUserAssetLinks({realm: manager.displayRealm, assetId: asset.id})
+            .then((userAssetLinksRes) => {
+                const userIds = userAssetLinksRes.data.map(e => e.id!.userId);
+                console.log(userIds)
+                // manager.rest.api.UserResource.getRoles(manager.displayRealm)
+                //     .then((rolesRes) => {
+                //         const compositeRoles = rolesRes.data.filter(role => role.composite);
+                //         console.log(compositeRoles)
+                //     })
+                userIds.forEach((userId) => {
+
+                    updateTable();
+                    // userTable.insertRow(1);
+                    manager.rest.api.UserResource.get(manager.displayRealm, userId!)
+                        .then((usersRes) => {
+                            console.log('users result', usersRes)
+                        });
+                })
+            });
+
+        // if (!this.responseAndStateOK(() => true, userAssetLinksResponse, i18next.t("loadFailedUserInfo"))) {
+        //     user.loading = false;
+        //     trElem.classList.remove("disabled");
+        //     return;
+        // }
+
         return html`
             <style>
                 p {
                      color: red;
                 }
             </style>
-            
-            <p>asdf</p>
+            <or-mwc-table .id="${panelName}-user-table"></or-mwc-table>
         `;
     }
 }
