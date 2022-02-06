@@ -207,6 +207,9 @@ export const mapAssetCardStyle = css`
                 display: flex;
                 line-height: 30px;
             }
+            li.highlighted {
+                font-weight: bold;
+            }
             
             .attribute-name {
                 flex: 1;            

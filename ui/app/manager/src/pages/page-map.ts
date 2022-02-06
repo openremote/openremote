@@ -1,5 +1,6 @@
 import {css, html} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
+import {until} from 'lit/directives/until.js';
 import {createSlice, EnhancedStore, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
@@ -26,7 +27,7 @@ import {
 } from "@openremote/model";
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {GenericAxiosResponse, RestResponse } from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
 
 export interface MapState {
     assets: Asset[];
@@ -99,7 +100,8 @@ export const pageMapReducer = pageMapSlice.reducer;
 
 export interface PageMapConfig {
     card?: MapAssetCardConfig,
-    assetQuery?: AssetQuery
+    assetQuery?: AssetQuery,
+    markers?: MapMarkerConfig
 }
 
 export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
@@ -111,7 +113,7 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
         ],
         pageCreator: () => {
             const page = new PageMap(store);
-            if(config) page.config = config;
+            page.config = config || {};
             return page
         }
     };
@@ -319,7 +321,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
         return html`
             
-            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
@@ -328,11 +330,24 @@ export class PageMap extends Page<MapStateKeyed> {
                             return false;
                         }
                         const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                        const showOnMap = !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr); 
-                        return showOnMap;
-                    }).map((asset) => {
+                        return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                    }).map(asset => {
                         return html`
-                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}"></or-map-marker-asset>
+                            ${until(
+                                    manager.events.sendEventWithReply({
+                                        event: {
+                                            eventType: "read-asset",
+                                            assetId: asset.id
+                                        }
+                                    }).then((result: AssetEvent) => {
+                                        return html`
+                                            <or-map-marker-asset
+                                                ?active="${this._currentAsset && this._currentAsset.id === result.asset.id}"
+                                                .asset="${result.asset}"
+                                                .config="${this.config.markers}"></or-map-marker-asset>
+                                        `;
+                                    })
+                            )};
                         `;
                     })
                 }

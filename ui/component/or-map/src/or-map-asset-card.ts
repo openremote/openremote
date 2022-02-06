@@ -1,6 +1,4 @@
 import {
-    CSSResult,
-    CSSResultArray,
     CSSResultGroup,
     html,
     LitElement,
@@ -8,6 +6,7 @@ import {
     TemplateResult
 } from "lit";
 import {customElement, property} from "lit/decorators.js";
+import { classMap } from 'lit-html/directives/class-map.js';
 import {
     Asset,
     AssetEvent,
@@ -23,6 +22,8 @@ import "@openremote/or-icon";
 import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
+import { getMarkerIconAndColorFromAssetType } from "./util";
+import { MapMarkerConfig } from "./markers/or-map-marker-asset";
 
 export interface MapAssetCardTypeConfig {
     include?: string[];
@@ -74,6 +75,9 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
 
     @property({type: Object})
     public config?: MapAssetCardConfig;
+
+    @property({type: Object})
+    public markerconfig?: MapMarkerConfig;
 
     @property({type: Boolean, attribute: true})
     public useAssetColor: boolean = true;
@@ -162,7 +166,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                              const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset!.type, attr.name, attr);
                              const label = Util.getAttributeLabel(attr, descriptors[0], this.asset!.type, true);
                              const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset!.type, false, "-");
-                             return html`<li><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`; 
+                             const classes = {highlighted: attr.name === this.markerconfig![this.asset!.type!][0].attributeName};
+                             return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`; 
                         })}
                     </ul>
                 </div>
@@ -182,14 +187,17 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
     protected getIcon(): string | undefined {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
-            return descriptor ? descriptor.icon : undefined;
+            const icon = getMarkerIconAndColorFromAssetType(descriptor)?.icon;
+            return icon ? icon : undefined;
         }
     }
 
     protected getColor(): string | undefined {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
-            return descriptor ? descriptor.colour : undefined;
+            const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
+            // check if range
+            return (typeof color === 'string') ? color : color![0].colour;
         }
     }
 }

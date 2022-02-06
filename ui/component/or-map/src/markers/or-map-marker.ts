@@ -1,6 +1,7 @@
-import {html, LitElement, PropertyValues} from "lit";
+import {css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
+import {DefaultBoxShadowBottom} from "@openremote/core";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -41,6 +42,11 @@ export interface OrMapMarkerChangedEventDetail extends OrMapMarkerEventDetail {
     property: string;
 }
 
+export interface TemplateOptions {
+    displayValue?: string;
+    direction?: string;
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrMapMarkerChangedEvent.NAME]: OrMapMarkerChangedEvent;
@@ -56,7 +62,48 @@ declare global {
 @customElement("or-map-marker")
 export class OrMapMarker extends LitElement {
 
-    protected static _defaultTemplate = (icon: string | undefined) => `
+    static get styles(): CSSResultGroup {
+        return css`
+          .label {
+            background-color: white;
+            width: auto;
+            height: 20px;
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            padding: 0 3px;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            border-radius: 3px;
+            -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+          }
+          .label > span {
+            white-space: nowrap;
+          }
+          
+          .icon-direction {
+            position: absolute;
+            top: 13px;
+            left: 4px;
+            width: 24px;
+            fill: white;
+            stroke: black;
+            stroke-width: 1px;
+          }
+        `;
+    }
+
+    protected static _defaultTemplate = (icon: string | undefined, options?: TemplateOptions) => `
+        ${options && options.displayValue !== undefined 
+            ? `<div class="label"><span>${options.displayValue}</span></div>` 
+            : ``
+        }
+        ${options && options.direction
+            ? `<or-icon class="icon-direction" icon="navigation" style="transform: rotate(${options.direction}deg);"></or-icon>`
+            : ``
+        }
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -69,6 +116,12 @@ export class OrMapMarker extends LitElement {
 
     @property({type: Number, reflect: true})
     public radius?: number;
+
+    @property({reflect: true})
+    public displayValue?: string;
+
+    @property({reflect: true})
+    public direction?: string;
 
     @property({type: Boolean})
     public visible: boolean = true;
@@ -151,7 +204,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("icon")) {
+        if (_changedProperties.has("icon") || _changedProperties.has("displayValue") || _changedProperties.has("direction")) {
             this.refreshMarkerContent();
         }
 
@@ -268,7 +321,7 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon);
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
         return div;
     }
 }
