@@ -72,15 +72,15 @@ jobs:
           
       - name: Output info
         run: |
-          echo 'DOCKER_INFO<<EOF' >> $GITHUB_ENV
-          docker-compose -f profile/dev-testing.yml images >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
+          export DOCKER_INFO="$(docker-compose -f profile/dev-testing.yml images)"
+          DOCKER_INFO="${DOCKER_INFO//'%'/'%25'}"
+          DOCKER_INFO="${DOCKER_INFO//$'\n'/'%0A'}"
+          DOCKER_INFO="${DOCKER_INFO//$'\r'/'%0D'}"
           echo "************************************************************"
           echo "**************        BUILD INFO         *******************"
           echo "************************************************************"
           echo "Yarn version: $(yarn -v)"
-          echo "dev-testing.yml images: ${{ env.DOCKER_INFO }}"
-          echo docker-compose -f profile/dev-testing.yml images
+          echo "dev-testing.yml images: $DOCKER_INFO"
           echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit == 'true' }}"
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
           echo "Docker postgres from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit == 'true' }}"
