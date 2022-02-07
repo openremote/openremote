@@ -5,8 +5,8 @@ concurrency: ci
 
 on:
   push:
-    paths-ignore:
-      - '.github/**'
+#     paths-ignore:
+#       - '.github/**'
 
   workflow_dispatch:
 
