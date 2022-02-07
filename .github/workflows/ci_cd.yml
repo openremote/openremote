@@ -34,8 +34,8 @@ jobs:
       
       - name: Extract docker image IDs
         run: |
-          echo $(docker-compose -f profile\dev-testing.yml images -q -- postgresql) >> $GITHUB_ENV
-          echo $(docker-compose -f profile\dev-testing.yml images -q -- keycloak) >> $GITHUB_ENV
+          echo "POSTGRES_ID=$(docker-compose -f profile\dev-testing.yml images -q -- postgresql)" >> $GITHUB_ENV
+          echo "KEYLCOAK_ID=$(docker-compose -f profile\dev-testing.yml images -q -- keycloak)" >> $GITHUB_ENV
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -78,6 +78,8 @@ jobs:
           echo "Yarn version: $(yarn -v)"
           echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit == 'true' }}"
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
+          echo "Postgres image ID: $env.POSTGRES_ID"
+          echo "Keycloak image ID: $env.KEYCLOAK_ID"
           echo "Docker postgres from cache: ${{ steps.docker-postgres-cache.outputs.cache-hit == 'true' }}"
           echo "Docker keycloak from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit == 'true' }}"
           echo "************************************************************"
