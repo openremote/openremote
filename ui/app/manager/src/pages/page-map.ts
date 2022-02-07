@@ -10,7 +10,8 @@ import {
     OrMapClickedEvent,
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent,
-    OrMapGeocoderChangeEvent
+    OrMapGeocoderChangeEvent,
+    MapMarkerConfig
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
