@@ -85,7 +85,10 @@ jobs:
           echo "Docker keycloak from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit == 'true' }}"
           echo "************************************************************"
           echo "************************************************************"
-      
+    
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+          
 #       - name: Build
 #         run: ./gradlew installDist
       
