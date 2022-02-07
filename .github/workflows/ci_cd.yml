@@ -34,8 +34,8 @@ jobs:
       
       - name: Extract docker image IDs
         run: |
-          echo "POSTGRES_ID=$(docker-compose -f profile\dev-testing.yml images -q -- postgresql)" >> $GITHUB_ENV
-          echo "KEYLCOAK_ID=$(docker-compose -f profile\dev-testing.yml images -q -- keycloak)" >> $GITHUB_ENV
+          echo "POSTGRES_ID=$(docker-compose -f profile/dev-testing.yml images -q -- postgresql)" >> $GITHUB_ENV
+          echo "KEYLCOAK_ID=$(docker-compose -f profile/dev-testing.yml images -q -- keycloak)" >> $GITHUB_ENV
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
