@@ -1,12 +1,18 @@
 # Build, test and conditionally publish the manager docker image using the included gradle wrapper
 
 name: CI/CD
-concurrency: ci
 
 on:
+  # Push excluding tags and workflow changes
   push:
+    tags:
+      - '!**'
 #     paths-ignore:
 #       - '.github/**'
+
+  # When a release is published
+  release:
+    types: [published]
 
   workflow_dispatch:
 
@@ -19,7 +25,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+          
+      - name: Checkout
+        uses: actions/checkout@v2
+    
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Set environment based on branch
+        uses: kanga333/variable-mapper@master
+        with:
+          key: "${{github.base_ref}}"
+          map: |
+            {
+              "develop": {
+                "TAG": "develop"
+              }
+            }
+            
+      - name: Determine docker image tag name
+        run: echo "TAG=${{ github.event.release.tag_name || env.TAG }}" >> $GITHUB_ENV            
 
       - name: Set up JDK 17 and gradle cache
         uses: actions/setup-java@v2
@@ -68,10 +95,7 @@ jobs:
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
           echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
           echo "************************************************************"
-          echo "************************************************************"    
-          
-#       - name: Build
-#         run: ./gradlew installDist
+          echo "************************************************************"
 
       - name: Check for cached docker images
         id: check_docker
@@ -97,9 +121,20 @@ jobs:
       - name: Start docker test services
         run: docker-compose -f profile/dev-testing.yml up -d --no-build
         
-      - name: Test
-        run: ./gradlew test      
-           
+      - name: Build and run backend tests
+        run: ./gradlew build installDist
+        timeout-minutes: 30
+        
+        
+      - name: Create manager docker image
+        if: env.TAG != ""
+        run: docker build -t openremote/manager:$TAG
+        
+        
+        ## TODO: Add UI tests to the pipeline
+        # Start manager
+        # Run UI tests with gradle
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
