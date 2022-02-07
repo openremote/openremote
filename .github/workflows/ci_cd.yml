@@ -23,7 +23,7 @@ jobs:
 
   build:
     outputs:
-      tag: ${{ env.TAG }}
+      tag: ${{ steps.docker-tag-name.outputs.tag }}
       
     runs-on: ubuntu-latest
 
@@ -50,6 +50,9 @@ jobs:
 
       - name: Determine docker image tag name
         run: echo "TAG=${{ github.event.release.tag_name || env.TAG }}" >> $GITHUB_ENV
+
+      - id: docker-tag-name
+        run: echo "::set-output name=tag::${{ env.TAG }}"
 
 #       - name: Set up JDK 17 and gradle cache
 #         uses: actions/setup-java@v2
