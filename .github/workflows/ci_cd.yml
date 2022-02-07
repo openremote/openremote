@@ -40,7 +40,7 @@ jobs:
       - name: Set environment based on branch
         uses: kanga333/variable-mapper@master
         with:
-          key: "${{github.base_ref}}"
+          key: "${{ github.ref_name }}"
           map: |
             {
               ".*": {
