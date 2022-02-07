@@ -15,18 +15,11 @@ env:
   
 jobs:
 
-
   build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-           
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Set up JDK 17 and gradle cache
         uses: actions/setup-java@v2
@@ -37,12 +30,6 @@ jobs:
           
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      
-      - name: Extract docker image IDs
-        run: |
-          echo docker-compose -f profile/dev-testing.yml images -q -- postgresql
-          echo "POSTGRES_ID=$(docker-compose -f profile/dev-testing.yml images -q -- postgresql)" >> $GITHUB_ENV
-          echo "KEYLCOAK_ID=$(docker-compose -f profile/dev-testing.yml images -q -- keycloak)" >> $GITHUB_ENV
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -57,25 +44,52 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
             
-      - name: Docker postgres image cache
+      - name: Docker image cache
         uses: actions/cache@v2
-        id: docker-postgres-cache
+        id: docker-cache
         with:
           path:  |
-            postgres.tar.gz
-          key: ${{ runner.os }}-postgres-image--${{ env.POSTGRES_ID }}
+            image-cache
+          key: ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
           restore-keys: |
-            ${{ runner.os }}-postgres-image--${{ env.POSTGRES_ID }}            
-      
-      - name: Docker keycloak image cache
-        uses: actions/cache@v2
-        id: docker-keycloak-cache
+            ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
+
+      - name: Check for cached keycloak image
+        id: check_keycloak
+        uses: andstor/file-existence-action@v1
         with:
-          path:  |
-            keycloak.tar.gz
-          key: ${{ runner.os }}-keycloak-image--${{ env.KEYCLOAK_ID }}
-          restore-keys: |
-            ${{ runner.os }}-keycloak-image--${{ env.KEYCLOAK_ID }}
+          files: "image-cache/keycloak.tar.gz"
+                    
+      - name: Check for cached postgres image
+        id: check_postgres
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "image-cache/postgres.tar.gz"         
+          
+      - name: Load keycloak image from cache
+        if: steps.check_keycloak.outputs.files_exists == 'true'
+        run: |
+          docker load < image-cache/keycloak.tar.gz
+          
+      - name: Load postgres image from cache
+        if: steps.check_postgres.outputs.files_exists == 'true'
+        run: |
+          docker load < image-cache/postgres.tar.gz
+
+      - name: Pull keycloak image from hub
+        if: steps.check_keycloak.outputs.files_exists != 'true'
+        run: |
+          docker-compose -f profile/dev-testing.yml pull keycloak
+          keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
+          docker save $keycloak | gzip > image-cache/keycloak.tar.gz
+
+      - name: Pull postgres image from hub
+        if: steps.check_postgres.outputs.files_exists != 'true'
+        run: |
+          docker-compose -f profile/dev-testing.yml pull postgresql
+          postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
+          docker save $postgres | gzip > image-cache/postgres.tar.gz
+
           
       - name: Output info
         run: |
@@ -85,10 +99,7 @@ jobs:
           echo "Yarn version: $(yarn -v)"
           echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit == 'true' }}"
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
-          echo "Postgres image ID: ${{ env.POSTGRES_ID }}"
-          echo "Keycloak image ID: ${{ env.KEYCLOAK_ID }}"
-          echo "Docker postgres from cache: ${{ steps.docker-postgres-cache.outputs.cache-hit == 'true' }}"
-          echo "Docker keycloak from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit == 'true' }}"
+          echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
           echo "************************************************************"
           echo "************************************************************"
     
@@ -99,43 +110,14 @@ jobs:
           limit-access-to-users: richturner
           
 #       - name: Build
-#         run: ./gradlew installDist
-          
-#       - name: Check for cached keycloak image
-#         id: check_keycloak
-#         uses: andstor/file-existence-action@v1
-#         with:
-#           files: "keycloak.tar.gz"
-                    
-#       - name: Check for cached postgres image
-#         id: check_postgres
-#         uses: andstor/file-existence-action@v1
-#         with:
-#           files: "postgres.tar.gz"         
-          
-#       - name: Load keycloak image from cache
-#         if: steps.check_keycloak.outputs.files_exists == 'true'
-#         run: |
-#           docker load < keycloak.tar.gz
-                
-#       - name: Pull keycloak image from hub
-#         if: steps.check_keycloak.outputs.files_exists != 'true'
-#         run: |
-#           docker-compose -f profile/dev-testing.yml pull keycloak
-#           keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
-#           docker save $keycloak | gzip > keycloak.tar.gz
-          
-#       - name: Load postgres image from cache
-#         if: steps.check_postgres.outputs.files_exists == 'true'
-#         run: |
-#           docker load < postgres.tar.gz
-                
-#       - name: Pull postgres image from hub
-#         if: steps.check_postgres.outputs.files_exists != 'true'
-#         run: |
-#           docker-compose -f profile/dev-testing.yml pull postgresql
-#           postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
-#           docker save $postgres | gzip > postgres.tar.gz
+#         run: ./gradlew installDist       
+           
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        
         
         
 #       - name: Test
