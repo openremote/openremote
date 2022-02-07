@@ -33,8 +33,7 @@ function getStandardModuleRules() {
                 use: {
                     loader: "ts-loader",
                     options: {
-                        projectReferences: true,
-                        transpileOnly: true
+                        projectReferences: true
                     }
                 }
             }
