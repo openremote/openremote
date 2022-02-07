@@ -22,6 +22,9 @@ env:
 jobs:
 
   build:
+    outputs:
+      tag: ${{ env.TAG }}
+      
     runs-on: ubuntu-latest
 
     steps:
@@ -43,182 +46,136 @@ jobs:
               "develop": {
                 "TAG": "develop"
               }
-            }
-            
+            }        
+
       - name: Determine docker image tag name
-        run: echo "TAG=${{ github.event.release.tag_name || env.TAG }}" >> $GITHUB_ENV            
+        run: echo "TAG=${{ github.event.release.tag_name || env.TAG }}" >> $GITHUB_ENV
 
-      - name: Set up JDK 17 and gradle cache
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+#       - name: Set up JDK 17 and gradle cache
+#         uses: actions/setup-java@v2
+#         with:
+#           distribution: 'temurin'
+#           java-version: '17'
+#           cache: 'gradle'
           
-      - name: Grant execute permission for gradlew and make image-cache
-        run: |
-          chmod +x gradlew
-          mkdir -p ~/image-cache
+#       - name: Grant execute permission for gradlew and make image-cache
+#         run: |
+#           chmod +x gradlew
+#           mkdir -p ~/image-cache
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+#       - name: Get yarn cache directory path
+#         id: yarn-cache-dir-path
+#         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
 
-      - name: Yarn cache
-        uses: actions/cache@v2
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+#       - name: Yarn cache
+#         uses: actions/cache@v2
+#         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+#         with:
+#           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+#           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+#           restore-keys: |
+#             ${{ runner.os }}-yarn-
             
-      - name: Docker image cache
-        uses: actions/cache@v2
-        id: docker-cache
-        with:
-          path:  |
-            ~/image-cache
-          key: ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
+#       - name: Docker image cache
+#         uses: actions/cache@v2
+#         id: docker-cache
+#         with:
+#           path:  |
+#             ~/image-cache
+#           key: ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
+#           restore-keys: |
+#             ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
           
-      - name: Output build info
-        run: |
-          echo "************************************************************"
-          echo "**************        BUILD INFO         *******************"
-          echo "************************************************************"
-          echo "Java version: $(java --version)"
-          echo "Yarn version: $(yarn -v)"
-          echo "Node version: $(node -v)"
-          echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit == 'true' }}"
-          echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
-          echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
-          echo "************************************************************"
-          echo "************************************************************"
+#       - name: Output build info
+#         run: |
+#           echo "************************************************************"
+#           echo "**************        BUILD INFO         *******************"
+#           echo "************************************************************"
+#           echo "Java version: $(java --version)"
+#           echo "Yarn version: $(yarn -v)"
+#           echo "Node version: $(node -v)"
+#           echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit == 'true' }}"
+#           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
+#           echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
+#           echo "************************************************************"
+#           echo "************************************************************"
 
-      - name: Check for cached docker images
-        id: check_docker
-        uses: andstor/file-existence-action@v1
-        with:
-          files: "~/image-cache/keycloak.tar.gz, ~/image-cache/postgres.tar.gz"
+#       - name: Check for cached docker images
+#         id: check_docker
+#         uses: andstor/file-existence-action@v1
+#         with:
+#           files: "~/image-cache/keycloak.tar.gz, ~/image-cache/postgres.tar.gz"
           
-      - name: Load cached docker images
-        if: steps.check_docker.outputs.files_exists == 'true'
-        run: |
-          docker load < ~/image-cache/keycloak.tar.gz
-          docker load < ~/image-cache/postgres.tar.gz
+#       - name: Load cached docker images
+#         if: steps.check_docker.outputs.files_exists == 'true'
+#         run: |
+#           docker load < ~/image-cache/keycloak.tar.gz
+#           docker load < ~/image-cache/postgres.tar.gz
 
-      - name: Pull docker images
-        if: steps.check_docker.outputs.files_exists != 'true'
-        run: |
-          docker-compose -f profile/dev-testing.yml pull
-          keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
-          postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
-          docker save $keycloak | gzip > ~/image-cache/keycloak.tar.gz
-          docker save $postgres | gzip > ~/image-cache/postgres.tar.gz
+#       - name: Pull docker images
+#         if: steps.check_docker.outputs.files_exists != 'true'
+#         run: |
+#           docker-compose -f profile/dev-testing.yml pull
+#           keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
+#           postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
+#           docker save $keycloak | gzip > ~/image-cache/keycloak.tar.gz
+#           docker save $postgres | gzip > ~/image-cache/postgres.tar.gz
 
-      - name: Start docker test services
-        run: docker-compose -f profile/dev-testing.yml up -d --no-build
+#       - name: Start docker test services
+#         run: docker-compose -f profile/dev-testing.yml up -d --no-build
         
-      - name: Build and run backend tests
-        run: ./gradlew build installDist
-        timeout-minutes: 30
+#       - name: Build and run backend tests
+#         run: ./gradlew build installDist
+#         timeout-minutes: 30        
         
-        
-      - name: Create manager docker image
-        if: env.TAG != ""
-        run: docker build -t openremote/manager:$TAG
-        
-        
-        ## TODO: Add UI tests to the pipeline
-        # Start manager
-        # Run UI tests with gradle
+#         ## TODO: Add UI tests to the pipeline
+#         # Start manager
+#         # Run UI tests with gradle
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          
 #       - name: Share build artifacts
+#         if: ${{ env.TAG != "" }}
 #         uses: actions/upload-artifact@v2
 #         with:
 #           name: build-output
 #           path: |
 #             manager/build
-#             deployment/build
 #           retention-days: 1
 
 
 
-#   test_ui:
-#     runs-on: ubuntu-latest
-#     needs: [image_manager]
-#     steps:
-#       - uses: actions/setup-python@v2
+  docker_image:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: ${{ needs.build.output.tag != "" }}
+    
+    steps:
+      - name: Download build artifacts
+        run: echo "BUILD"
+#         uses: actions/download-artifact@v2
 #         with:
-#           python-version: 3.8
-#       - name: install openremote-cli
-#         run: |
-#           pip3 install openremote-cli
-#           openremote-cli -V -t
-#       - name: deploy openremote stack on localhost and run UI test
-#         run: |
-#           wget -nc https://raw.githubusercontent.com/openremote/openremote/master/docker-compose.yml
-#           docker-compose up -d
-#           sleep 60
-#           docker ps
-#           # Login to manager and add weather agent asset
-#           or-test-http-rest --dnsname localhost --password secret -vv
-#         timeout-minutes: 30
-#         continue-on-error: true
-
-
-#   test_staging_demo:
-#     runs-on: ubuntu-latest
-#     needs: [image_manager]
-#     steps:
-#       - uses: actions/setup-python@v2
-#         with:
-#           python-version: 3.9
-#       - name: install openremote-cli
-#         run: |
-#           pip3 install openremote-cli
-#           openremote-cli -V -t
-#       - name: wait 10m for staging.demo new image update
-#         run: sleep 600
-#       - name: login staging.demo.openremote.io and wait for map
-#         run: openremote-cli manager --open -t --quit --quiet -v --dnsname staging.demo.openremote.io --password "${{ secrets.STAGING_DEMO_PASSWORD }}"
-#         continue-on-error: false
-
-#   image_manager:
-#     runs-on: ubuntu-latest
-#     needs: [build]
-
-#     steps:
-#       - uses: actions/checkout@v2
-#       - uses: n1hility/cancel-previous-runs@v2
-#         with:
-#           token: ${{ secrets.GITHUB_TOKEN }}
+#           name: dist-build
+          
 #       - name: set up QEMU
 #         uses: docker/setup-qemu-action@v1
 #         with:
 #           platforms: all
+
 #       - name: install buildx
 #         id: buildx
 #         uses: docker/setup-buildx-action@v1
 #         with:
 #           version: latest
 #           install: true
+
 #       - name: available platforms
 #         run: echo ${{ steps.buildx.outputs.platforms }}
-#       - name: login to docker hub
-#         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
-#       - name: Download build artifacts
-#         uses: actions/download-artifact@v2
+
+#       - name: Login to DockerHub
+#         uses: docker/login-action@v1
 #         with:
-#           name: dist-build
+#           username: ${{ secrets.DOCKERHUB_USER }}
+#           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
 #       - name: build and push images
 #         run: |
 #           docker build --push --platform $PLATFORM -t openremote/manager:latest manager/build/install/manager
