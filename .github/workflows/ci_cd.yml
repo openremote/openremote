@@ -88,8 +88,9 @@ jobs:
     
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
-        limit-access-to-actor: true
-        limit-access-to-users: richturner
+        with:
+          limit-access-to-actor: true
+          limit-access-to-users: richturner
           
 #       - name: Build
 #         run: ./gradlew installDist
