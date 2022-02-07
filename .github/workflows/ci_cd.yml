@@ -22,10 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - name: Set up JDK 17
-        uses: actions/setup-java@v1
+      - name: Set up JDK 17 and gradle cache
+        uses: actions/setup-java@v2
         with:
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
           
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -34,17 +36,6 @@ jobs:
         run: |
           echo $(docker-compose -f profile\dev-testing.yml images -q -- postgresql) >> $GITHUB_ENV
           echo $(docker-compose -f profile\dev-testing.yml images -q -- keycloak) >> $GITHUB_ENV
-
-      - name: Gradle cache
-        id: gradle-cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -81,15 +72,18 @@ jobs:
           
       - name: Output info
         run: |
+          echo "DOCKER_INFO<<EOF" >> $GITHUB_ENV
+          echo $(docker-compose -f profile/dev-testing.yml images) >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           echo "************************************************************"
           echo "**************        BUILD INFO         *******************"
           echo "************************************************************"
           echo "Yarn version: $(yarn -v)"
-          echo "dev-testing.yml images: $(docker-compose -f profile/dev-testing.yml images)"
-          echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit }}"
-          echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit }}"
-          echo "Docker postgres from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit }}"
-          echo "Docker keycloak from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit }}"
+          echo "dev-testing.yml images: ${{ env.DOCKER_INFO }}"
+          echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit == 'true' }}"
+          echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
+          echo "Docker postgres from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit == 'true' }}"
+          echo "Docker keycloak from cache: ${{ steps.docker-keycloak-cache.outputs.cache-hit == 'true' }}"
           echo "************************************************************"
           echo "************************************************************"
       
