@@ -28,8 +28,10 @@ jobs:
           java-version: '17'
           cache: 'gradle'
           
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Grant execute permission for gradlew and make image-cache
+        run: |
+          chmod +x gradlew
+          mkdir image-cache
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
