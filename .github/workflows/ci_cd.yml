@@ -5,8 +5,8 @@ name: CI/CD
 on:
   # Push excluding tags and workflow changes
   push:
-    tags:
-      - '!**'
+#     tags:
+#       - '!**'
 #     paths-ignore:
 #       - '.github/**'
 
