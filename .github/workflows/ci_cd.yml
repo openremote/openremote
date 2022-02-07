@@ -21,7 +21,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      
+           
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Set up JDK 17 and gradle cache
         uses: actions/setup-java@v2
         with:
@@ -94,12 +100,6 @@ jobs:
           
 #       - name: Build
 #         run: ./gradlew installDist
-      
-#       - name: Login to DockerHub
-#         uses: docker/login-action@v1
-#         with:
-#           username: ${{ secrets.DOCKERHUB_USER }}
-#           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           
 #       - name: Check for cached keycloak image
 #         id: check_keycloak
