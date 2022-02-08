@@ -175,6 +175,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: dist-build
+          path: manager/build/install/manager
           
       - name: set up QEMU
         uses: docker/setup-qemu-action@v1
