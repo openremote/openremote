@@ -61,6 +61,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up JDK 17 and gradle cache
+        id: java
         uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
@@ -103,7 +104,7 @@ jobs:
           echo "Java version: $(java --version)"
           echo "Yarn version: $(yarn -v)"
           echo "Node version: $(node -v)"
-          echo "Gradle cache: ${{ steps.gradle-cache.outputs.cache-hit == 'true' }}"
+          echo "Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}"
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
           echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
           echo "************************************************************"
@@ -113,22 +114,23 @@ jobs:
         id: check_docker
         uses: andstor/file-existence-action@v1
         with:
-          files: "~/image-cache/keycloak.tar.gz, ~/image-cache/postgres.tar.gz"
+          files: ", ~/image-cache/postgres.tar.gz"
           
       - name: Load cached docker images
-        if: steps.check_docker.outputs.files_exists == 'true'
+        if: steps.docker-cache.outputs.cache-hit == 'true'
         run: |
           docker load < ~/image-cache/keycloak.tar.gz
           docker load < ~/image-cache/postgres.tar.gz
 
       - name: Pull docker images
-        if: steps.check_docker.outputs.files_exists != 'true'
+        if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
           docker-compose -f profile/dev-testing.yml pull
           keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
           postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
           docker save $keycloak | gzip > ~/image-cache/keycloak.tar.gz
           docker save $postgres | gzip > ~/image-cache/postgres.tar.gz
+          ls -R ~/image-cache
 
       - name: Start docker test services
         run: docker-compose -f profile/dev-testing.yml up -d --no-build
