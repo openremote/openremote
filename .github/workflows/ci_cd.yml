@@ -52,7 +52,7 @@ jobs:
         run: echo "TAG=${{ github.event.release.tag_name || env.TAG }}" >> $GITHUB_ENV
 
       - id: dockertag
-        run: echo "::set-output name=tag::${{ env.TAG }}"
+        run: echo "::set-output name=tag::test"
 
 #       - name: Set up JDK 17 and gradle cache
 #         uses: actions/setup-java@v2
