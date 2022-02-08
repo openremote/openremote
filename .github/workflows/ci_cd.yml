@@ -5,10 +5,12 @@ name: CI/CD
 on:
   # Push excluding tags and workflow changes
   push:
-#     tags:
-#       - '!**'
-#     paths-ignore:
-#       - '.github/**'
+    branches:
+        - '**'
+    tags-ignore:
+      - '*.*'
+    paths-ignore:
+      - '.github/**'
 
   # When a release is published
   release:
