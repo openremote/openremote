@@ -1,0 +1,4 @@
+# Automatic or manual deployment of the stack using specified docker manager image tag from docker hub
+# or alternatively a git commit can be sepcified to build a custom manager image for deployment
+
+name: CI/CD
