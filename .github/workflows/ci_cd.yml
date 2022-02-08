@@ -65,7 +65,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
+          cache: 'gradle-'
           
       - name: Grant execute permission for gradlew and make image-cache
         run: |
@@ -81,9 +81,9 @@ jobs:
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-yarn---
             
       - name: Docker image cache
         uses: actions/cache@v2
@@ -91,9 +91,9 @@ jobs:
         with:
           path:  |
             ~/image-cache
-          key: ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
+          key: ${{ runner.os }}-docker---${{ hashFiles('profile/dev-testing.yml') }}
           restore-keys: |
-            ${{ runner.os }}-docker--${{ hashFiles('profile/dev-testing.yml') }}
+            ${{ runner.os }}-docker---
           
       - name: Output build info
         run: |
@@ -133,9 +133,14 @@ jobs:
       - name: Start docker test services
         run: docker-compose -f profile/dev-testing.yml up -d --no-build
         
-      - name: Build and run backend tests
-        run: ./gradlew build installDist
-        timeout-minutes: 30        
+      - name: Run backend tests
+        run: ./gradlew build
+        timeout-minutes: 20
+        
+      - name: Prepare docker image
+        if: ${{ needs.dockertag.outputs.tag != '' }}
+        run: ./gradlew installDist
+        timeout-minutes: 10
         
         ## TODO: Add UI tests to the pipeline
         # Start manager
@@ -145,7 +150,7 @@ jobs:
         if: ${{ needs.dockertag.outputs.tag != '' }}
         uses: actions/upload-artifact@v2
         with:
-          name: build-output
+          name: dist-build
           path: |
             manager/build/install/manager
           retention-days: 1
