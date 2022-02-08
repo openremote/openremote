@@ -49,4 +49,5 @@ jobs:
         
       - name: Check commit SHA
         if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
+        run: echo "TEST"
         
