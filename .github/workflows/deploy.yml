@@ -1,4 +1,41 @@
 # Automatic or manual deployment of the stack using specified docker manager image tag from docker hub
 # or alternatively a git commit can be sepcified to build a custom manager image for deployment
 
-name: CI/CD
+name: Deploy
+
+on:
+  # Manually request a deploy
+  workflow_dispatch:
+    inputs:
+      managerTag:
+        description: 'Manager docker tag to pull'
+      managerCommit:
+        description: 'Repo commit SHA to build'
+      branch:
+        description: 'Branch to use (or default)'
+      environment:
+        description: 'Environment to use (if any)'
+      host:
+        description: 'Host to deploy to'
+      password:
+        description: 'Admin password to use'
+      
+        
+  # Docker push webhook trigger
+  repository_dispatch:
+    types: [docker-push]
+
+env:
+  PLATFORM: linux/amd64,linux/arm64
+
+jobs:
+
+  config:
+    name: Determine config
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check manager Tag
+        if: github.event.inputs.tag_name != ''
+        id: check-tag
+        run: docker manifest inspect openremote/manager:${{ github.event.inputs.tag_name }} > /dev/null 2> /dev/null
