@@ -49,5 +49,5 @@ jobs:
         
       - name: Check commit SHA
 #         if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
-        run: echo "Secrets= ${{ toSON($secrets) }}"
+        run: echo "Secrets= ${{ toJSON($secrets) }}"
         
