@@ -31,7 +31,7 @@ env:
 jobs:
 
   config:
-    environment: ${{ env.environment }}
+    environment: $env.environment
     name: Determine config
     runs-on: ubuntu-latest
     
