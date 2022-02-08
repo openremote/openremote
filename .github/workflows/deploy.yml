@@ -31,8 +31,8 @@ env:
 jobs:
 
   config:
-    environment:
-        name: ${{ env.environment }}
+    outputs:
+      my_env: ${{ steps.manager-tag.outputs.my_env }}
     name: Determine config
     runs-on: ubuntu-latest
     
@@ -46,9 +46,21 @@ jobs:
           
       - name: Check manager Tag
         if: github.event.inputs.managerTag != ''
-        run: docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
+        id: manager-tag
+        run: |
+          docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
+          echo "::set-output name=my_env::staging"
         
       - name: Check commit SHA
 #         if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
         run: echo "Secrets= ${{ toJSON(secrets) }}"
         
+  deploy:
+    needs: [config]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.config.outputs.my_env }}
+    
+    steps:
+      
+      - run: echo "Secrets= ${{ toJSON(secrets) }}"
