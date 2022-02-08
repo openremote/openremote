@@ -53,6 +53,8 @@ jobs:
 
       - id: dockertag
         run: echo "::set-output name=tag::test"
+        
+      - run: echo "TAG=${{ steps.dockertag.outputs.tag }}"
 
 #       - name: Set up JDK 17 and gradle cache
 #         uses: actions/setup-java@v2
