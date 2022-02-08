@@ -32,7 +32,8 @@ jobs:
 
   config:
     outputs:
-      my_env: ${{ steps.manager-tag.outputs.my_env }}
+      tag:
+      environment: ${{ steps.set-environment.outputs.environment }}
     name: Determine config
     runs-on: ubuntu-latest
     
@@ -52,8 +53,13 @@ jobs:
           echo "::set-output name=my_env::staging"
         
       - name: Check commit SHA
-#         if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
+        if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
         run: echo "Secrets= ${{ toJSON(secrets) }}"
+        
+      - name: Set environment
+        if: github.event.inputs.managerTag != ''
+        id: set-environment
+        run: echo "::set-output name=environment::${{ github.event.inputs.environment }}"
         
   deploy:
     needs: [config]
