@@ -36,6 +36,6 @@ jobs:
     
     steps:
       - name: Check manager Tag
-        if: github.event.inputs.tag_name != ''
+        if: github.event.inputs.managerTag != ''
         id: check-tag
-        run: docker manifest inspect openremote/manager:${{ github.event.inputs.tag_name }} > /dev/null 2> /dev/null
+        run: docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
