@@ -7,16 +7,16 @@ on:
   # Manually request a deploy
   workflow_dispatch:
     inputs:
+      host:
+        description: 'Host to deploy to'
+      password:
+        description: 'Admin password to use'
       managerTag:
         description: 'Manager docker tag to pull'
       managerCommit:
         description: 'Repo branch or commit SHA to use'
       environment:
         description: 'Environment to use (if any)'
-      host:
-        description: 'Host to deploy to'
-      password:
-        description: 'Admin password to use'
       
         
   # Docker push webhook trigger
@@ -30,6 +30,8 @@ jobs:
 
   config:
     outputs:
+      host: ${{ steps.host.outputs.host }}
+      password: ${{ steps.password.outputs.password }}
       managerTag: ${{ steps.managerTag.outputs.managerTag }}
       managerCommit: ${{ steps.managerCommit.outputs.managerCommit }}
       environment: ${{ steps.environment.outputs.environment }}
@@ -44,10 +46,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           
-      - name: Check host input
-        id: host
+      - name: Host input missing
         if: ${{ github.event.inputs.host == '' }}
         run: exit 1
+        
+      - name: Set host output
+        id: host
+        run: echo "::set-output name=host::${{ github.event.inputs.host }}"
 
       - name: Check commit input
         if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
