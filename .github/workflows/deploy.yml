@@ -78,7 +78,7 @@ jobs:
         run: |
           if [ ! -z $ENV_COMPOSE_FILE ]; then
             echo "::set-output name=value::$ENV_COMPOSE_FILE"
-          elif [ -f "profile/$ENVIRONMENT.yml ]; then
+          elif [ -f "profile/$ENVIRONMENT.yml" ]; then
             echo "::set-output name=value::profile/$ENVIRONMENT.yml"
           else
             echo "::set-output name=value::docker-compose.yml"
