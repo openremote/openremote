@@ -34,7 +34,7 @@ jobs:
       password: ${{ steps.password.outputs.password }}
       managerTag: ${{ steps.managerTag.outputs.managerTag }}
       managerCommit: ${{ steps.managerCommit.outputs.managerCommit }}
-      environment: ${{ steps.environment.outputs.environment }}
+      envInput: ${{ steps.env-input.outputs.value }}
     name: Evaluate inputs
     runs-on: ubuntu-latest
     
@@ -74,8 +74,8 @@ jobs:
         
       - name: Check environment input
         if: github.event.inputs.managerTag != ''
-        id: environment
-        run: echo "::set-output name=environment::${{ github.event.inputs.environment }}"
+        id: env-input
+        run: echo "::set-output name=value::${{ github.event.inputs.environment }}"
         
   deploy:
     needs: [config]
