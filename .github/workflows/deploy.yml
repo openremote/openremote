@@ -32,22 +32,32 @@ env:
 
 jobs:
 
-  config:
+  config-init:
+    name: Evaluate environment input
     outputs:
-      host: ${{ github.event.inputs.host }}
-      password: ${{ steps.password.outputs.password }}
-      managerTag: ${{ steps.manager-tag.outputs.managerTag }}
-      commit: ${{ steps.commit.outputs.commit }}
-      environment: ${{ steps.environment.outputs.value }}
-      composeFile: ${{ env.COMPOSE_FILE }}
-      customProject: ${{ steps.check_custom_project.outputs.files_exists }}
-      buildManager: ${{ steps.manager-tag.outputs.managerTag == '' }}
-      buildDeployment: ${{ steps.check_deployment_dir.outputs.files_exists }}
-      platform: ${{ github.event.inputs.platform }}
-    name: Evaluate inputs
+      environment: ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
     
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    
     steps:
+      - name: Check environment input
+        id: environment
+        run: echo $secrets
+        env:
+          secrets: ${{ toJson(secrets) }}
+
+  deploy:
+    # This is separate so the environment is loaded so we can extract config from there also
+    name: Build and deploy
+    needs: [config-init]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.config-init.outputs.environment }}
+
+    steps:      
+      
       - name: Login to DockerHub
         if: github.event.inputs.managerTag != ''
         uses: docker/login-action@v1
@@ -63,42 +73,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{github.event.inputs.commit}}
-        
-      - name: Output commit input
-        if: (github.event.inputs.commit != '') && (github.event.inputs.managerTag == '')
-        id: commit
-        run: echo "::set-output name=value::${{ github.event.inputs.commit }}"
+          submodules: recursive
         
       - name: Check manager tag input
         if: github.event.inputs.managerTag != ''
-        id: manager-tag
         run: |
           docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
-          echo "::set-output name=value::${{ github.event.inputs.managerTag }}"
-        
-      - name: Check environment input
-        if: github.event.inputs.environment != ''
-        id: environment
-        run: echo "::set-output name=value::${{ github.event.inputs.environment }}"
-        
-      - name: Check environment compose file existence
-        if: github.event.inputs.environment != ''
-        id: check_env_compose
-        uses: andstor/file-existence-action@v1
-        with:
-          files: "profile/${{github.event.inputs.environment}}.yml"
-          
-      - name: Environment compose file exists
-        if: steps.check_env_compose.outputs.files_exists == 'true'
-        run: echo "COMPOSE_FILE=$COMPOSE_FILE" >> $GITHUB_ENV
-        env:
-          COMPOSE_FILE: profile/${{github.event.inputs.environment}}.yml
-      
-      - name: Use default compose file
-        if: steps.check_env_compose.outputs.files_exists != 'true'
-        run: echo "COMPOSE_FILE=$COMPOSE_FILE" >> $GITHUB_ENV
-        env:
-          COMPOSE_FILE: docker-compose.yml
           
       - name: Check deployment existence
         id: check_deployment_dir
@@ -111,6 +91,50 @@ jobs:
         uses: andstor/file-existence-action@v1
         with:
           files: "openremote"
+        
+      - name: Determine compose file path
+        id: compose-file
+        run: |
+          if [ ! -z $ENV_COMPOSE_FILE ]; then
+            echo "::set-output name=value::$ENV_COMPOSE_FILE"
+          else if [ -f "profile/$ENVIRONMENT.yml ]; then
+            echo "::set-output name=value::profile/$ENVIRONMENT.yml"
+          else
+            echo "::set-output name=value::docker-compose.yml"
+          fi
+        env:
+          ENV_COMPOSE_FILE: ${{ secrets.COMPOSE_FILE }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+        
+      - name: Determine manager image info
+        id: manager-image
+        run: |
+          
+          if [ ! -z $INPUT_TAG ]; then
+            echo "::set-output name=tag::$INPUT_TAG"
+          else if [ $CUSTOM_PROJECT == 'true' ]; then
+            echo "::set-output name=build::true"
+            echo "::set-output name=path::openremote/manager/build/install/manager"
+            echo "::set-output name=tag::$(cd openremote; git rev-parse --short HEAD; cd ..)"
+          else if 
+            echo "::set-output name=build::true"
+            echo "::set-output name=path::manager/build/install/manager"
+            echo "::set-output name=tag::$(git rev-parse --short HEAD)"
+          fi
+        env:
+          INPUT_TAG: ${{ github.event.inputs.managerTag }}
+          INPUT_COMMIT:  ${{ github.event.inputs.commit }}
+          CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.file_exists }}
+
+      - name: Determine deployment image info
+        id: deployment-image
+        if: steps.check_deployment_dir.outputs.files_exists == 'true'
+        run: |
+          echo "::set-output name=build::true"
+          echo "::set-output name=path::deployment/build"
+          echo "::set-output name=tag::$(git rev-parse --short HEAD)"
+
+      - run: echo "PLATFORM=${{ secrets.PLATFORM || github.event.inputs.platform || linux/amd64 }}" >> $GITHUB_ENV
 
       - name: Output info
         run: |
@@ -118,70 +142,56 @@ jobs:
           echo "**************           INFO            *******************"
           echo "************************************************************"
           echo "Host: ${{ github.event.inputs.host }}"
-          echo "environment: ${{ steps.environment.outputs.value }}"
-          echo "Manager tag: ${{ steps.managerTag.outputs.value }}"
-          echo "Repo commit: ${{ steps.commit.outputs.value }}"
-          echo "Compose file: ${{ env.COMPOSE_FILE }}"
-          echo "Custom project: ${{ steps.check_custom_project.outputs.files_exists }}"
-          echo "Build manager: ${{ steps.manager-tag.outputs.managerTag == '' }}"
-          echo "Build deployment: ${{ steps.check_deployment_dir.outputs.files_exists }}"
+          echo "Environment: ${{ steps.environment.outputs.value }}"
+          echo "Platform: ${{ env.PLATFORM }}"
+          echo "Repo commit: $(git rev-parse --short HEAD)"
+          echo "Compose file: ${{ steps.compose-file.outputs.value }}"
+          echo "Manager build: ${{ steps.manager-image.outputs.build == 'true' }}"
+          echo "Manager tag: ${{ steps.manager-image.outputs.tag }}"
+          echo "Manager build path: ${{ steps.manager-image.outputs.path }}"
+          echo "Deployment build: ${{ steps.deployment-image.outputs.build == 'true' }}"
+          echo "Deployment tag: ${{ steps.deployment-image.outputs.tag }}"
+          echo "Deployment build path: ${{ steps.manager-image.outputs.path }}"
           echo "************************************************************"
           echo "************************************************************"
-        
-  build:
-    name: Build code
-    needs: [config]
-    runs-on: ubuntu-latest
-    environment:
-      name: ${{ needs.config.outputs.environment }}
-      
-    env:
-      PLATFORM: ${{ secrets.PLATFORM || needs.config.outputs.platform || linux/amd64 }}
-    
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{github.event.inputs.commit}}
-          
-      - name: Do Build
-        if: ${{ needs.config.outputs.buildRequired == 'true' }}
-        run: echo "DO INSTALL DIST!!!!!"
-        #./gradlew installDist
-          
-      - name: set up QEMU
-        uses: docker/setup-qemu-action@v1
-        with:
-          platforms: ${{ env.PLATFORM }}
-
-      - name: install buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          version: latest
-          install: true
-
-      - name: Build manager image
-        if: needs.config.outputs.buildManager == 'true'
+  
+      - name: Do code build
         run: |
-          docker build --platform $PLATFORM -t openremote/manager:$TAG manager/build/install/manager
+          if [ $BUILD_MANAGER == 'true' ]; then
+            echo "./gradlew installDist"
+          else if [ $BUILD_DEPLOYMENT == 'true' ]; then
+            echo "./gradlew -p deployment installDist"
+          fi
         env:
-          TAG:
-        
+          BUILD_MANAGER: ${{ steps.manager-image.outputs.build }}
+          BUILD_DEPLOYMENT: ${{ steps.deployment-image.outputs.build }}
+          
+#       - name: set up QEMU
+#         uses: docker/setup-qemu-action@v1
+#         with:
+#           platforms: ${{ env.PLATFORM }}
+
+#       - name: install buildx
+#         id: buildx
+#         uses: docker/setup-buildx-action@v1
+#         with:
+#           version: latest
+#           install: true
+
       - name: Build manager image
-        
-        
-        
-        
-  deploy:
-    needs: [build]
-    runs-on: ubuntu-latest
-    environment:
-      name: ${{ needs.config.outputs.environment }}
-    
-    steps:
-         
+        if: steps.manager-image.outputs.build == 'true'
+        run: echo "docker build --platform $PLATFORM -t openremote/manager:$TAG $BUILD_PATH"
+        env:
+          TAG: ${{ steps.manager-image.outputs.tag }}
+          BUILD_PATH: ${{ steps.manager-image.outputs.path }}
+
+      - name: Build deployment image
+        if: steps.deployment-image.outputs.build == 'true'
+        run: echo "docker build --platform $PLATFORM -t openremote/deployment:$TAG $BUILD_PATH"
+        env:
+          TAG: ${{ steps.deployment-image.outputs.tag }}
+          BUILD_PATH: ${{ steps.deployment-image.outputs.path }}
+          
       - name: Output secrets to .env file
         shell: bash
         run: |
@@ -190,3 +200,4 @@ jobs:
           secrets: ${{ toJson(secrets) }}
 
       - run: cat .env
+
