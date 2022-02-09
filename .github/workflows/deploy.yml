@@ -10,9 +10,7 @@ on:
       managerTag:
         description: 'Manager docker tag to pull'
       managerCommit:
-        description: 'Repo commit SHA to build'
-      branch:
-        description: 'Branch to use (or default)'
+        description: 'Repo branch or commit SHA to use'
       environment:
         description: 'Environment to use (if any)'
       host:
@@ -32,9 +30,10 @@ jobs:
 
   config:
     outputs:
-      tag:
-      environment: ${{ steps.set-environment.outputs.environment }}
-    name: Determine config
+      managerTag: ${{ steps.managerTag.outputs.managerTag }}
+      managerCommit: ${{ steps.managerCommit.outputs.managerCommit }}
+      environment: ${{ steps.environment.outputs.environment }}
+    name: Evaluate inputs
     runs-on: ubuntu-latest
     
     steps:
@@ -45,27 +44,36 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           
-      - name: Check manager Tag
+      - name: Check host input
+        id: host
+        if: ${{ github.event.inputs.host == '' }}
+        run: exit 1
+        
+      - name: Check manager tag input
         if: github.event.inputs.managerTag != ''
-        id: manager-tag
+        id: managerTag
         run: |
           docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
-          echo "::set-output name=my_env::staging"
+          echo "::set-output name=managerTag::${{ github.event.inputs.managerTag }}"
         
-      - name: Check commit SHA
+      - name: Check commit input
         if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
-        run: echo "Secrets= ${{ toJSON(secrets) }}"
+        id: managerCommit
+        run: |
+          git fetch --all
+          git show -q > /dev/null 2> /dev/null
+          echo "::set-output name=managerCommit::${{ github.event.inputs.managerCommit }}"
         
-      - name: Set environment
+      - name: Check environment input
         if: github.event.inputs.managerTag != ''
-        id: set-environment
+        id: environment
         run: echo "::set-output name=environment::${{ github.event.inputs.environment }}"
         
   deploy:
     needs: [config]
     runs-on: ubuntu-latest
     environment:
-      name: ${{ needs.config.outputs.my_env }}
+      name: ${{ needs.config.outputs.environment }}
     
     steps:
       
