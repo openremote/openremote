@@ -134,7 +134,7 @@ jobs:
           echo "::set-output name=path::deployment/build"
           echo "::set-output name=tag::$(git rev-parse --short HEAD)"
 
-      - run: echo "PLATFORM=${{ secrets.PLATFORM || github.event.inputs.platform || linux/amd64 }}" >> $GITHUB_ENV
+      - run: echo "PLATFORM=${{ secrets.PLATFORM || github.event.inputs.platform || 'linux/amd64' }}" >> $GITHUB_ENV
 
       - name: Output info
         run: |
