@@ -147,10 +147,10 @@ jobs:
           BUILD_MANAGER: ${{ steps.manager-image.outputs.build }}
           BUILD_DEPLOYMENT: ${{ steps.deployment-image.outputs.build }}
           
-#       - name: set up QEMU
-#         uses: docker/setup-qemu-action@v1
-#         with:
-#           platforms: ${{ env.PLATFORM }}
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: ${{ env.PLATFORM }}
 
 #       - name: install buildx
 #         id: buildx
