@@ -36,6 +36,7 @@ jobs:
       managerTag: ${{ steps.managerTag.outputs.managerTag }}
       managerCommit: ${{ steps.managerCommit.outputs.managerCommit }}
       environment: ${{ steps.environment.outputs.value }}
+      composeFile: ${{ env.COMPOSE_FILE }}
     name: Evaluate inputs
     runs-on: ubuntu-latest
     
@@ -78,6 +79,25 @@ jobs:
         id: environment
         run: echo "::set-output name=value::${{ github.event.inputs.environment }}"
         
+      - name: Check environment compose file existence
+        if: github.event.inputs.environment != ''
+        id: check_env_compose
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "profile/${{github.event.inputs.environment}}.yml"
+          
+      - name: Environment compose file exists
+        if: steps.check_env_compose.outputs.files_exists == 'true'
+        run: echo "COMPOSE_FILE=$COMPOSE_FILE" >> $GITHUB_ENV
+        env:
+          COMPOSE_FILE: profile/${{github.event.inputs.environment}}.yml
+      
+      - name: Use default compose file
+        if: steps.check_env_compose.outputs.files_exists != 'true'
+        run: echo "COMPOSE_FILE=$COMPOSE_FILE" >> $GITHUB_ENV
+        env:
+          COMPOSE_FILE: docker-compose.yml
+        
   deploy:
     needs: [config]
     runs-on: ubuntu-latest
@@ -94,6 +114,7 @@ jobs:
           echo "environment: ${{needs.config.outputs.environment }}"
           echo "Manager tag: ${{needs.config.outputs.managerTag }}"
           echo "Manager commit: ${{needs.config.outputs.managerCommit }}"
+          echo "Compose file: ${{needs.config.outputs.composeFile }}"
           echo "************************************************************"
           echo "************************************************************"
           
