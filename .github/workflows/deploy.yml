@@ -11,13 +11,16 @@ on:
         description: 'Host to deploy to'
         required: true
       password:
-        description: 'Admin password to use'
+        description: 'Admin password override'
       managerTag:
         description: 'Manager docker tag to pull'
-      managerCommit:
+      commit:
         description: 'Repo branch or commit SHA to use'
       environment:
         description: 'Environment to use (if any)'
+      platform:
+        description: 'Platform architecture'
+        default: linux/amd64
       
         
   # Docker push webhook trigger
@@ -31,12 +34,16 @@ jobs:
 
   config:
     outputs:
-      host: ${{ steps.host.outputs.host }}
+      host: ${{ github.event.inputs.host }}
       password: ${{ steps.password.outputs.password }}
-      managerTag: ${{ steps.managerTag.outputs.managerTag }}
-      managerCommit: ${{ steps.managerCommit.outputs.managerCommit }}
+      managerTag: ${{ steps.manager-tag.outputs.managerTag }}
+      commit: ${{ steps.commit.outputs.commit }}
       environment: ${{ steps.environment.outputs.value }}
       composeFile: ${{ env.COMPOSE_FILE }}
+      customProject: ${{ steps.check_custom_project.outputs.files_exists }}
+      buildManager: ${{ steps.manager-tag.outputs.managerTag == '' }}
+      buildDeployment: ${{ steps.check_deployment_dir.outputs.files_exists }}
+      platform: ${{ github.event.inputs.platform }}
     name: Evaluate inputs
     runs-on: ubuntu-latest
     
@@ -51,27 +58,23 @@ jobs:
       - name: Host input missing
         if: ${{ github.event.inputs.host == '' }}
         run: exit 1
-        
-      - name: Set host output
-        id: host
-        run: echo "::set-output name=host::${{ github.event.inputs.host }}"
 
       - name: Check commit input
         uses: actions/checkout@v2
         with:
-          ref: ${{github.event.inputs.managerCommit}}
+          ref: ${{github.event.inputs.commit}}
         
       - name: Output commit input
-        if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
-        id: managerCommit
-        run: echo "::set-output name=managerCommit::${{ github.event.inputs.managerCommit }}"
+        if: (github.event.inputs.commit != '') && (github.event.inputs.managerTag == '')
+        id: commit
+        run: echo "::set-output name=value::${{ github.event.inputs.commit }}"
         
       - name: Check manager tag input
         if: github.event.inputs.managerTag != ''
-        id: managerTag
+        id: manager-tag
         run: |
           docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
-          echo "::set-output name=managerTag::${{ github.event.inputs.managerTag }}"
+          echo "::set-output name=value::${{ github.event.inputs.managerTag }}"
         
       - name: Check environment input
         if: github.event.inputs.environment != ''
@@ -96,27 +99,89 @@ jobs:
         run: echo "COMPOSE_FILE=$COMPOSE_FILE" >> $GITHUB_ENV
         env:
           COMPOSE_FILE: docker-compose.yml
+          
+      - name: Check deployment existence
+        id: check_deployment_dir
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "deployment/Dockerfile"          
+          
+      - name: Check custom project
+        id: check_custom_project
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "openremote"
+
+      - name: Output info
+        run: |
+          echo "************************************************************"
+          echo "**************           INFO            *******************"
+          echo "************************************************************"
+          echo "Host: ${{ github.event.inputs.host }}"
+          echo "environment: ${{ steps.environment.outputs.value }}"
+          echo "Manager tag: ${{ steps.managerTag.outputs.value }}"
+          echo "Repo commit: ${{ steps.commit.outputs.value }}"
+          echo "Compose file: ${{ env.COMPOSE_FILE }}"
+          echo "Custom project: ${{ steps.check_custom_project.outputs.files_exists }}"
+          echo "Build manager: ${{ steps.manager-tag.outputs.managerTag == '' }}"
+          echo "Build deployment: ${{ steps.check_deployment_dir.outputs.files_exists }}"
+          echo "************************************************************"
+          echo "************************************************************"
+        
+  build:
+    name: Build code
+    needs: [config]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.config.outputs.environment }}
+      
+    env:
+      PLATFORM: ${{ secrets.PLATFORM || needs.config.outputs.platform || linux/amd64 }}
+    
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.event.inputs.commit}}
+          
+      - name: Do Build
+        if: ${{ needs.config.outputs.buildRequired == 'true' }}
+        run: echo "DO INSTALL DIST!!!!!"
+        #./gradlew installDist
+          
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: ${{ env.PLATFORM }}
+
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+
+      - name: Build manager image
+        if: needs.config.outputs.buildManager == 'true'
+        run: |
+          docker build --platform $PLATFORM -t openremote/manager:$TAG manager/build/install/manager
+        env:
+          TAG:
+        
+      - name: Build manager image
+        
+        
+        
         
   deploy:
-    needs: [config]
+    needs: [build]
     runs-on: ubuntu-latest
     environment:
       name: ${{ needs.config.outputs.environment }}
     
     steps:
-      - name: Output deployment info
-        run: |
-          echo "************************************************************"
-          echo "**************     DEPLOYMENT INFO       *******************"
-          echo "************************************************************"
-          echo "Host: ${{needs.config.outputs.host }}"
-          echo "environment: ${{needs.config.outputs.environment }}"
-          echo "Manager tag: ${{needs.config.outputs.managerTag }}"
-          echo "Manager commit: ${{needs.config.outputs.managerCommit }}"
-          echo "Compose file: ${{needs.config.outputs.composeFile }}"
-          echo "************************************************************"
-          echo "************************************************************"
-          
+         
       - name: Output secrets to .env file
         shell: bash
         run: |
