@@ -9,6 +9,7 @@ on:
     inputs:
       host:
         description: 'Host to deploy to'
+        required: true
       password:
         description: 'Admin password to use'
       managerTag:
