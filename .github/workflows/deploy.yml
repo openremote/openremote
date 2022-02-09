@@ -84,5 +84,22 @@ jobs:
       name: ${{ needs.config.outputs.environment }}
     
     steps:
-      
-      - run: echo "Secrets= ${{ toJSON(secrets) }}"
+      - name: Output deployment info
+        run: |
+          echo "************************************************************"
+          echo "**************     DEPLOYMENT INFO       *******************"
+          echo "************************************************************"
+          echo "Host: ${{needs.config.outputs.host }}"
+          echo "environment: ${{needs.config.outputs.environment }}"
+          echo "Manager tag: ${{needs.config.outputs.managerTag }}"
+          echo "Manager commit: ${{needs.config.outputs.managerCommit }}"
+          echo "************************************************************"
+          echo "************************************************************"
+          
+      - name: Output secrets to .env file
+        shell: bash
+        run: |
+          jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' <<< "$secrets" > .env
+          echo cat .env
+        env:
+          secrets: ${{ toJson(secrets) }}
