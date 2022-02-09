@@ -136,6 +136,8 @@ jobs:
           echo "************************************************************"
           echo "************************************************************"
   
+#       - name: Copy compose file
+  
       - name: Do code build
         run: |
           if [ $BUILD_MANAGER == 'true' ]; then
@@ -152,12 +154,12 @@ jobs:
         with:
           platforms: ${{ env.PLATFORM }}
 
-#       - name: install buildx
-#         id: buildx
-#         uses: docker/setup-buildx-action@v1
-#         with:
-#           version: latest
-#           install: true
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
 
       - name: Build manager image
         if: steps.manager-image.outputs.build == 'true'
