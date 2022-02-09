@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 env:
-  PLATFORM: linux/amd64,linux/aarch64
+  PLATFORMS: linux/amd64,linux/aarch64
   
 jobs:
 
@@ -188,7 +188,7 @@ jobs:
       - name: set up QEMU
         uses: docker/setup-qemu-action@v1
         with:
-          platforms: all
+          platforms: ${{ env.PLATFORMS }}
 
       - name: install buildx
         id: buildx
@@ -199,4 +199,4 @@ jobs:
 
       - name: Build and push images
         run: |
-          docker build --push --platform $PLATFORM -t openremote/manager:$TAG manager/build/install/manager
+          docker build --push --platform $PLATFORMS -t openremote/manager:$TAG manager/build/install/manager
