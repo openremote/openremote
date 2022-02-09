@@ -48,6 +48,17 @@ jobs:
         id: host
         if: ${{ github.event.inputs.host == '' }}
         run: exit 1
+
+      - name: Check commit input
+        if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.event.inputs.managerCommit}}
+        
+      - name: Output commit input
+        if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
+        id: managerCommit
+        run: echo "::set-output name=managerCommit::${{ github.event.inputs.managerCommit }}"
         
       - name: Check manager tag input
         if: github.event.inputs.managerTag != ''
@@ -55,14 +66,6 @@ jobs:
         run: |
           docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
           echo "::set-output name=managerTag::${{ github.event.inputs.managerTag }}"
-        
-      - name: Check commit input
-        if: (github.event.inputs.managerCommit != '') && (github.event.inputs.managerTag == '')
-        id: managerCommit
-        run: |
-          git fetch --all
-          git show -q > /dev/null 2> /dev/null
-          echo "::set-output name=managerCommit::${{ github.event.inputs.managerCommit }}"
         
       - name: Check environment input
         if: github.event.inputs.managerTag != ''
