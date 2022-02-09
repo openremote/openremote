@@ -101,6 +101,7 @@ jobs:
         shell: bash
         run: |
           jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' <<< "$secrets" > .env
-          echo cat .env
         env:
           secrets: ${{ toJson(secrets) }}
+
+      - run: cat .env
