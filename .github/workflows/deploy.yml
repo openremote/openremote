@@ -32,29 +32,10 @@ env:
 
 jobs:
 
-  config-init:
-    name: Evaluate environment input
-    outputs:
-      environment: ${{ github.event.inputs.environment }}
+  deploy:
     runs-on: ubuntu-latest
-    
     environment:
       name: ${{ github.event.inputs.environment }}
-    
-    steps:
-      - name: Check environment input
-        id: environment
-        run: echo $secrets
-        env:
-          secrets: ${{ toJson(secrets) }}
-
-  deploy:
-    # This is separate so the environment is loaded so we can extract config from there also
-    name: Build and deploy
-    needs: [config-init]
-    runs-on: ubuntu-latest
-    environment:
-      name: ${{ needs.config-init.outputs.environment }}
 
     steps:      
       
@@ -112,11 +93,11 @@ jobs:
           
           if [ ! -z $INPUT_TAG ]; then
             echo "::set-output name=tag::$INPUT_TAG"
-          else if [ $CUSTOM_PROJECT == 'true' ]; then
+          elif [ $CUSTOM_PROJECT == 'true' ]; then
             echo "::set-output name=build::true"
             echo "::set-output name=path::openremote/manager/build/install/manager"
             echo "::set-output name=tag::$(cd openremote; git rev-parse --short HEAD; cd ..)"
-          else if 
+          else
             echo "::set-output name=build::true"
             echo "::set-output name=path::manager/build/install/manager"
             echo "::set-output name=tag::$(git rev-parse --short HEAD)"
@@ -159,7 +140,7 @@ jobs:
         run: |
           if [ $BUILD_MANAGER == 'true' ]; then
             echo "./gradlew installDist"
-          else if [ $BUILD_DEPLOYMENT == 'true' ]; then
+          elif [ $BUILD_DEPLOYMENT == 'true' ]; then
             echo "./gradlew -p deployment installDist"
           fi
         env:
