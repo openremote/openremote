@@ -134,7 +134,7 @@ jobs:
         with:
           host: staging.demo.openremote.io
           username: ubuntu
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SSHKEY }}
           port: 22
           script: whoami
 
