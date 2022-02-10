@@ -103,7 +103,6 @@ jobs:
             else
               echo "$key=$value" >> $GITHUB_ENV
             fi
-            echo "Do whatever with ${id} ${name} ${date}"
           done< <($secrets | jq -r 'to_entries|.[] | "\(.key) \(.value)"')
         env:
           secrets: ${{ toJson(secrets) }}
