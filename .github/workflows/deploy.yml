@@ -132,10 +132,10 @@ jobs:
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.HOST }}
-          username: ${{ env.SSH_USER }}
+          host: staging.demo.openremote.io
+          username: ubuntu
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ env.SSH_PORT }}
+          port: 22
           script: whoami
 
       - run: exit 1
