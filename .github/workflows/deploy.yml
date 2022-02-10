@@ -84,11 +84,14 @@ jobs:
     steps:
     
       - name: Login to DockerHub
-        if: secrets.DOCKERHUB_USER != '' && secrets.DOCKERHUB_PASSWORD != ''
+        if: ${{ (USER != '') && (PASSWORD != '') }}
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        env:
+          USER: ${{ secrets.DOCKERHUB_USER }}
+          PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           
       - name: Output secrets to ENV ready for overwrites from inputs
         run: |
