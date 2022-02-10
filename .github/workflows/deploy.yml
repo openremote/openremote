@@ -103,7 +103,7 @@ jobs:
         id: host-name
         run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
         
-      - name: Host is set
+      - name: Host not set
         if: ${{ env.HOST == '' }}
         run: exit 1
                 
@@ -121,23 +121,21 @@ jobs:
         
       - name: Determine platform
         run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
-          
-      - name: Determine password
-        id: password
-        run: echo "SETUP_ADMIN_PASSWORD=${{ github.event.inputs.password || env.SETUP_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
-
-      - name: Check commit input
-        uses: actions/checkout@v2
-        with:
-          ref: ${{github.event.inputs.commit}}
-          submodules: recursive
-        
-      - run: echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
         
       - name: Check manager tag input
         if: github.event.inputs.managerTag != ''
         run: |
           docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
+
+      - name: Determine password
+        id: password
+        run: echo "SETUP_ADMIN_PASSWORD=${{ github.event.inputs.password || env.SETUP_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.event.inputs.commit}}
+          submodules: recursive
           
       - name: Check deployment existence
         id: check_deployment_dir
@@ -155,11 +153,11 @@ jobs:
         id: compose-file
         run: |
           if [ ! -z $ENV_COMPOSE_FILE ]; then
-            echo "::set-output name=value::$ENV_COMPOSE_FILE"
+            echo "COMPOSE_FILE=$ENV_COMPOSE_FILE" >> $GITHUB_ENV
           elif [ -f "profile/$ENVIRONMENT.yml" ]; then
-            echo "::set-output name=value::profile/$ENVIRONMENT.yml"
+            echo "COMPOSE_FILE=profile/$ENVIRONMENT.yml" >> $GITHUB_ENV
           else
-            echo "::set-output name=value::docker-compose.yml"
+            echo "COMPOSE_FILE=docker-compose.yml" >> $GITHUB_ENV
           fi
         env:
           ENV_COMPOSE_FILE: ${{ secrets.COMPOSE_FILE }}
@@ -167,71 +165,66 @@ jobs:
         
       - name: Determine manager image info
         id: manager-image
-        run: |
-          
+        run: |          
           if [ ! -z $INPUT_TAG ]; then
-            echo "::set-output name=tag::$INPUT_TAG"
+            echo "MANAGER_TAG=$INPUT_TAG" >> $GITHUB_ENV
           elif [ $CUSTOM_PROJECT == 'true' ]; then
-            echo "::set-output name=build::true"
-            echo "::set-output name=path::openremote/manager/build/install/manager"
-            echo "::set-output name=tag::$(cd openremote; git rev-parse --short HEAD; cd ..)"
+            echo "MANAGER_BUILD=true" >> $GITHUB_ENV
+            echo "MANAGER_PATH=openremote/manager/build/install/manager" >> $GITHUB_ENV
+            echo "MANAGER_TAG=$(cd openremote; git rev-parse --short HEAD; cd ..)" >> $GITHUB_ENV
           else
-            echo "::set-output name=build::true"
-            echo "::set-output name=path::manager/build/install/manager"
-            echo "::set-output name=tag::$(git rev-parse --short HEAD)"
+            echo "MANAGER_BUILD=true" >> $GITHUB_ENV
+            echo "MANAGER_PATH=manager/build/install/manager" >> $GITHUB_ENV
+            echo "MANAGER_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
         env:
           INPUT_TAG: ${{ github.event.inputs.managerTag }}
-          INPUT_COMMIT:  ${{ github.event.inputs.commit }}
           CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.file_exists }}
 
       - name: Determine deployment image info
         id: deployment-image
         if: steps.check_deployment_dir.outputs.files_exists == 'true'
         run: |
-          echo "::set-output name=build::true"
-          echo "::set-output name=path::deployment/build"
-          echo "::set-output name=tag::$(git rev-parse --short HEAD)"
+          echo "DEPLOYMENT_BUILD=true" >> $GITHUB_ENV
+          echo "DEPLOYMENT_PATH=deployment/build" >> $GITHUB_ENV
+          echo "DEPLOYMENT_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Output info
         run: |
           echo "************************************************************"
           echo "**************           INFO            *******************"
           echo "************************************************************"
-          echo "Host: ${{ steps.host-name.outputs.value }}"
+          echo "Host: ${{ env.HOST }}"
           echo "Environment: ${{ github.event.inputs.environment }}"
           echo "Platform: ${{ env.PLATFORM }}"
-          echo "Repo commit: "
-          echo "Compose file: ${{ steps.compose-file.outputs.value }}"
-          echo "Manager build: ${{ steps.manager-image.outputs.build == 'true' }}"
-          echo "Manager tag: ${{ steps.manager-image.outputs.tag }}"
-          echo "Manager build path: ${{ steps.manager-image.outputs.path }}"
-          echo "Deployment build: ${{ steps.deployment-image.outputs.build == 'true' }}"
-          echo "Deployment tag: ${{ steps.deployment-image.outputs.tag }}"
-          echo "Deployment build path: ${{ steps.manager-image.outputs.path }}"
+          echo "Compose file: ${{ env.COMPOSE_FILE }}"
+          echo "Manager build: ${{ env.MANAGER_BUILD == 'true' }}"
+          echo "Manager tag: ${{ env.MANAGER_TAG }}"
+          echo "Manager build path: ${{ env.MANAGER_PATH }}"
+          echo "Deployment build: ${{ env.DEPLOYMENT_BUILD == 'true' }}"
+          echo "Deployment tag: ${{ env.DEPLOYMENT_TAG }}"
+          echo "Deployment build path: ${{ env.DEPLOYMENT_PATH }}"
           echo "************************************************************"
           echo "************************************************************"
   
-#       - name: Copy compose file (test SSH connection before building)
-#         uses: appleboy/scp-action@master
-#         with:
-#           host: staging.k2.openremote.io
-#           username: ubuntu
-#           key: ${{ secrets.OPENREMOTE_SSH_PRIVATE_KEY }}
-#           source: "aws-docker-compose.yml"
-#           target: "~"
-
+      - name: Copy compose file (test SSH connection before building)
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          source: ${{ env.COMPOSE_FILE }}
+          target: "~"
   
       - name: Do code build
         run: |
-          if [ $BUILD_MANAGER == 'true' ]; then
+          if [ $MANAGER_BUILD == 'true' ]; then
             echo "./gradlew installDist"
-          elif [ $BUILD_DEPLOYMENT == 'true' ]; then
+          elif [ $DEPLOYMENT_BUILD == 'true' ]; then
             echo "./gradlew -p deployment installDist"
           fi
-        env:
-          BUILD_MANAGER: ${{ steps.manager-image.outputs.build }}
-          BUILD_DEPLOYMENT: ${{ steps.deployment-image.outputs.build }}
           
       - name: set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -246,18 +239,10 @@ jobs:
           install: true
 
       - name: Build manager image
-        if: steps.manager-image.outputs.build == 'true'
-        run: echo "docker build --platform $PLATFORM -t openremote/manager:$TAG $BUILD_PATH"
-        env:
-          TAG: ${{ steps.manager-image.outputs.tag }}
-          BUILD_PATH: ${{ steps.manager-image.outputs.path }}
+        if: ${{ env.MANAGER_BUILD == 'true' }}
+        run: echo "docker build --platform $PLATFORM -t openremote/manager:$MANAGER_TAG $MANAGER_PATH"
 
       - name: Build deployment image
-        if: steps.deployment-image.outputs.build == 'true'
-        run: echo "docker build --platform $PLATFORM -t openremote/deployment:$TAG $BUILD_PATH"
-        env:
-          TAG: ${{ steps.deployment-image.outputs.tag }}
-          BUILD_PATH: ${{ steps.deployment-image.outputs.path }}
-
-      - run: cat .env
+        if: ${{ env.DEPLOYMENT_BUILD == 'true' }}
+        run: echo "docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_TAG $DEPLOYMENT_PATH"
 
