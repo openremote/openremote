@@ -97,11 +97,11 @@ jobs:
         run: |
           while read -r key value; do
             if [[ $key == *$'\n'* ]]; then
-              echo "$key<<EOF"
-              echo $value
-              echo "EOF"
+              echo "$key<<EOF" >> $GITHUB_ENV
+              echo $value >> $GITHUB_ENV
+              echo "EOF" >> $GITHUB_ENV
             elif [[ ! -z $key ]]; then
-              echo "$key=$value"
+              echo "$key=$value" >> $GITHUB_ENV
             fi
           done< <(jq -r 'to_entries|.[] | "\(.key) \(.value)"' <<< "$secrets")
         env:
