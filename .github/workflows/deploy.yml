@@ -97,9 +97,9 @@ jobs:
         run: |
           while read -r key value; do
             if [[ $key == *$'\n'* ]]; then
-              echo $key'<<EOF' >> env.txt
+              echo $key'<<@@@' >> env.txt
               echo $value >> env.txt
-              echo 'EOF' >> env.txt
+              echo '@@@' >> env.txt
             elif [[ ! -z $key ]]; then
               echo "$key=$value" >> env.txt
             fi
