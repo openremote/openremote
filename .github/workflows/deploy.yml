@@ -100,7 +100,7 @@ jobs:
               echo "$key<<EOF" >> $GITHUB_ENV
               echo $value >> $GITHUB_ENV
               echo "EOF" >> $GITHUB_ENV
-            else
+            elif [[ ! -z $key ]]; then
               echo "$key=$value" >> $GITHUB_ENV
             fi
           done< <(jq -r 'to_entries|.[] | "\(.key) \(.value)"' <<< "$secrets")
