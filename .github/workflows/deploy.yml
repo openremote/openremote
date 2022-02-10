@@ -97,17 +97,19 @@ jobs:
         run: |
           while read -r key value; do
             if [[ $key == *$'\n'* ]]; then
+              echo "MULTILINE"
               echo $key'<<@@@' >> env.txt
               echo $value >> env.txt
               echo '@@@' >> env.txt
             elif [[ ! -z $key ]]; then
+              echo "SINGLE LINE"
               echo "$key=$value" >> env.txt
             fi
           done< <(jq -r 'to_entries|.[] | "\(.key) \(.value)"' <<< $secrets)
         env:
-          secrets: ${{ toJson(secrets) }}
+          secrets: ${{ secrets }}
             
-      - run: echo "${{ toJson(secrets) }}" >> secrets.txt
+      - run: echo "${{ toJSON(secrets) }}" >> secrets.txt
             
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
