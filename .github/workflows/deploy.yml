@@ -106,16 +106,18 @@ jobs:
           done< <(jq -r 'to_entries|.[] | "\(.key) \(.value)"' <<< "$secrets")
         env:
           secrets: ${{ toJson(secrets) }}
+      
+      - run: |
+          echo "RICHTEST<<EOF" >> $GITHUB_ENV
+          echo "MULTI\nLINE\nVALUE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+            
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
         with:
           ## limits ssh access and adds the ssh public keys of the listed GitHub users
           limit-access-to-users: richturner
       
-      - run: |
-            echo "RICHTEST<<EOF" >> $GITHUB_ENV
-            echo "MULTI\nLINE\nVALUE" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
 #       - name: Determine host name
 #         id: host-name
 #         run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
