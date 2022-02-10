@@ -1,5 +1,42 @@
 # Automatic or manual deployment of the stack using specified docker manager image tag from docker hub
-# or alternatively a git commit can be sepcified to build a custom manager image for deployment
+# or alternatively a git commit can be sepcified to build a custom manager image.
+#
+# If this is a custom project (i.e. has openremote submodule) or deployment/Dockerfile exists then a
+# deployment image will also be built and loaded on the host.
+#
+# If triggered by a webhook then the payload must contain an inputs object with the same keys as the
+# workflow_dispatch inputs
+#
+# Inputs:
+#
+# - environment  - used to load the specified environment from github; this can then contain specific
+#                  secrets to override default values; these are overlayed ontop of the repo and org
+#                  secrets
+# - host         - DNS URL for the host (default: secrets.HOST)
+# - ssh_user     - SSH username (default: secrets.SSH_USER || root)
+# - ssh_password - SSH password (default: secrets.SSH_PASSWORD)
+# - ssh_key      - SSH private key (default: secrets.SSH_KEY)
+# - ssh_port     - SSH port (default: secrets.SSH_PORT || 22)
+# - password     - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
+#                 (default: secrets.SETUP_ADMIN_PASSWORD || secret)
+# - managerTag   - The docker tag to pull for the manager image; if not specified then the manager image
+#                  will be built using the specified commit or latest branch commit
+# - commit       - Which commit or branch to use on this repo (default: branch on which workflow is executed)
+# - platform     - The host platform architecture (default: secrets.PLATFORM || linux/amd64)
+#
+# Secrets:
+#
+# The following secrets are supported (* are required)
+#
+# - DOCKERHUB_USER
+# - DOCKERHUB_PASSWORD
+# - HOST
+# - SSH_USER
+# - SSH_PORT
+# - SSH_PASSWORD
+# - SSH_KEY
+# - SETUP_ADMIN_PASSWORD
+
 
 name: Deploy
 
@@ -9,7 +46,14 @@ on:
     inputs:
       host:
         description: 'Host to deploy to'
-        required: true
+      ssh_user:
+        description: 'SSH Username'
+      ssh_port:
+        description: 'SSH port'
+      ssh_password:
+        description: 'SSH password'
+      ssh_key:
+        description: 'SSH key'
       password:
         description: 'Admin password override'
       managerTag:
@@ -19,7 +63,7 @@ on:
       environment:
         description: 'Environment to use (if any)'
       platform:
-        description: 'Platform architecture'
+        description: 'Host platform architecture'
         default: linux/amd64
       
         
@@ -37,18 +81,47 @@ jobs:
     environment:
       name: ${{ github.event.inputs.environment }}
 
-    steps:      
-      
+    steps:
+    
       - name: Login to DockerHub
-        if: github.event.inputs.managerTag != ''
+        if: ${{ (secrets.DOCKERHUB_USER != '') && (secrets.DOCKERHUB_PASSWORD != '') }}
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
           
-      - name: Host input missing
-        if: ${{ github.event.inputs.host == '' }}
+      - name: Output secrets to ENV ready for overwrites from inputs
+        run: |
+          jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' <<< "$secrets" >> $GITHUB_ENV
+        env:
+          secrets: ${{ toJson(secrets) }}
+          
+      - name: Determine host name
+        id: host-name
+        run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
+        
+      - name: Host is set
+        if: ${{ env.HOST == '' }}
         run: exit 1
+                
+      - name: Determine SSH username
+        run: echo "SSH_USER=${{ github.event.inputs.ssh_user || env.SSH_USER || 'root' }}" >> $GITHUB_ENV
+                
+      - name: Determine SSH port
+        run: echo "SSH_PORT=${{ github.event.inputs.ssh_port || env.SSH_PORT || '22' }}" >> $GITHUB_ENV
+                        
+      - name: Determine SSH password
+        run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
+                        
+      - name: Determine SSH key
+        run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
+        
+      - name: Determine platform
+        run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
+          
+      - name: Determine password
+        id: password
+        run: echo "SETUP_ADMIN_PASSWORD=${{ github.event.inputs.password || env.SETUP_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
 
       - name: Check commit input
         uses: actions/checkout@v2
@@ -115,15 +188,13 @@ jobs:
           echo "::set-output name=path::deployment/build"
           echo "::set-output name=tag::$(git rev-parse --short HEAD)"
 
-      - run: echo "PLATFORM=${{ secrets.PLATFORM || github.event.inputs.platform || 'linux/amd64' }}" >> $GITHUB_ENV
-
       - name: Output info
         run: |
           echo "************************************************************"
           echo "**************           INFO            *******************"
           echo "************************************************************"
-          echo "Host: ${{ github.event.inputs.host }}"
-          echo "Environment: ${{ steps.environment.outputs.value }}"
+          echo "Host: ${{ steps.host-name.outputs.value }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
           echo "Platform: ${{ env.PLATFORM }}"
           echo "Repo commit: $(git rev-parse --short HEAD)"
           echo "Compose file: ${{ steps.compose-file.outputs.value }}"
@@ -136,7 +207,15 @@ jobs:
           echo "************************************************************"
           echo "************************************************************"
   
-#       - name: Copy compose file
+      - name: Copy compose file (test SSH connection before building)
+        uses: appleboy/scp-action@master
+        with:
+          host: staging.k2.openremote.io
+          username: ubuntu
+          key: ${{ secrets.OPENREMOTE_SSH_PRIVATE_KEY }}
+          source: "aws-docker-compose.yml"
+          target: "~"
+
   
       - name: Do code build
         run: |
@@ -174,13 +253,6 @@ jobs:
         env:
           TAG: ${{ steps.deployment-image.outputs.tag }}
           BUILD_PATH: ${{ steps.deployment-image.outputs.path }}
-          
-      - name: Output secrets to .env file
-        shell: bash
-        run: |
-          jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' <<< "$secrets" > .env
-        env:
-          secrets: ${{ toJson(secrets) }}
 
       - run: cat .env
 
