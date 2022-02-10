@@ -107,7 +107,7 @@ jobs:
         env:
           secrets: ${{ toJson(secrets) }}
             
-      - run: echo ${{ toJson(secrets) }} >> secrets.txt
+      - run: echo "${{ toJson(secrets) }}" >> secrets.txt
             
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
