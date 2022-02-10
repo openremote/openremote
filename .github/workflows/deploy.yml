@@ -95,7 +95,16 @@ jobs:
           
       - name: Output secrets to ENV ready for overwrites from inputs
         run: |
-          jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' <<< "$secrets" >> $GITHUB_ENV
+          while read -r key value; do
+            if [[ $key == *$'\n'* ]]; then
+              echo "$key<<EOF" >> $GITHUB_ENV
+              echo $value >> $GITHUB_ENV
+              echo "EOF" >> $GITHUB_ENV
+            else
+              echo "$key=$value" >> $GITHUB_ENV
+            fi
+            echo "Do whatever with ${id} ${name} ${date}"
+          done< <($secrets | jq -r 'to_entries|.[] | "\(.key) \(.value)"')
         env:
           secrets: ${{ toJson(secrets) }}
           
