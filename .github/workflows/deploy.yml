@@ -134,7 +134,7 @@ jobs:
         with:
           host: ${{ env.HOST }}
           username: ${{ env.SSH_USER }}
-          key: ${{ env.SSH_KEY }}
+          key: ${{ secrets.SSH_KEY }}
           port: ${{ env.SSH_PORT }}
           script: whoami
 
