@@ -84,7 +84,7 @@ jobs:
     steps:
     
       - name: Login to DockerHub
-        if: ${{ (secrets.DOCKERHUB_USER != '') && (secrets.DOCKERHUB_PASSWORD != '') }}
+        if: (secrets.DOCKERHUB_USER != '') && (secrets.DOCKERHUB_PASSWORD != '')
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
