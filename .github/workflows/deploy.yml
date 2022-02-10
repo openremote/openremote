@@ -93,19 +93,19 @@ jobs:
           USER: ${{ secrets.DOCKERHUB_USER }}
           PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           
-#       - name: Output secrets to ENV ready for overwrites from inputs
-#         run: |
-#           while read -r key value; do
-#             if [[ $key == *$'\n'* ]]; then
-#               echo "$key<<EOF" >> $GITHUB_ENV
-#               echo $value >> $GITHUB_ENV
-#               echo "EOF" >> $GITHUB_ENV
-#             else
-#               echo "$key=$value" >> $GITHUB_ENV
-#             fi
-#           done< <(jq -r 'to_entries|.[] | "\(.key) \(.value)"' <<< "$secrets")
-#         env:
-#           secrets: ${{ toJson(secrets) }}
+      - name: Output secrets to ENV ready for overwrites from inputs
+        run: |
+          while read -r key value; do
+            if [[ $key == *$'\n'* ]]; then
+              echo "$key<<EOF" >> $GITHUB_ENV
+              echo $value >> $GITHUB_ENV
+              echo "EOF" >> $GITHUB_ENV
+            else
+              echo "$key=$value" >> $GITHUB_ENV
+            fi
+          done< <(jq -r 'to_entries|.[] | "\(.key) \(.value)"' <<< "$secrets")
+        env:
+          secrets: ${{ toJson(secrets) }}
           
 #       - name: Determine host name
 #         id: host-name
