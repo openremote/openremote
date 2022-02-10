@@ -127,6 +127,19 @@ jobs:
       - name: Determine SSH key
         run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
         
+        
+
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_KEY }}
+          port: ${{ env.SSH_PORT }}
+          script: whoami
+
+      - run: exit 1
+        
       - name: Determine platform
         run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
         
