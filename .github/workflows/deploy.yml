@@ -129,6 +129,8 @@ jobs:
           ref: ${{github.event.inputs.commit}}
           submodules: recursive
         
+      - run: echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        
       - name: Check manager tag input
         if: github.event.inputs.managerTag != ''
         run: |
@@ -196,7 +198,7 @@ jobs:
           echo "Host: ${{ steps.host-name.outputs.value }}"
           echo "Environment: ${{ github.event.inputs.environment }}"
           echo "Platform: ${{ env.PLATFORM }}"
-          echo "Repo commit: $(git rev-parse --short HEAD)"
+          echo "Repo commit: "
           echo "Compose file: ${{ steps.compose-file.outputs.value }}"
           echo "Manager build: ${{ steps.manager-image.outputs.build == 'true' }}"
           echo "Manager tag: ${{ steps.manager-image.outputs.tag }}"
@@ -207,14 +209,14 @@ jobs:
           echo "************************************************************"
           echo "************************************************************"
   
-      - name: Copy compose file (test SSH connection before building)
-        uses: appleboy/scp-action@master
-        with:
-          host: staging.k2.openremote.io
-          username: ubuntu
-          key: ${{ secrets.OPENREMOTE_SSH_PRIVATE_KEY }}
-          source: "aws-docker-compose.yml"
-          target: "~"
+#       - name: Copy compose file (test SSH connection before building)
+#         uses: appleboy/scp-action@master
+#         with:
+#           host: staging.k2.openremote.io
+#           username: ubuntu
+#           key: ${{ secrets.OPENREMOTE_SSH_PRIVATE_KEY }}
+#           source: "aws-docker-compose.yml"
+#           target: "~"
 
   
       - name: Do code build
