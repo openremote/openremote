@@ -93,7 +93,7 @@ jobs:
           USER: ${{ secrets.DOCKERHUB_USER }}
           PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Python run
+      - name: Output secrets to ENV ready for overwrites from inputs
         shell: python
         run: |
           import json
@@ -113,21 +113,6 @@ jobs:
         env:
           secret: ${{ toJSON(secrets) }}
 
-#       - name: Output secrets to ENV ready for overwrites from inputs
-#         shell: bash
-#         run: |
-#           while IFS=$' ' read -d $'\t' -r key value; do
-#             if [[ $key == *$'\n'* ]]; then
-#               echo $key'<<EOF' >> $GITHUB_ENV
-#               echo "$value" >> $GITHUB_ENV
-#               echo 'EOF' >> $GITHUB_ENV
-#             elif [[ ! -z $key ]]; then
-#               echo $key'='$value >> $GITHUB_ENV
-#             fi
-#           done< <(jq -j 'to_entries|.[] | "\(.key) \(.value)\t"' <<< "$secrets")
-#         env:
-#           secrets: ${{ toJSON(secrets) }}
-
       - name: Determine host name
         id: host-name
         run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
@@ -145,15 +130,15 @@ jobs:
       - name: Determine SSH password
         run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
                         
-#       - name: Determine SSH key
-#         run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
+      - name: Determine SSH key
+        run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
 
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@master
         with:
           host: staging.demo.openremote.io
           username: ubuntu
-          key: ${{ env.SSHKEY }}
+          key: ${{ env.SSH_KEY }}
           port: 22
           script: whoami
 
