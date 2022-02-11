@@ -246,11 +246,10 @@ jobs:
               print(f"Setting {key} ...")
               lines = len(value.split("\n"))
               if lines > 1:
-                  os.system(f"echo '{key}<<EOF' >> .env")
-                  os.system(f"echo '{value}' >> .env")
-                  os.system("echo 'EOF' >> .env")
+                  os.system(f"echo '{key}=\'' >> .env")
+                  os.system(f"echo '{value}\'' >> .env")
               else:
-                  os.system(f"echo '{key}={value}' >> .env")
+                  os.system(f"echo '{key}=\"{value}\"' >> .env")
         env:
           secret: ${{ toJSON(env) }}
 
