@@ -260,7 +260,7 @@ jobs:
         run: |
           files="~/.env,$COMPOSE_FILE"
           if [ ! -z $HOST_INIT_SCRIPT ]; then
-              files = "${files},profile/host_init/$HOST_INIT_SCRIPT"
+              files="${files},profile/host_init/$HOST_INIT_SCRIPT"
           fi
           echo "Init file list: $files"
           echo "::set-output name=value::$files"
