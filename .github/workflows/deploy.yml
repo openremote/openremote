@@ -15,7 +15,6 @@
 # - host         - DNS URL for the host (default: secrets.HOST)
 # - ssh_user     - SSH username (default: secrets.SSH_USER || root)
 # - ssh_password - SSH password (default: secrets.SSH_PASSWORD)
-# - ssh_key      - SSH private key (default: secrets.SSH_KEY)
 # - ssh_port     - SSH port (default: secrets.SSH_PORT || 22)
 # - password     - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
 #                 (default: secrets.SETUP_ADMIN_PASSWORD || secret)
@@ -52,8 +51,6 @@ on:
         description: 'SSH port'
       ssh_password:
         description: 'SSH password'
-      ssh_key:
-        description: 'SSH key'
       password:
         description: 'Admin password override'
       managerTag:
@@ -138,8 +135,6 @@ jobs:
           key: ${{ env.SSH_KEY }}
           port: 22
           script: whoami
-
-      - run: exit 1
         
       - name: Determine platform
         run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
