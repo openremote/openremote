@@ -35,7 +35,7 @@
 # - SSH_PASSWORD
 # - SSH_KEY
 # - SETUP_ADMIN_PASSWORD
-
+# - COMPOSE_FILE
 
 name: Deploy
 
@@ -126,15 +126,6 @@ jobs:
                         
       - name: Determine SSH password
         run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: executing remote ssh commands using password
-        uses: appleboy/ssh-action@master
-        with:
-          host: staging.demo.openremote.io
-          username: ubuntu
-          key: ${{ env.SSH_KEY }}
-          port: 22
-          script: whoami
         
       - name: Determine platform
         run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
@@ -177,7 +168,7 @@ jobs:
             echo "COMPOSE_FILE=docker-compose.yml" >> $GITHUB_ENV
           fi
         env:
-          ENV_COMPOSE_FILE: ${{ secrets.COMPOSE_FILE }}
+          ENV_COMPOSE_FILE: ${{ env.COMPOSE_FILE }}
           ENVIRONMENT: ${{ github.event.inputs.environment }}
         
       - name: Determine manager image info
@@ -206,6 +197,23 @@ jobs:
           echo "DEPLOYMENT_PATH=deployment/build" >> $GITHUB_ENV
           echo "DEPLOYMENT_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
+      - name: Determine host init script
+        id: host-init
+        run: |
+          if [ $HOST_INIT_SCRIPT == 'NONE' ]; then
+            echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
+          elif [ ! -z $HOST_INIT_SCRIPT ]; then
+            echo "HOST_INIT_SCRIPT="${ENV_HOST_INIT_SCRIPT}.sh" >> $GITHUB_ENV
+          elif [ -f "profile/host_init/$ENVIRONMENT.sh" ]; then
+            echo "HOST_INIT_SCRIPT=$ENVIRONMENT.sh" >> $GITHUB_ENV
+          elif [ -f "profile/host_init/init.sh" ]; then
+            echo "init.sh" >> $GITHUB_ENV
+          else
+            echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
+          fi
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+
       - name: Output info
         run: |
           echo "************************************************************"
@@ -221,10 +229,43 @@ jobs:
           echo "Deployment build: ${{ env.DEPLOYMENT_BUILD == 'true' }}"
           echo "Deployment tag: ${{ env.DEPLOYMENT_TAG }}"
           echo "Deployment build path: ${{ env.DEPLOYMENT_PATH }}"
+          echo "Host init script: ${{ env.HOST_INIT_SCRIPT }}"
           echo "************************************************************"
           echo "************************************************************"
   
-      - name: Copy compose file (test SSH connection before building)
+      - name: Output ENV to file
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+
+          secrets = json.loads(os.getenv('secret'))
+          envFile = os.path.join(os.path.expanduser('~'), ".env")
+          
+          for key, value in secrets.items():
+              print(f"Setting {key} ...")
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}<<EOF' >> {envFile}")
+                  os.system(f"echo '{value}' >> {envFile}")
+                  os.system("echo 'EOF' >> {envFile}")
+              else:
+                  os.system(f"echo '{key}={value}' >> {envFile}")
+        env:
+          secret: ${{ toJSON(env) }}
+          
+      - name: Build file list
+        id: file-list
+        run: |
+          files="~/.env,$COMPOSE_FILE"
+          if [ ! -z $HOST_INIT_SCRIPT ]; then
+              files += ",profile/host_init/$HOST_INIT_SCRIPT"
+          fi
+          echo "Init file list: $files"
+          echo "::set-output name=value::$files"
+        
+      - name: Copy compose file, env and host init files
         uses: appleboy/scp-action@master
         with:
           host: ${{ env.HOST }}
@@ -232,9 +273,24 @@ jobs:
           username: ${{ env.SSH_USER }}
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
-          source: ${{ env.COMPOSE_FILE }}
-          target: "~"
-  
+          source: ${{ steps.file-list.outputs.value }}
+          target: "or"
+          rm: true
+          
+      - name: Execute host init (this must be idempotent)
+        if: ${{ env.HOST_INIT_SCRIPT != '' }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            chmod +x -R or/
+            source or/.env            
+            ./or/host-init/$HOST_INIT_SCRIPT
+            
       - name: Do code build
         run: |
           if [ $MANAGER_BUILD == 'true' ]; then
@@ -262,4 +318,3 @@ jobs:
       - name: Build deployment image
         if: ${{ env.DEPLOYMENT_BUILD == 'true' }}
         run: echo "docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_TAG $DEPLOYMENT_PATH"
-
