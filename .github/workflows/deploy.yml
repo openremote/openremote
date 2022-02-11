@@ -239,26 +239,23 @@ jobs:
           import json
           import os
           import sys
-
-          secrets = json.loads(os.getenv('secret'))
-          envFile = os.path.join(os.path.expanduser('~'), ".env")
           
           for key, value in secrets.items():
               print(f"Setting {key} ...")
               lines = len(value.split("\n"))
               if lines > 1:
-                  os.system(f"echo '{key}<<EOF' >> {envFile}")
-                  os.system(f"echo '{value}' >> {envFile}")
-                  os.system("echo 'EOF' >> {envFile}")
+                  os.system(f"echo '{key}<<EOF' >> .env")
+                  os.system(f"echo '{value}' >> .env")
+                  os.system("echo 'EOF' >> .env")
               else:
-                  os.system(f"echo '{key}={value}' >> {envFile}")
+                  os.system(f"echo '{key}={value}' >> .env")
         env:
           secret: ${{ toJSON(env) }}
           
       - name: Build file list
         id: file-list
         run: |
-          files="~/.env,$COMPOSE_FILE"
+          files=".env,$COMPOSE_FILE"
           if [ ! -z $HOST_INIT_SCRIPT ]; then
               files="${files},profile/host_init/$HOST_INIT_SCRIPT"
           fi
