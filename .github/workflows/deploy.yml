@@ -291,6 +291,9 @@ jobs:
             source or/.env            
             ./or/host-init/$HOST_INIT_SCRIPT
 
+      - name: grant execute permission for gradlew
+        run: chmod +x gradlew0
+
       - name: Do code build
         run: |
           if [ $MANAGER_BUILD == 'true' ]; then
