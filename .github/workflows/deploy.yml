@@ -275,6 +275,7 @@ jobs:
           key: ${{ env.SSH_KEY }}
           source: ${{ steps.file-list.outputs.value }}
           target: "or"
+          strip_components: 1
           rm: true
           
       - name: Execute host init (this must be idempotent)
@@ -290,7 +291,12 @@ jobs:
             chmod +x -R or/
             source or/.env            
             ./or/host-init/$HOST_INIT_SCRIPT
-            
+
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          limit-access-to-users: richturner
+
       - name: Do code build
         run: |
           if [ $MANAGER_BUILD == 'true' ]; then
