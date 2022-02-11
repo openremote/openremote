@@ -92,10 +92,11 @@ jobs:
         env:
           USER: ${{ secrets.DOCKERHUB_USER }}
           PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-          
+
       - name: Output secrets to ENV ready for overwrites from inputs
+        shell: bash
         run: |
-          while read -d $'\t' -r key value; do
+          while IFS=$' ' read -d $'\t' -r key value; do
             if [[ $key == *$'\n'* ]]; then
               echo $key'<<EOF' >> $GITHUB_ENV
               echo "$value" >> $GITHUB_ENV
@@ -132,7 +133,7 @@ jobs:
         with:
           host: staging.demo.openremote.io
           username: ubuntu
-          key: ${{ secrets.SSHKEY }}
+          key: ${{ env.SSHKEY }}
           port: 22
           script: whoami
 
