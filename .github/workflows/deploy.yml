@@ -253,18 +253,8 @@ jobs:
                   os.system(f"echo '{key}={value}' >> .env")
         env:
           secret: ${{ toJSON(env) }}
-          
-      - name: Build file list
-        id: file-list
-        run: |
-          files=".env,$COMPOSE_FILE"
-          if [ ! -z $HOST_INIT_SCRIPT ]; then
-              files="${files},profile/host_init/$HOST_INIT_SCRIPT"
-          fi
-          echo "Init file list: $files"
-          echo "::set-output name=value::$files"
-        
-      - name: Copy compose file, env and host init files
+
+      - name: Copy compose file and env
         uses: appleboy/scp-action@master
         with:
           host: ${{ env.HOST }}
@@ -272,13 +262,24 @@ jobs:
           username: ${{ env.SSH_USER }}
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
-          source: ${{ steps.file-list.outputs.value }}
+          source: ${{ ".env," + env.COMPOSE_FILE }}
           target: "or"
-          strip_components: 1
           rm: true
           
+      - name: Copy host init files
+        if: ${{ env.HOST_INIT_SCRIPT }}
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          source: ${{ "profile/host_init/" + env.HOST_INIT_SCRIPT }}
+          strip_components: 1
+          target: "or"
+          
       - name: Execute host init (this must be idempotent)
-        if: ${{ env.HOST_INIT_SCRIPT != '' }}
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.HOST }}
