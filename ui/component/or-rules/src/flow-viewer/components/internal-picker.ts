@@ -69,7 +69,9 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 color: grey;
             }
             .selected-asset-icon {
-                margin-right: 10px;
+                display: flex;
+                justify-content: center;
+                padding: 0px 5px 0px 5px;
                 --or-icon-width: 20px;
             }`];
     }
@@ -216,7 +218,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                             <div class="asset-attribute">${selectedAttrLabel}</div>
                         </div>
                     </div>` : 
-                    html`<or-mwc-input class="attribute-label-white my-test" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="plus" @click="${() => openDialog()}"></or-mwc-input>`
+                    html`<or-mwc-input class="attribute-label-white" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="plus" @click="${() => openDialog()}"></or-mwc-input>`
             )}
         </div>`;
     }
