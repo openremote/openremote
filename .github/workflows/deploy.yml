@@ -95,51 +95,37 @@ jobs:
           
       - name: Output secrets to ENV ready for overwrites from inputs
         run: |
-          while read -r key value; do
+          while read -d $'\t' -r key value; do
             if [[ $key == *$'\n'* ]]; then
-              echo "MULTILINE" >> env.txt
-              echo $key'<<@@@' >> env.txt
-              echo $value >> env.txt
-              echo '@@@' >> env.txt
+              echo $key'<<EOF' >> $GITHUB_ENV
+              echo $value >> $GITHUB_ENV
+              echo 'EOF' >> $GITHUB_ENV
             elif [[ ! -z $key ]]; then
-              echo "SINGLE LINE" >> env.txt
-              echo "$key=$value" >> env.txt
+              echo "$key=$value" >> $GITHUB_ENV
             fi
-          done< <(jq -r 'to_entries|.[] | "\(.key) \(.value)"' <<< $secrets)
+          done< <(jq -j 'to_entries|.[] | "\(.key) \(.value)\t"' <<< "$secrets")
         env:
           secrets: ${{ toJSON(secrets) }}
-            
-      - run: echo $secrets >> secrets.txt
-        env:
-          secrets: ${{ toJSON(secrets) }}
-            
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          ## limits ssh access and adds the ssh public keys of the listed GitHub users
-          limit-access-to-users: richturner
-      
-#       - name: Determine host name
-#         id: host-name
-#         run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
+
+      - name: Determine host name
+        id: host-name
+        run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
         
-#       - name: Host not set
-#         if: ${{ env.HOST == '' }}
-#         run: exit 1
+      - name: Host not set
+        if: ${{ env.HOST == '' }}
+        run: exit 1
                 
-#       - name: Determine SSH username
-#         run: echo "SSH_USER=${{ github.event.inputs.ssh_user || env.SSH_USER || 'root' }}" >> $GITHUB_ENV
+      - name: Determine SSH username
+        run: echo "SSH_USER=${{ github.event.inputs.ssh_user || env.SSH_USER || 'root' }}" >> $GITHUB_ENV
                 
-#       - name: Determine SSH port
-#         run: echo "SSH_PORT=${{ github.event.inputs.ssh_port || env.SSH_PORT || '22' }}" >> $GITHUB_ENV
+      - name: Determine SSH port
+        run: echo "SSH_PORT=${{ github.event.inputs.ssh_port || env.SSH_PORT || '22' }}" >> $GITHUB_ENV
                         
-#       - name: Determine SSH password
-#         run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
+      - name: Determine SSH password
+        run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
                         
-#       - name: Determine SSH key
-#         run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
-        
-        
+      - name: Determine SSH key
+        run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
 
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@master
