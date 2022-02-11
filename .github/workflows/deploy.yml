@@ -262,7 +262,7 @@ jobs:
           username: ${{ env.SSH_USER }}
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
-          source: ".env,${{ env.COMPOSE_FILE) }}"
+          source: ".env,${{ env.COMPOSE_FILE }}"
           target: "or"
           rm: true
           
