@@ -124,8 +124,8 @@ jobs:
       - name: Determine SSH password
         run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
                         
-      - name: Determine SSH key
-        run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
+#       - name: Determine SSH key
+#         run: echo "SSH_KEY=${{ github.event.inputs.ssh_key || env.SSH_KEY }}" >> $GITHUB_ENV
 
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@master
