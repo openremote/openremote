@@ -93,20 +93,38 @@ jobs:
           USER: ${{ secrets.DOCKERHUB_USER }}
           PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Output secrets to ENV ready for overwrites from inputs
-        shell: bash
-        run: |
-          while IFS=$' ' read -d $'\t' -r key value; do
-            if [[ $key == *$'\n'* ]]; then
-              echo $key'<<EOF' >> $GITHUB_ENV
-              echo "$value" >> $GITHUB_ENV
-              echo 'EOF' >> $GITHUB_ENV
-            elif [[ ! -z $key ]]; then
-              echo $key'='$value >> $GITHUB_ENV
-            fi
-          done< <(jq -j 'to_entries|.[] | "\(.key) \(.value)\t"' <<< "$secrets")
+      - run: |
+          import json
+          import os
+          import sys
+
+          secrets = json.loads(secret)
+          for key, value in secrets.items():
+              print(f"Setting {key} ...")
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}<<EOF' >> $GITHUB_ENV")
+                  os.system(f"echo '{value}' >> $GITHUB_ENV")
+                  os.system("echo 'EOF' >> $GITHUB_ENV")
+              else:
+                  os.system(f"echo '{key}={value}' >> $GITHUB_ENV")
         env:
-          secrets: ${{ toJSON(secrets) }}
+          secret: ${{ toJSON(secrets) }}
+
+#       - name: Output secrets to ENV ready for overwrites from inputs
+#         shell: bash
+#         run: |
+#           while IFS=$' ' read -d $'\t' -r key value; do
+#             if [[ $key == *$'\n'* ]]; then
+#               echo $key'<<EOF' >> $GITHUB_ENV
+#               echo "$value" >> $GITHUB_ENV
+#               echo 'EOF' >> $GITHUB_ENV
+#             elif [[ ! -z $key ]]; then
+#               echo $key'='$value >> $GITHUB_ENV
+#             fi
+#           done< <(jq -j 'to_entries|.[] | "\(.key) \(.value)\t"' <<< "$secrets")
+#         env:
+#           secrets: ${{ toJSON(secrets) }}
 
       - name: Determine host name
         id: host-name
