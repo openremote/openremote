@@ -203,11 +203,11 @@ jobs:
           if [ $HOST_INIT_SCRIPT == 'NONE' ]; then
             echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
           elif [ ! -z $HOST_INIT_SCRIPT ]; then
-            echo "HOST_INIT_SCRIPT="${ENV_HOST_INIT_SCRIPT}.sh" >> $GITHUB_ENV
+            echo "HOST_INIT_SCRIPT=${ENV_HOST_INIT_SCRIPT}.sh" >> $GITHUB_ENV
           elif [ -f "profile/host_init/$ENVIRONMENT.sh" ]; then
             echo "HOST_INIT_SCRIPT=$ENVIRONMENT.sh" >> $GITHUB_ENV
           elif [ -f "profile/host_init/init.sh" ]; then
-            echo "init.sh" >> $GITHUB_ENV
+            echo "HOST_INIT_SCRIPT=init.sh" >> $GITHUB_ENV
           else
             echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
           fi
