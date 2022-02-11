@@ -274,11 +274,6 @@ jobs:
           target: "or"
           strip_components: 1
           rm: true
-
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          limit-access-to-users: richturner
           
       - name: Execute host init (this must be idempotent)
         if: ${{ env.HOST_INIT_SCRIPT != '' }}
