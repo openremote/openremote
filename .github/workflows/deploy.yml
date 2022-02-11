@@ -93,7 +93,9 @@ jobs:
           USER: ${{ secrets.DOCKERHUB_USER }}
           PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - run: |
+      - name: Python run
+        shell: python
+        run: |
           import json
           import os
           import sys
