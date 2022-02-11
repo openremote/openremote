@@ -240,6 +240,8 @@ jobs:
           import os
           import sys
           
+          secrets = json.loads(os.getenv('secret'))
+          
           for key, value in secrets.items():
               print(f"Setting {key} ...")
               lines = len(value.split("\n"))
