@@ -165,10 +165,12 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                         ${attrs.map((attr) => {
                             if (!this.asset || !this.asset.type) { return }
                             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.asset.type, attr.name, attr);
-                            const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
-                            const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
-                            const classes = {highlighted: (this.markerconfig![this.asset.type][0] && attr.name === this.markerconfig![this.asset.type][0].attributeName)};
-                            return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`; 
+                            if (descriptors && descriptors.length) { 
+                                const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
+                                const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
+                                const classes = {highlighted: (this.markerconfig![this.asset.type] && attr.name === this.markerconfig![this.asset.type][0].attributeName)};
+                                return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`;
+                            }
                         })}
                     </ul>
                 </div>
