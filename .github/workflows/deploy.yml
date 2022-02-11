@@ -262,7 +262,7 @@ jobs:
           username: ${{ env.SSH_USER }}
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
-          source: ${{ join(".env,", env.COMPOSE_FILE) }}
+          source: '.env,${{ env.COMPOSE_FILE) }}'
           target: "or"
           rm: true
           
@@ -275,7 +275,7 @@ jobs:
           username: ${{ env.SSH_USER }}
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
-          source: ${{ join("profile/host_init/", env.HOST_INIT_SCRIPT) }}
+          source: 'profile/host_init/${{ env.HOST_INIT_SCRIPT) }}'
           strip_components: 1
           target: "or"
           
