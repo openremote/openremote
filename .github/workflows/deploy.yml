@@ -2,7 +2,8 @@
 # or alternatively a git commit can be sepcified to build a custom manager image.
 #
 # If this is a custom project (i.e. has openremote submodule) or deployment/Dockerfile exists then a
-# deployment image will also be built and loaded on the host.
+# deployment image will also be built and loaded on the host (it is up to the loaded docker compose
+# file to actually use this deployment image for volume mappings).
 #
 # If triggered by a webhook then the payload must contain an inputs object with the same keys as the
 # workflow_dispatch inputs
@@ -11,31 +12,57 @@
 #
 # - environment  - used to load the specified environment from github; this can then contain specific
 #                  secrets to override default values; these are overlayed ontop of the repo and org
-#                  secrets
+#                  secrets. It is also used to load an environment specific env file from the repo
+                   and/or an environment specific docker compose file
 # - host         - DNS URL for the host (default: secrets.HOST)
 # - ssh_user     - SSH username (default: secrets.SSH_USER || root)
 # - ssh_password - SSH password (default: secrets.SSH_PASSWORD)
 # - ssh_port     - SSH port (default: secrets.SSH_PORT || 22)
 # - password     - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
 #                 (default: secrets.SETUP_ADMIN_PASSWORD || secret)
-# - managerTag   - The docker tag to pull for the manager image; if not specified then the manager image
+# - manager_tag  - The docker tag to pull for the manager image; if not specified then the manager image
 #                  will be built using the specified commit or latest branch commit
 # - commit       - Which commit or branch to use on this repo (default: branch on which workflow is executed)
 # - platform     - The host platform architecture (default: secrets.PLATFORM || linux/amd64)
 #
-# Secrets:
+# Environment vairables are loaded into the env context from the following files in the repo if they exist:
 #
-# The following secrets are supported (* are required)
+# profile/env
+# profile/{environment}.env
 #
-# - DOCKERHUB_USER
-# - DOCKERHUB_PASSWORD
-# - HOST
-# - SSH_USER
-# - SSH_PORT
-# - SSH_PASSWORD
-# - SSH_KEY
-# - SETUP_ADMIN_PASSWORD
-# - COMPOSE_FILE
+# Env/Secrets:
+#
+# Secrets are loaded from the github environment corresponding to the environment input, these secrets
+# are copied into the env context; the combined env/secrets are then made available to the host during
+# exection of docker compose commands; so any env/secret configurable in the compose profile can be set
+# in the env file and/or in the secrets (secrets take priority); NOTE: sensitive values should only be
+# stored as secrets so they are encrypted.
+#
+# The following env/secrets are supported to configure the way this workflow behaves:
+#
+# - HOST             - Will be used if input host value is not set
+# - SSH_USER         - Will be used if input ssh_user is not set
+# - SSH_PORT         - Will be used if input ssh_port is not set
+# - SSH_PASSWORD     - Will be used if input ssh_password is not set (should only be set as a secret)
+# - SSH_KEY          - SSH private key (should only be set as a secret)
+# - MANAGER_TAG      - Will be used if input manager_tag is not set
+# - CLEAN_INSTALL    - Can 
+# - COMPOSE_FILE     - Use a specific compose file, must be the full path (e.g. profile/my-compose.yml);
+#                      if not specified and the file 'profile/{environment}.yml' exists then that will be
+#                      used otherwise fallback to 'docker-compose.yml' in the repo root.
+# - HOST_INIT_SCRIPT - name of the host initialisation (see below) script to execute on the host (just the
+#                      name no path or extension e.g. 'test' -> 'profile/host_init/test.sh'; can be set to
+#                      'NONE' to force no host initialisation.
+#
+# Host initialisation
+#
+# To do host specific configuration (download map files etc.) files can be added to the 'profile/host-init'
+# directory these will be copied to the host and the HOST_INIT_SCRIPT will be executed (if it is present in
+# the repo); if HOST_INIT_SCRIPT is set to 'NONE' no host initialisation will be done, if it is not set
+# then the following files will be checked in priority order:
+#
+# profile/host_init/{environment}.sh
+# profile/host_init/init.sh
 
 name: Deploy
 
@@ -53,16 +80,17 @@ on:
         description: 'SSH password'
       password:
         description: 'Admin password override'
-      managerTag:
+      manager_tag:
         description: 'Manager docker tag to pull'
+      clean_install:
+        description: 'Delete data before start'
+        type: boolean
       commit:
         description: 'Repo branch or commit SHA to use'
       environment:
         description: 'Environment to use (if any)'
       platform:
-        description: 'Host platform architecture'
-        default: linux/amd64
-      
+        description: 'Host platform architecture'      
         
   # Docker push webhook trigger
   repository_dispatch:
@@ -133,12 +161,12 @@ jobs:
         env:
           secret: ${{ toJSON(secrets) }}
 
-      - name: Login to DockerHub
-        if: ${{ env.DOCKERHUB_USER != '' && env.DOCKERHUB_PASSWORD != '' }}
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKERHUB_USER }}
-          password: ${{ env.DOCKERHUB_PASSWORD }}
+#       - name: Login to DockerHub
+#         if: ${{ env.DOCKERHUB_USER != '' && env.DOCKERHUB_PASSWORD != '' }}
+#         uses: docker/login-action@v1
+#         with:
+#           username: ${{ env.DOCKERHUB_USER }}
+#           password: ${{ env.DOCKERHUB_PASSWORD }}
 
       - name: Determine host name
         id: host-name
@@ -160,10 +188,16 @@ jobs:
       - name: Determine platform
         run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
         
+      - name: Determine manager tag
+        run: echo "MANAGER_TAG=${{ github.event.inputs.manager_tag || env.MANAGER_TAG }}" >> $GITHUB_ENV
+        
+      - name: Determine clean install
+        run eco "CLEAN_INSTALL=${{ github.event.inputs.clean_install || env.CLEAN_INSTALL }}" >> $GITHUB_ENV
+        
       - name: Check manager tag input
-        if: github.event.inputs.managerTag != ''
+        if: env.MANAGER_TAG != ''
         run: |
-          docker manifest inspect openremote/manager:${{ github.event.inputs.managerTag }} > /dev/null 2> /dev/null
+          docker manifest inspect openremote/manager:${{ env.MANAGER_TAG }} > /dev/null 2> /dev/null
 
       - name: Determine password
         id: password
@@ -185,6 +219,10 @@ jobs:
         id: compose-file
         run: |
           if [ ! -z $ENV_COMPOSE_FILE ]; then
+            if [ ! -f $ENV_COMPOSE_FILE ]; then
+              echo "Specified ENV_COMPOSE_FILE does not exist $ENV_COMPOSE_FILE"
+              exit 1
+            fi
             echo "COMPOSE_FILE=$ENV_COMPOSE_FILE" >> $GITHUB_ENV
           elif [ -f "profile/$ENVIRONMENT.yml" ]; then
             echo "COMPOSE_FILE=profile/$ENVIRONMENT.yml" >> $GITHUB_ENV
@@ -198,8 +236,8 @@ jobs:
       - name: Determine manager image info
         id: manager-image
         run: |          
-          if [ ! -z $INPUT_TAG ]; then
-            echo "MANAGER_TAG=$INPUT_TAG" >> $GITHUB_ENV
+          if [ ! -z $MANAGER_TAG ]; then
+            echo "MANAGER_TAG=$MANAGER_TAG" >> $GITHUB_ENV
           elif [ $CUSTOM_PROJECT == 'true' ]; then
             echo "MANAGER_BUILD=true" >> $GITHUB_ENV
             echo "MANAGER_PATH=openremote/manager/build/install/manager" >> $GITHUB_ENV
@@ -210,7 +248,6 @@ jobs:
             echo "MANAGER_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           fi
         env:
-          INPUT_TAG: ${{ github.event.inputs.managerTag }}
           CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.file_exists }}
 
       - name: Determine deployment image info
@@ -361,12 +398,33 @@ jobs:
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
           script: |
-            chmod +x -R temp/
-            source temp/env
-            if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
-              ./temp/host-init/$HOST_INIT_SCRIPT
-            fi            
+            #chmod +x -R temp/
+            #source temp/env
+            #if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
+            #  ./temp/host-init/$HOST_INIT_SCRIPT
+            #fi            
             # Attempt docker compose down
-            docker-compose -f temp/docker-compose.yml -p or down
+            # docker-compose -f temp/docker-compose.yml -p or down
             
             # Delete postgres volume if CLEAN_INSTALL=true
+            #if [ ! -z $CLEAN_INSTALL ]; then
+            #  docker volume rm or_deployment-data
+            #fi
+
+            # Start the stack
+            # docker-compose -f temp/docker-compose.yml -p or up -d
+
+      - name: Wait for up to 5 mins for manager webserver to be running
+        run: |
+          echo "Waiting for manager web server https://$HOST..."
+          count=0
+          success=false
+          while [ $success != 'true' -a $count < 36 ]; do
+            success=$(curl --output /dev/null --silent --head --fail https://$HOST/manager/)
+            echo '.'
+            $(( count++ ))
+            sleep 5
+          done
+          if [ $success != 'true' ]; then
+            exit 1
+          fi
