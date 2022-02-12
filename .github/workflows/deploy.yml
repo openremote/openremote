@@ -91,6 +91,8 @@ jobs:
         run: |
           if [ -f "profile/$ENVIRONMENT.env" ]; then
             echo "::set-output name=value::true"
+          else
+            echo "profile/$ENVIRONMENT.env"
           fi
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
@@ -317,7 +319,7 @@ jobs:
             ./or/host-init/$HOST_INIT_SCRIPT
 
       - name: grant execute permission for gradlew
-        run: chmod +x gradlew0
+        run: chmod +x gradlew
 
       - name: Do code build
         run: |
