@@ -13,7 +13,7 @@
 # - environment  - used to load the specified environment from github; this can then contain specific
 #                  secrets to override default values; these are overlayed ontop of the repo and org
 #                  secrets. It is also used to load an environment specific env file from the repo
-                   and/or an environment specific docker compose file
+#                  and/or an environment specific docker compose file
 # - host         - DNS URL for the host (default: secrets.HOST)
 # - ssh_user     - SSH username (default: secrets.SSH_USER || root)
 # - ssh_password - SSH password (default: secrets.SSH_PASSWORD)
