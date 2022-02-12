@@ -303,6 +303,7 @@ jobs:
           target: "or"
           
       - name: Execute host init (this must be idempotent)
+        if: ${{ env.HOST_INIT_SCRIPT }}
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.HOST }}
