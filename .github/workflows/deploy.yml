@@ -78,6 +78,12 @@ jobs:
 
     steps:
 
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.event.inputs.commit}}
+          submodules: recursive
+          
       - name: Check if env file exists
         id: env-exists
         run: |
@@ -91,8 +97,6 @@ jobs:
         run: |
           if [ -f "profile/$ENVIRONMENT.env" ]; then
             echo "::set-output name=value::true"
-          else
-            echo "profile/$ENVIRONMENT.env"
           fi
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
@@ -164,13 +168,7 @@ jobs:
       - name: Determine password
         id: password
         run: echo "SETUP_ADMIN_PASSWORD=${{ github.event.inputs.password || env.SETUP_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
-
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: ${{github.event.inputs.commit}}
-          submodules: recursive
-          
+        
       - name: Check deployment existence
         id: check_deployment_dir
         uses: andstor/file-existence-action@v1
@@ -259,6 +257,10 @@ jobs:
           echo "************************************************************"
           echo "************************************************************"
   
+      - name: Make temp dir
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        run: mkdir temp
+  
       - name: Output ENV to file
         shell: python
         run: |
@@ -272,52 +274,20 @@ jobs:
               print(f"Setting {key} ...")
               lines = len(value.split("\n"))
               if lines > 1:
-                  os.system(f"echo '{key}=\'' >> env")
-                  os.system(f"echo '{value}\'' >> env")
+                  os.system(f"echo '{key}=\'' >> temp/env")
+                  os.system(f"echo '{value}\'' >> temp/env")
               else:
-                  os.system(f"echo '{key}=\"{value}\"' >> env")
+                  os.system(f"echo '{key}=\"{value}\"' >> temp/env")
         env:
           secret: ${{ toJSON(env) }}
 
-      - name: Copy compose file and env
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ env.HOST }}
-          port: ${{ env.SSH_PORT }}
-          username: ${{ env.SSH_USER }}
-          password: ${{ env.SSH_PASSWORD }}
-          key: ${{ env.SSH_KEY }}
-          source: "env,${{ env.COMPOSE_FILE }}"
-          target: "or"
-          rm: true
+      - name: Copy compose file to temp folder
+        run: copy "$COMPOSE_FILE" temp/docker-compose.yml
           
-      - name: Copy host init files
+      - name: Copy host init files to temp folder
         if: ${{ env.HOST_INIT_SCRIPT }}
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ env.HOST }}
-          port: ${{ env.SSH_PORT }}
-          username: ${{ env.SSH_USER }}
-          password: ${{ env.SSH_PASSWORD }}
-          key: ${{ env.SSH_KEY }}
-          source: "profile/host_init/${{ env.HOST_INIT_SCRIPT }}"
-          strip_components: 1
-          target: "or"
-          
-      - name: Execute host init (this must be idempotent)
-        if: ${{ env.HOST_INIT_SCRIPT }}
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.HOST }}
-          port: ${{ env.SSH_PORT }}
-          username: ${{ env.SSH_USER }}
-          password: ${{ env.SSH_PASSWORD }}
-          key: ${{ env.SSH_KEY }}
-          script: |
-            chmod +x -R or/
-            source or/env            
-            ./or/host-init/$HOST_INIT_SCRIPT
-
+        run: copy "profile/host_init" temp/
+        
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -341,10 +311,62 @@ jobs:
           version: latest
           install: true
 
-      - name: Build manager image
+      - name: Build and save manager image
         if: ${{ env.MANAGER_BUILD == 'true' }}
-        run: echo "docker build --platform $PLATFORM -t openremote/manager:$MANAGER_TAG $MANAGER_PATH"
+        run: |
+          echo "docker build --platform $PLATFORM -t openremote/manager:$MANAGER_TAG $MANAGER_PATH"
+          echo "docker save openremote/manager:$MANAGER_TAG | gzip > temp/manager.tar.gz"
 
-      - name: Build deployment image
+      - name: Build and save deployment image
         if: ${{ env.DEPLOYMENT_BUILD == 'true' }}
-        run: echo "docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_TAG $DEPLOYMENT_PATH"
+        run: |
+          echo "docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_TAG $DEPLOYMENT_PATH"
+          echo "docker save openremote/deployment:$MANAGER_TAG | gzip > temp/deployment.tar.gz"
+        
+      - name: Copy files to host
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          source: "temp"
+          target: "temp"
+          rm: true
+        
+      - name: Load image(s)
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            if [ -f "temp/manager.tar.gz" ]; then
+              docker load < temp/manager.tar.gz
+            fi
+            if [ -f "temp/deployment.tar.gz" ]; then
+              docker load < temp/deployment.tar.gz
+            fi
+                    
+      - name: Execute deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            chmod +x -R temp/
+            source temp/env
+            if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
+              ./temp/host-init/$HOST_INIT_SCRIPT
+            fi            
+            # Attempt docker compose down
+            docker-compose -f temp/docker-compose.yml -p or down
+            
+            # Delete postgres volume if CLEAN_INSTALL=true
