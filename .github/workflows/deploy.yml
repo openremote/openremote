@@ -192,7 +192,7 @@ jobs:
         run: echo "MANAGER_TAG=${{ github.event.inputs.manager_tag || env.MANAGER_TAG }}" >> $GITHUB_ENV
         
       - name: Determine clean install
-        run eco "CLEAN_INSTALL=${{ github.event.inputs.clean_install || env.CLEAN_INSTALL }}" >> $GITHUB_ENV
+        run: echo "CLEAN_INSTALL=${{ github.event.inputs.clean_install || env.CLEAN_INSTALL }}" >> $GITHUB_ENV
         
       - name: Check manager tag input
         if: env.MANAGER_TAG != ''
@@ -418,9 +418,9 @@ jobs:
         run: |
           echo "Waiting for manager web server https://$HOST..."
           count=0
-          success=false
-          while [ $success != 'true' -a $count < 36 ]; do
-            success=$(curl --output /dev/null --silent --head --fail https://$HOST/manager/)
+          success=0
+          while [ $success -ne 200 -a $count < 36 ]; do
+            success=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
             echo '.'
             $(( count++ ))
             sleep 5
