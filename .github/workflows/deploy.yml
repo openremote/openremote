@@ -68,8 +68,6 @@ on:
   repository_dispatch:
     types: [docker-push]
 
-env:
-  environment: staging
 
 jobs:
 
@@ -79,16 +77,35 @@ jobs:
       name: ${{ github.event.inputs.environment }}
 
     steps:
-    
-      - name: Login to DockerHub
-        if: ${{ env.USER != '' && env.PASSWORD != '' }}
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Check if env file exists
+        id: env-exists
+        run: |
+          if [ -f "profile/env" ]; then
+            echo "::set-output name=value::true"
+          fi
+
+      - name: Check if environment specific env file exists
+        id: env-specific-exists
+        if: ${{ github.event.inputs.environment != '' }}
+        run: |
+          if [ -f "profile/$ENVIRONMENT.env" ]; then
+            echo "::set-output name=value::true"
+          fi
         env:
-          USER: ${{ secrets.DOCKERHUB_USER }}
-          PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          
+      - name: Load env file
+        if: ${{ steps.env-exists.outputs.value }}
+        uses: cardinalby/export-env-action@v1
+        with:
+          envFile: 'profiles/env'
+
+      - name: Load environment specific env file
+        if: ${{ steps.env-specific-exists.outputs.value }}
+        uses: cardinalby/export-env-action@v1
+        with:
+          envFile: 'profiles/${{ github.event.inputs.environment }}.env'
 
       - name: Output secrets to ENV ready for overwrites from inputs
         shell: python
@@ -109,6 +126,13 @@ jobs:
                   os.system(f"echo '{key}={value}' >> $GITHUB_ENV")
         env:
           secret: ${{ toJSON(secrets) }}
+
+      - name: Login to DockerHub
+        if: ${{ env.DOCKERHUB_USER != '' && env.DOCKERHUB_PASSWORD != '' }}
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ env.DOCKERHUB_PASSWORD }}
 
       - name: Determine host name
         id: host-name
@@ -246,10 +270,10 @@ jobs:
               print(f"Setting {key} ...")
               lines = len(value.split("\n"))
               if lines > 1:
-                  os.system(f"echo '{key}=\'' >> .env")
-                  os.system(f"echo '{value}\'' >> .env")
+                  os.system(f"echo '{key}=\'' >> env")
+                  os.system(f"echo '{value}\'' >> env")
               else:
-                  os.system(f"echo '{key}=\"{value}\"' >> .env")
+                  os.system(f"echo '{key}=\"{value}\"' >> env")
         env:
           secret: ${{ toJSON(env) }}
 
@@ -261,7 +285,7 @@ jobs:
           username: ${{ env.SSH_USER }}
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
-          source: ".env,${{ env.COMPOSE_FILE }}"
+          source: "env,${{ env.COMPOSE_FILE }}"
           target: "or"
           rm: true
           
@@ -288,7 +312,7 @@ jobs:
           key: ${{ env.SSH_KEY }}
           script: |
             chmod +x -R or/
-            source or/.env            
+            source or/env            
             ./or/host-init/$HOST_INIT_SCRIPT
 
       - name: grant execute permission for gradlew
