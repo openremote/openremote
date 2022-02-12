@@ -96,16 +96,16 @@ jobs:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
           
       - name: Load env file
-        if: ${{ steps.env-exists.outputs.value }}
+        if: ${{ steps.env-exists.outputs.value == 'true' }}
         uses: cardinalby/export-env-action@v1
         with:
-          envFile: 'profiles/env'
+          envFile: 'profile/env'
 
       - name: Load environment specific env file
-        if: ${{ steps.env-specific-exists.outputs.value }}
+        if: ${{ steps.env-specific-exists.outputs.value == 'true' }}
         uses: cardinalby/export-env-action@v1
         with:
-          envFile: 'profiles/${{ github.event.inputs.environment }}.env'
+          envFile: 'profile/${{ github.event.inputs.environment }}.env'
 
       - name: Output secrets to ENV ready for overwrites from inputs
         shell: python
