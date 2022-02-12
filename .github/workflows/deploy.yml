@@ -46,7 +46,7 @@
 # - SSH_PASSWORD     - Will be used if input ssh_password is not set (should only be set as a secret)
 # - SSH_KEY          - SSH private key (should only be set as a secret)
 # - MANAGER_TAG      - Will be used if input manager_tag is not set
-# - CLEAN_INSTALL    - Can 
+# - CLEAN_INSTALL    - Can be used to force clean the data before starting the stack
 # - COMPOSE_FILE     - Use a specific compose file, must be the full path (e.g. profile/my-compose.yml);
 #                      if not specified and the file 'profile/{environment}.yml' exists then that will be
 #                      used otherwise fallback to 'docker-compose.yml' in the repo root.
@@ -322,7 +322,7 @@ jobs:
         run: copy "$COMPOSE_FILE" temp/docker-compose.yml
           
       - name: Copy host init files to temp folder
-        if: ${{ env.HOST_INIT_SCRIPT }}
+        if: ${{ env.HOST_INIT_SCRIPT != '' }}
         run: copy "profile/host_init" temp/
         
       - name: grant execute permission for gradlew
@@ -331,9 +331,9 @@ jobs:
       - name: Do code build
         run: |
           if [ $MANAGER_BUILD == 'true' ]; then
-            echo "./gradlew installDist"
+            ./gradlew installDist
           elif [ $DEPLOYMENT_BUILD == 'true' ]; then
-            echo "./gradlew -p deployment installDist"
+            ./gradlew -p deployment installDist
           fi
           
       - name: set up QEMU
@@ -351,14 +351,14 @@ jobs:
       - name: Build and save manager image
         if: ${{ env.MANAGER_BUILD == 'true' }}
         run: |
-          echo "docker build --platform $PLATFORM -t openremote/manager:$MANAGER_TAG $MANAGER_PATH"
-          echo "docker save openremote/manager:$MANAGER_TAG | gzip > temp/manager.tar.gz"
+          docker build --platform $PLATFORM -t openremote/manager:$MANAGER_TAG $MANAGER_PATH
+          docker save openremote/manager:$MANAGER_TAG | gzip > temp/manager.tar.gz
 
       - name: Build and save deployment image
         if: ${{ env.DEPLOYMENT_BUILD == 'true' }}
         run: |
-          echo "docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_TAG $DEPLOYMENT_PATH"
-          echo "docker save openremote/deployment:$MANAGER_TAG | gzip > temp/deployment.tar.gz"
+          docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_TAG $DEPLOYMENT_PATH
+          docker save openremote/deployment:$MANAGER_TAG | gzip > temp/deployment.tar.gz
         
       - name: Copy files to host
         uses: appleboy/scp-action@master
@@ -398,21 +398,25 @@ jobs:
           password: ${{ env.SSH_PASSWORD }}
           key: ${{ env.SSH_KEY }}
           script: |
-            #chmod +x -R temp/
-            #source temp/env
-            #if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
-            #  ./temp/host-init/$HOST_INIT_SCRIPT
-            #fi            
+            chmod +x -R temp/
+            source temp/env
+            if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
+              ./temp/host-init/$HOST_INIT_SCRIPT
+            fi
+            
+            # Pull any required images
+            docker-compose -f temp/docker-compose.yml pull
+            
             # Attempt docker compose down
-            # docker-compose -f temp/docker-compose.yml -p or down
+            docker-compose -f temp/docker-compose.yml -p or down
             
             # Delete postgres volume if CLEAN_INSTALL=true
-            #if [ ! -z $CLEAN_INSTALL ]; then
-            #  docker volume rm or_deployment-data
-            #fi
-
+            if [ $CLEAN_INSTALL == 'true' ]; then
+              docker volume rm or_deployment-data
+            fi
+            
             # Start the stack
-            # docker-compose -f temp/docker-compose.yml -p or up -d
+            docker-compose -f temp/docker-compose.yml -p or up -d
 
       - name: Wait for up to 5 mins for manager webserver to be running
         run: |
@@ -428,3 +432,14 @@ jobs:
           if [ $success != 'true' ]; then
             exit 1
           fi
+          
+      - name: Cleanup any obsolete docker images
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            docker image prune
