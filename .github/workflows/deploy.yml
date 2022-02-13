@@ -70,6 +70,8 @@ on:
   # Manually request a deploy
   workflow_dispatch:
     inputs:
+      environment:
+        description: 'Environment to use (if any)'
       host:
         description: 'Host to deploy to'
       ssh_user:
@@ -87,8 +89,6 @@ on:
         type: boolean
       commit:
         description: 'Repo branch or commit SHA to use'
-      environment:
-        description: 'Environment to use (if any)'
       platform:
         description: 'Host platform architecture'      
         
