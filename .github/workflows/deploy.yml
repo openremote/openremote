@@ -423,10 +423,10 @@ jobs:
           echo "Waiting for manager web server https://$HOST..."
           count=0
           success=0
-          while [ $success -ne 200 -a $count < 36 ]; do
+          while [ $success -ne 200 ] && [ $count -lt 36 ]; do
             success=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
             echo '.'
-            $(( count++ ))
+            ((count++))
             sleep 5
           done
           if [ $success != 'true' ]; then
