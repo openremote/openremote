@@ -412,8 +412,10 @@ jobs:
             
             # Delete postgres volume if CLEAN_INSTALL=true
             if [ $CLEAN_INSTALL == 'true' ]; then
-              docker volume rm or_deployment-data
+              docker volume rm or_postgresql-data
             fi
+            
+            docker volume rm or_deployment-data
             
             # Start the stack
             docker-compose -f temp/docker-compose.yml -p or up -d
