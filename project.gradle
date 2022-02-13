@@ -45,21 +45,25 @@ if (project == rootProject) {
                     shortenCommandLine = MANIFEST
                     workingDirectory = (isCustomProject() ? project(":openremote").projectDir.toString() : projectDir.toString())
                 }
-                "Empty"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
-                }
-                "Test Setup"(Application) {
+                "Demo Setup"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
-                }
-                "Empty with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
+                            SETUP_TYPE: "demo"
+                    ]
+                }
+                "Demo Setup with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
+                    envs = [
+                            SETUP_TYPE: "demo",
                             WEBSERVER_LISTEN_HOST: "0.0.0.0",
                             EXTERNAL_URL: "https://localhost:8443"
                     ]
                 }
-                "Test Setup with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
+                "Empty"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
+                }
+                "Empty with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
                             WEBSERVER_LISTEN_HOST: "0.0.0.0",
                             EXTERNAL_URL: "https://localhost:8443"

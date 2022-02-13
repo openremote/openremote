@@ -1,0 +1,317 @@
+{
+	"name": "Total power consumption",
+	"description": null,
+	"connections": [
+		{
+			"from": "k7xzWpPmOU",
+			"to": "mOv6cwMsN6"
+		},
+		{
+			"from": "0GKNcY239I",
+			"to": "TlmXpsOXUQ"
+		},
+		{
+			"from": "h9ZwYflt4Z",
+			"to": "rDjJ1NRPSV"
+		},
+		{
+			"from": "lzZfpdD4S0",
+			"to": "N2_UIZs3xI"
+		},
+		{
+			"from": "quH3sV5fSp",
+			"to": "Rsco32_whA"
+		},
+		{
+			"from": "cTWyTa7iqz",
+			"to": "DZdxsbYtlW"
+		},
+		{
+			"from": "74xUsnTGZY",
+			"to": "kW3nIIzmKM"
+		}
+	],
+	"nodes": [
+		{
+			"inputs": [],
+			"internals": [
+				{
+					"name": "Attribute",
+					"picker": {
+						"type": "ASSET_ATTRIBUTE"
+					},
+					"value": {
+						"assetId": "3Mj9yiC6bcH4MoIYDY2T35",
+						"attributeName": "power"
+					}
+				}
+			],
+			"name": "READ_ATTRIBUTE",
+			"outputs": [
+				{
+					"name": "value",
+					"type": "NUMBER",
+					"nodeId": "b_5QIrcpn",
+					"id": "k7xzWpPmOU"
+				}
+			],
+			"type": "INPUT",
+			"position": {
+				"x": -855.0078125,
+				"y": -453.5
+			},
+			"size": {
+				"x": 257.781,
+				"y": 65
+			},
+			"id": "b_5QIrcpn"
+		},
+		{
+			"inputs": [],
+			"internals": [
+				{
+					"name": "Attribute",
+					"picker": {
+						"type": "ASSET_ATTRIBUTE"
+					},
+					"value": {
+						"assetId": "4jBtdIZOtA7pLxPNSwWCVa",
+						"attributeName": "power"
+					}
+				}
+			],
+			"name": "READ_ATTRIBUTE",
+			"outputs": [
+				{
+					"name": "value",
+					"type": "NUMBER",
+					"nodeId": "5zCZbiVkM",
+					"id": "0GKNcY239I"
+				}
+			],
+			"type": "INPUT",
+			"position": {
+				"x": -858.0078125,
+				"y": -301.5
+			},
+			"size": {
+				"x": 243.969,
+				"y": 65
+			},
+			"id": "5zCZbiVkM"
+		},
+		{
+			"inputs": [],
+			"internals": [
+				{
+					"name": "Attribute",
+					"picker": {
+						"type": "ASSET_ATTRIBUTE"
+					},
+					"value": {
+						"assetId": "6L8hVlM1fQ4dDHFM6HYA6O",
+						"attributeName": "power"
+					}
+				}
+			],
+			"name": "READ_ATTRIBUTE",
+			"outputs": [
+				{
+					"name": "value",
+					"type": "NUMBER",
+					"nodeId": "TQ9PC2hLm",
+					"id": "h9ZwYflt4Z"
+				}
+			],
+			"type": "INPUT",
+			"position": {
+				"x": -861.0078125,
+				"y": -151.5
+			},
+			"size": {
+				"x": 217.031,
+				"y": 65
+			},
+			"id": "TQ9PC2hLm"
+		},
+		{
+			"inputs": [],
+			"internals": [
+				{
+					"name": "Attribute",
+					"picker": {
+						"type": "ASSET_ATTRIBUTE"
+					},
+					"value": {
+						"assetId": "4oio0T4DX9lxeBsZVNIpEN",
+						"attributeName": "power"
+					}
+				}
+			],
+			"name": "READ_ATTRIBUTE",
+			"outputs": [
+				{
+					"name": "value",
+					"type": "NUMBER",
+					"nodeId": "EA8rltWHy",
+					"id": "lzZfpdD4S0"
+				}
+			],
+			"type": "INPUT",
+			"position": {
+				"x": -865.0078125,
+				"y": 2.5
+			},
+			"size": {
+				"x": 216.141,
+				"y": 65
+			},
+			"id": "EA8rltWHy"
+		},
+		{
+			"inputs": [
+				{
+					"name": "a",
+					"type": "NUMBER",
+					"nodeId": "VTzqeMTRY",
+					"id": "mOv6cwMsN6"
+				},
+				{
+					"name": "b",
+					"type": "NUMBER",
+					"nodeId": "VTzqeMTRY",
+					"id": "TlmXpsOXUQ"
+				}
+			],
+			"internals": [],
+			"name": "ADD_OPERATOR",
+			"displayCharacter": "+",
+			"outputs": [
+				{
+					"name": "c",
+					"type": "NUMBER",
+					"nodeId": "VTzqeMTRY",
+					"id": "quH3sV5fSp"
+				}
+			],
+			"type": "PROCESSOR",
+			"position": {
+				"x": -336.5,
+				"y": -327.5
+			},
+			"size": {
+				"x": 0,
+				"y": 0
+			},
+			"id": "VTzqeMTRY"
+		},
+		{
+			"inputs": [
+				{
+					"name": "a",
+					"type": "NUMBER",
+					"nodeId": "zy-tW7hST",
+					"id": "rDjJ1NRPSV"
+				},
+				{
+					"name": "b",
+					"type": "NUMBER",
+					"nodeId": "zy-tW7hST",
+					"id": "N2_UIZs3xI"
+				}
+			],
+			"internals": [],
+			"name": "ADD_OPERATOR",
+			"displayCharacter": "+",
+			"outputs": [
+				{
+					"name": "c",
+					"type": "NUMBER",
+					"nodeId": "zy-tW7hST",
+					"id": "cTWyTa7iqz"
+				}
+			],
+			"type": "PROCESSOR",
+			"position": {
+				"x": -362.5,
+				"y": -31.5
+			},
+			"size": {
+				"x": 0,
+				"y": 0
+			},
+			"id": "zy-tW7hST"
+		},
+		{
+			"inputs": [
+				{
+					"name": "a",
+					"type": "NUMBER",
+					"nodeId": "4_h4BFrUr",
+					"id": "Rsco32_whA"
+				},
+				{
+					"name": "b",
+					"type": "NUMBER",
+					"nodeId": "4_h4BFrUr",
+					"id": "DZdxsbYtlW"
+				}
+			],
+			"internals": [],
+			"name": "ADD_OPERATOR",
+			"displayCharacter": "+",
+			"outputs": [
+				{
+					"name": "c",
+					"type": "NUMBER",
+					"nodeId": "4_h4BFrUr",
+					"id": "74xUsnTGZY"
+				}
+			],
+			"type": "PROCESSOR",
+			"position": {
+				"x": -167.5,
+				"y": -186.5
+			},
+			"size": {
+				"x": 0,
+				"y": 0
+			},
+			"id": "4_h4BFrUr"
+		},
+		{
+			"inputs": [
+				{
+					"name": "value",
+					"type": "NUMBER",
+					"nodeId": "3CV-fcqbr",
+					"id": "kW3nIIzmKM"
+				}
+			],
+			"internals": [
+				{
+					"name": "Attribute",
+					"picker": {
+						"type": "ASSET_ATTRIBUTE"
+					},
+					"value": {
+						"assetId": "44ORIhkDVAlT97dYGUD9n5",
+						"attributeName": "powerTotalConsumers"
+					}
+				}
+			],
+			"name": "WRITE_ATTRIBUTE",
+			"outputs": [],
+			"type": "OUTPUT",
+			"position": {
+				"x": 25.9921875,
+				"y": -232.5
+			},
+			"size": {
+				"x": 247,
+				"y": 65
+			},
+			"id": "3CV-fcqbr"
+		}
+	]
+}

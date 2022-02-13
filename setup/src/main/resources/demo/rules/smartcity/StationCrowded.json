@@ -1,0 +1,150 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "MicrophoneAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "soundLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 60
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2bdD9xZlveIOabucPi9Iur"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "MicrophoneAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "soundLevel"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 60
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "5WKcxVxZqFq1GYd9b2YVGD"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    "PeopleCounterAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "countGrowthMinute"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 2
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "4vD8XpKSR6iieaSLJ35nKl"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "2JA9oLQDHY0pjVHnGJMS35"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 60,
+          "attributeName": "brightness"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "3BSvaTREZX2MLjuE8bkM16"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 75,
+          "attributeName": "brightness"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "2motXSzult66RsYrImPTdf"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 70,
+          "attributeName": "brightness"
+        }
+      ],
+      "name": "Station: Crowded square"
+    }
+  ]
+}

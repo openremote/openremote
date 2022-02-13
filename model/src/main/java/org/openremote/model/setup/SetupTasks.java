@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.setup;
+package org.openremote.model.setup;
+
+import org.openremote.model.Container;
+
+import java.util.List;
 
 /**
- * A task that runs when the application starts. Typically this means a procedure that
- * <ul>
- *     <li>initializes some (database) state when the application starts for the first time</li>
- *     <li>cleans up some state when the application is restarted (e.g. during development)</li>
- *     <li>imports some state for demo/testing purposes</li>
- * </ul>
+ * Provides a list of {@link Setup} tasks to execute.
  */
-public interface Setup {
+public interface SetupTasks {
 
-    default void onInit() throws Exception {}
+    /**
+     * Can be used by setup tasks to have different configurable setups (e.g. production/staging/test/etc.)
+     */
+    String SETUP_TYPE = "SETUP_TYPE";
 
-    default void onStart() throws Exception {}
+    List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled);
 }

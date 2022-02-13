@@ -10,7 +10,7 @@ apply plugin: "groovy"
 
 dependencies {
 
-    api resolveProject(":setup")
+    api resolveProject(":manager")
 
     api "org.codehaus.groovy:groovy-all:$groovyVersion"
 

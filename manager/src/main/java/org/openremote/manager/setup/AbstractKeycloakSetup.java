@@ -22,12 +22,14 @@ package org.openremote.manager.setup;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
+import org.openremote.model.setup.Setup;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,8 +40,6 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID;
 
 public abstract class AbstractKeycloakSetup implements Setup {
 
-    public static final String SETUP_EMAIL_FROM_KEYCLOAK = "SETUP_EMAIL_FROM_KEYCLOAK";
-    public static final String SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT = "no-reply@openremote.io";
     public static final ClientRole[] PUBLIC_USER_ROLES = new ClientRole[] {
         ClientRole.READ_ASSETS,
         ClientRole.READ_MAP

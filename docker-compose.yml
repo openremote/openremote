@@ -61,6 +61,7 @@ services:
       keycloak:
         condition: service_healthy
     environment:
+      SETUP_TYPE:
       DEV_MODE: ${DEV_MODE:-false}
       SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
     volumes:

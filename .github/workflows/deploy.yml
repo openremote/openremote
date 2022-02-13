@@ -397,7 +397,9 @@ jobs:
           key: ${{ env.SSH_KEY }}
           script: |
             chmod +x -R temp/
-            source temp/env
+            set -a
+            . ./temp/env
+            set +a
             if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
               ./temp/host-init/$HOST_INIT_SCRIPT
             fi

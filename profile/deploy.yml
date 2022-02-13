@@ -136,6 +136,11 @@ services:
       # the keycloak identity provider).
       SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
 
+      # Can be used by SetupTasks to determine what assets etc. should be setup for this deployment
+      # the available values and general use of this is dependent on the actual SetupTasks available
+      # in the instance being deployed some basic recommendations are 'production', 'staging'
+      SETUP_TYPE: ${SETUP_TYPE}
+
       # The public URL of the proxy in front of this manager; must match the proxy#DOMAINNAME (unfortunately
       # docker compose doesn't support chaining environment variables at time of writing, hence the need for
       # two environment variables)

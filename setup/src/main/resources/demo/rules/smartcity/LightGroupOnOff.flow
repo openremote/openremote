@@ -1,0 +1,270 @@
+{
+    "name": "Light group: On/Off",
+    "description": null,
+    "connections": [
+        {
+            "from": "ukpONuy_1l",
+            "to": "B3dY_taYNK"
+        },
+        {
+            "from": "ukpONuy_1l",
+            "to": "68LWcne-67"
+        },
+        {
+            "from": "ukpONuy_1l",
+            "to": "ktRR2NfCIz"
+        },
+        {
+            "from": "ukpONuy_1l",
+            "to": "yeg_2mKTYs"
+        },
+        {
+            "from": "ukpONuy_1l",
+            "to": "IZLWvgKE53"
+        },
+        {
+            "from": "ukpONuy_1l",
+            "to": "jhuPjbsPKE"
+        }
+    ],
+    "nodes": [
+        {
+            "inputs": [],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "value": {
+                        "assetId": "52kOB7c1Rs7WUxgfoCKf5B",
+                        "attributeName": "onOff"
+                    }
+                }
+            ],
+            "name": "READ_ATTRIBUTE",
+            "outputs": [
+                {
+                    "name": "value",
+                    "type": "BOOLEAN",
+                    "nodeId": "06QKgajTZ",
+                    "id": "ukpONuy_1l"
+                }
+            ],
+            "type": "INPUT",
+            "position": {
+                "x": -543.9625396728516,
+                "y": -112.80001831054688
+            },
+            "size": {
+                "x": 227.5,
+                "y": 65
+            },
+            "id": "06QKgajTZ"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BOOLEAN",
+                    "nodeId": "B5WJbAESc",
+                    "id": "B3dY_taYNK"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "value": {
+                        "assetId": "3QlH8nQWvnevcyxat6tQKJ",
+                        "attributeName": "onOff"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": -17.587539672851562,
+                "y": -464.4250183105469
+            },
+            "size": {
+                "x": 113,
+                "y": 65
+            },
+            "id": "B5WJbAESc"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BOOLEAN",
+                    "nodeId": "-RIbDrogC",
+                    "id": "68LWcne-67"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "value": {
+                        "assetId": "4Y8sldGAezGSxqSSW3bly5",
+                        "attributeName": "onOff"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": -17.212539672851562,
+                "y": -323.1750183105469
+            },
+            "size": {
+                "x": 113,
+                "y": 65
+            },
+            "id": "-RIbDrogC"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BOOLEAN",
+                    "nodeId": "pfENJ9_NZ",
+                    "id": "ktRR2NfCIz"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "value": {
+                        "assetId": "4RYkKKuM1wOw21PNOgHShZ",
+                        "attributeName": "onOff"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": -16.962539672851562,
+                "y": -183.30001831054688
+            },
+            "size": {
+                "x": 113,
+                "y": 65
+            },
+            "id": "pfENJ9_NZ"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BOOLEAN",
+                    "nodeId": "w11vs1M8S",
+                    "id": "yeg_2mKTYs"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "value": {
+                        "assetId": "43F9MlyRcnGhY2m2hHlOdz",
+                        "attributeName": "onOff"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": -17.712539672851562,
+                "y": -41.675018310546875
+            },
+            "size": {
+                "x": 113,
+                "y": 65
+            },
+            "id": "w11vs1M8S"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BOOLEAN",
+                    "nodeId": "80FuLcHW-",
+                    "id": "IZLWvgKE53"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "value": {
+                        "assetId": "5aID6iE9exaVNirT2flago",
+                        "attributeName": "onOff"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": -16.587539672851562,
+                "y": 94.57498168945312
+            },
+            "size": {
+                "x": 113,
+                "y": 65
+            },
+            "id": "80FuLcHW-"
+        },
+        {
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BOOLEAN",
+                    "nodeId": "aJz5lyWMD",
+                    "id": "jhuPjbsPKE"
+                }
+            ],
+            "internals": [
+                {
+                    "name": "Attribute",
+                    "picker": {
+                        "type": "ASSET_ATTRIBUTE"
+                    },
+                    "value": {
+                        "assetId": "3wauEi0ol2th6hXULHV2N4",
+                        "attributeName": "onOff"
+                    }
+                }
+            ],
+            "name": "WRITE_ATTRIBUTE",
+            "outputs": [],
+            "type": "OUTPUT",
+            "position": {
+                "x": -17.462539672851562,
+                "y": 233.94998168945312
+            },
+            "size": {
+                "x": 113,
+                "y": 65
+            },
+            "id": "aJz5lyWMD"
+        }
+    ]
+}

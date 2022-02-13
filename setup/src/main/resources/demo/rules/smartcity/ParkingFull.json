@@ -1,0 +1,61 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 10080
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "GroupAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "totalOccupancy"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 90
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "7UUzmvnTuLdjVpTb8MnjSX"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "target": {
+            "custom": "test@testemail.com"
+          },
+          "notification": {
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%"
+            }
+          }
+        }
+      ],
+      "name": "Parking: Almost full"
+    }
+  ]
+}

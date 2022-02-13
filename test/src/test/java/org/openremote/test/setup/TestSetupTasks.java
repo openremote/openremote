@@ -19,32 +19,24 @@
  */
 package org.openremote.test.setup;
 
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.manager.setup.EmptySetupTasks;
-import org.openremote.manager.setup.Setup;
 import org.openremote.model.Container;
+import org.openremote.model.setup.Setup;
+import org.openremote.model.setup.SetupTasks;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Test setup tasks.
  */
-public class TestSetupTasks extends EmptySetupTasks {
+public class TestSetupTasks implements SetupTasks {
 
     @Override
-    public List<Setup> createTasks(Container container) {
-        super.createTasks(container);
-
-        // Basic vs Keycloak identity provider
-        if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
-
-            addTask(new KeycloakTestSetup(container));
-            addTask(new ManagerTestSetup(container));
-            //addTask(new RulesTestSetup(container));
-
-            addTask(new ManagerTestAgentSetup(container));
-        }
-
-        return getTasks();
+    public List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled) {
+        return Arrays.asList(
+            new KeycloakTestSetup(container),
+            new ManagerTestSetup(container),
+            new ManagerTestAgentSetup(container)
+        );
     }
 }

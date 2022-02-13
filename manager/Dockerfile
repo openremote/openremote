@@ -10,6 +10,7 @@ ENV JAVA_TOOL_OPTIONS ${JAVA_TOOL_OPTIONS}
 
 ENV TZ ${TZ:-Europe/Amsterdam}
 ENV SETUP_ADMIN_PASSWORD ${SETUP_ADMIN_PASSWORD:-secret}
+ENV SETUP_TYPE ${SETUP_TYPE}
 ENV EXTERNAL_URL ${EXTERNAL_URL:-https://localhost}
 ENV SETUP_EMAIL_HOST ${SETUP_EMAIL_HOST}
 ENV SETUP_EMAIL_USER ${SETUP_EMAIL_USER}
@@ -69,6 +70,7 @@ ADD web /opt/web
 ADD map /opt/map
 
 EXPOSE 8080
+EXPOSE 1883
 
 HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
 ENTRYPOINT java $MANAGER_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
