@@ -1,42 +1,44 @@
-# Automatic or manual deployment of the stack using specified docker manager image tag from docker hub
-# or alternatively a git commit can be sepcified to build a custom manager image.
+# Automatic or manual deployment of the stack using specified docker manager image tag from docker hub or alternatively
+# if not specified a commit specific image will be built using the git commit.
 #
-# If this is a custom project (i.e. has openremote submodule) or deployment/Dockerfile exists then a
-# deployment image will also be built and loaded on the host (it is up to the loaded docker compose
-# file to actually use this deployment image for volume mappings).
+# This workflow supports custom projects https://github.com/openremote/custom-project (i.e. has openremote submodule)
+# as well as supporting a deployment directory directly within this repo (deployment/Dockerfile must exist); in this mode
+# a deployment image will also be built and loaded on the host (it is up to the loaded docker compose file to actually
+# use this deployment image via volume mappings).
 #
-# If triggered by a webhook then the payload must contain an inputs object with the same keys as the
-# workflow_dispatch inputs
+# Trigger
+#
+# This workflow can be triggered manually or by a webhook; if triggered by a webhook then the payload must contain an
+# inputs object with the same keys as the workflow_dispatch inputs (note none of the inputs are required):
 #
 # Inputs:
 #
-# - environment     - used to load the specified environment from github; this can then contain specific
-#                     secrets to override default values; these are overlayed ontop of the repo and org
-#                     secrets. It is also used to load an environment specific env file from the repo
-#                     and/or an environment specific docker compose file
-# - host            - DNS URL for the host (default: secrets.HOST)
-# - ssh_user        - SSH username (default: secrets.SSH_USER || root)
+# - environment     - used to load the specified environment from github; this can then contain specific secrets to
+#                     override default values; these are overlaid on top of the repo and org secrets. It is also used
+#                     to load an environment specific env and/or host_init files from the repo and/or an environment
+#                     specific docker compose file
+# - host            - FQDN for the host (default: env/secrets.HOST)
+# - ssh_user        - SSH username (default: env/secrets.SSH_USER || root)
 # - ssh_password    - SSH password (default: secrets.SSH_PASSWORD)
-# - ssh_port        - SSH port (default: secrets.SSH_PORT || 22)
+# - ssh_port        - SSH port (default: env/secrets.SSH_PORT || 22)
 # - password        - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
 #                     (default: secrets.SETUP_ADMIN_PASSWORD || secret)
 # - manager_version - The docker tag to pull for the manager image; if not specified then the manager image
-#                     will be built using the specified commit or latest branch commit
-# - commit          - Which commit or branch to use on this repo (default: branch on which workflow is executed)
-# - platform        - The host platform architecture (default: secrets.PLATFORM || linux/amd64)
+#                     will be built using the checked out repo commit
+# - commit          - Which commit or branch to checkout and use on this repo (default: branch on which workflow is executed)
+# - platform        - The host platform architecture (default: env/secrets.PLATFORM || linux/amd64)
 #
-# Environment vairables are loaded into the env context from the following files in the repo if they exist:
+# Environment variables are loaded into the env context from the following files in the repo if they exist:
 #
-# profile/env
-# profile/{environment}.env
+# .github/env/.env
+# .github/env/{environment}.env
 #
 # Env/Secrets:
 #
-# Secrets are loaded from the github environment corresponding to the environment input, these secrets
-# are copied into the env context; the combined env/secrets are then made available to the host during
-# exection of docker compose commands; so any env/secret configurable in the compose profile can be set
-# in the env file and/or in the secrets (secrets take priority); NOTE: sensitive values should only be
-# stored as secrets so they are encrypted.
+# Secrets are loaded from the github environment corresponding to the environment input, these secrets are copied into
+# the env context; the combined env/secrets are then made available to the host during execution of docker compose
+# commands; so any env/secret configurable in the compose profile can be set in the env file and/or in the secrets
+# (secrets take priority); NOTE: sensitive values should only be stored as secrets so they are encrypted.
 #
 # The following env/secrets are supported to configure the way this workflow behaves:
 #
@@ -51,18 +53,18 @@
 #                      if not specified and the file 'profile/{environment}.yml' exists then that will be
 #                      used otherwise fallback to 'docker-compose.yml' in the repo root.
 # - HOST_INIT_SCRIPT - name of the host initialisation (see below) script to execute on the host (just the
-#                      name no path or extension e.g. 'test' -> 'profile/host_init/test.sh'; can be set to
-#                      'NONE' to force no host initialisation.
+#                      name no path or extension e.g. 'test' -> '.github/host_init/test.sh'; can be set to
+#                      'NONE' to force no host initialisation even if files exist.
 #
 # Host initialisation
 #
-# To do host specific configuration (download map files etc.) files can be added to the 'profile/host-init'
-# directory these will be copied to the host and the HOST_INIT_SCRIPT will be executed (if it is present in
-# the repo); if HOST_INIT_SCRIPT is set to 'NONE' no host initialisation will be done, if it is not set
-# then the following files will be checked in priority order:
+# To do host specific configuration (download map files etc.) files can be added to the '.github/host-init' directory
+# these will be copied to the host and the HOST_INIT_SCRIPT will be executed (if it is present in the repo); if
+# HOST_INIT_SCRIPT is set to 'NONE' no host initialisation will be done, if it is not set then the following files will
+# be checked in priority order:
 #
-# profile/host_init/{environment}.sh
-# profile/host_init/init.sh
+# .github/host_init/{environment}.sh
+# .github/host_init/init.sh
 
 name: Deploy
 
@@ -85,17 +87,16 @@ on:
       manager_version:
         description: 'Manager docker tag to pull'
       clean_install:
-        description: 'Delete data before start'
+        description: 'Delete data before starting'
         type: boolean
       commit:
         description: 'Repo branch or commit SHA to use'
       platform:
-        description: 'Host platform architecture'      
-        
+        description: 'Host platform architecture'
+
   # Docker push webhook trigger
   repository_dispatch:
-    types: [docker-push]
-
+    types: [ docker-push ]
 
 jobs:
 
@@ -111,11 +112,11 @@ jobs:
         with:
           ref: ${{github.event.inputs.commit}}
           submodules: recursive
-          
+
       - name: Check if env file exists
         id: env-exists
         run: |
-          if [ -f "profile/env" ]; then
+          if [ -f ".github/env/.env" ]; then
             echo "::set-output name=value::true"
           fi
 
@@ -123,23 +124,23 @@ jobs:
         id: env-specific-exists
         if: ${{ github.event.inputs.environment != '' }}
         run: |
-          if [ -f "profile/$ENVIRONMENT.env" ]; then
+          if [ -f ".github/env/$ENVIRONMENT.env" ]; then
             echo "::set-output name=value::true"
           fi
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
-          
+
       - name: Load env file
         if: ${{ steps.env-exists.outputs.value == 'true' }}
         uses: cardinalby/export-env-action@v1
         with:
-          envFile: 'profile/env'
+          envFile: '.github/env/.env'
 
       - name: Load environment specific env file
         if: ${{ steps.env-specific-exists.outputs.value == 'true' }}
         uses: cardinalby/export-env-action@v1
         with:
-          envFile: 'profile/${{ github.event.inputs.environment }}.env'
+          envFile: '.github/env/${{ github.event.inputs.environment }}.env'
 
       - name: Output secrets to ENV ready for overwrites from inputs
         shell: python
@@ -161,39 +162,32 @@ jobs:
         env:
           secret: ${{ toJSON(secrets) }}
 
-#       - name: Login to DockerHub
-#         if: ${{ env.DOCKERHUB_USER != '' && env.DOCKERHUB_PASSWORD != '' }}
-#         uses: docker/login-action@v1
-#         with:
-#           username: ${{ env.DOCKERHUB_USER }}
-#           password: ${{ env.DOCKERHUB_PASSWORD }}
-
       - name: Determine host name
         id: host-name
         run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
-        
+
       - name: Host not set
         if: ${{ env.HOST == '' }}
         run: exit 1
-                
+
       - name: Determine SSH username
         run: echo "SSH_USER=${{ github.event.inputs.ssh_user || env.SSH_USER || 'root' }}" >> $GITHUB_ENV
-                
+
       - name: Determine SSH port
         run: echo "SSH_PORT=${{ github.event.inputs.ssh_port || env.SSH_PORT || '22' }}" >> $GITHUB_ENV
-                        
+
       - name: Determine SSH password
         run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
-        
+
       - name: Determine platform
         run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
-        
+
       - name: Determine manager tag
         run: echo "MANAGER_VERSION=${{ github.event.inputs.manager_version || env.MANAGER_VERSION }}" >> $GITHUB_ENV
-        
+
       - name: Determine clean install
         run: echo "CLEAN_INSTALL=${{ github.event.inputs.clean_install || env.CLEAN_INSTALL }}" >> $GITHUB_ENV
-        
+
       - name: Check manager tag input
         if: env.MANAGER_VERSION != ''
         run: |
@@ -202,19 +196,19 @@ jobs:
       - name: Determine password
         id: password
         run: echo "SETUP_ADMIN_PASSWORD=${{ github.event.inputs.password || env.SETUP_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
-        
+
       - name: Check deployment existence
         id: check_deployment_dir
         uses: andstor/file-existence-action@v1
         with:
-          files: "deployment/Dockerfile"          
-          
+          files: "deployment/Dockerfile"
+
       - name: Check custom project
         id: check_custom_project
         uses: andstor/file-existence-action@v1
         with:
           files: "openremote"
-        
+
       - name: Determine compose file path
         id: compose-file
         run: |
@@ -232,10 +226,10 @@ jobs:
         env:
           ENV_COMPOSE_FILE: ${{ env.COMPOSE_FILE }}
           ENVIRONMENT: ${{ github.event.inputs.environment }}
-        
+
       - name: Determine manager image info
         id: manager-image
-        run: |          
+        run: |
           if [ ! -z $MANAGER_VERSION ]; then
             echo "MANAGER_VERSION=$MANAGER_VERSION" >> $GITHUB_ENV
           elif [ $CUSTOM_PROJECT == 'true' ]; then
@@ -264,10 +258,14 @@ jobs:
           if [ $HOST_INIT_SCRIPT == 'NONE' ]; then
             echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
           elif [ ! -z $HOST_INIT_SCRIPT ]; then
+            if [ ! -f ".github/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
+              echo "HOST_INIT_SCRIPT (.github/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
+              exit 1
+            fi
             echo "HOST_INIT_SCRIPT=${ENV_HOST_INIT_SCRIPT}.sh" >> $GITHUB_ENV
-          elif [ -f "profile/host_init/$ENVIRONMENT.sh" ]; then
+          elif [ -f ".github/host_init/$ENVIRONMENT.sh" ]; then
             echo "HOST_INIT_SCRIPT=$ENVIRONMENT.sh" >> $GITHUB_ENV
-          elif [ -f "profile/host_init/init.sh" ]; then
+          elif [ -f ".github/host_init/init.sh" ]; then
             echo "HOST_INIT_SCRIPT=init.sh" >> $GITHUB_ENV
           else
             echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
@@ -293,10 +291,10 @@ jobs:
           echo "Host init script: ${{ env.HOST_INIT_SCRIPT }}"
           echo "************************************************************"
           echo "************************************************************"
-  
+
       - name: Make temp dir
         run: mkdir temp
-  
+
       - name: Output ENV to file
         shell: python
         run: |
@@ -319,11 +317,11 @@ jobs:
 
       - name: Copy compose file to temp folder
         run: cp "$COMPOSE_FILE" temp/docker-compose.yml
-          
+
       - name: Copy host init files to temp folder
         if: ${{ env.HOST_INIT_SCRIPT != '' }}
-        run: cp "profile/host_init" temp/
-        
+        run: cp ".github/host_init" temp/
+
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
 
@@ -334,7 +332,7 @@ jobs:
           elif [ $DEPLOYMENT_BUILD == 'true' ]; then
             ./gradlew -p deployment installDist
           fi
-          
+
       - name: set up QEMU
         uses: docker/setup-qemu-action@v1
         with:
@@ -358,7 +356,7 @@ jobs:
         run: |
           docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_VERSION $DEPLOYMENT_PATH
           docker save openremote/deployment:$DEPLOYMENT_VERSION | gzip > temp/deployment.tar.gz
-        
+
       - name: Copy files to host
         uses: appleboy/scp-action@master
         with:
@@ -371,7 +369,7 @@ jobs:
           target: "temp"
           strip_components: 1
           rm: true
-        
+
       - name: Load image(s)
         if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
         uses: appleboy/ssh-action@master
@@ -388,7 +386,7 @@ jobs:
             if [ -f "temp/deployment.tar.gz" ]; then
               docker load < temp/deployment.tar.gz
             fi
-                    
+
       - name: Execute deployment
         uses: appleboy/ssh-action@master
         with:
@@ -434,7 +432,7 @@ jobs:
           if [ $success != 'true' ]; then
             exit 1
           fi
-          
+
       - name: Cleanup any obsolete docker images
         uses: appleboy/ssh-action@master
         with:
