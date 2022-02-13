@@ -369,6 +369,7 @@ jobs:
           key: ${{ env.SSH_KEY }}
           source: "temp"
           target: "temp"
+          strip_components: 1
           rm: true
         
       - name: Load image(s)
