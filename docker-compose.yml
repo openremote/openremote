@@ -51,7 +51,7 @@ services:
       - ./deployment:/deployment
     environment:
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: https://${HOST:localhost}/auth
+      KEYCLOAK_FRONTEND_URL: https://${HOST:-localhost}/auth
       
   manager:
 #    privileged: true
