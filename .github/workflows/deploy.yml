@@ -295,7 +295,6 @@ jobs:
           echo "************************************************************"
   
       - name: Make temp dir
-        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
         run: mkdir temp
   
       - name: Output ENV to file
