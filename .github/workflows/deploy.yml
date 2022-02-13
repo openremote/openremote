@@ -319,11 +319,11 @@ jobs:
           secret: ${{ toJSON(env) }}
 
       - name: Copy compose file to temp folder
-        run: copy "$COMPOSE_FILE" temp/docker-compose.yml
+        run: cp "$COMPOSE_FILE" temp/docker-compose.yml
           
       - name: Copy host init files to temp folder
         if: ${{ env.HOST_INIT_SCRIPT != '' }}
-        run: copy "profile/host_init" temp/
+        run: cp "profile/host_init" temp/
         
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
