@@ -468,6 +468,8 @@ jobs:
             echo "Response code = $response"
             exit 1
           fi
+          echo $?
+          echo whoami
 
       - name: Cleanup any obsolete docker images
         timeout-minutes: 2
