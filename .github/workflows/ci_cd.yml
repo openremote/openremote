@@ -55,7 +55,7 @@ jobs:
         run: echo "::set-output name=tag::${{ env.TAG }}"
 
   build:
-    name: Build
+    name: Build & Test
     needs: [dockertag]
 
     runs-on: ubuntu-latest
