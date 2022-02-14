@@ -325,7 +325,38 @@ jobs:
       - name: grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Set up JDK 17 and gradle cache
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        id: java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+          
+      - name: Grant execute permission for gradlew and make image-cache
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        run: |
+          chmod +x gradlew
+          mkdir -p ~/image-cache
+          
+      - name: Get yarn cache directory path
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+      - name: Yarn cache
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        uses: actions/cache@v2
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn---
+            
       - name: Do code build
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
         run: |
           if [ $MANAGER_BUILD == 'true' ]; then
             ./gradlew installDist
