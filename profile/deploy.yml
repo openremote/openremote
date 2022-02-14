@@ -57,7 +57,10 @@ services:
       # rely on a baked-in self-signed certificate.
       DOMAINNAME: ${HOST}
 
-      # Provide your own email address for your SSL certificates with Let's Encrypt.
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      HAPROXY_CONFIG: ${HAPROXY_CONFIG}
+
+      # Email address for SSL certificate issuance and expiration notifications.
       LE_EMAIL: ${SETUP_EMAIL_TO}
 
       # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt

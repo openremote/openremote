@@ -37,6 +37,8 @@ services:
     environment:
       LE_EMAIL: ${SETUP_EMAIL_TO}
       DOMAINNAME: ${HOST:-localhost}
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
       
   postgresql:
     restart: always
