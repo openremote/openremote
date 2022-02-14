@@ -461,17 +461,13 @@ jobs:
           while [ $response -ne 200 ] && [ $count -lt 36 ]; do
             response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
             echo '.'
-            ((count++))
-            echo '..'
+            count=$((count+1))
             sleep 5
-            echo '...'
           done
           if [ $response -ne 200 ]; then
             echo "Response code = $response"
-            #exit 1
+            exit 1
           fi
-          echo $?
-          echo whoami
 
       - name: Cleanup any obsolete docker images
         timeout-minutes: 2
