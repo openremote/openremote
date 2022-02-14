@@ -465,6 +465,7 @@ jobs:
             sleep 5
           done
           if [ $success -ne 200 ]; then
+            echo "Response code = $success"
             exit 1
           fi
 
