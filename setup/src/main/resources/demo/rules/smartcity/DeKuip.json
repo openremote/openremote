@@ -1,0 +1,76 @@
+{
+  "rules": [
+    {
+      "name": "De Kuip",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "ConsoleAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "location"
+                        },
+                        "value": {
+                          "predicateType": "radial",
+                          "negated": false,
+                          "radius": 100,
+                          "lat": 51.8938569,
+                          "lng": 4.5219983
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "notification": {
+            "name": "De Kuip",
+            "message": {
+              "type": "push",
+              "title": "De Kuip",
+              "body": "De thuis van Feyenoord",
+              "action": {
+                "url": "https://www.feyenoord.nl"
+              },
+              "buttons": [
+                {
+                  "title": "Open in app",
+                  "action": {
+                    "url": "https://www.feyenoord.nl"
+                  }
+                },
+                {
+                  "title": "Open in browser",
+                  "action": {
+                    "url": "https://www.feyenoord.nl",
+                    "openInBrowser": true
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "reset": {
+        "timer": "1m"
+      }
+    }
+  ]
+}
