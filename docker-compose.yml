@@ -68,20 +68,20 @@ services:
         condition: service_healthy
     environment:
       # Set this variable `demo` to auto provision demo assets etc.
-      SETUP_TYPE: ${SETUP_TYPE:-}
-      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
-      SETUP_WIPE_CLEAN_INSTALL: ${SETUP_WIPE_CLEAN_INSTALL:-false}
-      SETUP_EMAIL_HOST: ${SETUP_EMAIL_HOST:-}
-      SETUP_EMAIL_USER: ${SETUP_EMAIL_USER:-}
-      SETUP_EMAIL_PASSWORD: ${SETUP_EMAIL_PASSWORD:-}
-      SETUP_EMAIL_FROM: ${SETUP_EMAIL_FROM:-}
-      SETUP_EMAIL_TO: ${SETUP_EMAIL_TO:-}
-      DEV_MODE: ${DEV_MODE:-false}
+      SETUP_TYPE:
+      SETUP_ADMIN_PASSWORD:
+      SETUP_WIPE_CLEAN_INSTALL:
+      SETUP_EMAIL_HOST:
+      SETUP_EMAIL_USER:
+      SETUP_EMAIL_PASSWORD:
+      SETUP_EMAIL_FROM:
+      SETUP_EMAIL_TO:
+      DEV_MODE:
       # The following variables will configure the demo
-      FORECAST_SOLAR_API_KEY: ${FORECAST_SOLAR_API_KEY:-}
-      OPEN_WEATHER_API_APP_ID: ${OPEN_WEATHER_API_APP_ID:-}
-      SETUP_IMPORT_DEMO_AGENT_KNX: ${SETUP_IMPORT_DEMO_AGENT_KNX:-false}
-      SETUP_IMPORT_DEMO_AGENT_VELBUS: ${SETUP_IMPORT_DEMO_AGENT_KNX:-false}
+      FORECAST_SOLAR_API_KEY:
+      OPEN_WEATHER_API_APP_ID:
+      SETUP_IMPORT_DEMO_AGENT_KNX:
+      SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - temp-data:/tmp
 #      - /var/run/dbus:/var/run/dbus
