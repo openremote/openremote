@@ -457,18 +457,17 @@ jobs:
         run: |
           echo "Waiting for manager web server https://$HOST..."
           count=0
-          success=0
-          while [ $success -ne 200 ] && [ $count -lt 36 ]; do
-            success=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
+          response=0
+          while [ $response -ne 200 ] && [ $count -lt 36 ]; do
+            response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
             echo '.'
             ((count++))
             sleep 5
           done
-          if [ $success -ne 200 ]; then
-            echo "Response code = $success"
+          if [ $response -ne 200 ]; then
+            echo "Response code = $response"
             exit 1
           fi
-          exit 0
 
       - name: Cleanup any obsolete docker images
         timeout-minutes: 2
