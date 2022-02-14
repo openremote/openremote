@@ -76,6 +76,7 @@ services:
       SETUP_EMAIL_PASSWORD:
       SETUP_EMAIL_FROM:
       SETUP_EMAIL_TO:
+      EXTERNAL_URL: https://${HOST:-localhost}
       DEV_MODE:
       # The following variables will configure the demo
       FORECAST_SOLAR_API_KEY:
