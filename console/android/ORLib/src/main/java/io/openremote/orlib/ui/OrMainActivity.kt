@@ -129,7 +129,7 @@ open class OrMainActivity : Activity() {
 
             if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
                 val apiManager = ApiManager("https://${project}.openremote.io/api/$realm")
-                apiManager.getAppConfig { statusCode, appConfig, error ->
+                apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                     if (statusCode in 200..299) {
                         this.appConfig = appConfig
                         processAppConfig()
