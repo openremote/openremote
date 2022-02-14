@@ -148,7 +148,10 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
 
             if (asset.attributes && asset.attributes[WellknownAttributes.DIRECTION]) {
-                this.direction = (await this.getAttrValue(asset, WellknownAttributes.DIRECTION))!.toString() || undefined;
+                const directionVal = await this.getAttrValue(asset, WellknownAttributes.DIRECTION);
+                if (directionVal !== undefined) {
+                    this.direction = directionVal.toString();
+                }
             }
 
             if (this.config && asset.type && this.config[asset.type]) {

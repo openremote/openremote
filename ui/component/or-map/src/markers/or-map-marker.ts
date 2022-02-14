@@ -85,12 +85,12 @@ export class OrMapMarker extends LitElement {
           
           .icon-direction {
             position: absolute;
+            z-index: -1;
             top: 13px;
-            left: 4px;
+            left: 0;
             width: 24px;
-            fill: white;
-            stroke: black;
-            stroke-width: 1px;
+            fill: var(--or-app-color5);
+            --internal-or-icon-fill: var(--or-app-color5);
           }
         `;
     }

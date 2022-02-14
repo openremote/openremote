@@ -24,7 +24,7 @@ class SplashViewController: UIViewController {
             let url = host!.appending("/api/\(realm)")
 
             let apiManager = ApiManager(baseUrl: url)
-            apiManager.getAppConfig(callback: { statusCode, orAppConfig, error in
+            apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
                 DispatchQueue.main.async {
                     if statusCode == 200 && error == nil {
                         self.appconfig = orAppConfig
