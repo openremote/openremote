@@ -419,39 +419,39 @@ jobs:
               docker load < temp/deployment.tar.gz
             fi
 
-#       - name: Execute deployment
-#         timeout-minutes: 10
-#         uses: appleboy/ssh-action@master
-#         with:
-#           host: ${{ env.HOST }}
-#           port: ${{ env.SSH_PORT }}
-#           username: ${{ env.SSH_USER }}
-#           password: ${{ env.SSH_PASSWORD }}
-#           key: ${{ env.SSH_KEY }}
-#           script: |
-#             chmod +x -R temp/
-#             set -a
-#             . ./temp/env
-#             set +a
-#             if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
-#               ./temp/host-init/$HOST_INIT_SCRIPT
-#             fi
+      - name: Execute deployment
+        timeout-minutes: 10
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            chmod +x -R temp/
+            set -a
+            . ./temp/env
+            set +a
+            if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
+              ./temp/host-init/$HOST_INIT_SCRIPT
+            fi
             
-#             # Pull any required images
-#             docker-compose -f temp/docker-compose.yml pull
+            # Pull any required images
+            docker-compose -f temp/docker-compose.yml pull
             
-#             # Attempt docker compose down
-#             docker-compose -f temp/docker-compose.yml -p or down
+            # Attempt docker compose down
+            docker-compose -f temp/docker-compose.yml -p or down
             
-#             # Delete postgres volume if CLEAN_INSTALL=true
-#             if [ $CLEAN_INSTALL == 'true' ]; then
-#               docker volume rm or_postgresql-data
-#             fi
+            # Delete postgres volume if CLEAN_INSTALL=true
+            if [ $CLEAN_INSTALL == 'true' ]; then
+              docker volume rm or_postgresql-data
+            fi
             
-#             docker volume rm or_deployment-data
+            docker volume rm or_deployment-data
             
-#             # Start the stack
-#             docker-compose -f temp/docker-compose.yml -p or up -d
+            # Start the stack
+            docker-compose -f temp/docker-compose.yml -p or up -d
         
       - name: Wait for up to 5 mins for manager webserver to be running
         run: |
