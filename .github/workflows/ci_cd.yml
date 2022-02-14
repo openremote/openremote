@@ -43,7 +43,10 @@ jobs:
           key: "${{ github.ref_name }}"
           map: |
             {
-              "feature/ci-cd": {
+              "master": {
+                "TAG": "latest"
+              },
+              "develop": {
                 "TAG": "develop"
               }
             }        
