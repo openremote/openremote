@@ -458,6 +458,14 @@ jobs:
           echo "Waiting for manager web server https://$HOST..."
           count=0
           response=0
+          while [ $response -ne 200 ] && [ $count -lt 36 ]; do
+            response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
+            echo '.'
+            ((count++))
+            echo '..'
+            sleep 5
+            echo '...'
+          done
           if [ $response -ne 200 ]; then
             echo "Response code = $response"
             #exit 1
