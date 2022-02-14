@@ -1,5 +1,5 @@
 # CI/CD workflow files
-The files in this directory are used by the [deploy workflow](./workflows/deploy.yml) which provides a standard
+The files in this directory are used by the [deploy workflow](../.github/workflows/deploy.yml) which provides a standard
 github workflow for deploying this repo on a linux host via SSH.
 
 # `/env` Directory
