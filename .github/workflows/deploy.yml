@@ -379,13 +379,13 @@ jobs:
       - name: Build and save manager image
         if: ${{ env.MANAGER_BUILD == 'true' }}
         run: |
-          docker build --platform $PLATFORM -t openremote/manager:$MANAGER_VERSION $MANAGER_PATH
+          docker build --build-arg GIT_COMMIT=$MANAGER_VERSION --platform $PLATFORM -t openremote/manager:$MANAGER_VERSION $MANAGER_PATH
           docker save openremote/manager:$MANAGER_VERSION | gzip > temp/manager.tar.gz
 
       - name: Build and save deployment image
         if: ${{ env.DEPLOYMENT_BUILD == 'true' }}
         run: |
-          docker build --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_VERSION $DEPLOYMENT_PATH
+          docker build --build-arg GIT_COMMIT=$DEPLOYMENT_VERSION --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_VERSION $DEPLOYMENT_PATH
           docker save openremote/deployment:$DEPLOYMENT_VERSION | gzip > temp/deployment.tar.gz
 
       - name: Copy files to host
