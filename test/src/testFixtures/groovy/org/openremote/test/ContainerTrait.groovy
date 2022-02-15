@@ -21,7 +21,6 @@ package org.openremote.test
 
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.builder.RouteBuilder
-import org.glassfish.tyrus.client.ClientManager
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
