@@ -24,7 +24,7 @@
 version: '2.4'
 
 volumes:
-  postgresql-data: # Needed if you want to persist postgres data outside of container
+#  postgresql-data: # Needed if you want to persist postgres data outside of container
   temp-data: # Needed to share temp export data between postgres and manager containers
   proxy-data: #Needed to persist SSL certificates to avoid excessive requests to Letsencrypt
   btmesh-data: #Needed to persist Bluetooth mesh data (if using Bluetooth mesh)
@@ -329,7 +329,7 @@ services:
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       - temp-data:/tmp
-      - postgresql-data:/var/lib/postgresql/data
+#      - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server
     environment:
