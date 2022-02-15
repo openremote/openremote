@@ -12,12 +12,11 @@
 #
 # SETUP_ADMIN_PASSWORD
 # HOST
-# EXTERNAL_URL
 # ADMIN_EMAIL
 # SETUP_EMAIL_HOST
 # SETUP_EMAIL_USER
 # SETUP_EMAIL_PASSWORD
-# SETUP_EMAIL_TO
+# SETUP_EMAIL_ADMIN
 # SETUP_EMAIL_FROM
 # NOTIFICATION_FIREBASE_API_KEY
 # IDENTITY_PROVIDER
@@ -27,6 +26,8 @@ version: '2.4'
 volumes:
   postgresql-data: # Needed if you want to persist postgres data outside of container
   temp-data: # Needed to share temp export data between postgres and manager containers
+  proxy-data: #Needed to persist SSL certificates to avoid excessive requests to Letsencrypt
+  btmesh-data: #Needed to persist Bluetooth mesh data (if using Bluetooth mesh)
 
 services:
 
@@ -36,9 +37,8 @@ services:
   proxy:
     image: openremote/proxy:${PROXY_VERSION:-2.5.0.1}
     restart: always
-    # Override the haproxy.cfg with custom file
-    #volumes:
-    #  -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
+    volumes:
+      - proxy-data:/deployment
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
@@ -55,13 +55,13 @@ services:
       # The public host name of this OpenRemote installation. Set this to request/manage an SSL
       # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
       # rely on a baked-in self-signed certificate.
-      DOMAINNAME: ${HOST}
+      DOMAINNAME: ${HOST:-localhost}
 
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       HAPROXY_CONFIG: ${HAPROXY_CONFIG}
 
       # Email address for SSL certificate issuance and expiration notifications.
-      LE_EMAIL: ${SETUP_EMAIL_TO}
+      LE_EMAIL: ${SETUP_EMAIL_ADMIN}
 
       # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)
@@ -102,6 +102,7 @@ services:
   # The OpenRemote Manager
   manager:
     image: openremote/manager:${MANAGER_VERSION:-latest}
+    #    privileged: true # Needed for dbus access when using Bluetooth
     restart: always
     # Map any custom content into the /deployment dir:
     #   /deployment/manager/app - contains custom web content
@@ -147,7 +148,7 @@ services:
       # The public URL of the proxy in front of this manager; must match the proxy#DOMAINNAME (unfortunately
       # docker compose doesn't support chaining environment variables at time of writing, hence the need for
       # two environment variables)
-      EXTERNAL_URL: ${EXTERNAL_URL:-https://localhost}
+      EXTERNAL_URL: https://${HOST:-localhost}
 
       # Configure Email, SMTP server to send password reset emails etc.
       SETUP_EMAIL_HOST:
@@ -155,8 +156,12 @@ services:
       SETUP_EMAIL_PASSWORD:
       SETUP_EMAIL_PORT: ${SETUP_EMAIL_PORT}
       SETUP_EMAIL_TLS: ${SETUP_EMAIL_TLS}
-      SETUP_EMAIL_TO: ${SETUP_EMAIL_TO}
-      SETUP_EMAIL_FROM_DEFAULT: ${SETUP_EMAIL_FROM}
+
+      # Where to send admin emails to
+      SETUP_EMAIL_ADMIN: ${SETUP_EMAIL_ADMIN}
+
+      # From address for emails sent by the system
+      SETUP_EMAIL_FROM: ${SETUP_EMAIL_FROM}
 
       # Console applications can register for push notifications through FCM.
       NOTIFICATION_FIREBASE_URL: ${NOTIFICATION_FIREBASE_URL:-https://fcm.googleapis.com/fcm/send}
@@ -305,7 +310,7 @@ services:
       KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
       PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING:-true}
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
+      KEYCLOAK_FRONTEND_URL: https://${HOST:-localhost}/auth
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:--XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m
@@ -324,7 +329,7 @@ services:
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:
       - temp-data:/tmp
-    #  - postgresql-data:/var/lib/postgresql/data
+      - postgresql-data:/var/lib/postgresql/data
     #ports:
     #  - "5432:5432" # DB server
     environment:

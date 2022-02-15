@@ -35,7 +35,7 @@ services:
     volumes:
       - proxy-data:/deployment
     environment:
-      LE_EMAIL: ${SETUP_EMAIL_TO}
+      LE_EMAIL: ${SETUP_EMAIL_ADMIN:-}
       DOMAINNAME: ${HOST:-localhost}
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
@@ -75,7 +75,7 @@ services:
       SETUP_EMAIL_USER:
       SETUP_EMAIL_PASSWORD:
       SETUP_EMAIL_FROM:
-      SETUP_EMAIL_TO:
+      SETUP_EMAIL_ADMIN:
       EXTERNAL_URL: https://${HOST:-localhost}
       DEV_MODE:
       # The following variables will configure the demo

@@ -58,7 +58,7 @@ public interface Constants {
     boolean SETUP_EMAIL_TLS_DEFAULT = true;
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
     String SETUP_EMAIL_FROM_DEFAULT = "no-reply@localhost";
-    String SETUP_EMAIL_TO = "SETUP_EMAIL_TO";
+    String SETUP_EMAIL_ADMIN = "SETUP_EMAIL_ADMIN";
     String REALM_PARAM_NAME = "Realm";
     String ASSET_ID_REGEXP = "^[0-9A-Za-z]{22}$";
     String UUID_REGEXP = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";

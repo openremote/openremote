@@ -25,10 +25,6 @@ services:
       MANAGER_HOST: 'host.docker.internal'
       KEYCLOAK_HOST: 'host.docker.internal'
       KEYCLOAK_PORT: 8081
-    ports:
-      - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
-      - "443:443" # HTTPS /auth directs to keycloak and other paths direct to manager
-      - "8883:8883" # MQTTS
 
   keycloak:
     extends:
@@ -46,7 +42,7 @@ services:
         condition: service_healthy
     environment:
       # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
+      KEYCLOAK_FRONTEND_URL: https://${HOST:-localhost}/auth
 
   postgresql:
     extends:
