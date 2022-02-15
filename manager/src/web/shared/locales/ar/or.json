@@ -388,5 +388,11 @@
   },
   "readPermissions": "صلاحيات القراءة",
   "writePermissions": "صلاحيات الكتابة",
-  "valueType": "نوع القيمة"
+  "valueType": "نوع القيمة",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
+  }
 }

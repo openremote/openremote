@@ -435,5 +435,11 @@
     "invalidJSON": "JSON no válido",
     "invalidDate": "Fecha no válida",
     "keyAlreadyExists": "La clave ya existe"
+  },
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

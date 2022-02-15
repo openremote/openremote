@@ -423,5 +423,11 @@
     "invalidJSON": "JSON inválido",
     "invalidDate": "Data inválida",
     "keyAlreadyExists": "A chave já existe"
+  },
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

@@ -222,6 +222,7 @@ export const style = css`
         display: flex;
         align-items: center;
         position: relative;
+        background-color: #F9F9F9;
     }
     
     #filterInput {
@@ -232,10 +233,41 @@ export const style = css`
         width: 16px;
         height: 16px;
         position: absolute;
-        right: 0;
+        right: 25px;
         padding-right: 14px;
         cursor: pointer;
         display: none;
+    }
+    
+    #filterSettingsIcon {
+        cursor: pointer;
+        margin-right: 5px;
+    }
+    
+    #asset-tree-filter-setting {
+        position: absolute;
+        background-color: #F9F9F9;
+        top: calc(var(--internal-or-asset-tree-header-height) + var(--internal-or-header-height, 50px) - 1px);
+        display: none;
+        width: 300px;
+        z-index: 100;
+        box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
+        box-sizing: border-box;
+        padding: 5px;
+    }
+
+    #asset-tree-filter-setting .advanced-filter {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #asset-tree-filter-setting.visible {
+        display: block;
+    }
+    
+    .filterAssetType {
+        display: flex;
+        align-items: center;
     }
     
     #clearIcon.visible {

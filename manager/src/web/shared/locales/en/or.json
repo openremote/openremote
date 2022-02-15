@@ -466,5 +466,11 @@
   "createUserFailed": "Create user failed",
   "saveUserFailed": "Save user failed",
   "invalidUsername": "Username must be 3-255 alpha numerical characters",
-  "invalidEmail": "Invalid email address"
+  "invalidEmail": "Invalid email address",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
+  }
 }

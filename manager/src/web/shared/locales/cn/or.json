@@ -435,5 +435,11 @@
     "invalidJSON": "Invalid JSON",
     "invalidDate": "Invalid date",
     "keyAlreadyExists": "Key already exists"
+  },
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

@@ -461,5 +461,11 @@
     "title": {
       "indexedItem": "Item {{index}}"
     }
+  },
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }
