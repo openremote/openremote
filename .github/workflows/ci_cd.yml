@@ -152,7 +152,7 @@ jobs:
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
           echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
           echo "Deploy environment: ${{ env.DEPLOY }}"
-          echo "Docker tags: ${{ env.TAGS }}
+          echo "Docker tags: ${{ env.TAGS }}"
           echo "************************************************************"
           echo "************************************************************"
           exit 1
