@@ -1,12 +1,12 @@
 {
 	"push": {
 		"develop": {
-			"dockerTags": ["develop"],
+			"dockerTags": "develop",
 			"deployEnvironment": "staging"
 		}
 	}
 	"release": {
-		"dockerTags": ["latest", "$version"],
+		"dockerTags": "latest,$version",
 		"deployEnvironment": "production"		
 	}
 }
