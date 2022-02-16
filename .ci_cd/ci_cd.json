@@ -1,6 +1,6 @@
 {
 	"push": {
-		"develop": {
+		"feature/workflows": {
 			"dockerTags": "develop",
 			"deployEnvironment": "staging"
 		}
