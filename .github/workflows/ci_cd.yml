@@ -25,37 +25,8 @@ env:
   
 jobs:
 
-  dockertag:
-    name: Determine docker tag
-    runs-on: ubuntu-latest
-    
-    outputs:
-      tag: ${{ steps.dockertag.outputs.tag }}
-      
-    steps:
-
-          
-      - name: Set docker tag based on branch and trigger
-        uses: kanga333/variable-mapper@master
-        with:
-          key: "${{ github.ref_name }}"
-          map: |
-            {
-              "master": {
-                "TAG": "latest"
-              },
-              "develop": {
-                "TAG": "develop"
-              }
-            }        
-
-      - id: dockertag
-        run: echo "::set-output name=tag::${{ env.TAG }}"
-
   build:
     name: Build & Test
-    needs: [dockertag]
-
     runs-on: ubuntu-latest
 
     steps:
@@ -75,7 +46,7 @@ jobs:
           files: ".ci_cd/ci_cd.json"
 
       - name: Process ci_cd.json file
-        if: ${{ steps.check_cicd_json.outputs.file-exists == 'true' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
         shell: python
         run: |
           import json
