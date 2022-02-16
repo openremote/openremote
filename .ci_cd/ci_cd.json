@@ -4,7 +4,7 @@
 			"dockerTags": "develop",
 			"deployEnvironment": "staging"
 		}
-	}
+	},
 	"release": {
 		"dockerTags": "latest,$version",
 		"deployEnvironment": "production"		
