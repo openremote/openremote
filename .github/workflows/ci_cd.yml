@@ -58,10 +58,10 @@ jobs:
           data = json.load(f)
           f.close()
           
-          if data is not None:
+          if data is not None and eventName in data:
             eventConfig = data[eventName]
             if eventConfig is not None:
-              if eventName == "push":
+              if eventName == "push" and refName in eventConfig:
                 eventConfig = eventConfig[refName]
             if eventConfig is not None:
               dockerTags = eventConfig['dockerTags']
