@@ -9,10 +9,10 @@ on:
         - '**'
     tags-ignore:
       - '*.*'
-    paths-ignore:
-      - '.github/**'
-      - '.ci_cd/**'
-      - '**/*.md'
+#     paths-ignore:
+#       - '.github/**'
+#       - '.ci_cd/**'
+#       - '**/*.md'
 
   # When a release is published
   release:
