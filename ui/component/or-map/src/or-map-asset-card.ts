@@ -168,7 +168,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                             if (descriptors && descriptors.length) { 
                                 const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
                                 const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
-                                const classes = {highlighted: (this.markerconfig![this.asset.type] && attr.name === this.markerconfig![this.asset.type][0].attributeName)};
+                                const classes = {highlighted: (this.markerconfig!! && this.markerconfig![this.asset.type] && attr.name === this.markerconfig![this.asset.type][0].attributeName)};
                                 return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`;
                             }
                         })}
