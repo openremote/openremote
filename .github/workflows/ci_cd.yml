@@ -181,7 +181,7 @@ jobs:
   docker_image:
     name: Build & push docker image
     runs-on: ubuntu-latest
-    needs: [dockertag, build]
+    needs: [build]
     if: ${{ needs.dockertag.outputs.tag != '' }}
     env:
       TAG: ${{ needs.dockertag.outputs.tag }}
