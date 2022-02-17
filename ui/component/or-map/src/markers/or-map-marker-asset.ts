@@ -5,33 +5,35 @@ import {
     Asset,
     AssetEvent,
     AssetEventCause,
+    AssetModelUtil,
     AttributeEvent,
     GeoJSONPoint,
-    ReadAttributeEvent,
     SharedEvent,
-    WellknownAttributes,
-    AssetModelUtil
+    WellknownAttributes
 } from "@openremote/model";
 import manager, {subscribe, Util} from "@openremote/core";
-import { getMarkerIconAndColorFromAssetType } from "../util";
+import {getMarkerIconAndColorFromAssetType, OverrideConfigSettings} from "../util";
 
-export type BaseMapMarkerConfig = {
+export type MapMarkerConfig = {
     attributeName: string;
     showLabel?: boolean;
     showUnits?: boolean;
-    showDirection?: boolean;
+    hideDirection?: boolean;
+    colours?: MapMarkerColours;
 }
 
-export type MapMarkerConfig = {
-    [assetType: string]: AttributeMarkerColours[] | RangeAttributeMarkerColours[];
+export type MapMarkerColours = AttributeMarkerColours | RangeAttributeMarkerColours;
+
+export type MapMarkerAssetConfig = {
+    [assetType: string]: MapMarkerConfig
 }
 
-export type AttributeMarkerColours = BaseMapMarkerConfig & {
+export type AttributeMarkerColours = {
     type: "string" | "boolean";
     [value: string]: string;
 }
 
-export type RangeAttributeMarkerColours = BaseMapMarkerConfig & {
+export type RangeAttributeMarkerColours = {
     type: "range";
     ranges: AttributeMarkerColoursRange[];
 }
@@ -39,6 +41,24 @@ export type RangeAttributeMarkerColours = BaseMapMarkerConfig & {
 export type AttributeMarkerColoursRange = {
     max: number;
     colour: string;
+}
+
+export function getMarkerConfigForAssetType(config: MapMarkerAssetConfig | undefined, assetType: string | undefined): MapMarkerConfig | undefined {
+    if (!config || !assetType || !config[assetType]) {
+        return;
+    }
+
+    return config[assetType];
+}
+
+export function getMarkerConfigLabelAttributeName(config: MapMarkerAssetConfig | undefined, assetType: string | undefined): string | undefined {
+    const assetTypeConfig = getMarkerConfigForAssetType(config, assetType);
+
+    if (!assetTypeConfig) {
+        return;
+    }
+
+    return assetTypeConfig.showLabel ? assetTypeConfig.attributeName : undefined;
 }
 
 @customElement("or-map-marker-asset")
@@ -51,7 +71,7 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
     public asset?: Asset;
 
     @property()
-    public config?: MapMarkerConfig;
+    public config?: MapMarkerAssetConfig;
 
     public assetTypeAsIcon: boolean = true;
 
@@ -64,13 +84,15 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
     protected set type(type: string | undefined) {
 
-        let overrideOpts;
-        if (this.config && type && this.config[type]) {
-            const markerConfig = this.config[type][0] || undefined;
+        let overrideOpts: OverrideConfigSettings | undefined;
+        const assetTypeConfig = getMarkerConfigForAssetType(this.config, type);
 
-            if (this.displayValue) {
-                overrideOpts = {markerConfig: markerConfig, attributeValue: this.displayValue};
-            }
+        if (assetTypeConfig && assetTypeConfig.attributeName && this.asset && this.asset.attributes && this.asset.attributes[assetTypeConfig.attributeName] && assetTypeConfig.colours) {
+            const currentValue = this.asset.attributes[assetTypeConfig.attributeName].value;
+            overrideOpts = {
+                markerConfig: assetTypeConfig.colours,
+                currentValue: currentValue
+            };
         }
 
         const iconAndColour = getMarkerIconAndColorFromAssetType(type, overrideOpts);
@@ -95,6 +117,8 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             this.lat = undefined;
             this.lng = undefined;
             this.type = undefined;
+            this.direction = undefined;
+            this.displayValue = undefined;
             this.assetIds = this.assetId && this.assetId.length > 0 ? [this.assetId] : undefined;
 
             if (Object.keys(_changedProperties).length === 1) {
@@ -103,12 +127,21 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
         }
 
         if (_changedProperties.has("asset")) {
-            this.onAssetChanged(this.asset);
+            try {
+                this.onAssetChanged(this.asset);
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         return super.shouldUpdate(_changedProperties);
     }
 
+    /**
+     * This will only get called when assetId is set; if asset is set then it is expected that attribute changes are
+     * handled outside this component and the asset should be replaced when attributes change that require the marker
+     * to re-render
+     */
     public _onEvent(event: SharedEvent) {
         if (event.eventType === "attribute") {
             const attributeEvent = event as AttributeEvent;
@@ -144,36 +177,35 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
 
     protected async onAssetChanged(asset?: Asset) {
         if (asset) {
+            this.direction = undefined;
+            this.displayValue = undefined;
+
             const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
             this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
 
-            if (asset.attributes && asset.attributes[WellknownAttributes.DIRECTION]) {
-                const directionVal = await this.getAttrValue(asset, WellknownAttributes.DIRECTION);
-                if (directionVal !== undefined) {
-                    this.direction = directionVal.toString();
+            const assetTypeConfig = getMarkerConfigForAssetType(this.config, asset.type);
+            const showDirection = !assetTypeConfig || !assetTypeConfig.hideDirection;
+            const showLabel = assetTypeConfig && assetTypeConfig.showLabel && !!assetTypeConfig.attributeName;
+
+            if (showLabel && asset.attributes && asset.attributes[assetTypeConfig?.attributeName]) {
+                const attrVal = asset.attributes[assetTypeConfig?.attributeName].value;
+                if (attrVal !== undefined && attrVal !== null) {
+                    this.displayValue = attrVal.toString();
+
+                    if (assetTypeConfig.showUnits !== false && attr) {
+                        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type!);
+                        const unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
+                        this.displayValue = `${this.displayValue} ${unit}`;
+                    }
                 }
             }
 
-            if (this.config && asset.type && this.config[asset.type]) {
-                const assetTypeConfig = this.config[asset.type][0] || undefined;
-
-                if (assetTypeConfig && assetTypeConfig.showLabel) {
-                    if (assetTypeConfig.showLabel) {
-                        const attrVal = await this.getAttrValue(asset, assetTypeConfig.attributeName);
-                        if (attrVal === undefined) return;
-
-                        this.displayValue = attrVal.toString();
-
-                        if (assetTypeConfig.showUnits !== false && attr) {
-                            const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type);
-                            const unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
-                            this.displayValue = `${this.displayValue} ${unit}`;
-                        }
+            if (showDirection) {
+                if (asset.attributes && asset.attributes[WellknownAttributes.DIRECTION]) {
+                    const directionVal = asset.attributes[WellknownAttributes.DIRECTION].value as number;
+                    if (directionVal !== undefined && directionVal !== null) {
+                        this.direction = directionVal.toString();
                     }
-                }
-
-                if (assetTypeConfig && assetTypeConfig.showDirection === false) {
-                    this.direction = undefined;
                 }
             }
 
@@ -182,19 +214,6 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             this.lat = undefined;
             this.lng = undefined;
         }
-    }
-    
-    protected async getAttrValue(asset: Asset, attributeName: string): Promise<string | number | boolean | undefined> {
-        const currentValue: AttributeEvent = await manager.events!.sendEventWithReply({
-            event: {
-                eventType: "read-asset-attribute",
-                ref: {
-                    id: asset.id,
-                    name: attributeName
-                }
-            } as ReadAttributeEvent
-        });
-        return currentValue.attributeState?.value;
     }
 
     protected _updateLocation(location: GeoJSONPoint | null) {

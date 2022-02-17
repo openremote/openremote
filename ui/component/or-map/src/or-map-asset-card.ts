@@ -23,7 +23,7 @@ import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { getMarkerIconAndColorFromAssetType } from "./util";
-import { MapMarkerConfig } from "./markers/or-map-marker-asset";
+import {MapMarkerConfig, getMarkerConfigLabelAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
 
 export interface MapAssetCardTypeConfig {
     include?: string[];
@@ -77,7 +77,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
     public config?: MapAssetCardConfig;
 
     @property({type: Object})
-    public markerconfig?: MapMarkerConfig;
+    public markerconfig?: MapMarkerAssetConfig;
 
     @property({type: Boolean, attribute: true})
     public useAssetColor: boolean = true;
@@ -154,6 +154,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
             && (!attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr)))
             .sort(Util.sortByString((listItem) => listItem.name!));
 
+        const highlightedAttr = getMarkerConfigLabelAttributeName(this.markerconfig, this.asset.type);
+
         return html`
             <div id="card-container" style="${styleStr}">
                 <div id="header">
@@ -168,7 +170,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
                             if (descriptors && descriptors.length) { 
                                 const label = Util.getAttributeLabel(attr, descriptors[0], this.asset.type, true);
                                 const value = Util.getAttributeValueAsString(attr, descriptors[0], this.asset.type, false, "-");
-                                const classes = {highlighted: (this.markerconfig!! && this.markerconfig![this.asset.type] && attr.name === this.markerconfig![this.asset.type][0].attributeName)};
+                                const classes = {highlighted: highlightedAttr === attr.name};
                                 return html`<li class="${classMap(classes)}"><span class="attribute-name">${label}</span><span class="attribute-value">${value}</span></li>`;
                             }
                         })}

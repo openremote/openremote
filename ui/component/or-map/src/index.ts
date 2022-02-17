@@ -599,6 +599,3 @@ export class OrMap extends LitElement {
         });
     }
 }
-
-export * from "./markers/or-map-marker";
-export * from "./markers/or-map-marker-asset";

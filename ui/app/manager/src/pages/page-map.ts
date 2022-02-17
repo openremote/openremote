@@ -1,6 +1,5 @@
 import {css, html} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {until} from 'lit/directives/until.js';
+import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, EnhancedStore, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
@@ -11,7 +10,7 @@ import {
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent,
     OrMapGeocoderChangeEvent,
-    MapMarkerConfig
+    MapMarkerAssetConfig
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -65,9 +64,12 @@ const pageMapSlice = createSlice({
 
             return state;
         },
-        attributeEventReceived(state: MapState, action: PayloadAction<AttributeEvent>) {
+        attributeEventReceived(state: MapState, action: PayloadAction<[string[], AttributeEvent]>) {
             const assets = state.assets;
-            const assetId = action.payload.attributeState.ref.id;
+            const attrsOfInterest = action.payload[0];
+            const attrEvent = action.payload[1];
+            const attrName = attrEvent.attributeState.ref.name;
+            const assetId = attrEvent.attributeState.ref.id;
             const index = assets.findIndex((asst) => asst.id === assetId);
             const asset = index >= 0 ? assets[index] : null;
 
@@ -75,14 +77,19 @@ const pageMapSlice = createSlice({
                 return state;
             }
 
-            if (action.payload.attributeState.deleted) {
+            if (attrName === WellknownAttributes.LOCATION && attrEvent.attributeState.deleted) {
                 return {
                     ...state,
                     assets: [...assets.splice(index, 1)]
                 };
             }
 
-            assets[index] = Util.updateAsset({...asset}, action.payload);
+            // Only react if attribute is an attribute of interest
+            if (!attrsOfInterest.includes(attrName)) {
+                return;
+            }
+
+            assets[index] = Util.updateAsset({...asset}, attrEvent);
             return state;
         },
         setAssets(state, action: PayloadAction<Asset[]>) {
@@ -97,12 +104,10 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
-
-
 export interface PageMapConfig {
     card?: MapAssetCardConfig,
     assetQuery?: AssetQuery,
-    markers?: MapMarkerConfig
+    markers?: MapMarkerAssetConfig
 }
 
 export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
@@ -164,10 +169,10 @@ export class PageMap extends Page<MapStateKeyed> {
     @query("#map")
     protected _map?: OrMap;
 
-    @property()
+    @state()
     protected _assets: Asset[] = [];
 
-    @property()
+    @state()
     protected _currentAsset?: Asset;
 
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
@@ -177,15 +182,32 @@ export class PageMap extends Page<MapStateKeyed> {
     protected assetSubscriptionId: string;
     protected attributeSubscriptionId: string;
 
+    protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
+        // Extract all label attributes configured in marker config
+        let markerLabelAttributes = [];
+
+        if (this.config && this.config.markers) {
+            markerLabelAttributes = Object.values(this.config.markers)
+                .filter(assetTypeMarkerConfig => assetTypeMarkerConfig.showLabel && assetTypeMarkerConfig.attributeName)
+                .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
+        }
+
+        return [
+            ...markerLabelAttributes,
+            WellknownAttributes.LOCATION,
+            WellknownAttributes.DIRECTION
+        ];
+    }
+
     protected subscribeAssets = async (realm: string) => {
         let response: GenericAxiosResponse<Asset[]>;
-
+        const attrsOfInterest = this.getAttributesOfInterest();
         const assetQuery: AssetQuery = this.config && this.config.assetQuery ? this.config.assetQuery : {
             tenant: {
                 realm: realm
             },
             select: {
-                attributes: [WellknownAttributes.LOCATION],
+                attributes: attrsOfInterest,
             },
             attributes: {
                 items: [
@@ -243,7 +265,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 this.assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
-                    this._store.dispatch(attributeEventReceived(event));
+                    this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -334,21 +356,7 @@ export class PageMap extends Page<MapStateKeyed> {
                         return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
                     }).map(asset => {
                         return html`
-                            ${until(
-                                    manager.events.sendEventWithReply({
-                                        event: {
-                                            eventType: "read-asset",
-                                            assetId: asset.id
-                                        }
-                                    }).then((result: AssetEvent) => {
-                                        return html`
-                                            <or-map-marker-asset
-                                                ?active="${this._currentAsset && this._currentAsset.id === result.asset.id}"
-                                                .asset="${result.asset}"
-                                                .config="${this.config.markers}"></or-map-marker-asset>
-                                        `;
-                                    })
-                            )};
+                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
                         `;
                     })
                 }

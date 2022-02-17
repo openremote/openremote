@@ -41,8 +41,9 @@ function getStandardModuleRules() {
     };
 }
 
-function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
+function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl, port) {
     const production = mode === "production";
+    port = port || 9000;
     managerUrl = managerUrl || (production && !isDevServer ? undefined : "http://localhost:8080");
     const OUTPUT_PATH = isDevServer ? 'src' : 'dist';
 
@@ -204,7 +205,7 @@ function getAppConfig(mode, isDevServer, dirname, managerUrl, keycloakUrl) {
         historyApiFallback: {
             index: "/" + dirname.split(path.sep).slice(-1)[0] + "/",
         },
-        port: 9000,
+        port: port,
         open: false,
         hot: false, // HMR doesn't work with webcomponents at present
         liveReload: true,
