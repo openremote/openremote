@@ -9,6 +9,9 @@ import {
     AssetEvent,
     AssetEventCause,
     AssetQuery,
+    StringPredicate,
+    LogicGroup,
+    AttributePredicate,
     AssetQueryMatch,
     AssetsEvent,
     AssetTreeNode,
@@ -990,55 +993,104 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected async getMatcherFromQuery(): Promise<((asset: Asset) => boolean)> {
-        const query: AssetQuery = {
-            select: {
-                excludePath: true,
-                excludeAttributes: true,
-                excludeParentInfo: true
-            },
-            names: [{
+        let assetCond: StringPredicate[] | undefined = undefined;
+        let attributeCond: LogicGroup<AttributePredicate> | undefined = undefined;
+        let assetTypeCond: string[] | undefined = undefined;
+
+        if (this._filter.asset) {
+            assetCond = [{
                 predicateType: "string",
                 match: AssetQueryMatch.CONTAINS,
                 value: this._filter.asset,
                 caseSensitive: false
-            }]
+            }];
+        }
+
+        if (this._filter.assetType) {
+            assetTypeCond = [ this._filter.assetType ];
+        }
+
+        if (this._filter.attribute) {
+            attributeCond = {
+                items: [
+                    {
+                        name: {
+                            predicateType: "string",
+                            match: AssetQueryMatch.CONTAINS,
+                            value: this._filter.attribute,
+                            caseSensitive: false
+                        }
+                    }
+                ]
+            }
+        }
+
+        const query: AssetQuery = {
+            select: {
+                excludePath: true,
+                excludeAttributes: attributeCond ? false : true,
+                excludeParentInfo: true
+            },
+            names: assetCond,
+            types: assetTypeCond,
+            attributes: attributeCond
         };
 
-        /*attributes: {
-            items: [
-                {
-                    name: {
-                        predicateType: "string",
-                        value: WellknownAttributes.LOCATION
-                    },
-                    meta: [
-                        {
-                            name: {
-                                predicateType: "string",
-                                value: WellknownMetaItems.SHOWONDASHBOARD
-                            },
-                            negated: true
-                        },
-                        {
-                            name: {
-                                predicateType: "string",
-                                value: WellknownMetaItems.SHOWONDASHBOARD
-                            },
-                            value: {
-                                predicateType: "boolean",
-                                value: true
-                            }
-                        }
-                    ]
-                }
-            ]
-        }*/
-
         const response = await manager.rest.api.AssetResource.queryAssets(query);
+
         const foundAssetIds: string[] = response.data.map((asset: Asset) => asset.id!);
 
         return (asset) => {
-            return foundAssetIds.includes(asset.id!);
+            let attrValueCheck = true;
+
+            if (this._filter.attribute && this._filter.attributeValue && foundAssetIds.includes(asset.id!)) {
+                console.log('attribute with value in filtering... need to filter more!');
+                let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
+
+                if (matchingAsset && matchingAsset.attributes) {
+                    console.log(matchingAsset.attributes);
+                    let atLeastOneAttributeMatchValue: boolean = false;
+                    Object.keys(matchingAsset.attributes).forEach((key: string) => {
+                        let attr: Attribute<any> = matchingAsset!.attributes![key];
+
+                        // attr.value check to avoid to compare with empty/non existing value
+                        if (attr.name!.toLowerCase().includes(this._filter.attribute!.toLowerCase()) && attr.value) {
+                            console.log(attr.name + ' ' + attr.type + ' ' + attr.value);
+                            switch (attr.type!) {
+                                case "number":
+                                case "positiveNumber":
+                                    const resultNumberEval: boolean = eval(attr.value + this._filter.attributeValue);
+                                    console.log('!!!number!!!');
+                                    console.log(resultNumberEval);
+                                    if (resultNumberEval) {
+                                        atLeastOneAttributeMatchValue = true;
+                                    }
+                                    break;
+                                case "text":
+                                    if (attr.value) {
+                                        let unparsedValue: string = this._filter.attributeValue!;
+                                        const multicharString: string = '*';
+
+                                        let parsedValue: string = unparsedValue.replace(multicharString, '.*');
+
+                                        let valueFromAttribute: string = attr.value as string;
+                                        let answer = valueFromAttribute.match(parsedValue);
+                                        console.log('!!!string!!!');
+                                        console.log(answer && answer.length > 0);
+                                        if (answer && answer.length > 0) {
+                                            atLeastOneAttributeMatchValue = true;
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                    });
+
+                    attrValueCheck = atLeastOneAttributeMatchValue;
+                }
+            }
+
+            return foundAssetIds.includes(asset.id!) && attrValueCheck;
         };
     }
 
