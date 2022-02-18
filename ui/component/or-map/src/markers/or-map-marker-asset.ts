@@ -180,24 +180,18 @@ export class OrMapMarkerAsset extends subscribe(manager)(OrMapMarker) {
             this.direction = undefined;
             this.displayValue = undefined;
 
-            const attr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
-            this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
+            const locAttr = asset.attributes ? asset.attributes[WellknownAttributes.LOCATION] : undefined;
+            this._updateLocation(locAttr ? locAttr.value as GeoJSONPoint : null);
 
             const assetTypeConfig = getMarkerConfigForAssetType(this.config, asset.type);
             const showDirection = !assetTypeConfig || !assetTypeConfig.hideDirection;
-            const showLabel = assetTypeConfig && assetTypeConfig.showLabel && !!assetTypeConfig.attributeName;
+            const showLabel = assetTypeConfig && assetTypeConfig.showLabel === true && !!assetTypeConfig.attributeName;
+            const showUnits = !!(assetTypeConfig && assetTypeConfig.showUnits !== false);
 
             if (showLabel && asset.attributes && asset.attributes[assetTypeConfig?.attributeName]) {
-                const attrVal = asset.attributes[assetTypeConfig?.attributeName].value;
-                if (attrVal !== undefined && attrVal !== null) {
-                    this.displayValue = attrVal.toString();
-
-                    if (assetTypeConfig.showUnits !== false && attr) {
-                        const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(assetTypeConfig.attributeName, asset.type!);
-                        const unit = Util.resolveUnits(Util.getAttributeUnits(attr, attributeDescriptor, asset.type));
-                        this.displayValue = `${this.displayValue} ${unit}`;
-                    }
-                }
+                const attr = asset.attributes[assetTypeConfig.attributeName];
+                const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attr.name, attr);
+                this.displayValue = Util.getAttributeValueAsString(attr, descriptors[0], asset.type, showUnits, "-");
             }
 
             if (showDirection) {
