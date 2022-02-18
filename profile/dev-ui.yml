@@ -27,7 +27,7 @@ services:
         condition: service_healthy
     environment:
       # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-http://localhost:8080}/auth
+      KEYCLOAK_FRONTEND_URL: http://${HOST:-localhost:8080}/auth
 
   postgresql:
     extends:
@@ -50,7 +50,7 @@ services:
       - temp-data:/tmp
     environment:
       SETUP_WIPE_CLEAN_INSTALL: "true"
-      EXTERNAL_URL: http://localhost:8080
+      EXTERNAL_URL: http://${HOST:-localhost:8080}
       DEV_MODE: "true"
     ports:
       - "8080:8080"

@@ -20,6 +20,8 @@
 package org.openremote.container.persistence;
 
 import org.apache.camel.ExchangePattern;
+import org.apache.camel.Predicate;
+import org.apache.camel.ProducerTemplate;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.output.MigrateResult;
@@ -28,10 +30,9 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
+import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.EntityClassProvider;
+import org.openremote.model.*;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -68,7 +69,7 @@ import java.util.stream.IntStream;
 
 import static org.openremote.container.util.MapAccess.*;
 
-public class PersistenceService implements ContainerService {
+public class PersistenceService implements ContainerService, Consumer<PersistenceEvent<?>> {
 
     /**
      * Programmatic definition of OpenRemotePU for hibernate
@@ -182,6 +183,11 @@ public class PersistenceService implements ContainerService {
         }
     }
 
+    // TODO: Make configurable
+    public static final String PERSISTENCE_TOPIC =
+        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=25000";
+    public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
+
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
 
     /**
@@ -221,11 +227,17 @@ public class PersistenceService implements ContainerService {
     protected String persistenceUnitName;
     protected Properties persistenceUnitProperties;
     protected EntityManagerFactory entityManagerFactory;
-
     protected Flyway flyway;
     protected boolean forceClean;
     protected Set<String> defaultSchemaLocations = new HashSet<>();
     protected Set<String> schemas = new HashSet<>();
+
+    public static Predicate isPersistenceEventForEntityType(Class<?> type) {
+        return exchange -> {
+            Class<?> entityType = exchange.getIn().getHeader(HEADER_ENTITY_TYPE, Class.class);
+            return type.isAssignableFrom(entityType);
+        };
+    }
 
     @Override
     public int getPriority() {
@@ -261,12 +273,15 @@ public class PersistenceService implements ContainerService {
 
         if (messageBrokerService != null) {
             persistenceUnitProperties.put(
-                org.hibernate.cfg.AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
+                AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
                 PersistenceEventInterceptor.class.getName()
             );
         }
 
         persistenceUnitProperties.put(AvailableSettings.DEFAULT_SCHEMA, dbSchema);
+
+        // Add custom integrator so we can register a custom flush entity event listener
+        persistenceUnitProperties.put(EntityManagerFactoryBuilderImpl.INTEGRATOR_PROVIDER, IntegratorProvider.class.getName());
 
         persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
 
@@ -353,7 +368,7 @@ public class PersistenceService implements ContainerService {
             Session session = entityManager.unwrap(Session.class);
             PersistenceEventInterceptor persistenceEventInterceptor =
                 (PersistenceEventInterceptor) ((SharedSessionContractImplementor) session).getInterceptor();
-            persistenceEventInterceptor.setMessageBrokerService(messageBrokerService);
+            persistenceEventInterceptor.setEventConsumer(this);
         }
 
         return entityManager;
@@ -439,10 +454,10 @@ public class PersistenceService implements ContainerService {
 
         if (messageBrokerService.getProducerTemplate() != null) {
             messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                PersistenceEvent.PERSISTENCE_TOPIC,
+                PERSISTENCE_TOPIC,
                 ExchangePattern.InOnly,
                 persistenceEvent,
-                PersistenceEvent.HEADER_ENTITY_TYPE,
+                HEADER_ENTITY_TYPE,
                 persistenceEvent.getEntity().getClass()
             );
         }
@@ -500,6 +515,22 @@ public class PersistenceService implements ContainerService {
 
     protected void appendSchemas(List<String> schemas) {
         schemas.addAll(this.schemas);
+    }
+
+    @Override
+    public void accept(PersistenceEvent<?> persistenceEvent) {
+
+        ProducerTemplate producerTemplate = messageBrokerService.getProducerTemplate();
+
+        if (producerTemplate != null) {
+            producerTemplate.sendBodyAndHeader(
+                PersistenceService.PERSISTENCE_TOPIC,
+                ExchangePattern.InOnly,
+                persistenceEvent,
+                PersistenceService.HEADER_ENTITY_TYPE,
+                persistenceEvent.getEntity().getClass()
+            );
+        }
     }
 
     @Override

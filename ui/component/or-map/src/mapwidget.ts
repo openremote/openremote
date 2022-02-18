@@ -355,10 +355,6 @@ export class MapWidget {
                 this._geocoder._inputEl.addEventListener("change", () => {
                     var selected = this._geocoder._typeahead.selected;
                     this._onGeocodeChange(selected);
-                    if (selected) {
-                        // Set marker by calling _onMapClick and doubleClicked set to true
-                        this._onLongPress(selected.center);
-                    }
                 });                
             }
 

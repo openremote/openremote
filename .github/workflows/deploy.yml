@@ -1,0 +1,496 @@
+# Automatic or manual deployment of the stack using specified docker manager image tag from docker hub or alternatively
+# if not specified a commit specific image will be built using the git commit.
+#
+# This workflow supports custom projects https://github.com/openremote/custom-project (i.e. has openremote submodule)
+# as well as supporting a deployment directory directly within this repo (deployment/Dockerfile must exist); in this mode
+# a deployment image will also be built and loaded on the host (it is up to the loaded docker compose file to actually
+# use this deployment image via volume mappings).
+#
+# Trigger
+#
+# This workflow can be triggered manually or by a webhook; if triggered by a webhook then the payload must contain an
+# inputs object with the same keys as the workflow_dispatch inputs (note none of the inputs are required):
+#
+# Inputs:
+#
+# - environment     - used to load the specified environment from github; this can then contain specific secrets to
+#                     override default values; these are overlaid on top of the repo and org secrets. It is also used
+#                     to load an environment specific env and/or host_init files from the repo and/or an environment
+#                     specific docker compose file
+# - host            - FQDN for the host (default: env/secrets.HOST)
+# - ssh_user        - SSH username (default: env/secrets.SSH_USER || root)
+# - ssh_password    - SSH password (default: secrets.SSH_PASSWORD)
+# - ssh_port        - SSH port (default: env/secrets.SSH_PORT || 22)
+# - password        - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
+#                     (default: secrets.SETUP_ADMIN_PASSWORD || secret)
+# - manager_version - The docker tag to pull for the manager image; if not specified then the manager image
+#                     will be built using the checked out repo commit
+# - commit          - Which commit or branch to checkout and use on this repo (default: branch on which workflow is executed)
+# - platform        - The host platform architecture (default: env/secrets.PLATFORM || linux/amd64)
+#
+# Environment variables are loaded into the env context from the following files in the repo if they exist:
+#
+# .ci_cd/env/.env
+# .ci_cd/env/{environment}.env
+#
+# Env/Secrets:
+#
+# Secrets are loaded from the github environment corresponding to the environment input, these secrets are copied into
+# the env context; the combined env/secrets are then made available to the host during execution of docker compose
+# commands; so any env/secret configurable in the compose profile can be set in the env file and/or in the secrets
+# (secrets take priority); NOTE: sensitive values should only be stored as secrets so they are encrypted.
+#
+# The following env/secrets are supported to configure the way this workflow behaves:
+#
+# - HOST             - Will be used if input host value is not set
+# - SSH_USER         - Will be used if input ssh_user is not set
+# - SSH_PORT         - Will be used if input ssh_port is not set
+# - SSH_PASSWORD     - Will be used if input ssh_password is not set (should only be set as a secret)
+# - SSH_KEY          - SSH private key (should only be set as a secret)
+# - MANAGER_VERSION  - Will be used if input manager_version is not set
+# - CLEAN_INSTALL    - Can be used to force clean the data before starting the stack
+# - COMPOSE_FILE     - Use a specific compose file, must be the full path (e.g. profile/my-compose.yml);
+#                      if not specified and the file 'profile/{environment}.yml' exists then that will be
+#                      used otherwise fallback to 'docker-compose.yml' in the repo root.
+# - HOST_INIT_SCRIPT - name of the host initialisation (see below) script to execute on the host (just the
+#                      name no path or extension e.g. 'test' -> '.ci_cd/host_init/test.sh'; can be set to
+#                      'NONE' to force no host initialisation even if files exist.
+#
+# Host initialisation
+#
+# To do host specific configuration (download map files etc.) files can be added to the '.ci_cd/host-init' directory
+# these will be copied to the host and the HOST_INIT_SCRIPT will be executed (if it is present in the repo); if
+# HOST_INIT_SCRIPT is set to 'NONE' no host initialisation will be done, if it is not set then the following files will
+# be checked in priority order:
+#
+# .ci_cd/host_init/{environment}.sh
+# .ci_cd/host_init/init.sh
+
+name: Deploy
+
+on:
+  # Manually request a deploy
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to use (if any)'
+      host:
+        description: 'Host to deploy to'
+      ssh_user:
+        description: 'SSH Username'
+      ssh_port:
+        description: 'SSH port'
+      ssh_password:
+        description: 'SSH password'
+      password:
+        description: 'Admin password override'
+      manager_version:
+        description: 'Manager docker tag to pull'
+      clean_install:
+        description: 'Delete data before starting'
+        type: boolean
+      commit:
+        description: 'Repo branch or commit SHA to use'
+      platform:
+        description: 'Host platform architecture'
+
+  # Docker push webhook trigger
+  repository_dispatch:
+    types: [ docker-push ]
+
+jobs:
+
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment }}
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.event.inputs.commit}}
+          submodules: recursive
+
+      - name: Check if env file exists
+        id: env-exists
+        run: |
+          if [ -f ".ci_cd/env/.env" ]; then
+            echo "::set-output name=value::true"
+          fi
+
+      - name: Check if environment specific env file exists
+        id: env-specific-exists
+        if: ${{ github.event.inputs.environment != '' }}
+        run: |
+          if [ -f ".ci_cd/env/$ENVIRONMENT.env" ]; then
+            echo "::set-output name=value::true"
+          fi
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+
+      - name: Load env file
+        if: ${{ steps.env-exists.outputs.value == 'true' }}
+        uses: cardinalby/export-env-action@v1
+        with:
+          envFile: '.ci_cd/env/.env'
+
+      - name: Load environment specific env file
+        if: ${{ steps.env-specific-exists.outputs.value == 'true' }}
+        uses: cardinalby/export-env-action@v1
+        with:
+          envFile: '.ci_cd/env/${{ github.event.inputs.environment }}.env'
+
+      - name: Output secrets to ENV ready for overwrites from inputs
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+
+          secrets = json.loads(os.getenv('secret'))
+          for key, value in secrets.items():
+              if key.startswith("_"):
+                environment = os.getenv('environment').upper()
+                prefix = "_" + environment + "_"
+                if not key.startswith(prefix):
+                  continue
+                else:
+                  key = key.lstrip(prefix)
+              print(f"Setting {key} ...")
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}<<EOF' >> $GITHUB_ENV")
+                  os.system(f"echo '{value}' >> $GITHUB_ENV")
+                  os.system("echo 'EOF' >> $GITHUB_ENV")
+              else:
+                  os.system(f"echo '{key}={value}' >> $GITHUB_ENV")
+        env:
+          secret: ${{ toJSON(secrets) }}
+          environment: ${{ github.event.inputs.environment }}
+
+      - name: Determine host name
+        id: host-name
+        run: echo "HOST=${{ github.event.inputs.host || env.HOST }}" >> $GITHUB_ENV
+
+      - name: Host not set
+        if: ${{ env.HOST == '' }}
+        run: exit 1
+
+      - name: Determine SSH username
+        run: echo "SSH_USER=${{ github.event.inputs.ssh_user || env.SSH_USER || 'root' }}" >> $GITHUB_ENV
+
+      - name: Determine SSH port
+        run: echo "SSH_PORT=${{ github.event.inputs.ssh_port || env.SSH_PORT || '22' }}" >> $GITHUB_ENV
+
+      - name: Determine SSH password
+        run: echo "SSH_PASSWORD=${{ github.event.inputs.ssh_password || env.SSH_PASSWORD }}" >> $GITHUB_ENV
+
+      - name: Determine platform
+        run: echo "PLATFORM=${{ github.event.inputs.platform || env.PLATFORM || 'linux/amd64' }}" >> $GITHUB_ENV
+
+      - name: Determine manager tag
+        run: echo "MANAGER_VERSION=${{ github.event.inputs.manager_version || env.MANAGER_VERSION }}" >> $GITHUB_ENV
+
+      - name: Determine clean install
+        run: echo "CLEAN_INSTALL=${{ github.event.inputs.clean_install || env.CLEAN_INSTALL }}" >> $GITHUB_ENV
+
+      - name: Check manager tag input
+        if: env.MANAGER_VERSION != ''
+        run: |
+          docker manifest inspect openremote/manager:${{ env.MANAGER_VERSION }} > /dev/null 2> /dev/null
+
+      - name: Determine password
+        id: password
+        run: echo "SETUP_ADMIN_PASSWORD=${{ github.event.inputs.password || env.SETUP_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
+
+      - name: Check deployment existence
+        id: check_deployment_dir
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "deployment/Dockerfile"
+
+      - name: Check custom project
+        id: check_custom_project
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "openremote"
+
+      - name: Determine compose file path
+        id: compose-file
+        run: |
+          if [ ! -z $ENV_COMPOSE_FILE ]; then
+            if [ ! -f $ENV_COMPOSE_FILE ]; then
+              echo "Specified ENV_COMPOSE_FILE does not exist $ENV_COMPOSE_FILE"
+              exit 1
+            fi
+            echo "COMPOSE_FILE=$ENV_COMPOSE_FILE" >> $GITHUB_ENV
+          elif [ -f "profile/$ENVIRONMENT.yml" ]; then
+            echo "COMPOSE_FILE=profile/$ENVIRONMENT.yml" >> $GITHUB_ENV
+          else
+            echo "COMPOSE_FILE=docker-compose.yml" >> $GITHUB_ENV
+          fi
+        env:
+          ENV_COMPOSE_FILE: ${{ env.COMPOSE_FILE }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+
+      - name: Determine manager image info
+        id: manager-image
+        run: |
+          if [ ! -z $MANAGER_VERSION ]; then
+            echo "MANAGER_VERSION=$MANAGER_VERSION" >> $GITHUB_ENV
+          elif [ $CUSTOM_PROJECT == 'true' ]; then
+            echo "MANAGER_BUILD=true" >> $GITHUB_ENV
+            echo "MANAGER_PATH=openremote/manager/build/install/manager" >> $GITHUB_ENV
+            echo "MANAGER_VERSION=$(cd openremote; git rev-parse --short HEAD; cd ..)" >> $GITHUB_ENV
+          else
+            echo "MANAGER_BUILD=true" >> $GITHUB_ENV
+            echo "MANAGER_PATH=manager/build/install/manager" >> $GITHUB_ENV
+            echo "MANAGER_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          fi
+        env:
+          CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.file_exists }}
+
+      - name: Determine deployment image info
+        id: deployment-image
+        if: steps.check_deployment_dir.outputs.files_exists == 'true'
+        run: |
+          echo "DEPLOYMENT_BUILD=true" >> $GITHUB_ENV
+          echo "DEPLOYMENT_PATH=deployment/build" >> $GITHUB_ENV
+          echo "DEPLOYMENT_VERSION=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Determine host init script
+        id: host-init
+        run: |
+          if [ $HOST_INIT_SCRIPT == 'NONE' ]; then
+            echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
+          elif [ ! -z $HOST_INIT_SCRIPT ]; then
+            if [ ! -f ".ci_cd/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
+              echo "HOST_INIT_SCRIPT (.ci_cd/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
+              exit 1
+            fi
+            echo "HOST_INIT_SCRIPT=${ENV_HOST_INIT_SCRIPT}.sh" >> $GITHUB_ENV
+          elif [ -f ".ci_cd/host_init/$ENVIRONMENT.sh" ]; then
+            echo "HOST_INIT_SCRIPT=$ENVIRONMENT.sh" >> $GITHUB_ENV
+          elif [ -f ".ci_cd/host_init/init.sh" ]; then
+            echo "HOST_INIT_SCRIPT=init.sh" >> $GITHUB_ENV
+          else
+            echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
+          fi
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+
+      - name: Output info
+        run: |
+          echo "************************************************************"
+          echo "**************           INFO            *******************"
+          echo "************************************************************"
+          echo "Host: ${{ env.HOST }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Platform: ${{ env.PLATFORM }}"
+          echo "Compose file: ${{ env.COMPOSE_FILE }}"
+          echo "Manager build: ${{ env.MANAGER_BUILD == 'true' }}"
+          echo "Manager version: ${{ env.MANAGER_VERSION }}"
+          echo "Manager build path: ${{ env.MANAGER_PATH }}"
+          echo "Deployment build: ${{ env.DEPLOYMENT_BUILD == 'true' }}"
+          echo "Deployment version: ${{ env.DEPLOYMENT_VERSION }}"
+          echo "Deployment build path: ${{ env.DEPLOYMENT_PATH }}"
+          echo "Host init script: ${{ env.HOST_INIT_SCRIPT }}"
+          echo "************************************************************"
+          echo "************************************************************"
+
+      - name: Make temp dir
+        run: mkdir temp
+
+      - name: Output ENV to file
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+          
+          secrets = json.loads(os.getenv('secret'))
+          
+          for key, value in secrets.items():
+              print(f"Setting {key} ...")
+              lines = len(value.split("\n"))
+              if lines > 1:
+                  os.system(f"echo '{key}=\'' >> temp/env")
+                  os.system(f"echo '{value}\'' >> temp/env")
+              else:
+                  os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+        env:
+          secret: ${{ toJSON(env) }}
+
+      - name: Copy compose file to temp folder
+        run: cp "$COMPOSE_FILE" temp/docker-compose.yml
+
+      - name: Copy host init files to temp folder
+        if: ${{ env.HOST_INIT_SCRIPT != '' }}
+        run: cp ".ci_cd/host_init" temp/
+
+      - name: grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Set up JDK 17 and gradle cache
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        id: java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew and make image-cache
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        run: |
+          chmod +x gradlew
+          mkdir -p ~/image-cache
+
+      - name: Get yarn cache directory path
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+      - name: Yarn cache
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        uses: actions/cache@v2
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn---
+
+      - name: Do code build
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        run: |
+          if [ $MANAGER_BUILD == 'true' ]; then
+            ./gradlew installDist
+          elif [ $DEPLOYMENT_BUILD == 'true' ]; then
+            ./gradlew -p deployment installDist
+            echo "--------------------------------------------"
+            echo "Deployment image files:"
+            echo ""
+            find ./deployment/build/image
+            echo ""
+            echo "--------------------------------------------"
+          fi
+
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: ${{ env.PLATFORM }}
+
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+
+      - name: Build and save manager image
+        if: ${{ env.MANAGER_BUILD == 'true' }}
+        run: |
+          docker build --load --build-arg GIT_COMMIT=$MANAGER_VERSION --platform $PLATFORM -t openremote/manager:$MANAGER_VERSION $MANAGER_PATH
+          docker save openremote/manager:$MANAGER_VERSION | gzip > temp/manager.tar.gz
+
+      - name: Build and save deployment image
+        if: ${{ env.DEPLOYMENT_BUILD == 'true' }}
+        run: |
+          docker build --load --build-arg GIT_COMMIT=$DEPLOYMENT_VERSION --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_VERSION $DEPLOYMENT_PATH
+          docker save openremote/deployment:$DEPLOYMENT_VERSION | gzip > temp/deployment.tar.gz
+
+      - name: Copy files to host
+        timeout-minutes: 10
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          source: "temp"
+          target: "temp"
+          strip_components: 1
+          rm: true
+
+      - name: Load image(s)
+        if: ${{ env.MANAGER_BUILD == 'true' || env.DEPLOYMENT_BUILD == 'true' }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            if [ -f "temp/manager.tar.gz" ]; then
+              docker load < temp/manager.tar.gz
+            fi
+            if [ -f "temp/deployment.tar.gz" ]; then
+              docker load < temp/deployment.tar.gz
+            fi
+
+      - name: Execute deployment
+        timeout-minutes: 10
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            chmod +x -R temp/
+            set -a
+            . ./temp/env
+            set +a
+            if [ -f "temp/host-init/$HOST_INIT_SCRIPT" ]; then            
+              ./temp/host-init/$HOST_INIT_SCRIPT
+            fi
+            
+            # Pull any required images
+            docker-compose -f temp/docker-compose.yml pull
+            
+            # Attempt docker compose down
+            docker-compose -f temp/docker-compose.yml -p or down
+            
+            # Delete postgres volume if CLEAN_INSTALL=true
+            if [ $CLEAN_INSTALL == 'true' ]; then
+              docker volume rm or_postgresql-data
+            fi
+            
+            docker volume rm or_deployment-data
+            
+            # Start the stack
+            docker-compose -f temp/docker-compose.yml -p or up -d
+
+      - name: Wait for up to 5 mins for manager webserver to be running
+        run: |
+          echo "Waiting for manager web server https://$HOST..."
+          count=0
+          response=0
+          while [ $response -ne 200 ] && [ $count -lt 36 ]; do
+            response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
+            echo '.'
+            count=$((count+1))
+            sleep 5
+          done
+          if [ $response -ne 200 ]; then
+            echo "Response code = $response"
+            exit 1
+          fi
+
+      - name: Cleanup any obsolete docker images
+        timeout-minutes: 2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          port: ${{ env.SSH_PORT }}
+          username: ${{ env.SSH_USER }}
+          password: ${{ env.SSH_PASSWORD }}
+          key: ${{ env.SSH_KEY }}
+          script: |
+            docker image prune -f

@@ -27,6 +27,8 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient
 import org.openremote.agent.protocol.tcp.TCPIOClient
 import org.openremote.agent.protocol.tcp.TCPStringServer
 import org.openremote.model.asset.agent.ConnectionStatus
+import org.openremote.model.notification.AbstractNotificationMessage
+import org.openremote.model.notification.Notification
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -39,7 +41,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
     def "Check client"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         and: "the container is started"
         def container = startContainer(defaultConfig(), [])
@@ -52,6 +54,7 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         })
 
         and: "a simple TCP client"
+        def connectAttempts = 0
         TCPIOClient<String> client = new TCPIOClient<String>(
                 "127.0.0.1",
                 echoServerPort)
@@ -60,6 +63,11 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
             new StringDecoder(CharsetUtil.UTF_8),
             new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
         })
+        client = Spy(client)
+        client.doConnect() >> {
+            connectAttempts++
+            callRealMethod()
+        }
 
         and: "we add callback consumers to the client"
         def connectionStatus = client.getConnectionStatus()
@@ -142,16 +150,32 @@ class TcpClientTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "we lose connection to the server"
+        connectAttempts = 0
         echoServer.stop()
 
-        then: "the client status should change to CONNECTING"
+        then: "the server status should be DISCONNECTED"
+        conditions.eventually {
+            assert echoServer.connectionStatus == ConnectionStatus.DISCONNECTED
+        }
+
+        then: "the client status should change to CONNECTING and several re-connection attempts should be made"
         conditions.eventually {
             assert client.connectionStatus == ConnectionStatus.CONNECTING
             assert connectionStatus == ConnectionStatus.CONNECTING
+            assert connectAttempts > 2
         }
 
         when: "the connection to the server is restored"
-        echoServer.start()
+        // need to retry here as the previous connected socket might not have been released
+        def retries = 0
+        while (echoServer.connectionStatus != ConnectionStatus.CONNECTED && retries < 10) {
+            echoServer.start()
+            Thread.sleep(500)
+            retries++
+        }
+
+        then: "the server is connected"
+        assert echoServer.connectionStatus == ConnectionStatus.CONNECTED
 
         then: "the client status should become CONNECTED"
         conditions.eventually {

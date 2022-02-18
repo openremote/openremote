@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef } from "@openremote/model";
+import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef, AssetModelUtil } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import rest from "@openremote/rest";
@@ -10,7 +10,7 @@ import { project } from "./flow-editor";
 import { NodeUtilities } from "../node-structure";
 import { translate, i18next } from "@openremote/or-translate";
 import { PickerStyle } from "../styles/picker-styles";
-import { AssetModelUtil, Util } from "@openremote/core";
+import { Util } from "@openremote/core";
 import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
@@ -120,8 +120,6 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         const results = (await rest.api.AssetResource.queryAssets({
             ids: [value.assetId!],
             select: {
-                excludeParentInfo: true,
-                excludePath: true,
                 attributes: [
                     value.attributeName!
                 ]
@@ -145,11 +143,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
 
     private async setSelectedAssetFromInternalValue(){
         const response = await rest.api.AssetResource.queryAssets({
-            ids: [this.internal.value.assetId],
-            select: {
-                excludeParentInfo: true,
-                excludePath: true
-            }
+            ids: [this.internal.value.assetId]
         });
 
         if (response.data.length === 0) {

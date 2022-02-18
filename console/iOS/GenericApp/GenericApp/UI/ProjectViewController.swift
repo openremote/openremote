@@ -15,6 +15,7 @@ class ProjectViewController: UIViewController {
     var projectName: String?
     var realmName: String?
     var appconfig: ORAppConfig?
+    var host: String?
 
     @IBOutlet weak var projectTextInput: ORTextInput!
     @IBOutlet weak var realmTextInput: ORTextInput!
@@ -70,12 +71,15 @@ extension ProjectViewController: UITextFieldDelegate {
     }
 
     fileprivate func requestAppConfig(_ project: String, _ realm: String) {
-        let apiManager = ApiManager(baseUrl: "https://\(project).openremote.io/api/\(realm)")
-        apiManager.getAppConfig(callback: { statusCode, orAppConfig, error in
+        host = project.isUrl() ? project : "https://\(project).openremote.io/"
+        let url = project.isUrl() ? project.appending("/api/\(realm)") : "https://\(project).openremote.io/api/\(realm)"
+        
+        let apiManager = ApiManager(baseUrl: url)
+        apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
             DispatchQueue.main.async {
                 if statusCode == 200 && error == nil {
                     let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
-                    userDefaults?.set(project, forKey: DefaultsKey.projectKey)
+                    userDefaults?.set(self.host, forKey: DefaultsKey.hostKey)
                     userDefaults?.set(realm, forKey: DefaultsKey.realmKey)
                     self.appconfig = orAppConfig
 

@@ -29,7 +29,7 @@ import org.openremote.agent.protocol.io.AbstractNettyIOClient;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.model.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -58,8 +58,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
@@ -90,7 +90,7 @@ public class GatewayClientService extends RouteBuilder implements ContainerServi
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new GatewayClientResourceImpl(timerService, identityService, this)
         );
 

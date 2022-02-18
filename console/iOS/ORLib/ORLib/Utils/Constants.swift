@@ -24,6 +24,7 @@ import UIKit
 public enum DefaultsKey {
     public static var groupEntitlement = "group.io.openremote.app"
     public static let projectKey = "PROJECT"
+    public static let hostKey = "HOST"
     public static let realmKey = "REALM"
     public static let refreshTokenKey = "REFRESH_TOKEN"
     public static let fcmTokenKey = "FCM_TOKEN_KEY"

@@ -1,6 +1,10 @@
 # OpenRemote v3
 #
-# Profile that runs the vanilla stack on https://localhost using a self-signed SSL certificate,
+# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
+# but optionally on https://$HOST with an auto generated SSL certificate from Letsencrypt.
+#
+# It is possible to specify SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
+# is shown at https://demo.openremote.io)
 # with username 'admin' and password 'secret'. There is no map data available in the vanilla
 # system so the map tile server will not function. Persistent data is stored in a docker
 # volume called postgresql-data between restarts, simply delete this volume to reset the
@@ -11,6 +15,7 @@
 version: '2.4'
 
 volumes:
+  proxy-data:
   temp-data:
   postgresql-data:
   btmesh-data:
@@ -27,7 +32,14 @@ services:
       - "80:80"
       - "443:443"
       - "8883:8883"
-
+    volumes:
+      - proxy-data:/deployment
+    environment:
+      LE_EMAIL: ${SETUP_EMAIL_ADMIN:-}
+      DOMAINNAME: ${HOST:-localhost}
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
+      
   postgresql:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
@@ -41,24 +53,40 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    volumes:
+      - ./deployment:/deployment
     environment:
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
       KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
-
+      KEYCLOAK_FRONTEND_URL: https://${HOST:-localhost}/auth
+      
   manager:
-    privileged: true
+#    privileged: true
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
     depends_on:
       keycloak:
         condition: service_healthy
     environment:
-      DEV_MODE: ${DEV_MODE:-false}
-      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+      # Set this variable `demo` to auto provision demo assets etc.
+      SETUP_TYPE:
+      SETUP_ADMIN_PASSWORD:
+      SETUP_WIPE_CLEAN_INSTALL:
+      SETUP_EMAIL_HOST:
+      SETUP_EMAIL_USER:
+      SETUP_EMAIL_PASSWORD:
+      SETUP_EMAIL_FROM:
+      SETUP_EMAIL_ADMIN:
+      EXTERNAL_URL: https://${HOST:-localhost}
+      DEV_MODE:
+      # The following variables will configure the demo
+      FORECAST_SOLAR_API_KEY:
+      OPEN_WEATHER_API_APP_ID:
+      SETUP_IMPORT_DEMO_AGENT_KNX:
+      SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - temp-data:/tmp
-      - /var/run/dbus:/var/run/dbus
-      - btmesh-data:/btmesh
+#      - /var/run/dbus:/var/run/dbus
+#      - btmesh-data:/btmesh
 #   devices:
 #     - /dev/ttyACM0:/dev/ttyS0
 

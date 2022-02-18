@@ -1,0 +1,206 @@
+# Build, test and conditionally publish the manager docker image using the included gradle wrapper
+
+name: CI/CD
+
+on:
+  # Push excluding tags and workflow changes
+  push:
+    branches:
+        - '**'
+    tags-ignore:
+      - '*.*'
+    paths-ignore:
+      - '.github/**'
+      - '**/*.md'
+
+  # When a release is published
+  release:
+    types: [published]
+
+  workflow_dispatch:
+
+env:
+  PLATFORMS: linux/amd64,linux/aarch64
+  
+jobs:
+
+  dockertag:
+    name: Determine docker tag
+    runs-on: ubuntu-latest
+    
+    outputs:
+      tag: ${{ steps.dockertag.outputs.tag }}
+      
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+          
+      - name: Set docker tag based on branch and trigger
+        uses: kanga333/variable-mapper@master
+        with:
+          key: "${{ github.ref_name }}"
+          map: |
+            {
+              "master": {
+                "TAG": "latest"
+              },
+              "develop": {
+                "TAG": "develop"
+              }
+            }        
+
+      - name: Determine docker image tag name
+        run: echo "TAG=${{ github.event.release.tag_name || env.TAG }}" >> $GITHUB_ENV
+
+      - id: dockertag
+        run: echo "::set-output name=tag::${{ env.TAG }}"
+
+  build:
+    name: Build & Test
+    needs: [dockertag]
+
+    runs-on: ubuntu-latest
+
+    steps:
+          
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17 and gradle cache
+        id: java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+          
+      - name: Grant execute permission for gradlew and make image-cache
+        run: |
+          chmod +x gradlew
+          mkdir -p ~/image-cache
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+      - name: Yarn cache
+        uses: actions/cache@v2
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn---
+            
+      - name: Docker image cache
+        uses: actions/cache@v2
+        id: docker-cache
+        with:
+          path:  |
+            ~/image-cache
+          key: ${{ runner.os }}-docker---${{ hashFiles('profile/dev-testing.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-docker---
+          
+      - name: Output build info
+        run: |
+          echo "************************************************************"
+          echo "**************        BUILD INFO         *******************"
+          echo "************************************************************"
+          echo "Java version: $(java --version)"
+          echo "Yarn version: $(yarn -v)"
+          echo "Node version: $(node -v)"
+          echo "Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}"
+          echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
+          echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
+          echo "************************************************************"
+          echo "************************************************************"
+
+      - name: Check for cached docker images
+        id: check_docker
+        uses: andstor/file-existence-action@v1
+        with:
+          files: ", ~/image-cache/postgres.tar.gz"
+          
+      - name: Load cached docker images
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: |
+          docker load < ~/image-cache/keycloak.tar.gz
+          docker load < ~/image-cache/postgres.tar.gz
+
+      - name: Pull docker images
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          docker-compose -f profile/dev-testing.yml pull
+          keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
+          postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
+          docker save $keycloak | gzip > ~/image-cache/keycloak.tar.gz
+          docker save $postgres | gzip > ~/image-cache/postgres.tar.gz
+          ls -R ~/image-cache
+
+      - name: Start docker test services
+        run: docker-compose -f profile/dev-testing.yml up -d --no-build
+        
+      - name: Run backend tests
+        run: ./gradlew build
+        timeout-minutes: 20
+        continue-on-error: true
+        
+      - name: Prepare docker image
+        if: ${{ needs.dockertag.outputs.tag != '' }}
+        run: ./gradlew installDist
+        timeout-minutes: 10
+        
+        ## TODO: Add UI tests to the pipeline
+        # Start manager
+        # Run UI tests with gradle
+
+      - name: Share build artifacts
+        if: ${{ needs.dockertag.outputs.tag != '' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-build
+          path: |
+            manager/build/install/manager
+          retention-days: 1
+
+
+
+  docker_image:
+    name: Build & push docker image
+    runs-on: ubuntu-latest
+    needs: [dockertag, build]
+    if: ${{ needs.dockertag.outputs.tag != '' }}
+    env:
+      TAG: ${{ needs.dockertag.outputs.tag }}
+    
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Download build artifacts         
+        uses: actions/download-artifact@v2
+        with:
+          name: dist-build
+          path: manager/build/install/manager
+          
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: ${{ env.PLATFORMS }}
+
+      - name: install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+
+      - name: Build and push images
+        run: |
+          docker build --push --build-arg GIT_COMMIT=${{ github.sha }} --platform $PLATFORMS -t openremote/manager:$TAG manager/build/install/manager

@@ -54,7 +54,7 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
 
     public static final AttributeDescriptor<Boolean> INCLUDE_FORECAST_SOLAR_SERVICE = new AttributeDescriptor<>("includeForecastSolarService", BOOLEAN);
 
-    public static final AttributeDescriptor<Boolean> SET_ACTUAL_VALUE_WITH_FORECAST = new AttributeDescriptor<>("setActualValueWithForecast", BOOLEAN);
+    public static final AttributeDescriptor<Boolean> SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST = new AttributeDescriptor<>("setActualSolarValueWithForecast", BOOLEAN);
 
     public static final AssetDescriptor<ElectricityProducerSolarAsset> DESCRIPTOR = new AssetDescriptor<>("white-balance-sunny", "EABB4D", ElectricityProducerSolarAsset.class);
 
@@ -76,8 +76,8 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
         return getAttribute(INCLUDE_FORECAST_SOLAR_SERVICE).flatMap(AbstractNameValueHolder::getValue);
     }
 
-    public Optional<Boolean> isSetActualValueWithForecast() {
-        return getAttribute(SET_ACTUAL_VALUE_WITH_FORECAST).flatMap(AbstractNameValueHolder::getValue);
+    public Optional<Boolean> isSetActualSolarValueWithForecast() {
+        return getAttribute(SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST).flatMap(AbstractNameValueHolder::getValue);
     }
 
     public ElectricityProducerSolarAsset setPanelOrientation(PanelOrientation value) {
@@ -108,8 +108,8 @@ public class ElectricityProducerSolarAsset extends ElectricityProducerAsset {
         return this;
     }
 
-    public ElectricityProducerSolarAsset setSetActualValueWithForecast(boolean value) {
-        getAttributes().getOrCreate(SET_ACTUAL_VALUE_WITH_FORECAST).setValue(value);
+    public ElectricityProducerSolarAsset setSetActualSolarValueWithForecast(boolean value) {
+        getAttributes().getOrCreate(SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST).setValue(value);
         return this;
     }
 

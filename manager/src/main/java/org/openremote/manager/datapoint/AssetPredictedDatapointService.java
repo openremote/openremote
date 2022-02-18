@@ -27,13 +27,12 @@ import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetPredictedDatapoint;
-import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.util.Pair;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -54,7 +53,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
     public void init(Container container) throws Exception {
         super.init(container);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AssetPredictedDatapointResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),
@@ -109,7 +108,7 @@ public class AssetPredictedDatapointService extends AbstractDatapointService<Ass
         try {
             // Purge data points not in the above list using default duration
             LOG.finer("Purging predicted data points older than now");
-            doPurge("where dp.timestamp < :dt", LocalDateTime.ofInstant(timerService.getNow().truncatedTo(HOURS), ZoneId.systemDefault()));
+            doPurge("where dp.timestamp < :dt", Date.from(timerService.getNow().truncatedTo(HOURS)));
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to run data points purge", e);
         }

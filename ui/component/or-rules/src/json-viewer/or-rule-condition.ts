@@ -1,6 +1,6 @@
 import {css, html, LitElement, TemplateResult} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {AssetTypeInfo, RuleCondition, WellknownAssets} from "@openremote/model";
+import {AssetTypeInfo, RuleCondition, WellknownAssets, AssetModelUtil} from "@openremote/model";
 import {ConditionType, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "./or-rule-asset-query";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -9,7 +9,7 @@ import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
-import {AssetModelUtil, Util} from "@openremote/core";
+import {Util} from "@openremote/core";
 import {i18next, translate} from "@openremote/or-translate";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
 import {OrRuleAssetQuery} from "./or-rule-asset-query";
@@ -188,7 +188,7 @@ class OrRuleCondition extends translate(i18next)(LitElement) {
                         html`<or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>`,
                         getWhenTypesMenu(this.config, this.assetInfos),
                         type,
-                        (values: string[] | string) => this.type = values as ConditionType)}
+                        (value) => this.type = value as ConditionType)}
                 </div>
             `;
             }

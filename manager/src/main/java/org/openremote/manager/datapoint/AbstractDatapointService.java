@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -72,6 +73,8 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
     public void upsertValue(String assetId, String attributeName, Object value, LocalDateTime timestamp) throws IllegalStateException {
         persistenceService.doTransaction(em ->
                 em.unwrap(Session.class).doWork(connection -> {
+
+                    getLogger().finest("Storing datapoint for: id=" + assetId + ", name=" + attributeName + ", timestamp=" + timestamp + ", value=" + value);
                     PreparedStatement st;
 
                     try {
@@ -388,10 +391,10 @@ public abstract class AbstractDatapointService<T extends Datapoint> implements C
 
     protected abstract Logger getLogger();
 
-    protected void doPurge(String whereClause, LocalDateTime dateTime) {
+    protected void doPurge(String whereClause, Date date) {
         persistenceService.doTransaction(em -> em.createQuery(
                 "delete from " + getDatapointClass().getSimpleName() + " dp " + whereClause
-        ).setParameter("dt", dateTime).executeUpdate());
+        ).setParameter("dt", date).executeUpdate());
     }
 
     protected long getFirstPurgeMillis(Instant currentTime) {

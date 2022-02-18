@@ -50,7 +50,6 @@ import java.util.stream.IntStream;
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.query.AssetQuery.Access;
-import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
 import static org.openremote.model.value.MetaItemType.*;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
@@ -75,8 +74,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 return new Asset<?>[0];
             }
 
-            AssetQuery assetQuery = new AssetQuery()
-                .select(AssetQuery.Select.selectExcludePathAndParentInfo());
+            AssetQuery assetQuery = new AssetQuery();
 
             if (!isRestrictedUser()) {
                 assetQuery
@@ -108,6 +106,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             if (!(isSuperUser() || getAuthenticatedRealm().equals(realm)))
                 throw new WebApplicationException(FORBIDDEN);
+
+            if (!isSuperUser() && userId != null && !userId.equals(getAuthContext().getUserId())) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
 
             if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realm))
                 throw new WebApplicationException(BAD_REQUEST);
@@ -157,7 +159,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         List<Asset<?>> assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludeParentInfo(true).excludePath(true).excludeAttributes(true))
+                .select(new AssetQuery.Select().excludeAttributes())
                 .tenant(new TenantPredicate(realm))
                 .ids(assetIds)
         );
@@ -533,7 +535,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(selectExcludeAll()));
+            List<Asset<?>> assets = assetStorageService.findAll(new AssetQuery().ids(assetIds.toArray(new String[0])).select(new AssetQuery.Select().excludeAttributes()));
             if (assets == null || assets.size() != assetIds.size()) {
                 LOG.fine("Request to delete one or more invalid assets");
                 throw new WebApplicationException(BAD_REQUEST);

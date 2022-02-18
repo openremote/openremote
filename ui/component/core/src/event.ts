@@ -522,8 +522,6 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onConnect() {
-        console.debug("Event provider connected: " + this.constructor.name);
-
         if (Object.keys(this._subscriptionMap).length > 0) {
             for (const subscriptionId in this._subscriptionMap) {
                 if (this._subscriptionMap.has(subscriptionId)) {
@@ -537,7 +535,6 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _onDisconnect() {
-        console.debug("Event provider disconnected");
         this._onStatusChanged(EventProviderStatus.DISCONNECTED);
         if (this._pendingSubscription) {
             this._queuedSubscriptions.unshift(this._pendingSubscription);

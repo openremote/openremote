@@ -145,7 +145,7 @@ public abstract class AbstractNettyIOServer<T, U extends Channel, V extends Abst
             return;
         }
 
-        LOG.finest("Stopping IO Server: " + getSocketAddressString());
+        LOG.fine("Stopping IO Server: " + getSocketAddressString());
         onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
 
         try {

@@ -407,7 +407,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         asset = assetStorageService.find(
             new AssetQuery()
-                .select(AssetQuery.Select.selectExcludePathAndAttributes())
+                .select(new AssetQuery.Select().excludeAttributes())
                 .ids(assetId));
 
         if (asset == null)

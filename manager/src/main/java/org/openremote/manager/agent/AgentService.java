@@ -19,11 +19,10 @@
  */
 package org.openremote.manager.agent;
 
-import groovy.util.MapEntry;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -69,8 +68,8 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.model.asset.agent.Protocol.ACTUATOR_TOPIC;
@@ -125,7 +124,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return;
         }
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AgentResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),

@@ -28,6 +28,8 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.syslog.SyslogCategory;
 
+import java.util.HashMap;
+import java.util.WeakHashMap;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -39,6 +41,7 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
     protected final MessageBrokerService messageBrokerService;
     protected final ManagerKeycloakIdentityProvider identityProvider;
     protected final TimerService timerService;
+    protected final WeakHashMap<String, MqttConnection> disconnectedConnections = new WeakHashMap<>();
 
     public ORInterceptHandler(MqttBrokerService brokerService,
                               ManagerKeycloakIdentityProvider identityProvider,
@@ -88,21 +91,45 @@ public class ORInterceptHandler extends AbstractInterceptHandler {
 
     @Override
     public void onDisconnect(InterceptDisconnectMessage msg) {
-        MqttConnection connection = brokerService.clearConnectionSession(msg.getClientID());
+        MqttConnection connection;
+        synchronized (disconnectedConnections) {
+            connection = disconnectedConnections.remove(msg.getClientID());
+        }
 
         if (connection != null) {
             // No topic info here so just notify all custom handlers
-            brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onDisconnect(connection, msg));
+            MqttConnection finalConnection = connection;
+            brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onDisconnect(finalConnection, msg));
+        } else {
+            connection = brokerService.clearConnectionSession(msg.getClientID());
+
+            // Store weak reference to connection for onConnectionLost
+            synchronized (disconnectedConnections) {
+                disconnectedConnections.put(msg.getClientID(), connection);
+            }
         }
     }
 
     @Override
     public void onConnectionLost(InterceptConnectionLostMessage msg) {
-        MqttConnection connection = brokerService.clearConnectionSession(msg.getClientID());
+        // This can fire after onConnect which causes the connection to be removed; seems that onDisconnect also gets
+        // called when connection is lost and that is called first and before onConnect so we'll just use that for now
+        MqttConnection connection;
+        synchronized (disconnectedConnections) {
+            connection = disconnectedConnections.remove(msg.getClientID());
+        }
 
         if (connection != null) {
             // No topic info here so just notify all custom handlers
-            brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onConnectionLost(connection, msg));
+            MqttConnection finalConnection = connection;
+            brokerService.getCustomHandlers().forEach(customHandler -> customHandler.onConnectionLost(finalConnection, msg));
+        } else {
+            connection = brokerService.clearConnectionSession(msg.getClientID());
+
+            // Store weak reference to connection for onDisconnect
+            synchronized (disconnectedConnections) {
+                disconnectedConnections.put(msg.getClientID(), connection);
+            }
         }
     }
 

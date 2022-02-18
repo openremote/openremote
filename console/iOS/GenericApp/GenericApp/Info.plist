@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string></string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,14 +26,16 @@
 	<string></string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>The camera is needed in order to send area information</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Location is needed in order to get updates on surveys</string>
+	<string>Location is needed in order to get notifications based on your location</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Location is needed in order to get updates on surveys</string>
+	<string>Location is needed in order to get notifications based on your location</string>
 	<key>NSLocationUsageDescription</key>
-	<string>Location is needed in order to get updates on surveys</string>
+	<string>Location is needed in order to get notifications based on your location</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Location is needed in order to get updates on surveys</string>
+	<string>Location is needed in order to get notifications based on your location</string>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>

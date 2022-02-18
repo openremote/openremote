@@ -5,7 +5,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
@@ -15,7 +15,6 @@ import org.openremote.manager.rules.RulesService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.asset.impl.ElectricityProducerAsset;
-import org.openremote.model.asset.impl.ElectricityProducerSolarAsset;
 import org.openremote.model.asset.impl.ElectricityProducerWindAsset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.query.AssetQuery;
@@ -36,8 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
@@ -173,7 +172,6 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
         List<ElectricityProducerWindAsset> electricityProducerWindAssets = assetStorageService.findAll(
                         new AssetQuery()
-                                .select(new AssetQuery.Select().excludeParentInfo(true))
                                 .types(ElectricityProducerWindAsset.class)
                 )
                 .stream()
@@ -230,7 +228,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerWindAsset.SET_ACTUAL_WIND_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
             ElectricityProducerWindAsset asset = (ElectricityProducerWindAsset) assetStorageService.find(attributeEvent.getAssetId());
 
@@ -284,7 +282,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER_FORECAST.getName(), -currentPower));
 
-                if (electricityProducerWindAsset.isSetActualValueWithForecast().orElse(false)) {
+                if (electricityProducerWindAsset.isSetActualWindValueWithForecast().orElse(false)) {
                     assetProcessingService.sendAttributeEvent(new AttributeEvent(electricityProducerWindAsset.getId(), ElectricityProducerAsset.POWER.getName(), -currentPower));
                 }
 
@@ -304,7 +302,15 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
                 rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerWindAsset.getId());
             } else {
-                LOG.warning("Request failed: " + response);
+                StringBuilder message = new StringBuilder("Unknown");
+                if (response != null) {
+                    message.setLength(0);
+                    message.append("Status ");
+                    message.append(response.getStatus());
+                    message.append(" - ");
+                    message.append(response.readEntity(String.class));
+                }
+                LOG.warning("Request failed: " + message);
             }
         } catch (Throwable e) {
             if (e.getCause() != null && e.getCause() instanceof IOException) {

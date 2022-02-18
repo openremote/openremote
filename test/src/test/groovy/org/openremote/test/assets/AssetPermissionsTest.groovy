@@ -1,10 +1,8 @@
 package org.openremote.test.assets
 
 import org.openremote.manager.setup.SetupService
-import org.openremote.model.asset.impl.ThingAsset
 import org.openremote.model.attribute.AttributeState
 import org.openremote.model.attribute.AttributeWriteFailure
-import org.openremote.model.util.ValueUtil
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
 import org.openremote.model.asset.Asset
@@ -65,7 +63,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -86,7 +84,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -97,7 +95,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -249,14 +247,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         // Assets should not be completely loaded (no path or parent info)
         assets.find {it.id == managerTestSetup.smartOfficeId}.path == null
         assets.find {it.id == managerTestSetup.smartOfficeId}.parentId == null
-        assets.find {it.id == managerTestSetup.smartOfficeId}.parentName == null
-        assets.find {it.id == managerTestSetup.smartOfficeId}.parentType == null
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -276,7 +272,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -288,7 +284,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.tenantBuilding.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "a bad request exception should be thrown"
@@ -415,14 +411,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         // Assets should not be completely loaded (no path or parent info)
         assets.find {it.id == managerTestSetup.smartBuildingId}.path == null
         assets.find {it.id == managerTestSetup.smartBuildingId}.parentId == null
-        assets.find {it.id == managerTestSetup.smartBuildingId}.parentName == null
-        assets.find {it.id == managerTestSetup.smartBuildingId}.parentType == null
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "a bad request exception should be thrown"
@@ -431,7 +425,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -443,7 +437,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.tenantCity.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -560,7 +554,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.realm == keycloakTestSetup.tenantBuilding.realm
         apartment1.type == BuildingAsset.DESCRIPTOR.getName()
         apartment1.parentId == managerTestSetup.smartBuildingId
-        apartment1.path == null
+        apartment1.path[0] == managerTestSetup.smartBuildingId
+        apartment1.path[1] == managerTestSetup.apartment1Id
         apartment1.attributes.size() == 12
 
         Asset apartment1Livingroom = assets[1]
@@ -587,7 +582,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.masterTenant.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "a bad request exception should be thrown"
@@ -596,7 +591,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "result should match"
@@ -606,7 +601,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakTestSetup.tenantCity.realm))
-                        .parents(new ParentPredicate(true))
+                        .parents(new ParentPredicate(null))
         )
 
         then: "a bad request exception should be thrown"

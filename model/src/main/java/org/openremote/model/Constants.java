@@ -47,16 +47,18 @@ public interface Constants {
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
     String PERSISTENCE_JSON_VALUE_TYPE = "jsonb";
     String PERSISTENCE_STRING_ARRAY_TYPE = "string-array";
+    String PERSISTENCE_LTREE_TYPE = "ltree";
 
     String SETUP_EMAIL_USER = "SETUP_EMAIL_USER";
     String SETUP_EMAIL_HOST = "SETUP_EMAIL_HOST";
     String SETUP_EMAIL_PASSWORD = "SETUP_EMAIL_PASSWORD";
     String SETUP_EMAIL_PORT = "SETUP_EMAIL_PORT";
-    int SETUP_EMAIL_PORT_DEFAULT = 25;
+    int SETUP_EMAIL_PORT_DEFAULT = 587;
     String SETUP_EMAIL_TLS = "SETUP_EMAIL_TLS";
     boolean SETUP_EMAIL_TLS_DEFAULT = true;
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
-    String SETUP_EMAIL_FROM_DEFAULT = "support@openremote.io";
+    String SETUP_EMAIL_FROM_DEFAULT = "no-reply@localhost";
+    String SETUP_EMAIL_ADMIN = "SETUP_EMAIL_ADMIN";
     String REALM_PARAM_NAME = "Realm";
     String ASSET_ID_REGEXP = "^[0-9A-Za-z]{22}$";
     String UUID_REGEXP = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";

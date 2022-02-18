@@ -3,27 +3,12 @@ import {Console} from "./console";
 import rest from "@openremote/rest";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
-import i18next, { InitOptions } from "i18next";
+import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {
-    AgentDescriptor,
-    AssetDescriptor,
-    AssetTypeInfo,
-    Attribute,
-    AttributeDescriptor,
-    ConsoleAppConfig,
-    MetaItemDescriptor,
-    Role,
-    User,
-    ValueDescriptor,
-    ValueDescriptorHolder,
-    ValueHolder,
-    WellknownAssets,
-    WellknownValueTypes
-} from "@openremote/model";
+import {AssetModelUtil, ConsoleAppConfig, Role, User} from "@openremote/model";
 import * as Util from "./util";
-import orIconSet from "./or-icon-set";
+import {IconSets, createSvgIconSet, createMdiIconSet, OrIconSet} from "@openremote/or-icon";
 
 // Re-exports
 export {Util};
@@ -193,298 +178,9 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
     return normalisedConfig;
 }
 
-export class IconSetAddedEvent extends CustomEvent<void> {
-
-    public static readonly NAME = "or-iconset-added";
-
-    constructor() {
-        super(IconSetAddedEvent.NAME, {
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
 export interface OrManagerEventDetail {
     event: OREvent;
     error?: ORError;
-}
-
-declare global {
-    export interface HTMLElementEventMap {
-        [IconSetAddedEvent.NAME]: IconSetAddedEvent;
-    }
-}
-
-export interface IconSetSvg {
-    size: number;
-    icons: {[name: string]: string};
-}
-
-export class ORIconSets {
-    private _icons: {[name: string]: IconSetSvg} = {};
-
-    addIconSet(name: string, iconset: IconSetSvg) {
-        this._icons[name] = iconset;
-        window.dispatchEvent(new IconSetAddedEvent());
-    }
-
-    getIconSet(name: string) {
-        return this._icons[name];
-    }
-
-    getIcon(icon: string | undefined): Element | undefined {
-        if (!icon) {
-            return undefined;
-        }
-
-        const parts = (icon || "").split(":");
-        const iconName = parts.pop();
-        const iconSetName = parts.pop() || DEFAULT_ICONSET;
-        if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {
-            return;
-        }
-
-        const iconSet = IconSets.getIconSet(iconSetName);
-        // iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
-
-        if (!iconSet || !iconSet.icons.hasOwnProperty(iconName)) {
-            return;
-        }
-
-        const iconData = iconSet.icons[iconName];
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("viewBox", "0 0 " + iconSet.size + " " + iconSet.size);
-        svg.style.cssText = "pointer-events: none; display: block; width: 100%; height: 100%;";
-        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        svg.setAttribute("focusable", "false");
-        if (iconData.startsWith("<")) {
-            svg.innerHTML = iconData;
-        } else {
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", iconData);
-            path.style.pointerEvents = "pointer-events: var(--or-icon-pointer-events, none);";
-            svg.appendChild(path);
-        }
-        return svg;
-    }
-}
-
-export class AssetModelUtil {
-
-    static _assetTypeInfos: AssetTypeInfo[] = [];
-    static _metaItemDescriptors: MetaItemDescriptor[] = [];
-    static _valueDescriptors: ValueDescriptor[] = [];
-
-    public static getAssetDescriptors(): AssetDescriptor[] {
-        return AssetModelUtil._assetTypeInfos.map(info => info.assetDescriptor as AgentDescriptor);
-    }
-
-    public static getMetaItemDescriptors(): MetaItemDescriptor[] {
-        return [...this._metaItemDescriptors];
-    }
-
-    public static getValueDescriptors(): ValueDescriptor[] {
-        return [...this._valueDescriptors];
-    }
-
-    public static getAssetTypeInfos(): AssetTypeInfo[] {
-        return [...this._assetTypeInfos];
-    }
-
-    public static getAssetTypeInfo(type: string | AssetDescriptor | AssetTypeInfo): AssetTypeInfo | undefined {
-        if (!type) {
-            return;
-        }
-
-        if ((type as AssetTypeInfo).assetDescriptor) {
-            return type as AssetTypeInfo;
-        }
-
-        if (typeof(type) !== "string") {
-            type = (type as AssetDescriptor).name!;
-        }
-
-        return this._assetTypeInfos.find((assetTypeInfo) => {
-            return assetTypeInfo.assetDescriptor!.name === type;
-        });
-    }
-
-    public static getAssetDescriptor(type?: string | AssetDescriptor | AssetTypeInfo): AssetDescriptor | undefined {
-        if (!type) {
-            return;
-        }
-
-        if ((type as AssetTypeInfo).assetDescriptor) {
-            return (type as AssetTypeInfo).assetDescriptor;
-        }
-
-        if (typeof(type) !== "string") {
-            return type as AssetDescriptor;
-        }
-
-        const match = this._assetTypeInfos.find((assetTypeInfo) => {
-            return assetTypeInfo.assetDescriptor!.name === type;
-        });
-        return match ? match.assetDescriptor : undefined;
-    }
-
-    public static getAttributeDescriptor(attributeName: string, assetTypeOrDescriptor: string | AssetDescriptor | AssetTypeInfo): AttributeDescriptor | undefined {
-        if (!attributeName) {
-            return;
-        }
-
-        const assetTypeInfo = this.getAssetTypeInfo(assetTypeOrDescriptor || WellknownAssets.UNKNOWNASSET);
-
-        if (!assetTypeInfo || !assetTypeInfo.attributeDescriptors) {
-            return;
-        }
-
-        return assetTypeInfo.attributeDescriptors.find((attributeDescriptor) => attributeDescriptor.name === attributeName);
-    }
-
-    public static getValueDescriptor(name?: string): ValueDescriptor | undefined {
-        if (!name) {
-            return;
-        }
-
-        // If name ends with [] then it's an array value type so lookup the base type and then convert to array
-        let arrayDimensions: number | undefined;
-
-        if (name.endsWith("[]")) {
-            arrayDimensions = 0;
-            while(name.endsWith("[]")) {
-                name = name.substring(0, name.length - 2);
-                arrayDimensions++;
-            }
-        }
-
-        // Value descriptor names are globally unique
-        let valueDescriptor = this._valueDescriptors.find((valueDescriptor) => valueDescriptor.name === name);
-        if (valueDescriptor && arrayDimensions) {
-            valueDescriptor = {...valueDescriptor, arrayDimensions: arrayDimensions};
-        }
-        return valueDescriptor;
-    }
-
-    public static resolveValueDescriptor(valueHolder: ValueHolder<any> | undefined, descriptorOrValueType: ValueDescriptorHolder | ValueDescriptor | string | undefined): ValueDescriptor | undefined {
-        let valueDescriptor: ValueDescriptor | undefined;
-
-        if (descriptorOrValueType) {
-            if (typeof(descriptorOrValueType) === "string") {
-                valueDescriptor = AssetModelUtil.getValueDescriptor(descriptorOrValueType);
-            }
-            if ((descriptorOrValueType as ValueDescriptor).jsonType) {
-                valueDescriptor = descriptorOrValueType as ValueDescriptor;
-            } else {
-                // Must be a value descriptor holder or value holder
-                valueDescriptor = AssetModelUtil.getValueDescriptor((descriptorOrValueType as ValueDescriptorHolder).type);
-            }
-        }
-
-        if (!valueDescriptor && valueHolder) {
-            // Try and determine the value descriptor based on the value type
-            valueDescriptor = this.resolveValueDescriptorFromValue(valueHolder.value);
-        }
-
-        return valueDescriptor;
-    }
-
-    public static resolveValueTypeFromValue(value: any): string {
-        if (value === null || value === undefined) {
-            return WellknownValueTypes.JSON;
-        }
-
-        if (typeof value === "number") {
-            return WellknownValueTypes.NUMBER;
-        }
-        if (typeof value === "string") {
-            return WellknownValueTypes.TEXT;
-        }
-        if (typeof value === "boolean") {
-            return WellknownValueTypes.BOOLEAN;
-        }
-        if (Array.isArray(value)) {
-            let dimensions = 1;
-            let v = (value as any[]).find(v => v !== undefined && v !== null);
-
-            while (Array.isArray(v)) {
-                v = (v as any[]).find(v => v !== undefined && v !== null);
-                dimensions++;
-            }
-
-            let valueType = this.resolveValueTypeFromValue(v);
-
-            while (dimensions > 0) {
-                valueType += "[]";
-                dimensions--;
-            }
-
-            return valueType;
-        }
-        if (value instanceof Date) {
-            return WellknownValueTypes.DATEANDTIME;
-        } else {
-            return WellknownValueTypes.JSONOBJECT;
-        }
-    }
-
-    public static resolveValueDescriptorFromValue(value: any): ValueDescriptor | undefined {
-        const valueType = AssetModelUtil.resolveValueTypeFromValue(value);
-        return AssetModelUtil.getValueDescriptor(valueType);
-    }
-
-    public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeNameOrDescriptor: string | AttributeDescriptor | undefined, attribute?: Attribute<any>): [AttributeDescriptor | undefined, ValueDescriptor | undefined] {
-        let attributeDescriptor: AttributeDescriptor | undefined;
-        let valueDescriptor: ValueDescriptor | undefined;
-
-        if (attributeNameOrDescriptor && typeof attributeNameOrDescriptor !== "string") {
-            attributeDescriptor = attributeNameOrDescriptor as AttributeDescriptor;
-        } else {
-            const assetTypeInfo = this.getAssetTypeInfo(assetType || WellknownAssets.UNKNOWNASSET);
-
-            if (!assetTypeInfo) {
-                return [undefined, undefined];
-            }
-
-            if (typeof (attributeNameOrDescriptor) === "string") {
-                attributeDescriptor = this.getAttributeDescriptor(attributeNameOrDescriptor as string, assetTypeInfo);
-            }
-
-            if (!attributeDescriptor && attribute) {
-                attributeDescriptor = {
-                    type: attribute.type,
-                    name: attribute.name,
-                    meta: attribute.meta
-                };
-            }
-        }
-
-        if (attributeDescriptor) {
-            valueDescriptor = this.getValueDescriptor(attributeDescriptor.type);
-        }
-
-        return [attributeDescriptor, valueDescriptor];
-    }
-
-    public static getMetaItemDescriptor(name?: string): MetaItemDescriptor | undefined {
-        if (!name) {
-            return;
-        }
-
-        // Meta item descriptor names are globally unique
-        return this._metaItemDescriptors.find((metaItemDescriptor) => metaItemDescriptor.name === name);
-    }
-
-    public static getAssetDescriptorColour(typeOrDescriptor: string | AssetTypeInfo | AssetDescriptor | undefined, fallbackColor?: string): string | undefined {
-        const assetDescriptor = this.getAssetDescriptor(typeOrDescriptor);
-        return assetDescriptor && assetDescriptor.colour ? assetDescriptor.colour : fallbackColor;
-    }
-
-    public static getAssetDescriptorIcon(typeOrDescriptor: string | AssetTypeInfo | AssetDescriptor | undefined, fallbackIcon?: string): string | undefined {
-        const assetDescriptor = this.getAssetDescriptor(typeOrDescriptor);
-        return assetDescriptor && assetDescriptor.icon ? assetDescriptor.icon : fallbackIcon;
-    }
 }
 
 export type EventCallback = (event: OREvent) => void;
@@ -725,10 +421,14 @@ export class Manager implements EventProviderFactory {
 
             // Load material design and OR icon sets if requested
             if (this._config.loadIcons) {
-                const response = await fetch(manager.config.managerUrl + "/shared/mdi-icons.json");
-                const mdiIconSet = await response.json();
-                IconSets.addIconSet("mdi", mdiIconSet);
-                IconSets.addIconSet("or", orIconSet);
+                IconSets.addIconSet(
+                    "mdi",
+                    createMdiIconSet(manager.config.managerUrl!)
+                );
+                IconSets.addIconSet(
+                    "or",
+                    createSvgIconSet(OrIconSet.size, OrIconSet.icons)
+                );
             }
 
             return true;
@@ -755,7 +455,7 @@ export class Manager implements EventProviderFactory {
         });
 
         // Look for language preference in local storage
-        const language = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
+        const language: string | undefined = !this.console ? undefined : await this.console.retrieveData("LANGUAGE");
         const initOptions: InitOptions = {
             lng: language,
             fallbackLng: "en",
@@ -914,14 +614,11 @@ export class Manager implements EventProviderFactory {
 
     protected async getConsoleAppConfig(): Promise<boolean> {
         try {
-            const consoleAppConfigResponse = await this.rest.api.ConsoleAppResource.getAppConfig();
-            if (consoleAppConfigResponse.status === 200) {
-                this._consoleAppConfig = consoleAppConfigResponse.data;
-            }
+            const response = await fetch(manager.config.managerUrl + "/consoleappconfig/" + manager.displayRealm + ".json");
+            this._consoleAppConfig = await response.json() as ConsoleAppConfig;
             return true;
         } catch (e) {
-            this._setError(ORError.CONSOLE_ERROR);
-            return false;
+            return true;
         }
     }
 
@@ -1141,7 +838,7 @@ export class Manager implements EventProviderFactory {
             let keycloakPromise: any = null;
 
             // Load the keycloak JS API
-            await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.js");
+            await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.min.js");
 
             // Should have Keycloak global var now
             if (!(window as any).Keycloak) {
@@ -1261,5 +958,4 @@ export class Manager implements EventProviderFactory {
 }
 
 export const manager = new Manager(); // Needed for webpack bundling
-export const IconSets = new ORIconSets();
 export default manager;

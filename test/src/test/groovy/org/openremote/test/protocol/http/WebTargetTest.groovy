@@ -253,6 +253,18 @@ class WebTargetTest extends Specification {
         assert grant2.scope == grant.scope
         assert ((OAuthPasswordGrant)grant2).username == grant.username
         assert ((OAuthPasswordGrant)grant2).password == grant.password
+
+        when: "serialised"
+        Map<String, Object> map = new HashMap<>();
+        String v = "{\"test\": 123}"
+        map.put("value", v)
+        String mapStr = ValueUtil.JSON.writeValueAsString(map)
+
+        and: "deserialised"
+        def newMap = ValueUtil.JSON.readValue(mapStr, Map.class)
+
+        then: "should work"
+        assert newMap != null
     }
 
     def "Check Basic authentication"() {

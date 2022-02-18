@@ -65,7 +65,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
     public void init(Container container) throws Exception {
         super.init(container);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new AssetDatapointResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),
@@ -139,8 +139,7 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
                     .attributes(
                         new AttributePredicate().meta(
                             new NameValuePredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS, null)
-                        ))
-                    .select(AssetQuery.Select.selectExcludePathAndParentInfo()));
+                        )));
 
             List<Pair<String, Attribute<?>>> attributes = assets.stream()
                 .map(asset -> asset

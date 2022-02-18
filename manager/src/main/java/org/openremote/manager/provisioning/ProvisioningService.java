@@ -52,7 +52,7 @@ public class ProvisioningService implements ContainerService {
         identityService = container.getService(ManagerIdentityService.class);
         TimerService timerService = container.getService(TimerService.class);
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
             new ProvisioningResourceImpl(this, timerService, identityService)
         );
     }

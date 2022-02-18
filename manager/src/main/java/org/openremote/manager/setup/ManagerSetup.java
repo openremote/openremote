@@ -28,12 +28,12 @@ import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
-import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.impl.*;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.setup.Setup;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.ValueFormat;
 import org.openremote.model.value.ValueType;
@@ -92,7 +92,6 @@ public class ManagerSetup implements Setup {
             return;
         }
 
-        provisionConsoleAppConfig();
         provisionAssets();
     }
 
@@ -454,28 +453,6 @@ public class ManagerSetup implements Setup {
         shipAsset.getAttributes().addOrReplace(new Attribute<>(Asset.LOCATION, location));
 
         return shipAsset;
-    }
-
-    protected void provisionConsoleAppConfig() throws IOException {
-
-        if (!Files.exists(Paths.get(provisionDocRoot.toString(), "consoleappconfig"))) {
-            return;
-        }
-
-        Log.info("Provisioning console app configs");
-
-        Files.list(Paths.get(provisionDocRoot.toString(), "consoleappconfig")).filter(Files::isRegularFile)
-                .forEach(file -> {
-                    try {
-                        ConsoleAppConfig config = ValueUtil.JSON.readValue(file.toFile(), ConsoleAppConfig.class);
-                        persistenceService.doTransaction(entityManager -> entityManager.merge(config));
-
-                        Log.info("Console app config added for realm: " + config.getRealm());
-                    } catch (IOException e) {
-                        Log.warn("Processing of file " + file.getFileName() + " went wrong", e);
-                    }
-                });
-
     }
 
     protected void provisionAssets() throws IOException {

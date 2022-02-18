@@ -61,7 +61,10 @@ export const style = css`
         top: 0;
         bottom: 0;
     }
-
+    .mapboxgl-ctrl-geocoder,
+    .maplibregl-ctrl-geocoder--input {
+        width: calc(100% - 20px)
+    }
     .leaflet-marker-icon, .maplibregl-marker, .mapboxgl-marker {
         pointer-events: none !important;
     }
@@ -203,6 +206,9 @@ export const mapAssetCardStyle = css`
             li {
                 display: flex;
                 line-height: 30px;
+            }
+            li.highlighted {
+                font-weight: bold;
             }
             
             .attribute-name {

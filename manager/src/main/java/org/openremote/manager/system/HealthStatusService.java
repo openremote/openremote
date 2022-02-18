@@ -52,7 +52,7 @@ public class HealthStatusService implements ContainerService {
             }
         }
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).addApiSingleton(
                 new StatusResourceImpl(healthStatusProviderList)
         );
     }

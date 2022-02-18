@@ -27,7 +27,8 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -58,7 +59,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 import static org.openremote.manager.security.ManagerKeycloakIdentityProvider.KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.*;
@@ -130,8 +130,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         // Find all console assets that use this adapter
         assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludePath(true)
-                    .attributes(ConsoleAsset.CONSOLE_PROVIDERS.getName()))
+                .select(new AssetQuery.Select().attributes(ConsoleAsset.CONSOLE_PROVIDERS.getName()))
                 .types(ConsoleAsset.class)
                 .attributes(
                     new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))
@@ -150,9 +149,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     @Override
     public void configure() throws Exception {
         // If any console asset was modified in the database, detect push provider changes
-        from(PERSISTENCE_TOPIC)
+        from(PersistenceService.PERSISTENCE_TOPIC)
             .routeId("PushNotificationAssetChanges")
-            .filter(isPersistenceEventForEntityType(ConsoleAsset.class))
+            .filter(PersistenceService.isPersistenceEventForEntityType(ConsoleAsset.class))
             .filter(isNotForGateway(gatewayService))
             .process(exchange -> {
                 @SuppressWarnings("unchecked")
@@ -209,7 +208,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                         // Get all console assets with a push provider defined within the specified tenant
                         List<Asset<?>> consoleAssets = assetStorageService.findAll(
                                 new AssetQuery()
-                                        .select(AssetQuery.Select.selectExcludeAll())
+                                        .select(new AssetQuery.Select().excludeAttributes())
                                         .tenant(new TenantPredicate(targetId))
                                         .types(ConsoleAsset.class)
                                         .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))));
@@ -256,7 +255,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                                 mappedTargets.addAll(
                                         assetStorageService.findAll(
                                                 new AssetQuery()
-                                                        .select(AssetQuery.Select.selectExcludeAll())
+                                                        .select(new AssetQuery.Select().excludeAttributes())
                                                         .ids(ids)
                                                         .types(ConsoleAsset.class)
                                                         .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
@@ -274,7 +273,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     case ASSET:
                         // Find all console descendants of the specified asset
                         consoleAssets = assetStorageService.findAll(new AssetQuery()
-                                .select(AssetQuery.Select.selectExcludeAll())
+                                .select(new AssetQuery.Select().excludeAttributes())
                                 .paths(new PathPredicate(targetId))
                                 .types(ConsoleAsset.class)
                                 .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))));

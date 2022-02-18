@@ -74,7 +74,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
     def "Check client"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 20, delay: 0.2)
 
         and: "the container is started"
         def container = startContainer(defaultConfig(), defaultServices())

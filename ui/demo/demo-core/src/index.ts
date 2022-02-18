@@ -1,12 +1,12 @@
 import {html, LitElement, TemplateResult, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import manager, {AssetModelUtil, Auth, Manager, OREvent, subscribe, Util} from "@openremote/core";
+import manager, {Auth, Manager, OREvent, subscribe, Util} from "@openremote/core";
 import "@openremote/or-icon";
 import "@openremote/or-translate";
 import {IconSets} from "@openremote/or-icon";
 import i18next from "i18next";
 
-import {AttributeEvent, WellknownMetaItems, SharedEvent, Asset, WellknownAssets, WellknownAttributes} from "@openremote/model";
+import {AttributeEvent, WellknownMetaItems, SharedEvent, Asset, WellknownAssets, WellknownAttributes, AssetModelUtil} from "@openremote/model";
 import {getBuildingAsset, getElectricityChargerAsset, getElectricityConsumerAsset} from "./util";
 
 @customElement("or-demo")

@@ -47,7 +47,6 @@ import {
 } from "@openremote/model";
 import {getItemTemplate, getListTemplate, ListItem, ListType} from "./or-mwc-list";
 import { i18next } from "@openremote/or-translate";
-import { MDCMenu } from "@material/menu";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const buttonStyle = require("@material/button/dist/mdc.button.css");
@@ -341,11 +340,12 @@ export const getValueHolderInputTemplateProvider: ValueInputProviderGenerator = 
     } else if (notEmptyConstraint && !pattern) {
         pattern = ".+";
     }
-    if ((!options.disabled && !options.readonly) && allowedValuesConstraint && allowedValuesConstraint.allowedValues) {
+    if (allowedValuesConstraint && allowedValuesConstraint.allowedValues) {
         const allowedLabels = allowedValuesConstraint.allowedValueNames && allowedValuesConstraint.allowedValueNames.length === allowedValuesConstraint.allowedValues.length ? allowedValuesConstraint.allowedValueNames : undefined;
         selectOptions = allowedValuesConstraint.allowedValues.map((v, i) => {
-            const label = allowedLabels ? allowedLabels[i] : typeof v === "string" ? Util.getAllowedValueLabel(v) : "" + i;
-            return ["" + v, label || "" + v];
+            let label = allowedLabels ? allowedLabels[i] : "" + v;
+            label = Util.getAllowedValueLabel(label)!;
+            return [v, label || "" + v];
         });
         inputType = InputType.SELECT;
 
@@ -507,6 +507,15 @@ const style = css`
         border-radius: 50% !important;
     }
 
+    #select-searchable {
+        background-color: transparent; 
+        border: 1px solid var(--or-app-color5); 
+        margin: 16px 16px 8px; 
+        width: calc(100% - 66px); 
+        border-radius: 4px; 
+        padding: 4px 16px;
+    }
+
     .mdc-text-field__input::-webkit-calendar-picker-indicator {
         display: block;
     }
@@ -660,10 +669,18 @@ export class OrMwcInput extends LitElement {
     public placeHolder?: string;
 
     @property({type: Array})
-    public options?: (string | [string, string])[];
+    public options?: any[] | any;
 
     @property({type: Boolean})
     public autoSelect?: boolean;
+
+    /* SELECT SEARCH PROPERTIES BELOW */
+    
+    @property({type: String})
+    public searchableValue?: string;
+
+    @property({type: Boolean})
+    public searchable?: boolean;
 
     /* STYLING PROPERTIES BELOW */
 
@@ -820,7 +837,7 @@ export class OrMwcInput extends LitElement {
                 "mdc-text-field-helper-text--validation-msg": showValidationMessage,
             };
             const hasValue = this.value || this.value === false;
-            const labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
+            let labelTemplate = showLabel ? html`<span class="mdc-floating-label ${hasValue ? "mdc-floating-label--float-above" : ""}" id="label">${this.label}</span>` : undefined;
 
             switch (this.type) {
                 case InputType.RADIO:
@@ -842,7 +859,7 @@ export class OrMwcInput extends LitElement {
                                                 ?checked="${this.value && this.value.includes(optValue)}"
                                                 ?required="${this.required}"
                                                 ?disabled="${this.disabled || this.readonly}"                            
-                                                @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}"
+                                                @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), optValue)}"
                                                 class="mdc-radio__native-control"/>
                                             <div class="mdc-radio__background">
                                             <div class="mdc-radio__outer-circle"></div>
@@ -920,8 +937,10 @@ export class OrMwcInput extends LitElement {
                         "mdc-select--with-leading-icon": !!this.icon
                     };
 
-                    const opts = this.resolveOptions(this.options);
-
+                    let opts = this.resolveOptions(this.options);
+                    if(this.searchableValue && opts) {
+                        opts = opts.filter(([optValue, optDisplay]) => optDisplay.toLowerCase().includes((this.searchableValue as string).toLowerCase()));
+                    }
                     const itemClickHandler: (ev: MouseEvent, item: ListItem) => void = (ev, item) => {
                         const value = item.value;
 
@@ -971,10 +990,11 @@ export class OrMwcInput extends LitElement {
                     return html`
                         <div id="component"
                             class="mdc-select ${classMap(classes)}"
-                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(this.options![e.detail.index]) ? this.options![e.detail.index][0] : this.options![e.detail.index])}">
+                            @MDCSelect:change="${(e: MDCSelectEvent) => this.onValueChange(undefined, e.detail.index === -1 ? undefined : Array.isArray(opts![e.detail.index]) ? opts![e.detail.index][0] : opts![e.detail.index])}">
                                 <div class="mdc-select__anchor" role="button"
                                      aria-haspopup="listbox"
                                      aria-expanded="false"
+                                     aria-disabled="${""+(this.disabled || this.readonly)}"
                                      aria-labelledby="label selected-text">
                                     <span class="mdc-select__ripple"></span>
                                     ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
@@ -1002,25 +1022,32 @@ export class OrMwcInput extends LitElement {
                                     ${!outlined ? html`<div class="mdc-line-ripple"></div>` : ``}
                                 </div>
                                 <div id="mdc-select-menu" class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fixed" @MDCMenuSurface:closed="${menuCloseHandler}">
-                                ${getListTemplate(
-                                    this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                    opts ? html`${opts.map(([optValue, optDisplay], index) => {
-                                        return getItemTemplate(
-                                            {
-                                                text: optDisplay,
-                                                value: optValue                                                
-                                            },
-                                            index,
-                                            Array.isArray(this.value) ? this.value as string[] : this.value ? [this.value as string] : undefined,
-                                            this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
-                                            false,    
-                                            itemClickHandler
-                                        )
-                                    })}` : html``,
-                                    false,
-                                    undefined
-                                )}
-                            </div>
+                                    ${this.searchable ? html`
+                                        <input class="mdc-text-field__input" 
+                                            autofocus
+                                            id="select-searchable" 
+                                            type="text"
+                                            @keyup="${(e:MDCSelectEvent) =>  this.searchableValue = (e.target as HTMLInputElement).value}"/>   
+                                    ` : ``}
+                                    ${getListTemplate(
+                                        this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                        opts ? html`${opts.map(([optValue, optDisplay], index) => {
+                                            return getItemTemplate(
+                                                {
+                                                    text: optDisplay,
+                                                    value: optValue                                                
+                                                },
+                                                index,
+                                                Array.isArray(this.value) ? this.value as any[] : this.value ? [this.value as any] : [],
+                                                this.multiple ? ListType.MULTI_TICK : ListType.SELECT,
+                                                false,    
+                                                itemClickHandler
+                                            )
+                                        })}` : html``,
+                                        false,
+                                        undefined
+                                    )}
+                                </div>
                                 ${hasHelper || showValidationMessage ? html`
                                     <p id="component-helper-text" class="mdc-select-helper-text ${classMap(helperClasses)}" aria-hidden="true">
                                         ${showValidationMessage ? this.errorMessage || this.validationMessage : this.helperText}
@@ -1065,7 +1092,13 @@ export class OrMwcInput extends LitElement {
                     `;
                 }
                 case InputType.CHECKBOX_LIST:
-
+                    if (!Array.isArray(this.value)) {
+                        if (this.value === null || this.value === undefined) {
+                            this.value = [];
+                        } else {
+                            this.value = [this.value];
+                        }
+                    }
                     const optsCheckboxList = this.resolveOptions(this.options);
                     this._selectedIndex = -1;
                     return html`
@@ -1078,12 +1111,19 @@ export class OrMwcInput extends LitElement {
                                     <div id="field" class="mdc-form-field">
                                         <div id="component" class="mdc-checkbox">
                                             <input type="checkbox"
-                                                id="elem"
                                                 ?checked="${this.value && this.value.includes(optValue)}"
                                                 ?required="${this.required}"
                                                 name="${optValue}"
                                                 ?disabled="${this.disabled || this.readonly}"
-                                                @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), {name: (e.target as HTMLInputElement).name, checked: (e.target as HTMLInputElement).checked})}"
+                                                @change="${(e: Event) => {
+                                                    let val: any[] = this.value;
+                                                    if ((e.target as HTMLInputElement).checked) {
+                                                        val = [optValue,...val];
+                                                    } else {
+                                                        val = val.filter((v: any) => v !== optValue);
+                                                    }
+                                                    this.onValueChange((e.target as HTMLInputElement), val);
+                                                }}"
                                                 class="mdc-checkbox__native-control" id="elem-${optValue}"/>
 
                                             <label for="elem-${optValue}"><or-translate value="${optDisplay}"></or-translate></label>
@@ -1109,7 +1149,7 @@ export class OrMwcInput extends LitElement {
                                     ?required="${this.required}"
                                     ?disabled="${this.disabled || this.readonly}"
                                     @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).checked)}"
-                                    class="mdc-checkbox__native-control" id="elem"/>
+                                    class="mdc-checkbox__native-control" />
                                 <div class="mdc-checkbox__background">
                                     <svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
                                         <path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59"></path>
@@ -1238,7 +1278,7 @@ export class OrMwcInput extends LitElement {
                                 if ((e.code === "Enter" || e.code === "NumpadEnter")) {
                                     this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value, true);
                                 }}}"
-                            @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}" 
+                            @blur="${(e: Event) => {if ((e.target as HTMLInputElement).value === "") this.reportValidity()}}"
                             @change="${(e: Event) => this.onValueChange((e.target as HTMLInputElement), (e.target as HTMLInputElement).value)}" />`;
 
                         inputElem = html`
@@ -1444,6 +1484,7 @@ export class OrMwcInput extends LitElement {
                 if (_changedProperties.has("options")) {
                     (this._mdcComponent as MDCSelect).layoutOptions();
                 }
+                (this._mdcComponent as MDCSelect).disabled = !!(this.disabled || this.readonly);
                 (this._mdcComponent as MDCSelect).useDefaultValidation = !this.multiple;
                 (this._mdcComponent as MDCSelect).valid = !this.required || (!this.multiple && (this._mdcComponent as MDCSelect).valid) || (this.multiple && Array.isArray(this.value) && (this.value as []).length > 0);
                 const selectedText = this.getSelectedTextValue();
@@ -1461,11 +1502,11 @@ export class OrMwcInput extends LitElement {
             } else if (this.type === InputType.CHECKBOX && this._mdcComponent) {
                 const checkbox = this._mdcComponent as MDCCheckbox;
                 checkbox.checked = !!this.value;
-                checkbox.disabled = this.disabled || this.readonly;
+                checkbox.disabled = !!(this.disabled || this.readonly);
             }
 
             if (this._mdcComponent) {
-                (this._mdcComponent as any).required = this.required;
+                (this._mdcComponent as any).required = !!this.required;
             }
         }
 
@@ -1590,6 +1631,14 @@ export class OrMwcInput extends LitElement {
             }
             this.dispatchEvent(new OrInputChangedEvent(this.value, previousValue, enterPressed));
         }
+
+        if(this.searchable) {
+            const searchableElement = this.shadowRoot?.getElementById('select-searchable');
+            if(searchableElement) {
+                this.searchableValue = undefined;
+                (searchableElement as HTMLInputElement).value = "";
+            }
+        }
     }
 
     public get valid(): boolean {
@@ -1607,15 +1656,16 @@ export class OrMwcInput extends LitElement {
         }
     }
 
-    protected resolveOptions(options: (string | [string, string])[] | undefined): [string, string][] | undefined {
-        let resolved: [string, string][] | undefined;
+    protected resolveOptions(options: any[] | undefined): [any, string][] | undefined {
+        let resolved: [any, string][] | undefined;
 
         if (options && options.length > 0) {
             resolved = options.map(opt => {
                 if (Array.isArray(opt)) {
-                    return opt as [string, string];
+                    return opt as [any, string];
                 } else {
-                    return [opt, i18next.t(opt, {defaultValue: Util.camelCaseToSentenceCase(opt)})]
+                    const optStr = "" + opt;
+                    return [opt, i18next.t(optStr, {defaultValue: Util.camelCaseToSentenceCase(optStr)})]
                 }
             });
         }

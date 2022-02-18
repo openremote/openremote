@@ -1,0 +1,11 @@
+{
+    "realm": "master",
+    "initialUrl": "/console_loader/?realm=master&consoleProviders=geofence push storage",
+    "url": "/manager/?realm=master&consoleProviders=geofence push storage",
+    "menuEnabled": false,
+    "menuPosition": "BOTTOM_RIGHT",
+    "menuImage": null,
+    "primaryColor": "#4D9D2A",
+    "secondaryColor": "#CFCFCF",
+    "links": null
+}

@@ -217,5 +217,41 @@ export const style = css`
     .mdc-checkbox or-icon[icon="checkbox-multiple-marked-outline"] {
         color: var(--internal-or-asset-tree-selected-color);
     }
+    
+    #asset-tree-filter {
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+    
+    #filterInput {
+        padding: 7px 10px;
+    }
+    
+    #clearIcon {
+        --or-icon-width: 20px;
+        --or-icon-height: 20px;
+        position: absolute;
+        right: 0;
+        padding-right: 16px;
+        cursor: pointer;
+        display: none;
+    }
+    
+    #clearIcon.visible {
+        display: block;
+    }
 
+    #noAssetsFound {
+        flex: 1 0 auto;
+        display: inline-flex;
+        align-items: center;
+        text-align: center;
+        margin: 0 auto;
+        font-size: 14px;
+    }
+    
+    .filterMatching {
+        color: #808080;
+    }
 `;

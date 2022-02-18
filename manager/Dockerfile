@@ -5,18 +5,20 @@ ARG GIT_COMMIT=unknown
 
 LABEL git-commit=$GIT_COMMIT
 
+USER root
 ENV JAVA_TOOL_OPTIONS ${JAVA_TOOL_OPTIONS}
 
 ENV TZ ${TZ:-Europe/Amsterdam}
 ENV SETUP_ADMIN_PASSWORD ${SETUP_ADMIN_PASSWORD:-secret}
+ENV SETUP_TYPE ${SETUP_TYPE}
 ENV EXTERNAL_URL ${EXTERNAL_URL:-https://localhost}
 ENV SETUP_EMAIL_HOST ${SETUP_EMAIL_HOST}
 ENV SETUP_EMAIL_USER ${SETUP_EMAIL_USER}
 ENV SETUP_EMAIL_PASSWORD ${SETUP_EMAIL_PASSWORD}
-ENV SETUP_EMAIL_PORT ${SETUP_EMAIL_PORT:-25}
+ENV SETUP_EMAIL_PORT ${SETUP_EMAIL_PORT:-587}
 ENV SETUP_EMAIL_TLS ${SETUP_EMAIL_TLS:-true}
-ENV SETUP_EMAIL_FROM_KEYCLOAK ${SETUP_EMAIL_FROM_KEYCLOAK:-no-reply@localhost}
-ENV SETUP_EMAIL_FROM_DEFAULT ${SETUP_EMAIL_FROM_DEFAULT:-no-reply@localhost}
+ENV SETUP_EMAIL_FROM ${SETUP_EMAIL_FROM}
+ENV SETUP_EMAIL_ADMIN ${SETUP_EMAIL_ADMIN}
 ENV NOTIFICATION_FIREBASE_URL ${NOTIFICATION_FIREBASE_URL:-https://fcm.googleapis.com/fcm/send}
 ENV NOTIFICATION_FIREBASE_API_KEY ${NOTIFICATION_FIREBASE_API_KEY}
 ENV FIREBASE_CONFIG_FILE ${FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
@@ -38,6 +40,7 @@ ENV KEYCLOAK_PORT ${KEYCLOAK_PORT:-8080}
 ENV KEYCLOAK_GRANT_FILE ${KEYCLOAK_GRANT_FILE:-/deployment/manager/keycloak.json}
 ENV APP_DOCROOT ${APP_DOCROOT:-/opt/web}
 ENV CUSTOM_APP_DOCROOT ${CUSTOM_APP_DOCROOT:-/deployment/manager/app}
+ENV CONSOLE_APP_CONFIG_DOCROOT ${CONSOLE_APP_CONFIG_DOCROOT:-/deployment/manager/consoleappconfig}
 ENV PROVISIONING_DOCROOT ${PROVISIONING_DOCROOT:-/deployment/manager/provisioning}
 ENV ROOT_REDIRECT_PATH ${ROOT_REDIRECT_PATH:-/manager}
 ENV MAP_TILES_PATH ${MAP_TILES_PATH:-/deployment/map/mapdata.mbtiles}
@@ -58,6 +61,8 @@ ENV MANAGER_JAVA_OPTS ${MANAGER_JAVA_OPTS:--Xms400m -Xmx400m \
     -XX:MaxDirectMemorySize=25m -XX:NativeMemoryTracking=summary \
     -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof}
 
+RUN mkdir -p /deployment/manager/extensions
+
 WORKDIR /opt/app
 
 ADD lib /opt/app/lib
@@ -65,6 +70,7 @@ ADD web /opt/web
 ADD map /opt/map
 
 EXPOSE 8080
+EXPOSE 1883
 
 HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
 ENTRYPOINT java $MANAGER_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main

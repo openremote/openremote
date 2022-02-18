@@ -15,7 +15,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import manager, {subscribe, Util} from "@openremote/core";
 import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
@@ -30,7 +30,8 @@ import {
     SharedEvent,
     WellknownAssets,
     WellknownAttributes,
-    WellknownMetaItems
+    WellknownMetaItems,
+    AssetModelUtil
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
@@ -635,12 +636,12 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
             selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
         }
-        const configStr = window.localStorage.getItem('OrAssetConfig')
+        const config: any = manager.console.retrieveData("OrAssetConfig");
         const viewSelector = asset.id ? asset.id : window.location.hash;
-        if(configStr) {
-            const config = JSON.parse(configStr);
+
+        if (config && config.views) {
             const view = config.views[viewSelector];
-            if(view) {
+            if (view) {
                 selectedAttributes = [...view]
             }
         }
@@ -718,11 +719,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 return arr;
             });
 
-            let config;
-            const configStr = window.localStorage.getItem('OrAssetConfig')
-            if(configStr) {
-                config = JSON.parse(configStr);
-                if(asset.id) {
+            let config: any = manager.console.retrieveData("OrAssetConfig");
+
+            if (config) {
+                if (asset.id) {
                     config.views[asset.id] = selectedAttributes;
                 }
             } else {
@@ -732,16 +732,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     }
                 }
             }
-           
 
-            const message = {
-                provider: "STORAGE",
-                action: "STORE",
-                key: "OrAssetConfig",
-                value: JSON.stringify(config)
-    
-            }
-            manager.console._doSendProviderMessage(message)
+            manager.console.storeData("OrAssetConfig", config);
             window.setTimeout(() => OrAssetViewer.generateGrid(hostElement.shadowRoot), 0);
         };
 
@@ -799,7 +791,7 @@ export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, ho
     }
 
     return html`
-        <or-attribute-input class="force-btn-padding" .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location' ? true : false}"></or-attribute-input>
+        <or-attribute-input class="force-btn-padding" disablesubscribe .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location' ? true : false}"></or-attribute-input>
     `;
 }
 
@@ -864,9 +856,7 @@ export function getField(name: string, itemConfig?: InfoPanelItemConfig, content
 async function getAssetNames(ids: string[]): Promise<string[]> {
     const response = await manager.rest.api.AssetResource.queryAssets({
         select: {
-            excludePath: true,
-            excludeParentInfo: true,
-            excludeAttributes: true
+            attributes: []
         },
         ids: ids
     });
@@ -883,10 +873,6 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
 
     try {
         response = await manager.rest.api.AssetResource.queryAssets({
-            select: {
-                excludePath: true,
-                excludeParentInfo: true
-            },
             parents: [
                 {
                     id: id
@@ -944,62 +930,62 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-@customElement("or-asset-viewer")
-export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
+export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
+    viewerStyles: {
 
-    public static DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
-        viewerStyles: {
-
+    },
+    panels: {
+        group: {
+            type: "group",
+            title: "underlyingAssets"
         },
-        panels: {
-            group: {
-                type: "group",
-                title: "underlyingAssets"
-            },
-            info: {
-                type: "info",
-                hideOnMobile: true,
-                properties: {
-                    include:[]
-                },
-                attributes: {
-                    include: ["notes", "manufacturer", "model"]
-                }
-            },
-            setup: {
-                type: "setup",
-                title: "setup",
-                hideOnMobile: false
-            },
-            location: {
-                type: "info",
-                properties: {
-                    include:[]
-                },
-                attributes: {
-                    include: ["location"],
-                    itemConfig: {
-                        location: {
-                            label: "",
-                            readonly: true
-                        }
-                    }
-                }
+        info: {
+            type: "info",
+            hideOnMobile: true,
+            properties: {
+                include:[]
             },
             attributes: {
-                type: "info",
-                properties: {
-                    include:[]
-                },
-                attributes: {
-                    exclude: ["location", "notes", "manufacturer", "model", "status"]
-                }
-            },
-            history: {
-                type: "history"
+                include: ["notes", "manufacturer", "model"]
             }
+        },
+        setup: {
+            type: "setup",
+            title: "setup",
+            hideOnMobile: false
+        },
+        location: {
+            type: "info",
+            properties: {
+                include:[]
+            },
+            attributes: {
+                include: ["location"],
+                itemConfig: {
+                    location: {
+                        label: "",
+                        readonly: true
+                    }
+                }
+            }
+        },
+        attributes: {
+            type: "info",
+            properties: {
+                include:[]
+            },
+            attributes: {
+                exclude: ["location", "notes", "manufacturer", "model"]
+            }
+        },
+        history: {
+            type: "history"
         }
-    };
+    }
+};
+
+@customElement("or-asset-viewer")
+export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
     static get styles() {
         return [
@@ -1326,18 +1312,26 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         if (event.eventType === "attribute") {
+
+            // Inject the attribute as we don't subscribe to events from individual attribute inputs
             const attributeEvent = event as AttributeEvent;
             const attrName = attributeEvent.attributeState!.ref!.name!;
 
             if (attributeEvent.attributeState!.deleted && this.asset && this.asset.attributes) {
                 delete this.asset.attributes[attrName];
                 this.asset = {...this.asset};
+            } else if (this.asset && this.asset.attributes && this.asset.attributes[attrName]) {
+                const attr = {...this.asset.attributes[attrName]};
+                attr.value = attributeEvent.attributeState!.value;
+                attr.timestamp = attributeEvent.timestamp;
+                this.asset.attributes[attrName] = attr;
+                this.asset = {...this.asset};
             }
         }
     }
 
     protected _getPanelConfig(asset: Asset): AssetViewerConfig {
-        const config = {...OrAssetViewer.DEFAULT_VIEWER_CONFIG};
+        const config = {...DEFAULT_VIEWER_CONFIG};
 
         if (this.config) {
 

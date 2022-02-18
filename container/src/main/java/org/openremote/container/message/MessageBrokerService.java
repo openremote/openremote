@@ -134,8 +134,7 @@ public class MessageBrokerService implements ContainerService {
 
         String allowedOrigin = getString(container.getConfig(), MESSAGE_SESSION_ALLOWED_ORIGIN, MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT);
         WebsocketComponent websocketComponent = new DefaultWebsocketComponent(
-            container.getService(IdentityService.class),
-            container.getService(WebService.class),
+            container,
             allowedOrigin
         );
 

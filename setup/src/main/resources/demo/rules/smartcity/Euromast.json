@@ -1,0 +1,76 @@
+{
+  "rules": [
+    {
+      "name": "Euromast",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "ConsoleAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "location"
+                        },
+                        "value": {
+                          "predicateType": "radial",
+                          "negated": false,
+                          "radius": 100,
+                          "lat": 51.9069373,
+                          "lng": 4.4633775
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "notification": {
+            "name": "Euromast",
+            "message": {
+              "type": "push",
+              "title": "Euromast",
+              "body": "Euromast, sinds 1960",
+              "action": {
+                "url": "https://euromast.nl"
+              },
+              "buttons": [
+                {
+                  "title": "Open in app",
+                  "action": {
+                    "url": "https://euromast.nl"
+                  }
+                },
+                {
+                  "title": "Open in browser",
+                  "action": {
+                    "url": "https://euromast.nl",
+                    "openInBrowser": true
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "reset": {
+        "timer": "1m"
+      }
+    }
+  ]
+}

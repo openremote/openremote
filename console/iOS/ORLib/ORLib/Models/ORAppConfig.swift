@@ -9,13 +9,11 @@
 import UIKit
 
 public struct ORAppConfig: Codable {
-    let id: Int32
     let realm: String
-    let initialUrl: String
+    let initialUrl: String?
     let url: String
     let menuEnabled: Bool
     let menuPosition: String?
-    let menuImage: String?
     let primaryColor: String?
     let secondaryColor: String?
     let links: [ORLinkConfig]?

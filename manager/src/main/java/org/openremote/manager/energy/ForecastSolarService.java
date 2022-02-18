@@ -5,7 +5,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -21,6 +21,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -38,8 +39,8 @@ import java.util.logging.Logger;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
@@ -135,7 +136,6 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
 
         List<ElectricityProducerSolarAsset> electricityProducerSolarAssets = assetStorageService.findAll(
                         new AssetQuery()
-                                .select(new AssetQuery.Select().excludeParentInfo(true))
                                 .types(ElectricityProducerSolarAsset.class)
                 )
                 .stream()
@@ -191,7 +191,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
             }
         }
 
-        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_VALUE_WITH_FORECAST.getName())) {
+        if (attributeEvent.getAttributeName().equals(ElectricityProducerSolarAsset.SET_ACTUAL_SOLAR_VALUE_WITH_FORECAST.getName())) {
             // Get latest asset from storage
             ElectricityProducerSolarAsset asset = (ElectricityProducerSolarAsset) assetStorageService.find(attributeEvent.getAssetId());
 
@@ -247,7 +247,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                         // Forecast date time is ISO8601 without 'T' so needs special formatter
                         LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(timerService.getCurrentTimeMillis()), ZoneId.systemDefault());
                         LocalDateTime previousTimestamp = null;
-                        boolean setActualValuePower = electricityProducerSolarAsset.isSetActualValueWithForecast().orElse(false);
+                        boolean setActualValuePower = electricityProducerSolarAsset.isSetActualSolarValueWithForecast().orElse(false);
                         boolean setActualValueForecastPower = true;
 
                         for (Map.Entry<String, Double> wattItem : responseModel.result.watts.entrySet()) {
@@ -277,7 +277,15 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
                         rulesService.fireDeploymentsWithPredictedDataForAsset(electricityProducerSolarAsset.getId());
                     }
                 } else {
-                    LOG.warning("Request failed: " + response);
+                    StringBuilder message = new StringBuilder("Unknown");
+                    if (response != null) {
+                        message.setLength(0);
+                        message.append("Status ");
+                        message.append(response.getStatus());
+                        message.append(" - ");
+                        message.append(response.readEntity(String.class));
+                    }
+                    LOG.warning("Request failed: " + message);
                 }
             } catch (Throwable e) {
                 if (e.getCause() != null && e.getCause() instanceof IOException) {

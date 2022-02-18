@@ -1,22 +1,25 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
+plugins {
+    id 'com.adarshr.test-logger' version '3.1.0'
+}
+
 apply plugin: "java-library"
+apply plugin: "java-test-fixtures"
 apply plugin: "groovy"
 
 dependencies {
 
     api resolveProject(":manager")
 
-    api "org.codehaus.groovy:groovy-all:$groovyVersion"
+    implementation "org.codehaus.groovy:groovy:$groovyVersion"
+    testFixturesApi platform("org.spockframework:spock-bom:$spockVersion")
+    testFixturesApi 'org.spockframework:spock-core'
 
-    api "junit:junit:$junitVersion"
-    api "org.spockframework:spock-core:$spockVersion"
-
-    api "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
-    api "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
-    api "org.objenesis:objenesis:$objenesisVersion"
-    api "net.bytebuddy:byte-buddy:$byteBuddyVersion"
+    // optional dependencies for using Spock
+    testRuntimeOnly "net.bytebuddy:byte-buddy:$byteBuddyVersion" // allows mocking of classes (in addition to interfaces)
+    testRuntimeOnly "org.objenesis:objenesis:$objenesisVersion"      // allows mocking of classes without default constructor (together with ByteBuddy or CGLIB)
 
     api("com.github.calimero:calimero-server:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
@@ -24,9 +27,12 @@ dependencies {
     }
 }
 
+tasks.withType(Test) {
+    environment("LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
+}
+
 test {
     workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
-    outputs.upToDateWhen {false}
     useJUnitPlatform()
     testLogging {
         // set options for log level LIFECYCLE
@@ -50,9 +56,9 @@ test {
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat
 
-        afterTest { desc, result ->
-            logger.quiet "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
-        }
+//        afterTest { desc, result ->
+//            logger.quiet "${desc.className} > ${desc.name} took: ${(result.endTime - result.startTime)}ms"
+//        }
 
         afterSuite { desc, result ->
             if (!desc.parent) { // will match the outermost suite

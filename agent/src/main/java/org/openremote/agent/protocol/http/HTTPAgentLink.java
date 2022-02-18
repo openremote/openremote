@@ -33,7 +33,7 @@ public class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
         " supplied a new header will be added with the key name and specified string value")
     protected Map<String, List<String>> headers;
     @JsonPropertyDescription("A JSON object of query parameters to be added to HTTP request URL; the key represents the name of the query parameter and for each string value" +
-        " supplied a new query parameter will be added with the key name and specified string value (e.g. 'https://..../?test=1&test2")
+        " supplied a new query parameter will be added with the key name and specified string value (e.g. 'https://..../?test=1&test=2')")
     protected Map<String, List<String>> queryParameters;
     @JsonPropertyDescription("Indicates that this HTTP request is used to update the linked attribute; this value indicates how frequently the HTTP request is made in order" +
         " to update the linked attribute value")
@@ -48,6 +48,10 @@ public class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
     protected String contentType;
     @JsonPropertyDescription("Allows the polled response to be written to another attribute with the specified name on the same asset as the linked attribute")
     protected String pollingAttribute;
+    @JsonPropertyDescription("Indicates that the HTTP response is binary and should be converted to binary string representation")
+    protected boolean messageConvertBinary;
+    @JsonPropertyDescription("Indicates that the HTTP response is binary and should be converted to hexidecimal string representation")
+    protected boolean messageConvertHex;
 
     // For Hydrators
     protected HTTPAgentLink() {
@@ -126,6 +130,24 @@ public class HTTPAgentLink extends AgentLink<HTTPAgentLink> {
 
     public HTTPAgentLink setPollingAttribute(String pollingAttribute) {
         this.pollingAttribute = pollingAttribute;
+        return this;
+    }
+
+    public boolean isMessageConvertBinary() {
+        return messageConvertBinary;
+    }
+
+    public HTTPAgentLink setMessageConvertBinary(boolean messageConvertBinary) {
+        this.messageConvertBinary = messageConvertBinary;
+        return this;
+    }
+
+    public boolean isMessageConvertHex() {
+        return messageConvertHex;
+    }
+
+    public HTTPAgentLink setMessageConvertHex(boolean messageConvertHex) {
+        this.messageConvertHex = messageConvertHex;
         return this;
     }
 }

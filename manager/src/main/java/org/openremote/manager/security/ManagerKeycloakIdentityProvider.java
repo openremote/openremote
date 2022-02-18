@@ -26,7 +26,6 @@ import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
@@ -36,6 +35,7 @@ import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.auth.OAuthGrant;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
@@ -69,8 +69,6 @@ import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS;
 import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS_DEFAULT;
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK;
-import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.ValueUtil.convert;
 
@@ -1126,7 +1124,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             emailConfig.put("password", container.getConfig().getOrDefault(SETUP_EMAIL_PASSWORD, null));
             emailConfig.put("auth", container.getConfig().containsKey(SETUP_EMAIL_USER) ? "true" : "false");
             emailConfig.put("tls", Boolean.toString(getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT)));
-            emailConfig.put("from", getString(container.getConfig(), SETUP_EMAIL_FROM_KEYCLOAK, SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT));
+            emailConfig.put("from", getString(container.getConfig(), SETUP_EMAIL_FROM, SETUP_EMAIL_FROM_DEFAULT));
             realmRepresentation.setSmtpServer(emailConfig);
         }
 

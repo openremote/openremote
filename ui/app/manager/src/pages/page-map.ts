@@ -1,5 +1,5 @@
 import {css, html} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {createSlice, EnhancedStore, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
@@ -9,7 +9,8 @@ import {
     OrMapClickedEvent,
     OrMapMarkerAsset,
     OrMapMarkerClickedEvent,
-    OrMapGeocoderChangeEvent
+    OrMapGeocoderChangeEvent,
+    MapMarkerAssetConfig
 } from "@openremote/or-map";
 import manager, {Util} from "@openremote/core";
 import {createSelector} from "reselect";
@@ -26,7 +27,7 @@ import {
 } from "@openremote/model";
 import {getAssetsRoute, getMapRoute} from "../routes";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {GenericAxiosResponse, RestResponse } from "@openremote/rest";
+import {GenericAxiosResponse} from "@openremote/rest";
 
 export interface MapState {
     assets: Asset[];
@@ -56,16 +57,19 @@ const pageMapSlice = createSlice({
                 if (locationAttr && (!locationAttr.meta || locationAttr.meta && (!locationAttr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!locationAttr.meta[WellknownMetaItems.SHOWONDASHBOARD]))) {
                     return {
                         ...state,
-                        assets: [...this.state.assets, action.payload.asset]
+                        assets: [...state.assets, action.payload.asset]
                     };
                 }
             }
 
             return state;
         },
-        attributeEventReceived(state: MapState, action: PayloadAction<AttributeEvent>) {
+        attributeEventReceived(state: MapState, action: PayloadAction<[string[], AttributeEvent]>) {
             const assets = state.assets;
-            const assetId = action.payload.attributeState.ref.id;
+            const attrsOfInterest = action.payload[0];
+            const attrEvent = action.payload[1];
+            const attrName = attrEvent.attributeState.ref.name;
+            const assetId = attrEvent.attributeState.ref.id;
             const index = assets.findIndex((asst) => asst.id === assetId);
             const asset = index >= 0 ? assets[index] : null;
 
@@ -73,14 +77,19 @@ const pageMapSlice = createSlice({
                 return state;
             }
 
-            if (action.payload.attributeState.deleted) {
+            if (attrName === WellknownAttributes.LOCATION && attrEvent.attributeState.deleted) {
                 return {
                     ...state,
                     assets: [...assets.splice(index, 1)]
                 };
             }
 
-            assets[index] = Util.updateAsset({...asset}, action.payload);
+            // Only react if attribute is an attribute of interest
+            if (!attrsOfInterest.includes(attrName)) {
+                return;
+            }
+
+            assets[index] = Util.updateAsset({...asset}, attrEvent);
             return state;
         },
         setAssets(state, action: PayloadAction<Asset[]>) {
@@ -95,11 +104,10 @@ const pageMapSlice = createSlice({
 const {assetEventReceived, attributeEventReceived, setAssets} = pageMapSlice.actions;
 export const pageMapReducer = pageMapSlice.reducer;
 
-
-
 export interface PageMapConfig {
     card?: MapAssetCardConfig,
-    assetQuery?: AssetQuery
+    assetQuery?: AssetQuery,
+    markers?: MapMarkerAssetConfig
 }
 
 export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
@@ -111,7 +119,7 @@ export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: Pa
         ],
         pageCreator: () => {
             const page = new PageMap(store);
-            if(config) page.config = config;
+            page.config = config || {};
             return page
         }
     };
@@ -161,10 +169,10 @@ export class PageMap extends Page<MapStateKeyed> {
     @query("#map")
     protected _map?: OrMap;
 
-    @property()
+    @state()
     protected _assets: Asset[] = [];
 
-    @property()
+    @state()
     protected _currentAsset?: Asset;
 
     protected _assetSelector = (state: MapStateKeyed) => state.map.assets;
@@ -174,17 +182,31 @@ export class PageMap extends Page<MapStateKeyed> {
     protected assetSubscriptionId: string;
     protected attributeSubscriptionId: string;
 
+    protected getAttributesOfInterest(): (string | WellknownAttributes)[] {
+        // Extract all label attributes configured in marker config
+        let markerLabelAttributes = [];
+
+        if (this.config && this.config.markers) {
+            markerLabelAttributes = Object.values(this.config.markers)
+                .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
+        }
+
+        return [
+            ...markerLabelAttributes,
+            WellknownAttributes.LOCATION,
+            WellknownAttributes.DIRECTION
+        ];
+    }
+
     protected subscribeAssets = async (realm: string) => {
         let response: GenericAxiosResponse<Asset[]>;
-
+        const attrsOfInterest = this.getAttributesOfInterest();
         const assetQuery: AssetQuery = this.config && this.config.assetQuery ? this.config.assetQuery : {
             tenant: {
                 realm: realm
             },
             select: {
-                attributes: [WellknownAttributes.LOCATION],
-                excludeParentInfo: true,
-                excludePath: true
+                attributes: attrsOfInterest,
             },
             attributes: {
                 items: [
@@ -242,7 +264,7 @@ export class PageMap extends Page<MapStateKeyed> {
                 this.assetSubscriptionId = assetSubscriptionId;
 
                 const attributeSubscriptionId = await manager.events.subscribeAttributeEvents(undefined, false, (event) => {
-                    this._store.dispatch(attributeEventReceived(event));
+                    this._store.dispatch(attributeEventReceived([attrsOfInterest, event]));
                 });
 
                 if (!this.isConnected || realm !== this._realmSelector(this.getState())) {
@@ -321,7 +343,7 @@ export class PageMap extends Page<MapStateKeyed> {
 
         return html`
             
-            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}"></or-map-asset-card>` : ``}
+            ${this._currentAsset ? html `<or-map-asset-card .config="${this.config?.card}" .assetId="${this._currentAsset.id}" .markerconfig="${this.config?.markers}"></or-map-asset-card>` : ``}
             
             <or-map id="map" class="or-map" showGeoCodingControl @or-map-geocoder-change="${(ev: OrMapGeocoderChangeEvent) => {this._setCenter(ev.detail.geocode);}}">
                 ${
@@ -330,11 +352,10 @@ export class PageMap extends Page<MapStateKeyed> {
                             return false;
                         }
                         const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
-                        const showOnMap = !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr); 
-                        return showOnMap;
-                    }).map((asset) => {
+                        return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
+                    }).map(asset => {
                         return html`
-                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}"></or-map-marker-asset>
+                            <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
                         `;
                     })
                 }

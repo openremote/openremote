@@ -1,0 +1,16 @@
+apply plugin: "java-library"
+
+dependencies {
+    api resolveProject(":manager")
+}
+
+jar {
+    archivesBaseName = "openremote-demo-${project.name}"
+}
+
+task installDist(type: Copy) {
+    dependsOn jar
+    dependsOn resolveTask(":manager:installDist")
+    from jar.archiveFile
+    into "${resolveProject(":manager").buildDir}/install/manager/lib"
+}

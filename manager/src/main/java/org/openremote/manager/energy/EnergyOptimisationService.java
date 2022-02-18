@@ -21,7 +21,7 @@ package org.openremote.manager.energy;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -64,8 +64,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.time.temporal.ChronoUnit.HOURS;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
 
 /**
@@ -125,7 +125,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         List<EnergyOptimisationAsset> energyOptimisationAssets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludeParentInfo(true))
                 .types(EnergyOptimisationAsset.class)
         )
             .stream()
@@ -379,7 +378,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         List<ElectricitySupplierAsset> supplierAssets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludePath(true))
                 .types(ElectricitySupplierAsset.class)
                 .recursive(true)
                 .parents(optimisationAssetId)
@@ -409,7 +407,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
 
         List<ElectricityStorageAsset> optimisableStorageAssets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludePath(true).excludeParentInfo(true))
                 .recursive(true)
                 .parents(optimisationAssetId)
                 .types(ElectricityStorageAsset.class)
@@ -500,7 +497,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         AtomicInteger count = new AtomicInteger(0);
         assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludePath(true).excludeParentInfo(true))
                 .recursive(true)
                 .parents(optimisationAssetId)
                 .types(ElectricityConsumerAsset.class, ElectricityProducerAsset.class)
@@ -519,7 +515,6 @@ public class EnergyOptimisationService extends RouteBuilder implements Container
         // Get power of storage assets that don't support neither import or export (treat them as plain consumers/producers)
         List<ElectricityStorageAsset> plainStorageAssets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select().excludePath(true).excludeParentInfo(true))
                 .recursive(true)
                 .parents(optimisationAssetId)
                 .types(ElectricityStorageAsset.class)

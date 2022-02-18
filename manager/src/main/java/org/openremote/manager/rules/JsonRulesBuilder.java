@@ -22,7 +22,7 @@ package org.openremote.manager.rules;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.asset.Asset;
@@ -818,7 +818,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts);
 
             if (ids == null || ids.isEmpty()) {
-                log(Level.FINEST, "No targets for write attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
+                log(Level.INFO, "No targets for write attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
                 return null;
             }
 
@@ -866,7 +866,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
 
             if (matchingAssetIds.isEmpty()) {
-                log(Level.WARNING, "No assets matched to apply update attribute action to");
+                log(Level.INFO, "No targets for update attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
                 return null;
             }
 

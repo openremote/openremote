@@ -88,6 +88,7 @@ public class ManagerWebService extends WebService {
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
     protected static final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
+    protected boolean initialised;
     protected Path builtInAppDocRoot;
     protected Path customAppDocRoot;
     protected Collection<Class<?>> apiClasses = new HashSet<>();
@@ -104,7 +105,6 @@ public class ManagerWebService extends WebService {
     public void init(Container container) throws Exception {
         super.init(container);
 
-        IdentityService identityService = container.getService(IdentityService.class);
         String rootRedirectPath = getString(container.getConfig(), ROOT_REDIRECT_PATH, ROOT_REDIRECT_PATH_DEFAULT);
 
         // Modify swagger object mapper to match ours
@@ -138,12 +138,13 @@ public class ManagerWebService extends WebService {
 
         OpenApiResource openApiResource = new OpenApiResource();
         openApiResource.openApiConfiguration(oasConfig);
-        getApiSingletons().add(openApiResource);
+        addApiSingleton(openApiResource);
 
-        ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), getApiSingletons(), true);
+        initialised = true;
+        ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), apiSingletons, true);
 
         // Serve REST API
-        HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
+        HttpHandler apiHandler = createApiHandler(container, resteasyDeployment);
 
         if (apiHandler != null) {
 
@@ -186,14 +187,12 @@ public class ManagerWebService extends WebService {
         HttpHandler defaultHandler = null;
 
         if (Files.isDirectory(customAppDocRoot)) {
-            HttpHandler customBaseFileHandler = createFileHandler(devMode, identityService, customAppDocRoot, null);
+            HttpHandler customBaseFileHandler = createFileHandler(container, customAppDocRoot, null);
             defaultHandler = exchange -> {
                 if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
                     exchange.setRelativePath("/index.html");
                 }
-                if (customBaseFileHandler != null) {
-                    customBaseFileHandler.handleRequest(exchange);
-                }
+                customBaseFileHandler.handleRequest(exchange);
             };
         }
 
@@ -201,7 +200,7 @@ public class ManagerWebService extends WebService {
 
         // Serve deployment files
         if (Files.isDirectory(builtInAppDocRoot)) {
-            HttpHandler appBaseFileHandler = createFileHandler(devMode, identityService, builtInAppDocRoot, null);
+            HttpHandler appBaseFileHandler = createFileHandler(container, builtInAppDocRoot, null);
             HttpHandler appFileHandler = exchange -> {
                 if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
                     exchange.setRelativePath("/index.html");
@@ -256,8 +255,11 @@ public class ManagerWebService extends WebService {
     /**
      * Add resource/provider/etc. singletons to enable REST API.
      */
-    public Collection<Object> getApiSingletons() {
-        return apiSingletons;
+    public void addApiSingleton(Object singleton) {
+        if (this.initialised) {
+            throw new IllegalStateException("API singletons must be added before the service is initialised");
+        }
+        apiSingletons.add(singleton);
     }
 
     public Path getBuiltInAppDocRoot() {
@@ -268,7 +270,7 @@ public class ManagerWebService extends WebService {
         return customAppDocRoot;
     }
 
-    protected HttpHandler createApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
+    protected HttpHandler createApiHandler(Container container, ResteasyDeployment resteasyDeployment) {
         if (resteasyDeployment == null)
             return null;
 
@@ -284,27 +286,30 @@ public class ManagerWebService extends WebService {
                 .addServlet(restServlet)
                 .setClassLoader(Container.class.getClassLoader());
 
+        IdentityService identityService = container.getService(IdentityService.class);
+
         if (identityService != null) {
             resteasyDeployment.setSecurityEnabled(true);
         } else {
             throw new RuntimeException("No identity service deployed, can't enable API security");
         }
 
-        return addServletDeployment(identityService, deploymentInfo, resteasyDeployment.isSecurityEnabled());
+        return addServletDeployment(container, deploymentInfo, resteasyDeployment.isSecurityEnabled());
     }
 
     // TODO: Switch to use PathResourceManager
-    public HttpHandler createFileHandler(boolean devMode, IdentityService identityService, Path filePath, String[] requiredRoles) {
+    public static HttpHandler createFileHandler(Container container, Path filePath, String[] requiredRoles) {
+        boolean devMode = container.isDevMode();
         requiredRoles = requiredRoles == null ? new String[0] : requiredRoles;
         DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, "", filePath, requiredRoles);
-        return new CanonicalPathHandler(addServletDeployment(identityService, deploymentInfo, requiredRoles.length != 0));
+        return new CanonicalPathHandler(addServletDeployment(container, deploymentInfo, requiredRoles.length != 0));
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "appDocRoot=" + builtInAppDocRoot +
-                "customAppDocRoot=" + customAppDocRoot +
-                '}';
+            "builtInAppDocRoot=" + builtInAppDocRoot +
+            ", customAppDocRoot=" + customAppDocRoot +
+            '}';
     }
 }

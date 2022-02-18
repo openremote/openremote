@@ -1,5 +1,4 @@
 // Common configuration applied to all projects
-
 import java.nio.file.Paths
 
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
@@ -46,21 +45,25 @@ if (project == rootProject) {
                     shortenCommandLine = MANIFEST
                     workingDirectory = (isCustomProject() ? project(":openremote").projectDir.toString() : projectDir.toString())
                 }
-                "Empty"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
-                }
-                "Test Setup"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.main" : ".test.main")
-                }
-                "Empty with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
+                "Demo Setup"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                     envs = [
+                            SETUP_TYPE: "demo"
+                    ]
+                }
+                "Demo Setup with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
+                    envs = [
+                            SETUP_TYPE: "demo",
                             WEBSERVER_LISTEN_HOST: "0.0.0.0",
                             EXTERNAL_URL: "https://localhost:8443"
                     ]
                 }
-                "Test Setup with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.test.main" : ".test.main")
+                "Empty"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
+                }
+                "Empty with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
                             WEBSERVER_LISTEN_HOST: "0.0.0.0",
                             EXTERNAL_URL: "https://localhost:8443"
@@ -76,7 +79,8 @@ if (project == rootProject) {
                     envs = [
                         MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
                         MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
-                        CUSTOM_APP_DOCROOT: "../deployment/manager/app"
+                        CUSTOM_APP_DOCROOT: "../deployment/manager/app",
+                        CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
                     ]
                 }
             }
@@ -162,11 +166,31 @@ def getYarnInstallTask() {
     }
 }
 
+// Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
+// extensions directory
+def getDeploymentJars() {
+    if (project.configurations.find { it.name == "runtimeClasspath" } == null) {
+        return null;
+    }
+
+    // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
+    // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
+    def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
+
+    return project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll {
+        dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect {
+        println "CopyLibs Artifact: ${it.file.path}"
+        return it.file
+    }
+}
+
 ext {
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
     isCustomProject = this.&isCustomProject
+    getYarnInstallTask = this.&getYarnInstallTask
+    getDeploymentJars = this.&getDeploymentJars
 }
 
 if (project.convention.findPlugin(JavaPluginConvention)) {
@@ -223,7 +247,7 @@ task npmPublish(type: Exec){
     dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "publish"
 }
-task npmServeProduction(type: Exec){
+task npmServeProduction(type: Exec) {
     dependsOn getYarnInstallTask()
     commandLine npmCommand("npm"), "run", "serveProduction"
 }

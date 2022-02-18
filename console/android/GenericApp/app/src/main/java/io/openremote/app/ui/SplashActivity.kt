@@ -19,6 +19,7 @@ class SplashActivity : Activity() {
     private lateinit var binding: ActivitySplashBinding
 
     var sharedPreferences: SharedPreferences? = null
+    var host: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,12 +40,13 @@ class SplashActivity : Activity() {
     }
 
     private fun startNextActivity() {
-        val project = sharedPreferences!!.getString("project", null)
+        val host = sharedPreferences!!.getString("hostt", null)
         val realm = sharedPreferences!!.getString("realm", null)
 
-        if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
-            val apiManager = ApiManager("https://${project}.openremote.io/api/$realm")
-            apiManager.getAppConfig { statusCode, appConfig, error ->
+        if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
+            val url =  host.plus("/api/${realm}")
+            val apiManager = ApiManager(url)
+            apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                 if (statusCode in 200..299) {
                     val intent = Intent(this@SplashActivity, OrMainActivity::class.java)
                     intent.putExtra(

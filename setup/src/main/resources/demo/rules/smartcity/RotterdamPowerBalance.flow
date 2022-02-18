@@ -1,0 +1,167 @@
+{
+"name": "De Rotterdam: Power balance",
+"description": "",
+  "connections": [
+    {
+      "from": "mtdBqMHEXV",
+      "to": "HdQFYHsvcv"
+    },
+    {
+      "from": "LvwzHkg9-A",
+      "to": "q-nDnOD6dF"
+    },
+    {
+      "from": "NsjVJrTtFW",
+      "to": "Ni1QTWS6Cr"
+    }
+  ],
+  "nodes": [
+    {
+      "inputs": [
+
+      ],
+      "internals": [
+        {
+          "name": "Attribute",
+          "picker": {
+            "type": "ASSET_ATTRIBUTE"
+          },
+          "value": {
+            "assetId": "6DW7WWYVtOybr7W1BWREc3",
+            "attributeName": "power"
+          }
+        }
+      ],
+      "name": "READ_ATTRIBUTE",
+      "outputs": [
+        {
+          "name": "value",
+          "type": "NUMBER",
+          "nodeId": "sroPWsTkE",
+          "id": "LvwzHkg9-A"
+        }
+      ],
+      "type": "INPUT",
+      "position": {
+        "x": -689.5,
+        "y": -341.5
+      },
+      "size": {
+        "x": 193.766,
+        "y": 65
+      },
+      "id": "sroPWsTkE"
+    },
+    {
+      "inputs": [
+
+      ],
+      "internals": [
+        {
+          "name": "Attribute",
+          "picker": {
+            "type": "ASSET_ATTRIBUTE"
+          },
+          "value": {
+            "assetId": "3Mj9yiC6bcH4MoIYDY2T35",
+            "attributeName": "power"
+          }
+        }
+      ],
+      "name": "READ_ATTRIBUTE",
+      "outputs": [
+        {
+          "name": "value",
+          "type": "NUMBER",
+          "nodeId": "f4jr9m-j7",
+          "id": "mtdBqMHEXV"
+        }
+      ],
+      "type": "INPUT",
+      "position": {
+        "x": -687.5,
+        "y": -165.5
+      },
+      "size": {
+        "x": 256.844,
+        "y": 65
+      },
+      "id": "f4jr9m-j7"
+    },
+    {
+      "inputs": [
+        {
+          "name": "value",
+          "type": "NUMBER",
+          "nodeId": "pR1MxgR1S",
+          "id": "Ni1QTWS6Cr"
+        }
+      ],
+      "internals": [
+        {
+          "name": "Attribute",
+          "picker": {
+            "type": "ASSET_ATTRIBUTE"
+          },
+          "value": {
+            "assetId": "2wzKB2j39144oTzAJnHpfs",
+            "attributeName": "powerBalance"
+          }
+        }
+      ],
+      "name": "WRITE_ATTRIBUTE",
+      "outputs": [
+
+      ],
+      "type": "OUTPUT",
+      "position": {
+        "x": 25.9921875,
+        "y": -245.5
+      },
+      "size": {
+        "x": 139.453,
+        "y": 65
+      },
+      "id": "pR1MxgR1S"
+    },
+    {
+      "inputs": [
+        {
+          "name": "a",
+          "type": "NUMBER",
+          "nodeId": "WdW_DByTa",
+          "id": "q-nDnOD6dF"
+        },
+        {
+          "name": "b",
+          "type": "NUMBER",
+          "nodeId": "WdW_DByTa",
+          "id": "HdQFYHsvcv"
+        }
+      ],
+      "internals": [
+
+      ],
+      "name": "ADD_OPERATOR",
+      "displayCharacter": "+",
+      "outputs": [
+        {
+          "name": "c",
+          "type": "NUMBER",
+          "nodeId": "WdW_DByTa",
+          "id": "NsjVJrTtFW"
+        }
+      ],
+      "type": "PROCESSOR",
+      "position": {
+        "x": -187.5,
+        "y": -197.5
+      },
+      "size": {
+        "x": 0,
+        "y": 0
+      },
+      "id": "WdW_DByTa"
+    }
+  ]
+}
