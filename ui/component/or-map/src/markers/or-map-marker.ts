@@ -325,4 +325,11 @@ export class OrMapMarker extends LitElement {
         div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
         return div;
     }
+
+    public hasPosition(): boolean {
+        return typeof this.lat === "number"
+            && typeof this.lng === "number"
+            && this.lat >= -90 && this.lat < 90
+            && this.lng >= -180 && this.lng < 180;
+    }
 }
