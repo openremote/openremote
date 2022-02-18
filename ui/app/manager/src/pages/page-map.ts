@@ -188,7 +188,6 @@ export class PageMap extends Page<MapStateKeyed> {
 
         if (this.config && this.config.markers) {
             markerLabelAttributes = Object.values(this.config.markers)
-                .filter(assetTypeMarkerConfig => assetTypeMarkerConfig.showLabel && assetTypeMarkerConfig.attributeName)
                 .map(assetTypeMarkerConfig => assetTypeMarkerConfig.attributeName);
         }
 
