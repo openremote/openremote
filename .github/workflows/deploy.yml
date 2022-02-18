@@ -152,10 +152,12 @@ jobs:
           secrets = json.loads(os.getenv('secret'))
           for key, value in secrets.items():
               if key.startswith("_"):
-                if not key.startswith("_" + os.getenv('environment') + "_"):
+                environment = os.getenv('environment').upper()
+                prefix = "_" + environment + "_"
+                if not key.startswith(prefix):
                   continue
                 else:
-                  key = key.lstrip("_" + os.getenv('environment') + "_")
+                  key = key.lstrip(prefix)
               print(f"Setting {key} ...")
               lines = len(value.split("\n"))
               if lines > 1:

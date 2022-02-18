@@ -166,12 +166,31 @@ def getYarnInstallTask() {
     }
 }
 
+// Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
+// extensions directory
+def getDeploymentJars() {
+    if (project.configurations.find { it.name == "runtimeClasspath" } == null) {
+        return null;
+    }
+
+    // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
+    // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
+    def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
+
+    return project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll {
+        dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect {
+        println "CopyLibs Artifact: ${it.file.path}"
+        return it.file
+    }
+}
+
 ext {
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
     isCustomProject = this.&isCustomProject
     getYarnInstallTask = this.&getYarnInstallTask
+    getDeploymentJars = this.&getDeploymentJars
 }
 
 if (project.convention.findPlugin(JavaPluginConvention)) {
@@ -236,23 +255,6 @@ task npmServeProduction(type: Exec) {
 // Add typescript tasks
 task tscWatch(type: Exec) {
     commandLine npmCommand("npx"), "tsc", "-b", "--watch"
-}
-
-// A task for copying a custom java projects libs that aren't part of the manager dependencies
-task copyLibs {
-    doLast {
-
-        if (project.configurations.find { it.name == "runtimeClasspath" } != null) {
-            // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
-            // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
-            def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
-            def customLibs = project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll { dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect { it.file }
-            copy {
-                from customLibs
-                into "${project.buildDir}/image/manager/extensions"
-            }
-        }
-    }
 }
 
 // Configure Java build
