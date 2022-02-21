@@ -19,9 +19,11 @@
 			"environment": "production"
 		}
 	},
-	"managerDockerPush": {
+	"managerDockerPush": {		
 		"develop": {
-			"environment": "staging"
+			"deploy": {
+				"environment": "staging"
+			}
 		}
 	}
 }
