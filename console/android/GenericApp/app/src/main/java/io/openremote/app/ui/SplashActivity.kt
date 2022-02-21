@@ -40,7 +40,7 @@ class SplashActivity : Activity() {
     }
 
     private fun startNextActivity() {
-        val host = sharedPreferences!!.getString("hostt", null)
+        val host = sharedPreferences!!.getString("host", null)
         val realm = sharedPreferences!!.getString("realm", null)
 
         if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
