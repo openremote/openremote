@@ -165,7 +165,7 @@ jobs:
                   elif deploys is not None:
                     deployStr = deploys['environment'] + ":" + deploys['managerTag']
                     
-                  if deployStr is not None && len(deployStr) > 0:
+                  if deployStr is not None and len(deployStr) > 0:
                     print("Deployments to deploy: {tags}")
                     os.system(f"echo ::set-output name=deploys::{deployStr}")
         env:
