@@ -39,11 +39,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         
-      - name: Make tag-cache dirs
+      - name: Make cache dirs and set file permissions
         run: |
           chmod +x gradlew
+          mkdir -p ~/image-cache
           mkdir -p ~/manager-tags-old
           mkdir -p ~/manager-tags-new
+          
+      - name: Check if main repo
+        id: is_main_repo
+        run: |
+          if [ $REPO_NAME == 'openremote/openremote' ]; then
+            echo "::set-output name=value::true"
+          fi
+        env:
+          REPO_NAME: ${{ github.repository }}
+          
+      - name: Check deployment dir
+        id: check_deployment_dir
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "deployment"
+          
+      - name: Check deployment dockerfile
+        id: check_deployment_dockerfile
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "deployment/Dockerfile"
+
+      - name: Check custom project
+        id: check_custom_project
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "openremote,.gitmodules"
 
       - name: Check ci_cd existence
         id: check_cicd_json
@@ -52,7 +80,7 @@ jobs:
           files: ".ci_cd/ci_cd.json"
 
       - name: Get docker tags to monitor
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
         id: monitor-tags
         shell: python
         run: |
@@ -82,7 +110,7 @@ jobs:
         
         
       - name: Load manager tag cache
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
         uses: actions/cache@v2
         id: manager-tag-cache
         with:
@@ -102,6 +130,7 @@ jobs:
           
           eventName = os.getenv('EVENT_NAME')
           refName = os.getenv('REF_NAME')
+          isMainRepo = os.getenv('IS_MAIN_REPO')
           deploys = []
           tags = None
           deployEnvironment = None
@@ -117,7 +146,13 @@ jobs:
             eventConfig = data[eventName]
             
             if eventConfig is not None:
+            
               if eventName == "managerDockerPush":
+              
+                if isMainRepo == 'true':
+                  os.system("Ignoring scheduled trigger as this is the main openremote repository")
+                  exit(1)
+              
                 # Iterate through keys and check if that manager docker image has changed since last execution
                 for key in eventConfig.keys():
                   print(f"Checking manager docker tag: {key}")
@@ -140,40 +175,38 @@ jobs:
                       # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
                       deployConfig['managerTag'] = key
                       deploys.append(deployConfig)
-              
-                # Clear eventConfig so not processed in next block
-                eventConfig = None
                 
               elif eventName == "push":
+              
                 eventConfig = eventConfig[refName]
                 if eventConfig is not None:
                   deploys = eventConfig['deploy']
                   tags = eventConfig['distribute']['tags']
             
               elif eventName == "release":
+              
                 eventConfig = eventConfig[refName]
                 if eventConfig is not None:
                   deploys = eventConfig['deploy']
                   tags = eventConfig['distribute']['tags']
              
-                  if tags is not None:
-                    tags = tags.replace("$version", refName)
-                    print(f"Tags to push to docker: {tags}")
-                    os.system(f"echo ::set-output name=tags::{tags}")
-                  
-                  deployStr = None
+          if tags is not None and isMainRepo == 'true':
+            tags = tags.replace("$version", refName)
+            os.system(f" echo 'Manager tags to push to docker: {tags}'")
+            tags = " ".join(map(lambda t: f"-t {tag.strip()}", tags.split(",")))
+            os.system(f"echo ::set-output name=tags::{tags}")
                   
           if deploys is not None and isinstance(deploys, list) and len(deploys) > 0:
-            deployStr = ""
-            deployStr = ";".join(map(lambda d: d['environment'] + ":" + d['managerTag'], deploys))
+            deployStr = ";".join(map(lambda d: d['environment'] + ":" + (d['managerTag'] if d['managerTag'] is not None else '$ref'), deploys))
 
           elif deploys is not None:
-            deployStr = deploys['environment'] + ":" + deploys['managerTag']
+            deployStr = deploys['environment'] + ":" + (deploys['managerTag'] if deploys['managerTag'] is not None else '$ref')
 
           if deployStr is not None and len(deployStr) > 0:
             print(f"Deployments to deploy: {deployStr}")
             os.system(f"echo ::set-output name=deploys::{deployStr}")
         env:
+          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
 
@@ -181,6 +214,33 @@ jobs:
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
         run: cp -r ~/manager-tags-new/* ~/manager-tags-old/
 
+      - name: Define test required
+        id: test-required
+        run: |
+          if [ $EVENT_NAME == 'push' || $EVENT_NAME == 'release' ]; then
+            echo "::set-output name=value::true"
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          
+      - name: Define manager build required
+      
+      - name: Define deployment build required
+      
+      
+      - name: Define installDist command
+        id: install-command
+        run: |
+          if [ ! -z $MANAGER_TAGS ]; then
+            echo "::set-output name=value::./gradlew installDist"
+          elif [ $DEPLOYMENTS == *"$ref"* ]; then
+            echo "::set-output name=value::./gradlew installDist"
+          fi
+        env:
+          MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.tags }}
+          DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
+        
+          
 
 #       - name: Set up JDK 17 and gradle cache
 #         id: java
@@ -189,11 +249,6 @@ jobs:
 #           distribution: 'temurin'
 #           java-version: '17'
 #           cache: 'gradle'
-          
-#       - name: Grant execute permission for gradlew and make image-cache
-#         run: |
-#           chmod +x gradlew
-#           mkdir -p ~/image-cache
 
 #       - name: Get yarn cache directory path
 #         id: yarn-cache-dir-path
@@ -218,11 +273,18 @@ jobs:
 #           restore-keys: |
 #             ${{ runner.os }}-docker---
           
-      - name: Output build info
+      - name: Output info
         run: |
           echo "************************************************************"
-          echo "**************        BUILD INFO         *******************"
+          echo "**************            INFO           *******************"
           echo "************************************************************"
+          echo "Trigger event: ${{ github.event_name }}"
+          echo "Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}"
+          echo "Has deployment dir: ${{ steps.check_deployment_dir.outputs.files_exists == 'true' }}"
+          echo "Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}"
+          echo "Is custom project: ${{ check_custom_project.outputs.files_exists == 'true' }}"
+          echo "Push manager tags: ${{ steps.ci-cd-output.outputs.tags }}"
+          echo "Deployments: ${{ steps.ci-cd-output.outputs.deploys }}"
           echo "Java version: $(java --version)"
           echo "Yarn version: $(yarn -v)"
           echo "Node version: $(node -v)"
@@ -230,18 +292,9 @@ jobs:
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
           echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
           echo "Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}"
-          echo "Deploy environment: ${{ env.DEPLOY }}"
-          echo "Push manager tags: ${{ steps.ci-cd-output.outputs.tags }}"
-          echo "Deployments: ${{ steps.ci-cd-output.outputs.deploys }}"
           echo "************************************************************"
           echo "************************************************************"
           exit 1
-          
-      - name: Check for cached docker images
-        id: check_docker
-        uses: andstor/file-existence-action@v1
-        with:
-          files: ", ~/image-cache/postgres.tar.gz"
           
       - name: Load cached docker images
         if: steps.docker-cache.outputs.cache-hit == 'true'
