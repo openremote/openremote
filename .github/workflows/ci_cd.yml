@@ -55,7 +55,6 @@ jobs:
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
         id: monitor-tags
         shell: python
-        run: |
           import json
           import os
           
@@ -75,7 +74,7 @@ jobs:
             if len(managerPushConfig.keys()) > 0:
               for key in managerPushConfig.keys():
                 # Output new tag cache files (for generating hash)
-                print("Outputting manifest info for tag: {key}")
+                print(f"Outputting manifest info for tag: {key}")
                 os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
         
       - name: Load manager tag cache
@@ -117,22 +116,22 @@ jobs:
               if eventName == "managerDockerPush":
                 # Iterate through keys and check if that manager docker image has changed since last execution
                 for key in eventConfig.keys():
-                  print("Checking manager docker tag: {key}")
+                  print(f"Checking manager docker tag: {key}")
                   newManifestStr = None
                   oldManifestStr = None
 
-                  if os.path.exists("manager-tags-new/{key}"):
-                    f = open("manager-tags-new/{key}")
+                  if os.path.exists(f"manager-tags-new/{key}"):
+                    f = open(f"manager-tags-new/{key}")
                     newManifestStr = json.load(f)
                     f.close()
-                  if os.path.exists("manager-tags-old/{key}"):
-                    f = open("manager-tags-old/{key}")
+                  if os.path.exists(f"manager-tags-old/{key}"):
+                    f = open(f"manager-tags-old/{key}")
                     oldManifestStr = json.load(f)
                     f.close()                  
                   
                   if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
-                    print("Manager docker tag '{key}' has been updated")
-                    deployConfig = eventConfig['{key}.deploy']
+                    print(f"Manager docker tag '{key}' has been updated")
+                    deployConfig = eventConfig[f'{key}.deploy']
                     if deployConfig is not None:
                       # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
                       deployConfig['managerTag'] = key
@@ -155,7 +154,7 @@ jobs:
              
                   if tags is not None:
                     tags = tags.replace("$version", refName)
-                    print("Tags to push to docker: {tags}")
+                    print(f"Tags to push to docker: {tags}")
                     os.system(f"echo ::set-output name=tags::{tags}")
                   
                   deployStr = None
@@ -168,7 +167,7 @@ jobs:
                     deployStr = deploys['environment'] + ":" + deploys['managerTag']
                     
                   if deployStr is not None and len(deployStr) > 0:
-                    print("Deployments to deploy: {tags}")
+                    print(f"Deployments to deploy: {deployStr}")
                     os.system(f"echo ::set-output name=deploys::{deployStr}")
         env:
           EVENT_NAME: ${{ github.event_name }}
