@@ -77,6 +77,8 @@ jobs:
                 # Output new tag cache files (for generating hash)
                 print(f"Outputting manifest info for tag: {key}")
                 os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
+            os.system("ls -R ~/manager-tags-new")
+        
         
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
