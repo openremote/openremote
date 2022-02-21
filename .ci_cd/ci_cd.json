@@ -8,5 +8,8 @@
 	"release": {
 		"dockerTags": "latest,$version",
 		"deployEnvironment": "production"		
+	},
+	"managerDockerPush": {
+		"dockerTag": ""
 	}
 }
