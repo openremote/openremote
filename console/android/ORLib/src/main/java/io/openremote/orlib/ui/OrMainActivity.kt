@@ -14,7 +14,10 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.*
 import android.text.TextUtils
-import android.view.*
+import android.view.KeyEvent
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.*
 import android.webkit.ConsoleMessage.MessageLevel
 import android.webkit.WebView.WebViewTransport
@@ -25,8 +28,6 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.messaging.FirebaseMessaging
@@ -38,7 +39,6 @@ import io.openremote.orlib.service.GeofenceProvider
 import io.openremote.orlib.service.QrScannerProvider
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -57,7 +57,7 @@ open class OrMainActivity : Activity() {
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
     private var consoleId: String? = null
-    private var appConfig: ORAppConfig? = null
+    protected var appConfig: ORAppConfig? = null
     private var onDownloadCompleteReciever: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
             val action = intent.action
@@ -147,7 +147,7 @@ open class OrMainActivity : Activity() {
         openIntentUrl(intent)
     }
 
-    private fun processAppConfig() {
+    protected fun processAppConfig() {
         if (appConfig != null) {
 
             if (!appConfig!!.primaryColor.isNullOrBlank()) {
