@@ -75,11 +75,9 @@ jobs:
             if len(managerPushConfig.keys()) > 0:
               for key in managerPushConfig.keys():
                 # Output new tag cache files (for generating hash)
-                print(f"Outputting manifest info for tag: {key}")
-                print(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
+                os.system(f"echo 'Outputting manifest info for tag: {key}'")
                 os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
-            print("Tag manifests generated:")
-            print()
+            os.system("echo 'Tag manifests generated:'")
             os.system("find ~/manager-tags-new")
         
         
@@ -128,11 +126,11 @@ jobs:
 
                   if os.path.exists(f"manager-tags-new/{key}"):
                     f = open(f"manager-tags-new/{key}")
-                    newManifestStr = json.load(f)
+                    newManifestStr = f.read()
                     f.close()
                   if os.path.exists(f"manager-tags-old/{key}"):
                     f = open(f"manager-tags-old/{key}")
-                    oldManifestStr = json.load(f)
+                    oldManifestStr = f.read()
                     f.close()                  
                   
                   if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
