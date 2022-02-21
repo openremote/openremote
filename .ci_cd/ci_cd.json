@@ -1,15 +1,27 @@
 {
 	"push": {
 		"feature/workflows": {
-			"dockerTags": "develop",
-			"deployEnvironment": "staging"
+			"distribute": {
+				"tags": "develop"
+			},
+			"deploy": {				
+				"managerTag": "develop",
+				"environment": "staging"
+			}
 		}
 	},
 	"release": {
-		"dockerTags": "latest,$version",
-		"deployEnvironment": "production"		
+		"distribute": {
+			"tags": "latest,$version"
+		},
+		"deploy": {
+			"managerTag": "latest",
+			"environment": "production"
+		}
 	},
 	"managerDockerPush": {
-		"dockerTag": ""
+		"develop": {
+			"environment": "staging"
+		}
 	}
 }
