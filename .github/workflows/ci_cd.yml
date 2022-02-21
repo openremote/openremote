@@ -165,7 +165,7 @@ jobs:
                   
           if deploys is not None and isinstance(deploys, list) and len(deploys) > 0:
             deployStr = ""
-            deployStr = ";".join(deploys.map(lambda d: d['environment'] + ":" + d['managerTag']))
+            deployStr = ";".join(map(lambda d: d['environment'] + ":" + d['managerTag'], deploys))
 
           elif deploys is not None:
             deployStr = deploys['environment'] + ":" + deploys['managerTag']
