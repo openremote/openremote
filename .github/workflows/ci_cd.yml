@@ -119,11 +119,11 @@ jobs:
                   newManifestStr = None
                   oldManifestStr = None
 
-                  if path.exists("manager-tags-new/{key}"):
+                  if os.path.exists("manager-tags-new/{key}"):
                     f = open("manager-tags-new/{key}")
                     newManifestStr = json.load(f)
                     f.close()
-                  if path.exists("manager-tags-old/{key}"):
+                  if os.path.exists("manager-tags-old/{key}"):
                     f = open("manager-tags-old/{key}")
                     oldManifestStr = json.load(f)
                     f.close()                  
