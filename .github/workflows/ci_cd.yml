@@ -9,10 +9,10 @@ on:
         - '**'
     tags-ignore:
       - '*.*'
-#     paths-ignore:
-#       - '.github/**'
-#       - '.ci_cd/**'
-#       - '**/*.md'
+    paths-ignore:
+      - '.github/**'
+      - '.ci_cd/**'
+      - '**/*.md'
 
   # When a release is published
   release:
@@ -71,10 +71,11 @@ jobs:
           
           managerPushConfig = data["managerDockerPush"]
           
-          if managerPushConfig is not None:            
+          if managerPushConfig is not None:
             if len(managerPushConfig.keys()) > 0:
               for key in managerPushConfig.keys():
                 # Output new tag cache files (for generating hash)
+                print("Outputting manifest info for tag: {key}")
                 os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
         
       - name: Load manager tag cache
@@ -116,6 +117,7 @@ jobs:
               if eventName == "managerDockerPush":
                 # Iterate through keys and check if that manager docker image has changed since last execution
                 for key in eventConfig.keys():
+                  print("Checking manager docker tag: {key}")
                   newManifestStr = None
                   oldManifestStr = None
 
