@@ -135,7 +135,7 @@ jobs:
                   
                   if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
                     print(f"Manager docker tag '{key}' has been updated")
-                    deployConfig = eventConfig[f'{key}']['deploy']
+                    deployConfig = eventConfig[key]['deploy']
                     if deployConfig is not None:
                       # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
                       deployConfig['managerTag'] = key
@@ -163,16 +163,16 @@ jobs:
                   
                   deployStr = None
                   
-                  if deploys is not None and isinstance(deploys, list) and len(deploys) > 0:
-                    deployStr = ""
-                    deployStr = ";".join(deploys.map(lambda d: d['environment'] + ":" + d['managerTag']))
-                      
-                  elif deploys is not None:
-                    deployStr = deploys['environment'] + ":" + deploys['managerTag']
-                    
-                  if deployStr is not None and len(deployStr) > 0:
-                    print(f"Deployments to deploy: {deployStr}")
-                    os.system(f"echo ::set-output name=deploys::{deployStr}")
+          if deploys is not None and isinstance(deploys, list) and len(deploys) > 0:
+            deployStr = ""
+            deployStr = ";".join(deploys.map(lambda d: d['environment'] + ":" + d['managerTag']))
+
+          elif deploys is not None:
+            deployStr = deploys['environment'] + ":" + deploys['managerTag']
+
+          if deployStr is not None and len(deployStr) > 0:
+            print(f"Deployments to deploy: {deployStr}")
+            os.system(f"echo ::set-output name=deploys::{deployStr}")
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
