@@ -38,6 +38,12 @@ jobs:
           
       - name: Checkout
         uses: actions/checkout@v2
+        
+      - name: Make tag-cache dirs
+        run: |
+          chmod +x gradlew
+          mkdir -p ~/manager-tags-old
+          mkdir -p ~/manager-tags-new
 
       - name: Check ci_cd existence
         id: check_cicd_json
@@ -45,8 +51,9 @@ jobs:
         with:
           files: ".ci_cd/ci_cd.json"
 
-      - name: Process ci_cd.json file
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
+      - name: Get docker tags to monitor
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        id: monitor-tags
         shell: python
         run: |
           import json
@@ -54,26 +61,121 @@ jobs:
           
           eventName = os.getenv('EVENT_NAME')
           refName = os.getenv('REF_NAME')
+          pushTag = None
+          deployTag = None
+          deployEnvironment = None
+          
           f = open(".ci_cd/ci_cd.json")
           data = json.load(f)
           f.close()
           
-          if data is not None and eventName in data:
+          managerPushConfig = data["managerDockerPush"]
+          
+          if managerPushConfig is not None:            
+            if len(managerPushConfig.keys()) > 0:
+              for key in managerPushConfig.keys():
+                # Output new tag cache files (for generating hash)
+                os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
+        
+      - name: Load manager tag cache
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        uses: actions/cache@v2
+        id: manager-tag-cache
+        with:
+          path: |
+            ~/manager-tags-old
+          key: ${{ runner.os }}-manager-tags---${{ hashFiles('~/manager-tags-new/**') }}
+          restore-keys: |
+            ${{ runner.os }}-manager-tags---
+
+      - name: Process ci_cd.json file
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
+        id: ci-cd-output
+        shell: python
+        run: |
+          import json
+          import os
+          
+          eventName = os.getenv('EVENT_NAME')
+          refName = os.getenv('REF_NAME')
+          deploys = []
+          tags = None
+          deployEnvironment = None
+          
+          f = open(".ci_cd/ci_cd.json")
+          data = json.load(f)
+          f.close()
+
+          if eventName == "workflow_dispatch":
+            eventName = "managerDockerPush"
+
+          if data is not None and eventName in data:              
             eventConfig = data[eventName]
-            if eventConfig is not None:
-              if eventName == "push" and refName in eventConfig:
-                eventConfig = eventConfig[refName]
-            if eventConfig is not None:
-              dockerTags = eventConfig['dockerTags']
-              deployEnv = eventConfig['deployEnvironment']
-            if dockerTags is not None and eventName == "release":
-              dockerTags = dockerTags.replace("$version", refName)
             
-            os.system(f"echo 'TAGS={dockerTags}' >> $GITHUB_ENV")
-            os.system(f"echo 'DEPLOY={deployEnv}' >> $GITHUB_ENV")
+            if eventConfig is not None:
+              if eventName == "managerDockerPush":
+                # Iterate through keys and check if that manager docker image has changed since last execution
+                for key in eventConfig.keys():
+                  newManifestStr = None
+                  oldManifestStr = None
+
+                  if path.exists("manager-tags-new/{key}"):
+                    f = open("manager-tags-new/{key}")
+                    newManifestStr = json.load(f)
+                    f.close()
+                  if path.exists("manager-tags-old/{key}"):
+                    f = open("manager-tags-old/{key}")
+                    oldManifestStr = json.load(f)
+                    f.close()                  
+                  
+                  if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
+                    print("Manager docker tag '{key}' has been updated")
+                    deployConfig = eventConfig['{key}.deploy']
+                    if deployConfig is not None:
+                      # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
+                      deployConfig['managerTag'] = key
+                      deploys.append(deployConfig)
+              
+                # Clear eventConfig so not processed in next block
+                eventConfig = None
+                
+              elif eventName == "push":
+                eventConfig = eventConfig[refName]
+                if eventConfig is not None:
+                  deploys = eventConfig['deploy']
+                  tags = eventConfig['distribute.tags']
+            
+              elif eventName == "release":
+                eventConfig = eventConfig[refName]
+                if eventConfig is not None:
+                  deploys = eventConfig['deploy']
+                  tags = eventConfig['distribute.tags']
+             
+                  if tags is not None:
+                    tags = tags.replace("$version", refName)
+                    print("Tags to push to docker: {tags}")
+                    os.system(f"echo ::set-output name=tags::{tags}")
+                  
+                  deployStr = None
+                  
+                  if deploys is not None and isinstance(deploys, list) and len(deploys) > 0:
+                    deployStr = ""
+                    deployStr = ";".join(deploys.map(lambda d: d['environment'] + ":" + d['managerTag']))
+                      
+                  elif deploys is not None:
+                    deployStr = deploys['environment'] + ":" + deploys['managerTag']
+                    
+                  if deployStr is not None && len(deployStr) > 0:
+                    print("Deployments to deploy: {tags}")
+                    os.system(f"echo ::set-output name=deploys::{deployStr}")
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
+
+      - name: Copy new tag cache to old
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        run: cp -r ~/manager-tags-new/* ~/manager-tags-old/
+
 
 #       - name: Set up JDK 17 and gradle cache
 #         id: java
@@ -122,8 +224,10 @@ jobs:
           echo "Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}"
           echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
           echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
+          echo "Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}"
           echo "Deploy environment: ${{ env.DEPLOY }}"
-          echo "Docker tags: ${{ env.TAGS }}"
+          echo "Push manager tags: ${{ steps.ci-cd-output.outputs.tags }}"
+          echo "Deployments: ${{ steps.ci-cd-output.outputs.deploys }}"
           echo "************************************************************"
           echo "************************************************************"
           exit 1
