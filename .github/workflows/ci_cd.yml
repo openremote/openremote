@@ -124,12 +124,12 @@ jobs:
                   newManifestStr = None
                   oldManifestStr = None
 
-                  if os.path.exists(f"manager-tags-new/{key}"):
-                    f = open(f"manager-tags-new/{key}")
+                  if os.path.exists(os.path.expanduser(f"~/manager-tags-new/{key}")):
+                    f = open(os.path.expanduser(f"~/manager-tags-new/{key}"))
                     newManifestStr = f.read()
                     f.close()
-                  if os.path.exists(f"manager-tags-old/{key}"):
-                    f = open(f"manager-tags-old/{key}")
+                  if os.path.exists(os.path.expanduser(f"~/manager-tags-old/{key}")):
+                    f = open(os.path.expanduser(f"~/manager-tags-old/{key}"))
                     oldManifestStr = f.read()
                     f.close()                  
                   
