@@ -131,7 +131,7 @@ jobs:
           eventName = os.getenv('EVENT_NAME')
           refName = os.getenv('REF_NAME')
           isMainRepo = os.getenv('IS_MAIN_REPO')
-          deploys = []
+          deploys = None
           tags = None
           deployEnvironment = None
           
@@ -150,12 +150,13 @@ jobs:
               if eventName == "managerDockerPush":
               
                 if isMainRepo == 'true':
-                  os.system("Ignoring scheduled trigger as this is the main openremote repository")
+                  os.system("echo 'Ignoring scheduled trigger as this is the main openremote repository'")
                   # TODO: exit(1)
               
                 # Iterate through keys and check if that manager docker image has changed since last execution
+                deploys=[]
                 for key in eventConfig.keys():
-                  print(f"Checking manager docker tag: {key}")
+                  os.system(f"echo 'Checking manager docker tag: {key}'")
                   newManifestStr = None
                   oldManifestStr = None
 
@@ -169,7 +170,7 @@ jobs:
                     f.close()                  
                   
                   if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
-                    print(f"Manager docker tag '{key}' has been updated")
+                    os.system(f"echo 'Manager docker tag has been updated: {key}'")
                     deployConfig = eventConfig[key]['deploy']
                     if deployConfig is not None:
                       # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
@@ -196,8 +197,9 @@ jobs:
             tags = " ".join(map(lambda t: f"-t openremote/manager:{tag.strip()}", tags.split(",")))
             os.system(f"echo ::set-output name=tags::{tags}")
                   
-          if deploys is not None and isinstance(deploys, list) and len(deploys) > 0:
-            deployStr = ";".join(map(lambda d: d['environment'] + ":" + (d['managerTag'] if d['managerTag'] is not None else '$ref'), deploys))
+          if deploys is not None and isinstance(deploys, list):
+            if len(deploys) > 0:
+              deployStr = ";".join(map(lambda d: d['environment'] + ":" + (d['managerTag'] if d['managerTag'] is not None else '$ref'), deploys))
 
           elif deploys is not None:
             deployStr = deploys['environment'] + ":" + (deploys['managerTag'] if deploys['managerTag'] is not None else '$ref')
