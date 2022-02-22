@@ -224,7 +224,7 @@ jobs:
       - name: Define backend test command
         id: test-backend-command
         run: |
-          if [ $EVENT_NAME == 'push' || $EVENT_NAME == 'release' ]; then
+          if [ $EVENT_NAME == 'push' -o $EVENT_NAME == 'release' ]; then
             echo "::set-output name=value::./gradlew -p test test"
           fi
         env:
@@ -237,7 +237,7 @@ jobs:
       - name: Define manager docker build command
         id: manager-docker-command
         run: |
-          if [ ! -z $MANAGER_TAGS || $DEPLOYMENTS == *"$ref"* || ! -z $TEST_UI_CMD ]; then
+          if [ ! -z $MANAGER_TAGS -o $DEPLOYMENTS == *"$ref"* -o ! -z $TEST_UI_CMD ]; then
             if [ $IS_CUSTOM_PROJECT == 'true' ]; then
               buildPath="openremote/manager/build/install/manager"
               commitSha=$(cd openremote; git rev-parse --short HEAD; cd ..)
@@ -257,7 +257,7 @@ jobs:
       - name: Define deployment docker build command
         id: deployment-docker-command
         run: |
-          if [ ! -z $DEPLOYMENTS && $HAS_DEPLOYMENT_DOCKERFILE == 'true' ]; then
+          if [ ! -z $DEPLOYMENTS -a $HAS_DEPLOYMENT_DOCKERFILE == 'true' ]; then
             buildPath="deployment/build"
             commitSha=$(git rev-parse HEAD)
             commitShaShort=$(git rev-parse --short HEAD)
@@ -323,8 +323,8 @@ jobs:
           echo "Is custom project: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}"
           echo "Push manager tags: ${{ steps.ci-cd-output.outputs.tags }}"
           echo "Deployments: ${{ steps.ci-cd-output.outputs.deploys }}"
-          echo "Test backend command: $${{ steps.test-backend-command.outputs.value }}"
-          echo "Test UI command: $${{ steps.test-ui-command.outputs.value }}"
+          echo "Test backend command: ${{ steps.test-backend-command.outputs.value }}"
+          echo "Test UI command: ${{ steps.test-ui-command.outputs.value }}"
           echo "Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}"
           echo "Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}"
           echo "InstallDist command: ${{ steps.install-command.outputs.value }}"
