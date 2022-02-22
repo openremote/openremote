@@ -335,7 +335,7 @@ jobs:
           echo "Has deployment build.gradle: ${{ steps.check_deployment_gradle.outputs.files_exists == 'true' }}"
           echo "Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}"
           echo "Is custom project: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}"
-          echo "Push manager tags: ${{ steps.ci-cd-output.outputs.tags }}"
+          echo "First manager tag: ${{ steps.ci-cd-output.outputs.firstTag }}"
           echo "Deployments: ${{ steps.ci-cd-output.outputs.deploys }}"
           echo "Test backend command: ${{ steps.test-backend-command.outputs.value }}"
           echo "Test UI command: ${{ steps.test-ui-command.outputs.value }}"
