@@ -151,7 +151,7 @@ jobs:
               
                 if isMainRepo == 'true':
                   os.system("Ignoring scheduled trigger as this is the main openremote repository")
-                  exit(1)
+                  # TODO: exit(1)
               
                 # Iterate through keys and check if that manager docker image has changed since last execution
                 for key in eventConfig.keys():
