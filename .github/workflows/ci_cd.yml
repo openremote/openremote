@@ -237,7 +237,7 @@ jobs:
       - name: Define manager docker build command
         id: manager-docker-command
         run: |
-          if [ ! -z "$MANAGER_TAGS" -o $DEPLOYMENTS == *"$ref"* -o ! -z "$TEST_UI_CMD" ]; then
+          if [ ! -z "$MANAGER_TAGS" -o "$DEPLOYMENTS" == *"$ref"* -o ! -z "$TEST_UI_CMD" ]; then
             if [ $IS_CUSTOM_PROJECT == 'true' ]; then
               buildPath="openremote/manager/build/install/manager"
               commitSha=$(cd openremote; git rev-parse --short HEAD; cd ..)
@@ -257,7 +257,7 @@ jobs:
       - name: Define deployment docker build command
         id: deployment-docker-command
         run: |
-          if [ ! -z $DEPLOYMENTS -a $HAS_DEPLOYMENT_DOCKERFILE == 'true' ]; then
+          if [ ! -z "$DEPLOYMENTS" -a $HAS_DEPLOYMENT_DOCKERFILE == 'true' ]; then
             buildPath="deployment/build"
             commitSha=$(git rev-parse HEAD)
             commitShaShort=$(git rev-parse --short HEAD)
