@@ -194,6 +194,8 @@ jobs:
              
           if tags is not None and isMainRepo == 'true':
             tags = tags.replace("$version", refName)
+            firstTag = tags.split(",")[0]
+            os.system(f"echo ::set-output name=firstTag::{firstTag}")
             os.system(f" echo 'Manager tags to push to docker: {tags}'")
             tags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", tags.split(",")))
             os.system(f"echo ::set-output name=tags::{tags}")
@@ -240,15 +242,25 @@ jobs:
           if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"\$ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then           
             if [ $IS_CUSTOM_PROJECT == 'true' ]; then
               buildPath="openremote/manager/build/install/manager"
-              commitSha=$(cd openremote; git rev-parse --short HEAD; cd ..)
+              commitSha=$(cd openremote; git rev-parse HEAD; cd ..)
+              commitShaShort=$(cd openremote; git rev-parse --short HEAD; cd ..)
             else
               buildPath="manager/build/install/manager"
-              commitSha=$(git rev-parse --short HEAD)
+              commitSha=$(git rev-parse HEAD)
+              commitShaShort=$(git rev-parse --short HEAD)
             fi
-            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
+            if [ ! -z "$MANAGER_TAGS" ]; then
+              push='--push'
+              echo "::set-output name=tag::$FIRST_MANAGER_TAG"
+            else
+              MANAGER_TAGS="-t openremote/manager:$commitShaShort"
+              echo "::set-output name=tag::$commitShaShort"
+            fi
+            command="docker build $push --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
             echo "::set-output name=value::$command"
           fi
         env:
+          FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.tags }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exist }}
