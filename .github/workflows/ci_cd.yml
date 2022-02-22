@@ -18,6 +18,9 @@ on:
   release:
     types: [published]
 
+#   schedule:
+    
+
   workflow_dispatch:
 
 env:
@@ -80,8 +83,7 @@ jobs:
           files: ".ci_cd/ci_cd.json"
 
       - name: Get docker tags to monitor
-        # TODO if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
         id: monitor-tags
         shell: python
         run: |
@@ -107,11 +109,10 @@ jobs:
                 os.system(f"echo 'Outputting manifest info for tag: {key}'")
                 os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
             os.system("echo 'Tag manifests generated:'")
-            os.system("find ~/manager-tags-new")
-        
+            os.system("find ~/manager-tags-new")        
         
       - name: Load manager tag cache
-        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
         uses: actions/cache@v2
         id: manager-tag-cache
         with:
@@ -122,7 +123,7 @@ jobs:
             ${{ runner.os }}-manager-tags---
 
       - name: Process ci_cd.json file
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name != 'workflow_dispatch' }}
         id: ci-cd-output
         shell: python
         run: |
@@ -217,29 +218,30 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
 
       - name: Copy new tag cache to old
-        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' }}
         run: |
           cd ~/manager-tags-new
           cp -r . ~/manager-tags-old/
-          
 
       - name: Define backend test command
         id: test-backend-command
-        run: |
-          if [ $EVENT_NAME == 'push' -o $EVENT_NAME == 'release' ]; then
-            echo "::set-output name=value::./gradlew -p test test"
-          fi
-        env:
-          EVENT_NAME: ${{ github.event_name }}
+        if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
+        run: echo "::set-output name=value::./gradlew -p test test"
           
       - name: Define UI test command
         id: test-ui-command
+        if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         run: echo ""
-               
+
+      - name: Determine if build needed for manual deploy
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: echo ""
+      
       - name: Define manager docker build command
         id: manager-docker-command
+        shell: bash
         run: |
-          if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"\$ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then           
+          if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"\$ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then
             if [ $IS_CUSTOM_PROJECT == 'true' ]; then
               buildPath="openremote/manager/build/install/manager"
               commitSha=$(cd openremote; git rev-parse HEAD; cd ..)
@@ -249,6 +251,7 @@ jobs:
               commitSha=$(git rev-parse HEAD)
               commitShaShort=$(git rev-parse --short HEAD)
             fi
+            
             if [ ! -z "$MANAGER_TAGS" ]; then
               push='--push'
               echo "::set-output name=tag::$FIRST_MANAGER_TAG"
@@ -268,18 +271,14 @@ jobs:
           
       - name: Define deployment docker build command
         id: deployment-docker-command
+        if: ${{ steps.ci-cd-output.outputs.deploys != '' && steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}
         shell: bash
         run: |
-          if [ ! -z "$DEPLOYMENTS" -a $HAS_DEPLOYMENT_DOCKERFILE == 'true' ]; then
-            buildPath="deployment/build"
-            commitSha=$(git rev-parse HEAD)
-            commitShaShort=$(git rev-parse --short HEAD)
-            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
-            echo "::set-output name=value::$command"
-          fi
-        env:
-          DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
-          HAS_DEPLOYMENT_DOCKERFILE: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
+          buildPath="deployment/build"
+          commitSha=$(git rev-parse HEAD)
+          commitShaShort=$(git rev-parse --short HEAD)
+          command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
+          echo "::set-output name=value::$command"
           
       - name: Define installDist command
         id: install-command
@@ -287,12 +286,13 @@ jobs:
         run: |
           if [ ! -z "$MANAGER_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew installDist"
-          elif [ ! -z "$DEPLOYMENT_DOCKER_CMD" ]; then
+          elif [ ! -z "$DEPLOYMENT_DOCKER_CMD" -a "$HAS_DEPLOYMENT_GRADLE" == 'true' ]; then
             echo "::set-output name=value::./gradlew -p deployment installDist"
           fi
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
-          DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}          
+          DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
+          HAS_DEPLOYMENT_GRADLE: ${{ steps.check_deployment_gradle.outputs.files_exists }}
           
 #       - name: Set up JDK 17 and gradle cache
 #         id: java
@@ -352,7 +352,9 @@ jobs:
           echo "************************************************************"
           echo "************************************************************"
           exit 1
-          
+  
+      -
+
       - name: Load cached docker images
         if: steps.docker-cache.outputs.cache-hit == 'true'
         run: |
