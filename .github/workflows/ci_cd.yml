@@ -195,7 +195,7 @@ jobs:
           if tags is not None and isMainRepo == 'true':
             tags = tags.replace("$version", refName)
             os.system(f" echo 'Manager tags to push to docker: {tags}'")
-            tags = " ".join(map(lambda t: f"-t openremote/manager:{tag.strip()}", tags.split(",")))
+            tags = " ".join(map(lambda t: f"-t openremote/manager:{t.strip()}", tags.split(",")))
             os.system(f"echo ::set-output name=tags::{tags}")
                   
           deployStr = None
