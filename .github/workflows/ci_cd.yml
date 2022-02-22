@@ -55,11 +55,11 @@ jobs:
         env:
           REPO_NAME: ${{ github.repository }}
           
-      - name: Check deployment dir
-        id: check_deployment_dir
+      - name: Check deployment build.gradle
+        id: check_deployment_gradle
         uses: andstor/file-existence-action@v1
         with:
-          files: "deployment"
+          files: "deployment/build.gradle"
           
       - name: Check deployment dockerfile
         id: check_deployment_dockerfile
@@ -318,7 +318,7 @@ jobs:
           echo "************************************************************"
           echo "Trigger event: ${{ github.event_name }}"
           echo "Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}"
-          echo "Has deployment dir: ${{ steps.check_deployment_dir.outputs.files_exists == 'true' }}"
+          echo "Has deployment build.gradle: ${{ steps.check_deployment_gradle.outputs.files_exists == 'true' }}"
           echo "Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}"
           echo "Is custom project: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}"
           echo "Push manager tags: ${{ steps.ci-cd-output.outputs.tags }}"
