@@ -256,6 +256,7 @@ jobs:
           
       - name: Define deployment docker build command
         id: deployment-docker-command
+        shell: bash
         run: |
           if [ ! -z "$DEPLOYMENTS" -a $HAS_DEPLOYMENT_DOCKERFILE == 'true' ]; then
             buildPath="deployment/build"
@@ -270,6 +271,7 @@ jobs:
           
       - name: Define installDist command
         id: install-command
+        shell: bash
         run: |
           if [ ! -z "$MANAGER_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew installDist"
