@@ -218,7 +218,7 @@ jobs:
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
         run: |
           cd ~/manager-tags-new
-          cp -r /. ~/manager-tags-old/
+          cp -r . ~/manager-tags-old/
           
 
       - name: Define backend test command
