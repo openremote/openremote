@@ -245,7 +245,7 @@ jobs:
               buildPath="manager/build/install/manager"
               commitSha=$(git rev-parse --short HEAD)
             fi
-            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath
+            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
             echo "::set-output name=value::$command"
           fi
         env:
@@ -261,7 +261,7 @@ jobs:
             buildPath="deployment/build"
             commitSha=$(git rev-parse HEAD)
             commitShaShort=$(git rev-parse --short HEAD)
-            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath
+            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
             echo "::set-output name=value::$command"
           fi
         env:
