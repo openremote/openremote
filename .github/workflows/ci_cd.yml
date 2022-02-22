@@ -193,7 +193,7 @@ jobs:
           if tags is not None and isMainRepo == 'true':
             tags = tags.replace("$version", refName)
             os.system(f" echo 'Manager tags to push to docker: {tags}'")
-            tags = " ".join(map(lambda t: f"-t {tag.strip()}", tags.split(",")))
+            tags = " ".join(map(lambda t: f"-t openremote/manager:{tag.strip()}", tags.split(",")))
             os.system(f"echo ::set-output name=tags::{tags}")
                   
           if deploys is not None and isinstance(deploys, list) and len(deploys) > 0:
@@ -214,34 +214,65 @@ jobs:
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
         run: cp -r ~/manager-tags-new/* ~/manager-tags-old/
 
-      - name: Define test required
-        id: test-required
+      - name: Define backend test command
+        id: test-backend-command
         run: |
           if [ $EVENT_NAME == 'push' || $EVENT_NAME == 'release' ]; then
-            echo "::set-output name=value::true"
+            echo "::set-output name=value::./gradlew -p test test"
           fi
         env:
           EVENT_NAME: ${{ github.event_name }}
           
-      - name: Define manager build required
-      
-      - name: Define deployment build required
-      
-      
-      - name: Define installDist command
-        id: install-command
+      - name: Define UI test command
+        id: test-ui-command
+        run: echo ""
+               
+      - name: Define manager docker build command
+        id: manager-docker-command
         run: |
-          if [ ! -z $MANAGER_TAGS ]; then
-            echo "::set-output name=value::./gradlew installDist"
-          elif [ $DEPLOYMENTS == *"$ref"* ]; then
-            echo "::set-output name=value::./gradlew installDist"
+          if [ ! -z $MANAGER_TAGS || $DEPLOYMENTS == *"$ref"* || ! -z $TEST_UI_CMD ]; then
+            if [ $IS_CUSTOM_PROJECT == 'true' ]; then
+              buildPath="openremote/manager/build/install/manager"
+              commitSha=$(cd openremote; git rev-parse --short HEAD; cd ..)
+            else
+              buildPath="manager/build/install/manager"
+              commitSha=$(git rev-parse --short HEAD)
+            fi
+            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath
+            echo "::set-output name=value::$command"
           fi
         env:
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.tags }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
-        
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exist }}
+          TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
           
-
+      - name: Define deployment docker build command
+        id: deployment-docker-command
+        run: |
+          if [ ! -z $DEPLOYMENTS && $HAS_DEPLOYMENT_DOCKERFILE == 'true' ]; then
+            buildPath="deployment/build"
+            commitSha=$(git rev-parse HEAD)
+            commitShaShort=$(git rev-parse --short HEAD)
+            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath
+            echo "::set-output name=value::$command"
+          fi
+        env:
+          DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
+          HAS_DEPLOYMENT_DOCKERFILE: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
+          
+      - name: Define installDist command
+        id: install-command
+        run: |
+          if [ ! -z $MANAGER_DOCKER_CMD ]; then
+            echo "::set-output name=value::./gradlew installDist"
+          elif [ ! -z $DEPLOYMENT_DOCKER_CMD ]; then
+            echo "::set-output name=value::./gradlew -p deployment installDist"
+          fi
+        env:
+          MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
+          DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}          
+          
 #       - name: Set up JDK 17 and gradle cache
 #         id: java
 #         uses: actions/setup-java@v2
@@ -282,9 +313,14 @@ jobs:
           echo "Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}"
           echo "Has deployment dir: ${{ steps.check_deployment_dir.outputs.files_exists == 'true' }}"
           echo "Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}"
-          echo "Is custom project: ${{ check_custom_project.outputs.files_exists == 'true' }}"
+          echo "Is custom project: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}"
           echo "Push manager tags: ${{ steps.ci-cd-output.outputs.tags }}"
           echo "Deployments: ${{ steps.ci-cd-output.outputs.deploys }}"
+          echo "Test backend command: $${{ steps.test-backend-command.outputs.value }}"
+          echo "Test UI command: $${{ steps.test-ui-command.outputs.value }}"
+          echo "Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}"
+          echo "Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}"
+          echo "InstallDist command: ${{ steps.install-command.outputs.value }}"
           echo "Java version: $(java --version)"
           echo "Yarn version: $(yarn -v)"
           echo "Node version: $(node -v)"
