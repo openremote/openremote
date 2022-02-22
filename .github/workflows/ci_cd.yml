@@ -80,7 +80,8 @@ jobs:
           files: ".ci_cd/ci_cd.json"
 
       - name: Get docker tags to monitor
-        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
+        # TODO if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
         id: monitor-tags
         shell: python
         run: |
@@ -215,7 +216,10 @@ jobs:
 
       - name: Copy new tag cache to old
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'workflow_dispatch' }}
-        run: cp -r ~/manager-tags-new/* ~/manager-tags-old/
+        run: |
+          cd ~/manager-tags-new
+          cp /. ~/manager-tags-old/
+          
 
       - name: Define backend test command
         id: test-backend-command
