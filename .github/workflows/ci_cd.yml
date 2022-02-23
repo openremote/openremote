@@ -41,6 +41,10 @@ jobs:
           
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
+          ref: ${{ github.event.inputs.commit }}
+          submodules: recursive
         
       - name: Make cache dirs and set file permissions
         run: |
@@ -81,9 +85,19 @@ jobs:
         uses: andstor/file-existence-action@v1
         with:
           files: ".ci_cd/ci_cd.json"
+          
+      - name: Check is custom project when scheduled trigger
+        if: ${{ github.event_name == 'schedule' }}
+        run: |
+          if [ "$IS_CUSTOM_PROJECT" != 'true' ]; then
+            echo "Schedule can only be used on a custom project repo
+            exit 1
+          fi
+        env:
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
 
       - name: Get docker tags to monitor
-        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
         id: monitor-tags
         shell: python
         run: |
@@ -112,7 +126,7 @@ jobs:
             os.system("find ~/manager-tags-new")        
         
       - name: Load manager tag cache
-        if: ${{ steps.is_main_repo.outputs.value != 'true' && steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
+        if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
         uses: actions/cache@v2
         id: manager-tag-cache
         with:
@@ -150,11 +164,7 @@ jobs:
             if eventConfig is not None:
             
               if eventName == "managerDockerPush":
-              
-                if isMainRepo == 'true':
-                  os.system("echo 'Ignoring scheduled trigger as this is the main openremote repository'")
-                  # TODO: exit(1)
-              
+
                 # Iterate through keys and check if that manager docker image has changed since last execution
                 deploys=[]
                 for key in eventConfig.keys():
@@ -222,6 +232,25 @@ jobs:
         run: |
           cd ~/manager-tags-new
           cp -r . ~/manager-tags-old/
+          
+      - name: Sanitize deployments value
+        id: deployments
+        run: |
+          deployments=$DEPLOYMENTS
+          
+          if [ "$EVENT_NAME" == 'workflow_dispatch' ]; then
+            tag="$INPUT_MANAGER_TAG"
+            if [ -z "$INPUT_MANAGER_TAG" ]; then
+              tag="$ref"
+            fi
+            deployments="$ENVIRONMENT:$tag"
+          fi
+          echo "::set-output name=value::$deployments"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
+          INPUT_ENVIRONMENT: ${{ github.event.inputs.environment }}
+          INPUT_MANAGER_TAG: ${{ github.event.inputs.manager_tag }}
 
       - name: Define backend test command
         id: test-backend-command
@@ -232,53 +261,58 @@ jobs:
         id: test-ui-command
         if: ${{ github.event_name == 'push' || github.event_name == 'release' }}
         run: echo ""
-
-      - name: Determine if build needed for manual deploy
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: echo ""
       
       - name: Define manager docker build command
         id: manager-docker-command
         shell: bash
         run: |
+          if [ $IS_CUSTOM_PROJECT == 'true' ]; then
+            buildPath="openremote/manager/build/install/manager"
+            commitSha=$(cd openremote; git rev-parse HEAD; cd ..)
+            commitShaShort=$(cd openremote; git rev-parse --short HEAD; cd ..)
+          else
+            buildPath="manager/build/install/manager"
+            commitSha=$(git rev-parse HEAD)
+            commitShaShort=$(git rev-parse --short HEAD)
+          fi
+            
           if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"\$ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then
-            if [ $IS_CUSTOM_PROJECT == 'true' ]; then
-              buildPath="openremote/manager/build/install/manager"
-              commitSha=$(cd openremote; git rev-parse HEAD; cd ..)
-              commitShaShort=$(cd openremote; git rev-parse --short HEAD; cd ..)
-            else
-              buildPath="manager/build/install/manager"
-              commitSha=$(git rev-parse HEAD)
-              commitShaShort=$(git rev-parse --short HEAD)
-            fi
             
             if [ ! -z "$MANAGER_TAGS" ]; then
-              push='--push'
-              echo "::set-output name=tag::$FIRST_MANAGER_TAG"
+              command="docker build --push --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath; docker image tag openremote/manager:$FIRST_MANAGER_TAG openremote/manager:$commitShaShort"
             else
-              MANAGER_TAGS="-t openremote/manager:$commitShaShort"
-              echo "::set-output name=tag::$commitShaShort"
+              command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 openremote/manager:$commitShaShort $buildPath"
             fi
-            command="docker build $push --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
             echo "::set-output name=value::$command"
           fi
+          echo "::set-output name=refTag::$commitShaShort"
         env:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.tags }}
-          DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
+          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exist }}
           TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
           
       - name: Define deployment docker build command
         id: deployment-docker-command
-        if: ${{ steps.ci-cd-output.outputs.deploys != '' && steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}
         shell: bash
         run: |
-          buildPath="deployment/build"
-          commitSha=$(git rev-parse HEAD)
-          commitShaShort=$(git rev-parse --short HEAD)
-          command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
-          echo "::set-output name=value::$command"
+          if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ] && [ ! -z "$DEPLOYMENTS" ]; then
+            if [ "$DEPLOYMENT_GRADLE_EXISTS" != 'true' ]; then
+              echo "Deployment must have a build.gradle file to prepare the deployment files in the deployment/build dir"
+              exit 1
+            fi
+            buildPath="deployment/build"
+            commitSha=$(git rev-parse HEAD)
+            commitShaShort=$(git rev-parse --short HEAD)
+            command="docker build --load --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
+            echo "::set-output name=value::$command"
+            echo "::set-output name=refTag::$commitShaShort"
+          fi
+        env:
+          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+          DEPLOYMENT_DOCKERFILE_EXISTS: ${{ steps.check_deployment_dockerfile.outputs.files_exists }}
+          DEPLOYMENT_GRADLE_EXISTS: ${{ steps.check_deployment_gradle.outputs.files_exists }}
           
       - name: Define installDist command
         id: install-command
@@ -286,44 +320,12 @@ jobs:
         run: |
           if [ ! -z "$MANAGER_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew installDist"
-          elif [ ! -z "$DEPLOYMENT_DOCKER_CMD" -a "$HAS_DEPLOYMENT_GRADLE" == 'true' ]; then
+          elif [ ! -z "$DEPLOYMENT_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew -p deployment installDist"
           fi
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
-          HAS_DEPLOYMENT_GRADLE: ${{ steps.check_deployment_gradle.outputs.files_exists }}
-          
-#       - name: Set up JDK 17 and gradle cache
-#         id: java
-#         uses: actions/setup-java@v2
-#         with:
-#           distribution: 'temurin'
-#           java-version: '17'
-#           cache: 'gradle'
-
-#       - name: Get yarn cache directory path
-#         id: yarn-cache-dir-path
-#         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-
-#       - name: Yarn cache
-#         uses: actions/cache@v2
-#         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-#         with:
-#           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-#           key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
-#           restore-keys: |
-#             ${{ runner.os }}-yarn---
-            
-#       - name: Docker image cache
-#         uses: actions/cache@v2
-#         id: docker-cache
-#         with:
-#           path:  |
-#             ~/image-cache
-#           key: ${{ runner.os }}-docker---${{ hashFiles('profile/dev-testing.yml') }}
-#           restore-keys: |
-#             ${{ runner.os }}-docker---
           
       - name: Output info
         run: |
@@ -332,11 +334,11 @@ jobs:
           echo "************************************************************"
           echo "Trigger event: ${{ github.event_name }}"
           echo "Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}"
-          echo "Has deployment build.gradle: ${{ steps.check_deployment_gradle.outputs.files_exists == 'true' }}"
+          echo "Is custom project repo: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}"
           echo "Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}"
-          echo "Is custom project: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}"
-          echo "First manager tag: ${{ steps.ci-cd-output.outputs.firstTag }}"
-          echo "Deployments: ${{ steps.ci-cd-output.outputs.deploys }}"
+          echo "Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}"
+          echo "Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}"
+          echo "Deployments: ${{ steps.deployments.outputs.value }}"
           echo "Test backend command: ${{ steps.test-backend-command.outputs.value }}"
           echo "Test UI command: ${{ steps.test-ui-command.outputs.value }}"
           echo "Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}"
@@ -352,8 +354,59 @@ jobs:
           echo "************************************************************"
           echo "************************************************************"
           exit 1
-  
-      -
+
+      - name: Login to DockerHub
+        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          
+      - name: set up QEMU
+        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: ${{ env.PLATFORMS }}
+
+      - name: install buildx
+        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          install: true
+
+      - name: Set up JDK 17 and gradle cache
+        id: java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+      - name: Yarn cache
+        uses: actions/cache@v2
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn---${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn---
+            
+      - name: Docker image cache
+        uses: actions/cache@v2
+        if: steps.test-backend-command.outputs.value != ''
+        id: docker-cache
+        with:
+          path:  |
+            ~/image-cache
+          key: ${{ runner.os }}-docker---${{ hashFiles('profile/dev-testing.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-docker---
 
       - name: Load cached docker images
         if: steps.docker-cache.outputs.cache-hit == 'true'
@@ -362,7 +415,7 @@ jobs:
           docker load < ~/image-cache/postgres.tar.gz
 
       - name: Pull docker images
-        if: steps.docker-cache.outputs.cache-hit != 'true'
+        if: ${{ steps.test-backend-command.outputs.value != '' && steps.docker-cache.outputs.cache-hit != 'true' }}
         run: |
           docker-compose -f profile/dev-testing.yml pull
           keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
@@ -372,66 +425,81 @@ jobs:
           ls -R ~/image-cache
 
       - name: Start docker test services
+        if: steps.test-backend-command.outputs.value != ''
         run: docker-compose -f profile/dev-testing.yml up -d --no-build
         
       - name: Run backend tests
-        run: ./gradlew build
+        if: steps.test-backend-command.outputs.value != ''
+        run: ${{ steps.test-backend-command.outputs.value }}
         timeout-minutes: 20
         continue-on-error: true
         
-      - name: Prepare docker image
-        if: ${{ needs.dockertag.outputs.tag != '' }}
-        run: ./gradlew installDist
+      - name: Start docker frontend test services
+        if: steps.test-ui-command.outputs.value != ''
+        run: echo "START TEST UI SERVICES!!!!"
+        
+      - name: Run frontend tests
+        if: steps.test-ui-command.outputs.value != ''
+        run: ${{ steps.test-ui-command.outputs.value }}
+        timeout-minutes: 20
+        continue-on-error: true
+        
+      - name: Check deployment host connections if only deploying
+        if: ${{ steps.ci-cd-output.outputs.tags == '' && steps.deployments.outputs.value != '' }}
+        run: echo "TEST DEPLOYMENT HOST CONNECTIONS"
+        
+      - name: Run install dist
+        if: steps.install-command.outputs.value != ''
+        run: ${{ steps.install-command.outputs.value }}
         timeout-minutes: 10
         
-        ## TODO: Add UI tests to the pipeline
-        # Start manager
-        # Run UI tests with gradle
+      - name: Run manager docker build and push
+        if: steps.manager-docker-command.outputs.value != ''
+        run: ${{ steps.manager-docker-command.outputs.value }}
+        
+      - name: Run deployment docker build
+        if: steps.deployment-docker-command.outputs.value != ''
+        run: ${{ steps.deployment-docker-command.outputs.value }}
 
-      - name: Share build artifacts
-        if: ${{ needs.dockertag.outputs.tag != '' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: dist-build
-          path: |
-            manager/build/install/manager
-          retention-days: 1
-
-
-
-  docker_image:
-    name: Build & push docker image
-    runs-on: ubuntu-latest
-    needs: [build]
-    if: ${{ needs.dockertag.outputs.tag != '' }}
-    env:
-      TAG: ${{ needs.dockertag.outputs.tag }}
-    
-    steps:
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Download build artifacts         
-        uses: actions/download-artifact@v2
-        with:
-          name: dist-build
-          path: manager/build/install/manager
-          
-      - name: set up QEMU
-        uses: docker/setup-qemu-action@v1
-        with:
-          platforms: ${{ env.PLATFORMS }}
-
-      - name: install buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          version: latest
-          install: true
-
-      - name: Build and push images
+      - name: Do deployments
+        if: steps.deployments.outputs.value != ''
+        shell: python
         run: |
-          docker build --push --build-arg GIT_COMMIT=${{ github.sha }} --platform $PLATFORMS -t openremote/manager:$TAG manager/build/install/manager
+        
+          import os
+          
+          deployments = os.getenv("DEPLOYMENTS")
+          deployments = deployments.split(";")
+          
+          for deployment in deployments:
+            dep = deployment.split(":")
+            env = dep[0]
+            managerTag = dep[1]
+            
+            # Load env file if exists
+            
+            # Load environment specific env file if exists
+            
+            # Determine host name or skip/exit
+            
+            # Determine SSH user
+            
+            # Determine SSH port
+            
+            # Determine SSH password
+            
+            # Determine platform
+            
+            # Determine manager Tag
+            
+            # Determine clean install
+            
+            # Check tag exists
+            os.system("docker manifest inspect openremote/manager:${{ env.MANAGER_VERSION }} > /dev/null 2> /dev/null")
+          
+        env:
+          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+          MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
+          DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
+          SECRETS: ${{ toJSON(secrets) }}
+        
