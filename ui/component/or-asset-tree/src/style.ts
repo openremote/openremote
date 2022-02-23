@@ -233,10 +233,19 @@ export const style = css`
         width: 16px;
         height: 16px;
         position: absolute;
-        right: 25px;
+        right: 20px;
         padding-right: 14px;
         cursor: pointer;
         display: none;
+    }
+
+    #filterAssetTypeDownIcon {
+        width: 16px;
+        height: 16px;
+        position: absolute;
+        right: 20px;
+        padding-right: 14px;
+        cursor: pointer;
     }
     
     #filterSettingsIcon {

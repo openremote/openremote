@@ -687,6 +687,9 @@ export class OrMwcInput extends LitElement {
     public icon?: string;
 
     @property({type: String})
+    public iconColor?: string;
+
+    @property({type: String})
     public iconOn?: string;
 
     @property({type: String})
@@ -1268,7 +1271,7 @@ export class OrMwcInput extends LitElement {
 
                         inputElem = html`
                             <label id="${componentId}" class="${classMap(classes)}">
-                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
+                                ${this.icon ? html`<or-icon class="mdc-text-field__icon mdc-text-field__icon--leading" style="--or-icon-fill: ${this.iconColor ? "#" + this.iconColor : "unset"}" aria-hidden="true" icon="${this.icon}"></or-icon>` : ``}
                                 ${outlined ? `` : html`<span class="mdc-text-field__ripple"></span>`}
                                 ${inputElem}
                                 ${outlined ? this.renderOutlined(labelTemplate) : labelTemplate}
