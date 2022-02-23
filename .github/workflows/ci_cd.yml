@@ -459,26 +459,50 @@ jobs:
         
       - name: Run deployment docker build
         if: steps.deployment-docker-command.outputs.value != ''
-        run: ${{ steps.deployment-docker-command.outputs.value }}
+        run: |
+          ${{ steps.deployment-docker-command.outputs.value }}
+          docker save openremote/deployment:$DEPLOYMENT_TAG | gzip > deployment.tar.gz
+          echo "Output deployment docker image to 'deployment.tar.gz'"
+        env:
+          DEPLOYMENT_TAG: ${{ steps.deployment-docker-command.outputs.refTag }}
 
       - name: Do deployments
         if: steps.deployments.outputs.value != ''
         shell: python
         run: |
-        
+          
+          import json
           import os
+          import sys
           
           deployments = os.getenv("DEPLOYMENTS")
+          managerRef = os.getenv("MANAGER_REF")
+          deploymentRef = os.getenv("DEPLOYMENT_REF")
+          secrets = json.loads(os.getenv('secrets'))
           deployments = deployments.split(";")
           
           for deployment in deployments:
             dep = deployment.split(":")
             env = dep[0]
             managerTag = dep[1]
+                      
+            # Clean/make temp dir
+            os.system("rm -r temp")
+            os.system("mkdir temp")
             
             # Load env file if exists
-            
+            envStr=""
+            if os.path.exists(".ci_cd/env/.env"):
+              f = open(".ci_cd/env/.env")
+              envStr = f.read()
+              f.close()
+              
             # Load environment specific env file if exists
+            envSpecificStr=""
+            if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
+              f = open(".ci_cd/env/{env}.env")
+              envSpecificStr = f.read()
+              f.close()
             
             # Determine host name or skip/exit
             
@@ -487,19 +511,34 @@ jobs:
             # Determine SSH port
             
             # Determine SSH password
-            
+          
+            # Check tag exists
+            os.system("docker manifest inspect openremote/manager:${{ env.MANAGER_VERSION }} > /dev/null 2> /dev/null")
+          
             # Determine platform
             
             # Determine manager Tag
             
             # Determine clean install
+
+            # Determine host init script
             
-            # Check tag exists
-            os.system("docker manifest inspect openremote/manager:${{ env.MANAGER_VERSION }} > /dev/null 2> /dev/null")
+            # Output env to file
+            for key, value in secrets.items():
+            print(f"Setting {key} ...")
+            lines = len(value.split("\n"))
+            if lines > 1:
+                os.system(f"echo '{key}=\"' >> temp/env")
+                os.system(f"echo '{value}\"' >> temp/env")
+            else:
+                os.system(f"echo '{key}=\"{value}\"' >> temp/env")
           
+            # Generate bash script to copy files to host and do deployment
+            
         env:
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           SECRETS: ${{ toJSON(secrets) }}
+        continue-on-error: true
         
