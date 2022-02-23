@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "src"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../rest" },
+    { "path": "../model" },
+    { "path": "../or-chart" },
+    { "path": "../or-components" },
+    { "path": "../or-translate" },
+    { "path": "../or-icon" },
+    { "path": "../or-map" },
+    { "path": "../or-attribute-input" },
+    { "path": "../or-attribute-history" },
+    { "path": "../or-mwc-components" },
+    { "path": "../or-json-forms" }
+  ]
+}

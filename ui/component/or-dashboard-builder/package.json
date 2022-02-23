@@ -1,0 +1,30 @@
+{
+  "name": "@openremote/or-dashboard-builder",
+  "version": "1.0.0",
+  "description": "OpenRemote Dashboard Builder",
+  "main": "dist/umd/index.bundle.js",
+  "module": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*.js"
+  },
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"No tests\" && exit 0",
+    "prepublishOnly": "npx webpack"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "^1.0.4",
+    "@openremote/model": "^1.0.4",
+    "@openremote/rest": "^1.0.4",
+    "lit": "^2.0.2"
+  },
+  "devDependencies": {
+    "@openremote/util": "^1.0.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

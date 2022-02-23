@@ -8,6 +8,7 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
+import "../../../../component/or-dashboard-builder"
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -118,7 +119,8 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 <div id="title">
                     <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
                 </div>
-                <or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>
+                <or-dashboard-builder id="data-viewer"></or-dashboard-builder>
+                <!--<or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>-->
             </div>
         `;
     }
