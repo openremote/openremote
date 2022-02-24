@@ -33,6 +33,7 @@ if [ -f "$SSH_PORT" ]; then
 fi
 
 if [ -f "ssh.key" ]; then
+  chmod 400 ssh.key
   sshCommandPrefix="$sshCommandPrefix -i ssh.key"
   scpCommandPrefix="$scpCommandPrefix -i ssh.key"
 fi
