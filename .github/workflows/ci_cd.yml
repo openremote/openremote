@@ -94,6 +94,7 @@ jobs:
           import json
           import os
           import sys
+          import subprocess
           
           deployments = os.getenv("DEPLOYMENTS")
           deployments = deployments.split(";")
