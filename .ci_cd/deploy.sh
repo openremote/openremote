@@ -73,9 +73,9 @@ $sshCommandPrefix ${hostStr} << EOF
   fi
   
   # Run host init
-  if [ "$HOST_INIT_SCRIPT" == 'NONE' || "$HOST_INIT_SCRIPT" == 'none' ]; then
+  if [ "$HOST_INIT_SCRIPT" == 'NONE' -o "$HOST_INIT_SCRIPT" == 'none' ]; then
     echo "No host init requested"
-  elif [ ! -z $HOST_INIT_SCRIPT ]; then
+  elif [ ! -z "$HOST_INIT_SCRIPT" ]; then
     if [ ! -f ".ci_cd/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
       echo "HOST_INIT_SCRIPT (.ci_cd/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
       exit 1
