@@ -28,7 +28,7 @@ sshCommandPrefix="ssh"
 scpCommandPrefix="scp"
 
 if [ -f "$SSH_PORT" ]; then
-  sshCommandPrefix="$sshCommandPrefix -P $SSH_PORT"
+  sshCommandPrefix="$sshCommandPrefix -p $SSH_PORT"
   scpCommandPrefix="$scpCommandPrefix -P $SSH_PORT"
 fi
 
