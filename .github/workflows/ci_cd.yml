@@ -52,7 +52,155 @@ jobs:
           mkdir -p ~/image-cache
           mkdir -p ~/manager-tags-old
           mkdir -p ~/manager-tags-new
+
+
+
+      - name: Get manager and deployment refs
+        id: refs
+        run: |
+          touch manager.tar.gz
+          touch deployment.tar.gz
+          echo "::set-output name=managerRef::$(git rev-parse --short HEAD)"
+          echo "::set-output name=deploymentRef::$(git rev-parse --short HEAD)"
           
+
+      - name: Do deployments
+        if: steps.deployments.outputs.value != ''
+        shell: python
+        run: |
+          
+          import json
+          import os
+          import sys
+          
+          deployments = os.getenv("DEPLOYMENTS")
+          deployments = deployments.split(";")
+          managerRef = os.getenv("MANAGER_REF")
+          deploymentRef = os.getenv("DEPLOYMENT_REF")
+          secrets = json.loads(os.getenv('SECRETS'))
+          inputs = os.getenv('INPUTS'))
+          
+          if inputs is not None and inputs != '':
+            inputs = json.loads(inputs)
+          else
+            inputs = {}
+          
+          failure = false
+          
+          for deployment in deployments:
+            dep = deployment.split(":")
+            env = dep[0]
+            managerTag = dep[1]
+            managerTagFound = true
+
+            # Check manager tag exists
+            if managerTag != managerRef:
+              retCode = os.system(f"docker manifest inspect openremote/manager:{managerTag} > /dev/null 2> /dev/null")
+              if retCode != 0:
+                os.system(f"echo 'Requested manager tag not found: {managerTag}'")
+                managerTagFound = false
+                failure = true
+                continue
+                      
+            # Clean/make temp dir and ssh env file
+            os.system("rm -r temp")
+            os.system("mkdir temp")
+            os.system("rm ssh.env")
+            os.system("rm ssh.key")
+            
+            # Copy compose file
+            composeFile = inputs.get("ENV_COMPOSE_FILE", "docker-compose.yml")
+            if os.path.exists(f"profile/{env}.yml"):
+              os.system(f"cp profile/{env}.yml temp/docker-compose.yml")
+            elif os.path.exists(composeFile):
+              os.system(f"cp {composeFile} temp/docker-compose.yml")
+            else
+              os.system("echo 'No docker compose file found for deployment'")
+              failure=true
+              continue
+
+            # Copy host init files
+            if os.path.exists(".ci_cd/host_init"):
+              os.system("cp -r.ci_cd/host_init temp/")
+          
+            # Copy docker images
+            if managerTag == "$ref":
+              os.system("cp manager.tar.gz temp/")
+            if os.path.exists("deployment.tar.gz"):
+              os.system("cp deployment.tar.gz temp/")
+          
+            # Make deploy script executable
+            os.system("chmod +x .ci_cd/deploy.sh")
+            
+            # ------------------------------------------------------
+            # Output env variables to temp env file for POSIX shell
+            # ------------------------------------------------------
+            
+            # Output default values for environment variables
+            os.system("echo 'SSH_PORT=\"22\"' >> temp/env")
+            os.system("echo 'SSH_USER=\"root\"' >> temp/env")
+            os.system("echo 'PLATFORM=\"linux/amd64\"' >> temp/env")
+            os.system(f"echo 'ENVIRONMENT=\"{env}\"' >> temp/env")
+            
+            # Output env file if exists
+            if os.path.exists(".ci_cd/env/.env"):
+              os.system("cat .ci_cd/env/.env >> temp/env")
+              
+            # Output environment specific env file if exists
+            if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
+              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
+            
+            # Output secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
+            for key, value in secrets.items():
+              os.system(f"echo 'Secret found {key}...'")
+              if key == "SSH_KEY":
+                os.system(f"echo {value} >> ssh.key")
+              elif key == "SSH_PASSWORD":
+                os.system(f"echo '{key}=\"{value}\"' >> ssh.env")
+              else
+                lines = len(value.split("\n"))
+                if lines > 1:
+                    os.system(f"echo '{key}=\"' >> temp/env")
+                    os.system(f"echo '{value}\"' >> temp/env")
+                else:
+                    os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+            
+            # Output inputs that have a value
+            for key, value in inputs.items():
+              if value is not None and value != '':
+                os.system(f"echo 'Input found {key}...'")
+                os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+            
+            # Execute deploy script            
+            os.system(f"echo 'Executing deploy script for deployment: {deployment}'")
+            os.system("echo 'Deployment files:'")
+            os.system("find temp")
+            retCode = os.system("bash .ci_cd/deploy.sh")
+            
+            if recCode != 0:
+              os.system(f"echo 'Deployment failed: {deployment}'")
+              failure = true
+              continue
+          
+          if failure == true:
+            os.system("echo 'One or more deployments failed'")
+            sys.exit(1)
+        env:
+          DEPLOYMENTS: 'staging:$ref;:develop'
+          MANAGER_REF: ${{ steps.refs.outputs.managerRef }}
+          DEPLOYMENT_REF: ${{ steps.refs.outputs.deploymentRef }}
+#           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+#           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
+#           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
+          SECRETS: ${{ toJSON(secrets) }}
+          INPUTS: ${{ toJSON(github.event.inputs) }}
+        continue-on-error: true
+
+      - run: exit 1
+
+
+
+
       - name: Check if main repo
         id: is_main_repo
         run: |
@@ -455,7 +603,15 @@ jobs:
         
       - name: Run manager docker build and push
         if: steps.manager-docker-command.outputs.value != ''
-        run: ${{ steps.manager-docker-command.outputs.value }}
+        run: |
+          ${{ steps.manager-docker-command.outputs.value }}
+          if [[ "$DEPLOYMENTS" == *"\$ref"* ]]; then
+            docker save openremote/manager:$MANAGER_TAG | gzip > manager.tar.gz
+            echo "Output manager docker image to 'manager.tar.gz'"
+          fi
+        env:
+          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+          MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
         
       - name: Run deployment docker build
         if: steps.deployment-docker-command.outputs.value != ''
@@ -477,113 +633,4 @@ jobs:
         if: steps.check_deployment_script.outputs.files_exists == 'true'
         run: exit 1
 
-      - name: Do deployments
-        if: steps.deployments.outputs.value != ''
-        shell: python
-        run: |
-          
-          import json
-          import os
-          import sys
-          
-          deployments = os.getenv("DEPLOYMENTS")
-          deployments = deployments.split(";")
-          managerRef = os.getenv("MANAGER_REF")
-          deploymentRef = os.getenv("DEPLOYMENT_REF")
-          secrets = json.loads(os.getenv('SECRETS'))
-          inputs = os.getenv('INPUTS'))
-          
-          if inputs is not None and inputs != '':
-            inputs = json.loads(inputs)
-          else
-            inputs = {}
-          
-          failure = false
-          
-          for deployment in deployments:
-            dep = deployment.split(":")
-            env = dep[0]
-            managerTag = dep[1]
-            managerTagFound = true
-
-            # Check manager tag exists
-            if managerTag != managerRef:
-              retCode = os.system(f"docker manifest inspect openremote/manager:{managerTag} > /dev/null 2> /dev/null")
-              if retCode != 0:
-                os.system(f"echo 'Manager tag not found: {managerTag}'")
-                managerTagFound = false
-                failure = true
-                continue
-                      
-            # Clean/make temp dir
-            os.system("rm -r temp")
-            os.system("mkdir temp")
-            
-            # ------------------------------------------------------
-            # Output env variables to temp env file for POSIX shell
-            # ------------------------------------------------------
-            
-            # Output default values for environment variables
-            os.system("echo 'SSH_PORT=\"22\"' >> temp/env")
-            os.system("echo 'SSH_USER=\"root\"' >> temp/env")
-            os.system("echo 'PLATFORM=\"linux/amd64\"' >> temp/env")
-            os.system(f"echo 'ENVIRONMENT=\"{env}\"' >> temp/env")
-            
-            # Output env file if exists
-            if os.path.exists(".ci_cd/env/.env"):
-              os.system("cat .ci_cd/env/.env >> temp/env")
-              
-            # Output environment specific env file if exists
-            if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
-              os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
-            
-            # Output secrets
-            for key, value in secrets.items():
-              os.system(f"echo 'Secret found {key}...'")
-              lines = len(value.split("\n"))
-              if lines > 1:
-                  os.system(f"echo '{key}=\"' >> temp/env")
-                  os.system(f"echo '{value}\"' >> temp/env")
-              else:
-                  os.system(f"echo '{key}=\"{value}\"' >> temp/env")
-            
-            # Output inputs that have a value
-            for key, value in inputs.items():
-              if value is not None and value != '':
-                os.system(f"echo 'Input found {key}...'")
-                os.system(f"echo '{key}=\"{value}\"' >> temp/env")
-            
-            # Copy compose file
-            composeFile = inputs.get("ENV_COMPOSE_FILE", "docker-compose.yml")
-            if os.path.exists(f"profile/{env}.yml"):
-              os.system(f"cp profile/{env}.yml temp/docker-compose.yml")
-            elif os.path.exists(composeFile):
-              os.system(f"cp {composeFile} temp/docker-compose.yml")
-            else
-              os.system("echo 'No docker compose file found for deployment'")
-              failure=true
-              continue
-            
-            # Determine clean install
-
-            # Output host init files
-            if os.path.exists(".ci_cd/host_init"):
-              os.system("cp -r.ci_cd/host_init temp/")
-          
-            # Make deploy script executable
-            os.system("chmod +x .ci_cd/deploy.sh")
-            
-            # Execute deploy script
-            os.system("bash .ci_cd/deploy.sh")
-          
-          if failure == true:
-            os.system("echo 'One or more deployments failed'")
-            sys.exit(1)
-        env:
-          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
-          DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
-          SECRETS: ${{ toJSON(secrets) }}
-          INPUTS: ${{ toJSON(github.event.inputs) }}
-        continue-on-error: true
         
