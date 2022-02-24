@@ -205,7 +205,7 @@ jobs:
             os.system("find temp")
             retCode = os.system("bash .ci_cd/deploy.sh")
             
-            if recCode != 0:
+            if retCode != 0:
               os.system(f"echo 'Deployment failed: {deployment}'")
               failure = True
               continue
