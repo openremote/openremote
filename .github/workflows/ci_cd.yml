@@ -116,7 +116,7 @@ jobs:
             managerTagFound = True
 
             # Check manager tag exists
-            if managerTag != managerRef:
+            if managerTag != "$ref":
               retCode = os.system(f"docker manifest inspect openremote/manager:{managerTag} > /dev/null 2> /dev/null")
               if retCode != 0:
                 os.system(f"echo 'Requested manager tag not found: {managerTag}'")
