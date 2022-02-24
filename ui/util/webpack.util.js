@@ -10,12 +10,12 @@ function getStandardModuleRules() {
     return {
         rules: [
             {
-                test: /(maplibre|mapbox|@material|@mdi).*\.css$/, //output css as strings
+                test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
                 type: "asset/source"
             },
             {
                 test: /\.css$/, //
-                exclude: /(maplibre|mapbox|@material|@mdi).*\.css$/,
+                exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
                 use: [
                     { loader: "css-loader" }
                 ]
