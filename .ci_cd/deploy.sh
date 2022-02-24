@@ -24,23 +24,23 @@ if [ -z "$HOST" ]; then
  exit 1
 fi
 
-sshCommandPrefix = "ssh"
-scpCommandPrefix = "scp"
+sshCommandPrefix="ssh"
+scpCommandPrefix="scp"
 
 if [ -f "$SSH_PORT" ]; then
-  sshCommandPrefix = "$sshCommandPrefix -P $SSH_PORT"
-  scpCommandPrefix = "$scpCommandPrefix -P $SSH_PORT"
+  sshCommandPrefix="$sshCommandPrefix -P $SSH_PORT"
+  scpCommandPrefix="$scpCommandPrefix -P $SSH_PORT"
 fi
 
 if [ -f "ssh.key" ]; then
-  sshCommandPrefix = "$sshCommandPrefix -i ssh.key"
-  scpCommandPrefix = "$scpCommandPrefix -i ssh.key"
+  sshCommandPrefix="$sshCommandPrefix -i ssh.key"
+  scpCommandPrefix="$scpCommandPrefix -i ssh.key"
 fi
 
-hostStr = "$HOST"
+hostStr="$HOST"
 
 if [ -z "$SSH_USER" ]; then
-  hostStr = "${SSH_USER}@$hostStr"
+  hostStr="${SSH_USER}@$hostStr"
 fi
 
 echo "GZipping temp dir"
