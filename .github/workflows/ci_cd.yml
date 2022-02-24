@@ -231,8 +231,7 @@ jobs:
             os.system("echo 'Deployment files:'")
             os.system("find temp")
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
-            result = subprocess.check_output("ls -a", capture_output=True, shell=True)
-            result = subprocess.check_output("bash .ci_cd/deploy.sh", capture_output=True, shell=True)
+            result = subprocess.check_output("bash .ci_cd/deploy.sh", shell=True)
             
             if result.returncode != 0:
               os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
