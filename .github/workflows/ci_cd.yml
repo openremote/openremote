@@ -230,9 +230,9 @@ jobs:
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
             os.system("echo 'Deployment files:'")
             os.system("find temp")
-            retCode = os.system("bash .ci_cd/deploy.sh")
+            result = subprocess.run("bash .ci_cd/deploy.sh", capture_output=True, shell=True)
             
-            if retCode != 0:
+            if result.returncode != 0:
               os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
               failure = True
               continue
