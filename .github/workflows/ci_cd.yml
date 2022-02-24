@@ -100,7 +100,7 @@ jobs:
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
           secrets = json.loads(os.getenv('SECRETS'))
-          inputs = os.getenv('INPUTS'))
+          inputs = os.getenv('INPUTS')
           
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
@@ -222,7 +222,6 @@ jobs:
 #           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           SECRETS: ${{ toJSON(secrets) }}
           INPUTS: ${{ toJSON(github.event.inputs) }}
-        continue-on-error: true
 
       - run: exit 1
 
