@@ -251,6 +251,18 @@ jobs:
           INPUTS: ${{ toJSON(github.event.inputs) }}
         continue-on-error: true
         
+      - name: Cleanup any obsolete docker images
+        timeout-minutes: 2
+        uses: appleboy/ssh-action@master
+        with:
+          host: staging.demo.openremote.io
+          port: 22
+          username: ubuntu
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            whoami
+        continue-on-error: true
+        
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
         with:
