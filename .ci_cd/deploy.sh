@@ -39,18 +39,18 @@ fi
 
 hostStr="$HOST"
 
-if [ -z "$SSH_USER" ]; then
+if [ ! -z "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
 
 echo "GZipping temp dir"
-echo "tar -zcvf temp.tar.gz temp"
+tar -zcvf temp.tar.gz temp
 
 echo "Copying temp dir to host"
-echo "$scpCommandPrefix temp.tar.gz ${hostStr}:~"
+$scpCommandPrefix temp.tar.gz ${hostStr}:~
 
 echo "Running deployment on host"
-echo '$sshCommandPrefix ${hostStr} << EOF
+echo $sshCommandPrefix ${hostStr} << EOF
   echo "Removing host temp dir"
   rm -fr temp
   
@@ -64,11 +64,11 @@ echo '$sshCommandPrefix ${hostStr} << EOF
   set +a 
   
   if [ -f "temp/manager.tar.gz" ]; then
-    docker load < temp/manager.tar.gz
+    echo "docker load < temp/manager.tar.gz"
   fi
   
   if [ -f "temp/deployment.tar.gz" ]; then
-    docker load < temp/deployment.tar.gz
+    echo "docker load < temp/deployment.tar.gz"
   fi
   
   # Run host init
@@ -87,31 +87,31 @@ echo '$sshCommandPrefix ${hostStr} << EOF
   fi  
   if [ ! -z "$hostInitCmd" ]; then
     echo "Running host init script: '$hostInitCmd'"
-    $hostInitCmd
+    echo "$hostInitCmd"
   fi
   
   # MAKE SURE WE HAVE CORRECT KEYCLOAK, PROXY AND POSTGRES IMAGES
-  docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
+  echo "docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures"
   
   # Attempt docker compose down
-  docker-compose -f temp/docker-compose.yml -p or down
+  echo "docker-compose -f temp/docker-compose.yml -p or down"
 
   # Delete postgres volume if CLEAN_INSTALL=true
   if [ $CLEAN_INSTALL == 'true' ]; then
-    docker volume rm or_postgresql-data
+    echo "docker volume rm or_postgresql-data"
   fi
   
   # Delete any deployment volume so we get the latest
-  docker volume rm or_deployment-data
+  echo "docker volume rm or_deployment-data"
 
   # Start the stack
-  docker-compose -f temp/docker-compose.yml -p or up -d
+  echo "docker-compose -f temp/docker-compose.yml -p or up -d"
   
   if [ $? != 0 ];then
     echo "Deployment failed to start the stack"
     exit 1
   fi
-  
+  exit 0
   echo "Waiting for up to 5mins for manager web server https://$HOST..."
   count=0
   response=0
@@ -125,4 +125,4 @@ echo '$sshCommandPrefix ${hostStr} << EOF
     echo "Response code = $response"
     exit 1
   fi
-EOF'
+EOF
