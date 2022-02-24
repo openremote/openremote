@@ -87,7 +87,7 @@ jobs:
           
 
       - name: Do deployments
-        if: steps.deployments.outputs.value != ''
+#         if: steps.deployments.outputs.value != ''
         shell: python
         run: |
           
