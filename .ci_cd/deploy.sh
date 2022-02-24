@@ -24,8 +24,8 @@ if [ -z "$HOST" ]; then
  exit 1
 fi
 
-sshCommandPrefix="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-scpCommandPrefix="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+sshCommandPrefix="ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+scpCommandPrefix="scp -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 if [ -f "$SSH_PORT" ]; then
   sshCommandPrefix="$sshCommandPrefix -p $SSH_PORT"
