@@ -107,21 +107,21 @@ jobs:
           else:
             inputs = {}
           
-          failure = false
+          failure = False
           
           for deployment in deployments:
             dep = deployment.split(":")
             env = dep[0]
             managerTag = dep[1]
-            managerTagFound = true
+            managerTagFound = True
 
             # Check manager tag exists
             if managerTag != managerRef:
               retCode = os.system(f"docker manifest inspect openremote/manager:{managerTag} > /dev/null 2> /dev/null")
               if retCode != 0:
                 os.system(f"echo 'Requested manager tag not found: {managerTag}'")
-                managerTagFound = false
-                failure = true
+                managerTagFound = False
+                failure = True
                 continue
                       
             # Clean/make temp dir and ssh env file
@@ -207,10 +207,10 @@ jobs:
             
             if recCode != 0:
               os.system(f"echo 'Deployment failed: {deployment}'")
-              failure = true
+              failure = True
               continue
           
-          if failure == true:
+          if failure == True:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
