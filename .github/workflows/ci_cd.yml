@@ -252,11 +252,6 @@ jobs:
           INPUTS: ${{ toJSON(github.event.inputs) }}
         continue-on-error: true
         
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          limit-access-to-users: richturner
-        
       - run: exit 1
 
 
