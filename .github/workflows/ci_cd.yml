@@ -163,12 +163,15 @@ jobs:
               os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
             
             # Output secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
+            # _ENV_ prefixed keys are output last (to override any non env specific keys)
             for key, value in secrets.items():
+              if key.startswith("_"):
+                continue
               os.system(f"echo 'Secret found {key}...'")
               if key == "SSH_KEY":
-                os.system(f"echo \"{value}\" >> ssh.key")
+                os.system(f"echo \"{value}\" > ssh.key")
               elif key == "SSH_PASSWORD":
-                os.system(f"echo '{key}=\"{value}\"' >> ssh.env")
+                os.system(f"echo '{key}=\"{value}\"' > ssh.env")
               else:
                 lines = len(value.split("\n"))
                 if lines > 1:
@@ -176,7 +179,30 @@ jobs:
                     os.system(f"echo '{value}\"' >> temp/env")
                 else:
                     os.system(f"echo '{key}=\"{value}\"' >> temp/env")
-            
+
+            for key, value in secrets.items():
+              if not key.startswith("_"):
+                continue
+              environment = (env if env else "").upper()
+              prefix = "_" + environment + "_"
+              if not key.startswith(prefix):
+                continue
+              else:
+                key = key.replace(prefix, "")
+              os.system(f"echo 'Secret found {key}...'")
+              if key == "SSH_KEY":
+                os.system(f"echo \"{value}\" > ssh.key")
+              elif key == "SSH_PASSWORD":
+                os.system(f"echo '{key}=\"{value}\"' > ssh.env")
+              else:
+                lines = len(value.split("\n"))
+                if lines > 1:
+                    os.system(f"echo '{key}=\"' >> temp/env")
+                    os.system(f"echo '{value}\"' >> temp/env")
+                else:
+                    os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+
+
             # Output inputs that have a value
             for key, value in inputs.items():
               if value is not None and value != '':
