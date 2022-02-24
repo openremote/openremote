@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ ! -f "temp/docker-compose.yml" ]; then
-  echo "Docker compose file missing: 'temp/docker-compose.yml`"
+  echo "Docker compose file missing: 'temp/docker-compose.yml'"
   exit 1
 fi
 
