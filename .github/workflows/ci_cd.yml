@@ -231,7 +231,7 @@ jobs:
             os.system("echo 'Deployment files:'")
             os.system("find temp")
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
-            result = subprocess.check_output("bash .ci_cd/deploy.sh", shell=True)
+            result = subprocess.run("bash .ci_cd/deploy.sh", shell=True)
             
             if result.returncode != 0:
               os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
@@ -251,11 +251,6 @@ jobs:
           SECRETS: ${{ toJSON(secrets) }}
           INPUTS: ${{ toJSON(github.event.inputs) }}
         continue-on-error: true
-        
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          limit-access-to-users: richturner
         
       - run: exit 1
 
