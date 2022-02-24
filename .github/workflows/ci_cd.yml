@@ -104,7 +104,7 @@ jobs:
           
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
-          else
+          else:
             inputs = {}
           
           failure = false
@@ -136,7 +136,7 @@ jobs:
               os.system(f"cp profile/{env}.yml temp/docker-compose.yml")
             elif os.path.exists(composeFile):
               os.system(f"cp {composeFile} temp/docker-compose.yml")
-            else
+            else:
               os.system("echo 'No docker compose file found for deployment'")
               failure=true
               continue
@@ -169,7 +169,7 @@ jobs:
                 os.system(f"echo {value} >> ssh.key")
               elif key == "SSH_PASSWORD":
                 os.system(f"echo '{key}=\"{value}\"' >> ssh.env")
-              else
+              else:
                 lines = len(value.split("\n"))
                 if lines > 1:
                     os.system(f"echo '{key}=\"' >> temp/env")
@@ -191,7 +191,7 @@ jobs:
             if managerTag == "$ref":
               os.system("cp manager.tar.gz temp/")
               os.system(f"echo 'MANAGER_VERSION=\"{managerRef}\"' >> temp/env")
-            else
+            else:
               os.system(f"echo 'MANAGER_VERSION=\"{managerTag}\"' >> temp/env")
               
             # Copy deployment docker image and set version
