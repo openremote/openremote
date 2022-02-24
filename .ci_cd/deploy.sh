@@ -51,7 +51,7 @@ echo "Copying temp dir to host"
 $scpCommandPrefix temp.tar.gz ${hostStr}:~
 
 echo "Running deployment on host"
-echo $sshCommandPrefix ${hostStr} << EOF
+$sshCommandPrefix ${hostStr} << EOF
   echo "Removing host temp dir"
   rm -fr temp
   
