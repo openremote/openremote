@@ -16,10 +16,10 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "gridstack": "^5.0.0",
     "@openremote/core": "^1.0.4",
     "@openremote/model": "^1.0.4",
     "@openremote/rest": "^1.0.4",
+    "gridstack": "^5.0.0",
     "lit": "^2.0.2"
   },
   "devDependencies": {
