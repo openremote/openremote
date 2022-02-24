@@ -241,7 +241,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
-          DEPLOYMENTS: 'staging:$ref;:develop'
+          DEPLOYMENTS: 'staging:$ref'
           MANAGER_REF: ${{ steps.refs.outputs.managerRef }}
           DEPLOYMENT_REF: ${{ steps.refs.outputs.deploymentRef }}
 #           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
@@ -249,7 +249,13 @@ jobs:
 #           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           SECRETS: ${{ toJSON(secrets) }}
           INPUTS: ${{ toJSON(github.event.inputs) }}
-
+        continue-on-error: true
+        
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          limit-access-to-users: richturner
+        
       - run: exit 1
 
 
