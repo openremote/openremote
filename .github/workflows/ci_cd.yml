@@ -125,10 +125,10 @@ jobs:
                 continue
                       
             # Clean/make temp dir and ssh env file
-            os.system("rm -r temp")
+            os.system("rm -r temp 2>/dev/null")
             os.system("mkdir temp")
-            os.system("rm ssh.env")
-            os.system("rm ssh.key")
+            os.system("rm ssh.env 2>/dev/null")
+            os.system("rm ssh.key 2>/dev/null")
             
             # Copy compose file
             composeFile = inputs.get("ENV_COMPOSE_FILE", "docker-compose.yml")
@@ -166,7 +166,7 @@ jobs:
             for key, value in secrets.items():
               os.system(f"echo 'Secret found {key}...'")
               if key == "SSH_KEY":
-                os.system(f"echo {value} >> ssh.key")
+                os.system(f"echo \"{value}\" >> ssh.key")
               elif key == "SSH_PASSWORD":
                 os.system(f"echo '{key}=\"{value}\"' >> ssh.env")
               else:
@@ -185,12 +185,13 @@ jobs:
             
             # Copy host init files
             if os.path.exists(".ci_cd/host_init"):
-              os.system("cp -r.ci_cd/host_init temp/")
+              os.system("cp -r .ci_cd/host_init temp/")
           
             # Copy manager docker image and set version
             if managerTag == "$ref":
               os.system("cp manager.tar.gz temp/")
               os.system(f"echo 'MANAGER_VERSION=\"{managerRef}\"' >> temp/env")
+              managerTag=managerRef
             else:
               os.system(f"echo 'MANAGER_VERSION=\"{managerTag}\"' >> temp/env")
               
@@ -200,13 +201,13 @@ jobs:
               os.system(f"echo 'DEPLOYMENT_VERSION=\"{deploymentRef}\"' >> temp/env")
             
             # Execute deploy script            
-            os.system(f"echo 'Executing deploy script for deployment: {deployment}'")
+            os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
             os.system("echo 'Deployment files:'")
             os.system("find temp")
             retCode = os.system("bash .ci_cd/deploy.sh")
             
             if retCode != 0:
-              os.system(f"echo 'Deployment failed: {deployment}'")
+              os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
               failure = True
               continue
           
