@@ -23,7 +23,7 @@ import {mapAssetCardStyle} from "./style";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 import { i18next } from "@openremote/or-translate";
 import { getMarkerIconAndColorFromAssetType } from "./util";
-import {MapMarkerConfig, getMarkerConfigLabelAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
+import {getMarkerConfigAttributeName, MapMarkerAssetConfig} from "./markers/or-map-marker-asset";
 
 export interface MapAssetCardTypeConfig {
     include?: string[];
@@ -154,7 +154,7 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
             && (!attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr)))
             .sort(Util.sortByString((listItem) => listItem.name!));
 
-        const highlightedAttr = getMarkerConfigLabelAttributeName(this.markerconfig, this.asset.type);
+        const highlightedAttr = getMarkerConfigAttributeName(this.markerconfig, this.asset.type);
 
         return html`
             <div id="card-container" style="${styleStr}">

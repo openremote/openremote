@@ -348,7 +348,7 @@ export class MapWidget {
                     this._geocoder._geocode(value);
                   }
                 }, 300);
-                this._mapGl!.addControl(this._geocoder);
+                this._mapGl!.addControl(this._geocoder, 'top-left');
 
                 // There's no callback parameter in the options of the MaplibreGeocoder,
                 // so this is how we get the selected result.

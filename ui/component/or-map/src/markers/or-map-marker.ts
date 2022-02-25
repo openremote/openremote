@@ -1,7 +1,7 @@
 import {css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
-import {DefaultBoxShadowBottom} from "@openremote/core";
+import {DefaultBoxShadow} from "@openremote/core";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -69,15 +69,15 @@ export class OrMapMarker extends LitElement {
             width: auto;
             height: 20px;
             position: absolute;
-            top: -20px;
+            top: -14px;
             left: 50%;
             padding: 0 3px;
             transform: translate(-50%, -50%);
             text-align: center;
             border-radius: 3px;
-            -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-            -moz-box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
-            box-shadow: ${unsafeCSS(DefaultBoxShadowBottom)};
+            -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+            -moz-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+            box-shadow: ${unsafeCSS(DefaultBoxShadow)};
           }
           .label > span {
             white-space: nowrap;

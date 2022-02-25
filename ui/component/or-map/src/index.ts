@@ -282,7 +282,7 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
             }
         };
 
-        const controls = [[centerControl, "bottom-left"], [coordinatesControl, "top-left"]]
+        const controls = [[centerControl, "bottom-left"], [coordinatesControl, "top-right"]]
 
         if (!readonly) {
 
