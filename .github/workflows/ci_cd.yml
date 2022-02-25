@@ -214,7 +214,7 @@ jobs:
                 deploys = eventConfig['deploy']
                 tags = eventConfig['distribute']['tags']
 
-            elif eventName == "release" && refName in eventConfig:
+            elif eventName == "release" and refName in eventConfig:
 
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
