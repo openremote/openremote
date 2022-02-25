@@ -461,5 +461,7 @@
     "title": {
       "indexedItem": "Item {{index}}"
     }
-  }
+  },
+  "yes": "Ja",
+  "no": "Nein"
 }

@@ -467,5 +467,7 @@
   "createUserFailed": "Create user failed",
   "saveUserFailed": "Save user failed",
   "invalidUsername": "Username must be 3-255 alpha numerical characters",
-  "invalidEmail": "Invalid email address"
+  "invalidEmail": "Invalid email address",
+  "yes": "Yes",
+  "no": "No"
 }
