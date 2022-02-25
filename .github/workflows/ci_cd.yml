@@ -180,43 +180,41 @@ jobs:
 
           if data is not None and eventName in data:              
             eventConfig = data[eventName]
-            
-            if eventConfig is not None:
-            
-              if eventName == "managerDockerPush":
+           
+            if eventName == "managerDockerPush":
 
-                # Iterate through keys and check if that manager docker image has changed since last execution
-                deploys=[]
-                for key in eventConfig.keys():
-                  os.system(f"echo 'Checking manager docker tag: {key}'")
-                  newManifestStr = None
-                  oldManifestStr = None
+              # Iterate through keys and check if that manager docker image has changed since last execution
+              deploys=[]
+              for key in eventConfig.keys():
+                os.system(f"echo 'Checking manager docker tag: {key}'")
+                newManifestStr = None
+                oldManifestStr = None
 
-                  if os.path.exists(os.path.expanduser(f"~/manager-tags-new/{key}")):
-                    f = open(os.path.expanduser(f"~/manager-tags-new/{key}"))
-                    newManifestStr = f.read()
-                    f.close()
-                  if os.path.exists(os.path.expanduser(f"~/manager-tags-old/{key}")):
-                    f = open(os.path.expanduser(f"~/manager-tags-old/{key}"))
-                    oldManifestStr = f.read()
-                    f.close()                  
-                  
-                  if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
-                    os.system(f"echo 'Manager docker tag has been updated: {key}'")
-                    deployConfig = eventConfig[key]['deploy']
-                    if deployConfig is not None:
-                      # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
-                      deployConfig['managerTag'] = key
-                      deploys.append(deployConfig)
+                if os.path.exists(os.path.expanduser(f"~/manager-tags-new/{key}")):
+                  f = open(os.path.expanduser(f"~/manager-tags-new/{key}"))
+                  newManifestStr = f.read()
+                  f.close()
+                if os.path.exists(os.path.expanduser(f"~/manager-tags-old/{key}")):
+                  f = open(os.path.expanduser(f"~/manager-tags-old/{key}"))
+                  oldManifestStr = f.read()
+                  f.close()                  
+
+                if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
+                  os.system(f"echo 'Manager docker tag has been updated: {key}'")
+                  deployConfig = eventConfig[key]['deploy']
+                  if deployConfig is not None:
+                    # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
+                    deployConfig['managerTag'] = key
+                    deploys.append(deployConfig)
                 
-              elif eventName == "push":
+              elif eventName == "push" and refName in eventConfig:
               
                 eventConfig = eventConfig[refName]
                 if eventConfig is not None:
                   deploys = eventConfig['deploy']
                   tags = eventConfig['distribute']['tags']
             
-              elif eventName == "release":
+              elif eventName == "release" && refName in eventConfig:
               
                 eventConfig = eventConfig[refName]
                 if eventConfig is not None:
