@@ -14,7 +14,7 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
-import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {subscribe, Util} from "@openremote/core";
 import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
@@ -23,6 +23,7 @@ import {
     AgentDescriptor,
     Asset,
     AssetEvent,
+    AssetModelUtil,
     Attribute,
     AttributeEvent,
     ClientRole,
@@ -31,14 +32,12 @@ import {
     WellknownAssets,
     WellknownAttributes,
     WellknownMetaItems,
-    AssetModelUtil,
-    UserAssetLink,
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
-import i18next, {TOptions, InitOptions} from "i18next";
+import i18next, {InitOptions, TOptions} from "i18next";
 import {styleMap} from "lit/directives/style-map.js";
 import {classMap} from "lit/directives/class-map.js";
-import { GenericAxiosResponse } from "axios";
+import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
@@ -772,7 +771,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName+"-user-table") as OrMwcTable;
             userTable.options = {stickyFirstColumn:false};
             userTable.headers = ['Username', 'Roles', 'Restricted user'];
-            if (rows) userTable.rows = rows;
+            if (rows) userTable.rows = rows.sort(Util.sortByString(u => u[0]));
         };
 
         // Load users and rights, then update the table
@@ -943,8 +942,13 @@ async function getLinkedUsers(asset: Asset): Promise<Promise<string[]>[]> {
                         row.push(roleNames!);
                     });
 
-                let restrictedUser = ''; // todo: get restricted user
-                row.push(restrictedUser);
+                await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
+                    .then((rolesRes) => {
+                        const hasRestrictedUser = rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
+
+                        let restrictedUser = hasRestrictedUser ? i18next.t('yes') : i18next.t('no');
+                        row.push(restrictedUser);
+                    });
 
                 return row;
             });
