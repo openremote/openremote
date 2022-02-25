@@ -24,8 +24,8 @@ if [ -z "$HOST" ]; then
  exit 1
 fi
 
-sshCommandPrefix="ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-scpCommandPrefix="scp -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+sshCommandPrefix="ssh -q -o LogLevel=QUIET -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+scpCommandPrefix="scp -q -o LogLevel=QUIET -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 if [ -f "$SSH_PORT" ]; then
   sshCommandPrefix="$sshCommandPrefix -p $SSH_PORT"
@@ -112,18 +112,54 @@ $sshCommandPrefix ${hostStr} << EOF
     echo "Deployment failed to start the stack"
     exit 1
   fi
-  exit 0
-  echo "Waiting for up to 5mins for manager web server https://$HOST..."
+  
+  echo "Waiting for up to 5mins for standard services to be running"
   count=0
-  response=0
-  while [ $response -ne 200 ] && [ $count -lt 36 ]; do
-    response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
+  ok=false
+  while [ "$ok" != 'true' ] && [ $count -lt 36 ]; do
     echo '.'
-    count=$((count+1))
     sleep 5
+    postgresOk=false
+    keycloakOk=false
+    managerOk=false
+    proxyOk=false
+    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
+      postgresOk=true
+    fi
+    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
+      keycloakOk=true
+    fi
+    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
+      managerOk=true
+    fi
+    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
+      proxyOk=true
+    fi
+    
+    if [ "$postgresOk" == 'true' -a "$keycloakOk" == 'true' -a "$managerOk" == 'true' -a "$proxyOk" == 'true' ]; then
+      ok=true
+    fi
+    
+    count=$((count+1))    
   done
-  if [ $response -ne 200 ]; then
-    echo "Response code = $response"
+  
+  if [ "$ok" != 'true' ]; then
+    echo "Not all containers are healthy"
     exit 1
+  else
+    docker image prune -f -a
+    docker volume prune -f
   fi
 EOF
+
+if [ $? != 0 ]; then
+  echo "Deployment failed or is unhealthy"
+  exit 1
+fi
+
+echo "Testing manager web server https://$HOST..."
+response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
+if [ $response -ne 200 ]; then
+  echo "Response code = $response"
+  exit 1
+fi
