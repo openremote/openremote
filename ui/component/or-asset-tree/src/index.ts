@@ -376,11 +376,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
 
     protected getSelectHeader(): TemplateResult {
-        return html `<or-mwc-input style="margin-bottom: 14px; width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" icon="selection-ellipse" comfortable="true"></or-mwc-input>`;
+        return html `<or-mwc-input style="margin-bottom: 14px; width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
     }
 
     protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
-        return html `<or-mwc-input style="margin-bottom: 14px; width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}" comfortable="true"></or-mwc-input>`;
+        return html `<or-mwc-input style="margin-bottom: 14px; width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}"></or-mwc-input>`;
     }
 
     protected assetTypeSelect(): TemplateResult {
@@ -455,6 +455,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     
                     this._attributeValueFilter.value = undefined;
                     this._attributeNameFilter.value = undefined;
+
+                    this._attributeValueFilter.disabled = true;
                     
                     this._filter = new OrAssetTreeFilter();
                     
@@ -492,7 +494,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div class="advanced-filter">
                     ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
                         this.assetTypeSelect(), 
-                        this.mapDescriptors(this._assetTypes, { text: "None", value: "undefined", icon: "selection-ellipse" }),
+                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeNone"), value: "", icon: "selection-ellipse" }),
                         undefined,
                         (v: string[] | string) => {
                             console.log('selected ' + (v as string));
@@ -500,7 +502,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         }) : html ``
                     }
                     <or-mwc-input id="attributeNameFilter" .label="${i18next.t("filter.attributeLabel")}"
-                                  comfortable="true"
+                                  
                                   .type="${InputType.TEXT}"
                                   style="margin-bottom: 14px;"
                                   ?disabled="${this._loading}"
@@ -511,7 +513,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                       this._shouldEnableAttrType((e.detail.value as string) || undefined);
                                   }}"></or-mwc-input>
                     <or-mwc-input id="attributeValueFilter" .label="${i18next.t("filter.attributeValueLabel")}"
-                                  comfortable="true"
+                                  
                                   .type="${InputType.TEXT}"
                                   style="margin-bottom: 14px;"
                                   disabled></or-mwc-input>
@@ -775,6 +777,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                     resultingFilter.attribute = [ matchingVal ];
                 }
+
+                this._attributeValueFilter.disabled = false;
             }
 
             matchingResult = searchValue.match(/(type\:)\S+/g);
@@ -840,7 +844,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             console.log('now 3 asset is ' + asset);
 
-            resultingFilter.asset = (asset && asset.length > 0) ? asset : undefined;
+            resultingFilter.asset = (asset && asset.length > 0) ? asset.trim() : undefined;
 
             console.log('result :');
             console.log(resultingFilter);

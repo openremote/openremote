@@ -392,6 +392,7 @@
   "filter": {
     "action": "FILTER",
     "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
     "attributeLabel": "Attribute",
     "attributeValueLabel": "Attribute value"
   }
