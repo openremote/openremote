@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [ ! -f "temp/docker-compose.yml" ]; then
-  echo "Docker compose file missing: 'temp/docker-compose.yml'"
-  exit 1
-fi
-
 if [ -f "temp/env" ]; then
   echo "Loading environment variables: 'temp/env'"
   set -a
@@ -17,6 +12,21 @@ if [ -f "ssh.env" ]; then
   set -a
   . ./ssh.env
   set +x
+fi
+
+if [ ! -z "$ENV_COMPOSE_FILE" ]; then
+  if [ -f "profile/$ENVIRONMENT.yml" ]; then
+    cp "profile/$ENVIRONMENT.yml" temp/docker-compose.yml
+  elif [ -f "docker-compose.yml" ]; then
+    cp docker-compose.yml temp/docker-compose.yml
+  fi
+elif [ -f "$ENV_COMPOSE_FILE" ]; then
+    cp "$ENV_COMPOSE_FILE" temp/docker-compose.yml
+fi
+
+if [ ! -f "temp/docker-compose.yml" ]; then
+  echo "Docker compose file missing: 'temp/docker-compose.yml'"
+  exit 1
 fi
 
 if [ -z "$HOST" ]; then
@@ -43,6 +53,45 @@ hostStr="$HOST"
 if [ ! -z "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
+
+# Get host platform
+PLATFORM=$("$sshCommandPrefix $HOST -- uname -m")
+if [ "$?" != 0 -o -z "$PLATFORM" ]; then
+  echo "Failed to determine host platform"
+  exit 1
+fi
+if [ "$PLATFORM" == "x86_64" ]; then
+  PLATFORM="amd64"
+fi
+PLATFORM="linux/$PLATFORM"
+
+# Create docker image tarballs as required
+if [ "$MANAGER_TAG" != '$ref' ]; then
+  docker manifest inspect openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
+  if [ $? != 0 ]; then
+    echo "Specified manager tag does not exist in docker hub"
+    exit 1
+  fi
+else
+  MANAGER_TAG="$MANAGER_REF"
+  # Export manager docker image for host platform
+  docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$MANAGER_REF --platform $PLATFORM openremote/manager:$MANAGER_REF $MANAGER_DOCKER_BUILD_PATH | gzip > temp/manager.tar.gz
+fi
+
+if [ ! -z "$DEPLOYMENT_REF" ]; then
+  # Export deployment docker image for host platform
+  docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$DEPLOYMENT_REF --platform $PLATFORM openremote/deployment:$DEPLOYMENT_REF $DEPLOYMENT_DOCKER_BUILD_PATH | gzip > temp/deployment.tar.gz
+fi
+
+if [ -d ".ci_cd/host_init" ]; then
+  cp -r .ci_cd/host_init temp/
+fi
+
+# Set version variables
+MANAGER_VERSION="$MANAGER_TAG"
+DEPLOYMENT_VERSION="$DEPLOYMENT_REF"
+echo "MANAGER_VERSION=\"$MANAGER_VERSION\"" >> temp/env
+echo "DEPLOYMENT_VERSION=\"$DEPLOYMENT_VERSION\"" >> temp/env
 
 echo "GZipping temp dir"
 tar -zcvf temp.tar.gz temp
@@ -85,8 +134,8 @@ $sshCommandPrefix ${hostStr} << EOF
     hostInitCmd=".ci_cd/host_init/$ENVIRONMENT.sh"
   elif [ -f ".ci_cd/host_init/init.sh" ]; then
     hostInitCmd=".ci_cd/host_init/init.sh"
-  fi  
-  if [ ! -z "$hostInitCmd" ]; then
+  fi
+    if [ ! -z "$hostInitCmd" ]; then
     echo "Running host init script: '$hostInitCmd'"
     $hostInitCmd
   fi
