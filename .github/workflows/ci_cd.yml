@@ -511,8 +511,6 @@ jobs:
           
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
-          else:
-            inputs = {}
           
           failure = False
                     
@@ -592,10 +590,11 @@ jobs:
 
 
             # Output inputs that have a value
-            for key, value in inputs.items():
-              if value is not None and value != '':
-                os.system(f"echo 'Input found {key}...'")
-                os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+            if inputs is not None and inputs != '':
+              for key, value in inputs.items():
+                if value is not None and value != '':
+                  os.system(f"echo 'Input found {key}...'")
+                  os.system(f"echo '{key}=\"{value}\"' >> temp/env")
             
             # Execute deploy script            
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
