@@ -781,14 +781,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             })
         });
 
-        return html`
-            <style>
-                p {
-                     color: red;
-                }
-            </style>
-            <or-mwc-table .id="${panelName}-user-table"></or-mwc-table>
-        `;
+        return html`<or-mwc-table .id="${panelName}-user-table"></or-mwc-table>`;
     }
 }
 
