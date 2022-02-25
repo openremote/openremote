@@ -243,7 +243,8 @@ jobs:
               if 'managerTag' in deploy:
                 deployStr += deploy['managerTag']
               else:
-                deployStr += '$ref'
+                os.system("echo 'Manager tag not specified so using commit SHA'")
+                deployStr += '#ref'
               
               deployStr += ";"
 
@@ -385,7 +386,7 @@ jobs:
           echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
           echo "************************************************************"
           echo "************************************************************"
-
+      
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         uses: docker/login-action@v1
