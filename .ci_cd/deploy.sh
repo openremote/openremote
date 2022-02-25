@@ -167,7 +167,7 @@ $sshCommandPrefix ${hostStr} << EOF
   echo "Waiting for up to 5mins for standard services to be running"
   count=0
   ok=false
-  while [ "$ok" != 'true' ] && [ $count -lt 36 ]; do
+  while [ "$ok" != 'true' ] && [ "$count" -lt 36 ]; do
     echo '.'
     sleep 5
     postgresOk=false
@@ -203,14 +203,14 @@ $sshCommandPrefix ${hostStr} << EOF
   fi
 EOF
 
-if [ $? != 0 ]; then
+if [ "$?" != 0 ]; then
   echo "Deployment failed or is unhealthy"
   exit 1
 fi
 
 echo "Testing manager web server https://$HOST..."
 response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
-if [ $response -ne 200 ]; then
+if [ "$response" -ne 200 ]; then
   echo "Response code = $response"
   exit 1
 fi
