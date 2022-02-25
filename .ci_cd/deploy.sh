@@ -36,8 +36,8 @@ if [ ! -f "temp/docker-compose.yml" ]; then
   exit 1
 fi
 
-sshCommandPrefix="ssh -q -o LogLevel=QUIET -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-scpCommandPrefix="scp -q -o LogLevel=QUIET -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+sshCommandPrefix="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+scpCommandPrefix="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 if [ -f "$SSH_PORT" ]; then
   sshCommandPrefix="$sshCommandPrefix -p $SSH_PORT"
