@@ -375,7 +375,6 @@ jobs:
           echo "Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}"
           echo "************************************************************"
           echo "************************************************************"
-          exit 1
 
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
