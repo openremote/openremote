@@ -242,7 +242,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
-          DEPLOYMENTS: 'staging:$ref'
+          DEPLOYMENTS: 'staging:$latest'
           MANAGER_REF: ${{ steps.refs.outputs.managerRef }}
           DEPLOYMENT_REF: ${{ steps.refs.outputs.deploymentRef }}
 #           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
