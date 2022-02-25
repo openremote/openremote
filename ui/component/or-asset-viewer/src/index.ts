@@ -924,8 +924,7 @@ async function getLinkedUsers(asset: Asset): Promise<Promise<string[]>[]> {
         response = await manager.rest.api.AssetResource.getUserAssetLinks(
             {realm: manager.displayRealm, assetId: asset.id}
         ).then((userAssetLinksRes) => {
-            return userAssetLinksRes.data.map(e => e.id!.userId) as string[];
-        }).then((userIds: string[]) => {
+            const userIds = userAssetLinksRes.data.map(e => e.id!.userId) as string[];
             return userIds.map(async (userId) => {
 
                 let row: string[] = [];
