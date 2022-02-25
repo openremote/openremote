@@ -65,11 +65,11 @@ $sshCommandPrefix ${hostStr} << EOF
   set +a 
   
   if [ -f "temp/manager.tar.gz" ]; then
-    echo "docker load < temp/manager.tar.gz"
+    docker load < temp/manager.tar.gz
   fi
   
   if [ -f "temp/deployment.tar.gz" ]; then
-    echo "docker load < temp/deployment.tar.gz"
+    docker load < temp/deployment.tar.gz
   fi
   
   # Run host init
@@ -88,25 +88,25 @@ $sshCommandPrefix ${hostStr} << EOF
   fi  
   if [ ! -z "$hostInitCmd" ]; then
     echo "Running host init script: '$hostInitCmd'"
-    echo "$hostInitCmd"
+    $hostInitCmd
   fi
   
   # MAKE SURE WE HAVE CORRECT KEYCLOAK, PROXY AND POSTGRES IMAGES
-  echo "docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures"
+  docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
   
   # Attempt docker compose down
-  echo "docker-compose -f temp/docker-compose.yml -p or down"
+  docker-compose -f temp/docker-compose.yml -p or down
 
   # Delete postgres volume if CLEAN_INSTALL=true
   if [ $CLEAN_INSTALL == 'true' ]; then
-    echo "docker volume rm or_postgresql-data"
+    docker volume rm or_postgresql-data
   fi
   
   # Delete any deployment volume so we get the latest
-  echo "docker volume rm or_deployment-data"
+  docker volume rm or_deployment-data
 
   # Start the stack
-  echo "docker-compose -f temp/docker-compose.yml -p or up -d"
+  docker-compose -f temp/docker-compose.yml -p or up -d
   
   if [ $? != 0 ];then
     echo "Deployment failed to start the stack"
