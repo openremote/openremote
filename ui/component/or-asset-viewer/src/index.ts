@@ -767,17 +767,21 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
     if (panelConfig.type === "linkedUsers") {
 
-        const updateTable = (rows?: string[][]) => {
+        const createUserTable = (rows: string[][]) => {
             const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName+"-user-table") as OrMwcTable;
             userTable.options = {stickyFirstColumn:false};
             userTable.headers = ['Username', 'Roles', 'Restricted user'];
-            if (rows) userTable.rows = rows.sort(Util.sortByString(u => u[0]));
+            userTable.rows = rows.sort(Util.sortByString(u => u[0]));
         };
 
         // Load users and rights, then update the table
         getLinkedUsers(asset).then((linkedUsers) => {
             Promise.all(linkedUsers).then(res => {
-                updateTable(res);
+                if (!res || res.length === 0) {
+                    hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
+                    return;
+                }
+                createUserTable(res);
             })
         });
 
