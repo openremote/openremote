@@ -265,7 +265,7 @@ jobs:
             if [ -z "$INPUT_MANAGER_TAG" ]; then
               tag="$ref"
             fi
-            deployments="$ENVIRONMENT:$tag"
+            deployments="$INPUT_ENVIRONMENT:$tag"
           fi
           echo "::set-output name=value::$deployments"
         env:
@@ -464,11 +464,7 @@ jobs:
         run: ${{ steps.test-ui-command.outputs.value }}
         timeout-minutes: 20
         continue-on-error: true
-        
-      - name: Check deployment host connections if only deploying
-        if: ${{ steps.ci-cd-output.outputs.tags == '' && steps.deployments.outputs.value != '' }}
-        run: echo "TEST DEPLOYMENT HOST CONNECTIONS"
-        
+
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
         run: ${{ steps.install-command.outputs.value }}
