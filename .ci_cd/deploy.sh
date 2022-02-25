@@ -59,7 +59,7 @@ fi
 # Get host platform
 PLATFORM=$($sshCommandPrefix $HOST -- uname -m)
 if [ "$?" != 0 -o -z "$PLATFORM" ]; then
-  echo "Failed to determine host platform"
+  echo "Failed to determine host platform using '$sshCommandPrefix $HOST -- uname -m': PLATFORM=$PLATFORM"
   exit 1
 fi
 if [ "$PLATFORM" == "x86_64" ]; then
