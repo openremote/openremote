@@ -484,7 +484,7 @@ jobs:
           files: ".ci_cd/deploy.sh"
           
       - name: Deployment script missing
-        if: steps.check_deployment_script.outputs.files_exists != 'true'
+        if: ${{ steps.deployments.outputs.value != '' && steps.check_deployment_script.outputs.files_exists != 'true' }}
         run: exit 1
         
       - name: Run deployment docker command
