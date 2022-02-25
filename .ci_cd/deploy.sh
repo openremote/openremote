@@ -14,6 +14,11 @@ if [ -f "ssh.env" ]; then
   set +x
 fi
 
+if [ -z "$HOST" ]; then
+ echo "SSH Host is not set"
+ exit 1
+fi
+
 if [ ! -z "$ENV_COMPOSE_FILE" ]; then
   if [ -f "profile/$ENVIRONMENT.yml" ]; then
     cp "profile/$ENVIRONMENT.yml" temp/docker-compose.yml
@@ -21,17 +26,14 @@ if [ ! -z "$ENV_COMPOSE_FILE" ]; then
     cp docker-compose.yml temp/docker-compose.yml
   fi
 elif [ -f "$ENV_COMPOSE_FILE" ]; then
-    cp "$ENV_COMPOSE_FILE" temp/docker-compose.yml
+  cp "$ENV_COMPOSE_FILE" temp/docker-compose.yml
+else
+  cp docker-compose.yml temp/docker-compose.yml
 fi
 
 if [ ! -f "temp/docker-compose.yml" ]; then
   echo "Docker compose file missing: 'temp/docker-compose.yml'"
   exit 1
-fi
-
-if [ -z "$HOST" ]; then
- echo "SSH Host is not set"
- exit 1
 fi
 
 sshCommandPrefix="ssh -q -o LogLevel=QUIET -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
