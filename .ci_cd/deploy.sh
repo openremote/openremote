@@ -164,11 +164,11 @@ $sshCommandPrefix ${hostStr} << EOF
     exit 1
   fi
   
-  echo "Waiting for up to 5mins for standard services to be running"
+  echo "Waiting for up to 5mins for standard services to be healthy"
   count=0
   ok=false
   while [ "$ok" != 'true' ] && [ \$count -lt 36 ]; do
-    echo '.'
+    echo "attempt...$count"
     sleep 5
     postgresOk=false
     keycloakOk=false
