@@ -167,34 +167,34 @@ $sshCommandPrefix ${hostStr} << EOF
   echo "Waiting for up to 5mins for standard services to be healthy"
   count=0
   ok=false
-  while [ "$ok" != 'true' ] && [ \$count -lt 36 ]; do
-    echo "attempt...$count"
+  while [ \$ok != 'true' ] && [ \$count -lt 36 ]; do
+    echo \"attempt...\$count\"
     sleep 5
     postgresOk=false
     keycloakOk=false
     managerOk=false
     proxyOk=false
-    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
+    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
       postgresOk=true
     fi
-    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
+    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
       keycloakOk=true
     fi
-    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
+    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
       managerOk=true
     fi
-    if [ ! -z "$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
+    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
       proxyOk=true
     fi
     
-    if [ "$postgresOk" == 'true' -a "$keycloakOk" == 'true' -a "$managerOk" == 'true' -a "$proxyOk" == 'true' ]; then
+    if [ \$postgresOk == 'true' -a \$keycloakOk == 'true' -a \$managerOk == 'true' -a \$proxyOk == 'true' ]; then
       ok=true
     fi
     
-    count=$((count+1))    
+    count=\$((count+1))    
   done
   
-  if [ "$ok" != 'true' ]; then
+  if [ \$ok != 'true' ]; then
     echo "Not all containers are healthy"
     exit 1
   else
