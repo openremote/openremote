@@ -232,7 +232,7 @@ jobs:
           deployStr = None
           if deploys is not None and isinstance(deploys, list):
             if len(deploys) > 0:
-              deployStr = ";".join(map(lambda d: d['environment'] + ":" + (d['managerTag'] if d['managerTag'] is not None else '$ref'), deploys))
+              deployStr = ";".join(map(lambda d: d['environment'] + ":" + (d['managerTag'] if managerTag in d else '$ref'), deploys))
 
           elif deploys is not None:
             deployStr = deploys['environment'] + ":" + (deploys['managerTag'] if deploys['managerTag'] is not None else '$ref')
