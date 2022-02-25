@@ -57,7 +57,7 @@ if [ ! -z "$SSH_USER" ]; then
 fi
 
 # Get host platform
-PLATFORM=$("$sshCommandPrefix $HOST -- uname -m")
+PLATFORM=$($sshCommandPrefix $HOST -- uname -m)
 if [ "$?" != 0 -o -z "$PLATFORM" ]; then
   echo "Failed to determine host platform"
   exit 1
