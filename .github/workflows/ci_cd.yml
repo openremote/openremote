@@ -378,7 +378,7 @@ jobs:
           echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
           echo "Java version: $(java --version)"
           echo "Yarn version: $(yarn -v)"
-          echo "Node version: $(node -v)'
+          echo "Node version: $(node -v)"
           echo 'Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}'
           echo 'Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}'
           echo 'Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}'
