@@ -32,6 +32,7 @@ import {
     WellknownAttributes,
     WellknownMetaItems,
     AssetModelUtil,
+    UserAssetLink,
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
 import i18next, {TOptions, InitOptions} from "i18next";
@@ -767,57 +768,19 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
     if (panelConfig.type === "linkedUsers") {
 
-        // manager.rest.api.UserResource.query({tenantPredicate: {realm: manager.displayRealm}} as UserQuery)
-        //     .then((usersRes) => console.log('users result', usersRes));
-
-        // const tableElem = hostElement.shadowRoot!.getElementById("linked-users") as HTMLTableElement;
-
         const updateTable = (rows?: string[][]) => {
-            console.log('updatetable', rows);
             const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName+"-user-table") as OrMwcTable;
             userTable.options = {stickyFirstColumn:false};
-            // let content: TemplateResult = html``;
             userTable.headers = ['Username', 'Roles', 'Restricted user'];
             if (rows) userTable.rows = rows;
         };
 
-        let rows: string[][] = [];
-        manager.rest.api.AssetResource.getUserAssetLinks({realm: manager.displayRealm, assetId: asset.id})
-            .then((userAssetLinksRes) => {
-                const userIds = userAssetLinksRes.data.map(e => e.id!.userId);
-
-                userIds.forEach(async (userId) => {
-
-                    let row: string[] = [];
-
-                    await manager.rest.api.UserResource.get(manager.displayRealm, userId!)
-                        .then((usersRes) => {
-                            row.push(usersRes.data.username!);
-                        });
-
-                    await manager.rest.api.UserResource.getRoles(manager.displayRealm)
-                        .then((rolesRes) => {
-                            const compositeRoles = rolesRes.data.filter(role => role.composite).map(r => r.name);
-                            const roleNames = compositeRoles.join(', ');
-                            row.push(roleNames!);
-                        });
-
-                    let restrictedUser = '';
-                    row.push(restrictedUser);
-                    console.log(row);
-
-                    rows.push(row);
-                });
-
-                console.log(rows);
-                updateTable(rows);
-            });
-
-        // if (!this.responseAndStateOK(() => true, userAssetLinksResponse, i18next.t("loadFailedUserInfo"))) {
-        //     user.loading = false;
-        //     trElem.classList.remove("disabled");
-        //     return;
-        // }
+        // Load users and rights, then update the table
+        getLinkedUsers(asset).then((linkedUsers) => {
+            Promise.all(linkedUsers).then(res => {
+                updateTable(res);
+            })
+        });
 
         return html`
             <style>
@@ -953,6 +916,50 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     }
 
     return response.data.filter((asset) => asset.type === childAssetType);
+}
+
+async function getLinkedUsers(asset: Asset): Promise<Promise<string[]>[]> {
+    let response: Promise<string[]>[];
+
+    try {
+        response = await manager.rest.api.AssetResource.getUserAssetLinks(
+            {realm: manager.displayRealm, assetId: asset.id}
+        ).then((userAssetLinksRes) => {
+            return userAssetLinksRes.data.map(e => e.id!.userId) as string[];
+        }).then((userIds: string[]) => {
+            return userIds.map(async (userId) => {
+
+                let row: string[] = [];
+
+                await manager.rest.api.UserResource.get(manager.displayRealm, userId!)
+                    .then((usersRes) => {
+                        row.push(usersRes.data.username!);
+                    });
+
+                await manager.rest.api.UserResource.getRoles(manager.displayRealm)
+                    .then((rolesRes) => {
+                        const compositeRoles = rolesRes.data.filter(role => role.composite).map(r => r.name);
+                        const roleNames = compositeRoles.join(', ');
+                        row.push(roleNames!);
+                    });
+
+                let restrictedUser = ''; // todo: get restricted user
+                row.push(restrictedUser);
+
+                return row;
+            });
+        });
+
+    } catch (e) {
+        console.log("Failed to get child assets: " + e);
+        return [];
+    }
+
+    if (!response) {
+        return [];
+    }
+
+    return response;
 }
 
 export async function saveAsset(asset: Asset): Promise<SaveResult> {
