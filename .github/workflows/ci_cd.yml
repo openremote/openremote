@@ -230,13 +230,25 @@ jobs:
             os.system(f"echo ::set-output name=tags::{tags}")
                   
           deployStr = None
-          if deploys is not None and isinstance(deploys, list):
-            if len(deploys) > 0:
-              deployStr = ";".join(map(lambda d: d['environment'] + ":" + (d['managerTag'] if 'managerTag' in d else '$ref'), deploys))
+          if deploys is not None:
+            if not isinstance(deploys, list):
+              deploys = [deploys]
+            
+            deployStr = ""
+            
+            for deploy in deploys:
+              if 'environment' in deploy:
+                deployStr += deploy['environment']
+              deployStr += ":"
+              if 'managerTag' in deploy:
+                deployStr += deploy['managerTag']
+              else
+                deployStr += '$ref'
+              
+              deployStr += ";"
 
-          elif deploys is not None:
-            deployStr = deploys['environment'] + ":" + (deploys['managerTag'] if 'managerTag' in deploys else '$ref')
-
+            deployStr = deployStr.rstrip(";")
+            
           if deployStr is not None and len(deployStr) > 0:
             print(f"Deployments to deploy: {deployStr}")
             os.system(f"echo ::set-output name=deploys::{deployStr}")
