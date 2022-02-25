@@ -364,25 +364,25 @@ jobs:
           echo "************************************************************"
           echo "**************            INFO           *******************"
           echo "************************************************************"
-          echo "Trigger event: ${{ github.event_name }}"
-          echo "Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}"
-          echo "Is custom project repo: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}"
-          echo "Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}"
-          echo "Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}"
-          echo "Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}"
-          echo "Deployments: ${{ steps.deployments.outputs.value }}"
-          echo "Test backend command: ${{ steps.test-backend-command.outputs.value }}"
-          echo "Test UI command: ${{ steps.test-ui-command.outputs.value }}"
-          echo "Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}"
-          echo "Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}"
-          echo "InstallDist command: ${{ steps.install-command.outputs.value }}"
+          echo 'Trigger event: ${{ github.event_name }}'
+          echo 'Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}'
+          echo 'Is custom project repo: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}'
+          echo 'Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}'
+          echo 'Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}'
+          echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
+          echo 'Deployments: ${{ steps.deployments.outputs.value }}'
+          echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
+          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
+          echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
+          echo 'Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}'
+          echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
           echo "Java version: $(java --version)"
           echo "Yarn version: $(yarn -v)"
-          echo "Node version: $(node -v)"
-          echo "Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}"
-          echo "Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}"
-          echo "Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}"
-          echo "Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}"
+          echo "Node version: $(node -v)'
+          echo 'Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}'
+          echo 'Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}'
+          echo 'Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}'
+          echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
           echo "************************************************************"
           echo "************************************************************"
 
