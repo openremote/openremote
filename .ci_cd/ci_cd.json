@@ -1,11 +1,10 @@
 {
 	"push": {
-		"develop": {
+		"feature/workflows": {
 			"distribute": {
 				"tags": "develop"
 			},
 			"deploy": {				
-				"managerTag": "develop",
 				"environment": "staging"
 			}
 		},
