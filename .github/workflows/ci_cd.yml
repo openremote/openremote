@@ -387,7 +387,7 @@ jobs:
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         uses: docker/setup-qemu-action@v1
         with:
-          platforms: ${{ env.PLATFORMS }}
+          platforms: linux/amd64,linux/aarch64
 
       - name: install buildx
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
