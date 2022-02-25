@@ -13,8 +13,9 @@ const styling = css`
         background-color: #F5F5F5;
         border: 1px solid #E0E0E0;
     }
-    .grid-stack-item-content {
-        background-color: #18bc9c;
+    .gridItem {
+        background: white;
+        height: 100%;
     }
     .flex-container {
         display: flex;
@@ -50,7 +51,15 @@ const styling = css`
         justify-content: center;
         overflow: hidden;
         border: 1px solid #E0E0E0;
+        border-radius: 8px;
         box-sizing: border-box;
+        flex-direction: column;
+        font-size: 14px;
+    }
+    .sidebarItem > or-icon {
+        --or-icon-height: 58px;
+        --or-icon-width: 58px;
+        margin-bottom: 12px;
     }
 `;
 
@@ -68,9 +77,9 @@ export class OrDashboardBuilder extends LitElement {
             if(this.shadowRoot != null) {
                 const gridElement = this.shadowRoot.getElementById("gridElement");
                 const gridItems = [
-                    {x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 2, content: '<span>First Item</span>'},
-                    {x: 2, y: 1, w: 3, h: 3, minW: 2, minH: 2, content: '<span>Second Item</span>'},
-                    {x: 6, y: 2, w: 2, h: 2, minW: 2, minH: 2, content: '<span>Third Item</span>'}
+                    {x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 2, content: '<div class="gridItem"><span>First Item</span></div>'},
+                    {x: 2, y: 1, w: 3, h: 3, minW: 2, minH: 2, content: '<div class="gridItem"><span>Second Item</span></div>'},
+                    {x: 6, y: 2, w: 2, h: 2, minW: 2, minH: 2, content: '<div class="gridItem"><span>Third Item</span></div>'}
                 ];
                 const mainGrid = GridStack.init({
                     acceptWidgets: true,
@@ -91,28 +100,50 @@ export class OrDashboardBuilder extends LitElement {
                         autoHide: false,
                         handles: 'se'
                     }
-                    // @ts-ignore
-                }, gridElement); // We ignore type checking on gridElement, because we can only provide an HTMLElement (which GridHTMLElement inherits)
-
+                    // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
+                }, gridElement);
                 mainGrid.load(gridItems);
-                mainGrid.on('added', () => { console.log("'added' event of GridStack got ."); });
-                mainGrid.on('change', () => { console.log("'change' event of GridStack got ."); });
-                mainGrid.on('dragstart', () => { console.log("'dragstart' event of GridStack got ."); });
-                mainGrid.on('drag', () => { console.log("'drag' event of GridStack got ."); });
-                mainGrid.on('dragstop', () => { console.log("'dragstop' event of GridStack got ."); });
-                mainGrid.on('dropped', () => { console.log("'dropped' event of GridStack got ."); });
-                mainGrid.on('removed', () => { console.log("'removed' event of GridStack got ."); });
-                mainGrid.on('resizestart', () => { console.log("'resizestart' event of GridStack got ."); });
-                mainGrid.on('resize', () => { console.log("'resize' event of GridStack got ."); });
-                mainGrid.on('resizestop', () => { console.log("'resizestop' event of GridStack got ."); });
 
 
+                // Handling dropping of new items
+                mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: any) => {
+                    console.log(previousWidget);
+                    console.log(newWidget);
+                    mainGrid.removeWidget(newWidget.el, true, false);
+                    let widgetToAdd: GridStackWidget | undefined;
+                    switch(newWidget.widgetId) {
+                        case 'sidebar-linechart': {
+                            widgetToAdd = {
+                                content: '<div class="gridItem"><span>This is a new Line Chart widget.</span></div>',
+                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                            }; break;
+                        }
+                        case 'sidebar-barchart': {
+                            widgetToAdd = {
+                                content: '<div class="gridItem"><span>This is a new Bar Chart widget.</span></div>',
+                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                            }; break;
+                        }
+                        case 'sidebar-gauge': {
+                            widgetToAdd = {
+                                content: '<div class="gridItem"><span>This is a new Gauge widget.</span></div>',
+                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                            }; break;
+                        }
+                    }
+                    if(widgetToAdd != null) {
+                        mainGrid.load([widgetToAdd]);
+                    }
+                    console.log("'dropped' event of GridStack got triggered.");
+                });
 
+
+                // Setup of Sidebar
                 const sidebarElement = this.shadowRoot.getElementById("sidebarElement");
-                const sidebarItems: GridStackWidget[] = [
-                    {x: 0, y: 0, w: 1, h: 1, locked: true, content: '<div class="sidebarItem"><span>Line Chart</span></div>'},
-                    {x: 1, y: 0, w: 1, h: 1, locked: true, content: '<div class="sidebarItem"><span>Bar Chart</span></div>'},
-                    {x: 0, y: 1, w: 1, h: 1, locked: true, content: '<div class="sidebarItem"><span>Pie Chart</span></div>'}
+                const sidebarItems = [
+                    {x: 0, y: 0, w: 1, h: 1, widgetId: 'sidebar-linechart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
+                    {x: 1, y: 0, w: 1, h: 1, widgetId: 'sidebar-barchart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
+                    {x: 0, y: 1, w: 1, h: 1, widgetId: 'sidebar-gauge', locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'}
                 ];
                 const sidebarGrid = GridStack.init({
                     acceptWidgets: false,
@@ -130,24 +161,12 @@ export class OrDashboardBuilder extends LitElement {
                     minRow: 5,
                     minWidth: 200,
 
-                    // @ts-ignore
-                }, sidebarElement); // We ignore type checking on gridElement, because we can only provide an HTMLElement (which GridHTMLElement inherits)
+                    // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
+                }, sidebarElement);
 
                 sidebarGrid.load(sidebarItems);
 
-                sidebarGrid.on('added', () => { console.log("'added' event of SidebarGrid got ."); });
-                sidebarGrid.on('change', () => { console.log("'change' event of SidebarGrid got ."); });
-                sidebarGrid.on('dragstart', () => { console.log("'dragstart' event of SidebarGrid got ."); });
-                sidebarGrid.on('drag', () => { console.log("'drag' event of SidebarGrid got ."); });
-                sidebarGrid.on('dragstop', () => { console.log("'dragstop' event of SidebarGrid got ."); });
-                sidebarGrid.on('dropped', () => { console.log("'dropped' event of SidebarGrid got ."); });
-                sidebarGrid.on('removed', () => { console.log("'removed' event of SidebarGrid got ."); });
-                sidebarGrid.on('resizestart', () => { console.log("'resizestart' event of SidebarGrid got ."); });
-                sidebarGrid.on('resize', () => { console.log("'resize' event of SidebarGrid got ."); });
-                sidebarGrid.on('resizestop', () => { console.log("'resizestop' event of SidebarGrid got ."); });
-
-
-                // @ts-ignore
+                // @ts-ignore typechecking since we assume they are not undefined
                 sidebarGrid.on('removed', (event: Event, items: GridStackNode[]) => {
                     const filteredItems = sidebarItems.filter(widget => { return (widget.content == items[0].content); });  // Filter the GridstackWidgets: the input (GridstackNode) extends on GridstackWidget
                     sidebarGrid.load([filteredItems[0]]);
