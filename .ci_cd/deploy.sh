@@ -75,9 +75,15 @@ if [ "$MANAGER_TAG" != '#ref' ]; then
     exit 1
   fi
 else
+  echo "Using commit SHA for manager docker tag: $MANAGER_REF"
   MANAGER_TAG="$MANAGER_REF"
   # Export manager docker image for host platform
   docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$MANAGER_REF --platform $PLATFORM openremote/manager:$MANAGER_REF $MANAGER_DOCKER_BUILD_PATH | gzip > temp/manager.tar.gz
+  if [ $? -ne 0 ]; then
+    echo "Failed to export manager image with tag: $MANAGER_REF"
+    echo "Failed command was: 'docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$MANAGER_REF --platform $PLATFORM openremote/manager:$MANAGER_REF $MANAGER_DOCKER_BUILD_PATH | gzip > temp/manager.tar.gz'"
+    exit 1
+  fi
 fi
 
 if [ ! -z "$DEPLOYMENT_REF" ]; then
