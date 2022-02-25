@@ -1,6 +1,6 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
-import {GridItemHTMLElement, GridStack, GridStackEngine, GridStackNode, GridStackWidget } from 'gridstack';
+import {GridStack, GridStackNode, GridStackWidget } from 'gridstack';
 import 'gridstack/dist/h5/gridstack-dd-native'; // drag and drop feature
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -37,12 +37,6 @@ const styling = css`
     .flex-item:nth-child(1) {
         flex-grow: 1;
     }
-    #linechartDraggable, #barchartDraggable, #piechartDraggable {
-        width: 100px;
-        padding: 18px;
-        background: #E0E0E0;
-        text-align: center;
-    }
     .sidebarItem {
         height: 100%;
         background: white;
@@ -75,6 +69,8 @@ export class OrDashboardBuilder extends LitElement {
     constructor() {
         super(); this.updateComplete.then(() => {
             if(this.shadowRoot != null) {
+
+                // Setting up main center Grid
                 const gridElement = this.shadowRoot.getElementById("gridElement");
                 const gridItems = [
                     {x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 2, content: '<div class="gridItem"><span>First Item</span></div>'},
@@ -89,13 +85,10 @@ export class OrDashboardBuilder extends LitElement {
                     draggable: {
                         appendTo: 'parent'
                     },
-                    dragInOptions: {
-                        helper: 'clone'
-                    },
                     dragOut: false,
                     float: true,
                     margin: 4,
-                    minRow: 5,
+                    minRow: 7,
                     resizable: {
                         autoHide: false,
                         handles: 'se'
@@ -103,39 +96,6 @@ export class OrDashboardBuilder extends LitElement {
                     // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
                 }, gridElement);
                 mainGrid.load(gridItems);
-
-
-                // Handling dropping of new items
-                mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: any) => {
-                    console.log(previousWidget);
-                    console.log(newWidget);
-                    mainGrid.removeWidget(newWidget.el, true, false);
-                    let widgetToAdd: GridStackWidget | undefined;
-                    switch(newWidget.widgetId) {
-                        case 'sidebar-linechart': {
-                            widgetToAdd = {
-                                content: '<div class="gridItem"><span>This is a new Line Chart widget.</span></div>',
-                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
-                            }; break;
-                        }
-                        case 'sidebar-barchart': {
-                            widgetToAdd = {
-                                content: '<div class="gridItem"><span>This is a new Bar Chart widget.</span></div>',
-                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
-                            }; break;
-                        }
-                        case 'sidebar-gauge': {
-                            widgetToAdd = {
-                                content: '<div class="gridItem"><span>This is a new Gauge widget.</span></div>',
-                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
-                            }; break;
-                        }
-                    }
-                    if(widgetToAdd != null) {
-                        mainGrid.load([widgetToAdd]);
-                    }
-                    console.log("'dropped' event of GridStack got triggered.");
-                });
 
 
                 // Setup of Sidebar
@@ -163,13 +123,47 @@ export class OrDashboardBuilder extends LitElement {
 
                     // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
                 }, sidebarElement);
-
                 sidebarGrid.load(sidebarItems);
 
+
+
+                // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
+                // This is done by just loading the initial/original widget back in the sidebar.
                 // @ts-ignore typechecking since we assume they are not undefined
                 sidebarGrid.on('removed', (event: Event, items: GridStackNode[]) => {
                     const filteredItems = sidebarItems.filter(widget => { return (widget.content == items[0].content); });  // Filter the GridstackWidgets: the input (GridstackNode) extends on GridstackWidget
                     sidebarGrid.load([filteredItems[0]]);
+                });
+
+
+
+                // Handling dropping of new items
+                mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: any) => {
+                    mainGrid.removeWidget(newWidget.el, true, false); // Removes dragged widget first
+                    let widgetToAdd: GridStackWidget | undefined;
+                    switch(newWidget.widgetId) {
+                        case 'sidebar-linechart': {
+                            widgetToAdd = {
+                                content: '<div class="gridItem"><span>This is a new Line Chart widget.</span></div>',
+                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                            }; break;
+                        }
+                        case 'sidebar-barchart': {
+                            widgetToAdd = {
+                                content: '<div class="gridItem"><span>This is a new Bar Chart widget.</span></div>',
+                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                            }; break;
+                        }
+                        case 'sidebar-gauge': {
+                            widgetToAdd = {
+                                content: '<div class="gridItem"><span>This is a new Gauge widget.</span></div>',
+                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                            }; break;
+                        }
+                    }
+                    if(widgetToAdd != null) {
+                        mainGrid.load([widgetToAdd]);
+                    }
                 });
             }
         });
