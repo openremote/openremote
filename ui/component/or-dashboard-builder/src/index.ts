@@ -9,7 +9,7 @@ const extracss = require('gridstack/dist/gridstack-extra.css')
 
 // language=CSS
 const styling = css`
-    .grid-stack {
+    .maingrid, .sidebar {
         background-color: #F5F5F5;
         border: 1px solid #E0E0E0;
     }
@@ -103,7 +103,8 @@ export class OrDashboardBuilder extends LitElement {
                 const sidebarItems = [
                     {x: 0, y: 0, w: 1, h: 1, widgetId: 'sidebar-linechart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
                     {x: 1, y: 0, w: 1, h: 1, widgetId: 'sidebar-barchart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
-                    {x: 0, y: 1, w: 1, h: 1, widgetId: 'sidebar-gauge', locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'}
+                    {x: 0, y: 1, w: 1, h: 1, widgetId: 'sidebar-gauge', locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},
+                    {x: 1, y: 1, w: 1, h: 1, locked: true, content: ''} // Invisible widget
                 ];
                 const sidebarGrid = GridStack.init({
                     acceptWidgets: false,
@@ -118,7 +119,6 @@ export class OrDashboardBuilder extends LitElement {
                     },
                     float: true,
                     margin: 8,
-                    minRow: 5,
                     minWidth: 200,
 
                     // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
@@ -174,13 +174,13 @@ export class OrDashboardBuilder extends LitElement {
         return html`
             <div class="flex-container">
                 <div class="flex-item">
-                    <div>
+                    <div class="maingrid">
                         <div id="gridElement" class="grid-stack"></div>
                     </div>
                 </div>
                 <div class="flex-item">
-                    <div class="sidebar" style="width: 320px;">
-                        <div id="sidebarElement" class="grid-stack" style="width: 100%;"></div>
+                    <div class="sidebar" style="width: 320px; height: 100%;">
+                        <div id="sidebarElement" class="grid-stack" style="width: 100%; height: 100%;"></div>
                     </div>
                 </div>
             </div>
