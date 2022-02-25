@@ -242,7 +242,7 @@ jobs:
               deployStr += ":"
               if 'managerTag' in deploy:
                 deployStr += deploy['managerTag']
-              else
+              else:
                 deployStr += '$ref'
               
               deployStr += ";"
