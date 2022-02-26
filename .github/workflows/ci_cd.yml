@@ -211,7 +211,7 @@ jobs:
 
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
-                deploys = eventConfig['deploy'] if deploy in eventConfig else {}
+                deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
                 if 'distribute' in eventConfig and 'tags' in eventConfig['distribute']:
                   tags = eventConfig['distribute']['tags']
 
@@ -219,7 +219,7 @@ jobs:
 
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
-                deploys = eventConfig['deploy'] if deploy in eventConfig else {}
+                deploys = eventConfig['deploy'] if 'deploy' in eventConfig else {}
                 if 'distribute' in eventConfig and 'tags' in eventConfig['distribute']:
                   tags = eventConfig['distribute']['tags']
              
