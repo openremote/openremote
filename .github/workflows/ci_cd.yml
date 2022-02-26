@@ -312,7 +312,7 @@ jobs:
             if [ ! -z "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
             else
-              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 openremote/manager:$commitShaShort $buildPath"
+              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
             fi
             echo "::set-output name=value::$command"
           fi
