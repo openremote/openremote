@@ -211,15 +211,17 @@ jobs:
 
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
-                deploys = eventConfig['deploy']
-                tags = eventConfig['distribute']['tags']
+                deploys = eventConfig['deploy'] if deploy in eventConfig else {}
+                if 'distribute' in eventConfig and 'tags' in eventConfig['distribute']:
+                  tags = eventConfig['distribute']['tags']
 
             elif eventName == "release" and refName in eventConfig:
 
               eventConfig = eventConfig[refName]
               if eventConfig is not None:
-                deploys = eventConfig['deploy']
-                tags = eventConfig['distribute']['tags']
+                deploys = eventConfig['deploy'] if deploy in eventConfig else {}
+                if 'distribute' in eventConfig and 'tags' in eventConfig['distribute']:
+                  tags = eventConfig['distribute']['tags']
              
           if tags is not None and isMainRepo == 'true':
             tags = tags.replace("$version", refName)
