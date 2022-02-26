@@ -309,7 +309,7 @@ jobs:
             commitShaShort=$(git rev-parse --short HEAD)
           fi
             
-          if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"\$ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then
+          if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then
             
             if [ ! -z "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
