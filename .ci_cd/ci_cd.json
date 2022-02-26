@@ -1,9 +1,6 @@
 {
 	"push": {
 		"feature/workflows": {
-			"distribute": {
-				"tags": "develop,$version"
-			},
 			"deploy": {				
 				"environment": "staging"
 			}
