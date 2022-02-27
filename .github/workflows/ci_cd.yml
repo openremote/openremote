@@ -16,7 +16,7 @@ on:
   release:
     types: [published]    
 
-  # Manual triggergithub 
+  # Manual trigger
   workflow_dispatch:
     inputs:
       ENVIRONMENT:
@@ -68,17 +68,17 @@ jobs:
           import os
           
           # Overlay all inputs and secrets onto this jobs outputs
+          callerInputs = os.getenv("CALLER_INPUTS")
           inputs = os.getenv("INPUTS")
           secrets = os.getenv("SECRETS")
           eventName = os.getenv("EVENT_NAME")
                     
           if secrets is not None and secrets != '':
             secrets = json.loads(secrets)
-
-          if inputs is not None and inputs != '':
-            inputs = json.loads(inputs)
           
           if eventName == 'workflow_call':
+            if callerInputs is not None and callerInputs != '':
+              inputs = json.loads(callerInputs)
             if 'INPUTS' in inputs:
               inputs = json.loads(inputs['INPUTS'])
             if 'SECRETS' in secrets:
@@ -86,26 +86,28 @@ jobs:
           
           # Iterate over secrets then inputs and assign them as outputs on this step
           for key, value in secrets.items():
-            lines = len(value.split("\n"))
-            if lines > 1:
-              value="${MY_STRING//'%'/'%25'}"
-              MY_STRING="${MY_STRING//$'\n'/'%0A'}"
-              MY_STRING="${MY_STRING//$'\r'/'%0D'}"
-              os.system(f"echo '{key}=\"' >> temp/env")
-              os.system(f"echo '{value}\"' >> temp/env")
-            else:
-              os.system(f"echo '{key}=\"{value}\"' >> temp/env")
-             echo "::set-output name=content::$MY_STRING"
+            value=value.replace('%','%25')
+            value=value.replace('\n','%oA')
+            value=value.replace('\r','%0D')
+            os.system(f"echo '::set-output name={key}::{value}'")
+              
+          for key, value in inputs.items():
+            value=value.replace('%','%25')
+            value=value.replace('\n','%oA')
+            value=value.replace('\r','%0D')
+            os.system(f"echo '::set-output name={key}::{value}'")
+             
         env:
-          INPUTS: ${{ toJSON(inputs) }}
+          CALLER_INPUTS: ${{ toJSON(inputs) }}
           SECRETS: ${{ toJSON(secrets) }}
+          INPUTS: ${{ toJSON(github.event.inputs) }}
           EVENT_NAME: ${{ github.event_name }}
           
       - name: Checkout
         uses: actions/checkout@v2
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
-          ref: ${{ github.event.inputs.COMMIT }}
+          ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
           submodules: recursive
         
       - name: Make cache dirs and set file permissions
@@ -324,8 +326,8 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           DEPLOYMENTS: ${{ steps.ci-cd-output.outputs.deploys }}
-          INPUT_ENVIRONMENT: ${{ github.event.inputs.ENVIRONMENT }}
-          INPUT_MANAGER_TAG: ${{ github.event.inputs.MANAGER_TAG }}
+          INPUT_ENVIRONMENT: ${{ steps.inputs-and-secrets.outputs.ENVIRONMENT }}
+          INPUT_MANAGER_TAG: ${{steps.inputs-and-secrets.outputs.MANAGER_TAG }}
 
       - name: Define backend test command
         id: test-backend-command
@@ -435,8 +437,8 @@ jobs:
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          username: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
+          password: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
           
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
@@ -561,11 +563,7 @@ jobs:
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
-          secrets = json.loads(os.getenv('SECRETS'))
-          inputs = os.getenv('INPUTS')
-          
-          if inputs is not None and inputs != '':
-            inputs = json.loads(inputs)
+          inputsAndSecrets = json.loads(os.getenv('INPUTS_AND_SECRETS'))
           
           failure = False
                     
@@ -603,9 +601,9 @@ jobs:
             if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
               os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
             
-            # Output secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
+            # Output inputs and secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
             # _ENV_ prefixed keys are output last (to override any non env specific keys)
-            for key, value in secrets.items():
+            for key, value in inputsAndSecrets.items():
               if key.startswith("_"):
                 continue
               os.system(f"echo 'Secret found {key}...'")
@@ -621,7 +619,7 @@ jobs:
                 else:
                     os.system(f"echo '{key}=\"{value}\"' >> temp/env")
 
-            for key, value in secrets.items():
+            for key, value in inputsAndSecrets.items():
               if not key.startswith("_"):
                 continue
               environment = (env if env else "").upper()
@@ -642,14 +640,6 @@ jobs:
                     os.system(f"echo '{value}\"' >> temp/env")
                 else:
                     os.system(f"echo '{key}=\"{value}\"' >> temp/env")
-
-
-            # Output inputs that have a value
-            if inputs is not None and inputs != '':
-              for key, value in inputs.items():
-                if value is not None and value != '':
-                  os.system(f"echo 'Input found {key}...'")
-                  os.system(f"echo '{key}=\"{value}\"' >> temp/env")
             
             # Execute deploy script            
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
@@ -670,5 +660,4 @@ jobs:
           DEPLOYMENT_DOCKER_BUILD_PATH: ${{ steps.deployment-docker-command.outputs.buildPath }}
           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
-          SECRETS: ${{ toJSON(secrets) }}
-          INPUTS: ${{ toJSON(github.event.inputs) }}      
+          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
