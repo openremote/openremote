@@ -1,15 +1,15 @@
 {
 	"push": {
-		"feature/workflows": {
-		      	"distribute": {
+		"develop": {
+			"distribute": {
 				"tags": "develop"
 			}
 		},
-    "master": {
-      "distribute": {
+		"master": {
+			"distribute": {
 				"tags": "latest"
 			}
-    }
+		}
 	},
 	"release": {
 		"distribute": {
@@ -18,13 +18,6 @@
 		"deploy": {
 			"managerTag": "latest",
 			"environment": "production"
-		}
-	},
-	"managerDockerPush": {		
-		"develop": {
-			"deploy": {
-				"environment": "staging"
-			}
 		}
 	}
 }
