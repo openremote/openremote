@@ -39,8 +39,14 @@ on:
       COMMIT:
         description: 'Repo branch or commit SHA to use'
 
-env:
-  PLATFORMS: linux/amd64,linux/aarch64
+  workflow_call:
+      inputs:
+        INPUTS:
+          required: true
+          type: string
+      secrets:
+        SECRETS:
+          required: true
   
 jobs:
 
@@ -55,8 +61,8 @@ jobs:
         with:
           access_token: ${{ github.token }}
           
-      - name: Get caller inputs and secrets
-        if: github.event_name == 'workflow_call'
+      - name: Get inputs and secrets
+        id: inputs-and-secrets
         shell: python
         run: |
           import os
@@ -64,11 +70,36 @@ jobs:
           # Overlay all inputs and secrets onto this jobs outputs
           inputs = os.getenv("INPUTS")
           secrets = os.getenv("SECRETS")
+          eventName = os.getenv("EVENT_NAME")
+                    
+          if secrets is not None and secrets != '':
+            secrets = json.loads(secrets)
+
+          if inputs is not None and inputs != '':
+            inputs = json.loads(inputs)
           
+          if eventName == 'workflow_call':
+            if 'INPUTS' in inputs:
+              inputs = json.loads(inputs['INPUTS'])
+            if 'SECRETS' in secrets:
+              secrets = json.loads(secrets['SECRETS'])
           
+          # Iterate over secrets then inputs and assign them as outputs on this step
+          for key, value in secrets.items():
+            lines = len(value.split("\n"))
+            if lines > 1:
+              value="${MY_STRING//'%'/'%25'}"
+              MY_STRING="${MY_STRING//$'\n'/'%0A'}"
+              MY_STRING="${MY_STRING//$'\r'/'%0D'}"
+              os.system(f"echo '{key}=\"' >> temp/env")
+              os.system(f"echo '{value}\"' >> temp/env")
+            else:
+              os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+             echo "::set-output name=content::$MY_STRING"
         env:
-          INPUTS: ${{ inputs.caller }}
-          SECRETS: ${{ secrets.caller }}
+          INPUTS: ${{ toJSON(inputs) }}
+          SECRETS: ${{ toJSON(secrets) }}
+          EVENT_NAME: ${{ github.event_name }}
           
       - name: Checkout
         uses: actions/checkout@v2
