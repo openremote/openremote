@@ -80,13 +80,16 @@ jobs:
             if callerInputs is not None and callerInputs != '':
               inputs = json.loads(callerInputs)
             if 'INPUTS' in inputs:
+              os.system("echo 'Processing inputs from caller'")
               inputs = json.loads(inputs['INPUTS'])
             if 'SECRETS' in secrets:
+              os.system("echo 'Processing secrets from caller'")
               secrets = json.loads(secrets['SECRETS'])
           
           # Iterate over secrets then inputs and assign them as outputs on this step
           if secrets is not None and secrets != 'null':
             for key, value in secrets.items():
+              os.system(f"echo 'Outputting secret: {key}'")
               value=value.replace('%','%25')
               value=value.replace('\n','%0A')
               value=value.replace('\r','%0D')
@@ -94,6 +97,7 @@ jobs:
               
           if inputs is not None and inputs != 'null':
             for key, value in inputs.items():
+              os.system(f"echo 'Outputting input: {key}'")
               value=value.replace('%','%25')
               value=value.replace('\n','%0A')
               value=value.replace('\r','%0D')
