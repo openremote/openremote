@@ -76,10 +76,11 @@ jobs:
           if inputs is not None and inputs != '':
             inputs = json.loads(inputs)
           if secrets is not None and secrets != '':
-            secrets = json.loads(secrets)
-          
+            secrets = json.loads(secrets)          
           if callerInputs is not None and callerInputs != '':
+            os.system(f"echo 'caller inputs is set: {callerInputs}'")
             inputs = json.loads(callerInputs)
+            
           if inputs is not None and 'INPUTS' in inputs:
             os.system("echo 'Processing inputs from caller'")
             inputs = json.loads(inputs['INPUTS'])
