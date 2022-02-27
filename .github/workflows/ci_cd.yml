@@ -156,7 +156,7 @@ jobs:
         if: ${{ github.event_name == 'schedule' }}
         run: |
           if [ "$IS_CUSTOM_PROJECT" != 'true' ]; then
-            echo "Schedule can only be used on a custom project repo
+            echo "Schedule can only be used on a custom project repo"
             exit 1
           fi
         env:
@@ -377,18 +377,22 @@ jobs:
         id: deployment-docker-command
         shell: bash
         run: |
-          if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ] && [ ! -z "$DEPLOYMENTS" ]; then
+          if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ]; then
             if [ "$DEPLOYMENT_GRADLE_EXISTS" != 'true' ]; then
               echo "Deployment must have a build.gradle file to prepare the deployment files in the deployment/build dir"
               exit 1
             fi
+            
             buildPath="deployment/build"
             commitSha=$(git rev-parse HEAD)
             commitShaShort=$(git rev-parse --short HEAD)
-            command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
-            echo "::set-output name=value::$command"
             echo "::set-output name=buildPath::$buildPath"
             echo "::set-output name=refTag::$commitShaShort"
+            
+            if [ ! -z "$DEPLOYMENTS" ]; then
+              command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
+              echo "::set-output name=value::$command"
+            fi
           fi
         env:
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
