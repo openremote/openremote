@@ -221,7 +221,7 @@ jobs:
           data = json.load(f)
           f.close()
 
-          if eventName == "workflow_dispatch":
+          if eventName == "schedule":
             eventName = "managerDockerPush"
 
           if data is not None and eventName in data:              
