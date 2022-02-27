@@ -1,0 +1,16 @@
+{
+    "realm": "smartcity",
+    "initialUrl": "https://demo.openremote.io/console_loader/?realm=smartcity&consoleProviders=geofence push storage",
+    "url": "https://demo.openremote.io/manager/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences",
+    "menuEnabled": false,
+    "menuPosition": "BOTTOM_RIGHT",
+    "menuImage": null,
+    "primaryColor": "#4D9D2A",
+    "secondaryColor": "#CFCFCF",
+    "links": [
+        {
+            "displayText": "Map",
+            "pageLink": "https://demo.openremote.io/console_loader/?realm=smartcity&consoleProviders=geofence push storage&consoleAutoEnable=true#!geofences"
+        }
+    ]
+}

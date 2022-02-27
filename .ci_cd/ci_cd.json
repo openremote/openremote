@@ -1,0 +1,23 @@
+{
+	"push": {
+		"develop": {
+			"distribute": {
+				"tags": "develop"
+			}
+		},
+		"master": {
+			"distribute": {
+				"tags": "latest"
+			}
+		}
+	},
+	"release": {
+		"distribute": {
+			"tags": "latest,$version"
+		},
+		"deploy": {
+			"managerTag": "latest",
+			"environment": "production"
+		}
+	}
+}
