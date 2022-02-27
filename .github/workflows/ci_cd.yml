@@ -1,5 +1,3 @@
-# Build, test and conditionally publish the manager docker image using the included gradle wrapper
-
 name: CI/CD
 
 on:
@@ -16,11 +14,9 @@ on:
 
   # When a release is published
   release:
-    types: [published]
+    types: [published]    
 
-#   schedule:
-    
-
+  # Manual triggergithub 
   workflow_dispatch:
     inputs:
       ENVIRONMENT:
@@ -58,6 +54,21 @@ jobs:
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
+          
+      - name: Get caller inputs and secrets
+        if: github.event_name == 'workflow_call'
+        shell: python
+        run: |
+          import os
+          
+          # Overlay all inputs and secrets onto this jobs outputs
+          inputs = os.getenv("INPUTS")
+          secrets = os.getenv("SECRETS")
+          
+          
+        env:
+          INPUTS: ${{ inputs.caller }}
+          SECRETS: ${{ secrets.caller }}
           
       - name: Checkout
         uses: actions/checkout@v2
