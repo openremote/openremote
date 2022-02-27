@@ -180,16 +180,17 @@ jobs:
           data = json.load(f)
           f.close()
           
-          managerPushConfig = data["managerDockerPush"]
-          
-          if managerPushConfig is not None:
-            if len(managerPushConfig.keys()) > 0:
-              for key in managerPushConfig.keys():
-                # Output new tag cache files (for generating hash)
-                os.system(f"echo 'Outputting manifest info for tag: {key}'")
-                os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
-            os.system("echo 'Tag manifests generated:'")
-            os.system("find ~/manager-tags-new")        
+          if "managerDockerPush" in data:
+            managerPushConfig = data["managerDockerPush"]
+
+            if managerPushConfig is not None:
+              if len(managerPushConfig.keys()) > 0:
+                for key in managerPushConfig.keys():
+                  # Output new tag cache files (for generating hash)
+                  os.system(f"echo 'Outputting manifest info for tag: {key}'")
+                  os.system(f"docker manifest inspect openremote/manager:{key} > ~/manager-tags-new/{key}")
+              os.system("echo 'Tag manifests generated:'")
+              os.system("find ~/manager-tags-new")        
         
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
@@ -247,11 +248,16 @@ jobs:
 
                 if newManifestStr != oldManifestStr: # Not a great way to compare but we'll assume manifest output is consistent
                   os.system(f"echo 'Manager docker tag has been updated: {key}'")
-                  deployConfig = eventConfig[key]['deploy']
-                  if deployConfig is not None:
-                    # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
-                    deployConfig['managerTag'] = key
-                    deploys.append(deployConfig)
+                  if 'deploy' in eventConfig[key]:
+                    deployConfig = eventConfig[key]['deploy']
+                    if deployConfig is not None:
+                      # Inject manager tag into deploy config (no point reacting to the manager image updating otherwise)
+                      deployConfig['managerTag'] = key
+                      deploys.append(deployConfig)
+                  else:
+                    os.system(f"echo 'No deploy config in ci_cd.json for manager tag {key}'")
+                else:
+                  os.system(f"echo 'Manager docker tag has not changed: {key}'")
                 
             elif eventName == "push" and refName in eventConfig:
 
