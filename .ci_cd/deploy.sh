@@ -19,7 +19,7 @@ if [ -z "$HOST" ]; then
  exit 1
 fi
 
-if [ ! -z "$ENV_COMPOSE_FILE" ]; then
+if [ -z "$ENV_COMPOSE_FILE" ]; then
   if [ -f "profile/$ENVIRONMENT.yml" ]; then
     cp "profile/$ENVIRONMENT.yml" temp/docker-compose.yml
   elif [ -f "docker-compose.yml" ]; then
