@@ -370,7 +370,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.tags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exist }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
           
       - name: Define deployment docker build command
