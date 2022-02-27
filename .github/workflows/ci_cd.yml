@@ -42,11 +42,10 @@ on:
   workflow_call:
       inputs:
         INPUTS:
-          required: true
           type: string
       secrets:
         SECRETS:
-          required: true
+          required: false
   
 jobs:
 
@@ -86,17 +85,19 @@ jobs:
               secrets = json.loads(secrets['SECRETS'])
           
           # Iterate over secrets then inputs and assign them as outputs on this step
-          for key, value in secrets.items():
-            value=value.replace('%','%25')
-            value=value.replace('\n','%oA')
-            value=value.replace('\r','%0D')
-            os.system(f"echo '::set-output name={key}::{value}'")
+          if secrets is not None and secrets != 'null':
+            for key, value in secrets.items():
+              value=value.replace('%','%25')
+              value=value.replace('\n','%0A')
+              value=value.replace('\r','%0D')
+              os.system(f"echo '::set-output name={key}::{value}'")
               
-          for key, value in inputs.items():
-            value=value.replace('%','%25')
-            value=value.replace('\n','%oA')
-            value=value.replace('\r','%0D')
-            os.system(f"echo '::set-output name={key}::{value}'")
+          if inputs is not None and inputs != 'null':
+            for key, value in inputs.items():
+              value=value.replace('%','%25')
+              value=value.replace('\n','%0A')
+              value=value.replace('\r','%0D')
+              os.system(f"echo '::set-output name={key}::{value}'")
              
         env:
           CALLER_INPUTS: ${{ toJSON(inputs) }}
