@@ -72,7 +72,9 @@ jobs:
           inputs = os.getenv("INPUTS")
           secrets = os.getenv("SECRETS")
           eventName = os.getenv("EVENT_NAME")
-                    
+          
+          if inputs is not None and inputs != '':
+            inputs = json.loads(inputs)
           if secrets is not None and secrets != '':
             secrets = json.loads(secrets)
           
