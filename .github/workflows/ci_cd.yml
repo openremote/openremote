@@ -76,15 +76,14 @@ jobs:
           if secrets is not None and secrets != '':
             secrets = json.loads(secrets)
           
-          if eventName == 'workflow_call':
-            if callerInputs is not None and callerInputs != '':
-              inputs = json.loads(callerInputs)
-            if 'INPUTS' in inputs:
-              os.system("echo 'Processing inputs from caller'")
-              inputs = json.loads(inputs['INPUTS'])
-            if 'SECRETS' in secrets:
-              os.system("echo 'Processing secrets from caller'")
-              secrets = json.loads(secrets['SECRETS'])
+          if callerInputs is not None and callerInputs != '':
+            inputs = json.loads(callerInputs)
+          if 'INPUTS' in inputs:
+            os.system("echo 'Processing inputs from caller'")
+            inputs = json.loads(inputs['INPUTS'])
+          if 'SECRETS' in secrets:
+            os.system("echo 'Processing secrets from caller'")
+            secrets = json.loads(secrets['SECRETS'])
           
           # Iterate over secrets then inputs and assign them as outputs on this step
           if secrets is not None and secrets != 'null':
