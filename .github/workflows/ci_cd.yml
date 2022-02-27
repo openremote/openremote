@@ -66,6 +66,7 @@ jobs:
         shell: python
         run: |
           import os
+          import json
           
           # Overlay all inputs and secrets onto this jobs outputs
           callerInputs = os.getenv("CALLER_INPUTS")
