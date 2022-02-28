@@ -605,9 +605,9 @@ jobs:
         shell: bash
         run: |
           if [ -f ".ci_cd/deploy.sh" ]; then
-            echo ::set-output name=value::bash .ci_cd/deploy.sh"
+            echo "::set-output name=value::bash .ci_cd/deploy.sh"
           elif [ "$IS_CUSTOM_PROJECT" == 'true' -a -f "openremote/.ci_cd/deploy.sh" ]; then
-            echo ::set-output name=value::bash openremote/.ci_cd/deploy.sh"
+            echo "::set-output name=value::bash openremote/.ci_cd/deploy.sh"
           else
             echo "Cannot find deploy bash script"
             exit 1
