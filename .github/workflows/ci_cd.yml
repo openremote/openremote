@@ -602,6 +602,7 @@ jobs:
       - name: Determine deploy script command
         id: deploy-script-command
         if: ${{ steps.deployments.outputs.value != '' && steps.check_deployment_script.outputs.files_exists != 'true' }}
+        shell: bash
         run: |
           if [ -f ".ci_cd/deploy.sh" ]; then
             echo ::set-output name=value::bash .ci_cd/deploy.sh"
