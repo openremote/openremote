@@ -9,7 +9,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.openremote.app.databinding.ActivitySplashBinding
 import io.openremote.orlib.network.ApiManager
 import io.openremote.orlib.ui.OrMainActivity
-import io.openremote.orlib.ui.OrMainActivity.Companion.APP_CONFIG_KEY
 import io.openremote.orlib.ui.OrPrivacyPolicyActivity
 
 class SplashActivity : Activity() {
@@ -49,11 +48,8 @@ class SplashActivity : Activity() {
             apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                 if (statusCode in 200..299) {
                     val intent = Intent(this@SplashActivity, OrMainActivity::class.java)
-                    intent.putExtra(
-                        APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(
-                            appConfig
-                        )
-                    )
+                    intent.putExtra(OrMainActivity.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
+                    intent.putExtra(OrMainActivity.BASE_URL_KEY, host)
                     startActivity(intent)
                     finish()
                 } else {

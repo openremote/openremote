@@ -57,7 +57,8 @@ open class OrMainActivity : Activity() {
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
     private var consoleId: String? = null
-    protected var appConfig: ORAppConfig? = null
+    private var appConfig: ORAppConfig? = null
+    private var baseUrl: String? = null
     private var onDownloadCompleteReciever: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
             val action = intent.action
@@ -119,6 +120,9 @@ open class OrMainActivity : Activity() {
                 intent.getStringExtra(APP_CONFIG_KEY),
                 ORAppConfig::class.java
             )
+        }
+        if (intent.hasExtra(BASE_URL_KEY)) {
+            baseUrl = intent.getStringExtra(BASE_URL_KEY)
         }
 
         if (appConfig == null) {
@@ -390,8 +394,9 @@ open class OrMainActivity : Activity() {
                         startActivity(i)
                         return true
                     }
-                     if (!request.url.isAbsolute) {
-                         
+                     if (!request.url.isAbsolute && baseUrl?.isNotEmpty()!!) {
+                         view.loadUrl("${baseUrl}/${request.url}")
+                         return true
                      }
 
                     return super.shouldOverrideUrlLoading(view, request)
@@ -846,5 +851,6 @@ open class OrMainActivity : Activity() {
         const val PUSH_PROVIDER_DISABLED_KEY = "PushProviderDisabled"
         const val CONSOLE_ID_KEY = "consoleId"
         const val APP_CONFIG_KEY = "APP_CONFIG_KEY"
+        const val BASE_URL_KEY = "BASE_URL_KEY"
     }
 }
