@@ -1,3 +1,52 @@
+# This workflow handles all CI/CD related tasks and can be re-used in custom projects
+# (https://github.com/openremote/custom-project i.e. has openremote submodule) or forks of this repo, it handles:
+#
+# - Running tests on push/release
+# - Distributing openremote/manager images to docker hub (DOCKERHUB_USER and DOCKERHUB_PASSWORD must be set) on push/release
+# - Deploying to hosts on push/release and/or manual trigger and/or when certain openremote/manager docker tags are updated
+#
+# By default this workflow will just run tests on push/release; distribution (pushing of openremote/manager docker image)
+# and deployment behaviour is configured via the .ci_cd/ci_cd.json file (see .ci_cd/README.md for more details).
+#
+# DEPLOYMENTS
+#
+# When a deployment is requested the repo is checked for a 'deployment/Dockerfile' and if that exists then also
+# 'deployment/build.gradle' must exist with an installDist task that prepares the deployment image in the
+# 'deployment/build' directory; if this condition is not met the deployment will fail.
+#
+# Secrets, inputs and environment variables are combined for consumption by the '.ci_cd/deploy.sh' bash script, they are
+# combined in the following priority:
+#
+# - '.ci_cd/env/.env'
+# - '.ci_cd/env/{ENVIRONMENT}.env'
+# - secrets without '_' prefix
+# - secrets with '_{ENVIRONMENT}_' prefix (secrets with any other '_' prefix will be excluded)
+# - inputs (from manual trigger using workflow_dispatch)
+#
+# The above variables are output to 'temp/env' file for each requested deployment. If a secret called 'SSH_PASSWORD' is
+# found that is output to 'ssh.env' file (so it is not copied to the host), if a secret called 'SSH_KEY' is
+# found that is output to 'ssh.key' file (so it is not copied to the host). Sensitive credentials should always be stored
+# in github secrets so they are encrypted, do not store within repo files (even private repos as these are not encrypted).
+#
+# SEE https://github.com/openremote/openremote/tree/master/.ci_cd for details of standard variables and handling.
+#
+# MANUAL TRIGGER
+#
+# This workflow can be triggered by push, release, manually or schedule (from any repo other than openremote/openremote)
+# if triggered manually then the following inputs are available and these override any set in env files and/or secrets:
+#
+# Inputs:
+#
+# - ENVIRONMENT           - Which environment to deploy (equivalent to deploy/environment in '.ci_cd/ci_cd.json')
+# - MANAGER_TAG           - Which manager docker tag to deploy (equivalent to deploy/managerTags in '.ci_cd/ci_cd.json')
+# - CLEAN_INSTALL
+# - COMMIT
+# - HOST
+# - SSH_USER
+# - SSH_PASSWORD
+# - SSH_PORT
+# - SETUP_ADMIN_PASSWORD
+
 name: CI/CD
 
 on:
@@ -26,18 +75,18 @@ on:
       CLEAN_INSTALL:
         description: 'Delete data before starting'
         type: boolean
+      COMMIT:
+        description: 'Repo branch or commit SHA to checkout'
       HOST:
         description: 'Host to deploy to'
-      SSH_USER:
-        description: 'SSH Username'
       SSH_PORT:
         description: 'SSH port'
+      SSH_USER:
+        description: 'SSH Username'
       SSH_PASSWORD:
         description: 'SSH password'
       SETUP_ADMIN_PASSWORD:
         description: 'Admin password override'
-      COMMIT:
-        description: 'Repo branch or commit SHA to use'
 
   workflow_call:
       inputs:

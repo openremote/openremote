@@ -70,7 +70,7 @@ PLATFORM="linux/$PLATFORM"
 # Create docker image tarballs as required
 if [ "$MANAGER_TAG" != '#ref' ]; then
   docker manifest inspect openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
-  if [ $? != 0 ]; then
+  if [ $? -ne 0 ]; then
     echo "Specified manager tag does not exist in docker hub"
     exit 1
   fi
@@ -133,42 +133,60 @@ $sshCommandPrefix ${hostStr} << EOF
   fi
   
   # Run host init
+  hostInitCmd=
   if [ "$HOST_INIT_SCRIPT" == 'NONE' -o "$HOST_INIT_SCRIPT" == 'none' ]; then
     echo "No host init requested"
   elif [ ! -z "$HOST_INIT_SCRIPT" ]; then
-    if [ ! -f ".ci_cd/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
-      echo "HOST_INIT_SCRIPT (.ci_cd/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
+    if [ ! -f "temp/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
+      echo "HOST_INIT_SCRIPT (temp/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
       exit 1
     fi
-    hostInitCmd=".ci_cd/host_init/${HOST_INIT_SCRIPT}.sh"
-  elif [ -f ".ci_cd/host_init/$ENVIRONMENT.sh" ]; then
-    hostInitCmd=".ci_cd/host_init/$ENVIRONMENT.sh"
-  elif [ -f ".ci_cd/host_init/init.sh" ]; then
-    hostInitCmd=".ci_cd/host_init/init.sh"
+    hostInitCmd="temp/host_init/${HOST_INIT_SCRIPT}.sh"
+  elif [ -f "temp/host_init/$ENVIRONMENT.sh" ]; then
+    hostInitCmd="temp/host_init/$ENVIRONMENT.sh"
+  elif [ -f "temp/host_init/init.sh" ]; then
+    hostInitCmd="temp/host_init/init.sh"
   fi
-    if [ ! -z "$hostInitCmd" ]; then
+  if [ ! -z "$hostInitCmd" ]; then
     echo "Running host init script: '$hostInitCmd'"
-    $hostInitCmd
+    sudo $hostInitCmd
+  else
+    echo "No host init script"
   fi
-  
-  # MAKE SURE WE HAVE CORRECT KEYCLOAK, PROXY AND POSTGRES IMAGES
+
+  # Make sure we have correct keycloak, proxy and postgres images
+  echo "Pulling requested service versions from docker hub"
   docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
-  
+
+  if [ \$? -ne 0 ]; then
+    echo "Deployment failed to pull docker images"
+    exit 1
+  fi
+
   # Attempt docker compose down
-  docker-compose -f temp/docker-compose.yml -p or down
+  echo "Stopping existing stack"
+  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+
+  if [ \$? -ne 0 ]; then
+    echo "Deployment failed to stop the existing stack"
+    exit 1
+  fi
 
   # Delete postgres volume if CLEAN_INSTALL=true
-  if [ $CLEAN_INSTALL == 'true' ]; then
-    docker volume rm or_postgresql-data
+  if [ "\$CLEAN_INSTALL" == 'true' ]; then
+    echo "Deleting existing postgres data volume"
+    docker volume rm or_postgresql-data 2> /dev/null
   fi
   
   # Delete any deployment volume so we get the latest
-  docker volume rm or_deployment-data
+  echo "Deleting existing deployment data volume"
+  docker volume rm or_deployment-data 2 > /dev/null
 
   # Start the stack
+  echo "Starting the stack"
   docker-compose -f temp/docker-compose.yml -p or up -d
   
-  if [ $? != 0 ];then
+  if [ \$? -ne 0 ]; then
     echo "Deployment failed to start the stack"
     exit 1
   fi
