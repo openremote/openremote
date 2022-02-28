@@ -390,6 +390,10 @@ open class OrMainActivity : Activity() {
                         startActivity(i)
                         return true
                     }
+                     if (!request.url.isAbsolute) {
+                         
+                     }
+
                     return super.shouldOverrideUrlLoading(view, request)
                 }
             }
