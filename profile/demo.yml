@@ -23,8 +23,7 @@ volumes:
 services:
 
   deployment:
-    build: '../deployment'
-    image: openremote/deployment:latest
+    image: openremote/deployment:${DEPLOYMENT_VERSION?DEPLOYMENT_VERSION must be set}
     volumes:
       - deployment-data:/deployment
 
