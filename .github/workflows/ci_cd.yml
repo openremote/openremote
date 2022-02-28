@@ -599,16 +599,20 @@ jobs:
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
-      - name: Check deployment script
-        if: steps.deployments.outputs.value != ''
-        id: check_deployment_script
-        uses: andstor/file-existence-action@v1
-        with:
-          files: ".ci_cd/deploy.sh"
-          
-      - name: Deployment script missing
+      - name: Determine deploy script command
+        id: deploy-script-command
         if: ${{ steps.deployments.outputs.value != '' && steps.check_deployment_script.outputs.files_exists != 'true' }}
-        run: exit 1
+        run: |
+          if [ -f ".ci_cd/deploy.sh" ]; then
+            echo ::set-output name=value::bash .ci_cd/deploy.sh"
+          elif [ "$IS_CUSTOM_PROJECT" == 'true' -a -f "openremote/.ci_cd/deploy.sh" ]; then
+            echo ::set-output name=value::bash openremote/.ci_cd/deploy.sh"
+          else
+            echo "Cannot find deploy bash script"
+            exit 1
+          fi
+        env:
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
         
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
@@ -629,7 +633,8 @@ jobs:
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
-          inputsAndSecrets = json.loads(os.getenv('INPUTS_AND_SECRETS'))
+          deployScriptCmd = os.getenv("DEPLOY_SCRIPT_COMMAND")
+          inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
           
           failure = False
                     
@@ -709,7 +714,7 @@ jobs:
             
             # Execute deploy script            
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
-            result = subprocess.run("bash .ci_cd/deploy.sh", shell=True)
+            result = subprocess.run(deployScriptCmd, shell=True)
             
             if result.returncode != 0:
               os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
@@ -727,3 +732,4 @@ jobs:
           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
+          DEPLOY_SCRIPT_COMMAND: ${{ steps.deploy-script-command.outputs.value }}
