@@ -50,7 +50,7 @@ declare global {
     }
 }
 
-export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true): TemplateResult {
+export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (ListItem | ListItem[] | null)[], selectedValues: string[] | string | undefined, valueChangedCallback: (values: string[] | string) => void, closedCallback?: () => void, multiSelect = false, translateValues = true, midHeight = false): TemplateResult {
 
     const openMenu = (evt: Event) => {
         if (!menuItems) {
@@ -63,7 +63,7 @@ export function getContentWithMenuTemplate(content: TemplateResult, menuItems: (
     return html`
         <span>
             <span @click="${openMenu}">${content}</span>
-            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" id="menu"></or-mwc-menu>` : ``}
+            ${menuItems ? html`<or-mwc-menu ?multiselect="${multiSelect}" @or-mwc-menu-closed="${() => {if (closedCallback) { closedCallback(); }} }" @or-mwc-menu-changed="${(evt: OrMwcMenuChangedEvent) => {if (valueChangedCallback) { valueChangedCallback(evt.detail); }} }" .translateValues="${translateValues}" .values="${selectedValues}" .menuItems="${menuItems}" .midHeight="${midHeight}" id="menu"></or-mwc-menu>` : ``}
         </span>
     `;
 }
@@ -89,6 +89,9 @@ const style = css`
         color: rgba(0, 0, 0, 0.87);
     }
      
+    .mdc-menu-surface-mid-height {
+        max-height: calc(50vh - 32px) !important;
+    }
 `;
 
 @customElement("or-mwc-menu")
@@ -117,6 +120,9 @@ export class OrMwcMenu extends LitElement {
 
     @property({type: Boolean, attribute: true})
     public translateValues?: boolean;
+
+    @property({type: Boolean, attribute: false})
+    public midHeight?: boolean;
 
     @query("#wrapper")
     protected _wrapperElem!: HTMLElement;
@@ -149,7 +155,7 @@ export class OrMwcMenu extends LitElement {
 
         return html`
             <div id="wrapper" class="mdc-menu-surface--anchor">
-                <div class="mdc-menu mdc-menu-surface" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
+                <div class="mdc-menu mdc-menu-surface ${this.midHeight ? "mdc-menu-surface-mid-height" : ""}" id="menu" @MDCMenuSurface:closed="${this._onMenuClosed}">
                     ${getListTemplate(ListType.MULTI_TICK, content, isTwoLine, "menu")}
                 </div>
             </div>
