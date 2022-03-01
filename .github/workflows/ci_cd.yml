@@ -160,6 +160,10 @@ jobs:
           INPUTS: ${{ toJSON(github.event.inputs) }}
           EVENT_NAME: ${{ github.event_name }}
           
+      - name: Public IP
+        id: ip-address
+        uses: haythem/public-ip@v1.2
+               
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -602,11 +606,12 @@ jobs:
       - name: Determine deploy script command
         id: deploy-script-command
         if: ${{ steps.deployments.outputs.value != '' && steps.check_deployment_script.outputs.files_exists != 'true' }}
+        shell: bash
         run: |
           if [ -f ".ci_cd/deploy.sh" ]; then
-            echo ::set-output name=value::bash .ci_cd/deploy.sh"
+            echo "::set-output name=value::bash .ci_cd/deploy.sh"
           elif [ "$IS_CUSTOM_PROJECT" == 'true' -a -f "openremote/.ci_cd/deploy.sh" ]; then
-            echo ::set-output name=value::bash openremote/.ci_cd/deploy.sh"
+            echo "::set-output name=value::bash openremote/.ci_cd/deploy.sh"
           else
             echo "Cannot find deploy bash script"
             exit 1
@@ -675,6 +680,8 @@ jobs:
             # Output inputs and secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
             # _ENV_ prefixed keys are output last (to override any non env specific keys)
             for key, value in inputsAndSecrets.items():
+              if "." in key:
+                continue
               if key.startswith("_"):
                 continue
               os.system(f"echo 'Secret found {key}...'")
@@ -691,6 +698,8 @@ jobs:
                     os.system(f"echo '{key}=\"{value}\"' >> temp/env")
 
             for key, value in inputsAndSecrets.items():
+              if "." in key:
+                continue
               if not key.startswith("_"):
                 continue
               environment = (env if env else "").upper()
@@ -733,3 +742,5 @@ jobs:
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
           DEPLOY_SCRIPT_COMMAND: ${{ steps.deploy-script-command.outputs.value }}
+          IPV4: ${{ steps.ip-address.outputs.ipv4 }}
+          IPV6: ${{ steps.ip-address.outputs.ipv6 }}
