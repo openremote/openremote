@@ -627,8 +627,7 @@ jobs:
       - name: Grant AWS SSH access
         id: aws-ssh-access
         run: |
-          # if [ ! -z "$DEPLOYMENTS" ]; then
-          if [ -z "$DEPLOYMENTS" ]; then
+          if [ ! -z "$DEPLOYMENTS" ]; then
             if [ ! -z "$AWS_KEY" -a ! -z "$AWS_SECRET" ]; then
               if [ -z "$AWS_REGION" ]; then
                 AWS_REGION="eu-west-1"
