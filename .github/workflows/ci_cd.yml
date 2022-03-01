@@ -164,7 +164,7 @@ jobs:
         id: ip-address
         uses: haythem/public-ip@v1.2
       
-      - name: AWs SSH access
+      - name: Grant AWS SSH access
         id: aws-ssh-access
         run: |
           # if [ ! -z "$DEPLOYMENTS" ]; then
@@ -180,6 +180,8 @@ jobs:
               if [ $? -ne 0 ]; then
                 echo "Failed to login to AWS"
                 exit 1
+              else
+                echo "Login succeeded"
               fi
               # Add this github runner to ssh-access security group for SSH access
               aws ec2 authorize-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
