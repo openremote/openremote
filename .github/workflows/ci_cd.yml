@@ -635,6 +635,7 @@ jobs:
               echo "Logging into AWS"
               aws configure set aws_access_key_id $AWS_KEY
               aws configure set aws_secret_access_key $AWS_SECRET
+              aws configure set region $AWS_REGION
               aws sts get-caller-identity 1>/dev/null 2>/dev/null
               if [ $? -ne 0 ]; then
                 echo "Failed to login to AWS"
@@ -716,6 +717,8 @@ jobs:
             # Output inputs and secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
             # _ENV_ prefixed keys are output last (to override any non env specific keys)
             for key, value in inputsAndSecrets.items():
+              if "." in key:
+                continue
               if key.startswith("_"):
                 continue
               os.system(f"echo 'Secret found {key}...'")
@@ -732,6 +735,8 @@ jobs:
                     os.system(f"echo '{key}=\"{value}\"' >> temp/env")
 
             for key, value in inputsAndSecrets.items():
+              if "." in key:
+                continue
               if not key.startswith("_"):
                 continue
               environment = (env if env else "").upper()
