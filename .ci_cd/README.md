@@ -13,7 +13,7 @@ docker image tag updates. The file layout is:
   "push": {
     // Name of branch to react to (exact match)
     "develop": {
-      // Comma separated list of tags to push to openremote/manager docker hub image $version is replaced with release version
+      // Comma separated list of tags to push to openremote/manager docker hub image
       // This can only be used on the main openremote repo (openremote/openremote)
       "distribute": {
         "tags": "develop"
@@ -59,7 +59,13 @@ docker image tag updates. The file layout is:
 # `deploy.sh` Bash script
 Bash script that handles the actual deployment to a specific host; environment variables should be already loaded into
 the shell or be available in `temp/env` file which will be automatically loaded. If `ssh.env` is found this env file is
-also automatically loaded. See [Variables section below](#variables) for available and required values.
+also automatically loaded. See [Variables section below](#variables) for available and required values. The `deploy.sh`
+in this repository is tailored for deployments on AWS and as such it performs the following functions:
+
+1. Login to AWS - If `AWS_KEY` and `AWS_SECRET` variables are defined, also sets the region to `AWS_REGION`
+1. Whitelist deployment runner (machine actioning the deployment) - If `IPV4` variable is defined then this IP address will be added to the `ssh-access` security group in the default VPC
+1. Executes deployment docker logic (refer to `deploy.sh` for details)
+1. Remove deployment runner from whitelist - Once deployment is completed or failed the deployment runner will be removed from the whitelist
 
 ## Docker compose file resolution
 The docker compose file used for the deployment is resolved as follows; if resolved file does not exist then deployment
@@ -104,6 +110,9 @@ profile can be specified in any of the places variables are loaded from (github 
 * `SSH_KEY` - SSH private key (this is written to `ssh.key` file and loaded by `deploy.sh` for SSH/SCP commands)
 * `SSH_PASSWORD` - SSH password (alternative to private key authentication)
 * `SSH_PORT` - SSH port (default: 22)
+* `AWS_KEY` - AWS access key ID
+* `AWS_SECRET` - AWS access key secret
+* `AWS_REGION` - AWS region to use
 * `SETUP_ADMIN_PASSWORD` - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
 * `ENV_COMPOSE_FILE` - The full path to the docker compose file to use for the deployment
 
