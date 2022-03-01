@@ -780,7 +780,7 @@ jobs:
         if: always()
         run: |
           if [ "$SG_SET" == 'true' ]; then
-            echo "aws ec2 revoke-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32"
+            aws ec2 revoke-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
             echo "Revoked AWS SSH access"
           fi
         env:
