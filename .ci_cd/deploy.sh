@@ -1,5 +1,10 @@
 #!/bin/bash
 
+revoke_ssh () {
+  aws ec2 revoke-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
+  echo "Revoked AWS SSH access"
+}
+
 if [ -f "temp/env" ]; then
   echo "Loading environment variables: 'temp/env'"
   set -a
@@ -56,10 +61,43 @@ if [ ! -z "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
 
+# Grant SSH access to this runner's public IP on AWS
+SSH_GRANTED='false'
+if [ ! -z "$AWS_KEY" -a ! -z "$AWS_SECRET" -a ! -z "$IPV4" ]; then
+  echo "Granting SSH access to this runner's public IP on AWS"
+  if [ -z "$AWS_REGION" ]; then
+    AWS_REGION="eu-west-1"
+  fi
+  echo "Logging into AWS"
+  aws configure set aws_access_key_id $AWS_KEY
+  aws configure set aws_secret_access_key $AWS_SECRET
+  aws configure set region $AWS_REGION
+  aws sts get-caller-identity 1>/dev/null 2>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Failed to login to AWS"
+    return
+  else
+    echo "Login succeeded"
+  fi
+  # Add this github runner to ssh-access security group for SSH access
+  aws ec2 authorize-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
+  if [ $? -ne 0 ]; then
+    echo "SSH Access failed might not be able to SSH into host(s)"
+  else
+    echo "SSH Access granted for this runner"
+    SSH_GRANTED='true'
+  fi
+else
+  echo "AWS_KEY, AWS_SECRET and or IPV4 not set so cannot grant SSH access"
+fi
+
 # Get host platform
 PLATFORM=$($sshCommandPrefix $hostStr -- uname -m)
 if [ "$?" != 0 -o -z "$PLATFORM" ]; then
   echo "Failed to determine host platform"
+  if [ "$SSH_GRANTED" == 'true' ]; then
+    revoke_ssh
+  fi
   exit 1
 fi
 if [ "$PLATFORM" == "x86_64" ]; then
@@ -72,6 +110,9 @@ if [ "$MANAGER_TAG" != '#ref' ]; then
   docker manifest inspect openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
   if [ $? -ne 0 ]; then
     echo "Specified manager tag does not exist in docker hub"
+    if [ "$SSH_GRANTED" == 'true' ]; then
+    revoke_ssh
+  fi
     exit 1
   fi
 else
@@ -81,6 +122,9 @@ else
   docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$MANAGER_REF --platform $PLATFORM -t openremote/manager:$MANAGER_REF $MANAGER_DOCKER_BUILD_PATH | gzip > temp/manager.tar.gz
   if [ $? -ne 0 -o ! -f temp/manager.tar.gz ]; then
     echo "Failed to export manager image with tag: $MANAGER_REF"
+    if [ "$SSH_GRANTED" == 'true' ]; then
+      revoke_ssh
+    fi
     exit 1
   fi
 fi
@@ -90,6 +134,9 @@ if [ ! -z "$DEPLOYMENT_REF" ]; then
   docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$DEPLOYMENT_REF --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_REF $DEPLOYMENT_DOCKER_BUILD_PATH | gzip > temp/deployment.tar.gz
   if [ $? -ne 0 -o ! -f temp/deployment.tar.gz ]; then
     echo "Failed to export deployment image"
+    if [ "$SSH_GRANTED" == 'true' ]; then
+      revoke_ssh
+    fi
     exit 1
   fi
 fi
@@ -232,6 +279,9 @@ EOF
 
 if [ $? -ne 0 ]; then
   echo "Deployment failed or is unhealthy"
+  if [ "$SSH_GRANTED" == 'true' ]; then
+    revoke_ssh
+  fi
   exit 1
 fi
 
@@ -239,5 +289,12 @@ echo "Testing manager web server https://$HOST..."
 response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
 if [ $response -ne 200 ]; then
   echo "Response code = $response"
+  if [ "$SSH_GRANTED" == 'true' ]; then
+      revoke_ssh
+  fi
   exit 1
+fi
+
+if [ "$SSH_GRANTED" == 'true' ]; then
+  revoke_ssh
 fi
