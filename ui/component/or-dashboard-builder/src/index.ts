@@ -1,11 +1,12 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
-import {GridStack, GridStackNode, GridStackWidget } from 'gridstack';
+import {GridItemHTMLElement, GridStack, GridStackNode, GridStackWidget } from 'gridstack';
 import 'gridstack/dist/h5/gridstack-dd-native'; // drag and drop feature
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
-const extracss = require('gridstack/dist/gridstack-extra.css')
+const extracss = require('gridstack/dist/gridstack-extra.css');
+const buttonStyle = require("@material/button/dist/mdc.button.css");
 
 // language=CSS
 const styling = css`
@@ -37,6 +38,9 @@ const styling = css`
     .flex-item:nth-child(1) {
         flex-grow: 1;
     }
+    .sidebar {
+        display: grid;
+    }
     .sidebarItem {
         height: 100%;
         background: white;
@@ -55,6 +59,10 @@ const styling = css`
         --or-icon-width: 58px;
         margin-bottom: 12px;
     }
+    #sidebarElement, #sidebarBgElement {
+        grid-column: 1;
+        grid-row: 1;
+    }
 `;
 
 @customElement("or-dashboard-builder") // @ts-ignore
@@ -62,8 +70,12 @@ export class OrDashboardBuilder extends LitElement {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), styling]
+        return [unsafeCSS(gridcss), unsafeCSS(extracss), unsafeCSS(buttonStyle), styling]
     }
+
+    // Variables
+    mainGrid: GridStack | undefined;
+
 
     // Main constructor; after the component is rendered/updated, we start rendering the grid.
     constructor() {
@@ -77,53 +89,62 @@ export class OrDashboardBuilder extends LitElement {
                     {x: 2, y: 1, w: 3, h: 3, minW: 2, minH: 2, content: '<div class="gridItem"><span>Second Item</span></div>'},
                     {x: 6, y: 2, w: 2, h: 2, minW: 2, minH: 2, content: '<div class="gridItem"><span>Third Item</span></div>'}
                 ];
-                const mainGrid = GridStack.init({
+                this.mainGrid = GridStack.init({
                     acceptWidgets: true,
-                    alwaysShowResizeHandle: true,
                     animate: true,
-                    cellHeight: "initial",
+                    cellHeight: "auto",
                     draggable: {
                         appendTo: 'parent'
                     },
-                    dragOut: false,
                     float: true,
                     margin: 4,
                     minRow: 7,
                     resizable: {
-                        autoHide: false,
-                        handles: 'se'
+                        handles: 'all'
                     }
                     // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
                 }, gridElement);
-                mainGrid.load(gridItems);
+                this.mainGrid.load(gridItems);
 
 
                 // Setup of Sidebar
                 const sidebarElement = this.shadowRoot.getElementById("sidebarElement");
                 const sidebarItems = [
-                    {x: 0, y: 0, w: 1, h: 1, widgetId: 'sidebar-linechart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
-                    {x: 1, y: 0, w: 1, h: 1, widgetId: 'sidebar-barchart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
-                    {x: 0, y: 1, w: 1, h: 1, widgetId: 'sidebar-gauge', locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},
-                    {x: 1, y: 1, w: 1, h: 1, locked: true, content: ''} // Invisible widget
+                    {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-linechart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
+                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-barchart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
+                    {x: 0, y: 2, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-gauge', locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},
+                    {x: 2, y: 2, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-table', locked: true, content: '<div class="sidebarItem"><or-icon icon="table-large"></or-icon><span>Table</span></div>'},
+                    //{x: 2, y: 3, w: 2, h: 2, locked: true, noMove: true, content: 'w'} // Invisible widget
                 ];
                 const sidebarGrid = GridStack.init({
                     acceptWidgets: false,
-                    animate: true,
                     cellHeight: "initial",
-                    column: 2,
-                    disableDrag: false,
+                    column: 4,
                     disableOneColumnMode: true,
                     disableResize: true,
                     draggable: {
                         appendTo: 'parent'
                     },
-                    float: true,
                     margin: 8,
-                    minWidth: 200,
+                    maxRow: 4
 
                     // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
                 }, sidebarElement);
                 sidebarGrid.load(sidebarItems);
+
+
+                // Seperate Static Background grid (to make it look like the items duplicate)
+                const sidebarBgElement = this.shadowRoot.getElementById("sidebarBgElement");
+                const backgroundGrid = GridStack.init({
+                    staticGrid: true,
+                    cellHeight: "initial",
+                    column: 4,
+                    disableOneColumnMode: true,
+                    margin: 8
+
+                    // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
+                }, sidebarBgElement);
+                backgroundGrid.load(sidebarItems); // Loading the same items
 
 
 
@@ -138,35 +159,49 @@ export class OrDashboardBuilder extends LitElement {
 
 
                 // Handling dropping of new items
-                mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: any) => {
-                    mainGrid.removeWidget(newWidget.el, true, false); // Removes dragged widget first
-                    let widgetToAdd: GridStackWidget | undefined;
-                    switch(newWidget.widgetId) {
-                        case 'sidebar-linechart': {
-                            widgetToAdd = {
-                                content: '<div class="gridItem"><span>This is a new Line Chart widget.</span></div>',
-                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
-                            }; break;
+                this.mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: any) => {
+                    if(this.mainGrid != null) {
+                        this.mainGrid.removeWidget(newWidget.el, true, false); // Removes dragged widget first
+                        let widgetToAdd: GridStackWidget | undefined;
+                        switch(newWidget.widgetId) {
+                            case 'sidebar-linechart': {
+                                widgetToAdd = {
+                                    content: '<div class="gridItem"><span>This is a new Line Chart widget.</span></div>',
+                                    w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                                }; break;
+                            }
+                            case 'sidebar-barchart': {
+                                widgetToAdd = {
+                                    content: '<div class="gridItem"><span>This is a new Bar Chart widget.</span></div>',
+                                    w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                                }; break;
+                            }
+                            case 'sidebar-gauge': {
+                                widgetToAdd = {
+                                    content: '<div class="gridItem"><span>This is a new Gauge widget.</span></div>',
+                                    w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                                }; break;
+                            }
+                            case 'sidebar-table': {
+                                widgetToAdd = {
+                                    content: '<div class="gridItem"><span>This is a new Table widget.</span></div>',
+                                    w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
+                                }
+                            }
                         }
-                        case 'sidebar-barchart': {
-                            widgetToAdd = {
-                                content: '<div class="gridItem"><span>This is a new Bar Chart widget.</span></div>',
-                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
-                            }; break;
+                        if(widgetToAdd != null) {
+                            this.mainGrid.load([widgetToAdd]);
                         }
-                        case 'sidebar-gauge': {
-                            widgetToAdd = {
-                                content: '<div class="gridItem"><span>This is a new Gauge widget.</span></div>',
-                                w: 2, h: 2, minW: 2, minH: 2, x: newWidget.x, y: newWidget.y
-                            }; break;
-                        }
-                    }
-                    if(widgetToAdd != null) {
-                        mainGrid.load([widgetToAdd]);
                     }
                 });
             }
         });
+    }
+
+    saveDashboard(): void {
+        if(this.mainGrid != null) {
+            console.log(this.mainGrid.save());
+        }
     }
 
     // Rendering the page
@@ -174,13 +209,22 @@ export class OrDashboardBuilder extends LitElement {
         return html`
             <div class="flex-container">
                 <div class="flex-item">
+                    <div style="margin-bottom: 12px; width: 100%;">
+                        <button class="mdc-button mdc-button--outlined">Action 1</button>
+                        <button class="mdc-button mdc-button--outlined">Action 2</button>
+                        <button class="mdc-button mdc-button--outlined">Action 3</button>
+                        <div style="float: right">
+                            <button class="mdc-button mdc-button--outlined" @click="${this.saveDashboard}">Save</button>
+                        </div>
+                    </div>
                     <div class="maingrid">
                         <div id="gridElement" class="grid-stack"></div>
                     </div>
                 </div>
                 <div class="flex-item">
                     <div class="sidebar" style="width: 320px; height: 100%;">
-                        <div id="sidebarElement" class="grid-stack" style="width: 100%; height: 100%;"></div>
+                        <div id="sidebarElement" class="grid-stack" style="width: 100%; z-index: 1001"></div>
+                        <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 1000"></div>
                     </div>
                 </div>
             </div>
