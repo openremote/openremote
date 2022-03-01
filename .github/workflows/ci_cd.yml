@@ -160,6 +160,46 @@ jobs:
           INPUTS: ${{ toJSON(github.event.inputs) }}
           EVENT_NAME: ${{ github.event_name }}
           
+      - name: Public IP
+        id: ip-address
+        uses: haythem/public-ip@v1.2
+      
+      - name: AWs SSH access
+        id: aws-ssh-access
+        run: |
+          # if [ ! -z "$DEPLOYMENTS" ]; then
+          if [ -z "$DEPLOYMENTS" ]; then
+            if [ ! -z "$AWS_KEY" -a ! -z "$AWS_SECRET" ]; then
+              if [ -z "$AWS_REGION" ]; then
+                AWS_REGION="eu-west-1"
+              fi
+              echo "Logging into AWS"
+              aws configure set aws_access_key_id $AWS_KEY
+              aws configure set aws_secret_access_key $AWS_SECRET
+              aws sts get-caller-identity 1>/dev/null 2>/dev/null
+              if [ $? -ne 0 ]; then
+                echo "Failed to login to AWS"
+                exit 1
+              fi
+              # Add this github runner to ssh-access security group for SSH access
+              aws ec2 authorize-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
+              if [ $? -ne 0 ]; then
+                echo "SSH Access failed might not be able to SSH into host(s)"
+              else
+                echo "SSH Access granted for this runner"
+                echo "::set-output name=sg-set::true"
+              fi
+            fi
+          fi
+          exit 1
+        env:
+          IPV4: ${{ steps.ip-address.outputs.ipv4 }}
+          IPV6: ${{ steps.ip-address.outputs.ipv6 }}
+          AWS_KEY: ${{ steps.inputs-and-secrets.outputs.AWS_KEY }}
+          AWS_SECRET: ${{ steps.inputs-and-secrets.outputs.AWS_SECRET }}
+          AWS_REGION: ${{ steps.inputs-and-secrets.outputs.AWS_REGION }}
+          DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
+          
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -734,3 +774,15 @@ jobs:
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
           DEPLOY_SCRIPT_COMMAND: ${{ steps.deploy-script-command.outputs.value }}
+        
+      - name: Revoke AWS access
+        if: always()
+        run: |
+          if [ "$SG_SET" == 'true' ]; then
+            aws ec2 revoke-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
+            echo "Revoked AWS SSH access"
+          fi
+        env:
+          IPV4: ${{ steps.ip-address.outputs.ipv4 }}
+          IPV6: ${{ steps.ip-address.outputs.ipv6 }}
+          SG_SET: ${{ steps.aws-ssh-access.outputs.sg-set }}
