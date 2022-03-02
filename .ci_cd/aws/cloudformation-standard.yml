@@ -1,0 +1,402 @@
+# ---------------------------------------------------------------------------------------------
+# Standard OpenRemote CloudFormation template for provisioning the following AWS resources (not
+# in order) for running an instance of the OpenRemote stack:
+#
+# - Provision EC2 instance using Amazon Linux 2 ARM image with standard security group assignments
+# - Add IAM user with SES email permissions
+# - Add Route 53 DNS record to hosted zone 'mvp.openremote.io' that points to new EC2 instance
+# - Configures logging for the EC2 instance
+# - Installs docker and docker-compose
+# - Optionally adds EFS data mount on /deployment.local
+#
+# The generated SMTP IAM credentials are output to /etc/environment using the standard OpenRemote
+# naming convention SETUP_EMAIL_HOST, SETUP_EMAIL_USER and SETUP_EMAIL_PASSWORD
+#
+# ---------------------------------------------------------------------------------------------
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Linux 2 with docker compose'
+Parameters:
+  Host:
+    Description: Hostname
+    Type: String
+    Default: demo
+    AllowedPattern: "[a-z0-9]+"
+    ConstraintDescription: Host name must be lowercase letters and numbers
+  InstanceType:
+    Description: EC2 instance type (don't change it unless you know what you are doing)
+    Type: String
+    # AWS Compute Optimizer reports that this instance type is under-provisioned and advise
+    # more than double the price instance. As the requirements vary massively depending on the actual project
+    # then we need to be flexible here and bear in mind use case and acceptable cost.
+    Default: t4g.small
+    AllowedValues:
+      - t4g.small
+      - t4g.medium
+      - t4g.large
+      - m6g.medium
+      - m6g.large
+    ConstraintDescription: must be a valid EC2 instance type.
+  MapFileSystemId:
+    Description: File system ID of map to mount from EFS (must already exist)
+    Type: String
+    AllowedPattern: ^$|^(fs-[0-9a-f]{8,40})?$
+    ConstraintDescription: Must be a valid file system ID e.g. (fs-ad2321321332132123)
+
+Conditions:
+  DoMapMount: !Not [!Equals [!Ref MapFileSystemId, ""]]
+
+Outputs:
+  InstanceIP:
+    Description: The Instance public IP
+    Value: !GetAtt EC2Instance.PublicIp
+  Domain:
+    Description: OpenRemote Instance URL
+    Value: !Join [".", [!Ref Host, "mvp.openremote.io"]]
+  SMTPUsername:
+    Description: SMTP server username
+    Value: !Ref SMTPCredentials
+  SMTPSecret:
+    Description: SMTP server password
+    Value: !GetAtt SMTPCredentials.SecretAccessKey
+  SMTPServer:
+    Value: !Join [".", ["email-smtp", !Ref "AWS::Region", "amazonaws.com"]]
+
+Resources:
+  SMTPUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Join ["-", ["smtp", !Ref Host ]]
+      Policies:
+        - PolicyName: OpenRemoteSendEmail
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendRawEmail
+                Resource:
+                  - '*'
+
+  SMTPCredentials:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref SMTPUser
+
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: "mvp.openremote.io."
+      Name: !Join [ ".", [!Ref Host, "mvp.openremote.io" ] ]
+      ResourceRecords:
+        - !GetAtt EC2Instance.PublicIp
+      TTL: '60'
+      Type: A
+
+  LogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: LogRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:Create*
+                  - logs:PutLogEvents
+                  - s3:GetObject
+                Resource:
+                  - arn:aws:logs:*:*:*
+                  - arn:aws:s3:::*
+
+  LogRoleInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - Ref: LogRole
+
+  CloudFormationLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - docker_setup
+            - cron_setup
+            - cfn_hup
+            - env_vars
+          withmap:
+            - ConfigSet: default
+            - nfs_setup
+            - mount
+
+        nfs_setup:
+          packages:
+            yum:
+              nfs-utils: []
+          files:
+            "/home/ec2-user/post_nfsstat":
+              content: !Sub |
+                #!/bin/bash
+                
+                INPUT="$(cat)"
+                CW_JSON_OPEN='{ "Namespace": "EFS", "MetricData": [ '
+                CW_JSON_CLOSE=' ] }'
+                CW_JSON_METRIC=''
+                METRIC_COUNTER=0
+                
+                for COL in 1 2 3 4 5 6; do
+                
+                 COUNTER=0
+                 METRIC_FIELD=$COL
+                 DATA_FIELD=$(($COL+($COL-1)))
+                
+                 while read line; do
+                   if [[ COUNTER -gt 0 ]]; then
+                
+                     LINE=`echo $line | tr -s ' ' `
+                     AWS_COMMAND="aws cloudwatch put-metric-data --region ${AWS::Region}"
+                     MOD=$(( $COUNTER % 2))
+                
+                     if [ $MOD -eq 1 ]; then
+                       METRIC_NAME=`echo $LINE | cut -d ' ' -f $METRIC_FIELD`
+                     else
+                       METRIC_VALUE=`echo $LINE | cut -d ' ' -f $DATA_FIELD`
+                     fi
+                
+                     if [[ -n "$METRIC_NAME" && -n "$METRIC_VALUE" ]]; then
+                       INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+                       CW_JSON_METRIC="$CW_JSON_METRIC { \"MetricName\": \"$METRIC_NAME\", \"Dimensions\": [{\"Name\": \"InstanceId\", \"Value\": \"$INSTANCE_ID\"} ], \"Value\": $METRIC_VALUE },"
+                       unset METRIC_NAME
+                       unset METRIC_VALUE
+                
+                       METRIC_COUNTER=$((METRIC_COUNTER+1))
+                       if [ $METRIC_COUNTER -eq 20 ]; then
+                         # 20 is max metric collection size, so we have to submit here
+                         aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
+                
+                         # reset
+                         METRIC_COUNTER=0
+                         CW_JSON_METRIC=''
+                       fi
+                     fi
+                
+                     COUNTER=$((COUNTER+1))
+                   fi
+                
+                   if [[ "$line" == "Client nfs v4:" ]]; then
+                     # the next line is the good stuff
+                     COUNTER=$((COUNTER+1))
+                   fi
+                 done <<< "$INPUT"
+                done
+                
+                # submit whatever is left
+                aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
+              mode: '000755'
+              owner: ec2-user
+              group: ec2-user
+            "/home/ec2-user/crontab":
+              content: "* * * * * /usr/sbin/nfsstat | /home/ec2-user/post_nfsstat\n"
+              owner: ec2-user
+              group: ec2-user
+
+        mount:
+          commands:
+            01_createdir:
+              command: !Sub "mkdir /deployment.local"
+            02_mount:
+              command: !Sub >
+                echo "${MapFileSystemId}.efs.${AWS::Region}.amazonaws.com:/ /deployment.local nfs4 nfsvers=4.1 0 0" >> /etc/fstab
+                mount -a
+            03_permissions:
+              command: chown ec2-user:ec2-user /deployment.local
+
+        env_vars:
+          files:
+            "/home/ec2-user/smtp_credentials_generate.py":
+              content: |
+                #!/usr/bin/env python3
+
+                import hmac
+                import hashlib
+                import base64
+                import argparse
+
+                SMTP_REGIONS = [
+                    'us-east-2',       # US East (Ohio)
+                    'us-east-1',       # US East (N. Virginia)
+                    'us-west-2',       # US West (Oregon)
+                    'ap-south-1',      # Asia Pacific (Mumbai)
+                    'ap-northeast-2',  # Asia Pacific (Seoul)
+                    'ap-southeast-1',  # Asia Pacific (Singapore)
+                    'ap-southeast-2',  # Asia Pacific (Sydney)
+                    'ap-northeast-1',  # Asia Pacific (Tokyo)
+                    'ca-central-1',    # Canada (Central)
+                    'eu-central-1',    # Europe (Frankfurt)
+                    'eu-west-1',       # Europe (Ireland)
+                    'eu-west-2',       # Europe (London)
+                    'sa-east-1',       # South America (Sao Paulo)
+                    'us-gov-west-1',   # AWS GovCloud (US)
+                ]
+
+                # These values are required to calculate the signature. Do not change them.
+                DATE = "11111111"
+                SERVICE = "ses"
+                MESSAGE = "SendRawEmail"
+                TERMINAL = "aws4_request"
+                VERSION = 0x04
+
+
+                def sign(key, msg):
+                    return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
+
+
+                def calculate_key(secret_access_key, region):
+                    if region not in SMTP_REGIONS:
+                        raise ValueError(f"The {region} Region doesn't have an SMTP endpoint.")
+
+                    signature = sign(("AWS4" + secret_access_key).encode('utf-8'), DATE)
+                    signature = sign(signature, region)
+                    signature = sign(signature, SERVICE)
+                    signature = sign(signature, TERMINAL)
+                    signature = sign(signature, MESSAGE)
+                    signature_and_version = bytes([VERSION]) + signature
+                    smtp_password = base64.b64encode(signature_and_version)
+                    return smtp_password.decode('utf-8')
+
+
+                def main():
+                    parser = argparse.ArgumentParser(
+                        description='Convert a Secret Access Key for an IAM user to an SMTP password.')
+                    parser.add_argument(
+                        'secret', help='The Secret Access Key to convert.')
+                    parser.add_argument(
+                        'region',
+                        help='The AWS Region where the SMTP password will be used.',
+                        choices=SMTP_REGIONS)
+                    args = parser.parse_args()
+                    print(calculate_key(args.secret, args.region))
+                
+
+                if __name__ == '__main__':
+                    main()
+              owner: ec2-user
+              group: ec2-user
+          commands:
+            01_output_smtp_credentials:
+              command: !Sub |
+                PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPCredentials.SecretAccessKey} ${AWS::Region})
+                echo "SETUP_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" >> /etc/environment
+                echo "SETUP_EMAIL_USER=${SMTPCredentials}" >> /etc/environment
+                echo "SETUP_EMAIL_PASSWORD=$PASS" >> /etc/environment                
+
+        docker_setup:
+          packages:
+            yum:
+              docker: []
+          commands:
+            01_configure:
+              command: |
+                usermod -a -G docker ec2-user
+                chkconfig docker on
+                curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose && chmod +x /usr/bin/docker-compose && docker-compose --version
+          services:
+            sysvinit:
+              docker:
+                enabled: "true"
+                ensureRunning: "true"
+
+        cron_setup:
+          packages:
+            yum:
+              yum-cron: []
+          commands:
+            01_configure:
+              command: chkconfig yum-cron on
+          services:
+            sysvinit:
+              yum-cron:
+                enabled: "true"
+                ensureRunning: "true"
+
+        cfn_hup:
+          files:
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+                runas=root
+              mode: "000400"
+              owner: "root"
+              group: "root"
+
+    Properties:
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        "openremote"
+      ImageId:
+        "ami-032afb7a6d14ab941"
+      SecurityGroups:
+        - "ssh-access"
+        - "http-access"
+        - "mqtt-access"
+        - "ping-access"
+        - "snmp-access"
+      Ipv6AddressCount: 1
+      Tags:
+        - Key: "Name"
+          Value: !Join [ ".", [ !Ref Host, "mvp.openremote.io" ] ]
+      IamInstanceProfile: !Ref 'LogRoleInstanceProfile'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          # Install latest cfn scripts
+          yum -y install aws-cfn-bootstrap
+          #sed -i '/update_cmd/s/= .*/= security/' /etc/yum/yum-cron-hourly.conf
+          #sed -i '/update_messages/s/= .*/= no/' /etc/yum/yum-cron-hourly.conf
+          #sed -i '/apply_updates/s/= .*/= yes/' /etc/yum/yum-cron-hourly.conf
+          #sed -i '/download_updates/s/= .*/= yes/' /etc/yum/yum-cron-hourly.conf
+          #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
+          
+          # Execute required config set
+          CONFIGSET=default
+          if [ ! -z "${MapFileSystemId}" ]; then
+            CONFIGSET=withmap
+          fi
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets $CONFIGSET --region ${AWS::Region}
+          
+          # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
+          /opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
+          # Get the CloudWatch Logs agent
+          wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+          # Install the CloudWatch Logs agent
+          python awslogs-agent-setup.py -n -r ${AWS::Region} -c /tmp/cwlogs/apacheaccess.conf || error_exit 'Failed to run CloudWatch Logs agent setup'         
+          
+          # Add NFS/EFS stat cron job
+          crontab /home/ec2-user/crontab
+          
+          # Swap file necessary?
+          
+          # All done so signal success
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
