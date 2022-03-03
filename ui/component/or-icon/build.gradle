@@ -1,7 +1,8 @@
 buildDir = "dist"
 
 task copyMdiFont(type: Exec) {
-    commandLine npmCommand("yarn"), "run", "copyMdiFont"
+    // Using yarn throws an error relating to node_module resolution
+    commandLine npmCommand("npm"), "run", "copyMdiFont"
 }
 
 task clean() {
