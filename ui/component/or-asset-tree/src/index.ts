@@ -1100,7 +1100,14 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase() && attr.value) {
                                 switch (attr.type!) {
                                     case "number":
+                                    case "integer":
+                                    case "long":
+                                    case "bigInteger":
+                                    case "bigNumber":
+                                    case "positiveInteger":
+                                    case "negativeInteger":
                                     case "positiveNumber":
+                                    case "negativeNumber":
                                         const resultNumberEval: boolean = eval(attr.value + currentAttributeVal[1]);
                                         if (resultNumberEval) {
                                             atLeastOneAttributeMatchValue = true;
