@@ -1,7 +1,7 @@
 buildDir = "dist"
 
 task copyMdiFont(type: Exec) {
-    commandLine npmCommand("npm"), "run-script", "copyMdiFont"
+    commandLine npmCommand("yarn"), "run", "copyMdiFont"
 }
 
 task clean() {

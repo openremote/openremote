@@ -25,7 +25,6 @@
   "dependencies": {
     "@material/button": "^9.0.0",
     "@material/checkbox": "^9.0.0",
-    "@material/radio": "^9.0.0",
     "@material/data-table": "^9.0.0",
     "@material/dialog": "^9.0.0",
     "@material/drawer": "^9.0.0",
@@ -35,19 +34,20 @@
     "@material/icon-button": "^9.0.0",
     "@material/line-ripple": "^9.0.0",
     "@material/menu": "^9.0.0",
+    "@material/radio": "^9.0.0",
     "@material/ripple": "^9.0.0",
     "@material/select": "^9.0.0",
     "@material/slider": "^9.0.0",
     "@material/snackbar": "^9.0.0",
     "@material/switch": "^9.0.0",
     "@material/textfield": "^9.0.0",
-    "@openremote/core": "^1.0.4",
+    "@openremote/core": "workspace:*",
     "@openremote/or-icon": "^1.0.4",
     "@openremote/or-translate": "^1.0.4",
     "lit": "^2.0.2"
   },
   "devDependencies": {
-    "@openremote/util": "^1.0.4"
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

@@ -16,12 +16,12 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.4",
-    "@openremote/model": "^1.0.4",
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "lit": "^2.0.2"
   },
   "devDependencies": {
-    "@openremote/util": "^1.0.4"
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

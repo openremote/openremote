@@ -218,38 +218,34 @@ task yarnInstallForce(type: Exec){
     commandLine npmCommand("yarn"), "install", "--force"
 }
 
-// Add npm tasks
-task npmInstall(type: Exec){
-    commandLine npmCommand("npm"), "install"
-}
 task npmClean(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "clean"
+    commandLine npmCommand("yarn"), "run", "clean"
 }
 task npmBuild(type: Exec){
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "build"
+    commandLine npmCommand("yarn"), "run", "build"
 }
 task npmTest(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "test"
+    commandLine npmCommand("yarn"), "run", "test"
 }
 task npmServe(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "serve"
+    commandLine npmCommand("yarn"), "run", "serve"
 }
 task npmPrepare(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "prepublishOnly"
+    commandLine npmCommand("yarn"), "run", "prepublishOnly"
 }
 task npmPublish(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "publish"
+    commandLine npmCommand("yarn"), "publish"
 }
 task npmServeProduction(type: Exec) {
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "serveProduction"
+    commandLine npmCommand("yarn"), "run", "serveProduction"
 }
 
 // Add typescript tasks

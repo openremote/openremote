@@ -17,7 +17,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^9.0.0",
-    "@openremote/core": "^1.0.4",
+    "@openremote/core": "workspace:*",
     "@openremote/or-chart": "^1.0.4",
     "@openremote/or-components": "^1.0.4",
     "@openremote/or-mwc-components": "^1.0.4",
@@ -26,7 +26,7 @@
     "lit": "^2.0.2"
   },
   "devDependencies": {
-    "@types/chart.js": "^2.9.34",
-    "@openremote/util": "^1.0.4"
+    "@openremote/util": "workspace:*",
+    "@types/chart.js": "^2.9.34"
   }
 }

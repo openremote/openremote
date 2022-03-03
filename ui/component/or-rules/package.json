@@ -16,14 +16,14 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.4",
-    "@openremote/model": "^1.0.4",
+    "@openremote/core": "workspace:*",
+    "@openremote/model": "workspace:*",
     "@openremote/or-attribute-input": "^1.0.4",
     "@openremote/or-components": "^1.0.4",
     "@openremote/or-icon": "^1.0.4",
     "@openremote/or-mwc-components": "^1.0.4",
     "@openremote/or-translate": "^1.0.4",
-    "@openremote/rest": "^1.0.4",
+    "@openremote/rest": "workspace:*",
     "ace-builds": "^1.4.13",
     "linqts": "^1.12.6",
     "lit": "^2.0.2",
@@ -33,8 +33,8 @@
     "shortid": "^2.2.15"
   },
   "devDependencies": {
-    "@types/shortid": "^0.0.29",
-    "@openremote/util": "^1.0.4"
+    "@openremote/util": "workspace:*",
+    "@types/shortid": "^0.0.29"
   },
   "publishConfig": {
     "access": "public"

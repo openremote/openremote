@@ -20,7 +20,7 @@
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@openremote/util": "^1.0.4"
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
