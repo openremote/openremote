@@ -1510,7 +1510,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     assets.push(node.asset!);
                 }
             });
-            this._buildTreeNodes(assets, this._getSortFunction());
+
+            // In case of filter already active, do not override the actual state of assetTree
+            if ( !this._filterInput.value ) {
+                this._buildTreeNodes(assets, this._getSortFunction());
+            }
             this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
         }
     }
