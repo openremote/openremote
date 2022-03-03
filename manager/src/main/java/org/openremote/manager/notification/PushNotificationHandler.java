@@ -509,7 +509,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         return asset.getConsoleProviders().flatMap(consoleProviders ->
             Optional.ofNullable(consoleProviders.get(PushNotificationMessage.TYPE))
                 .map(ConsoleProvider::getData)
-                .map(data -> data.get("token").asText()));
+                .map(data -> data.get("token") != null ? data.get("token").asText() : null));
     }
 
     protected void processConsoleAssetChange(ConsoleAsset asset, PersistenceEvent<ConsoleAsset> persistenceEvent) {
