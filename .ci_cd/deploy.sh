@@ -10,6 +10,9 @@ if [ -f "temp/env" ]; then
   set -a
   . ./temp/env
   set +x
+
+  echo "Environment variables loaded:"
+  cat temp/env
 fi
 
 if [ -f "ssh.env" ]; then

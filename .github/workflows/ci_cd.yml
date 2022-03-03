@@ -659,9 +659,6 @@ jobs:
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
           
           failure = False
-                    
-          # Make deploy script executable
-          os.system("chmod +x .ci_cd/deploy.sh")
           
           for deployment in deployments:
             dep = deployment.split(":")
@@ -688,10 +685,12 @@ jobs:
             
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):
+              os.system(f"echo 'Outputting .ci_cd/env/.env to temp/env'")
               os.system("cat .ci_cd/env/.env >> temp/env")
               
             # Output environment specific env file if exists
             if env is not None and env != '' and os.path.exists(f".ci_cd/env/{env}.env"):
+              os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
               os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
             
             # Output inputs and secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
