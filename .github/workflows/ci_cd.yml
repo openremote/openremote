@@ -476,7 +476,20 @@ jobs:
         env:
           MANAGER_DOCKER_CMD: ${{ steps.manager-docker-command.outputs.value }}
           DEPLOYMENT_DOCKER_CMD: ${{ steps.deployment-docker-command.outputs.value }}
-          
+
+      - name: Define dev-testing path
+        id: dev-testing-path
+        shell: bash
+        run: |
+          if [ $IS_CUSTOM_PROJECT == 'true' ]; then
+            echo "::set-output name=value::openremote/profile/dev-testing.yml"
+          else
+            echo "::set-output name=value::profile/dev-testing.yml"
+          fi
+
+        env:
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
+
       - name: Output info
         run: |
           echo "************************************************************"
@@ -553,7 +566,7 @@ jobs:
         with:
           path:  |
             ~/image-cache
-          key: ${{ runner.os }}-docker---${{ hashFiles('profile/dev-testing.yml') }}
+          key: ${{ runner.os }}-docker---${{ hashFiles(steps.dev-testing-path.outputs.value) }}
           restore-keys: |
             ${{ runner.os }}-docker---
 
@@ -566,17 +579,21 @@ jobs:
       - name: Pull docker images
         if: ${{ steps.test-backend-command.outputs.value != '' && steps.docker-cache.outputs.cache-hit != 'true' }}
         run: |
-          docker-compose -f profile/dev-testing.yml pull
+          docker-compose -f $DEV_TESTING_PATH pull
           keycloak=$(docker images --filter 'reference=openremote/keycloak' --format "{{.Repository}}:{{.Tag}}")
           postgres=$(docker images --filter 'reference=openremote/postgresql' --format "{{.Repository}}:{{.Tag}}")
           docker save $keycloak | gzip > ~/image-cache/keycloak.tar.gz
           docker save $postgres | gzip > ~/image-cache/postgres.tar.gz
           ls -R ~/image-cache
+        env:
+          DEV_TESTING_PATH: ${{ steps.dev-testing-path.outputs.value }}
 
       - name: Start docker test services
         if: steps.test-backend-command.outputs.value != ''
-        run: docker-compose -f profile/dev-testing.yml up -d --no-build
-        
+        run: docker-compose -f $DEV_TESTING_PATH up -d --no-build
+        env:
+          DEV_TESTING_PATH: ${{ steps.dev-testing-path.outputs.value }}
+
       - name: Run backend tests
         if: steps.test-backend-command.outputs.value != ''
         run: ${{ steps.test-backend-command.outputs.value }}
