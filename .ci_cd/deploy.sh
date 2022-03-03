@@ -47,7 +47,7 @@ fi
 sshCommandPrefix="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 scpCommandPrefix="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-if [ -f "$SSH_PORT" ]; then
+if [! -z "$SSH_PORT" ]; then
   sshCommandPrefix="$sshCommandPrefix -p $SSH_PORT"
   scpCommandPrefix="$scpCommandPrefix -P $SSH_PORT"
 fi
