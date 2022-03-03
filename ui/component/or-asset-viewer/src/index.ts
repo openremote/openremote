@@ -775,7 +775,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         };
 
         // Load users and rights, then update the table
-        getLinkedUsers(asset).then((linkedUsers) => {
+        getLinkedUsers(asset, hostElement).then((linkedUsers) => {
             Promise.all(linkedUsers).then(res => {
                 if (!res || res.length === 0) {
                     hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
@@ -914,7 +914,7 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
-async function getLinkedUsers(asset: Asset): Promise<Promise<string[]>[]> {
+async function getLinkedUsers(asset: Asset, hostElement: LitElement): Promise<Promise<string[]>[]> {
     let response: Promise<string[]>[];
 
     try {
@@ -933,9 +933,19 @@ async function getLinkedUsers(asset: Asset): Promise<Promise<string[]>[]> {
 
                 await manager.rest.api.UserResource.getRoles(manager.displayRealm)
                     .then((rolesRes) => {
+                        const roles = rolesRes.data.filter(role => !role.composite);
+                        if (!manager.isSuperUser() && !roles.some(r => r.name === 'write:admin') && !roles.some(r => r.name === 'read:admin')) {
+                            hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
+                            return;
+                        }
                         const compositeRoles = rolesRes.data.filter(role => role.composite).map(r => r.name);
                         const roleNames = compositeRoles.join(', ');
                         row.push(roleNames!);
+                    })
+                    .catch((err) => {
+                        console.info('User not allowed to get roles', err);
+                        hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
+                        return;
                     });
 
                 await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
