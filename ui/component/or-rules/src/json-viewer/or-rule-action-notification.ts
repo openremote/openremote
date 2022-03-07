@@ -95,6 +95,8 @@ export class OrRuleActionNotification extends LitElement {
         if (action.target) {
             if (action.target.users && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
                 targetType = NotificationTargetType.USER;
+            } else if (action.target.linkedUsers) {
+                targetType = NotificationTargetType.USER;
             } else if (action.target.custom !== undefined && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
                 targetType = NotificationTargetType.CUSTOM;
             }
@@ -190,6 +192,9 @@ export class OrRuleActionNotification extends LitElement {
                         });
                     }
                     values = [...additionalValues, ...values];
+                } else if (targetType === NotificationTargetType.USER) {
+                    // Add additional option for linked users
+                    values = [["linkedUsers", i18next.t("linked")], ...values];
                 }
 
                 return html`
@@ -306,9 +311,14 @@ export class OrRuleActionNotification extends LitElement {
     protected _onTargetChanged(targetType: NotificationTargetType, value: string | undefined) {
         switch (targetType) {
             case NotificationTargetType.USER:
-                if(value){
-                    const users:UserQuery = {ids: [value]}
-                    this.action.target = {users: users}
+                if (value === "linkedUsers") {
+                    this.action.target = {
+                        linkedUsers: true
+                    }
+                } else if (value) {
+                    this.action.target = {
+                        users: {ids: [value]}
+                    }
                 }
             break;
             case NotificationTargetType.CUSTOM:

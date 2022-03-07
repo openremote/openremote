@@ -34,6 +34,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.LogicGroup;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
+import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.TextUtil;
@@ -725,8 +726,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected static RuleActionExecution buildRuleActionExecution(JsonRule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, RuleState ruleState, Assets assetsFacade, Users usersFacade, Notifications notificationsFacade, PredictedDatapoints predictedDatapointsFacade) {
 
-        if (ruleAction instanceof RuleActionNotification) {
-            RuleActionNotification notificationAction = (RuleActionNotification) ruleAction;
+        if (ruleAction instanceof RuleActionNotification notificationAction) {
 
             if (notificationAction.notification != null) {
 
@@ -779,6 +779,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                         && ruleAction.target.assets == null
                         && ruleAction.target.matchedAssets == null) {
                         targetType = Notification.TargetType.USER;
+                    } else if (ruleAction.target.linkedUsers != null && ruleAction.target.linkedUsers) {
+                        targetType = Notification.TargetType.USER;
                     } else if (ruleAction.target.custom != null
                         && ruleAction.target.conditionAssets == null
                         && ruleAction.target.assets == null
@@ -802,13 +804,11 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
         }
 
-        if (ruleAction instanceof RuleActionWriteAttribute) {
+        if (ruleAction instanceof RuleActionWriteAttribute attributeAction) {
 
             if (targetIsNotAssets(ruleAction.target)) {
                 return null;
             }
-
-            RuleActionWriteAttribute attributeAction = (RuleActionWriteAttribute) ruleAction;
 
             if (TextUtil.isNullOrEmpty(attributeAction.attributeName)) {
                 log(Level.WARNING, "Attribute name is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -836,14 +836,12 @@ public class JsonRulesBuilder extends RulesBuilder {
             log(Level.FINEST, "Invalid delay for wait rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
         }
 
-        if (ruleAction instanceof RuleActionUpdateAttribute) {
+        if (ruleAction instanceof RuleActionUpdateAttribute attributeUpdateAction) {
 
             if (targetIsNotAssets(ruleAction.target)) {
                 log(Level.FINEST, "Invalid target update attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
                 return null;
             }
-
-            RuleActionUpdateAttribute attributeUpdateAction = (RuleActionUpdateAttribute) ruleAction;
 
             if (TextUtil.isNullOrEmpty(attributeUpdateAction.attributeName)) {
                 log(Level.WARNING, "Attribute name is missing for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
@@ -853,7 +851,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             List<String> matchingAssetIds;
 
             if (ruleAction.target == null || ruleAction.target.assets == null) {
-                if (ruleAction.target != null && ruleAction.target.users != null) {
+                if (targetIsNotAssets(ruleAction.target)) {
                     throw new IllegalStateException("Cannot use action type '" + RuleActionUpdateAttribute.class.getSimpleName() + "' with user target");
                 }
                 matchingAssetIds = new ArrayList<>(getRuleActionTargetIds(ruleAction.target, useUnmatched, ruleState, assetsFacade, usersFacade, facts));
@@ -1028,17 +1026,22 @@ public class JsonRulesBuilder extends RulesBuilder {
                 return triggerState != null ? triggerState.getUnmatchedAssetIds() : Collections.emptyList();
             }
 
-            if (conditionStateMap != null && target.matchedAssets != null) {
+            if (conditionStateMap != null && (target.matchedAssets != null || (target.linkedUsers != null && target.linkedUsers))) {
                 List<String> compareAssetIds = conditionStateMap.values().stream()
                     .flatMap(triggerState ->
-                        useUnmatched ? triggerState.getUnmatchedAssetIds().stream() : triggerState.getMatchedAssetIds().stream())
-                    .collect(Collectors.toList());
+                        useUnmatched ? triggerState.getUnmatchedAssetIds().stream() : triggerState.getMatchedAssetIds().stream()).toList();
 
-                return facts.matchAssetState(target.matchedAssets)
-                    .map(AssetState::getId)
-                    .distinct()
-                    .filter(compareAssetIds::contains)
-                    .collect(Collectors.toList());
+                if (target.matchedAssets != null) {
+                    return facts.matchAssetState(target.matchedAssets)
+                        .map(AssetState::getId)
+                        .distinct()
+                        .filter(compareAssetIds::contains)
+                        .collect(Collectors.toList());
+                }
+
+                // Find linked users
+                return compareAssetIds.stream().flatMap(assetId ->
+                    usersFacade.getResults(new UserQuery().asset(new UserAssetPredicate(assetId)))).collect(Collectors.toList());
             }
 
             if (target.assets != null) {
@@ -1070,7 +1073,7 @@ public class JsonRulesBuilder extends RulesBuilder {
     }
 
     protected static boolean targetIsNotAssets(RuleActionTarget target) {
-        return target != null && target.users != null;
+        return target != null && (target.users != null || (target.linkedUsers != null && target.linkedUsers));
     }
 
     protected static void log(Level level, String message) {

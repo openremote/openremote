@@ -300,7 +300,7 @@ class OrRuleThenOtherwise extends translate(i18next)(LitElement) {
                 }
             }
 
-            if(readonly) {
+            if (readonly) {
                 typeTemplate = html`
                     <div id="type" style="--or-mwc-input-color: #${buttonColor}">
                         <or-mwc-input type="${InputType.BUTTON}" .icon="${buttonIcon || ""}"></or-mwc-input>

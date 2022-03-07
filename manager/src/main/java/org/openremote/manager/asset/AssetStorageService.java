@@ -1060,22 +1060,34 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public List<UserAssetLink> findUserAssetLinks(String realm, String userId, String assetId) {
+        return findUserAssetLinks(
+            realm,
+            userId != null ? Collections.singletonList(userId) : null,
+            assetId != null ? Collections.singletonList(assetId) : null);
+    }
+
+    public List<UserAssetLink> findUserAssetLinks(String realm, List<String> userIds, List<String> assetIds) {
+
+        if (realm == null && (userIds == null || userIds.isEmpty()) && (assetIds == null || assetIds.isEmpty())) {
+            return Collections.emptyList();
+        }
+
         return persistenceService.doReturningTransaction(entityManager -> {
             StringBuilder sb = new StringBuilder();
             Map<String, Object> parameters = new HashMap<>(3);
             sb.append("select ua from UserAssetLink ua where 1=1");
 
             if (!isNullOrEmpty(realm)) {
-                sb.append(" and ua.id.realm = :realm");
+                sb.append(" and ua.id.realm in :realm");
                 parameters.put("realm", realm);
             }
-            if (!isNullOrEmpty(userId)) {
-                sb.append(" and ua.id.userId = :userId");
-                parameters.put("userId", userId);
+            if (userIds != null && !userIds.isEmpty()) {
+                sb.append(" and ua.id.userId in :userId");
+                parameters.put("userId", userIds);
             }
-            if (!isNullOrEmpty(assetId)) {
-                sb.append(" and ua.id.assetId = :assetId");
-                parameters.put("assetId", assetId);
+            if (assetIds != null && !assetIds.isEmpty()) {
+                sb.append(" and ua.id.assetId in :assetId");
+                parameters.put("assetId", assetIds);
             }
 
             sb.append(" order by ua.createdOn desc");
