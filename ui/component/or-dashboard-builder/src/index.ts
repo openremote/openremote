@@ -7,6 +7,7 @@ import 'gridstack/dist/h5/gridstack-dd-native'; // drag and drop feature
 const gridcss = require('gridstack/dist/gridstack.min.css');
 const extracss = require('gridstack/dist/gridstack-extra.css');
 const buttonStyle = require("@material/button/dist/mdc.button.css");
+const inputStyle = require("@material/textfield/dist/mdc.textfield.css");
 
 // language=CSS
 const styling = css`
@@ -70,7 +71,7 @@ export class OrDashboardBuilder extends LitElement {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), unsafeCSS(buttonStyle), styling]
+        return [unsafeCSS(gridcss), unsafeCSS(extracss), unsafeCSS(buttonStyle), unsafeCSS(inputStyle), styling]
     }
 
     // Variables
@@ -87,21 +88,22 @@ export class OrDashboardBuilder extends LitElement {
                 const gridItems = [
                     {x: 0, y: 0, w: 2, h: 2, minW: 2, minH: 2, content: '<div class="gridItem"><span>First Item</span></div>'},
                     {x: 2, y: 1, w: 3, h: 3, minW: 2, minH: 2, content: '<div class="gridItem"><span>Second Item</span></div>'},
-                    {x: 6, y: 2, w: 2, h: 2, minW: 2, minH: 2, content: '<div class="gridItem"><span>Third Item</span></div>'}
+                    {x: 6, y: 2, w: 2, h: 2, minW: 2, minH: 2, content: '<div class="gridItem"><span>Third Item</span></div>'},
+                    {x: 6, y: 5, w: 1, h: 1, minW: 1, minH: 1, content: '<div class="gridItem"><span>Fourth Item</span></div>'}
                 ];
                 this.mainGrid = GridStack.init({
                     acceptWidgets: true,
                     animate: true,
-                    cellHeight: "auto",
+                    cellHeight: 'initial',
+                    cellHeightThrottle: 100,
                     draggable: {
                         appendTo: 'parent'
                     },
                     float: true,
                     margin: 4,
-                    minRow: 7,
                     resizable: {
                         handles: 'all'
-                    }
+                    },
                     // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
                 }, gridElement);
                 this.mainGrid.load(gridItems);
@@ -118,7 +120,6 @@ export class OrDashboardBuilder extends LitElement {
                 ];
                 const sidebarGrid = GridStack.init({
                     acceptWidgets: false,
-                    cellHeight: "initial",
                     column: 4,
                     disableOneColumnMode: true,
                     disableResize: true,
@@ -137,7 +138,6 @@ export class OrDashboardBuilder extends LitElement {
                 const sidebarBgElement = this.shadowRoot.getElementById("sidebarBgElement");
                 const backgroundGrid = GridStack.init({
                     staticGrid: true,
-                    cellHeight: "initial",
                     column: 4,
                     disableOneColumnMode: true,
                     margin: 8
@@ -204,15 +204,62 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
+    compact(): void {
+        if(this.mainGrid != null) {
+            this.mainGrid.compact();
+        }
+    }
+
+    changeColumns(a: any): void {
+        if(this.mainGrid != null && a.target.value != null) {
+            this.mainGrid.column(a.target.value, 'moveScale');
+        }
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+
+        // Handling window resize for correct display of grid (perfect 1:1 squares)
+        /*window.addEventListener("resize", () => {
+            console.log("Resizing the Grid..");
+            if(this.mainGrid != null) {
+                if(this.mainGrid.getColumn() > 1) {
+                    this.mainGrid.cellHeight(undefined, true); // undefined makes GridStack use the default option; perfect squares.
+                    // @ts-ignore
+                    let children = Array.from(this.shadowRoot.getElementById("gridElement").children) as HTMLCollectionOf<HTMLElement>;
+                    for(let i in children) {
+                        const gridItemHeight = children[i].getAttribute('gs-h');
+                        if (gridItemHeight != null) {
+                            let width: number = children[i].clientWidth;
+                            children[i].style.setProperty('height', (width + 'px'), 'important');
+                        }
+                    }
+                } else {
+                    console.log("Oh you are viewing in Mobile mode..")
+                    this.mainGrid.cellHeight(160, true)
+                }
+            }
+        }, false);*/
+    }
+
     // Rendering the page
     render(): any {
         return html`
             <div class="flex-container">
                 <div class="flex-item">
                     <div style="margin-bottom: 12px; width: 100%;">
-                        <button class="mdc-button mdc-button--outlined">Action 1</button>
+                        <button @click="${this.compact}" class="mdc-button mdc-button--outlined">Compact</button>
                         <button class="mdc-button mdc-button--outlined">Action 2</button>
                         <button class="mdc-button mdc-button--outlined">Action 3</button>
+                        
+                        <span style="margin-left: 24px;">Amount of Columns:</span>
+                        <label class="mdc-text-field mdc-text-field--outlined mdc-text-field--no-label">
+                            <span class="mdc-notched-outline">
+                                <span class="mdc-notched-outline__leading"></span>
+                                <span class="mdc-notched-outline__trailing"></span>
+                            </span>
+                            <input class="mdc-text-field__input" type="number" value="12" min="1" max="36" aria-label="Label" @change="${this.changeColumns}">
+                        </label>
                         <div style="float: right">
                             <button class="mdc-button mdc-button--outlined" @click="${this.saveDashboard}">Save</button>
                         </div>
