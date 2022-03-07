@@ -221,12 +221,16 @@ Resources:
         mount:
           commands:
             01_createdir:
-              command: !Sub "mkdir /deployment.local"
-            02_mount:
-              command: !Sub >
-                echo "${MapFileSystemId}.efs.${AWS::Region}.amazonaws.com:/ /deployment.local nfs4 nfsvers=4.1 0 0" >> /etc/fstab
-                mount -a
-            03_permissions:
+              command: !Sub "mkdir -p /deployment.local/mapdata"
+            02_fstab:
+              command: !Sub |
+                echo "Adding EFS mount to /etc/fstab"
+                echo "${MapFileSystemId}.efs.${AWS::Region}.amazonaws.com:/ /deployment.local/mapdata nfs4 nfsvers=4.1 0 0" >> /etc/fstab
+            03_mount:
+              command: |
+                echo "Executing mount all"
+                mount -a -v
+            04_permissions:
               command: chown ec2-user:ec2-user /deployment.local
 
         env_vars:

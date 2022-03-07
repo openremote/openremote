@@ -43,7 +43,7 @@ ENV CUSTOM_APP_DOCROOT ${CUSTOM_APP_DOCROOT:-/deployment/manager/app}
 ENV CONSOLE_APP_CONFIG_DOCROOT ${CONSOLE_APP_CONFIG_DOCROOT:-/deployment/manager/consoleappconfig}
 ENV PROVISIONING_DOCROOT ${PROVISIONING_DOCROOT:-/deployment/manager/provisioning}
 ENV ROOT_REDIRECT_PATH ${ROOT_REDIRECT_PATH:-/manager}
-ENV MAP_TILES_PATH ${MAP_TILES_PATH:-/deployment/map/mapdata.mbtiles}
+ENV MAP_TILES_PATH ${MAP_TILES_PATH:-/deployment.local/mapdata/mapdata.mbtiles}
 ENV MAP_SETTINGS_PATH ${MAP_SETTINGS_PATH:-/deployment/map/mapsettings.json}
 ENV DATA_POINTS_EXPORT_DIR ${DATA_POINTS_EXPORT_DIR:-/tmp}
 ENV LOGGING_CONFIG_FILE ${LOGGING_CONFIG_FILE}

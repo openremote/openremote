@@ -167,7 +167,9 @@ public class MapService implements ContainerService {
 //        }
 
         if (mapTilesPath == null) {
-            if (Files.isRegularFile(Paths.get("/opt/map/mapdata.mbtiles"))) {
+            if (Files.isRegularFile(Paths.get("/deployment/map/mapdata.mbtiles"))) {
+                mapTilesPath = Paths.get("/deployment/map/mapdata.mbtiles");
+            } else if (Files.isRegularFile(Paths.get("/opt/map/mapdata.mbtiles"))) {
                 mapTilesPath = Paths.get("/opt/map/mapdata.mbtiles");
             } else if (Files.isRegularFile(Paths.get("manager/src/map/mapdata.mbtiles"))) {
                 mapTilesPath = Paths.get("manager/src/map/mapdata.mbtiles");

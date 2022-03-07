@@ -1,0 +1,30 @@
+# This workflow handles creation of AWS EC2 hosts under the OpenRemote hosted zone; it can optionally configure the
+# mounting of an existing EFS volume into /deployment.local
+name: Provision Host
+
+on:
+  workflow_dispatch:
+    inputs:
+      HOST:
+        description: 'Host to deploy to'
+        required: true
+      INSTANCE_TYPE:
+        description: 'EC2 instance type (only change if you know what you are doing)'
+        default: t4g.small
+        options:
+          - t4g.small
+          - t4g.medium
+          - t4g.large
+          - m6g.medium
+          - m6g.large
+        required: true
+      MAP_EFS_ID:
+        description: 'Map EFS Filesystem ID'
+
+  jobs:
+
+    provision:
+      name: CI/CD
+      runs-on: ubuntu-latest
+
+      steps:

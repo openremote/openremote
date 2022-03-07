@@ -181,8 +181,14 @@ $sshCommandPrefix ${hostStr} << EOF
   if [ -f "temp/deployment.tar.gz" ]; then
     docker load < temp/deployment.tar.gz
   fi
-  
-  # Run host init
+
+  # Run standard host init
+  if [ -f "temp/init.sh" ]; then
+      echo "Running standard host init"
+      sudo temp/init.sh
+  fi
+
+  # Run host specific init
   hostInitCmd=
   if [ "$HOST_INIT_SCRIPT" == 'NONE' -o "$HOST_INIT_SCRIPT" == 'none' ]; then
     echo "No host init requested"
@@ -274,10 +280,15 @@ $sshCommandPrefix ${hostStr} << EOF
   if [ \$ok != 'true' ]; then
     echo "Not all containers are healthy"
     exit 1
-  else
-    docker image prune -f -a
-    docker volume prune -f
   fi
+
+  # Cleanup obsolete docker data
+  docker image prune -f -a
+  docker volume prune -f
+  docker image inspect $(docker image ls -aq) > temp/image-info.txt
+  docker inspect $(docker ps -aq) > temp/container-info.txt
+
+  # Copy files to S3
 EOF
 
 if [ $? -ne 0 ]; then
