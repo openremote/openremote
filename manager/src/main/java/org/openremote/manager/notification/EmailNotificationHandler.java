@@ -28,10 +28,9 @@ import org.openremote.model.notification.AbstractNotificationMessage;
 import org.openremote.model.notification.EmailNotificationMessage;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
-import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.*;
-import org.openremote.model.security.User;
+import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.util.TextUtil;
 import org.simplejavamail.email.Email;
 import org.simplejavamail.email.EmailBuilder;
@@ -146,73 +145,55 @@ public class EmailNotificationHandler implements NotificationHandler {
             targets.forEach(target -> {
                 Notification.TargetType targetType = target.getType();
                 String targetId = target.getId();
+                UserQuery userQuery = new UserQuery();
 
                 switch (targetType) {
 
                     case TENANT:
+                        userQuery.tenant(new TenantPredicate(targetId));
                     case USER:
-                        // Find all users in this tenant or by id
-                        User[] users = targetType == Notification.TargetType.TENANT
-                            ? managerIdentityService
-                                .getIdentityProvider()
-                                .queryUsers(new UserQuery().tenant(new TenantPredicate(targetId)))
-                            : managerIdentityService
-                                .getIdentityProvider()
-                                .queryUsers(new UserQuery().ids(targetId));
-
-                        if (users.length == 0) {
-                            if (targetType == Notification.TargetType.USER) {
-                                LOG.info("User not found: " + targetId);
-                            } else {
-                                LOG.info("No users found in target realm: " + targetId);
-                            }
-                            return;
-                        }
-
-                        mappedTargets.addAll(
-                            Arrays.stream(users)
-                                .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
-                                .map(user -> {
-                                    Notification.Target userAssetTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
-                                    userAssetTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
-                                    return userAssetTarget;
-                                })
-                                .collect(Collectors.toList()));
+                        userQuery.ids(targetId);
                         break;
                     case CUSTOM:
                         // Nothing to do here
                         mappedTargets.add(new Notification.Target(targetType, targetId));
                         break;
                     case ASSET:
-                        // Find descendant assets with email attribute
-                        List<Asset<?>> assets = assetStorageService.findAll(
-                            new AssetQuery()
-                                .select(new AssetQuery.Select()
-                                    .attributes(Asset.EMAIL.getName()))
-                                .paths(new PathPredicate(targetId))
-                                .attributes(new AttributePredicate(
-                                    new StringPredicate(Asset.EMAIL.getName()),
-                                    new ValueEmptyPredicate().negate(true))));
-
-                        if (assets.isEmpty()) {
-                            LOG.fine("No assets with email attribute descendants of target asset");
-                            return;
+                        // If asset has an email attribute include that in the targets
+                        Asset<?> asset = assetStorageService.find(targetId);
+                        if (asset != null) {
+                            asset.getEmail().map(email -> {
+                                    Notification.Target assetTarget = new Notification.Target(Notification.TargetType.ASSET, asset.getId());
+                                    assetTarget.setData(new EmailNotificationMessage.Recipient(asset.getName(), email));
+                                    return assetTarget;
+                                }
+                            ).ifPresent(mappedTargets::add);
                         }
 
-                        mappedTargets.addAll(assets.stream()
-                            .map(asset -> {
-                                Notification.Target assetTarget =new Notification.Target(Notification.TargetType.ASSET, asset.getId());
-                                assetTarget.setData(new EmailNotificationMessage.Recipient(
-                                    asset.getName(),
-                                    asset.getEmail()
-                                        .orElse(null)));
-                                return assetTarget;
-                            })
-                            .collect(Collectors.toList()));
+                        userQuery.asset(new UserAssetPredicate(targetId));
                         break;
+                }
+
+                // Filter users that don't have disabled email notifications attribute
+                List<Notification.Target> userTargets = Arrays.stream(managerIdentityService
+                        .getIdentityProvider()
+                        .queryUsers(userQuery))
+                    .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
+                    .filter(user -> !TextUtil.isNullOrEmpty(user.getEmail()))
+                    .map(user -> {
+                        Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
+                        emailTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
+                        return emailTarget;
+                    }).toList();
+
+                if (userTargets.isEmpty()) {
+                    LOG.info("No email targets have been mapped");
+                } else {
+                    mappedTargets.addAll(userTargets);
                 }
             });
         }
+
         EmailNotificationMessage email = (EmailNotificationMessage)message;
 
         // Map to/cc/bcc into a custom target for traceability in sent notifications
@@ -222,8 +203,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             addresses.addAll(
                 email.getTo().stream()
                     .map(EmailNotificationMessage.Recipient::getAddress)
-                    .map(address -> "to:" + address)
-                    .collect(Collectors.toList()));
+                    .map(address -> "to:" + address).toList());
 
             email.setTo((List<EmailNotificationMessage.Recipient>) null);
         }
@@ -231,8 +211,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             addresses.addAll(
                 email.getCc().stream()
                     .map(EmailNotificationMessage.Recipient::getAddress)
-                    .map(address -> "cc:" + address)
-                    .collect(Collectors.toList()));
+                    .map(address -> "cc:" + address).toList());
 
             email.setCc((List<EmailNotificationMessage.Recipient>) null);
         }
@@ -240,8 +219,7 @@ public class EmailNotificationHandler implements NotificationHandler {
             addresses.addAll(
                 email.getBcc().stream()
                     .map(EmailNotificationMessage.Recipient::getAddress)
-                    .map(address -> "bcc:" + address)
-                    .collect(Collectors.toList()));
+                    .map(address -> "bcc:" + address).toList());
 
             email.setBcc((List<EmailNotificationMessage.Recipient>) null);
         }

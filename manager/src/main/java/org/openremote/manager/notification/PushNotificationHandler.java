@@ -27,13 +27,13 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.*;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.gateway.GatewayService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.impl.ConsoleAsset;
@@ -44,7 +44,10 @@ import org.openremote.model.notification.NotificationSendResult;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.*;
+import org.openremote.model.query.filter.AttributePredicate;
+import org.openremote.model.query.filter.NameValuePredicate;
+import org.openremote.model.query.filter.PathPredicate;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
@@ -201,112 +204,71 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
                 Notification.TargetType targetType = target.getType();
                 String targetId = target.getId();
+                AssetQuery assetQuery = new AssetQuery()
+                    .select(new AssetQuery.Select().excludeAttributes())
+                    .types(ConsoleAsset.class)
+                    .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE)));
 
                 switch (targetType) {
+                    case TENANT ->
+                        // Any console assets in the target realm
+                        assetQuery.tenant(new TenantPredicate(targetId));
+                    case USER ->
+                        // Any console assets linked to the target user
+                        assetQuery.userIds(targetId);
+                    case ASSET ->
+                        // Any users linked to this asset and then their linked console assets
+                        assetQuery.userIds(
+                            assetStorageService.findUserAssetLinks(null, null, targetId)
+                                .stream()
+                                .map(ual -> ual.getId().getUserId())
+                                .toArray(String[]::new));
+                }
 
-                    case TENANT:
-                        // Get all console assets with a push provider defined within the specified tenant
-                        List<Asset<?>> consoleAssets = assetStorageService.findAll(
-                                new AssetQuery()
-                                        .select(new AssetQuery.Select().excludeAttributes())
-                                        .tenant(new TenantPredicate(targetId))
-                                        .types(ConsoleAsset.class)
-                                        .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))));
+                List<String> consoleAssetIds = assetStorageService.findAll(assetQuery).stream().map(Asset::getId).distinct().toList();
 
-                        // Get all user ids which have pushNotificationsDisabled set to false
-                        String[] userIds = Arrays.stream(managerIdentityService
-                                        .getIdentityProvider()
-                                        .queryUsers(new UserQuery().tenant(new TenantPredicate((targetId))))
-                                )
-                                .filter(user -> Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
-                                .map(User::getId)
-                                .toArray(String[]::new);
-
-                        String[] assetIds = assetStorageService.findUserAssetLinks(targetId, null, null).stream()
-                                .filter(userAssetLink -> Arrays.stream(userIds).anyMatch(userId->userId.equals(userAssetLink.getId().getUserId())))
-                                .map(userAssetLink -> userAssetLink.getId().getAssetId())
-                                .toArray(String[]::new);
-
-                        //Remove consoleAssets which are linked to an User which has pushNotificationsDisabled set to false
-                        consoleAssets = consoleAssets.stream()
-                                .filter(consoleAsset -> Arrays.stream(assetIds).noneMatch(assetId -> assetId.equals(consoleAsset.getId())))
-                                .collect(Collectors.toList());
-
-                            mappedTargets.addAll(
-                                    consoleAssets
-                                            .stream()
-                                            .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
-                                            .collect(Collectors.toList()));
-                        break;
-
-                    case USER:
-                        Optional<User> user = Arrays.stream(managerIdentityService
-                                .getIdentityProvider()
-                                .queryUsers(new UserQuery().ids(targetId))).findFirst();
-
-                        if (user.isPresent() && !Boolean.parseBoolean(user.get().getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0))) {
-
-                            // Get all console assets linked to the specified user
-                            String[] ids = assetStorageService.findUserAssetLinks(null, targetId, null)
-                                    .stream()
-                                    .map(userAssetLink -> userAssetLink.getId().getAssetId()).toArray(String[]::new);
-
-                            if (ids.length > 0) {
-                                mappedTargets.addAll(
-                                        assetStorageService.findAll(
-                                                new AssetQuery()
-                                                        .select(new AssetQuery.Select().excludeAttributes())
-                                                        .ids(ids)
-                                                        .types(ConsoleAsset.class)
-                                                        .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))))
-                                        .stream()
-                                        .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
-                                        .collect(Collectors.toList()));
-                            }
+                if (!consoleAssetIds.isEmpty()) {
+                    // Special handling if target type is user (don't need to find all linked users)
+                    if (targetType == Notification.TargetType.USER) {
+                        User[] matchedUsers = managerIdentityService.getIdentityProvider().queryUsers(new UserQuery().ids(targetId));
+                        if (matchedUsers.length != 1) {
+                            consoleAssetIds = Collections.emptyList();
                         } else {
-                            LOG.fine("No console assets linked to target user");
-                            return;
+                            boolean disabled = Boolean.parseBoolean(matchedUsers[0].getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0));
+                            if (disabled) {
+                                consoleAssetIds = Collections.emptyList();
+                            }
                         }
+                    } else {
+                        // Any consoles linked to users; the user should not have push notification disabled attribute
+                        Map<String, List<String>> consoleUserIdsMap = assetStorageService.findUserAssetLinks(null, null, consoleAssetIds)
+                            .stream()
+                            .map(UserAssetLink::getId)
+                            .collect(Collectors.groupingBy(UserAssetLink.Id::getAssetId, Collectors.mapping(UserAssetLink.Id::getUserId, Collectors.toList())));
 
-                        break;
+                        consoleAssetIds = consoleAssetIds.stream()
+                            .filter(consoleId -> {
+                                if (!consoleUserIdsMap.containsKey(consoleId)) {
+                                    return true;
+                                }
 
-                    case ASSET:
-                        // Find all console descendants of the specified asset
-                        consoleAssets = assetStorageService.findAll(new AssetQuery()
-                                .select(new AssetQuery.Select().excludeAttributes())
-                                .paths(new PathPredicate(targetId))
-                                .types(ConsoleAsset.class)
-                                .attributes(new AttributePredicate(ConsoleAsset.CONSOLE_PROVIDERS, null, false, new NameValuePredicate.Path(PushNotificationMessage.TYPE))));
+                                long count = Arrays.stream(managerIdentityService.getIdentityProvider().queryUsers(
+                                        new UserQuery().ids(consoleUserIdsMap.get(consoleId).toArray(new String[0]))))
+                                    .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
+                                    .count();
+                                return count > 0;
+                            }).collect(Collectors.toList());
+                    }
+                }
 
-                        UserAssetLink[] userAssetLinks = consoleAssets.stream()
-                                .map(consoleAsset -> assetStorageService.findUserAssetLinks(null, null, consoleAsset.getId()))
-                                .flatMap(Collection::stream)
-                                .toArray(UserAssetLink[]::new);
-
-                        // Get all user ids which have pushNotificationsDisabled set to false
-                        assetIds = Arrays.stream(userAssetLinks)
-                                .filter(userAssetLink -> Arrays.stream(managerIdentityService
-                                            .getIdentityProvider()
-                                            .queryUsers(new UserQuery().asset(new UserAssetPredicate(userAssetLink.getId().getAssetId())))
-                                        )
-                                        .filter(user1 -> Boolean.parseBoolean(user1.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
-                                        .map(User::getId)
-                                        .anyMatch(userId -> userId.equals(userAssetLink.getId().getUserId()))
-                                ).map(userAssetLink -> userAssetLink.getId().getAssetId())
-                                .toArray(String[]::new);
-
-                        //Remove consoleAssets which are linked to an User which has pushNotificationsDisabled set to false
-                        consoleAssets = consoleAssets.stream()
-                                .filter(consoleAsset -> Arrays.stream(assetIds).noneMatch(assetId -> assetId.equals(consoleAsset.getId())))
-                                .collect(Collectors.toList());
-
-
-                        mappedTargets.addAll(
-                                consoleAssets
-                                        .stream()
-                                        .map(asset -> new Notification.Target(Notification.TargetType.ASSET, asset.getId()))
-                                        .collect(Collectors.toList()));
-                        break;
+                if (consoleAssetIds.isEmpty()) {
+                    LOG.info("No console asset targets have been mapped");
+                } else {
+                    mappedTargets.addAll(
+                        consoleAssetIds
+                            .stream()
+                            .map(id -> new Notification.Target(Notification.TargetType.ASSET, id))
+                            .toList());
                 }
             });
         }

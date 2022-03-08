@@ -53,6 +53,34 @@
         },
         {
           "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "name": "linkedPushTest",
+            "message": {
+              "type": "push",
+              "title": "Linked user test"
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "name": "linkedEmailTest",
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%",
+              "title": "Linked user test"
+            }
+          }
+        },
+        {
+          "action": "notification",
           "notification": {
             "message": {
               "type": "email",
