@@ -64,7 +64,7 @@ public class SetupService implements ContainerService {
 
         // If keycloak then we need keycloak clean and init tasks
         boolean keycloakEnabled = container.getService(ManagerIdentityService.class).isKeycloakEnabled();
-        String setupType = container.getConfig().get(SetupTasks.SETUP_TYPE);
+        String setupType = container.getConfig().get(SetupTasks.OR_SETUP_TYPE);
 
         if (keycloakEnabled) {
             // Keycloak is not managed by persistence service so need separate clean task

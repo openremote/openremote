@@ -49,8 +49,8 @@ public class ConsoleAppService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(ConsoleAppService.class.getName());
 
     public static final String CONSOLE_APP_CONFIG_PATH = "/consoleappconfig";
-    public static final String CONSOLE_APP_CONFIG_DOCROOT = "CONSOLE_APP_CONFIG_DOCROOT";
-    public static final String CONSOLE_APP_CONFIG_DOCROOT_DEFAULT = "manager/src/consoleappconfig";
+    public static final String OR_CONSOLE_APP_CONFIG_DOCROOT = "OR_CONSOLE_APP_CONFIG_DOCROOT";
+    public static final String OR_CONSOLE_APP_CONFIG_DOCROOT_DEFAULT = "manager/src/consoleappconfig";
 
     protected TimerService timerService;
     protected ManagerWebService managerWebService;
@@ -70,7 +70,7 @@ public class ConsoleAppService implements ContainerService {
             new ConsoleAppResourceImpl(this)
         );
 
-        consoleAppDocRoot = Paths.get(getString(container.getConfig(), CONSOLE_APP_CONFIG_DOCROOT, CONSOLE_APP_CONFIG_DOCROOT_DEFAULT));
+        consoleAppDocRoot = Paths.get(getString(container.getConfig(), OR_CONSOLE_APP_CONFIG_DOCROOT, OR_CONSOLE_APP_CONFIG_DOCROOT_DEFAULT));
 
         // Serve console app config files
         if (Files.isDirectory(consoleAppDocRoot)) {

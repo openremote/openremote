@@ -21,8 +21,8 @@
 # - ssh_user        - SSH username (default: env/secrets.SSH_USER || root)
 # - ssh_password    - SSH password (default: secrets.SSH_PASSWORD)
 # - ssh_port        - SSH port (default: env/secrets.SSH_PORT || 22)
-# - password        - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
-#                     (default: secrets.SETUP_ADMIN_PASSWORD || secret)
+# - password        - Admin password to be set on deployment; sets the OR_ADMIN_PASSWORD env variable
+#                     (default: secrets.OR_ADMIN_PASSWORD || secret)
 # - manager_version - The docker tag to pull for the manager image; if not specified then the manager image
 #                     will be built using the checked out repo commit
 # - commit          - Which commit or branch to checkout and use on this repo (default: branch on which workflow is executed)
@@ -203,7 +203,7 @@ jobs:
 
       - name: Determine password
         id: password
-        run: echo "SETUP_ADMIN_PASSWORD=${{ github.event.inputs.password || env.SETUP_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
+        run: echo "OR_ADMIN_PASSWORD=${{ github.event.inputs.password || env.OR_ADMIN_PASSWORD || 'secret' }}" >> $GITHUB_ENV
 
       - name: Check deployment existence
         id: check_deployment_dir
@@ -220,7 +220,7 @@ jobs:
       - name: Determine compose file path
         id: compose-file
         run: |
-          if [ ! -z $ENV_COMPOSE_FILE ]; then
+          if [ -n $ENV_COMPOSE_FILE ]; then
             if [ ! -f $ENV_COMPOSE_FILE ]; then
               echo "Specified ENV_COMPOSE_FILE does not exist $ENV_COMPOSE_FILE"
               exit 1
@@ -238,7 +238,7 @@ jobs:
       - name: Determine manager image info
         id: manager-image
         run: |
-          if [ ! -z $MANAGER_VERSION ]; then
+          if [ -n $MANAGER_VERSION ]; then
             echo "MANAGER_VERSION=$MANAGER_VERSION" >> $GITHUB_ENV
           elif [ $CUSTOM_PROJECT == 'true' ]; then
             echo "MANAGER_BUILD=true" >> $GITHUB_ENV
@@ -265,7 +265,7 @@ jobs:
         run: |
           if [ $HOST_INIT_SCRIPT == 'NONE' ]; then
             echo "HOST_INIT_SCRIPT=" >> $GITHUB_ENV
-          elif [ ! -z $HOST_INIT_SCRIPT ]; then
+          elif [ -n $HOST_INIT_SCRIPT ]; then
             if [ ! -f ".ci_cd/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
               echo "HOST_INIT_SCRIPT (.ci_cd/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
               exit 1

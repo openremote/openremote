@@ -23,7 +23,7 @@ if [ -f "ssh.env" ]; then
 fi
 
 if [ -z "$HOST" ]; then
- echo "SSH Host is not set"
+ echo "Host is not set"
  exit 1
 fi
 
@@ -58,7 +58,7 @@ if [ -f "ssh.key" ]; then
   scpCommandPrefix="$scpCommandPrefix -i ssh.key"
 fi
 
-hostStr="$HOST"
+hostStr="$OR_HOST"
 
 if [ ! -z "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
@@ -299,8 +299,8 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "Testing manager web server https://$HOST..."
-response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$HOST/manager/)
+echo "Testing manager web server https://$OR_HOST..."
+response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOST/manager/)
 if [ $response -ne 200 ]; then
   echo "Response code = $response"
   if [ "$SSH_GRANTED" == 'true' ]; then

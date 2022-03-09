@@ -10,7 +10,7 @@
 # - Optionally adds EFS data mount on /deployment.local
 #
 # The generated SMTP IAM credentials are output to /etc/environment using the standard OpenRemote
-# naming convention SETUP_EMAIL_HOST, SETUP_EMAIL_USER and SETUP_EMAIL_PASSWORD
+# naming convention OR_EMAIL_HOST, OR_EMAIL_USER and OR_EMAIL_PASSWORD
 #
 # ---------------------------------------------------------------------------------------------
 
@@ -308,9 +308,9 @@ Resources:
             01_output_smtp_credentials:
               command: !Sub |
                 PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPCredentials.SecretAccessKey} ${AWS::Region})
-                echo "SETUP_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" >> /etc/environment
-                echo "SETUP_EMAIL_USER=${SMTPCredentials}" >> /etc/environment
-                echo "SETUP_EMAIL_PASSWORD=$PASS" >> /etc/environment                
+                echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" >> /etc/environment
+                echo "OR_EMAIL_USER=${SMTPCredentials}" >> /etc/environment
+                echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment                
 
         docker_setup:
           packages:
@@ -385,7 +385,7 @@ Resources:
           
           # Execute required config set
           CONFIGSET=default
-          if [ ! -z "${MapFileSystemId}" ]; then
+          if [ -n "${MapFileSystemId}" ]; then
             CONFIGSET=withmap
           fi
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets $CONFIGSET --region ${AWS::Region}

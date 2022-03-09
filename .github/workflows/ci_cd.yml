@@ -45,7 +45,7 @@
 # - SSH_USER
 # - SSH_PASSWORD
 # - SSH_PORT
-# - SETUP_ADMIN_PASSWORD
+# - OR_ADMIN_PASSWORD
 
 name: CI/CD
 
@@ -85,7 +85,7 @@ on:
         description: 'SSH Username'
       SSH_PASSWORD:
         description: 'SSH password'
-      SETUP_ADMIN_PASSWORD:
+      OR_ADMIN_PASSWORD:
         description: 'Admin password override'
 
   workflow_call:
@@ -420,9 +420,9 @@ jobs:
             commitShaShort=$(git rev-parse --short HEAD)
           fi
             
-          if [ ! -z "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ ! -z "$TEST_UI_CMD" ]; then
+          if [ -n "$MANAGER_TAGS" ] || [[ "$DEPLOYMENTS" == *"#ref"* ]] || [ -n "$TEST_UI_CMD" ]; then
             
-            if [ ! -z "$MANAGER_TAGS" ]; then
+            if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
             else
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
@@ -454,7 +454,7 @@ jobs:
             echo "::set-output name=buildPath::$buildPath"
             echo "::set-output name=refTag::$commitShaShort"
             
-            if [ ! -z "$DEPLOYMENTS" ]; then
+            if [ -n "$DEPLOYMENTS" ]; then
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/deployment:$commitShaShort $buildPath"
               echo "::set-output name=value::$command"
             fi
@@ -468,9 +468,9 @@ jobs:
         id: install-command
         shell: bash
         run: |
-          if [ ! -z "$MANAGER_DOCKER_CMD" ]; then
+          if [ -n "$MANAGER_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew installDist"
-          elif [ ! -z "$DEPLOYMENT_DOCKER_CMD" ]; then
+          elif [ -n "$DEPLOYMENT_DOCKER_CMD" ]; then
             echo "::set-output name=value::./gradlew -p deployment installDist"
           fi
         env:

@@ -48,15 +48,15 @@ if (project == rootProject) {
                 "Demo Setup"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                     envs = [
-                            SETUP_TYPE: "demo"
+                            OR_SETUP_TYPE: "demo"
                     ]
                 }
                 "Demo Setup with Proxy"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                     envs = [
-                            SETUP_TYPE: "demo",
-                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            EXTERNAL_URL: "https://localhost:8443"
+                            OR_SETUP_TYPE: "demo",
+                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            OR_SSL_PORT: "8443"
                     ]
                 }
                 "Empty"(Application) {
@@ -65,8 +65,8 @@ if (project == rootProject) {
                 "Empty with Proxy"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
-                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            EXTERNAL_URL: "https://localhost:8443"
+                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            OR_SSL_PORT: "8443"
                     ]
                 }
             }
@@ -77,10 +77,10 @@ if (project == rootProject) {
                 "Custom Deployment"(Application) {
                     moduleName = "${getProject().idea.module.name}.setup.main"
                     envs = [
-                        MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
-                        MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
-                        CUSTOM_APP_DOCROOT: "../deployment/manager/app",
-                        CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
+                        OR_MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
+                        OR_MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
+                        OR_CUSTOM_APP_DOCROOT: "../deployment/manager/app",
+                        OR_CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
                     ]
                 }
             }

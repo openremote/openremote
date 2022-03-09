@@ -4,7 +4,7 @@
 #
 rm /etc/cron.d/openremote
 username=$(id -u -n)
-if [ ! -z "$SUDO_USER" ]; then
+if [ -n "$SUDO_USER" ]; then
   username=$SUDO_USER
 fi
 echo '#!/bin/bash' >> /etc/cron.d/openremote

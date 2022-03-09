@@ -110,17 +110,17 @@ public final class MetaItemType {
      * timestamp, not event processing time).
      * <p>
      * The default expiration for asset events can be configured with environment variable
-     * <code>RULE_EVENT_EXPIRES</code>.
+     * <code>OR_RULE_EVENT_EXPIRES</code>.
      * <p>
      * Also see {@link TemporaryFact#GUARANTEED_MIN_EXPIRATION_MILLIS}.
      */
     @Pattern(regexp = Constants.ISO8601_DURATION_REGEXP)
-    public static final MetaItemDescriptor<String> RULE_EVENT_EXPIRES = new MetaItemDescriptor<>("ruleEventExpires", ValueType.TEXT);
+    public static final MetaItemDescriptor<String> OR_RULE_EVENT_EXPIRES = new MetaItemDescriptor<>("ruleEventExpires", ValueType.TEXT);
 
     /**
      * Should attribute writes be processed by the rules engines as temporary facts. When an attribute is updated, the
      * change will be inserted as a new {@link AssetState} temporary fact in rules engines. These facts expire
-     * automatically after a defined time, see {@link #RULE_EVENT_EXPIRES}. If you want to match (multiple) {@link
+     * automatically after a defined time, see {@link #OR_RULE_EVENT_EXPIRES}. If you want to match (multiple) {@link
      * AssetState}s for the same attribute over time, to evaluate the change history of an attribute, add this meta
      * item.
      */

@@ -113,7 +113,7 @@ profile can be specified in any of the places variables are loaded from (github 
 * `AWS_KEY` - AWS access key ID
 * `AWS_SECRET` - AWS access key secret
 * `AWS_REGION` - AWS region to use
-* `SETUP_ADMIN_PASSWORD` - Admin password to be set on deployment; sets the SETUP_ADMIN_PASSWORD env variable
+* `OR_ADMIN_PASSWORD` - Admin password to be set on deployment; sets the OR_ADMIN_PASSWORD env variable
 * `ENV_COMPOSE_FILE` - The full path to the docker compose file to use for the deployment
 
 ## Github secrets

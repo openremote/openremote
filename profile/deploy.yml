@@ -10,16 +10,16 @@
 #
 # Here's a list of commonly customised environment variables:
 #
-# SETUP_ADMIN_PASSWORD
+# OR_ADMIN_PASSWORD
 # HOST
 # ADMIN_EMAIL
-# SETUP_EMAIL_HOST
-# SETUP_EMAIL_USER
-# SETUP_EMAIL_PASSWORD
-# SETUP_EMAIL_ADMIN
-# SETUP_EMAIL_FROM
+# OR_EMAIL_HOST
+# OR_EMAIL_USER
+# OR_EMAIL_PASSWORD
+# OR_EMAIL_FROM
+# OR_EMAIL_ADMIN
 # NOTIFICATION_FIREBASE_API_KEY
-# IDENTITY_PROVIDER
+# OR_IDENTITY_PROVIDER
 #
 version: '2.4'
 
@@ -35,7 +35,7 @@ services:
   # map a Docker volume or host directory to access/store proxy configuration files
   # and SSL certificates.
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.5.0.1}
+    image: openremote/proxy:${PROXY_VERSION:-2.5.0.3}
     restart: always
     volumes:
       - proxy-data:/deployment
@@ -55,13 +55,13 @@ services:
       # The public host name of this OpenRemote installation. Set this to request/manage an SSL
       # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
       # rely on a baked-in self-signed certificate.
-      DOMAINNAME: ${HOST:-localhost}
+      DOMAINNAME: ${OR_HOST:-localhost}
 
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       HAPROXY_CONFIG: ${HAPROXY_CONFIG}
 
       # Email address for SSL certificate issuance and expiration notifications.
-      LE_EMAIL: ${SETUP_EMAIL_ADMIN}
+      LE_EMAIL: ${OR_EMAIL_ADMIN}
 
       # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)
@@ -96,7 +96,7 @@ services:
     # Expose public services (web server, MQTT broker)
     ports:
       - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
-      - "443:443" # HTTPS /auth directs to keycloak and other paths direct to manager
+      - "${OR_SSL_PORT:-443}:443" # HTTPS /auth directs to keycloak and other paths direct to manager
       - "8883:8883" # MQTTS
 
   # The OpenRemote Manager
@@ -138,139 +138,138 @@ services:
 
       # The password for the super user (admin) of the master realm (must match keycloak password if using
       # the keycloak identity provider).
-      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+      OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
 
       # Can be used by SetupTasks to determine what assets etc. should be setup for this deployment
       # the available values and general use of this is dependent on the actual SetupTasks available
       # in the instance being deployed some basic recommendations are 'production', 'staging'
-      SETUP_TYPE: ${SETUP_TYPE}
+      OR_SETUP_TYPE: ${OR_SETUP_TYPE}
 
-      # The public URL of the proxy in front of this manager; must match the proxy#DOMAINNAME (unfortunately
+      # The public HOSTNAME and SSL PORT of the proxy in front of this manager; must match the proxy#OR_HOST (unfortunately
       # docker compose doesn't support chaining environment variables at time of writing, hence the need for
       # two environment variables)
-      EXTERNAL_URL: https://${HOST:-localhost}
+      OR_SSL_PORT: ${OR_SSL_PORT:-443}
+      OR_HOST: ${OR_HOST:-localhost}
 
       # Configure Email, SMTP server to send password reset emails etc.
-      SETUP_EMAIL_HOST:
-      SETUP_EMAIL_USER:
-      SETUP_EMAIL_PASSWORD:
-      SETUP_EMAIL_PORT: ${SETUP_EMAIL_PORT}
-      SETUP_EMAIL_TLS: ${SETUP_EMAIL_TLS}
+      OR_EMAIL_HOST:
+      OR_EMAIL_USER:
+      OR_EMAIL_PASSWORD:
+      OR_EMAIL_PORT: ${OR_EMAIL_PORT}
+      OR_EMAIL_TLS: ${OR_EMAIL_TLS}
 
       # Where to send admin emails to
-      SETUP_EMAIL_ADMIN: ${SETUP_EMAIL_ADMIN}
+      OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}
 
       # From address for emails sent by the system
-      SETUP_EMAIL_FROM: ${SETUP_EMAIL_FROM}
+      OR_EMAIL_FROM: ${OR_EMAIL_FROM}
 
       # Console applications can register for push notifications through FCM.
-      NOTIFICATION_FIREBASE_URL: ${NOTIFICATION_FIREBASE_URL:-https://fcm.googleapis.com/fcm/send}
-      NOTIFICATION_FIREBASE_API_KEY:
-      FIREBASE_CONFIG_FILE: ${FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
+      OR_FIREBASE_CONFIG_FILE: ${OR_FIREBASE_CONFIG_FILE:-/deployment/manager/fcm.json}
 
-      # Developer mode (see code for usages of DEV_MODE flag)
-      DEV_MODE: ${DEV_MODE:-false}
+      # Developer mode (see code for usages of OR_DEV_MODE flag)
+      OR_DEV_MODE: ${OR_DEV_MODE:-false}
 
       # !! WARNING: This will wipe your database !!
       # Force a full clean and setup on startup irrespective of whether there is existing data
-      # Default behaviour is false unless DEV_MODE = true or openremote database doesn't already exist
-      SETUP_CLEAN_ON_RESTART: ${SETUP_CLEAN_ON_RESTART:-false}
+      # Default behaviour is false unless OR_DEV_MODE = true or openremote database doesn't already exist
+      OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-false}
 
       # Manager web server interface binding; default:
-      WEBSERVER_LISTEN_HOST: ${WEBSERVER_LISTEN_HOST:-0.0.0.0}
+      OR_WEBSERVER_LISTEN_HOST: ${OR_WEBSERVER_LISTEN_HOST:-0.0.0.0}
 
       # Database settings
-      DB_VENDOR: ${DB_VENDOR:-postgres}
-      DB_HOST: ${DB_HOST:-postgresql}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_NAME: ${DB_NAME:-openremote}
-      DB_SCHEMA: ${DB_SCHEMA:-openremote}
-      DB_USERNAME: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_MIN_POOL_SIZE: ${DB_MIN_POOL_SIZE:-5}
-      DB_MAX_POOL_SIZE: ${DB_MAX_POOL_SIZE:-20}
-      DB_CONNECTION_TIMEOUT_SECONDS: ${DB_CONNECTION_TIMEOUT_SECONDS:-300}
+      OR_DB_VENDOR: ${OR_DB_VENDOR:-postgres}
+      OR_DB_HOST: ${OR_DB_HOST:-postgresql}
+      OR_DB_PORT: ${OR_DB_PORT:-5432}
+      OR_DB_NAME: ${OR_DB_NAME:-openremote}
+      OR_DB_SCHEMA: ${OR_DB_SCHEMA:-openremote}
+      OR_DB_USER: ${OR_DB_USER:-postgres}
+      OR_DB_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      OR_DB_MIN_POOL_SIZE: ${OR_DB_MIN_POOL_SIZE:-5}
+      OR_DB_MAX_POOL_SIZE: ${OR_DB_MAX_POOL_SIZE:-20}
+      OR_DB_CONNECTION_TIMEOUT_SECONDS: ${OR_DB_CONNECTION_TIMEOUT_SECONDS:-300}
 
       # The service-internal host name and port of the keycloak identity provider; defaults:
-      KEYCLOAK_HOST: ${KEYCLOAK_HOST:-keycloak}
-      KEYCLOAK_PORT: ${KEYCLOAK_PORT:-8080}
+      OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
+      OR_KEYCLOAK_PORT: ${OR_KEYCLOAK_PORT:-8080}
 
       # Location of built in web content.
-      APP_DOCROOT: ${APP_DOCROOT:-/opt/web}
+      OR_APP_DOCROOT: ${OR_APP_DOCROOT:-/opt/web}
 
       # Location of the custom web content.
-      CUSTOM_APP_DOCROOT: ${CUSTOM_APP_DOCROOT:-/deployment/manager/app}
+      OR_CUSTOM_APP_DOCROOT: ${OR_CUSTOM_APP_DOCROOT:-/deployment/manager/app}
 
       # Location for the provisioning files
-      PROVISIONING_DOCROOT: ${PROVISIONING_DOCROOT:-/deployment/manager/provisioning}
+      OR_PROVISIONING_DOCROOT: ${OR_PROVISIONING_DOCROOT:-/deployment/manager/provisioning}
 
       # Location of the console app config files.
-      CONSOLE_APP_CONFIG_ROOT: ${CONSOLE_APP_CONFIG_ROOT:-/deployment/manager/consoleappconfig}
+      OR_CONSOLE_APP_CONFIG_DOCROOT: ${OR_CONSOLE_APP_CONFIG_DOCROOT:-/deployment/manager/consoleappconfig}
 
       # Redirect path when root URI is requested
-      ROOT_REDIRECT_PATH: ${ROOT_REDIRECT_PATH:-/manager}
+      OR_ROOT_REDIRECT_PATH: ${OR_ROOT_REDIRECT_PATH:-/manager}
 
       # Map related settings.
       # Provide a path to the map tiles database file (see https://openmaptiles.com/).
-      MAP_TILES_PATH: ${MAP_TILES_PATH:-/deployment/map/mapdata.mbtiles}
+      OR_MAP_TILES_PATH: ${OR_MAP_TILES_PATH:-/deployment/map/mapdata.mbtiles}
 
       # Override the map settings such as center location and zoom when opening the
       # manager's map, as well as other style details and colours.
-      MAP_SETTINGS_PATH: ${MAP_SETTINGS_PATH:-/deployment/map/mapsettings.json}
+      OR_MAP_SETTINGS_PATH: ${OR_MAP_SETTINGS_PATH:-/deployment/map/mapsettings.json}
 
       # Set the tileserver host name and port; the manager will reverse proxy to this server
       # to provide raster map tiles to frontend apps
-      MAP_TILESERVER_HOST:
-      MAP_TILESERVER_PORT: ${MAP_TILESERVER_PORT:-8082}
-      MAP_TILESERVER_REQUEST_TIMEOUT: ${MAP_TILESERVER_REQUEST_TIMEOUT:-10000}
+      OR_MAP_TILESERVER_HOST:
+      OR_MAP_TILESERVER_PORT: ${OR_MAP_TILESERVER_PORT:-8082}
+      OR_MAP_TILESERVER_REQUEST_TIMEOUT: ${OR_MAP_TILESERVER_REQUEST_TIMEOUT:-10000}
 
       # Override logging.properties with a file of your choice; if not set then defaults
-      # to embedded logging.properties or logging-dev.properties (if DEV_MODE=true)
-      LOGGING_CONFIG_FILE:
+      # to embedded logging.properties or logging-dev.properties (if OR_DEV_MODE=true)
+      OR_LOGGING_CONFIG_FILE:
 
       # The number of threads and therefore background tasks that can be executed at the same
       # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
       # polling a remote service at regular interval, or the internal checks for expired client
       # subscriptions on the event bus (default depends on detected CPU cores). Also used by
       # the rules engine.
-      SCHEDULED_TASKS_THREADS_MAX: ${SCHEDULED_TASKS_THREADS_MAX:-4}
+      OR_SCHEDULED_TASKS_THREADS_MAX: ${OR_SCHEDULED_TASKS_THREADS_MAX:-4}
 
       # When asset attributes are enabled for rule events, each value update will be a temporary
       # fact in rules. You can set the global default expiration time span used when no other
       # attribute-level configuration exists. Default is 1 hour.
-      RULE_EVENT_EXPIRES: ${RULE_EVENT_EXPIRES:-1h}
+      OR_RULE_EVENT_EXPIRES: ${OR_RULE_EVENT_EXPIRES:-1h}
 
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is 'keycloak' which requires a separate service but
       # provides full multi-tenancy identity, role permissions, and user session timeouts.
       # The 'basic' provider supports only superusers and their text passwords, managed in a
       # simple database table, and always requires a new login when a page is reloaded.
-      IDENTITY_PROVIDER: ${IDENTITY_PROVIDER:-keycloak}
+      OR_IDENTITY_PROVIDER: ${OR_IDENTITY_PROVIDER:-keycloak}
 
       # For the Keycloak identity provider, you may configure session timeouts of frontend apps. This
       # will only be applied on newly created realms, or once on the master realm when clean setup runs.
 
       # Validity of non-offline refresh tokens, force login when expired on web app, default is 1 day.
-      IDENTITY_SESSION_MAX_MINUTES: ${IDENTITY_SESSION_MAX_MINUTES:-1440}
+      OR_IDENTITY_SESSION_MAX_MINUTES: ${OR_IDENTITY_SESSION_MAX_MINUTES:-1440}
 
       # Validity of offline refresh tokens, force login on native console app, default is 5 years.
       # Note that production offline tokens should be valid for months or years: When the offline token
       # expires, the native console app can no longer contact the service in the background (e.g. when
       # processing push notifications) and will therefore fail silently until the user logs in again.
-      IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: ${IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
+      OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: ${OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES:-2628000}
 
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
       # DATA_POINTS_MAX_AGE_DAYS = 30
 
       # App id for the API of OpenWeather: https://openweathermap.org
-      # OPEN_WEATHER_API_APP_ID
+      # OR_OPEN_WEATHER_API_APP_ID
 
       # API key for the API of ForecastSolar: https://forecast.solar
-      # FORECAST_SOLAR_API_KEY
+      # OR_FORECAST_SOLAR_API_KEY
 
       # Custom JVM options (increase heap size if required)
-      MANAGER_JAVA_OPTS: ${MANAGER_JAVA_OPTS:--Xms400m -Xmx400m
+      OR_JAVA_OPTS: ${OR_JAVA_OPTS:--Xms400m -Xmx400m
        -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
        -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
        -XX:MaxDirectMemorySize=25m -XX:NativeMemoryTracking=summary
@@ -300,17 +299,17 @@ services:
       KEYCLOAK_LOGLEVEL: ${KEYCLOAK_LOGLEVEL:-INFO}
 
       # Configure how Keycloak connects to the database
-      DB_VENDOR: ${DB_VENDOR:-postgres}
-      DB_ADDR: ${DB_HOST:-postgresql}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_DATABASE: ${DB_NAME:-openremote}
-      DB_USER: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_SCHEMA: ${DB_SCHEMA:-public}
+      DB_VENDOR: ${OR_DB_VENDOR:-postgres}
+      DB_ADDR: ${OR_DB_HOST:-postgresql}
+      DB_PORT: ${OR_DB_PORT:-5432}
+      DB_DATABASE: ${OR_DB_NAME:-openremote}
+      DB_USER: ${OR_DB_USER:-postgres}
+      DB_PASSWORD: ${OR_DB_PASSWORD:-postgres}
+      DB_SCHEMA: ${OR_DB_SCHEMA:-public}
       KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
-      KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+      KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING:-true}
-      KEYCLOAK_FRONTEND_URL: https://${HOST:-localhost}/auth
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:--XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m
@@ -340,9 +339,9 @@ services:
       PGTZ: ${PGTZ:-Europe/Amsterdam}
 
       # Database settings
-      POSTGRES_DB: ${DB_NAME:-openremote}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${OR_DB_NAME:-openremote}
+      POSTGRES_USER: ${OR_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${OR_DB_PASSWORD:-postgres}
 
   # Map tile server
   tileserver:
