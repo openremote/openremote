@@ -127,21 +127,26 @@ export class OrRuleActionNotification extends LitElement {
                 );
                 label = i18next.t("user_plural");
 
-                const userQuery = action.target!.users!;
+                if (action.target!.users) {
+                    const userQuery = action.target!.users!;
 
-                if ((userQuery.ids && userQuery.ids.length > 1)
-                    || userQuery.usernames
-                    || userQuery.assetPredicate
-                    || userQuery.limit
-                    || userQuery.pathPredicate
-                    || userQuery.tenantPredicate) {
-                    console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
-                    return;
+                    if ((userQuery.ids && userQuery.ids.length > 1)
+                        || userQuery.usernames
+                        || userQuery.assetPredicate
+                        || userQuery.limit
+                        || userQuery.pathPredicate
+                        || userQuery.tenantPredicate) {
+                        console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
+                        return;
+                    }
+
+                    if (userQuery.ids && userQuery.ids.length === 1) {
+                        value = userQuery.ids[0];
+                    }
+                } else if (action.target!.linkedUsers) {
+                    value = "linkedUsers";
                 }
 
-                if (userQuery.ids && userQuery.ids.length === 1) {
-                    value = userQuery.ids[0];
-                }
             } else {
                 const assetQuery = baseAssetQuery ? {...baseAssetQuery} : {};
                 assetQuery.orderBy = {
