@@ -109,7 +109,20 @@ if [ "$SKIP_HOST_PING" != 'true' ]; then
           echo "Starting EC2 instance"
           aws ec2 start-instances --instance-ids $instanceId
 
-          # Wait in a loop until the status is running
+          echo "Waiting for up to 5mins for instance to be running"
+          count=0
+          while [ "$currentState" != 'running' ] && [ $count -lt 10 ]; do
+            echo "attempt...$count"
+            sleep 30
+            currentState=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=$OR_HOST' --output text --query 'Reservations[*].Instances[*].State.Name')
+            count=$((count+1))
+          done
+
+          if [ "$currentState" != 'running' ]; then
+            echo "EC2 instance failed to start state is '$currentState'"
+          else
+            echo "EC2 instance started successfully"
+          fi
         else
           echo "Current EC2 instance state is '$currentState' it must be in 'stopped' state to initiate auto start"
           exit 1
@@ -346,7 +359,7 @@ $sshCommandPrefix ${hostStr} << EOF
   echo "Waiting for up to 5mins for standard services to be healthy"
   count=0
   ok=false
-  while [ \$ok != 'true' ] && [ \$count -lt 36 ]; do
+  while [ \$ok != 'true' ] && [ \$count -lt 60 ]; do
     echo \"attempt...\$count\"
     sleep 5
     postgresOk=false
