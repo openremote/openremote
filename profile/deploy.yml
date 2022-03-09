@@ -174,7 +174,7 @@ services:
       # !! WARNING: This will wipe your database !!
       # Force a full clean and setup on startup irrespective of whether there is existing data
       # Default behaviour is false unless DEV_MODE = true or openremote database doesn't already exist
-      SETUP_WIPE_CLEAN_INSTALL: ${SETUP_WIPE_CLEAN_INSTALL:-false}
+      SETUP_CLEAN_ON_RESTART: ${SETUP_CLEAN_ON_RESTART:-false}
 
       # Manager web server interface binding; default:
       WEBSERVER_LISTEN_HOST: ${WEBSERVER_LISTEN_HOST:-0.0.0.0}

@@ -74,7 +74,7 @@ services:
       # Set this variable `demo` to auto provision demo assets etc.
       SETUP_TYPE:
       SETUP_ADMIN_PASSWORD:
-      SETUP_WIPE_CLEAN_INSTALL:
+      SETUP_CLEAN_ON_RESTART:
       SETUP_EMAIL_HOST:
       SETUP_EMAIL_USER:
       SETUP_EMAIL_PASSWORD:
