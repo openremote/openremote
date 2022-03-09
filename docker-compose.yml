@@ -1,7 +1,7 @@
 # OpenRemote v3
 #
 # Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
-# but optionally on https://$HOST with an auto generated SSL certificate from Letsencrypt.
+# but optionally on https://$OR_HOST with an auto generated SSL certificate from Letsencrypt.
 #
 # It is possible to specify OR_SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
 # is shown at https://demo.openremote.io)

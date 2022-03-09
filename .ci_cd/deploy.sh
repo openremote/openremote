@@ -1,10 +1,16 @@
 #!/bin/bash
 
+SSH_GRANTED='false'
+
+# Function to be called before exiting to remove runner from AWS ssh-access security group
 revoke_ssh () {
-  aws ec2 revoke-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
-  echo "Revoked AWS SSH access"
+  if [ "$SSH_GRANTED" == 'true' ]; then
+    aws ec2 revoke-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
+    echo "Revoked AWS SSH access"
+  fi
 }
 
+# Load the environment variables into this session
 if [ -f "temp/env" ]; then
   echo "Loading environment variables: 'temp/env'"
   set -a
@@ -15,6 +21,13 @@ if [ -f "temp/env" ]; then
   cat temp/env
 fi
 
+# Check host is defined
+if [ -z "$OR_HOST" ]; then
+ echo "Host is not set"
+ exit 1
+fi
+
+# Load SSH environment variables into this session
 if [ -f "ssh.env" ]; then
   echo "Loading SSH password environment variable: 'ssh.env'"
   set -a
@@ -22,11 +35,31 @@ if [ -f "ssh.env" ]; then
   set +x
 fi
 
-if [ -z "$HOST" ]; then
- echo "Host is not set"
- exit 1
+# Login to AWS if credentials provided
+AWS_ENABLED=false
+if [ -n "$AWS_KEY" -a -n "$AWS_SECRET" ]; then
+
+  if [ -z "$AWS_REGION" ]; then
+    AWS_REGION="eu-west-1"
+  fi
+  echo "Logging into AWS '$AWS_REGION'"
+  aws configure set aws_access_key_id $AWS_KEY
+  aws configure set aws_secret_access_key $AWS_SECRET
+  aws configure set region $AWS_REGION
+  aws sts get-caller-identity 1>/dev/null 2>/dev/null
+
+  if [ $? -ne 0 ]; then
+    echo "Failed to login to AWS"
+    exit 1
+  else
+    echo "Login succeeded"
+    AWS_ENABLED=true
+  fi
+else
+  echo "AWS credentials not supplied so not logging into AWS"
 fi
 
+# Determine compose file to use and copy to temp dir (do this here as all env variables are loaded)
 if [ -z "$ENV_COMPOSE_FILE" ]; then
   if [ -f "profile/$ENVIRONMENT.yml" ]; then
     cp "profile/$ENVIRONMENT.yml" temp/docker-compose.yml
@@ -38,50 +71,61 @@ elif [ -f "$ENV_COMPOSE_FILE" ]; then
 else
   cp docker-compose.yml temp/docker-compose.yml
 fi
-
+# Check docker compose file is present
 if [ ! -f "temp/docker-compose.yml" ]; then
   echo "Docker compose file missing: 'temp/docker-compose.yml'"
   exit 1
 fi
 
+# Set SSH/SCP command variables
 sshCommandPrefix="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 scpCommandPrefix="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-
-if [ ! -z "$SSH_PORT" ]; then
+if [ -n "$SSH_PORT" ]; then
   sshCommandPrefix="$sshCommandPrefix -p $SSH_PORT"
   scpCommandPrefix="$scpCommandPrefix -P $SSH_PORT"
 fi
-
 if [ -f "ssh.key" ]; then
   chmod 400 ssh.key
   sshCommandPrefix="$sshCommandPrefix -i ssh.key"
   scpCommandPrefix="$scpCommandPrefix -i ssh.key"
 fi
-
 hostStr="$OR_HOST"
-
-if [ ! -z "$SSH_USER" ]; then
+if [ -n "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
 
-# Grant SSH access to this runner's public IP on AWS
-SSH_GRANTED='false'
-if [ ! -z "$AWS_KEY" -a ! -z "$AWS_SECRET" -a ! -z "$IPV4" ]; then
-  echo "Granting SSH access to this runner's public IP on AWS"
-  if [ -z "$AWS_REGION" ]; then
-    AWS_REGION="eu-west-1"
-  fi
-  echo "Logging into AWS"
-  aws configure set aws_access_key_id $AWS_KEY
-  aws configure set aws_secret_access_key $AWS_SECRET
-  aws configure set region $AWS_REGION
-  aws sts get-caller-identity 1>/dev/null 2>/dev/null
+# Check host is reachable (ping must be enabled)
+if [ "$SKIP_HOST_PING" != 'true' ]; then
+  ping -c1 -W1 -q $OR_HOST &>/dev/null
   if [ $? -ne 0 ]; then
-    echo "Failed to login to AWS"
-    return
-  else
-    echo "Login succeeded"
+    echo "Host is not reachable by PING"
+    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLEED" == 'true' ]; then
+      echo "Attempting to start EC2 instance with name '$OR_HOST'..."
+      instanceId=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=$OR_HOST' --output text --query 'Reservations[*].Instances[*].InstanceId')
+      if [ -n "$instanceId" ]; then
+        currentState=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=$OR_HOST' --output text --query 'Reservations[*].Instances[*].State.Name')
+
+        if [ "$currentState" == 'stopped' ]; then
+          echo "Starting EC2 instance"
+          aws ec2 start-instances --instance-ids $instanceId
+
+          # Wait in a loop until the status is running
+        else
+          echo "Current EC2 instance state is '$currentState' it must be in 'stopped' state to initiate auto start"
+          exit 1
+        fi
+      else
+        echo "No EC2 instance found (maybe the host is not an EC2 instance)"
+        exit 1
+      fi
+    fi
   fi
+fi
+
+# Grant SSH access to this runner's public IP on AWS
+if [ "$AWS_ENABLED" == 'true' ] && [ -n "$IPV4" ]; then
+  echo "Granting SSH access to this runner's public IP on AWS"
+
   # Add this github runner to ssh-access security group for SSH access
   aws ec2 authorize-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
   if [ $? -ne 0 ]; then
@@ -91,16 +135,15 @@ if [ ! -z "$AWS_KEY" -a ! -z "$AWS_SECRET" -a ! -z "$IPV4" ]; then
     SSH_GRANTED='true'
   fi
 else
-  echo "AWS_KEY, AWS_SECRET and or IPV4 not set so cannot grant SSH access"
+  echo "AWS not enabled or IPV4 not set so cannot grant SSH access"
 fi
 
-# Get host platform
+
+# Determine host platform via ssh for deployment image building (can't export/import manifests)
 PLATFORM=$($sshCommandPrefix $hostStr -- uname -m)
 if [ "$?" != 0 -o -z "$PLATFORM" ]; then
-  echo "Failed to determine host platform"
-  if [ "$SSH_GRANTED" == 'true' ]; then
-    revoke_ssh
-  fi
+  echo "Failed to determine host platform, most likely SSH credentials and/or settings are invalid"
+  revoke_ssh
   exit 1
 fi
 if [ "$PLATFORM" == "x86_64" ]; then
@@ -108,14 +151,13 @@ if [ "$PLATFORM" == "x86_64" ]; then
 fi
 PLATFORM="linux/$PLATFORM"
 
-# Create docker image tarballs as required
+
+# Verify manager tag and create docker image tarballs as required
 if [ "$MANAGER_TAG" != '#ref' ]; then
   docker manifest inspect openremote/manager:$MANAGER_TAG > /dev/null 2> /dev/null
   if [ $? -ne 0 ]; then
     echo "Specified manager tag does not exist in docker hub"
-    if [ "$SSH_GRANTED" == 'true' ]; then
     revoke_ssh
-  fi
     exit 1
   fi
 else
@@ -123,29 +165,20 @@ else
   MANAGER_TAG="$MANAGER_REF"
   # Export manager docker image for host platform
   docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$MANAGER_REF --platform $PLATFORM -t openremote/manager:$MANAGER_REF $MANAGER_DOCKER_BUILD_PATH | gzip > temp/manager.tar.gz
-  if [ $? -ne 0 -o ! -f temp/manager.tar.gz ]; then
+  if [ $? -ne 0 ] || [ ! -f temp/manager.tar.gz ]; then
     echo "Failed to export manager image with tag: $MANAGER_REF"
-    if [ "$SSH_GRANTED" == 'true' ]; then
-      revoke_ssh
-    fi
+    revoke_ssh
     exit 1
   fi
 fi
-
-if [ ! -z "$DEPLOYMENT_REF" ]; then
+if [ -n "$DEPLOYMENT_REF" ]; then
   # Export deployment docker image for host platform
   docker build -o type=docker,dest=- --build-arg GIT_REPO=$REPO_NAME --build-arg GIT_COMMIT=$DEPLOYMENT_REF --platform $PLATFORM -t openremote/deployment:$DEPLOYMENT_REF $DEPLOYMENT_DOCKER_BUILD_PATH | gzip > temp/deployment.tar.gz
-  if [ $? -ne 0 -o ! -f temp/deployment.tar.gz ]; then
+  if [ $? -ne 0 ] || [ ! -f temp/deployment.tar.gz ]; then
     echo "Failed to export deployment image"
-    if [ "$SSH_GRANTED" == 'true' ]; then
-      revoke_ssh
-    fi
+    revoke_ssh
     exit 1
   fi
-fi
-
-if [ -d ".ci_cd/host_init" ]; then
-  cp -r .ci_cd/host_init temp/
 fi
 
 # Set version variables
@@ -162,37 +195,54 @@ $scpCommandPrefix temp.tar.gz ${hostStr}:~
 
 echo "Running deployment on host"
 $sshCommandPrefix ${hostStr} << EOF
-  echo "Removing host temp dir"
+  echo "Removing old temp deployment dir"
   rm -fr temp
   
   echo "Extracting temp dir"
   tar -xvzf temp.tar.gz
-  
   chmod +x -R temp/
   
   set -a
   . ./temp/env
   set +a 
-  
+
+  # Login to AWS if credentials provided
+  if [ -n "$AWS_KEY" -a -n "$AWS_SECRET" ]; then
+
+    if [ -z "$AWS_REGION" ]; then
+      AWS_REGION="eu-west-1"
+    fi
+    echo "Logging into AWS on host '$AWS_REGION'"
+    aws configure set aws_access_key_id $AWS_KEY
+    aws configure set aws_secret_access_key $AWS_SECRET
+    aws configure set region $AWS_REGION
+    aws sts get-caller-identity 1>/dev/null 2>/dev/null
+
+    if [ $? -ne 0 ]; then
+      echo "Failed to login to AWS"
+      exit 1
+    else
+      echo "Login succeeded"
+    fi
+  else
+    echo "AWS credentials not supplied so not logging into AWS"
+  fi
+
   if [ -f "temp/manager.tar.gz" ]; then
+    echo "Loading manager docker image"
     docker load < temp/manager.tar.gz
   fi
   
   if [ -f "temp/deployment.tar.gz" ]; then
+    echo "Loading deployment docker image"
     docker load < temp/deployment.tar.gz
   fi
 
-  # Run standard host init
-  if [ -f "temp/init.sh" ]; then
-      echo "Running standard host init"
-      sudo temp/init.sh
-  fi
-
-  # Run host specific init
+  # Run host init
   hostInitCmd=
   if [ "$HOST_INIT_SCRIPT" == 'NONE' -o "$HOST_INIT_SCRIPT" == 'none' ]; then
     echo "No host init requested"
-  elif [ ! -z "$HOST_INIT_SCRIPT" ]; then
+  elif [ -n "$HOST_INIT_SCRIPT" ]; then
     if [ ! -f "temp/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
       echo "HOST_INIT_SCRIPT (temp/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
       exit 1
@@ -203,7 +253,7 @@ $sshCommandPrefix ${hostStr} << EOF
   elif [ -f "temp/host_init/init.sh" ]; then
     hostInitCmd="temp/host_init/init.sh"
   fi
-  if [ ! -z "$hostInitCmd" ]; then
+  if [ -n "$hostInitCmd" ]; then
     echo "Running host init script: '$hostInitCmd'"
     sudo $hostInitCmd
   else
@@ -228,15 +278,61 @@ $sshCommandPrefix ${hostStr} << EOF
     exit 1
   fi
 
-  # Delete postgres volume if CLEAN_INSTALL=true
+  # Run clean script if CLEAN_INSTALL=true
   if [ "\$CLEAN_INSTALL" == 'true' ]; then
-    echo "Deleting existing postgres data volume"
-    docker volume rm or_postgresql-data 2> /dev/null
+    if [ ! -f "temp/clean.sh" ]; then
+      echo "CLEAN_INSTALL requested by temp/clean.sh script not found"
+      exit 1
+    fi
+    echo "Running clean script"
+    temp/clean.sh
   fi
   
   # Delete any deployment volume so we get the latest
   echo "Deleting existing deployment data volume"
   docker volume rm or_deployment-data 2 > /dev/null
+
+  # Remove any existing map EFS mount
+  if [ -d "/deployment.local/map" ]; then
+    echo "Removing EFS map mount"
+    umount /deployment.local/map
+    sudo sed -i.bak '\@.amazonaws.com:/ /deployment.local/map@d' /etc/fstab
+    rm
+  fi
+
+  # Remove any existing deployment files from S3
+  if [ -d "/deployment.local/s3" ]; then
+    echo "Removing S3 deployment files"
+    rm -r /deployment.local/s3
+  fi
+
+  # Mount EFS map if specified
+  if [ "$AWS_ENABLED" == 'true' ] && [ -n "\$AWS_EFS_MAP" ]; then
+    echo "Attempting to mount EFS map data"
+    fileSystemId=\$(aws efs describe-file-systems --query FileSystems[?Name==\'\$AWS_EFS_MAP\'].FileSystemId --output text)
+    if [ -z "\$fileSystemId" ]; then
+      echo "Requested EFS volume named '$AWS_EFS_MAP' not found"
+      exit 1
+    fi
+    mkdir -p /deployment.local/map
+    echo "Adding EFS mount to /etc/fstab"
+    echo "\$fileSystemId.efs.$AWS_REGION.amazonaws.com:/ /deployment.local/map nfs4 nfsvers=4.1 0 0" >> /etc/fstab
+    echo "Attempting to mount EFS volume"
+    mount -a -v
+  fi
+
+  # Copy any S3 deployment files
+  if [ "$AWS_ENABLED" == 'true' ] && [ "\$SKIP_AWS_S3_FILECOPY" != 'true' ]; then
+    echo "Looking for host specific deployment files on S3 at 'openremote-hosts/$OR_HOST/deployment_files'"
+    aws s3 ls openremote-hosts/$OR_HOST/deployment_files &>/dev/null
+    if [ \$? -ne 0 ]; then
+      echo "No host specific deployment files found on S3"
+    else
+      echo "Files found; copying to /deployment.local/s3"
+      mkdir -p /deployment.local/s3
+      aws s3 cp s3://openremote-hosts/$OR_HOST/deployment_files/ /deployment.local/s3/ --recursive
+    fi
+  fi
 
   # Start the stack
   echo "Starting the stack"
@@ -257,16 +353,16 @@ $sshCommandPrefix ${hostStr} << EOF
     keycloakOk=false
     managerOk=false
     proxyOk=false
-    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
+    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
       postgresOk=true
     fi
-    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
+    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
       keycloakOk=true
     fi
-    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
+    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
       managerOk=true
     fi
-    if [ ! -z "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
+    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
       proxyOk=true
     fi
     
@@ -293,9 +389,7 @@ EOF
 
 if [ $? -ne 0 ]; then
   echo "Deployment failed or is unhealthy"
-  if [ "$SSH_GRANTED" == 'true' ]; then
-    revoke_ssh
-  fi
+  revoke_ssh
   exit 1
 fi
 
@@ -303,12 +397,8 @@ echo "Testing manager web server https://$OR_HOST..."
 response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOST/manager/)
 if [ $response -ne 200 ]; then
   echo "Response code = $response"
-  if [ "$SSH_GRANTED" == 'true' ]; then
-      revoke_ssh
-  fi
+  revoke_ssh
   exit 1
 fi
 
-if [ "$SSH_GRANTED" == 'true' ]; then
-  revoke_ssh
-fi
+revoke_ssh

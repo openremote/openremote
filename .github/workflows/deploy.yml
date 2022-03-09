@@ -17,7 +17,7 @@
 #                     override default values; these are overlaid on top of the repo and org secrets. It is also used
 #                     to load an environment specific env and/or host_init files from the repo and/or an environment
 #                     specific docker compose file
-# - host            - FQDN for the host (default: env/secrets.HOST)
+# - host            - FQDN for the host (default: env/secrets.OR_HOST)
 # - ssh_user        - SSH username (default: env/secrets.SSH_USER || root)
 # - ssh_password    - SSH password (default: secrets.SSH_PASSWORD)
 # - ssh_port        - SSH port (default: env/secrets.SSH_PORT || 22)

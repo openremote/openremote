@@ -41,7 +41,7 @@
 # - MANAGER_TAG           - Which manager docker tag to deploy (equivalent to deploy/managerTags in '.ci_cd/ci_cd.json')
 # - CLEAN_INSTALL
 # - COMMIT
-# - HOST
+# - OR_HOST
 # - SSH_USER
 # - SSH_PASSWORD
 # - SSH_PORT
@@ -77,7 +77,7 @@ on:
         type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
-      HOST:
+      OR_HOST:
         description: 'Host to deploy to'
       SSH_PORT:
         description: 'SSH port'
@@ -490,33 +490,6 @@ jobs:
         env:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
 
-      - name: Output info
-        run: |
-          echo "************************************************************"
-          echo "**************            INFO           *******************"
-          echo "************************************************************"
-          echo 'Trigger event: ${{ github.event_name }}'
-          echo 'Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}'
-          echo 'Is custom project repo: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}'
-          echo 'Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}'
-          echo 'Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}'
-          echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
-          echo 'Deployments: ${{ steps.deployments.outputs.value }}'
-          echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
-          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
-          echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
-          echo 'Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}'
-          echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
-          echo "Java version: $(java --version)"
-          echo "Yarn version: $(yarn -v)"
-          echo "Node version: $(node -v)"
-          echo 'Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}'
-          echo 'Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}'
-          echo 'Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}'
-          echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
-          echo "************************************************************"
-          echo "************************************************************"
-      
       - name: Login to DockerHub
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         uses: docker/login-action@v1
@@ -576,6 +549,34 @@ jobs:
           docker load < ~/image-cache/keycloak.tar.gz
           docker load < ~/image-cache/postgres.tar.gz
 
+
+      - name: Output info
+        run: |
+          echo "************************************************************"
+          echo "**************            INFO           *******************"
+          echo "************************************************************"
+          echo 'Trigger event: ${{ github.event_name }}'
+          echo 'Is main repo: ${{ steps.is_main_repo.outputs.value == 'true' }}'
+          echo 'Is custom project repo: ${{ steps.check_custom_project.outputs.files_exists == 'true' }}'
+          echo 'Has deployment dockerfile: ${{ steps.check_deployment_dockerfile.outputs.files_exists == 'true' }}'
+          echo 'Manager commit SHA: ${{ steps.manager-docker-command.outputs.refTag }}'
+          echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
+          echo 'Deployments: ${{ steps.deployments.outputs.value }}'
+          echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
+          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
+          echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
+          echo 'Deployment docker build command: ${{ steps.deployment-docker-command.outputs.value }}'
+          echo 'InstallDist command: ${{ steps.install-command.outputs.value }}'
+          echo "Java version: $(java --version)"
+          echo "Yarn version: $(yarn -v)"
+          echo "Node version: $(node -v)"
+          echo 'Gradle cache: ${{ steps.java.outputs.cache-hit == 'true' }}'
+          echo 'Yarn cache: ${{ steps.yarn-cache.outputs.cache-hit == 'true' }}'
+          echo 'Docker cache: ${{ steps.docker-cache.outputs.cache-hit == 'true' }}'
+          echo 'Manager tag cache: ${{ steps.manager-tag-cache.outputs.cache-hit == 'true' }}'
+          echo "************************************************************"
+          echo "************************************************************"
+
       - name: Pull docker images
         if: ${{ steps.test-backend-command.outputs.value != '' && steps.docker-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -620,22 +621,6 @@ jobs:
         run: |
           ${{ steps.manager-docker-command.outputs.value }}
 
-      - name: Determine deploy script command
-        id: deploy-script-command
-        if: ${{ steps.deployments.outputs.value != '' && steps.check_deployment_script.outputs.files_exists != 'true' }}
-        shell: bash
-        run: |
-          if [ -f ".ci_cd/deploy.sh" ]; then
-            echo "::set-output name=value::bash .ci_cd/deploy.sh"
-          elif [ "$IS_CUSTOM_PROJECT" == 'true' -a -f "openremote/.ci_cd/deploy.sh" ]; then
-            echo "::set-output name=value::bash openremote/.ci_cd/deploy.sh"
-          else
-            echo "Cannot find deploy bash script"
-            exit 1
-          fi
-        env:
-          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
-        
       - name: Run deployment docker command
         if: steps.deployment-docker-command.outputs.value != ''
         run: |
@@ -655,10 +640,28 @@ jobs:
           deployments = deployments.split(";")
           managerRef = os.getenv("MANAGER_REF")
           deploymentRef = os.getenv("DEPLOYMENT_REF")
-          deployScriptCmd = os.getenv("DEPLOY_SCRIPT_COMMAND")
+          isCustomProject = os.getenv("IS_CUSTOM_PROJECT")
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
           
           failure = False
+          
+          # Determine deploy script to use
+          deployScript = ".ci_cd/deploy.sh"
+          
+          if not os.path.exists(deployScript) and isCustomProject == 'true':
+            deployScript = "openremote/.ci_cd/deploy.sh"
+          fi
+          
+          if not os.path.exists(deployScript):
+            os.system(f"Deploy script not found '{deployScript}'")
+            sys.exit(1)
+          fi
+          
+          # Determine clean script to use
+          cleanScript = ".ci_cd/clean.sh"
+          if not os.path.exists(cleanScript) and isCustomProject == 'true':
+            cleanScript = "openremote/.ci_cd/clean.sh"
+          fi
           
           for deployment in deployments:
             dep = deployment.split(":")
@@ -737,9 +740,15 @@ jobs:
                 else:
                     os.system(f"echo '{key}=\"{value}\"' >> temp/env")
             
+            # Copy host_init files to temp deploy dir
+            os.system("cp -r .ci_cd/host_init temp/ 2>/dev/null")
+          
+            # Copy clean script
+            os.system(f"cp {cleanScript} temp/ 2>/dev/null") 
+            
             # Execute deploy script            
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
-            result = subprocess.run(deployScriptCmd, shell=True)
+            result = subprocess.run(f"bash {deployScript}", shell=True)
             
             if result.returncode != 0:
               os.system(f"echo 'Deployment failed: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
@@ -750,6 +759,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
+          IS_CUSTOM_PROJECT: $${{ steps.check_custom_project.outputs.files_exists }}
           REPO_NAME: ${{ github.repository }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}

@@ -142,11 +142,7 @@ Resources:
             - cron_setup
             - cfn_hup
             - env_vars
-          withmap:
-            - ConfigSet: default
             - nfs_setup
-            - mount
-
         nfs_setup:
           packages:
             yum:
@@ -217,21 +213,6 @@ Resources:
               content: "* * * * * /usr/sbin/nfsstat | /home/ec2-user/post_nfsstat\n"
               owner: ec2-user
               group: ec2-user
-
-        mount:
-          commands:
-            01_createdir:
-              command: !Sub "mkdir -p /deployment.local/mapdata"
-            02_fstab:
-              command: !Sub |
-                echo "Adding EFS mount to /etc/fstab"
-                echo "${MapFileSystemId}.efs.${AWS::Region}.amazonaws.com:/ /deployment.local/mapdata nfs4 nfsvers=4.1 0 0" >> /etc/fstab
-            03_mount:
-              command: |
-                echo "Executing mount all"
-                mount -a -v
-            04_permissions:
-              command: chown ec2-user:ec2-user /deployment.local
 
         env_vars:
           files:
@@ -384,11 +365,7 @@ Resources:
           #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
           
           # Execute required config set
-          CONFIGSET=default
-          if [ -n "${MapFileSystemId}" ]; then
-            CONFIGSET=withmap
-          fi
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets $CONFIGSET --region ${AWS::Region}
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
           
           # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
           /opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
