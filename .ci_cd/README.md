@@ -95,6 +95,7 @@ If an initialisation script is found then the entire `host_init` directory will 
 will be executed; by copying the entire directory additional files can be included and called from the initialisation
 script as required.
 
+# `aws` Directory
 
 # Variables
 The following variables are supported by deployments; any additional variables can also be used and these are made

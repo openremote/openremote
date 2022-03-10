@@ -1,0 +1,18 @@
+# This workflow handles starting an AWS EC2 hosts under the OpenRemote hosted zone
+name: Start Host
+
+on:
+  workflow_dispatch:
+    inputs:
+      HOST:
+        description: 'Host to start'
+        required: true
+
+  jobs:
+
+    provision:
+      name: Start
+      runs-on: ubuntu-latest
+
+      steps:
+        -run: echo ""

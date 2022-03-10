@@ -1,12 +1,11 @@
 #!/bin/bash
 
-SSH_GRANTED='false'
+# Must be run from the repo root dir
 
 # Function to be called before exiting to remove runner from AWS ssh-access security group
 revoke_ssh () {
   if [ "$SSH_GRANTED" == 'true' ]; then
-    aws ec2 revoke-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
-    echo "Revoked AWS SSH access"
+    "$AWS_SCRIPT_DIR/ssh_revoke.sh" "$IPV4" "$IPV6" "$AWS_ENABLED"
   fi
 }
 
@@ -35,28 +34,19 @@ if [ -f "ssh.env" ]; then
   set +x
 fi
 
+AWS_SCRIPT_DIR=".ci_cd/aws"
+if [ ! -d "$AWS_SCRIPT_PREFIX" ]; then
+  AWS_SCRIPT_DIR="openremote/.ci_cd/aws"
+fi
+if [ ! -d "$AWS_SCRIPT_PREFIX" ]; then
+  echo "AWS scripts not found so cannot perform AWS actions"
+fi
+
+
 # Login to AWS if credentials provided
 AWS_ENABLED=false
-if [ -n "$AWS_KEY" -a -n "$AWS_SECRET" ]; then
-
-  if [ -z "$AWS_REGION" ]; then
-    AWS_REGION="eu-west-1"
-  fi
-  echo "Logging into AWS '$AWS_REGION'"
-  aws configure set aws_access_key_id $AWS_KEY
-  aws configure set aws_secret_access_key $AWS_SECRET
-  aws configure set region $AWS_REGION
-  aws sts get-caller-identity 1>/dev/null 2>/dev/null
-
-  if [ $? -ne 0 ]; then
-    echo "Failed to login to AWS"
-    exit 1
-  else
-    echo "Login succeeded"
-    AWS_ENABLED=true
-  fi
-else
-  echo "AWS credentials not supplied so not logging into AWS"
+if [ -d "$AWS_SCRIPT_DIR" ]; then
+  source "$AWS_AWS_SCRIPT_DIR/login.sh"
 fi
 
 # Determine compose file to use and copy to temp dir (do this here as all env variables are loaded)
@@ -73,7 +63,7 @@ else
 fi
 # Check docker compose file is present
 if [ ! -f "temp/docker-compose.yml" ]; then
-  echo "Docker compose file missing: 'temp/docker-compose.yml'"
+  echo "Couldn't determine docker compose file"
   exit 1
 fi
 
@@ -96,61 +86,34 @@ fi
 
 # Check host is reachable (ping must be enabled)
 if [ "$SKIP_HOST_PING" != 'true' ]; then
+  echo "Attempting to ping host"
   ping -c1 -W1 -q $OR_HOST &>/dev/null
   if [ $? -ne 0 ]; then
     echo "Host is not reachable by PING"
-    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLEED" == 'true' ]; then
-      echo "Attempting to start EC2 instance with name '$OR_HOST'..."
-      instanceId=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=$OR_HOST' --output text --query 'Reservations[*].Instances[*].InstanceId')
-      if [ -n "$instanceId" ]; then
-        currentState=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=$OR_HOST' --output text --query 'Reservations[*].Instances[*].State.Name')
-
-        if [ "$currentState" == 'stopped' ]; then
-          echo "Starting EC2 instance"
-          aws ec2 start-instances --instance-ids $instanceId
-
-          echo "Waiting for up to 5mins for instance to be running"
-          count=0
-          while [ "$currentState" != 'running' ] && [ $count -lt 10 ]; do
-            echo "attempt...$count"
-            sleep 30
-            currentState=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=$OR_HOST' --output text --query 'Reservations[*].Instances[*].State.Name')
-            count=$((count+1))
-          done
-
-          if [ "$currentState" != 'running' ]; then
-            echo "EC2 instance failed to start state is '$currentState'"
-          else
-            echo "EC2 instance started successfully"
-          fi
-        else
-          echo "Current EC2 instance state is '$currentState' it must be in 'stopped' state to initiate auto start"
-          exit 1
-        fi
+    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
+      "$AWS_SCRIPT_DIR/start_ec2_instance.sh" "$OR_HOST" "$AWS_ENABLED"
+      if [ $? -ne 0 ]; then
+        # Don't exit as it might just not be reachable by PING we'll fail later on
+        echo "EC2 instance start failed"
       else
-        echo "No EC2 instance found (maybe the host is not an EC2 instance)"
-        exit 1
+        echo "EC2 instance start succeeded"
       fi
     fi
   fi
 fi
 
 # Grant SSH access to this runner's public IP on AWS
-if [ "$AWS_ENABLED" == 'true' ] && [ -n "$IPV4" ]; then
-  echo "Granting SSH access to this runner's public IP on AWS"
-
-  # Add this github runner to ssh-access security group for SSH access
-  aws ec2 authorize-security-group-ingress --group-name ssh-access --protocol tcp --port 22 --cidr $IPV4/32
-  if [ $? -ne 0 ]; then
-    echo "SSH Access failed might not be able to SSH into host(s)"
+if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
+  echo "Attempting to add runner to AWS SSH whitelist"
+  if [ "$AWS_ENABLED" == 'true' ]; then
+    "$AWS_SCRIPT_DIR/ssh_whitelist.sh" "$IPV4" "$IPV6" "$AWS_ENABLED"
+    if [ $? -eq 0 ]; then
+      SSH_GRANTED=true
+    fi
   else
-    echo "SSH Access granted for this runner"
-    SSH_GRANTED='true'
+    echo "AWS not enabled so cannot grant SSH access"
   fi
-else
-  echo "AWS not enabled or IPV4 not set so cannot grant SSH access"
 fi
-
 
 # Determine host platform via ssh for deployment image building (can't export/import manifests)
 PLATFORM=$($sshCommandPrefix $hostStr -- uname -m)
@@ -194,6 +157,11 @@ if [ -n "$DEPLOYMENT_REF" ]; then
   fi
 fi
 
+# Copy AWS scripts to temp dir
+if [ -d "$AWS_SCRIPT_DIR" ]; then
+  cp -r "AWS_SCRIPT_DIR" temp/
+fi
+
 # Set version variables
 MANAGER_VERSION="$MANAGER_TAG"
 DEPLOYMENT_VERSION="$DEPLOYMENT_REF"
@@ -220,26 +188,10 @@ $sshCommandPrefix ${hostStr} << EOF
   set +a 
 
   # Login to AWS if credentials provided
-  if [ -n "$AWS_KEY" -a -n "$AWS_SECRET" ]; then
-
-    if [ -z "$AWS_REGION" ]; then
-      AWS_REGION="eu-west-1"
-    fi
-    echo "Logging into AWS on host '$AWS_REGION'"
-    aws configure set aws_access_key_id $AWS_KEY
-    aws configure set aws_secret_access_key $AWS_SECRET
-    aws configure set region $AWS_REGION
-    aws sts get-caller-identity 1>/dev/null 2>/dev/null
-
-    if [ $? -ne 0 ]; then
-      echo "Failed to login to AWS"
-      exit 1
-    else
-      echo "Login succeeded"
-    fi
-  else
-    echo "AWS credentials not supplied so not logging into AWS"
-  fi
+  AWS_KEY=$AWS_KEY
+  AWS_SECRET=$AWS_SECRET
+  AWS_REGION=$AWS_REGION
+  source temp/aws/login.sh
 
   if [ -f "temp/manager.tar.gz" ]; then
     echo "Loading manager docker image"

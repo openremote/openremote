@@ -1,0 +1,18 @@
+# This workflow handles stopping an AWS EC2 hosts under the OpenRemote hosted zone
+name: Stop Host
+
+on:
+  workflow_dispatch:
+    inputs:
+      HOST:
+        description: 'Host to stop'
+        required: true
+
+  jobs:
+
+    provision:
+      name: Stop
+      runs-on: ubuntu-latest
+
+      steps:
+        -run: echo ""
