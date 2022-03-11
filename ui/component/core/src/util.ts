@@ -495,8 +495,8 @@ export function getMetaValueAsString(metaItem: NameValueHolder<any> | undefined,
 function getValueHolderValueAsString(nameValueHolder: NameValueHolder<any> | undefined, descriptor: AbstractNameValueDescriptorHolder | string | undefined, assetType: string | undefined, showUnits: boolean, isAttribute: boolean, fallback?: string): string {
 
     let valueStr = getValueAsString(nameValueHolder ? nameValueHolder.value : undefined, () => getValueFormatConstraintOrUnits(WellknownMetaItems.FORMAT, nameValueHolder, descriptor, assetType, isAttribute), undefined, fallback);
-
-    if (showUnits) {
+    const attrUnits = getAttributeUnits(nameValueHolder, descriptor, assetType);
+    if (showUnits && attrUnits && !!attrUnits.length) {
         const units: string[] | undefined = getValueFormatConstraintOrUnits(WellknownMetaItems.UNITS, nameValueHolder, descriptor, assetType, isAttribute);
         valueStr = resolveUnits(units, valueStr);
     }
