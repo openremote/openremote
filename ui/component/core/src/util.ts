@@ -22,14 +22,12 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
-    ValueDatapoint,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
 import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
-import { WellknownValueTypes } from "@openremote/model";
 
 export class Deferred<T> {
 
