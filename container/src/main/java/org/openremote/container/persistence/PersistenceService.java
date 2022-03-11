@@ -197,7 +197,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
      * database artifacts from wipe/migrate in FlywayDB...) you must have it in the 'public'
      * schema. Hence we need a different schema here.
      */
-    public static final String SETUP_WIPE_CLEAN_INSTALL = "SETUP_WIPE_CLEAN_INSTALL";
+    public static final String SETUP_CLEAN_ON_RESTART = "SETUP_CLEAN_ON_RESTART";
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
     public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "OpenRemotePU";
     public static final String DB_VENDOR = "DB_VENDOR";
@@ -285,7 +285,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
 
         persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
 
-        forceClean = getBoolean(container.getConfig(), SETUP_WIPE_CLEAN_INSTALL, container.isDevMode());
+        forceClean = getBoolean(container.getConfig(), SETUP_CLEAN_ON_RESTART, container.isDevMode());
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
         prepareSchema(connectionUrl, dbUsername, dbPassword, dbSchema);

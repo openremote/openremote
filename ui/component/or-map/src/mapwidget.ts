@@ -404,7 +404,7 @@ export class MapWidget {
     }
 
     public addMarker(marker: OrMapMarker) {
-        if (marker.lat && marker.lng) {
+        if (marker.hasPosition()) {
             this._updateMarkerElement(marker, true);
         }
     }
@@ -423,13 +423,12 @@ export class MapWidget {
             case "lat":
             case "lng":
             case "radius":
-                if (marker.lat && marker.lng) {
+                if (marker.hasPosition()) {
                     if (marker._actualMarkerElement) {
                         this._updateMarkerPosition(marker);
                     } else {
                         this._updateMarkerElement(marker, true);
                     }
-
                 } else if (marker._actualMarkerElement) {
                     this._updateMarkerElement(marker, false);
                 }

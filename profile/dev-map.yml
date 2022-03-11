@@ -11,7 +11,7 @@ services:
   map:
     extends:
       file: deploy.yml
-      service: map
+      service: tileserver
     ports:
       - "8082:80"
     volumes:

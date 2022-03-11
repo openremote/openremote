@@ -336,9 +336,15 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         try {
             Method closeMethod = session.getClass().getDeclaredMethod("closeImmediately");
             closeMethod.setAccessible(true);
+            Field connectionField = session.getClass().getDeclaredField("mqttConnection");
+            connectionField.setAccessible(true);
             Method disconnectMethod = session.getClass().getDeclaredMethod("disconnect");
             disconnectMethod.setAccessible(true);
-            closeMethod.invoke(session);
+
+            Object sessionConnection = connectionField.get(session);
+            if (sessionConnection != null) {
+                closeMethod.invoke(session);
+            }
             disconnectMethod.invoke(session);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to force disconnect Moquette session using reflection", e);

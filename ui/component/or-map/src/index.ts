@@ -16,7 +16,7 @@ import {
     ValueInputTemplateFunction
 } from "@openremote/or-mwc-components/or-mwc-input";
 import {OrMwcDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
-import {getMarkerIconAndColorFromAssetType} from "./markers/or-map-marker-asset";
+import {getMarkerIconAndColorFromAssetType} from "./util";
 import {i18next} from "@openremote/or-translate";
 
 // Re-exports
@@ -599,6 +599,3 @@ export class OrMap extends LitElement {
         });
     }
 }
-
-export * from "./markers/or-map-marker";
-export * from "./markers/or-map-marker-asset";

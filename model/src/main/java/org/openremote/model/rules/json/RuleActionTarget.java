@@ -31,6 +31,7 @@ import org.openremote.model.query.UserQuery;
  * <li>{@link #matchedAssets} - Assets that matched with additional {@link AssetQuery} applied</li>
  * <li>{@link #assets}</li>
  * <li>{@link #users}</li>
+ * <li>{@link #linkedUsers} - Users linked to matched assets</li>
  * <li>{@link #custom} - A custom string that the Rule Action interprets to generate targets</li>
  * </ol>
  */
@@ -39,5 +40,6 @@ public class RuleActionTarget {
     public AssetQuery matchedAssets;
     public AssetQuery assets;
     public UserQuery users;
+    public Boolean linkedUsers;
     public String custom;
 }

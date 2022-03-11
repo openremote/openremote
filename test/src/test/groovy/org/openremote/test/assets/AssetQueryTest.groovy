@@ -9,7 +9,6 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.model.Constants
 import org.openremote.test.setup.KeycloakTestSetup
 import org.openremote.test.setup.ManagerTestSetup
-import org.openremote.model.asset.Asset
 import org.openremote.model.asset.agent.Agent
 import org.openremote.model.asset.impl.BuildingAsset
 import org.openremote.model.asset.impl.RoomAsset
@@ -26,11 +25,9 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import javax.persistence.EntityManager
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.util.function.Function
 
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME
 import static org.openremote.model.query.AssetQuery.*

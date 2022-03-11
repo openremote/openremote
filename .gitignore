@@ -26,13 +26,22 @@ console/iOS/DerivedData
 console/iOS/Pods
 manager/.factorypath/
 Pods/
+bower_components/
 node_modules/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
 # Specific files and logs
 openremote.log
 dive.log
 yarn-error.log
 local.properties
+**/yarn.lock
 
 # File extensions
 *.mbtiles

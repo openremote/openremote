@@ -595,7 +595,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         this._searchInputTimer = window.setTimeout(() => {
             this._doFiltering(value);
-        }, 1500);
+        }, 300);
     }
 
     protected async _doFiltering(value?: string) {

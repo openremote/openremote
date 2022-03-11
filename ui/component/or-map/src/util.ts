@@ -1,5 +1,14 @@
 import {LngLat, LngLatBounds, LngLatBoundsLike, LngLatLike} from "maplibre-gl";
-import {Asset, Attribute, GeoJSONPoint, ValueHolder, WellknownAttributes} from "@openremote/model";
+import {
+    Asset,
+    AssetDescriptor,
+    AssetModelUtil,
+    Attribute,
+    GeoJSONPoint,
+    ValueHolder,
+    WellknownAttributes
+} from "@openremote/model";
+import {AttributeMarkerColoursRange, MapMarkerColours} from "./markers/or-map-marker-asset";
 
 export function getLngLat(lngLatLike?: LngLatLike | Asset | ValueHolder<any> | GeoJSONPoint): { lng: number, lat: number } | undefined {
     if (!lngLatLike) {
@@ -77,4 +86,50 @@ export function getLatLngBounds(lngLatBoundsLike?: LngLatBoundsLike): L.LatLngBo
     if (lngLatBounds) {
         return L.latLngBounds(lngLatBounds.getNorthEast()!, lngLatBounds.getSouthWest()!);
     }
+}
+
+export interface OverrideConfigSettings {
+    markerConfig: MapMarkerColours;
+    currentValue: any;
+}
+
+export function getMarkerIconAndColorFromAssetType(
+    type: AssetDescriptor | string | undefined,
+    configOverrideSettings?: OverrideConfigSettings
+): {icon: string, color: string | undefined | AttributeMarkerColoursRange[]} | undefined {
+
+    if (!type) {
+        return;
+    }
+
+    const descriptor = typeof(type) === "string" ? AssetModelUtil.getAssetDescriptor(type) : type;
+    const icon = descriptor && descriptor.icon ? descriptor.icon : "help-circle";
+    let colour = descriptor && descriptor.colour ? descriptor.colour : undefined;
+
+    if (configOverrideSettings) {
+        if (configOverrideSettings.markerConfig) {
+
+            const colourConfig = configOverrideSettings.markerConfig;
+            const attrVal = configOverrideSettings.currentValue;
+
+            if (colourConfig.type === "range" && colourConfig.ranges && typeof attrVal === "number") {
+                const ranges = colourConfig.ranges;
+                // see in what range the attrVal fits and if not, what the setting for the highest range is
+                const colourFromRange = ranges.find(r => attrVal < r.max) || ranges.reduce((a, b) => (a.max > b.max) ? a : b);
+                colour = colourFromRange.colour || undefined;
+            } else if (colourConfig.type === "boolean") {
+                const value = !!attrVal + "";
+                colour = colourConfig[value];
+            } else if (colourConfig.type === "string") {
+                const value = attrVal + "";
+                colour = colourConfig[value];
+            }
+        }
+        // todo icon override
+    }
+
+    return {
+        color: colour,
+        icon: icon
+    };
 }

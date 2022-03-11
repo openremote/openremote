@@ -225,15 +225,15 @@ export const style = css`
     }
     
     #filterInput {
-        padding: 5px;
+        padding: 7px 10px;
     }
     
     #clearIcon {
-        width: 16px;
-        height: 16px;
+        --or-icon-width: 20px;
+        --or-icon-height: 20px;
         position: absolute;
         right: 0;
-        padding-right: 14px;
+        padding-right: 16px;
         cursor: pointer;
         display: none;
     }

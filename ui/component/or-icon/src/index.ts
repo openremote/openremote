@@ -144,6 +144,7 @@ export class OrIcon extends LitElement {
                     --internal-or-icon-stroke-width: var(--or-icon-stroke-width, 0);
                 
                     display: inline-block;
+                    color: var(--internal-or-icon-fill);
                     fill: var(--internal-or-icon-fill);
                     stroke: var(--internal-or-icon-stroke);
                     stroke-width: var(--internal-or-icon-stroke-width);

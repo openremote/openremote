@@ -95,6 +95,8 @@ export class OrRuleActionNotification extends LitElement {
         if (action.target) {
             if (action.target.users && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
                 targetType = NotificationTargetType.USER;
+            } else if (action.target.linkedUsers) {
+                targetType = NotificationTargetType.USER;
             } else if (action.target.custom !== undefined && !action.target.conditionAssets && !action.target.matchedAssets && !action.target.assets) {
                 targetType = NotificationTargetType.CUSTOM;
             }
@@ -125,21 +127,26 @@ export class OrRuleActionNotification extends LitElement {
                 );
                 label = i18next.t("user_plural");
 
-                const userQuery = action.target!.users!;
+                if (action.target!.users) {
+                    const userQuery = action.target!.users!;
 
-                if ((userQuery.ids && userQuery.ids.length > 1)
-                    || userQuery.usernames
-                    || userQuery.assetPredicate
-                    || userQuery.limit
-                    || userQuery.pathPredicate
-                    || userQuery.tenantPredicate) {
-                    console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
-                    return;
+                    if ((userQuery.ids && userQuery.ids.length > 1)
+                        || userQuery.usernames
+                        || userQuery.assetPredicate
+                        || userQuery.limit
+                        || userQuery.pathPredicate
+                        || userQuery.tenantPredicate) {
+                        console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
+                        return;
+                    }
+
+                    if (userQuery.ids && userQuery.ids.length === 1) {
+                        value = userQuery.ids[0];
+                    }
+                } else if (action.target!.linkedUsers) {
+                    value = "linkedUsers";
                 }
 
-                if (userQuery.ids && userQuery.ids.length === 1) {
-                    value = userQuery.ids[0];
-                }
             } else {
                 const assetQuery = baseAssetQuery ? {...baseAssetQuery} : {};
                 assetQuery.orderBy = {
@@ -190,6 +197,9 @@ export class OrRuleActionNotification extends LitElement {
                         });
                     }
                     values = [...additionalValues, ...values];
+                } else if (targetType === NotificationTargetType.USER) {
+                    // Add additional option for linked users
+                    values = [["linkedUsers", i18next.t("linked")], ...values];
                 }
 
                 return html`
@@ -306,9 +316,14 @@ export class OrRuleActionNotification extends LitElement {
     protected _onTargetChanged(targetType: NotificationTargetType, value: string | undefined) {
         switch (targetType) {
             case NotificationTargetType.USER:
-                if(value){
-                    const users:UserQuery = {ids: [value]}
-                    this.action.target = {users: users}
+                if (value === "linkedUsers") {
+                    this.action.target = {
+                        linkedUsers: true
+                    }
+                } else if (value) {
+                    this.action.target = {
+                        users: {ids: [value]}
+                    }
                 }
             break;
             case NotificationTargetType.CUSTOM:
