@@ -269,19 +269,19 @@ export class PageRoles extends Page<AppStateKeyed> {
     this.getRoles();
   }
 
-  private _deleteRole(role) {
+  private _deleteRole(role, rowIndex) {
     showOkCancelDialog(i18next.t("delete"), i18next.t("deleteRoleConfirm"), i18next.t("delete"))
     .then((ok) => {
         if (ok) {
-          this.doDelete(role);
+          this.doDelete(role, rowIndex);
         }
     });
   }
   
-  private doDelete(role) {
+  private doDelete(role, rowIndex) {
+    this.expanderToggle(rowIndex);
     this._compositeRoles = [...this._compositeRoles.filter(u => u.id !== role.id)]
     this._updateRoles()
-
   }
 
   private addRemoveRole(e, r, index) {
@@ -293,7 +293,7 @@ export class PageRoles extends Page<AppStateKeyed> {
     this.requestUpdate('_compositeRoles')
   }
 
-  private expanderToggle(ev: MouseEvent, index: number) {
+  private expanderToggle(index: number) {
     const metaRow = this.shadowRoot.getElementById('attribute-meta-row-'+index)
     const expanderIcon = this.shadowRoot.getElementById('mdc-data-table-icon-'+index) as OrIcon
     if(metaRow.classList.contains('expanded')){
@@ -349,7 +349,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                         (role, index) => {
                           const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).sort((a, b) => a.localeCompare(b)).join(', ');
                           return html`
-                          <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => this.expanderToggle(ev, index)}">
+                          <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => this.expanderToggle(index)}">
                             <td  class="padded-cell mdc-data-table__cell"
                             >
                               <or-icon id="mdc-data-table-icon-${index}" icon="chevron-right"></or-icon>
@@ -408,7 +408,7 @@ export class PageRoles extends Page<AppStateKeyed> {
 
                                   <div class="row" style="margin-bottom: 0;">
                                   ${role.id && !readonly ? html`
-                                      <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role)}"></or-mwc-input>          
+                                      <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role, index)}"></or-mwc-input>          
                                       <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>   
                                   ` : html`
                                     <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._compositeRoles.splice(-1,1); this._compositeRoles = [...this._compositeRoles]}}"></or-mwc-input>            
