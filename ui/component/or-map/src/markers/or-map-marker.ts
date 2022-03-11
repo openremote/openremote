@@ -83,15 +83,52 @@ export class OrMapMarker extends LitElement {
             white-space: nowrap;
           }
           
-          .icon-direction {
+          .direction-icon-wrapper {
             position: absolute;
-            z-index: -1;
-            top: 18px;
-            left: 4px;
-            --or-icon-width: 24px;
-            --or-icon-height: 24px;
-            fill: var(--or-app-color5);
-            --internal-or-icon-fill: var(--or-app-color5);
+            top: 11px;
+            left: 16px;
+          }
+          .direction-circle {
+            position: absolute;
+            margin-top: -15px;
+            margin-left: -15px;
+            width: 30px;
+            height: 30px;
+          }
+          .direction-circle circle {
+            cx: 15px;
+            cy: 15px;
+            r: 13px;
+            stroke: white;
+            stroke-width: 3px;
+            fill: transparent;
+          }
+          .direction-icon {
+            position: absolute;
+            top: -24px;
+            left: -16px;
+            transform: scale(0.75) rotate(-90deg);
+          }
+          
+          .active .direction-icon-wrapper {
+            top: 17px;
+            left: 24px;
+          }
+          .active .direction-circle {
+            margin-top: -20px;
+            margin-left: -20px;
+            width: 40px;
+            height: 40px;
+          }
+          .active .direction-icon {
+            top: -35px;
+            left: -23px;
+          }
+          .active .direction-circle circle {
+            cx: 20px;
+            cy: 20px;
+            r: 18px;
+            stroke-width: 4px;
           }
         `;
     }
@@ -102,7 +139,12 @@ export class OrMapMarker extends LitElement {
             : ``
         }
         ${options && options.direction
-            ? `<or-icon class="icon-direction" icon="navigation" style="transform: rotate(${options.direction}deg);"></or-icon>`
+            ? `<div class="direction-icon-wrapper" style="transform: rotate(${options.direction}deg);">
+                <svg class="direction-circle">
+                 <circle/> 
+                </svg>
+                <or-icon class="direction-icon" icon="play"></or-icon>
+               </div>`
             : ``
         }
         <or-icon icon="or:marker"></or-icon>
