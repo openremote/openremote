@@ -98,14 +98,14 @@ export class OrMapMarker extends LitElement {
           .direction-circle circle {
             cx: 15px;
             cy: 15px;
-            r: 13px;
+            r: 12px;
             stroke: white;
             stroke-width: 3px;
             fill: transparent;
           }
           .direction-icon {
             position: absolute;
-            top: -24px;
+            top: -25px;
             left: -16px;
             transform: scale(0.75) rotate(-90deg);
           }
@@ -121,7 +121,7 @@ export class OrMapMarker extends LitElement {
             height: 40px;
           }
           .active .direction-icon {
-            top: -35px;
+            top: -36px;
             left: -23px;
           }
           .active .direction-circle circle {
