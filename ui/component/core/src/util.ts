@@ -22,14 +22,12 @@ import {
     AbstractNameValueDescriptorHolder,
     MetaItemDescriptor,
     ValueFormatStyleRepresentation,
-    ValueDatapoint,
 } from "@openremote/model";
 import i18next from "i18next";
 import Qs from "qs";
 import {AssetModelUtil} from "@openremote/model";
 import moment from "moment";
 import DateTimeFormatOptions = Intl.DateTimeFormatOptions;
-import { WellknownValueTypes } from "@openremote/model";
 
 export class Deferred<T> {
 
@@ -495,8 +493,8 @@ export function getMetaValueAsString(metaItem: NameValueHolder<any> | undefined,
 function getValueHolderValueAsString(nameValueHolder: NameValueHolder<any> | undefined, descriptor: AbstractNameValueDescriptorHolder | string | undefined, assetType: string | undefined, showUnits: boolean, isAttribute: boolean, fallback?: string): string {
 
     let valueStr = getValueAsString(nameValueHolder ? nameValueHolder.value : undefined, () => getValueFormatConstraintOrUnits(WellknownMetaItems.FORMAT, nameValueHolder, descriptor, assetType, isAttribute), undefined, fallback);
-
-    if (showUnits) {
+    const attrUnits = getAttributeUnits(nameValueHolder, descriptor, assetType);
+    if (showUnits && attrUnits && !!attrUnits.length) {
         const units: string[] | undefined = getValueFormatConstraintOrUnits(WellknownMetaItems.UNITS, nameValueHolder, descriptor, assetType, isAttribute);
         valueStr = resolveUnits(units, valueStr);
     }
