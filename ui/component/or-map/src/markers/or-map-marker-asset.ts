@@ -51,14 +51,14 @@ export function getMarkerConfigForAssetType(config: MapMarkerAssetConfig | undef
     return config[assetType];
 }
 
-export function getMarkerConfigLabelAttributeName(config: MapMarkerAssetConfig | undefined, assetType: string | undefined): string | undefined {
+export function getMarkerConfigAttributeName(config: MapMarkerAssetConfig | undefined, assetType: string | undefined): string | undefined {
     const assetTypeConfig = getMarkerConfigForAssetType(config, assetType);
 
     if (!assetTypeConfig) {
         return;
     }
 
-    return assetTypeConfig.showLabel ? assetTypeConfig.attributeName : undefined;
+    return assetTypeConfig.attributeName;
 }
 
 @customElement("or-map-marker-asset")
