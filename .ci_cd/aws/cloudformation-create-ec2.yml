@@ -7,7 +7,6 @@
 # - Add Route 53 DNS record to hosted zone 'mvp.openremote.io' that points to new EC2 instance
 # - Configures logging for the EC2 instance
 # - Installs docker and docker-compose
-# - Optionally adds EFS data mount on /deployment.local
 #
 # The generated SMTP IAM credentials are output to /etc/environment using the standard OpenRemote
 # naming convention OR_EMAIL_HOST, OR_EMAIL_USER and OR_EMAIL_PASSWORD
@@ -37,51 +36,24 @@ Parameters:
       - m6g.medium
       - m6g.large
     ConstraintDescription: must be a valid EC2 instance type.
-  MapFileSystemId:
-    Description: File system ID of map to mount from EFS (must already exist)
-    Type: String
-    AllowedPattern: ^$|^(fs-[0-9a-f]{8,40})?$
-    ConstraintDescription: Must be a valid file system ID e.g. (fs-ad2321321332132123)
-
-Conditions:
-  DoMapMount: !Not [!Equals [!Ref MapFileSystemId, ""]]
-
-Outputs:
-  InstanceIP:
-    Description: The Instance public IP
-    Value: !GetAtt EC2Instance.PublicIp
-  Domain:
-    Description: OpenRemote Instance URL
-    Value: !Join [".", [!Ref Host, "mvp.openremote.io"]]
-  SMTPUsername:
-    Description: SMTP server username
-    Value: !Ref SMTPCredentials
+  SMTPKey:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SMTP-User-Key
   SMTPSecret:
-    Description: SMTP server password
-    Value: !GetAtt SMTPCredentials.SecretAccessKey
-  SMTPServer:
-    Value: !Join [".", ["email-smtp", !Ref "AWS::Region", "amazonaws.com"]]
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SMTP-User-Secret
+  SMTPORArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SMTP-OpenRemote-Arn
+#  MapFileSystemId:
+#    Description: File system ID of map to mount from EFS (must already exist)
+#    Type: String
+#    AllowedPattern: ^$|^(fs-[0-9a-f]{8,40})?$
+#    ConstraintDescription: Must be a valid file system ID e.g. (fs-ad2321321332132123)
 
+#Conditions:
+#  DoMapMount: !Not [!Equals [!Ref MapFileSystemId, ""]]
 Resources:
-  SMTPUser:
-    Type: AWS::IAM::User
-    Properties:
-      UserName: !Join ["-", ["smtp", !Ref Host ]]
-      Policies:
-        - PolicyName: OpenRemoteSendEmail
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ses:SendRawEmail
-                Resource:
-                  - '*'
-
-  SMTPCredentials:
-    Type: AWS::IAM::AccessKey
-    Properties:
-      UserName: !Ref SMTPUser
 
   DNSRecord:
     Type: AWS::Route53::RecordSet
@@ -131,6 +103,67 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 7
+
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+    GroupName: ssh-access
+
+  StandardSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+    GroupName: standard-access
+      SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: '80'
+            ToPort: '80'
+            CidrIp: 0.0.0.0/0
+            Description: HTTP
+            - IpProtocol: tcp
+              FromPort: '443'
+              ToPort: '443'
+              CidrIp: 0.0.0.0/0
+              Description: HTTPS
+            - IpProtocol: tcp
+              FromPort: '80'
+              ToPort: '80'
+              CidrIpv6: ::/0
+              Description: HTTP
+            - IpProtocol: tcp
+              FromPort: '443'
+              ToPort: '443'
+              CidrIpv6: ::/0
+              Description: HTTPS
+            - IpProtocol: tcp
+              FromPort: '8883'
+              ToPort: '8883'
+              CidrIp: 0.0.0.0/0
+              Description: MQTT
+            - IpProtocol: tcp
+              FromPort: '8883'
+              ToPort: '8883'
+              CidrIpv6: ::/0
+              Description: MQTT
+            - IpProtocol: udp
+              FromPort: '161'
+              ToPort: '162'
+              CidrIp: 0.0.0.0/0
+              Description: SNMP
+            - IpProtocol: udp
+              FromPort: '161'
+              ToPort: '162'
+              CidrIpv6: ::/0
+              Description: SNMP
+            - IpProtocol: icmp
+              FromPort: '8'
+              ToPort: '-1'
+              CidrIp: 0.0.0.0/0
+              Description: Ping
+            - IpProtocol: icmpv6
+              FromPort: '-1'
+              ToPort: '-1'
+              CidrIpv6: ::/0
+              Description: Ping
 
   EC2Instance:
     Type: AWS::EC2::Instance
@@ -288,10 +321,11 @@ Resources:
           commands:
             01_output_smtp_credentials:
               command: !Sub |
-                PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPCredentials.SecretAccessKey} ${AWS::Region})
+                PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${AWS::Region})
                 echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" >> /etc/environment
-                echo "OR_EMAIL_USER=${SMTPCredentials}" >> /etc/environment
-                echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment                
+                echo "OR_EMAIL_USER=${SMTPKey}" >> /etc/environment
+                echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
+                echo "OR_EMAIL_X_HEADERS=${SMTPORArn}" >> /etc/environment
 
         docker_setup:
           packages:
@@ -339,15 +373,12 @@ Resources:
       InstanceType:
         Ref: InstanceType
       KeyName:
-        "openremote"
+        "developers"
       ImageId:
         "ami-032afb7a6d14ab941"
       SecurityGroups:
-        - "ssh-access"
-        - "http-access"
-        - "mqtt-access"
-        - "ping-access"
-        - "snmp-access"
+        - Ref: SSHSecurityGroup
+        - Ref: StandardSecurityGroup
       Ipv6AddressCount: 1
       Tags:
         - Key: "Name"

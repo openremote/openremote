@@ -20,10 +20,8 @@
 package org.openremote.model.apps;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 
-import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -31,9 +29,9 @@ import javax.ws.rs.Produces;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Tag(name = "Console App")
-@Path("app")
-public interface ConsoleAppResource {
+@Tag(name = "UI Apps")
+@Path("apps")
+public interface AppResource {
 
     /**
      * Retrieve installed console applications. Only the superuser can perform this operation,
@@ -41,14 +39,5 @@ public interface ConsoleAppResource {
      */
     @GET
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ADMIN_ROLE})
-    String[] getInstalledApps(@BeanParam RequestParams requestParams);
-
-    // TODO: Remove this once console updated to use file path
-    // Left here as android console stops working once this is removed
-    @Deprecated
-    @GET
-    @Path("config")
-    @Produces(APPLICATION_JSON)
-    ConsoleAppConfig getAppConfig(@BeanParam RequestParams requestParams);
+    String[] getApps(@BeanParam RequestParams requestParams);
 }
