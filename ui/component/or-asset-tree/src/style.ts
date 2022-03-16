@@ -229,14 +229,21 @@ export const style = css`
         padding: 5px;
     }
     
+    #clearIconContainer {
+        position: absolute;
+        right: 24px;
+        padding-right: 14px;
+        display: none;
+    }
+    
     #clearIcon {
         width: 16px;
         height: 16px;
-        position: absolute;
-        right: 20px;
-        padding-right: 14px;
         cursor: pointer;
-        display: none;
+        background-color: #F9F9F9;
+        margin-top: 2px;
+        padding-top: 4px;
+        padding-bottom: 4px;
     }
 
     #filterAssetTypeDownIcon {
@@ -279,7 +286,7 @@ export const style = css`
         align-items: center;
     }
     
-    #clearIcon.visible {
+    #clearIconContainer.visible {
         display: block;
     }
 

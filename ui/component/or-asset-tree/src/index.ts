@@ -297,8 +297,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     @state()
     protected _filter: OrAssetTreeFilter = new OrAssetTreeFilter();
     protected _searchInputTimer?: number = undefined;
-    @query("#clearIcon")
-    protected _clearIcon!: HTMLElement;
+    @query("#clearIconContainer")
+    protected _clearIconContainer!: HTMLElement;
     @query("#filterInput")
     protected _filterInput!: OrMwcInput;
     @query("#asset-tree-filter-setting")
@@ -311,8 +311,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _attributeValueFilter!: OrMwcInput;
     @state()
     protected _assetTypeFilter!: string;
-    // @state()
-    // protected _filterOptions: { assetType: AssetDescriptor | undefined } = { assetType: undefined };
+    protected _uniqueAssetTypes: string[] = [];
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -444,21 +443,25 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   this._onFilterInput((e.detail.value as string) || undefined, true);
                               }}">
                               </or-mwc-input>
-                <or-icon id="clearIcon" icon="close" @click="${() => {
-                    // Wipe the current value and hide the clear button
-                    this._filterInput.value = undefined;
-                    this._clearIcon.classList.remove("visible");
-                    
-                    this._attributeValueFilter.value = undefined;
-                    this._attributeNameFilter.value = undefined;
-
-                    this._attributeValueFilter.disabled = true;
-                    
-                    this._filter = new OrAssetTreeFilter();
-                    
-                    // Call filtering
-                    this._doFiltering();
-                }}"></or-icon>
+                <div id="clearIconContainer">
+                    <or-icon id="clearIcon" icon="close" @click="${() => {
+                        // Wipe the current value and hide the clear button
+                        this._filterInput.value = undefined;
+                        this._clearIconContainer.classList.remove("visible");
+                        
+                        this._attributeValueFilter.value = undefined;
+                        this._attributeNameFilter.value = undefined;
+    
+                        this._attributeValueFilter.disabled = true;
+                        
+                        this._assetTypeFilter = '';
+                        
+                        this._filter = new OrAssetTreeFilter();
+                        
+                        // Call filtering
+                        this._doFiltering();
+                    }}"></or-icon>
+                </div>
                 <or-icon id="filterSettingsIcon" icon="tune" @click="${() => {
                     if ( this._filterSetting.classList.contains("visible") ) {
                         this._filterSetting.classList.remove("visible");
@@ -466,6 +469,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         this._filterSetting.classList.add("visible");
                         // Avoid to build again the types
                         if ( this._assetTypes.length === 0 ) {
+                            let usedTypes: string[] = [];
                             const types = this._getAllowedChildTypes(this._selectedNodes[0]);
                             this._assetTypes = types.filter((t) => t.descriptorType === "asset");
                         }
@@ -489,7 +493,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 <div class="advanced-filter">
                     ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
                         this.assetTypeSelect(), 
-                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeNone"), value: "", icon: "selection-ellipse" }),
+                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }),
                         undefined,
                         (v: string[] | string) => {
                             this._assetTypeFilter = (v as string);
@@ -798,8 +802,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         asset = asset.replace(value, '');
 
                         const startIndex: number = value.toString().indexOf('":');
+                        // Adding 2 to remove the ": matched before
                         const matchingVal: string = value.toString().substring(startIndex + 2);
-                        const matchingName: string = value.toString().substring(0, startIndex);
+                        // Starting from position 1 to remove first "
+                        const matchingName: string = value.toString().substring(1, startIndex);
 
                         resultingFilter.attribute.push(matchingName);
                         resultingFilter.attributeValue.push(matchingVal);
@@ -808,8 +814,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     asset = asset.replace(matchingResult[0].toString(), '');
 
                     const startIndex: number = matchingResult[0].toString().indexOf('":');
+                    // Adding 2 to remove the ": matched before
                     const matchingVal: string = matchingResult[0].toString().substring(startIndex + 2);
-                    const matchingName: string = matchingResult[0].toString().substring(0, startIndex);
+                    // Starting from position 1 to remove first "
+                    const matchingName: string = matchingResult[0].toString().substring(1, startIndex);
 
                     resultingFilter.attribute = [ matchingName ];
                     resultingFilter.attributeValue = [ matchingVal ];
@@ -907,9 +915,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         let newFilterForSearchInput: string = this.formatFilter(this._filter);
 
         if (newFilterForSearchInput) {
-            this._clearIcon.classList.add("visible");
+            this._clearIconContainer.classList.add("visible");
         } else {
-            this._clearIcon.classList.remove("visible");
+            this._clearIconContainer.classList.remove("visible");
         }
 
         this._filterInput.value = newFilterForSearchInput;
@@ -926,9 +934,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             value = ((e.composedPath()[0] as HTMLInputElement).value) || undefined;
 
             if (value) {
-                this._clearIcon.classList.add("visible");
+                this._clearIconContainer.classList.add("visible");
             } else {
-                this._clearIcon.classList.remove("visible");
+                this._clearIconContainer.classList.remove("visible");
             }
         }
 
@@ -937,9 +945,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected _onFilterInput(newValue: string | undefined, force: boolean): void {
         if (newValue) {
-            this._clearIcon.classList.add("visible");
+            this._clearIconContainer.classList.add("visible");
         } else {
-            this._clearIcon.classList.remove("visible");
+            this._clearIconContainer.classList.remove("visible");
         }
 
         let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
@@ -1091,7 +1099,9 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
 
                 if (matchingAsset && matchingAsset.attributes) {
-                    for (let currentAttributeVal in attributeVal) {
+                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
+                        let currentAttributeVal = attributeVal[attributeValIndex];
+
                         let atLeastOneAttributeMatchValue: boolean = false;
                         Object.keys(matchingAsset.attributes).forEach((key: string) => {
                             let attr: Attribute<any> = matchingAsset!.attributes![key];
@@ -1108,7 +1118,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                     case "negativeInteger":
                                     case "positiveNumber":
                                     case "negativeNumber":
-                                        const resultNumberEval: boolean = eval(attr.value + currentAttributeVal[1]);
+                                        let value: string = currentAttributeVal[1];
+                                        if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
+                                            value = '=' + value;
+                                        }
+                                        const resultNumberEval: boolean = eval(attr.value + value);
+
                                         if (resultNumberEval) {
                                             atLeastOneAttributeMatchValue = true;
                                         }
@@ -1140,17 +1155,17 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         };
     }
 
-    protected filterTreeNode(currentNode: UiAssetTreeNode, matcher: (asset: Asset) => boolean): boolean {
+    protected filterTreeNode(currentNode: UiAssetTreeNode, matcher: (asset: Asset) => boolean, parentMatching: boolean = false): boolean {
         let nodeOrDescendantMatches = matcher(currentNode.asset!);
         currentNode.notMatchingFilter = !nodeOrDescendantMatches;
 
         const childOrDescendantMatches = currentNode.children.map((childNode) => {
-            return this.filterTreeNode(childNode, matcher);
+            return this.filterTreeNode(childNode, matcher, nodeOrDescendantMatches);
         });
 
         nodeOrDescendantMatches = nodeOrDescendantMatches || childOrDescendantMatches.some(m => m);
         currentNode.expanded = nodeOrDescendantMatches && currentNode.children.length > 0;
-        currentNode.hidden = !nodeOrDescendantMatches;
+        currentNode.hidden = !nodeOrDescendantMatches && !parentMatching;
         return nodeOrDescendantMatches;
     }
 
