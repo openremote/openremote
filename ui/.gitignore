@@ -1,3 +1,5 @@
 dist/
 lib/
 custom-elements.json
+test/screenshots/
+test/storageState.json
