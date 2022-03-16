@@ -31,6 +31,8 @@
     "iso-639-1": "^3.1.3"
   },
   "devDependencies": {
+    "@openremote/rest": "workspace:*",
+    "@openremote/test": "workspace:*",
     "@openremote/util": "workspace:*"
   },
   "publishConfig": {
