@@ -43,7 +43,7 @@ class SplashActivity : Activity() {
         val realm = sharedPreferences!!.getString("realm", null)
 
         if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
-            val url =  host.plus("/api/${realm}")
+            val url = host.plus("/api/${realm}")
             val apiManager = ApiManager(url)
             apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                 if (statusCode in 200..299) {

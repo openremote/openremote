@@ -73,10 +73,22 @@ open class OrMainActivity : Activity() {
         get() {
             var returnValue: String? = null
 
+            if (appConfig != null) {
+                if (URLUtil.isValidUrl(appConfig!!.initialUrl)) {
+                    return appConfig!!.initialUrl
+                } else {
+                    sharedPreferences?.let { pref ->
+                        pref.getString("host", null)?.let { host ->
+                            return host.plus(appConfig!!.initialUrl)
+                        }
+                    }
+                }
+            }
+
             sharedPreferences?.let { pref ->
-                pref.getString("project", null)?.let { projectName ->
-                    pref.getString("realm", null)?.let { realmName ->
-                        returnValue = "https://${projectName}.openremote.io/api/$realmName"
+                pref.getString("host", null)?.let { host ->
+                    pref.getString("realm", null)?.let { realm ->
+                        returnValue = host.plus("/api/${realm}")
                     }
                 }
             }
@@ -128,11 +140,12 @@ open class OrMainActivity : Activity() {
         if (appConfig == null) {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val project = sharedPreferences!!.getString("project", null)
+            val host = sharedPreferences!!.getString("host", null)
             val realm = sharedPreferences!!.getString("realm", null)
 
-            if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
-                val apiManager = ApiManager("https://${project}.openremote.io/api/$realm")
+            if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
+                val url = host.plus("/api/${realm}")
+                val apiManager = ApiManager(url)
                 apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                     if (statusCode in 200..299) {
                         this.appConfig = appConfig
@@ -242,10 +255,6 @@ open class OrMainActivity : Activity() {
                 val url = intent.getStringExtra("appUrl")
                 LOG.fine("Loading web view: $url")
                 loadUrl(url)
-            }
-            appConfig != null -> {
-                LOG.fine("Loading web view: ${appConfig!!.initialUrl}")
-                loadUrl(appConfig!!.initialUrl)
             }
             else -> {
                 var url = clientUrl
@@ -394,10 +403,10 @@ open class OrMainActivity : Activity() {
                         startActivity(i)
                         return true
                     }
-                     if (!request.url.isAbsolute && baseUrl?.isNotEmpty()!!) {
-                         view.loadUrl("${baseUrl}/${request.url}")
-                         return true
-                     }
+                    if (!request.url.isAbsolute && baseUrl?.isNotEmpty()!!) {
+                        view.loadUrl("${baseUrl}/${request.url}")
+                        return true
+                    }
 
                     return super.shouldOverrideUrlLoading(view, request)
                 }
@@ -766,10 +775,10 @@ open class OrMainActivity : Activity() {
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
 
                     qrScannerProvider?.enable(object : QrScannerProvider.ScannerCallback {
-                            override fun accept(responseData: Map<String, Any>) {
-                                notifyClient(responseData)
-                            }
-                        })
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
                 }
                 action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
                     val response = qrScannerProvider?.disable()
