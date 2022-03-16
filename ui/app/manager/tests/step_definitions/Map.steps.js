@@ -1,12 +1,11 @@
 const { Given, When, Then } = require("@cucumber/cucumber");
 const { OpenRemote_DEMO_URL } = require("../support/config");
-const fs = require("fs")
 const { expect } = require("@playwright/test");
 
-// Map attribute
+/**   Map attribute  **/
+
 Given('Login OpenRemote demo website', { timeout: 10000 }, async function () {
     await this.navigateTo(OpenRemote_DEMO_URL)
-    await this.login()
 })
 
 When('Click on the Parking Erasmusbrug', { timeout: 10000 }, async function () {
@@ -37,7 +36,8 @@ Then('Asset option is selected', async function () {
     await expect(text).not.toBeNull()
 })
 
-// Click on Assets
+/**   Click on Assets  **/
+
 When('Click on the Asset option', async function () {
     await this.click('#desktop-left a:nth-child(2)')
 })
@@ -51,7 +51,6 @@ Then('We see the collapsed asset tree with nothing selected', async function () 
     for (let i of options) {
         let text = await i.getAttribute('data-expanded')
         if (text != null) {
-            // its not null!!
             options_2.push(i)
         }
     }

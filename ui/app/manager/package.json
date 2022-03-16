@@ -23,7 +23,8 @@
     "serve": "npx tsc -b --clean && npx shx rm -rf dist && npx orutil build && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "cucumber-js",
-    "tags": "cucumber-js --tags"
+    "tags": "cucumber-js --tags",
+    "report":"node report.js"
   },
   "dependencies": {
     "@cucumber/cucumber": "^7.3.2",

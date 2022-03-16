@@ -15,11 +15,11 @@
             "line": 5,
             "name": "Login OpenRemote demo website",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:7"
+              "location": "tests\\step_definitions\\Map.steps.js:6"
             },
             "result": {
               "status": "passed",
-              "duration": 3155000000
+              "duration": 2310000000
             }
           },
           {
@@ -28,11 +28,11 @@
             "line": 9,
             "name": "Click on the Parking Erasmusbrug",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:12"
+              "location": "tests\\step_definitions\\Map.steps.js:10"
             },
             "result": {
               "status": "passed",
-              "duration": 2260000000
+              "duration": 3544000000
             }
           },
           {
@@ -41,11 +41,11 @@
             "line": 10,
             "name": "We see a map panel with Parking Erasmusbrug",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:18"
+              "location": "tests\\step_definitions\\Map.steps.js:16"
             },
             "result": {
               "status": "passed",
-              "duration": 34000000
+              "duration": 72000000
             }
           },
           {
@@ -53,9 +53,12 @@
             "keyword": "Then ",
             "line": 11,
             "name": "Snapshot \"Parking Erasmusbrug's panel\"",
+            "match": {
+              "location": "tests\\step_definitions\\general.js:12"
+            },
             "result": {
-              "status": "undefined",
-              "duration": 0
+              "status": "passed",
+              "duration": 427000000
             }
           },
           {
@@ -64,11 +67,11 @@
             "line": 12,
             "name": "Click on View button",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:23"
+              "location": "tests\\step_definitions\\Map.steps.js:21"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1592000000
             }
           },
           {
@@ -77,11 +80,11 @@
             "line": 13,
             "name": "We see the Parking Erasmusbrug page and History graph",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:27"
+              "location": "tests\\step_definitions\\Map.steps.js:25"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 634000000
             }
           },
           {
@@ -90,11 +93,11 @@
             "line": 14,
             "name": "Asset option is selected",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:33"
+              "location": "tests\\step_definitions\\Map.steps.js:31"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 179000000
             }
           },
           {
@@ -102,9 +105,12 @@
             "keyword": "Then ",
             "line": 15,
             "name": "Snapshot \"Parking Erasmusbrug's Asset page\"",
+            "match": {
+              "location": "tests\\step_definitions\\general.js:12"
+            },
             "result": {
-              "status": "undefined",
-              "duration": 0
+              "status": "passed",
+              "duration": 1398000000
             }
           },
           {
@@ -112,7 +118,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 169000000
+              "duration": 599000000
             }
           }
         ],
@@ -145,11 +151,11 @@
             "line": 5,
             "name": "Login OpenRemote demo website",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:7"
+              "location": "tests\\step_definitions\\Map.steps.js:6"
             },
             "result": {
               "status": "passed",
-              "duration": 3266000000
+              "duration": 3288000000
             }
           },
           {
@@ -158,11 +164,11 @@
             "line": 20,
             "name": "Click on the Asset option",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:41"
+              "location": "tests\\step_definitions\\Map.steps.js:39"
             },
             "result": {
               "status": "passed",
-              "duration": 1768000000
+              "duration": 2424000000
             }
           },
           {
@@ -171,11 +177,11 @@
             "line": 21,
             "name": "Asset option is selected",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:33"
+              "location": "tests\\step_definitions\\Map.steps.js:31"
             },
             "result": {
               "status": "passed",
-              "duration": 95000000
+              "duration": 102000000
             }
           },
           {
@@ -184,11 +190,11 @@
             "line": 22,
             "name": "We see the collapsed asset tree with nothing selected",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:45"
+              "location": "tests\\step_definitions\\Map.steps.js:43"
             },
             "result": {
               "status": "passed",
-              "duration": 673000000
+              "duration": 1918000000
             }
           },
           {
@@ -197,11 +203,11 @@
             "line": 23,
             "name": "We see text on the main panel",
             "match": {
-              "location": "tests\\step_definitions\\Map.steps.js:61"
+              "location": "tests\\step_definitions\\Map.steps.js:58"
             },
             "result": {
               "status": "passed",
-              "duration": 58000000
+              "duration": 41000000
             }
           },
           {
