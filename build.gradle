@@ -80,3 +80,8 @@ tasks.register('clean') {
         delete 'tmp'
     }
 }
+
+task uiTest(type: Exec) {
+    dependsOn getYarnInstallTask()
+    commandLine npmCommand("yarn"), "test"
+}
