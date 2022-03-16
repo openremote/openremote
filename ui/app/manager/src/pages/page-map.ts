@@ -133,12 +133,13 @@ export class PageMap extends Page<MapStateKeyed> {
         // language=CSS
         return css`
            or-map-asset-card {
-                height: 35vh;
+                height: 166px;
                 position: absolute;
                 bottom: 0;
                 right: 0;
-                width: 100vw;
-                z-index: 3;
+                width: calc(100vw - 10px);
+                margin: 5px;
+                z-index: 99;
             }
         
             or-map {
@@ -353,15 +354,7 @@ export class PageMap extends Page<MapStateKeyed> {
                         }
                         const attr = asset.attributes[WellknownAttributes.LOCATION] as Attribute<GeoJSONPoint>;
                         return !attr.meta || !attr.meta.hasOwnProperty(WellknownMetaItems.SHOWONDASHBOARD) || !!Util.getMetaValue(WellknownMetaItems.SHOWONDASHBOARD, attr);
-                    })
-                    .sort((a,b) => {
-                        if (a.attributes[WellknownAttributes.LOCATION].value && b.attributes[WellknownAttributes.LOCATION].value){
-                            return b.attributes[WellknownAttributes.LOCATION].value.coordinates[1] - a.attributes[WellknownAttributes.LOCATION].value.coordinates[1];
-                        } else {
-                            return;
-                        }
-                    })
-                    .map(asset => {
+                    }).map(asset => {
                         return html`
                             <or-map-marker-asset ?active="${this._currentAsset && this._currentAsset.id === asset.id}" .asset="${asset}" .config="${this.config.markers}"></or-map-marker-asset>
                         `;

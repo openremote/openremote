@@ -1,0 +1,249 @@
+[
+  {
+    "description": "",
+    "elements": [
+      {
+        "description": "",
+        "id": "playwright-docs;asset-map-panel",
+        "keyword": "Scenario",
+        "line": 8,
+        "name": "asset map panel",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 5,
+            "name": "Login OpenRemote demo website",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:7"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3155000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 9,
+            "name": "Click on the Parking Erasmusbrug",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:12"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2260000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 10,
+            "name": "We see a map panel with Parking Erasmusbrug",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:18"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 11,
+            "name": "Snapshot \"Parking Erasmusbrug's panel\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 12,
+            "name": "Click on View button",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:23"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 13,
+            "name": "We see the Parking Erasmusbrug page and History graph",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:27"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 14,
+            "name": "Asset option is selected",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:33"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 15,
+            "name": "Snapshot \"Parking Erasmusbrug's Asset page\"",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 169000000
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@OpenRemote",
+            "line": 1
+          },
+          {
+            "name": "@Desktop",
+            "line": 7
+          },
+          {
+            "name": "@map",
+            "line": 7
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "playwright-docs;navigate-to-assets",
+        "keyword": "Scenario",
+        "line": 19,
+        "name": "navigate to assets",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 5,
+            "name": "Login OpenRemote demo website",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:7"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3266000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 20,
+            "name": "Click on the Asset option",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1768000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 21,
+            "name": "Asset option is selected",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:33"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 95000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "We see the collapsed asset tree with nothing selected",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 673000000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "We see text on the main panel",
+            "match": {
+              "location": "tests\\step_definitions\\Map.steps.js:61"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 58000000
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 8000000
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@OpenRemote",
+            "line": 1
+          },
+          {
+            "name": "@Desktop",
+            "line": 18
+          },
+          {
+            "name": "@map",
+            "line": 18
+          },
+          {
+            "name": "@navigate",
+            "line": 18
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "playwright-docs",
+    "line": 2,
+    "keyword": "Feature",
+    "name": "Playwright docs",
+    "tags": [
+      {
+        "name": "@OpenRemote",
+        "line": 1
+      }
+    ],
+    "uri": "features\\map.feature"
+  }
+]
