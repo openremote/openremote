@@ -1,2 +1,4 @@
 dist/
 lib/
+test/screenshots/
+test/storageState.json
