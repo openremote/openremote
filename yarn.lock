@@ -3783,6 +3783,7 @@ __metadata:
     "@types/node": ^17.0.19
     cucumber-html-reporter: ^5.5.0
     cucumber-pretty: ^1.5.2
+    dotenv: ^16.0.0
     global: ^4.4.0
     jest: ^27.5.1
     playwright: ^1.19.1
@@ -7304,6 +7305,13 @@ __metadata:
   dependencies:
     is-obj: ^2.0.0
   checksum: 0f47600a4b93e1dc37261da4e6909652c008832a5d3684b5bf9a9a0d3f4c67ea949a86dceed9b72f5733ed8e8e6383cc5958df3bbd0799ee317fd181f2ece700
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^16.0.0":
+  version: 16.0.0
+  resolution: "dotenv@npm:16.0.0"
+  checksum: 664cebb51f0a9a1d1b930f51f0271e72e26d62feaecc9dc03df39453dd494b4e724809ca480fb3ec3213382b1ed3f791aaeb83569a137f9329ce58efd4853dbf
   languageName: node
   linkType: hard
 

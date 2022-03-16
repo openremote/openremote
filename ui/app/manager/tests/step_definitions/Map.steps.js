@@ -1,22 +1,21 @@
 const { Given, When, Then } = require("@cucumber/cucumber");
-const { OpenRemote_DEMO_URL } = require("../support/config");
 const { expect } = require("@playwright/test");
 
 /**   Map attribute  **/
 
 Given('Login OpenRemote demo website', { timeout: 10000 }, async function () {
-    await this.navigateTo(OpenRemote_DEMO_URL)
+    await this.navigateTo(process.env.DEMO_URL)
 })
 
 When('Click on the Parking Erasmusbrug', { timeout: 10000 }, async function () {
     const { page } = this;
     await page.locator('div:nth-child(30) .marker-container div or-icon svg path').click();
-
 })
 
 Then('We see a map panel with Parking Erasmusbrug', async function () {
     const { page } = this;
-    await expect(page).toHaveURL('https://demo.openremote.io/manager/?realm=smartcity#/map/2tLAEBGjmRCu1KrdJn9T2Z');
+    const cardId = await (await page.waitForSelector('or-map-asset-card')).getAttribute('assetid')
+    await expect(cardId).toEqual('2tLAEBGjmRCu1KrdJn9T2Z')
 })
 
 When('Click on View button', async function () {
@@ -25,7 +24,6 @@ When('Click on View button', async function () {
 
 Then('We see the Parking Erasmusbrug page and History graph', async function () {
     const { page } = this;
-    await expect(page).toHaveURL('https://demo.openremote.io/manager/?realm=smartcity#/assets/false/2tLAEBGjmRCu1KrdJn9T2Z');
     await expect(page.waitForSelector('div[id="history-panel"]')).not.toBeNull()
 })
 

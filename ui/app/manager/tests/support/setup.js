@@ -1,9 +1,8 @@
 const { setWorldConstructor, BeforeAll, AfterAll, After, Before } = require("@cucumber/cucumber");
-const { chromium, ChromiumBroswer } = require("playwright");
+const { ChromiumBroswer } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
-const { DEMO_UN, DEMO_PW } = require("./config");
-
+require('dotenv').config();
 
 /**
  * command for running all the test
@@ -31,8 +30,7 @@ class CustomWorld {
             });
             this.page = await context.newPage();
         }
-        else
-        {
+        else {
             context = await global.browser.newContext();
             this.page = await context.newPage();
             this.login()
@@ -41,8 +39,8 @@ class CustomWorld {
     }
 
     async login() {
-        await this.page?.fill('#username', DEMO_UN)
-        await this.page?.fill('#password', DEMO_PW)
+        await this.page?.fill('#username', process.env.USERID)
+        await this.page?.fill('#password', process.env.PASSWORD)
         await this.page?.press('body', 'Enter');
         await this.page?.context().storageState({ path: 'storageState.json' });
     }
@@ -50,6 +48,7 @@ class CustomWorld {
     async click(button) {
         await this.page?.locator(button).click()
     }
+
 }
 
 // launch broswer

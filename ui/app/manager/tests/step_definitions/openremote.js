@@ -1,12 +1,11 @@
 const { Given, When, Then } = require("@cucumber/cucumber");
-const { OpenRemote_DEMO_URL } = require("../support/config");
 const expect = require("playwright-expect")
 
 
 
 /**       navigation   */
 Given('Go to the OpenRemote demo website', async function () {
-    await this.navigateTo(OpenRemote_DEMO_URL)
+    await this.navigateTo(process.env.DEMO_URL)
 });
 
 /**       login        */

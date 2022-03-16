@@ -24,7 +24,7 @@
     "serveNoModelBuild": "npx tsc -b --clean && npx cross-env NODE_OPTIONS=--max_old_space_size=4096 webpack serve --mode development",
     "test": "cucumber-js",
     "tags": "cucumber-js --tags",
-    "report":"node report.js"
+    "report": "node report.js"
   },
   "dependencies": {
     "@cucumber/cucumber": "^7.3.2",
@@ -32,6 +32,7 @@
     "@playwright/test": "^1.19.2",
     "@types/node": "^17.0.19",
     "cucumber-html-reporter": "^5.5.0",
+    "dotenv": "^16.0.0",
     "global": "^4.4.0",
     "playwright": "^1.19.1",
     "playwright-expect": "^0.1.2",

@@ -10,3 +10,4 @@ openremote/**/*.d.ts
 openremote/**/*.js
 openremote/**/*.js.map
 screenshots/
+.env
