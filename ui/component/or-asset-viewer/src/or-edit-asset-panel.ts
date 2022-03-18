@@ -446,8 +446,10 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        this.asset.attributes![attr.name!] = attr;
-                        this._onModified();
+                        if (attr) {
+                            this.asset.attributes![attr.name!] = attr;
+                            this._onModified();
+                        }
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
                 }
