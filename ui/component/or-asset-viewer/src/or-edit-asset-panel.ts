@@ -409,8 +409,12 @@ export class OrEditAssetPanel extends LitElement {
         const asset = this.asset!;
         let attr: Attribute<any>;
 
+        const isDisabled = (attribute: Attribute<any>) => {
+            return !(attribute && attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+        }
+
         const onAttributeChanged = (attribute: Attribute<any>) => {
-            const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+            const addDisabled = isDisabled(attribute);
             const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrMwcInput;
             addBtn!.disabled = addDisabled;
             attr = attribute;
