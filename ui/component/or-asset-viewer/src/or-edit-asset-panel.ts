@@ -452,7 +452,7 @@ export class OrEditAssetPanel extends LitElement {
                         }
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"
-                                    @click="${(ev: MouseEvent) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
+                                    @click="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));
