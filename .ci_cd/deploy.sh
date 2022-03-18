@@ -5,11 +5,8 @@
 # Function to be called before exiting to remove runner from AWS ssh-access security group
 revoke_ssh () {
   if [ "$SSH_GRANTED" == 'true' ]; then
-      if [ -n "$IPV4" ]; then
-        "$AWS_SCRIPT_DIR/ssh_revoke.sh" "$IPV4/32" "$AWS_ENABLED"
-      fi
-      if [ -n "$IPV6" ]; then
-        "$AWS_SCRIPT_DIR/ssh_revoke.sh" "$IPV6/128" "$AWS_ENABLED"
+      if [ -n "$CIDR" ]; then
+        "$AWS_SCRIPT_DIR/ssh_revoke.sh" "$CIDR" "github-da" "$AWS_ENABLED"
       fi
   fi
 }
@@ -111,14 +108,8 @@ fi
 if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
   echo "Attempting to add runner to AWS SSH whitelist"
   if [ "$AWS_ENABLED" == 'true' ]; then
-    if [ -n "$IPV4" ]; then
-      "$AWS_SCRIPT_DIR/ssh_whitelist.sh" "$IPV4/32" "$AWS_ENABLED"
-    fi
-    if [ $? -eq 0 ]; then
-      SSH_GRANTED=true
-    fi
-    if [ -n "$IPV6" ]; then
-      "$AWS_SCRIPT_DIR/ssh_whitelist.sh" "$IPV6/128" "$AWS_ENABLED"
+    if [ -n "$CIDR" ]; then
+      "$AWS_SCRIPT_DIR/ssh_whitelist.sh" "$CIDR" "github-da" "$AWS_ENABLED"
     fi
     if [ $? -eq 0 ]; then
       SSH_GRANTED=true

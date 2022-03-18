@@ -17,11 +17,10 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'AWS Linux 2 with docker compose'
 Parameters:
   Host:
-    Description: Hostname
+    Description: FQDN for host
     Type: String
-    Default: demo
-    AllowedPattern: "[a-z0-9]+"
-    ConstraintDescription: Host name must be lowercase letters and numbers
+    AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    ConstraintDescription: Must be a valid FQDN
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -36,83 +35,59 @@ Parameters:
       - m6g.medium
       - m6g.large
     ConstraintDescription: must be a valid EC2 instance type.
+  DNSHostedZoneName:
+    Description: Name of hosted domain zone to insert host A record into
+    Type: String
+    AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    ConstraintDescription: Must be a valid FQDN (if not set no A record will be created for this instance)
+  SMTPORArn:
+    Description: SES Verified identity trust policy ARN
+    Type: String
   SMTPKey:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SMTP-User-Key
   SMTPSecret:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SMTP-User-Secret
-  SMTPORArn:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SMTP-OpenRemote-Arn
 #  MapFileSystemId:
 #    Description: File system ID of map to mount from EFS (must already exist)
 #    Type: String
 #    AllowedPattern: ^$|^(fs-[0-9a-f]{8,40})?$
 #    ConstraintDescription: Must be a valid file system ID e.g. (fs-ad2321321332132123)
 
-#Conditions:
+Conditions:
+  CreateDNSRecord: !Not [!Equals [!Ref DNSHostedZoneName, ""]]
 #  DoMapMount: !Not [!Equals [!Ref MapFileSystemId, ""]]
+
 Resources:
 
   DNSRecord:
     Type: AWS::Route53::RecordSet
+    Condition: CreateDNSRecord
     Properties:
-      HostedZoneName: "mvp.openremote.io."
-      Name: !Join [ ".", [!Ref Host, "mvp.openremote.io" ] ]
+      HostedZoneName: !Sub "${DNSHostedZoneName}."
+      Name: DNSHostedZoneName
       ResourceRecords:
         - !GetAtt EC2Instance.PublicIp
       TTL: '60'
       Type: A
 
-  LogRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: "/"
-      Policies:
-        - PolicyName: LogRolePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:Create*
-                  - logs:PutLogEvents
-                  - s3:GetObject
-                Resource:
-                  - arn:aws:logs:*:*:*
-                  - arn:aws:s3:::*
-
-  LogRoleInstanceProfile:
+  InstanceRoleProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: "/"
-      Roles:
-        - Ref: LogRole
+      Roles: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/ec2-access-", !Ref "AWS::Region"]]
 
   CloudFormationLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 7
 
-  SSHSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-    GroupName: ssh-access
-
   StandardSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-    GroupName: standard-access
+      GroupDescription: "Access OpenRemote stack services"
+      GroupName: !Join [ "-", ["standard-access", !Ref Host]]
       SecurityGroupIngress:
           - IpProtocol: tcp
             FromPort: '80'
@@ -176,6 +151,7 @@ Resources:
             - cfn_hup
             - env_vars
             - nfs_setup
+
         nfs_setup:
           packages:
             yum:
@@ -377,13 +353,13 @@ Resources:
       ImageId:
         "ami-032afb7a6d14ab941"
       SecurityGroups:
-        - Ref: SSHSecurityGroup
+        - "ssh-access"
         - Ref: StandardSecurityGroup
       Ipv6AddressCount: 1
       Tags:
         - Key: "Name"
-          Value: !Join [ ".", [ !Ref Host, "mvp.openremote.io" ] ]
-      IamInstanceProfile: !Ref 'LogRoleInstanceProfile'
+          Value: !Ref Host
+      IamInstanceProfile: !Ref 'InstanceRoleProfile'
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe

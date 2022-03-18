@@ -1,0 +1,44 @@
+# This workflow handles creation of AWS EC2 hosts under the OpenRemote hosted zone
+# You need to be a member of the CI/CD github team to use this
+name: Provision Host
+
+on:
+  workflow_dispatch:
+    inputs:
+      HOST:
+        description: 'Host to provision'
+        required: true
+      INSTANCE_TYPE:
+        description: 'EC2 instance type (only change if you know what you are doing)'
+        default: t4g.small
+        options:
+          - t4g.small
+          - t4g.medium
+          - t4g.large
+          - m6g.medium
+          - m6g.large
+        required: true
+
+jobs:
+
+  provision:
+    name: Provision
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Check CI/CD team membership
+        uses: tspascoal/get-user-teams-membership@v1
+        id: checkUserMember
+        with:
+          username: ${{ github.actor }}
+          organization: openremote
+          team: CI/CD
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
+
+      - name: Provision Host
+        if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
+        run: .ci_cd/aws/provision_host.sh "$HOST" "$INSTANCE_TYPE"
+        env:
+          HOST: ${{ github.event.inputs.HOST }}
+          INSTANCE_TYPE: ${{ github.event.inputs.INSTANCE_TYPE }}
