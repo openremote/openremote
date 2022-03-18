@@ -514,7 +514,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
 
             const format = formatProvider && formatProvider();
 
-            if (format) {
+            if (format && Object.keys(format).length !== 0) {
                 if (typeof(value) === "number") {
                     if (format.asBoolean) {
                         value = !!value;
