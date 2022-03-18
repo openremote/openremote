@@ -349,7 +349,7 @@ export class PageRoles extends Page<AppStateKeyed> {
                         (role, index) => {
                           const compositeRoleName = role.compositeRoleIds.map(id => this._rolesMapper[id]).sort((a, b) => a.localeCompare(b)).join(', ');
                           return html`
-                          <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${(ev) => this.expanderToggle(index)}">
+                          <tr id="mdc-data-table-row-${index}" class="mdc-data-table__row" @click="${() => this.expanderToggle(index)}">
                             <td  class="padded-cell mdc-data-table__cell"
                             >
                               <or-icon id="mdc-data-table-icon-${index}" icon="chevron-right"></or-icon>
