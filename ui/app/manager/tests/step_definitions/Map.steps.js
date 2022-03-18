@@ -4,17 +4,23 @@ const { expect } = require("@playwright/test");
 /**   Map attribute  **/
 
 Given('Login OpenRemote demo website', { timeout: 10000 }, async function () {
-    await this.navigateTo(process.env.DEMO_URL)
+    await this.navigate()
 })
 
+
+// not a good way to select a certain marker on the map
+// now it's using nth decorater to select item
+// skip if there is no such marker 
 When('Click on the Parking Erasmusbrug', { timeout: 10000 }, async function () {
     const { page } = this;
     await page.locator('div:nth-child(30) .marker-container div or-icon svg path').click();
 })
 
+// skip if the last step does not finish
 Then('We see a map panel with Parking Erasmusbrug', async function () {
     const { page } = this;
-    const cardId = await (await page.waitForSelector('or-map-asset-card')).getAttribute('assetid')
+    const card = await page.waitForSelector('or-map-asset-card')
+    const cardId = await card.getAttribute('assetid')
     await expect(cardId).toEqual('2tLAEBGjmRCu1KrdJn9T2Z')
 })
 

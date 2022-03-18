@@ -22,20 +22,21 @@ var global = {
 }
 
 class CustomWorld {
-    async navigateTo(url) {
+    async navigate() {
         var context
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
                 storageState: 'storageState.json',
             });
             this.page = await context.newPage();
+            await this.page.goto(process.env.DEMO_URL);
         }
         else {
             context = await global.browser.newContext();
             this.page = await context.newPage();
+            await this.page.goto(process.env.DEMO_URL);
             this.login()
-        }
-        await this.page.goto(url);
+        }      
     }
 
     async login() {

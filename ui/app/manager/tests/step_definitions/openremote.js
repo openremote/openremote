@@ -5,7 +5,7 @@ const expect = require("playwright-expect")
 
 /**       navigation   */
 Given('Go to the OpenRemote demo website', async function () {
-    await this.navigateTo(process.env.DEMO_URL)
+    await this.navigate()
 });
 
 /**       login        */

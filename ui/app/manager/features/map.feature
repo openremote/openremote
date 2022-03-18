@@ -1,5 +1,5 @@
 @OpenRemote
-Feature: Playwright docs
+Feature: Map
 
   Background: Navigation
     Given Login OpenRemote demo website
