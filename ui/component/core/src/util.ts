@@ -271,6 +271,19 @@ export function arrayRemove<T>(arr: T[], item: T) {
     }
 }
 
+export function sentenceCaseToCamelCase(str: string | undefined): string {
+    if (str === undefined || str === null) {
+        return "";
+    }
+
+    return str.split(' ').map((value: string, index: number): string => {
+        if (index === 0) {
+            return value[0].toLowerCase() + value.substring(1);
+        }
+        return value[0].toUpperCase() + value.substring(1);
+    }).join('');
+}
+
 export function camelCaseToSentenceCase(str: string | undefined): string {
     if (str === undefined || str === null) {
         return "";

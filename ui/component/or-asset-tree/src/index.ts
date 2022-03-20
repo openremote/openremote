@@ -740,6 +740,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected parseFromInputFilter(inputValue?: string): OrAssetTreeFilter {
+        console.log("parsing... " + inputValue);
         let searchValue: string | undefined = this._filterInput.value;
         if (inputValue) {
             searchValue = inputValue;
@@ -748,25 +749,19 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (searchValue) {
             let asset: string = searchValue;
-            let matchingResult: RegExpMatchArray | null = searchValue.match(/(attribute\:)\S+/g);
+            let matchingResult: RegExpMatchArray | null = searchValue.match(/(attribute\:)(\"[^"]+\")\S*/g);
             if (matchingResult) {
-                if (matchingResult.length > 1) {
+                console.log("found attribute");
+                if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
                         asset = asset.replace(value, '');
+
                         const startIndex: number = value.toString().indexOf('attribute:');
 
-                        const matchingVal: string = value.toString().substring(startIndex + 'attribute:'.length);
+                        const matchingVal: string = value.toString().substring(startIndex + 'attribute:'.length + 1, value.toString().length-1);
 
                         resultingFilter.attribute.push(matchingVal);
                     });
-                } else {
-                    asset = asset.replace(matchingResult[0].toString(), '');
-
-                    const startIndex: number = matchingResult[0].toString().indexOf('attribute:');
-
-                    const matchingVal: string = matchingResult[0].toString().substring(startIndex + 'attribute:'.length);
-
-                    resultingFilter.attribute = [ matchingVal ];
                 }
 
                 this._attributeValueFilter.disabled = false;
@@ -774,7 +769,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             matchingResult = searchValue.match(/(type\:)\S+/g);
             if (matchingResult) {
-                if (matchingResult.length > 1) {
+                if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
                         asset = asset.replace(value, '');
 
@@ -784,20 +779,12 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
                         resultingFilter.assetType.push(matchingVal);
                     });
-                } else {
-                    asset = asset.replace(matchingResult[0].toString(), '');
-
-                    const startIndex: number = matchingResult[0].toString().indexOf('type:');
-
-                    const matchingVal: string = matchingResult[0].toString().substring(startIndex + 'type:'.length);
-
-                    resultingFilter.assetType = [ matchingVal ];
                 }
             }
 
             matchingResult = searchValue.match(/(\"[^\s]+\")\:\S+/g);
             if (matchingResult) {
-                if (matchingResult.length > 1) {
+                if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
                         asset = asset.replace(value, '');
 
@@ -810,17 +797,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                         resultingFilter.attribute.push(matchingName);
                         resultingFilter.attributeValue.push(matchingVal);
                     });
-                } else {
-                    asset = asset.replace(matchingResult[0].toString(), '');
-
-                    const startIndex: number = matchingResult[0].toString().indexOf('":');
-                    // Adding 2 to remove the ": matched before
-                    const matchingVal: string = matchingResult[0].toString().substring(startIndex + 2);
-                    // Starting from position 1 to remove first "
-                    const matchingName: string = matchingResult[0].toString().substring(1, startIndex);
-
-                    resultingFilter.attribute = [ matchingName ];
-                    resultingFilter.attributeValue = [ matchingVal ];
                 }
             }
             resultingFilter.asset = (asset && asset.length > 0) ? asset.trim() : undefined;
@@ -854,7 +830,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         if (newFilter.attribute.length > 0 && newFilter.attributeValue.length === 0) {
             newFilter.attribute.forEach((attributeName: string) => {
                 if (!handledAttributeForValues.includes(attributeName)) {
-                    searchInput += prefix + 'attribute:' + attributeName;
+                    searchInput += prefix + 'attribute:"' + attributeName + '"';
                     prefix = ' ';
                 }
             });
@@ -889,8 +865,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         }
 
         if ( this._attributeNameFilter.value ) {
-            const attributeNameValue: string = this._attributeNameFilter.value.replace(' ', '');
-            filter.attribute = [ attributeNameValue ];
+            filter.attribute = [ this._attributeNameFilter.value ];
         } else {
             filter.attribute = [];
         }
@@ -1066,10 +1041,10 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                             name: {
                                 predicateType: "string",
                                 match: AssetQueryMatch.EXACT,
-                                value: attributeName,
+                                value: Util.sentenceCaseToCamelCase(attributeName),
                                 caseSensitive: false
                             }
-                        }
+                        };
                     })
             }
         }
