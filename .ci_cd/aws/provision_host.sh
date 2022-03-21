@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Provisions the standard stack of resources using CloudFormation template (cloudformation-create-ec2.yml) in the
-# specified AWS member account.
+# specified AWS member account; if no account specified then the account of the authenticate user will be used.
+# The account must already exist and be provisioned in the standard way (see provision_account.sh). To access the
+# account the developers-access role in that account will be assumed.
 #
 # To be called with arguments:
-# 1 - Account name where resources should be created (will try and assume developers access role in this account);
-#     the account must exist and be provisioned in the standard way (see provision_account.sh). If not specified then
-#     the account of the provided credentials will be used
+# 1 - ACCOUNT_NAME where resources should be created (defaults to callers account)
 # 2 - FQDN for host (e.g. staging.demo.openremote.app)
 # 3 - EC2 instance type see cloud formation template parameter
 # 4 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
@@ -28,8 +28,8 @@ if [ -z "$HOST" ]; then
   exit 1
 fi
 
-if [ -f "cloudformation-create-ec2.yml" ]; then
-  TEMPLATE_PATH="cloudformation-create-ec2.yml"
+if [ -f "${awsDir}/cloudformation-create-ec2.yml" ]; then
+  TEMPLATE_PATH="${awsDir}/cloudformation-create-ec2.yml"
 elif [ -f ".ci_cd/aws/cloudformation-create-ec2.yml" ]; then
   TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ec2.yml"
 elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ec2.yml" ]; then
@@ -44,7 +44,7 @@ source "${awsDir}/login.sh"
 
 if [ -n "$ACCOUNT_NAME" ]; then
   # Update github-da profile with ARN for ACCOUNT_ID
-  source "${awsDir}/update_developers_access_profile.sh"
+  source "${awsDir}/set_github-da_account_arn.sh"
   ACCOUNT_PROFILE="--profile github-da"
 else
   ACCOUNT_PROFILE="--profile github"
@@ -63,10 +63,10 @@ fi
 #Configure parameters
 CALLER_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 SMTP_ARN="arn:aws:ses:eu-west-1:$CALLER_ACCOUNT_ID:identity/openremote.io"
-PARAMS="ParameterKey=Host,ParameterValue=$HOST ParameterKey=SMTPORArn, ParameterValue=$SMTP_ARN"
+PARAMS="ParameterKey=Host,ParameterValue=$HOST ParameterKey=SMTPORArn,ParameterValue=$SMTP_ARN"
 
 if [ -n "$INSTANCE_TYPE" ]; then
-  PARAMS="$PARAMS ParameterKey=InstanceType, ParameterValue=$INSTANCE_TYPE"
+  PARAMS="$PARAMS ParameterKey=InstanceType,ParameterValue=$INSTANCE_TYPE"
 fi
 # Create standard stack resources in specified account
 aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS $ACCOUNT_PROFILE

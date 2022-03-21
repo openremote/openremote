@@ -7,6 +7,7 @@
 # - Add Route 53 DNS record to hosted zone 'mvp.openremote.io' that points to new EC2 instance
 # - Configures logging for the EC2 instance
 # - Installs docker and docker-compose
+# - Configures CloudWatch agent using config from Parameter Store key CloudWatch-Config
 #
 # The generated SMTP IAM credentials are output to /etc/environment using the standard OpenRemote
 # naming convention OR_EMAIL_HOST, OR_EMAIL_USER and OR_EMAIL_PASSWORD
@@ -19,7 +20,7 @@ Parameters:
   Host:
     Description: FQDN for host
     Type: String
-    AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     ConstraintDescription: Must be a valid FQDN
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
@@ -38,10 +39,13 @@ Parameters:
   DNSHostedZoneName:
     Description: Name of hosted domain zone to insert host A record into
     Type: String
-    AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
-    ConstraintDescription: Must be a valid FQDN (if not set no A record will be created for this instance)
+    #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+    ConstraintDescription: Must be a valid FQDN
+  DNSHostedZoneRoleArn:
+    Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
+    Type: String
   SMTPORArn:
-    Description: SES Verified identity trust policy ARN
+    Description: SES Verified identity trust policy ARN for SMTP X-Headers
     Type: String
   SMTPKey:
     Type: AWS::SSM::Parameter::Value<String>
@@ -49,15 +53,9 @@ Parameters:
   SMTPSecret:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SMTP-User-Secret
-#  MapFileSystemId:
-#    Description: File system ID of map to mount from EFS (must already exist)
-#    Type: String
-#    AllowedPattern: ^$|^(fs-[0-9a-f]{8,40})?$
-#    ConstraintDescription: Must be a valid file system ID e.g. (fs-ad2321321332132123)
 
 Conditions:
-  CreateDNSRecord: !Not [!Equals [!Ref DNSHostedZoneName, ""]]
-#  DoMapMount: !Not [!Equals [!Ref MapFileSystemId, ""]]
+  CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
 
 Resources:
 
@@ -66,7 +64,7 @@ Resources:
     Condition: CreateDNSRecord
     Properties:
       HostedZoneName: !Sub "${DNSHostedZoneName}."
-      Name: DNSHostedZoneName
+      Name: !Ref Host
       ResourceRecords:
         - !GetAtt EC2Instance.PublicIp
       TTL: '60'
@@ -76,7 +74,8 @@ Resources:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: "/"
-      Roles: !Join ["", ["arn:aws:iam::", !Ref "AWS::AccountId", ":role/ec2-access-", !Ref "AWS::Region"]]
+      Roles:
+        - !Join ["-", ["ec2-access", !Ref "AWS::Region"]]
 
   CloudFormationLogs:
     Type: AWS::Logs::LogGroup
@@ -87,70 +86,164 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: "Access OpenRemote stack services"
-      GroupName: !Join [ "-", ["standard-access", !Ref Host]]
+      GroupName: !Ref Host
       SecurityGroupIngress:
-          - IpProtocol: tcp
-            FromPort: '80'
-            ToPort: '80'
-            CidrIp: 0.0.0.0/0
-            Description: HTTP
-            - IpProtocol: tcp
-              FromPort: '443'
-              ToPort: '443'
-              CidrIp: 0.0.0.0/0
-              Description: HTTPS
-            - IpProtocol: tcp
-              FromPort: '80'
-              ToPort: '80'
-              CidrIpv6: ::/0
-              Description: HTTP
-            - IpProtocol: tcp
-              FromPort: '443'
-              ToPort: '443'
-              CidrIpv6: ::/0
-              Description: HTTPS
-            - IpProtocol: tcp
-              FromPort: '8883'
-              ToPort: '8883'
-              CidrIp: 0.0.0.0/0
-              Description: MQTT
-            - IpProtocol: tcp
-              FromPort: '8883'
-              ToPort: '8883'
-              CidrIpv6: ::/0
-              Description: MQTT
-            - IpProtocol: udp
-              FromPort: '161'
-              ToPort: '162'
-              CidrIp: 0.0.0.0/0
-              Description: SNMP
-            - IpProtocol: udp
-              FromPort: '161'
-              ToPort: '162'
-              CidrIpv6: ::/0
-              Description: SNMP
-            - IpProtocol: icmp
-              FromPort: '8'
-              ToPort: '-1'
-              CidrIp: 0.0.0.0/0
-              Description: Ping
-            - IpProtocol: icmpv6
-              FromPort: '-1'
-              ToPort: '-1'
-              CidrIpv6: ::/0
-              Description: Ping
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+          Description: HTTP
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIpv6: ::/0
+          Description: HTTP
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIpv6: ::/0
+          Description: HTTPS
+        - IpProtocol: tcp
+          FromPort: '8883'
+          ToPort: '8883'
+          CidrIp: 0.0.0.0/0
+          Description: MQTT
+        - IpProtocol: tcp
+          FromPort: '8883'
+          ToPort: '8883'
+          CidrIpv6: ::/0
+          Description: MQTT
+        - IpProtocol: udp
+          FromPort: '161'
+          ToPort: '162'
+          CidrIp: 0.0.0.0/0
+          Description: SNMP
+        - IpProtocol: udp
+          FromPort: '161'
+          ToPort: '162'
+          CidrIpv6: ::/0
+          Description: SNMP
+        - IpProtocol: icmp
+          FromPort: '8'
+          ToPort: '-1'
+          CidrIp: 0.0.0.0/0
+          Description: Ping
+        - IpProtocol: icmpv6
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIpv6: ::/0
+          Description: Ping
 
   EC2Instance:
     Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT20M
     Metadata:
       AWS::CloudFormation::Init:
         configSets:
           default:
+            - 01_setupCfnHup
+            - 02_config-amazon-cloudwatch-agent
+            - 03_restart_amazon-cloudwatch-agent
             - docker_setup
             - cron_setup
-            - cfn_hup
             - env_vars
             - nfs_setup
+            - dns_updater
+          UpdateEnvironment:
+            - 02_config-amazon-cloudwatch-agent
+            - 03_restart_amazon-cloudwatch-agent
+
+        dns_updater:
+          packages:
+            yum:
+              jq: []
+          files:
+            "/home/ec2-user/dns-updater.sh":
+              content: !Sub |
+                #!/bin/bash
+                
+                # -------------------------------------------------------------------------------------------
+                #
+                # Script for updating the A record for this host on restarts
+                #
+                # -------------------------------------------------------------------------------------------
+                
+                if [ -z "${DNSHostedZoneName}" ]; then
+                  echo "No DNS Hosted Zone provided so not updating DNS A record"
+                  exit 0
+                fi
+                
+                echo "Running DNS A record update"
+                PUBLIC_IP=$(curl ident.me)
+                
+                if [ -n "${DNSHostedZoneRoleArn}" ]; then
+                  echo "Assuming role '${DNSHostedZoneRoleArn}' for DNS A record update"
+                  # Assume DNS role in TLD account 
+                  CREDENTIALS=$(aws sts assume-role --role-arn ${DNSHostedZoneRoleArn} --role-session-name ${Host}-dns)
+                  if [ $? -ne 0 ]; then
+                    echo "Failed to get assume role credentials"
+                    exit 1
+                  fi
+                
+                  export AWS_ACCESS_KEY_ID=`echo $CREDENTIALS | jq -r '.Credentials.AccessKeyId'`
+                  export AWS_SECRET_ACCESS_KEY=`echo $CREDENTIALS | jq -r '.Credentials.SecretAccessKey'`
+                  export AWS_SESSION_TOKEN=`echo $CREDENTIALS | jq -r '.Credentials.SessionToken'`
+                fi
+
+                # Find hosted zone ID
+                HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='${DNSHostedZoneName}.'].Id" --output text)
+                
+                if [ $? -ne 0 ] || [ -z "$HOSTED_ZONE_ID" ]; then
+                  echo "Failed to get hosted zone ID for '${DNSHostedZoneName}'"
+                  exit 1
+                fi
+
+                read -r -d '' RECORDSET << EOF
+                {
+                  "Comment": "Creating NS record for '${Host}' subdomain",
+                  "Changes": [
+                    {
+                      "Action": "UPSERT",
+                      "ResourceRecordSet": {
+                          "Name": "${Host}.",
+                          "Type": "A",
+                          "TTL": 300,
+                        "ResourceRecords": [{ "Value": "$PUBLIC_IP"}]
+                      }
+                    }
+                  ]
+                }
+                EOF
+
+                aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "$RECORDSET"
+
+            "/lib/systemd/system/dns-updater.service":
+              content: |
+                [Unit]
+                Description=Route 53 DNS A record updater
+                After=network-online.target firewalld.service
+                Wants=network-online.target
+                
+                [Service]
+                ExecStart=/home/ec2-user/dns-updater.sh
+
+                [Install]
+                WantedBy=multi-user.target
+          commands:
+            01_init_service:
+              command: |
+                chmod +x /home/ec2-user/dns-updater.sh
+                systemctl daemon-reload
+                systemctl enable dns-updater.service
+                systemctl start dns-updater.service
 
         nfs_setup:
           packages:
@@ -301,7 +394,7 @@ Resources:
                 echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" >> /etc/environment
                 echo "OR_EMAIL_USER=${SMTPKey}" >> /etc/environment
                 echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
-                echo "OR_EMAIL_X_HEADERS=${SMTPORArn}" >> /etc/environment
+                echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
 
         docker_setup:
           packages:
@@ -332,18 +425,52 @@ Resources:
                 enabled: "true"
                 ensureRunning: "true"
 
-        cfn_hup:
+        # Definition of a dummy file, that change the contents of the dummy file can trigger the agent to reload the configuration from SSM parameter store.
+        02_config-amazon-cloudwatch-agent:
           files:
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+            '/opt/aws/amazon-cloudwatch-agent/etc/dummy.version':
+              content: !Sub |
+                "You can change the VERSION below to to simulate the update of metadata"
+                "VERSION=1.0"
+        # Invoke amazon-cloudwatch-agent-ctl to restart the AmazonCloudWatchAgent.
+        03_restart_amazon-cloudwatch-agent:
+          commands:
+            01_stop_service:
+              command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
+            02_start_service:
+              command: |
+                /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:CloudWatch-Config -s
+        01_setupCfnHup:
+          files:
+            '/etc/cfn/cfn-hup.conf':
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=1
+              mode: 000400
+              owner: root
+              group: root
+
+            '/etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf':
               content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
-                path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+                path=Resources.EC2Instance.Metadata.AWS::CloudFormation::Init.02_config-amazon-cloudwatch-agent
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets UpdateEnvironment
                 runas=root
-              mode: "000400"
-              owner: "root"
-              group: "root"
+              mode: '000400'
+              owner: root
+              group: root
+
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: true
+                ensureRunning: true
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf
 
     Properties:
       InstanceType:
@@ -371,16 +498,12 @@ Resources:
           #sed -i '/download_updates/s/= .*/= yes/' /etc/yum/yum-cron-hourly.conf
           #sed -i '/download_updates/s/= .*/= no/' /etc/yum/yum-cron.conf
           
+          rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
+          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:CloudWatch-Config -s
+          
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
-          
-          # Start up the cfn-hup daemon to listen for changes to the EC2 instance metadata
-          /opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
-          # Get the CloudWatch Logs agent
-          wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
-          # Install the CloudWatch Logs agent
-          python awslogs-agent-setup.py -n -r ${AWS::Region} -c /tmp/cwlogs/apacheaccess.conf || error_exit 'Failed to run CloudWatch Logs agent setup'         
-          
+
           # Add NFS/EFS stat cron job
           crontab /home/ec2-user/crontab
           

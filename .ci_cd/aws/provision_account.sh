@@ -2,13 +2,18 @@
 
 # Provisions a member account of the specified name under the Custom OU using Control Tower Account Factory via Service Catalog
 # The customisations for control tower will perform some standard customisations of the provisioned account as defined
-# in the custom-control-tower-configuration CodeCommit repo.
+# in the custom-control-tower-configuration CodeCommit repo. Also does the following:
+#
+# * Create Hosted domain zone (if requested) and will create the NS record in the PARENT_DNS_ZONE to delegate to the
+#   new hosted zone; the zone will use the account name.
+# * Adds SSH whitelist to the ssh-access security group in the new account (see set_ssh_whitelist.sh)
 #
 # Arguments:
 # 1 - ACCOUNT_NAME - Name of the new account (required)
 # 2 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
 # 3 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
 #     PARENT_DNS_ZONE in the management account (e.g. openremote.app -> ACCOUNT_NAME.openremote.app)
+# 4 - AWS_ENABLED indicates if login has already been successfully attempted and not required again
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -21,13 +26,10 @@ PARENT_DNS_ZONE=${2,,}
 HOSTED_DNS=${3,,}
 AWS_ENABLED=${4,,}
 
+OU='Custom(ou-hbsh-9i66giju)'
+
 if [ -z "$ACCOUNT_NAME" ]; then
   echo "ACCOUNT_NAME must be set"
-  exit 1
-fi
-
-if [ -z "$PARENT_DNS_ZONE" ]; then
-  echo "PARENT_DNS_ZONE must be set"
   exit 1
 fi
 
@@ -40,7 +42,7 @@ CALLER_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 # Check account doesn't already exist
 source "${awsDir}/get_account_id.sh"
 
-if [ -n "$AWS_ACCOUNT_ID" ]; then
+if [ -n "$ACCOUNT_ID" ]; then
   echo "Account already exists so skipping initial provisioning step"
 else
   RandomToken=$(echo $(( $RANDOM * 99999999999 )) | cut -c 1-13)
@@ -63,7 +65,7 @@ else
   fi
 
   CatalogName="account-$ACCOUNT_NAME"
-  Params="Key=SSOUserFirstName,Value=$ACCOUNT_NAME Key=SSOUserLastName,Value=$ACCOUNT_NAME Key=SSOUserEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$ACCOUNT_NAME Key=ManagedOrganizationalUnit,Value=Custom(ou-hbsh-9i66giju)"
+  Params="Key=SSOUserFirstName,Value=$ACCOUNT_NAME Key=SSOUserLastName,Value=$ACCOUNT_NAME Key=SSOUserEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$ACCOUNT_NAME Key=ManagedOrganizationalUnit,Value=$OU"
   aws servicecatalog provision-product --product-id $prod_id --provisioning-artifact-id $pa_id --provision-token $RandomToken --provisioned-product-name $CatalogName --provisioning-parameters $Params
 
   if [ $? -ne 0 ]; then
@@ -87,22 +89,23 @@ else
 
   # Get account ID of newly provisioned account
   ProvisionedProductId=$(aws servicecatalog scan-provisioned-products --query "ProvisionedProducts[?Name=='$CatalogName'].Id" --output text)
-  AWS_ACCOUNT_ID=$(aws servicecatalog get-provisioned-product-outputs --provisioned-product-id $ProvisionedProductId --query "Outputs[?OutputKey=='AccountId'].OutputValue" --output text)
+  ACCOUNT_ID=$(aws servicecatalog get-provisioned-product-outputs --provisioned-product-id $ProvisionedProductId --query "Outputs[?OutputKey=='AccountId'].OutputValue" --output text)
 
   # Store account ID in SSM (aws organizations list-accounts doesn't support server side filtering)
-  if [ -n "$AWS_ACCOUNT_ID" ]; then
+  if [ -n "$ACCOUNT_ID" ]; then
     echo "Storing account ID for future reference"
-    aws ssm put-parameter --name "/Account-Ids/$ACCOUNT_NAME" --value "$AWS_ACCOUNT_ID" --type String &>/dev/null
+    aws ssm put-parameter --name "/Account-Ids/$ACCOUNT_NAME" --value "$ACCOUNT_ID" --type String &>/dev/null
   fi
 fi
 
-if [ -z "$AWS_ACCOUNT_ID" ]; then
+if [ -z "$ACCOUNT_ID" ]; then
   echo "Failed to get ID of new account"
   exit 1
 fi
 
 # Update developers access profile with ARN for ACCOUNT_ID
-source "${awsDir}/update_developers_access_profile.sh"
+RETRY=true
+source "${awsDir}/set_github-da_account_arn.sh"
 
 # Wait for control tower customisations to complete
 STATUS=$(aws codepipeline list-pipeline-executions --pipeline-name Custom-Control-Tower-CodePipeline --query "pipelineExecutionSummaries[0].status" --output text)
@@ -148,7 +151,7 @@ read -r -d '' POLICY << EOF
     {
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::$AWS_ACCOUNT_ID:user/smtp"
+        "AWS": "arn:aws:iam::$ACCOUNT_ID:user/smtp"
       },
       "Action": [
         "ses:SendRawEmail",
@@ -160,24 +163,25 @@ read -r -d '' POLICY << EOF
   ]
 }
 EOF
-aws ses put-identity-policy --identity openremote.io --policy-name smtp-$AWS_ACCOUNT_ID --policy "$POLICY" 1>/dev/null
+aws ses put-identity-policy --identity openremote.io --policy-name smtp-$ACCOUNT_ID --policy "$POLICY" 1>/dev/null
 
 # Create/remove hosted zone as requested
-HOSTED_ZONE="$ACCOUNT_NAME.$PARENT_DNS_ZONE"
-PARENT_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$PARENT_DNS_ZONE.'].Id" --output text 2>/dev/null)
-SUB_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$HOSTED_ZONE.'].Id" --output text --profile github-da 2>/dev/null)
+if [ -n "$PARENT_DNS_ZONE" ]; then
+  HOSTED_ZONE="$ACCOUNT_NAME.$PARENT_DNS_ZONE"
+  PARENT_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$PARENT_DNS_ZONE.'].Id" --output text 2>/dev/null)
+  SUB_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$HOSTED_ZONE.'].Id" --output text --profile github-da 2>/dev/null)
 
-if [ -n "$PARENT_HOSTED_ZONE_ID" ]; then
-  if [ "$HOSTED_DNS" == 'true' ]; then
-    if [ -z "$SUB_HOSTED_ZONE_ID" ]; then
-      echo "Creating sub domain hosted zone '$HOSTED_ZONE' in new account"
-      SUB_HOSTED_ZONE_ID=$(aws route53 create-hosted-zone --name $HOSTED_ZONE --caller-reference $(date -u -Iseconds) --query "HostedZone.Id" --output text --profile github-da)
-    fi
+  if [ -n "$PARENT_HOSTED_ZONE_ID" ]; then
+    if [ "$HOSTED_DNS" == 'true' ]; then
+      if [ -z "$SUB_HOSTED_ZONE_ID" ]; then
+        echo "Creating sub domain hosted zone '$HOSTED_ZONE' in new account"
+        SUB_HOSTED_ZONE_ID=$(aws route53 create-hosted-zone --name $HOSTED_ZONE --caller-reference $(date -u -Iseconds) --query "HostedZone.Id" --output text --profile github-da)
+      fi
 
-    if [ -n "$SUB_HOSTED_ZONE_ID" ]; then
-      # Get name server record
-      NS_RECORDS=$(aws route53 list-resource-record-sets --hosted-zone-id $SUB_HOSTED_ZONE_ID --query "ResourceRecordSets[?(Type=='NS' && Name=='$HOSTED_ZONE.')] | [0].ResourceRecords" --profile github-da)
-      # Add name server record to PARENT_DNS_ZONE
+      if [ -n "$SUB_HOSTED_ZONE_ID" ]; then
+        # Get name server record
+        NS_RECORDS=$(aws route53 list-resource-record-sets --hosted-zone-id $SUB_HOSTED_ZONE_ID --query "ResourceRecordSets[?(Type=='NS' && Name=='$HOSTED_ZONE.')] | [0].ResourceRecords" --profile github-da)
+        # Add name server record to PARENT_DNS_ZONE
 
 read -r -d '' RECORDSET << EOF
 {
@@ -195,16 +199,19 @@ read -r -d '' RECORDSET << EOF
   ]
 }
 EOF
-
-      echo $RECORDSET > /tmp/awsdnsrecord
-      aws route53 change-resource-record-sets --hosted-zone-id $PARENT_HOSTED_ZONE_ID --change-batch "$RECORDSET"
+        aws route53 change-resource-record-sets --hosted-zone-id $PARENT_HOSTED_ZONE_ID --change-batch "$RECORDSET"
+      fi
+    else
+      if [ -n "$SUB_HOSTED_ZONE_ID" ]; then
+        echo "Removing existing sub domain hosted zone"
+        aws route53 delete-hosted-zone --id $SUB_HOSTED_ZONE_ID --profile github-da
+      fi
     fi
   else
-    if [ -n "$SUB_HOSTED_ZONE_ID" ]; then
-      echo "Removing existing sub domain hosted zone"
-      aws route53 delete-hosted-zone --id $SUB_HOSTED_ZONE_ID --profile github-da
-    fi
+    echo "Cannot find PARENT_DNS_ZONE '$PARENT_DNS_ZONE' so cannot configure DNS"
   fi
 else
-  echo "Cannot find PARENT_DNS_ZONE '$PARENT_DNS_ZONE' so cannot configure DNS"
+  echo "PARENT_DNS_ZONE not set so no DNS configuration will be attempted"
 fi
+
+"${awsDir}/set_ssh_whitelist.sh"
