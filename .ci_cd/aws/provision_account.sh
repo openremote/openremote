@@ -34,13 +34,13 @@ if [ -z "$ACCOUNT_NAME" ]; then
 fi
 
 # Optionally login if AWS_ENABLED != 'true'
-source "${awsDir}/login.sh"
+source "${awsDir}login.sh"
 
 # Get github account ID from github profile
 CALLER_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 
 # Check account doesn't already exist
-source "${awsDir}/get_account_id.sh"
+source "${awsDir}get_account_id.sh"
 
 if [ -n "$ACCOUNT_ID" ]; then
   echo "Account already exists so skipping initial provisioning step"
@@ -105,7 +105,7 @@ fi
 
 # Update developers access profile with ARN for ACCOUNT_ID
 RETRY=true
-source "${awsDir}/set_github-da_account_arn.sh"
+source "${awsDir}set_github-da_account_arn.sh"
 
 # Wait for control tower customisations to complete
 STATUS=$(aws codepipeline list-pipeline-executions --pipeline-name Custom-Control-Tower-CodePipeline --query "pipelineExecutionSummaries[0].status" --output text)
@@ -214,4 +214,4 @@ else
   echo "PARENT_DNS_ZONE not set so no DNS configuration will be attempted"
 fi
 
-"${awsDir}/set_ssh_whitelist.sh"
+"${awsDir}set_ssh_whitelist.sh"

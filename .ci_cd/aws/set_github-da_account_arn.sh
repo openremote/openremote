@@ -14,7 +14,7 @@ if [ -z "$ACCOUNT_ID" ]; then
     exit 1
   fi
 
-  source "${awsDir}/get_account_id.sh"
+  source "${awsDir}get_account_id.sh"
 fi
 
 if [ -z "$ACCOUNT_ID" ]; then

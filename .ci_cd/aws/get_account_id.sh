@@ -14,7 +14,7 @@ else
 fi
 
 # Optionally login if AWS_ENABLED != 'true'
-source "${awsDir}/login.sh"
+source "${awsDir}login.sh"
 
 ACCOUNT_ID=$(aws ssm get-parameter --name "/Account-Ids/$ACCOUNT_NAME" --query "Parameter.Value" --output text 2>/dev/null)
 

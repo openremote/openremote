@@ -25,7 +25,7 @@ AWS_ENABLED=${4,,}
 echo "Attempting to set the SSH whitelist for the specified account(s)"
 
 # Optionally login if AWS_ENABLED != 'true'
-source "${awsDir}/login.sh"
+source "${awsDir}login.sh"
 
 if [ -n "$OUS" ]; then
   ROOT_ID=$(aws organizations list-roots --query "Roots[0].Id" --output text)
@@ -42,7 +42,7 @@ elif [ -n "$ACCOUNT_NAMES" ]; then
   IFS=$','
   for ACCOUNT_NAME in $ACCOUNT_NAMES; do
     # Get ACCOUNT_ID
-    source "${awsDir}/get_account_id.sh" &>/dev/null
+    source "${awsDir}get_account_id.sh" &>/dev/null
     if [ $? -ne 0 ]; then
       echo "Couldn't resolve Account name '$ACCOUNT_NAME'"
       exit 1
@@ -60,7 +60,7 @@ SSH_LIST=$(aws ssm get-parameters-by-path --path "/SSH-Whitelist" --query "Param
 IFS=$' \t'
 for ACCOUNT_ID in $ACCOUNT_IDS; do
   # Update github-da profile with ARN for ACCOUNT_ID
-  source "${awsDir}/set_github-da_account_arn.sh"
+  source "${awsDir}set_github-da_account_arn.sh"
 
   echo "Revoking existing SSH Whitelist for Account '$ACCOUNT_ID'"
   LIST=$(aws ec2 describe-security-groups --profile github-da --filters Name=ip-permission.from-port,Values=22 Name=group-name,Values=ssh-access --query 'SecurityGroups[0].IpPermissions[?(IpProtocol==`tcp` && FromPort==`22`)]' --output json)

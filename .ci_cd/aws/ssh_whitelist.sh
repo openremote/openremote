@@ -17,7 +17,7 @@ else
 fi
 
 # Optionally login if AWS_ENABLED != 'true'
-source "${awsDir}/login.sh"
+source "${awsDir}login.sh"
 
 if [ "$AWS_ENABLED" != 'true' ]; then
   exit 1

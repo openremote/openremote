@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Provisions the standard stack of resources using CloudFormation template (cloudformation-create-ec2.yml) in the
-# specified AWS member account; if no account specified then the account of the authenticate user will be used.
+# specified AWS member account; if no account specified then the account of the authenticated user will be used.
 # The account must already exist and be provisioned in the standard way (see provision_account.sh). To access the
 # account the developers-access role in that account will be assumed.
 #
@@ -28,8 +28,8 @@ if [ -z "$HOST" ]; then
   exit 1
 fi
 
-if [ -f "${awsDir}/cloudformation-create-ec2.yml" ]; then
-  TEMPLATE_PATH="${awsDir}/cloudformation-create-ec2.yml"
+if [ -f "${awsDir}cloudformation-create-ec2.yml" ]; then
+  TEMPLATE_PATH="${awsDir}cloudformation-create-ec2.yml"
 elif [ -f ".ci_cd/aws/cloudformation-create-ec2.yml" ]; then
   TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-ec2.yml"
 elif [ -f "openremote/.ci_cd/aws/cloudformation-create-ec2.yml" ]; then
@@ -40,23 +40,22 @@ else
 fi
 
 # Optionally login if AWS_ENABLED != 'true'
-source "${awsDir}/login.sh"
+source "${awsDir}login.sh"
 
+ACCOUNT_PROFILE=
 if [ -n "$ACCOUNT_NAME" ]; then
   # Update github-da profile with ARN for ACCOUNT_ID
-  source "${awsDir}/set_github-da_account_arn.sh"
+  source "${awsDir}set_github-da_account_arn.sh"
   ACCOUNT_PROFILE="--profile github-da"
-else
-  ACCOUNT_PROFILE="--profile github"
 fi
 
-STACK_NAME="$HOST"
+STACK_NAME=$(tr '.' '-' <<< "$HOST")
 
 # Check stack doesn't already exist
-STACK_ID=$(aws cloudformation list-stacks --query "StackSummaries[?StackName=='$STACK_NAME'].StackId" --stack-status-filter CREATE_IN_PROGRESS CREATE_FAILED CREATE_COMPLETE --output text $ACCOUNT_PROFILE 2>/dev/null)
+STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
-if [ -n "$STACK_ID" ]; then
-  echo "Stack already exists for this host '$HOST'"
+if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
+  echo "Stack already exists for this host '$HOST' current status is '$STATUS'"
   exit 1
 fi
 
@@ -68,8 +67,58 @@ PARAMS="ParameterKey=Host,ParameterValue=$HOST ParameterKey=SMTPORArn,ParameterV
 if [ -n "$INSTANCE_TYPE" ]; then
   PARAMS="$PARAMS ParameterKey=InstanceType,ParameterValue=$INSTANCE_TYPE"
 fi
+
+# Determine DNSHostedZoneName and DNSHostedZoneRoleArn (must be set if hosted zone is not in the same account as where the host is being created)
+TLD_NAME=$(awk -F. '{print $(NF-1)"."$(NF)}' <<< "$HOST")
+COUNT=$(($(awk -F. '{print NF}' <<< "$HOST")-1))
+HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name]" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+if [ -n "$ACCOUNT_PROFILE" ]; then
+  # Append caller account hosted zones
+  HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name,'true']" --output text 2>/dev/null)
+fi
+
+if [ -n "$HOSTED_ZONES" ]; then
+  # Match hosted zone with the same name as the host moving up a domain level each time
+  i=1
+  while [ $i -le $COUNT ]; do
+
+    HOSTED_ZONE=$(cut -d'.' -f$i- <<< "$HOST")
+
+    IFS=$'\n'
+    for zone in $HOSTED_ZONES; do
+      IFS=$' \t'
+      zoneArr=( $zone )
+      name=${zoneArr[0]}
+      callerAccount=${zoneArr[1]}
+
+      if [ "$name" == "$HOSTED_ZONE." ]; then
+        echo "Found hosted zone for this host '$HOSTED_ZONE'"
+        DNSHostedZoneName=$HOSTED_ZONE
+        if [ "$callerAccount" == 'true' ]; then
+          # Get Role ARN that can be assumed to allow DNS record update for this host from the host's account
+          DNSHostedZoneRoleArn=$(aws ssm get-parameter --name TLD-DNS-Access-Role-Arn --query "Parameter.Value" --output text $ACCOUNT_PROFILE)
+          if [ -z "$DNSHostedZoneRoleArn" ]; then
+            echo "Failed to get 'TLD-DNS-Access-Role-Arn' from parameter store this must be set for cross account DNS support"
+            exit 1
+          fi
+        fi
+      fi
+    done
+
+    i=$(($i+1))
+  done
+fi
+
+if [ -n "$DNSHostedZoneName" ]; then
+  PARAMS="$PARAMS ParameterKey=DNSHostedZoneName,ParameterValue=$DNSHostedZoneName"
+fi
+if [ -n "$DNSHostedZoneRoleArn" ]; then
+  PARAMS="$PARAMS ParameterKey=DNSHostedZoneRoleArn,ParameterValue=$DNSHostedZoneRoleArn"
+fi
+
 # Create standard stack resources in specified account
-aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS $ACCOUNT_PROFILE
+STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
 if [ $? -ne 0 ]; then
   echo "Create stack failed"
@@ -80,20 +129,18 @@ fi
 if [ "$WAIT_FOR_STACK" != 'false' ]; then
   # Wait for cloud formation stack status to be CREATE_*
   echo "Waiting for stack to be created"
+  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
+  while [[ "$STATUS" == 'CREATE_IN_PROGRESS' ]]; do
+    echo "Stack creation is still in progress .. Sleeping 30 seconds"
+    sleep 30
+    STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[?StackId=='$STACK_ID'].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  done
+
+  if [ "$STATUS" != 'CREATE_COMPLETE' ]; then
+    echo "Stack creation has failed status is '$STATUS'"
+    exit 1
+  else
+    echo "Stack creation is complete"
+  fi
 fi
-
-
-
-
-
-
-
-
-
-
-if [ "$AWS_ENABLED" != 'true' ]; then
-  echo "Failed to login to AWS"
-  exit 1
-fi
-

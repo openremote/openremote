@@ -15,7 +15,7 @@
 # ---------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'AWS Linux 2 with docker compose'
+Description: 'AWS Linux 2, docker compose, nfs support, cron support, cloud watch logging, route53 updating'
 Parameters:
   Host:
     Description: FQDN for host
