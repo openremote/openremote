@@ -240,7 +240,6 @@ export const style = css`
         width: 16px;
         height: 16px;
         cursor: pointer;
-        background-color: #F9F9F9;
         margin-top: 2px;
         padding-top: 4px;
         padding-bottom: 4px;

@@ -441,7 +441,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   // Means field has lost focus so do filter immediately
                                   // this._doFiltering(FilterElementType.SEARCH_FILTER, (e.detail.value as string) || undefined);
                                   this._onFilterInput((e.detail.value as string) || undefined, true);
-                              }}">
+                              }}"
+                              trailingSpace="false">
                               </or-mwc-input>
                 <div id="clearIconContainer">
                     <or-icon id="clearIcon" icon="close" @click="${() => {
@@ -740,7 +741,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     }
 
     protected parseFromInputFilter(inputValue?: string): OrAssetTreeFilter {
-        console.log("parsing... " + inputValue);
         let searchValue: string | undefined = this._filterInput.value;
         if (inputValue) {
             searchValue = inputValue;
@@ -751,7 +751,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             let asset: string = searchValue;
             let matchingResult: RegExpMatchArray | null = searchValue.match(/(attribute\:)(\"[^"]+\")\S*/g);
             if (matchingResult) {
-                console.log("found attribute");
                 if (matchingResult.length > 0) {
                     matchingResult.forEach((value: string, index: number) => {
                         asset = asset.replace(value, '');
