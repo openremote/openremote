@@ -3,15 +3,15 @@ apply plugin: 'kotlin-android'
 apply plugin: 'com.google.gms.google-services'
 
 android {
-    compileSdkVersion 31
-    buildToolsVersion "30.0.3"
+    compileSdkVersion 32
+    buildToolsVersion "32.0.0"
 
     defaultConfig {
         applicationId "io.openremote.app"
         minSdkVersion 25
-        targetSdkVersion 31
-        versionCode 30
-        versionName "1.0.9"
+        targetSdkVersion 32
+        versionCode 31
+        versionName "1.0.10"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
