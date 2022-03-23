@@ -442,7 +442,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   // this._doFiltering(FilterElementType.SEARCH_FILTER, (e.detail.value as string) || undefined);
                                   this._onFilterInput((e.detail.value as string) || undefined, true);
                               }}"
-                              trailingSpace="false">
+                              trailingSpace="true">
                               </or-mwc-input>
                 <div id="clearIconContainer">
                     <or-icon id="clearIcon" icon="close" @click="${() => {
