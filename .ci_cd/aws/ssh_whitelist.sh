@@ -8,7 +8,10 @@
 
 CIDR=$1
 AWS_PROFILE=$2
-AWS_ENABLED=${3,,}
+
+if [ "$AWS_ENABLED" != true ]; then
+  AWS_ENABLED=${3,,}
+fi
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/

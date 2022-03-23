@@ -21,7 +21,10 @@ ACCOUNT_NAME=${1,,}
 HOST=${2,,}
 INSTANCE_TYPE=${3,,}
 WAIT_FOR_STACK=${4,,}
-AWS_ENABLED=${5,,}
+
+if [ "$AWS_ENABLED" != true ]; then
+  AWS_ENABLED=${5,,}
+fi
 
 if [ -z "$HOST" ]; then
   echo "Host must be set"
@@ -97,9 +100,9 @@ if [ -n "$HOSTED_ZONES" ]; then
         DNSHostedZoneName=$HOSTED_ZONE
         if [ "$callerAccount" == 'true' ]; then
           # Get Role ARN that can be assumed to allow DNS record update for this host from the host's account
-          DNSHostedZoneRoleArn=$(aws ssm get-parameter --name TLD-DNS-Access-Role-Arn --query "Parameter.Value" --output text $ACCOUNT_PROFILE)
+          DNSHostedZoneRoleArn=$(aws ssm get-parameter --name Hosted-Zone-Access-Role-Arn --query "Parameter.Value" --output text $ACCOUNT_PROFILE)
           if [ -z "$DNSHostedZoneRoleArn" ]; then
-            echo "Failed to get 'TLD-DNS-Access-Role-Arn' from parameter store this must be set for cross account DNS support"
+            echo "Failed to get 'Hosted-Zone-Access-Role-Arn' from parameter store this must be set for cross account DNS support"
             exit 1
           fi
         fi

@@ -20,7 +20,10 @@ fi
 OUS=$1
 ACCOUNT_NAMES=$2
 ACCOUNT_IDS=$3
-AWS_ENABLED=${4,,}
+
+if [ "$AWS_ENABLED" != true ]; then
+  AWS_ENABLED=${4,,}
+fi
 
 echo "Attempting to set the SSH whitelist for the specified account(s)"
 

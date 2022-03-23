@@ -6,7 +6,7 @@
 revoke_ssh () {
   if [ "$SSH_GRANTED" == 'true' ]; then
       if [ -n "$CIDR" ]; then
-        "$AWS_SCRIPT_DIR/ssh_revoke.sh" "$CIDR" "github-da" "$AWS_ENABLED"
+        "temp/aws/ssh_revoke.sh" "$CIDR" "github-da" "$AWS_ENABLED"
       fi
   fi
 }
@@ -36,19 +36,17 @@ if [ -f "ssh.env" ]; then
   set +x
 fi
 
-AWS_SCRIPT_DIR=".ci_cd/aws"
-if [ ! -d "$AWS_SCRIPT_PREFIX" ]; then
-  AWS_SCRIPT_DIR="openremote/.ci_cd/aws"
+# Copy CI/CD files into temp dir
+echo "Copying CI/CD files into temp dir"
+if [ "$IS_CUSTOM_PROJECT" == 'true' ]; then
+  cp -r openremote/.ci_cd/host_init temp/
+  cp -r openremote/.ci_cd/aws temp/
 fi
-if [ ! -d "$AWS_SCRIPT_PREFIX" ]; then
-  echo "AWS scripts not found so cannot perform AWS actions"
+if [ -d ".ci_cd/host_init" ]; then
+  cp -r .ci_cd/host_init temp/
 fi
-
-
-# Login to AWS if credentials provided
-AWS_ENABLED=false
-if [ -d "$AWS_SCRIPT_DIR" ]; then
-  source "$AWS_AWS_SCRIPT_DIR/login.sh"
+if [ -d ".ci_cd/aws" ]; then
+  cp -r .ci_cd/aws temp/
 fi
 
 # Determine compose file to use and copy to temp dir (do this here as all env variables are loaded)
@@ -93,7 +91,7 @@ if [ "$SKIP_HOST_PING" != 'true' ]; then
   if [ $? -ne 0 ]; then
     echo "Host is not reachable by PING"
     if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
-      "$AWS_SCRIPT_DIR/start_ec2_instance.sh" "$OR_HOST" "$AWS_ENABLED"
+      "temp/aws/start_ec2_instance.sh" "$OR_HOST" "$AWS_ENABLED"
       if [ $? -ne 0 ]; then
         # Don't exit as it might just not be reachable by PING we'll fail later on
         echo "EC2 instance start failed"
@@ -109,7 +107,7 @@ if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
   echo "Attempting to add runner to AWS SSH whitelist"
   if [ "$AWS_ENABLED" == 'true' ]; then
     if [ -n "$CIDR" ]; then
-      "$AWS_SCRIPT_DIR/ssh_whitelist.sh" "$CIDR" "github-da" "$AWS_ENABLED"
+      "temp/aws/ssh_whitelist.sh" "$CIDR" "github-da" "$AWS_ENABLED"
     fi
     if [ $? -eq 0 ]; then
       SSH_GRANTED=true
@@ -161,11 +159,6 @@ if [ -n "$DEPLOYMENT_REF" ]; then
   fi
 fi
 
-# Copy AWS scripts to temp dir
-if [ -d "$AWS_SCRIPT_DIR" ]; then
-  cp -r "AWS_SCRIPT_DIR" temp/
-fi
-
 # Set version variables
 MANAGER_VERSION="$MANAGER_TAG"
 DEPLOYMENT_VERSION="$DEPLOYMENT_REF"
@@ -207,6 +200,24 @@ $sshCommandPrefix ${hostStr} << EOF
     docker load < temp/deployment.tar.gz
   fi
 
+  # Make sure we have correct keycloak, proxy and postgres images
+  echo "Pulling requested service versions from docker hub"
+  docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
+
+  if [ \$? -ne 0 ]; then
+    echo "Deployment failed to pull docker images"
+    exit 1
+  fi
+
+  # Attempt docker compose down
+  echo "Stopping existing stack"
+  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+
+  if [ \$? -ne 0 ]; then
+    echo "Deployment failed to stop the existing stack"
+    exit 1
+  fi
+
   # Run host init
   hostInitCmd=
   if [ "$HOST_INIT_SCRIPT" == 'NONE' -o "$HOST_INIT_SCRIPT" == 'none' ]; then
@@ -229,51 +240,11 @@ $sshCommandPrefix ${hostStr} << EOF
     echo "No host init script"
   fi
 
-  # Make sure we have correct keycloak, proxy and postgres images
-  echo "Pulling requested service versions from docker hub"
-  docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
-
-  if [ \$? -ne 0 ]; then
-    echo "Deployment failed to pull docker images"
-    exit 1
-  fi
-
-  # Attempt docker compose down
-  echo "Stopping existing stack"
-  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
-
-  if [ \$? -ne 0 ]; then
-    echo "Deployment failed to stop the existing stack"
-    exit 1
-  fi
-
-  # Run clean script if CLEAN_INSTALL=true
-  if [ "\$CLEAN_INSTALL" == 'true' ]; then
-    if [ ! -f "temp/clean.sh" ]; then
-      echo "CLEAN_INSTALL requested by temp/clean.sh script not found"
-      exit 1
-    fi
-    echo "Running clean script"
-    temp/clean.sh
-  fi
-  
   # Delete any deployment volume so we get the latest
   echo "Deleting existing deployment data volume"
-  docker volume rm or_deployment-data 2 > /dev/null
+  docker volume rm or_deployment-data 1>/dev/null
 
-  # Remove any existing map EFS mount
-  if [ -d "/deployment.local/map" ]; then
-    echo "Removing EFS map mount"
-    umount /deployment.local/map
-    sudo sed -i.bak '\@.amazonaws.com:/ /deployment.local/map@d' /etc/fstab
-    rm
-  fi
 
-  # Remove any existing deployment files from S3
-  if [ -d "/deployment.local/s3" ]; then
-    echo "Removing S3 deployment files"
-    rm -r /deployment.local/s3
-  fi
 
   # Mount EFS map if specified
   if [ "$AWS_ENABLED" == 'true' ] && [ -n "\$AWS_EFS_MAP" ]; then

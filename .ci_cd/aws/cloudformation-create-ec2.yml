@@ -155,18 +155,80 @@ Resources:
             - docker_setup
             - cron_setup
             - env_vars
-            - nfs_setup
+            - efs_setup
             - dns_updater
+            - s3_backup_service
+            - deployment_local_dir
           UpdateEnvironment:
             - 02_config-amazon-cloudwatch-agent
             - 03_restart_amazon-cloudwatch-agent
+
+        deployment_local_dir:
+          commands:
+            01_create_dir:
+              command: |
+                mkdir /deployment.local
+                chown ec2-user:ec2-user /deployment.local
+
+        s3_backup_service:
+          files:
+            "/usr/local/bin/s3-backup":
+              content: !Sub |
+                #!/bin/bash
+                
+                # ------------------------------------------------------------------------------------------------------
+                #
+                # Script for synchronising files in /deployment.local/backup with S3 bucket with same name as this host
+                #
+                # ------------------------------------------------------------------------------------------------------
+
+                BUCKET=$(aws s3api list-buckets --query "Buckets[?Name=='${Host}'].Name" --output text)
+                
+                if [ -z "$BUCKET" ] || [ ! -d "/deployment.local/backup" ]; then
+                  exit 0
+                fi
+                
+                aws s3 sync /deployment.local/backup s3://${Host}/backup
+
+            "/lib/systemd/system/s3-backup.service":
+              content: |
+                [Unit]
+                Description=Daily S3 backup service
+                Wants=s3-backup.timer
+
+                [Service]
+                Type=oneshot
+                ExecStart=/usr/local/bin/s3-backup
+
+                [Install]
+                WantedBy=multi-user.target
+            "/lib/systemd/system/s3-backup.timer":
+              content: |
+                [Unit]
+                Description=Daily S3 backup timer
+                Requires=s3-backup.service
+                
+                [Timer]
+                Unit=s3-backup.service
+                OnCalendar=*-*-* 05:00:00
+                
+                [Install]
+                WantedBy=timers.target
+
+          commands:
+            01_init_service:
+              command: |
+                chmod +x /usr/local/bin/s3-backup
+                systemctl daemon-reload
+                systemctl start s3-backup.service
+                systemctl enable s3-backup.timer
 
         dns_updater:
           packages:
             yum:
               jq: []
           files:
-            "/home/ec2-user/dns-updater.sh":
+            "/usr/local/bin/dns-updater":
               content: !Sub |
                 #!/bin/bash
                 
@@ -233,22 +295,22 @@ Resources:
                 Wants=network-online.target
                 
                 [Service]
-                ExecStart=/home/ec2-user/dns-updater.sh
+                ExecStart=/usr/local/bin/dns-updater
 
                 [Install]
                 WantedBy=multi-user.target
           commands:
             01_init_service:
               command: |
-                chmod +x /home/ec2-user/dns-updater.sh
+                chmod +x /usr/local/bin/dns-updater
                 systemctl daemon-reload
                 systemctl enable dns-updater.service
                 systemctl start dns-updater.service
 
-        nfs_setup:
+        efs_setup:
           packages:
             yum:
-              nfs-utils: []
+              amazon-efs-utils: []
           files:
             "/home/ec2-user/post_nfsstat":
               content: !Sub |
@@ -315,6 +377,10 @@ Resources:
               content: "* * * * * /usr/sbin/nfsstat | /home/ec2-user/post_nfsstat\n"
               owner: ec2-user
               group: ec2-user
+          commands:
+            01_install_botocore:
+              command: |
+                pip3 install botocore
 
         env_vars:
           files:

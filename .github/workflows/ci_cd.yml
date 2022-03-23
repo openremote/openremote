@@ -642,6 +642,8 @@ jobs:
           deploymentRef = os.getenv("DEPLOYMENT_REF")
           isCustomProject = os.getenv("IS_CUSTOM_PROJECT")
           inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          ipv4 = os.getenv("IPV4")
+          ipv6 = os.getenv("IPV6")
           
           failure = False
           
@@ -655,12 +657,6 @@ jobs:
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
             sys.exit(1)
-          fi
-          
-          # Determine clean script to use
-          cleanScript = ".ci_cd/clean.sh"
-          if not os.path.exists(cleanScript) and isCustomProject == 'true':
-            cleanScript = "openremote/.ci_cd/clean.sh"
           fi
           
           for deployment in deployments:
@@ -740,13 +736,13 @@ jobs:
                 else:
                     os.system(f"echo '{key}=\"{value}\"' >> temp/env")
             
-            # Copy host_init files to temp deploy dir
-            os.system("cp -r .ci_cd/host_init temp/ 2>/dev/null")
-          
-            # Copy clean script
-            os.system(f"cp {cleanScript} temp/ 2>/dev/null") 
+            # Set CIDR environment variable
+            if ipv4 is not None and ipv4 != '':
+              os.putenv("CIDR", ipv4 + '/32')
+            elif ipv6 is not None and ipv6 != '':
+              os.putenv("CIDR", ipv6 + '/64')
             
-            # Execute deploy script            
+            # Execute deploy script
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
             result = subprocess.run(f"bash {deployScript}", shell=True)
             

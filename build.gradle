@@ -1,14 +1,16 @@
-// Build plugins
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.1"
-    }
-}
+
+// Uncomment the following to configure files to be encrypted/decrypted
+// Each file must be explicitly added to .gitignore otherwise git commit will fail
+// When using encryption the the GFE_PASSWORD environment variable must be set
+//apply plugin: "com.cherryperry.gradle-file-encrypt"
+//gradleFileEncrypt {
+//    // files to encrypt
+//    plainFiles.from("deployment/mySensitiveFile")
+//    // (optional) setup file mapping to store all encrypted files in one place for example
+//    //mapping = [ 'deployment/mySensitiveFile' : 'secrets/mySensitiveFile' ]
+//    // Use custom password provider as standard env mechanism doesn't seem to work
+//    passwordProvider = { return "$System.env.GFE_PASSWORD".toCharArray() }
+//}
 
 allprojects {
     apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"

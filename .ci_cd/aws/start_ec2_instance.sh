@@ -4,8 +4,11 @@
 # 1 - ec2 instance name (required)
 # 2 - AWS_ENABLED (optional true)
 
-INSTANCE_NAME=$1
-AWS_ENABLED=$2
+INSTANCE_NAME=${1,,}
+
+if [ "$AWS_ENABLED" != true ]; then
+  AWS_ENABLED=${2,,}
+fi
 
 # Optionally login if AWS_ENABLED != 'true'
 source "${BASH_SOURCE%/*}/login.sh"

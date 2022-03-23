@@ -24,7 +24,10 @@ fi
 ACCOUNT_NAME=${1,,}
 PARENT_DNS_ZONE=${2,,}
 HOSTED_DNS=${3,,}
-AWS_ENABLED=${4,,}
+
+if [ "$AWS_ENABLED" != true ]; then
+  AWS_ENABLED=${4,,}
+fi
 
 OU='Custom(ou-hbsh-9i66giju)'
 
