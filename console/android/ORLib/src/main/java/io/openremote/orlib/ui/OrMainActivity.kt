@@ -348,8 +348,7 @@ open class OrMainActivity : Activity() {
                     handleError(
                         errorResponse.statusCode,
                         errorResponse.reasonPhrase,
-                        request.url.toString(),
-                        request.isForMainFrame
+                        request.url.toString()
                     )
                 }
 
@@ -368,8 +367,7 @@ open class OrMainActivity : Activity() {
                     handleError(
                         error.errorCode,
                         error.description.toString(),
-                        request.url.toString(),
-                        request.isForMainFrame
+                        request.url.toString()
                     )
                 }
 
@@ -377,7 +375,7 @@ open class OrMainActivity : Activity() {
                     progressBar!!.visibility = View.VISIBLE
                     timeOutRunnable = Runnable {
                         if (!webViewLoaded) {
-                            handleError(ERROR_TIMEOUT, "Connection timed out", url, true)
+                            handleError(ERROR_TIMEOUT, "Connection timed out", url)
                         }
                     }
                     timeOutHandler = Looper.myLooper()?.let { Handler(it) }
@@ -496,33 +494,30 @@ open class OrMainActivity : Activity() {
     private fun handleError(
         errorCode: Int,
         description: String,
-        failingUrl: String?,
-        isForMainFrame: Boolean
+        failingUrl: String?
     ) {
         LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
-
+        //TODO should we always ignore image errors?
+        if (failingUrl != null && (failingUrl.endsWith("png")
+                    || failingUrl.endsWith("jpg")
+                    || failingUrl.endsWith("ico"))
+        ) {
+            LOG.info("Ignoring error loading image resource")
+            return
+        }
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
-        if (isForMainFrame) {
-
-            // Check page load error URL
-            val errorUrl = getString(R.string.OR_CONSOLE_LOAD_ERROR_URL)
-            if (!TextUtils.isEmpty(errorUrl) && failingUrl != errorUrl) {
-                LOG.info("Loading error URL: $errorUrl")
-                loadUrl(errorUrl)
-                return
-            }
+        // Check page load error URL
+        if (clientUrl != null) {
+            loadUrl(clientUrl)
+            Toast.makeText(this, description, Toast.LENGTH_LONG).show()
         } else {
-            if (java.lang.Boolean.parseBoolean(getString(R.string.OR_CONSOLE_IGNORE_PAGE_ERRORS))) {
-                return
-            }
-
-            //TODO should we always ignore image errors?
-            if (failingUrl != null && (failingUrl.endsWith("png")
-                        || failingUrl.endsWith("jpg")
-                        || failingUrl.endsWith("ico"))
-            ) {
-                LOG.info("Ignoring error loading image resource")
-                return
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                startActivity(launchIntent)
+                finish()
+                Toast.makeText(applicationContext, description, Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, description, Toast.LENGTH_LONG).show()
             }
         }
     }
