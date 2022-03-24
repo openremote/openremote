@@ -6,7 +6,7 @@
 revoke_ssh () {
   if [ "$SSH_GRANTED" == 'true' ]; then
       if [ -n "$CIDR" ]; then
-        "temp/aws/ssh_revoke.sh" "$CIDR" "github-da" "$AWS_ENABLED"
+        "temp/aws/ssh_revoke.sh" "$CIDR" "github-da"
       fi
   fi
 }
@@ -91,7 +91,7 @@ if [ "$SKIP_HOST_PING" != 'true' ]; then
   if [ $? -ne 0 ]; then
     echo "Host is not reachable by PING"
     if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
-      "temp/aws/start_ec2_instance.sh" "$OR_HOST" "$AWS_ENABLED"
+      "temp/aws/start_ec2_instance.sh" "$OR_HOST"
       if [ $? -ne 0 ]; then
         # Don't exit as it might just not be reachable by PING we'll fail later on
         echo "EC2 instance start failed"
@@ -107,7 +107,7 @@ if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
   echo "Attempting to add runner to AWS SSH whitelist"
   if [ "$AWS_ENABLED" == 'true' ]; then
     if [ -n "$CIDR" ]; then
-      "temp/aws/ssh_whitelist.sh" "$CIDR" "github-da" "$AWS_ENABLED"
+      "temp/aws/ssh_whitelist.sh" "$CIDR" "github-da"
     fi
     if [ $? -eq 0 ]; then
       SSH_GRANTED=true

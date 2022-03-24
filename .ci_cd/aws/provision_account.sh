@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# Provisions a member account of the specified name under the Custom OU using Control Tower Account Factory via Service Catalog
+# Provisions a member account of the specified name under the specified OU using Control Tower Account Factory via
+# Service Catalog; callee must have required permissions to call the service catalog and must also be in the Control
+# Tower home account.
 # The customisations for control tower will perform some standard customisations of the provisioned account as defined
 # in the custom-control-tower-configuration CodeCommit repo. Also does the following:
 #
@@ -12,8 +14,8 @@
 # 1 - ACCOUNT_NAME - Name of the new account (required)
 # 2 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
 # 3 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
-#     PARENT_DNS_ZONE in the management account (e.g. openremote.app -> ACCOUNT_NAME.openremote.app)
-# 4 - AWS_ENABLED indicates if login has already been successfully attempted and not required again
+#     PARENT_DNS_ZONE in the callee account (e.g. x.y -> ACCOUNT_NAME.x.y)
+# 4 - PROVISION_EFS set to 'false' to not provision an EFS volume for the default VPC using (cloudformation-create-efs.yml)
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -24,12 +26,8 @@ fi
 ACCOUNT_NAME=${1,,}
 PARENT_DNS_ZONE=${2,,}
 HOSTED_DNS=${3,,}
-
-if [ "$AWS_ENABLED" != true ]; then
-  AWS_ENABLED=${4,,}
-fi
-
-OU='Custom(ou-hbsh-9i66giju)'
+PROVISION_EFS=${4,,}
+ACCOUNT_PROFILE='--profile github-da'
 
 if [ -z "$ACCOUNT_NAME" ]; then
   echo "ACCOUNT_NAME must be set"
@@ -68,8 +66,19 @@ else
   fi
 
   CatalogName="account-$ACCOUNT_NAME"
-  Params="Key=SSOUserFirstName,Value=$ACCOUNT_NAME Key=SSOUserLastName,Value=$ACCOUNT_NAME Key=SSOUserEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$ACCOUNT_NAME Key=ManagedOrganizationalUnit,Value=$OU"
-  aws servicecatalog provision-product --product-id $prod_id --provisioning-artifact-id $pa_id --provision-token $RandomToken --provisioned-product-name $CatalogName --provisioning-parameters $Params
+  PARAMS="Key=SSOUserFirstName,Value=$ACCOUNT_NAME Key=SSOUserLastName,Value=$ACCOUNT_NAME Key=SSOUserEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$ACCOUNT_NAME"
+  if [ -n "$OU" ]; then
+    ROOT_ID=$(aws organizations list-roots --query "Roots[0].Id" --output text)
+    OU_ID=$(aws organizations list-organizational-units-for-parent --parent-id $ROOT_ID --query "OrganizationalUnits[?Name=='$OU'].Id" --output text)
+
+    if [ -z "$OU_ID" ]; then
+      echo "Couldn't find Organizational Unit ID only one level of OUs from root is currently supported"
+      exit 1
+    fi
+    # Need OU name and ID
+    PARAMS="$PARAMS Key=ManagedOrganizationalUnit,Value=$OU($OU_ID)"
+  fi
+  aws servicecatalog provision-product --product-id $prod_id --provisioning-artifact-id $pa_id --provision-token $RandomToken --provisioned-product-name $CatalogName --provisioning-parameters $PARAMS
 
   if [ $? -ne 0 ]; then
     echo "Failed to provision account using Control Tower Account Factory"
@@ -139,7 +148,7 @@ if [ $? -eq 0 ]; then
 
   if [ -f ~/.ssh/developers.pub ]; then
     echo "Adding developers SSH public key to new Account"
-    aws ec2 import-key-pair --key-name "developers" --public-key-material fileb://~/.ssh/developers.pub --profile github-da 1>/dev/null
+    aws ec2 import-key-pair --key-name "developers" --public-key-material fileb://~/.ssh/developers.pub $ACCOUNT_PROFILE 1>/dev/null
   fi
 else
   echo "Failed to retrieve developers SSH key cloud formation deployments will not succeed until this is resolved"
@@ -172,18 +181,18 @@ aws ses put-identity-policy --identity openremote.io --policy-name smtp-$ACCOUNT
 if [ -n "$PARENT_DNS_ZONE" ]; then
   HOSTED_ZONE="$ACCOUNT_NAME.$PARENT_DNS_ZONE"
   PARENT_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$PARENT_DNS_ZONE.'].Id" --output text 2>/dev/null)
-  SUB_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$HOSTED_ZONE.'].Id" --output text --profile github-da 2>/dev/null)
+  SUB_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$HOSTED_ZONE.'].Id" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
   if [ -n "$PARENT_HOSTED_ZONE_ID" ]; then
     if [ "$HOSTED_DNS" == 'true' ]; then
       if [ -z "$SUB_HOSTED_ZONE_ID" ]; then
         echo "Creating sub domain hosted zone '$HOSTED_ZONE' in new account"
-        SUB_HOSTED_ZONE_ID=$(aws route53 create-hosted-zone --name $HOSTED_ZONE --caller-reference $(date -u -Iseconds) --query "HostedZone.Id" --output text --profile github-da)
+        SUB_HOSTED_ZONE_ID=$(aws route53 create-hosted-zone --name $HOSTED_ZONE --caller-reference $(date -u -Iseconds) --query "HostedZone.Id" --output text $ACCOUNT_PROFILE)
       fi
 
       if [ -n "$SUB_HOSTED_ZONE_ID" ]; then
         # Get name server record
-        NS_RECORDS=$(aws route53 list-resource-record-sets --hosted-zone-id $SUB_HOSTED_ZONE_ID --query "ResourceRecordSets[?(Type=='NS' && Name=='$HOSTED_ZONE.')] | [0].ResourceRecords" --profile github-da)
+        NS_RECORDS=$(aws route53 list-resource-record-sets --hosted-zone-id $SUB_HOSTED_ZONE_ID --query "ResourceRecordSets[?(Type=='NS' && Name=='$HOSTED_ZONE.')] | [0].ResourceRecords" $ACCOUNT_PROFILE)
         # Add name server record to PARENT_DNS_ZONE
 
 read -r -d '' RECORDSET << EOF
@@ -207,7 +216,7 @@ EOF
     else
       if [ -n "$SUB_HOSTED_ZONE_ID" ]; then
         echo "Removing existing sub domain hosted zone"
-        aws route53 delete-hosted-zone --id $SUB_HOSTED_ZONE_ID --profile github-da
+        aws route53 delete-hosted-zone --id $SUB_HOSTED_ZONE_ID $ACCOUNT_PROFILE
       fi
     fi
   else
@@ -217,4 +226,77 @@ else
   echo "PARENT_DNS_ZONE not set so no DNS configuration will be attempted"
 fi
 
-"${awsDir}set_ssh_whitelist.sh"
+# Update SSH Whitelist for this account
+"${awsDir}set_ssh_whitelist.sh" "" "" $ACCOUNT_ID
+
+if [ "$PROVISION_EFS" != 'false' ]; then
+  echo "Provisioning EFS for account '$ACCOUNT_NAME' using cloud formation template"
+
+  if [ -f "${awsDir}cloudformation-create-efs.yml" ]; then
+    TEMPLATE_PATH="${awsDir}cloudformation-create-efs.yml"
+  elif [ -f ".ci_cd/aws/cloudformation-create-efs.yml" ]; then
+    TEMPLATE_PATH=".ci_cd/aws/cloudformation-create-efs.yml"
+  elif [ -f "openremote/.ci_cd/aws/cloudformation-create-efs.yml" ]; then
+    TEMPLATE_PATH="openremote/.ci_cd/aws/cloudformation-create-efs.yml"
+  else
+    echo "Cannot determine location of cloudformation-create-efs.yml so cannot provision EFS filesystem"
+  fi
+
+  STACK_NAME='hosts-filesystem'
+
+  # Check stack doesn't already exist
+  STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+  if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
+    echo "EFS stack already exists"
+  else
+
+    # Find Default VPC and security groups
+    VPCID=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    VPCIP4CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].CidrBlockAssociationSet[0].CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    VPCIP6CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+    if [ -z "$VPCIP4CIDR" ] && [ -z "$VPCIP6CIDR" ]; then
+      echo "Default VPC not found"
+    else
+
+      SGID=$(aws ec2 describe-security-groups --filters Name=vpc-id,Values=$VPCID --group-names 'default' --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+      if [ -z "$SGID" ]; then
+        echo "Security group for default VPC not found"
+      else
+        SUBNETIDS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPCID --query "Subnets[*].SubnetId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+        if [ -z "$SUBNETIDS" ]; then
+          echo "Subnets for default VPC not found"
+        else
+
+          PARAMS="ParameterKey=SecurityGroupID,ParameterValue=$SGID"
+
+          if [ -n "$VPCIP4CIDR" ]; then
+            PARAMS="$PARAMS ParameterKey=VPCIP4CIDR,ParameterValue=$VPCIP4CIDR"
+          fi
+          if [ -n "$VPCIP6CIDR" ]; then
+            PARAMS="$PARAMS ParameterKey=VPCIP6CIDR,ParameterValue=$VPCIP6CIDR"
+          fi
+
+          IFS=$' \t'
+          count=1
+          for SUBNETID in $SUBNETIDS; do
+            PARAMS="$PARAMS ParameterKey=SubnetID$count,ParameterValue=$SUBNETID"
+            count=$((count+1))
+          done
+
+          echo "Creating stack using cloudformation-create-efs.yml"
+          STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
+
+          if [ $? -ne 0 ]; then
+            echo "Create stack failed"
+          else
+            echo "Create stack in progress"
+          fi
+        fi
+      fi
+    fi
+  fi
+fi

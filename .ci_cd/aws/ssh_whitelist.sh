@@ -9,17 +9,12 @@
 CIDR=$1
 AWS_PROFILE=$2
 
-if [ "$AWS_ENABLED" != true ]; then
-  AWS_ENABLED=${3,,}
-fi
-
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
 else
   awsDir=./
 fi
 
-# Optionally login if AWS_ENABLED != 'true'
 source "${awsDir}login.sh"
 
 if [ "$AWS_ENABLED" != 'true' ]; then

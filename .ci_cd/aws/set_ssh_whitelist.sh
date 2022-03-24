@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Sets the SSH ingress rules for the ssh-access security group in the specified OUs or Accounts by looking in the
-# Parameter Store for all parameters with in the path /SSH-Whitelist/* of the caller account the value should be a CIDR.
-# All existing SSH ingress assignments in the ssh-access security group will be removed and new one created for each
+# Sets/updates the SSH ingress rules for the ssh-access security group in the specified OUs or Accounts by looking in the
+# Parameter Store for all parameters in the path /SSH-Whitelist/* of the caller account the value should be a CIDR.
+# All existing SSH ingress assignments in the ssh-access security group will be removed and new ones created for each
 # parameter found.
 #
 # Arguments:
@@ -77,7 +77,7 @@ for ACCOUNT_ID in $ACCOUNT_IDS; do
       IFS=$' \t'
       entryArr=( $entry )
       echo "Adding SSH whitelist for '${entryArr[0]}' '${entryArr[1]}'"
-      "$awsDir/ssh_whitelist.sh" "${entryArr[1]}" "github-da" "$AWS_ENABLED"
+      "$awsDir/ssh_whitelist.sh" "${entryArr[1]}" "github-da"
     done
   fi
 done

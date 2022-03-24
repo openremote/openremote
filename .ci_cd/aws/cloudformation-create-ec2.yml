@@ -1,17 +1,19 @@
 # ---------------------------------------------------------------------------------------------
-# Standard OpenRemote CloudFormation template for provisioning the following AWS resources (not
-# in order) for running an instance of the OpenRemote stack:
+# Standard OpenRemote CloudFormation template for provisioning an EC2 instance with docker
+# support for running the OpenRemote stack. SMTP credentials are optionally read from
+# the parameter store and added to the /etc/environment file to essentially preconfigure standard
+# OpenRemote SMTP environment variables.
+# DNS parameters allow for DNS A record for the created EC2 instance to be dynamically updated
+# between restarts.
 #
-# - Provision EC2 instance using Amazon Linux 2 ARM image with standard security group assignments
-# - Add IAM user with SES email permissions
-# - Add Route 53 DNS record to hosted zone 'mvp.openremote.io' that points to new EC2 instance
-# - Configures logging for the EC2 instance
-# - Installs docker and docker-compose
-# - Configures CloudWatch agent using config from Parameter Store key CloudWatch-Config
+# A standard access security group is also created for the standard OpenRemote stack services; the ssh-access security
+# group is also linked to the EC2 instance and this security group must already exist.
 #
-# The generated SMTP IAM credentials are output to /etc/environment using the standard OpenRemote
-# naming convention OR_EMAIL_HOST, OR_EMAIL_USER and OR_EMAIL_PASSWORD
+# Systemd services are also created to:
 #
+# - Mount EFS volume named 'hosts-filesystem' at /deployment.local/efs on restart
+# - Perform daily backup of /deployment.local/backup if an S3 bucket with the same name as the FQDN for this host exists
+#   (periods replaced with hyphen e.g. demo.openremote.app -> demo-openremote-app)
 # ---------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'
@@ -312,75 +314,48 @@ Resources:
             yum:
               amazon-efs-utils: []
           files:
-            "/home/ec2-user/post_nfsstat":
+            "/usr/local/bin/efs-mount":
               content: !Sub |
                 #!/bin/bash
                 
-                INPUT="$(cat)"
-                CW_JSON_OPEN='{ "Namespace": "EFS", "MetricData": [ '
-                CW_JSON_CLOSE=' ] }'
-                CW_JSON_METRIC=''
-                METRIC_COUNTER=0
+                # -------------------------------------------------------------------------------------------
+                #
+                # Script for checking if EFS filesystem called 'hosts-filesystem' exists and attempts to
+                # mount it to /deployment.local/efs at boot time
+                #
+                # -------------------------------------------------------------------------------------------
                 
-                for COL in 1 2 3 4 5 6; do
+                FILESYSTEMID=$(aws efs describe-file-systems --query "FileSystems[?Name=='hosts-filesystem'].FileSystemId" --output text --region ${AWS::Region})
                 
-                 COUNTER=0
-                 METRIC_FIELD=$COL
-                 DATA_FIELD=$(($COL+($COL-1)))
+                if [ -z "$FILESYSTEMID" ]; then
+                  echo "EFS Filesystem not found so nothing to mount"
+                  exit 0
+                fi
                 
-                 while read line; do
-                   if [[ COUNTER -gt 0 ]]; then
+                echo "Mounting EFS Filesystem '$FILESYSTEMID'"
+                sudo mount -t efs $FILESYSTEMID /deployment.local/efs
+                sudo chown -R ec2-user:ec2-user /deployment.local/efs
+
+            "/lib/systemd/system/efs-mount.service":
+              content: |
+                [Unit]
+                Description=Mounts hosts-filesystem EFS filesystem
+                After=network-online.target firewalld.service
+                Wants=network-online.target
                 
-                     LINE=`echo $line | tr -s ' ' `
-                     AWS_COMMAND="aws cloudwatch put-metric-data --region ${AWS::Region}"
-                     MOD=$(( $COUNTER % 2))
+                [Service]
+                ExecStart=/usr/local/bin/efs-mount
                 
-                     if [ $MOD -eq 1 ]; then
-                       METRIC_NAME=`echo $LINE | cut -d ' ' -f $METRIC_FIELD`
-                     else
-                       METRIC_VALUE=`echo $LINE | cut -d ' ' -f $DATA_FIELD`
-                     fi
-                
-                     if [[ -n "$METRIC_NAME" && -n "$METRIC_VALUE" ]]; then
-                       INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                       CW_JSON_METRIC="$CW_JSON_METRIC { \"MetricName\": \"$METRIC_NAME\", \"Dimensions\": [{\"Name\": \"InstanceId\", \"Value\": \"$INSTANCE_ID\"} ], \"Value\": $METRIC_VALUE },"
-                       unset METRIC_NAME
-                       unset METRIC_VALUE
-                
-                       METRIC_COUNTER=$((METRIC_COUNTER+1))
-                       if [ $METRIC_COUNTER -eq 20 ]; then
-                         # 20 is max metric collection size, so we have to submit here
-                         aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
-                
-                         # reset
-                         METRIC_COUNTER=0
-                         CW_JSON_METRIC=''
-                       fi
-                     fi
-                
-                     COUNTER=$((COUNTER+1))
-                   fi
-                
-                   if [[ "$line" == "Client nfs v4:" ]]; then
-                     # the next line is the good stuff
-                     COUNTER=$((COUNTER+1))
-                   fi
-                 done <<< "$INPUT"
-                done
-                
-                # submit whatever is left
-                aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
-              mode: '000755'
-              owner: ec2-user
-              group: ec2-user
-            "/home/ec2-user/crontab":
-              content: "* * * * * /usr/sbin/nfsstat | /home/ec2-user/post_nfsstat\n"
-              owner: ec2-user
-              group: ec2-user
+                [Install]
+                WantedBy=multi-user.target
           commands:
-            01_install_botocore:
+            01_init_service:
               command: |
-                pip3 install botocore
+                mkdir -p /deployment.local/efs
+                chmod +x /usr/local/bin/efs-mount
+                systemctl daemon-reload
+                systemctl enable efs-mount.service
+                systemctl start efs-mount.service
 
         env_vars:
           files:
@@ -569,9 +544,6 @@ Resources:
           
           # Execute required config set
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource EC2Instance --configsets default --region ${AWS::Region}
-
-          # Add NFS/EFS stat cron job
-          crontab /home/ec2-user/crontab
           
           # Swap file necessary?
           

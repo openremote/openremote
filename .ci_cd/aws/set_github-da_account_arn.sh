@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Updates/creates the github-da AWS profile with developers-access assumed role
+# Updates/creates the github-da AWS profile with developers-access assumed role so scripts can switch between which
+# credentials are used.
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
