@@ -439,7 +439,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                               }}"
                               @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
                                   // Means field has lost focus so do filter immediately
-                                  // this._doFiltering(FilterElementType.SEARCH_FILTER, (e.detail.value as string) || undefined);
                                   this._onFilterInput((e.detail.value as string) || undefined, true);
                               }}"
                               trailingSpace="true">
