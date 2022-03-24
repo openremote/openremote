@@ -1,5 +1,6 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
+import "./or-dashboard-tree";
 import {GridItemHTMLElement, GridStack, GridStackNode, GridStackWidget } from 'gridstack';
 import 'gridstack/dist/h5/gridstack-dd-native'; // drag and drop feature
 
@@ -26,7 +27,7 @@ const styling = css`
         justify-content: normal;
         align-items: normal;
         align-content: normal;
-        padding: 64px;
+        /*padding: 64px;*/
     }
     .flex-item {
         display: block;
@@ -63,6 +64,30 @@ const styling = css`
     #sidebarElement, #sidebarBgElement {
         grid-column: 1;
         grid-row: 1;
+    }
+    or-dashboard-tree {
+        align-items: stretch;
+        z-index: 1;
+    }
+    #content {
+        width: 100%;
+        height: 100%;
+    }
+    #container {
+        display: flex;
+        width: 100%;
+        height: 100%;
+    }
+    #browser {
+        flex-grow: 1;
+        align-items: stretch;
+        z-index: 1;
+        max-width: 300px;
+    }
+    #builder {
+        flex-grow: 2;
+        align-items: stretch;
+        z-index: 0;
     }
 `;
 
@@ -110,7 +135,7 @@ export class OrDashboardBuilder extends LitElement {
 
 
                 // Setup of Sidebar
-                const sidebarElement = this.shadowRoot.getElementById("sidebarElement");
+                /*const sidebarElement = this.shadowRoot.getElementById("sidebarElement");
                 const sidebarItems = [
                     {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-linechart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
                     {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-barchart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
@@ -154,7 +179,7 @@ export class OrDashboardBuilder extends LitElement {
                 sidebarGrid.on('removed', (event: Event, items: GridStackNode[]) => {
                     const filteredItems = sidebarItems.filter(widget => { return (widget.content == items[0].content); });  // Filter the GridstackWidgets: the input (GridstackNode) extends on GridstackWidget
                     sidebarGrid.load([filteredItems[0]]);
-                });
+                });*/
 
 
 
@@ -245,7 +270,39 @@ export class OrDashboardBuilder extends LitElement {
     // Rendering the page
     render(): any {
         return html`
-            <div class="flex-container">
+            <div id="container">
+                <div id="header"></div>
+                <div id="content">
+                    <div id="container">
+                        <div id="builder">
+                            <div style="margin-bottom: 12px; width: 100%;">
+                                <button @click="${this.compact}" class="mdc-button mdc-button--outlined">Compact</button>
+                                <button class="mdc-button mdc-button--outlined">Action 2</button>
+                                <button class="mdc-button mdc-button--outlined">Action 3</button>
+
+                                <span style="margin-left: 24px;">Amount of Columns:</span>
+                                <label class="mdc-text-field mdc-text-field--outlined mdc-text-field--no-label">
+                                            <span class="mdc-notched-outline">
+                                                <span class="mdc-notched-outline__leading"></span>
+                                                <span class="mdc-notched-outline__trailing"></span>
+                                            </span>
+                                    <input class="mdc-text-field__input" type="number" value="12" min="1" max="36" aria-label="Label" @change="${this.changeColumns}">
+                                </label>
+                                <div style="float: right">
+                                    <button class="mdc-button mdc-button--outlined" @click="${this.saveDashboard}">Save</button>
+                                </div>
+                            </div>
+                            <div class="maingrid">
+                                <div id="gridElement" class="grid-stack"></div>
+                            </div>
+                        </div>
+                        <or-dashboard-browser id="browser"></or-dashboard-browser>
+                    </div>
+                </div>
+            </div>
+            
+            
+            <!--<div class="flex-container">
                 <div class="flex-item">
                     <div style="margin-bottom: 12px; width: 100%;">
                         <button @click="${this.compact}" class="mdc-button mdc-button--outlined">Compact</button>
@@ -274,7 +331,7 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 1000"></div>
                     </div>
                 </div>
-            </div>
+            </div>-->
         `
     }
 }

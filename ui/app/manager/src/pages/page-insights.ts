@@ -8,7 +8,7 @@ import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
-import "../../../../component/or-dashboard-builder"
+import "../../../../component/or-dashboard-builder";
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -34,8 +34,48 @@ export class PageInsights extends Page<AppStateKeyed>  {
 
     static get styles() {
         // language=CSS
-        return css`            
+        return css`
+
+            #container {
+                display: flex;
+                width: 100%;
+            }
+            #tree {
+                flex-grow: 1;
+                align-items: stretch;
+                z-index: 1;
+                max-width: 300px;
+            }
+            #builder {
+                flex-grow: 2;
+                align-items: stretch;
+                z-index: 0;
+            }
+
             .hideMobile {
+                display: none;
+            }
+
+            @media only screen and (min-width: 768px){
+                #tree {
+                    width: 300px;
+                    min-width: 300px;
+                }
+
+                .hideMobile {
+                    display: flex;
+                }
+
+                #builder,
+                #builder.hideMobile {
+                    display: initial;
+                    max-width: calc(100vw - 300px);
+                }
+            }
+            
+            
+            
+            /*.hideMobile {
                 display: none;
             }
 
@@ -58,11 +98,11 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 display: flex;
             }
 
-            or-data-viewer {
+            !*or-data-viewer {
                 width: 100%;
                 max-width: 1400px;
                 margin: 0 auto;
-            }
+            }*!
         
             #title > or-icon {
                 margin-right: 10px;
@@ -79,7 +119,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 #title {
                     padding: 0 20px;
                 }
-            }
+            }*/
         `;
     }
 
@@ -115,13 +155,17 @@ export class PageInsights extends Page<AppStateKeyed>  {
 
     protected render(): TemplateResult | void {
         return html`
-            <div id="wrapper">
+            <div id="container">
+                <or-dashboard-tree id="tree"></or-dashboard-tree>
+                <or-dashboard-builder id="builder"></or-dashboard-builder>
+            </div>
+            <!--<div id="wrapper">
                 <div id="title">
                     <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
                 </div>
                 <or-dashboard-builder id="data-viewer"></or-dashboard-builder>
-                <!--<or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>-->
-            </div>
+                <or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>
+            </div>-->
         `;
     }
 
