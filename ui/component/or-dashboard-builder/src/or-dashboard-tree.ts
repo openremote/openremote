@@ -1,6 +1,7 @@
 import {html, LitElement, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
-import {InputType} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
+import "@openremote/or-icon";
 import {style} from "./style";
 import { GridStack } from "gridstack";
 import 'gridstack/dist/h5/gridstack-dd-native';

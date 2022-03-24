@@ -1,6 +1,8 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import "./or-dashboard-tree";
+import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
+import "@openremote/or-icon";
 import {GridItemHTMLElement, GridStack, GridStackNode, GridStackWidget } from 'gridstack';
 import 'gridstack/dist/h5/gridstack-dd-native'; // drag and drop feature
 
@@ -65,10 +67,6 @@ const styling = css`
         grid-column: 1;
         grid-row: 1;
     }
-    or-dashboard-tree {
-        align-items: stretch;
-        z-index: 1;
-    }
     #content {
         width: 100%;
         height: 100%;
@@ -89,6 +87,30 @@ const styling = css`
         align-items: stretch;
         z-index: 0;
     }
+    #title {
+        flex: 1 1 auto;
+        font-size: 18px;
+        font-weight: bold;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    #title > or-icon {
+        margin-right: 10px;
+    }
+    #wrapper {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+    }
+    #right-wrapper {
+        flex: 1 1 auto;
+        text-align: right;
+    }
+    #save-btn { margin-left: 20px; }
+    #view-btn { margin-left: 15px; }
 `;
 
 @customElement("or-dashboard-builder") // @ts-ignore
@@ -132,55 +154,6 @@ export class OrDashboardBuilder extends LitElement {
                     // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
                 }, gridElement);
                 this.mainGrid.load(gridItems);
-
-
-                // Setup of Sidebar
-                /*const sidebarElement = this.shadowRoot.getElementById("sidebarElement");
-                const sidebarItems = [
-                    {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-linechart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
-                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-barchart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
-                    {x: 0, y: 2, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-gauge', locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},
-                    {x: 2, y: 2, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-table', locked: true, content: '<div class="sidebarItem"><or-icon icon="table-large"></or-icon><span>Table</span></div>'},
-                    //{x: 2, y: 3, w: 2, h: 2, locked: true, noMove: true, content: 'w'} // Invisible widget
-                ];
-                const sidebarGrid = GridStack.init({
-                    acceptWidgets: false,
-                    column: 4,
-                    disableOneColumnMode: true,
-                    disableResize: true,
-                    draggable: {
-                        appendTo: 'parent'
-                    },
-                    margin: 8,
-                    maxRow: 4
-
-                    // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
-                }, sidebarElement);
-                sidebarGrid.load(sidebarItems);
-
-
-                // Seperate Static Background grid (to make it look like the items duplicate)
-                const sidebarBgElement = this.shadowRoot.getElementById("sidebarBgElement");
-                const backgroundGrid = GridStack.init({
-                    staticGrid: true,
-                    column: 4,
-                    disableOneColumnMode: true,
-                    margin: 8
-
-                    // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
-                }, sidebarBgElement);
-                backgroundGrid.load(sidebarItems); // Loading the same items
-
-
-
-                // If an item gets dropped on the main grid, the dragged item needs to be reset to the sidebar.
-                // This is done by just loading the initial/original widget back in the sidebar.
-                // @ts-ignore typechecking since we assume they are not undefined
-                sidebarGrid.on('removed', (event: Event, items: GridStackNode[]) => {
-                    const filteredItems = sidebarItems.filter(widget => { return (widget.content == items[0].content); });  // Filter the GridstackWidgets: the input (GridstackNode) extends on GridstackWidget
-                    sidebarGrid.load([filteredItems[0]]);
-                });*/
-
 
 
                 // Handling dropping of new items
@@ -270,28 +243,25 @@ export class OrDashboardBuilder extends LitElement {
     // Rendering the page
     render(): any {
         return html`
-            <div id="container">
-                <div id="header"></div>
+            <div id="container" style="display: inherit;">
+                <div id="header" style="background: white; padding: 20px 20px 14px 20px; border-bottom: solid 1px #e5e5e5;">
+                    <div id="wrapper">
+                        <div id="title">
+                            <!--<or-icon icon="view-dashboard"></or-icon>-->
+                            <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" value="Dashboard 1"></or-mwc-input>
+                        </div>
+                        <div id="right-wrapper">
+                            <div style="display: flex; flex-direction: row; align-items: center; float: right;">
+                                <or-mwc-input id="share-btn" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
+                                <or-mwc-input id="save-btn" type="${InputType.BUTTON}" raised label="Save"></or-mwc-input>
+                                <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="View"></or-mwc-input>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="content">
                     <div id="container">
                         <div id="builder">
-                            <div style="margin-bottom: 12px; width: 100%;">
-                                <button @click="${this.compact}" class="mdc-button mdc-button--outlined">Compact</button>
-                                <button class="mdc-button mdc-button--outlined">Action 2</button>
-                                <button class="mdc-button mdc-button--outlined">Action 3</button>
-
-                                <span style="margin-left: 24px;">Amount of Columns:</span>
-                                <label class="mdc-text-field mdc-text-field--outlined mdc-text-field--no-label">
-                                            <span class="mdc-notched-outline">
-                                                <span class="mdc-notched-outline__leading"></span>
-                                                <span class="mdc-notched-outline__trailing"></span>
-                                            </span>
-                                    <input class="mdc-text-field__input" type="number" value="12" min="1" max="36" aria-label="Label" @change="${this.changeColumns}">
-                                </label>
-                                <div style="float: right">
-                                    <button class="mdc-button mdc-button--outlined" @click="${this.saveDashboard}">Save</button>
-                                </div>
-                            </div>
                             <div class="maingrid">
                                 <div id="gridElement" class="grid-stack"></div>
                             </div>

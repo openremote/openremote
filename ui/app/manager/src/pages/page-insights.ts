@@ -45,6 +45,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 align-items: stretch;
                 z-index: 1;
                 max-width: 300px;
+                box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
             }
             #builder {
                 flex-grow: 2;
