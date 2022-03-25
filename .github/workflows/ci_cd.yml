@@ -659,7 +659,7 @@ jobs:
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
             sys.exit(1)
-          
+          sys.exit(0)
           for deployment in deployments:
             dep = deployment.split(":")
             env = dep[0]
@@ -763,3 +763,9 @@ jobs:
           DEPLOY_SCRIPT_COMMAND: ${{ steps.deploy-script-command.outputs.value }}
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
+
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          ## limits ssh access and adds the ssh public keys of the listed GitHub users
+          limit-access-to-users: richturner
