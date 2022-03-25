@@ -15,62 +15,7 @@ const inputStyle = require("@material/textfield/dist/mdc.textfield.css");
 
 // language=CSS
 const styling = css`
-    .maingrid, .sidebar {
-        background-color: #F5F5F5;
-        border: 1px solid #E0E0E0;
-    }
-    .gridItem {
-        background: white;
-        height: 100%;
-        box-sizing: border-box;
-        border: 2px solid #E0E0E0;
-        border-radius: 4px;
-    }
-    .flex-container {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        justify-content: normal;
-        align-items: normal;
-        align-content: normal;
-        /*padding: 64px;*/
-    }
-    .flex-item {
-        display: block;
-        flex-basis: auto;
-        align-self: auto;
-        order: 0;
-        border: 1px solid #E0E0E0;
-        padding: 32px;
-    }
-    .flex-item:nth-child(1) {
-        flex-grow: 1;
-    }
-    .sidebar {
-        display: grid;
-    }
-    .sidebarItem {
-        height: 100%;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border: 1px solid #E0E0E0;
-        border-radius: 8px;
-        box-sizing: border-box;
-        flex-direction: column;
-        font-size: 14px;
-    }
-    .sidebarItem > or-icon {
-        --or-icon-height: 58px;
-        --or-icon-width: 58px;
-        margin-bottom: 12px;
-    }
-    #sidebarElement, #sidebarBgElement {
-        grid-column: 1;
-        grid-row: 1;
-    }
+
     #content {
         width: 100%;
         height: 100%;
@@ -80,18 +25,20 @@ const styling = css`
         width: 100%;
         height: 100%;
     }
-    #browser {
-        flex-grow: 1;
-        align-items: stretch;
-        z-index: 1;
-        max-width: 300px;
+    /* ----------------------------- */
+    /* Header related styling */
+    #header {
+        background: white;
+        padding: 20px 20px 14px 20px;
+        border-bottom: solid 1px #e5e5e5;
     }
-    #builder {
-        flex-grow: 2;
-        align-items: stretch;
-        z-index: 0;
+    #header-wrapper {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
     }
-    #title {
+    #header-title {
         flex: 1 1 auto;
         font-size: 18px;
         font-weight: bold;
@@ -99,20 +46,45 @@ const styling = css`
         flex-direction: row;
         align-items: center;
     }
-
-    #title > or-icon {
+    #header-title > or-icon {
         margin-right: 10px;
     }
-    #wrapper {
-        height: 100%;
-        width: 100%;
-        display: flex;
-        flex-direction: row;
-    }
-    #right-wrapper {
+    #header-actions {
         flex: 1 1 auto;
         text-align: right;
     }
+    /* ----------------------------- */
+    /* Editor/builder related styling */
+    #builder {
+        flex-grow: 2;
+        align-items: stretch;
+        z-index: 0;
+    }
+    #maingrid {
+        border: 3px solid #909090;
+        background: #FFFFFF;
+        border-radius: 8px;
+        height: 500px; /* Should be set according to input */
+        overflow: auto;
+        width: 900px; /* Should be set according to input */
+        padding: 4px;
+    }
+    .gridItem {
+        background: white;
+        height: 100%;
+        box-sizing: border-box;
+        border: 2px solid #E0E0E0;
+        border-radius: 4px;
+    }
+    /* ----------------------------- */
+    /* Browser (drag and drop widgets) related styling */
+    #browser {
+        flex-grow: 1;
+        align-items: stretch;
+        z-index: 1;
+        max-width: 300px;
+    }
+    
     #save-btn { margin-left: 20px; }
     #view-btn { margin-left: 15px; }
     #view-preset-select { margin-left: 20px; }
@@ -121,7 +93,7 @@ const styling = css`
     #rotate-btn { margin-left: 10px; }
 `;
 
-@customElement("or-dashboard-builder") // @ts-ignore
+@customElement("or-dashboard-builder")
 export class OrDashboardBuilder extends LitElement {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
@@ -152,7 +124,7 @@ export class OrDashboardBuilder extends LitElement {
                     cellHeight: 'initial',
                     cellHeightThrottle: 100,
                     draggable: {
-                        appendTo: 'parent',
+                        appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                         scroll: true
                     },
                     float: true,
@@ -205,61 +177,21 @@ export class OrDashboardBuilder extends LitElement {
         });
     }
 
-    saveDashboard(): void {
-        if(this.mainGrid != null) {
-            console.log(this.mainGrid.save());
-        }
-    }
-
-    compact(): void {
-        if(this.mainGrid != null) {
-            this.mainGrid.compact();
-        }
-    }
-
-    changeColumns(a: any): void {
-        if(this.mainGrid != null && a.target.value != null) {
-            this.mainGrid.column(a.target.value, 'moveScale');
-        }
-    }
-
     connectedCallback(): void {
         super.connectedCallback();
-
-        // Handling window resize for correct display of grid (perfect 1:1 squares)
-        /*window.addEventListener("resize", () => {
-            console.log("Resizing the Grid..");
-            if(this.mainGrid != null) {
-                if(this.mainGrid.getColumn() > 1) {
-                    this.mainGrid.cellHeight(undefined, true); // undefined makes GridStack use the default option; perfect squares.
-                    // @ts-ignore
-                    let children = Array.from(this.shadowRoot.getElementById("gridElement").children) as HTMLCollectionOf<HTMLElement>;
-                    for(let i in children) {
-                        const gridItemHeight = children[i].getAttribute('gs-h');
-                        if (gridItemHeight != null) {
-                            let width: number = children[i].clientWidth;
-                            children[i].style.setProperty('height', (width + 'px'), 'important');
-                        }
-                    }
-                } else {
-                    console.log("Oh you are viewing in Mobile mode..")
-                    this.mainGrid.cellHeight(160, true)
-                }
-            }
-        }, false);*/
     }
 
     // Rendering the page
     render(): any {
         return html`
             <div id="container" style="display: inherit;">
-                <div id="header" style="background: white; padding: 20px 20px 14px 20px; border-bottom: solid 1px #e5e5e5;">
-                    <div id="wrapper">
-                        <div id="title">
+                <div id="header">
+                    <div id="header-wrapper">
+                        <div id="header-title">
                             <!--<or-icon icon="view-dashboard"></or-icon>-->
                             <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" value="Dashboard 1" style="min-width: 320px;"></or-mwc-input>
                         </div>
-                        <div id="right-wrapper">
+                        <div id="header-actions">
                             <div style="display: flex; flex-direction: row; align-items: center; float: right;">
                                 <or-mwc-input id="share-btn" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
                                 <or-mwc-input id="save-btn" type="${InputType.BUTTON}" raised label="Save"></or-mwc-input>
@@ -278,8 +210,8 @@ export class OrDashboardBuilder extends LitElement {
                                 <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="Height" min="100" value="1080" style="width: 90px;"></or-mwc-input>
                                 <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"></or-mwc-input>
                             </div>
-                            <div style="display: flex; width: 100%; justify-content: center;">
-                                <div class="maingrid" style="border: 3px solid #909090; background: #FFFFFF; border-radius: 8px; height: 500px; overflow: auto; width: 900px; padding: 4px;">
+                            <div id="container" style="justify-content: center;">
+                                <div id="maingrid">
                                     <div id="gridElement" class="grid-stack"></div>
                                 </div>
                             </div>
@@ -290,10 +222,12 @@ export class OrDashboardBuilder extends LitElement {
             </div>
             
             
+            <!-- Commented code containing logic from the first impleentation, in case we need it. -->
+            
             <!--<div class="flex-container">
                 <div class="flex-item">
                     <div style="margin-bottom: 12px; width: 100%;">
-                        <button @click="${this.compact}" class="mdc-button mdc-button--outlined">Compact</button>
+                        <button @click="{this.compact}" class="mdc-button mdc-button--outlined">Compact</button>
                         <button class="mdc-button mdc-button--outlined">Action 2</button>
                         <button class="mdc-button mdc-button--outlined">Action 3</button>
                         
@@ -303,10 +237,10 @@ export class OrDashboardBuilder extends LitElement {
                                 <span class="mdc-notched-outline__leading"></span>
                                 <span class="mdc-notched-outline__trailing"></span>
                             </span>
-                            <input class="mdc-text-field__input" type="number" value="12" min="1" max="36" aria-label="Label" @change="${this.changeColumns}">
+                            <input class="mdc-text-field__input" type="number" value="12" min="1" max="36" aria-label="Label" @change="{this.changeColumns}">
                         </label>
                         <div style="float: right">
-                            <button class="mdc-button mdc-button--outlined" @click="${this.saveDashboard}">Save</button>
+                            <button class="mdc-button mdc-button--outlined" @click="{this.saveDashboard}">Save</button>
                         </div>
                     </div>
                     <div class="maingrid">
