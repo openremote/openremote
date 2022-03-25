@@ -18,7 +18,8 @@ const styling = css`
 
     #content {
         width: 100%;
-        height: 100%;
+        display: table-row;
+        /*height: 100%;*/
     }
     #container {
         display: flex;
@@ -28,13 +29,15 @@ const styling = css`
     /* ----------------------------- */
     /* Header related styling */
     #header {
+        display: table-row;
+        height: 0.1%;
         background: white;
-        padding: 20px 20px 14px 20px;
         border-bottom: solid 1px #e5e5e5;
     }
     #header-wrapper {
-        height: 100%;
-        width: 100%;
+        /*height: 100%;*/
+        /*width: 100%;*/
+        padding: 20px 20px 14px 20px;
         display: flex;
         flex-direction: row;
     }
@@ -60,12 +63,19 @@ const styling = css`
         align-items: stretch;
         z-index: 0;
     }
+    #view-options {
+        padding: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
     #maingrid {
         border: 3px solid #909090;
         background: #FFFFFF;
         border-radius: 8px;
+        overflow-x: hidden;
+        overflow-y: auto;
         height: 500px; /* Should be set according to input */
-        overflow: auto;
         width: 900px; /* Should be set according to input */
         padding: 4px;
     }
@@ -76,6 +86,15 @@ const styling = css`
         border: 2px solid #E0E0E0;
         border-radius: 4px;
     }
+    /* Grid lines on the background of the grid */
+    .grid-stack {
+        background-image:
+                linear-gradient(90deg, #E0E0E0, transparent 1px),
+                linear-gradient(90deg, transparent calc(100% - 1px), #E0E0E0),
+                linear-gradient(#E0E0E0, transparent 1px),
+                linear-gradient(transparent calc(100% - 1px), #E0E0E0 100%);
+    }
+    
     /* ----------------------------- */
     /* Browser (drag and drop widgets) related styling */
     #browser {
@@ -136,6 +155,9 @@ export class OrDashboardBuilder extends LitElement {
                 }, gridElement);
                 this.mainGrid.load(gridItems);
 
+                if(gridElement != null) {
+                    gridElement.style.backgroundSize = "" + this.mainGrid.getCellHeight() + "px " + this.mainGrid.cellWidth() + "px";
+                }
 
                 // Handling dropping of new items
                 this.mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: any) => {
@@ -184,7 +206,7 @@ export class OrDashboardBuilder extends LitElement {
     // Rendering the page
     render(): any {
         return html`
-            <div id="container" style="display: inherit;">
+            <div id="container" style="display: table;">
                 <div id="header">
                     <div id="header-wrapper">
                         <div id="header-title">
@@ -203,14 +225,14 @@ export class OrDashboardBuilder extends LitElement {
                 <div id="content">
                     <div id="container">
                         <div id="builder" style="padding: 3vh 4vw 3vh 4vw;">
-                            <div style="padding: 24px; display: flex; justify-content: center; align-items: center;">
+                            <div id="view-options">
                                 <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" outlined label="100%"></or-mwc-input>
                                 <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
                                 <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="Width" min="100" value="1920" style="width: 90px"></or-mwc-input>
                                 <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="Height" min="100" value="1080" style="width: 90px;"></or-mwc-input>
                                 <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"></or-mwc-input>
                             </div>
-                            <div id="container" style="justify-content: center;">
+                            <div id="container" style="justify-content: center; height: auto;">
                                 <div id="maingrid">
                                     <div id="gridElement" class="grid-stack"></div>
                                 </div>
