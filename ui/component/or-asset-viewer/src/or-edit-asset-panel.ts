@@ -409,8 +409,12 @@ export class OrEditAssetPanel extends LitElement {
         const asset = this.asset!;
         let attr: Attribute<any>;
 
+        const isDisabled = (attribute: Attribute<any>) => {
+            return !(attribute && attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+        }
+
         const onAttributeChanged = (attribute: Attribute<any>) => {
-            const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+            const addDisabled = isDisabled(attribute);
             const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrMwcInput;
             addBtn!.disabled = addDisabled;
             attr = attribute;
@@ -442,10 +446,13 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        this.asset.attributes![attr.name!] = attr;
-                        this._onModified();
+                        if (attr) {
+                            this.asset.attributes![attr.name!] = attr;
+                            this._onModified();
+                        }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"
+                                    @click="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));
