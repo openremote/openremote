@@ -1,6 +1,7 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import "./or-dashboard-tree";
+// import "../../or-mwc-components/src/or-mwc-input"; // temporarily
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {GridItemHTMLElement, GridStack, GridStackNode, GridStackWidget } from 'gridstack';
@@ -21,6 +22,9 @@ const styling = css`
     .gridItem {
         background: white;
         height: 100%;
+        box-sizing: border-box;
+        border: 2px solid #E0E0E0;
+        border-radius: 4px;
     }
     .flex-container {
         display: flex;
@@ -111,6 +115,10 @@ const styling = css`
     }
     #save-btn { margin-left: 20px; }
     #view-btn { margin-left: 15px; }
+    #view-preset-select { margin-left: 20px; }
+    #width-input { margin-left: 20px; }
+    #height-input { margin-left: 10px; }
+    #rotate-btn { margin-left: 10px; }
 `;
 
 @customElement("or-dashboard-builder") // @ts-ignore
@@ -144,7 +152,8 @@ export class OrDashboardBuilder extends LitElement {
                     cellHeight: 'initial',
                     cellHeightThrottle: 100,
                     draggable: {
-                        appendTo: 'parent'
+                        appendTo: 'parent',
+                        scroll: true
                     },
                     float: true,
                     margin: 4,
@@ -248,7 +257,7 @@ export class OrDashboardBuilder extends LitElement {
                     <div id="wrapper">
                         <div id="title">
                             <!--<or-icon icon="view-dashboard"></or-icon>-->
-                            <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" value="Dashboard 1"></or-mwc-input>
+                            <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" value="Dashboard 1" style="min-width: 320px;"></or-mwc-input>
                         </div>
                         <div id="right-wrapper">
                             <div style="display: flex; flex-direction: row; align-items: center; float: right;">
@@ -261,9 +270,18 @@ export class OrDashboardBuilder extends LitElement {
                 </div>
                 <div id="content">
                     <div id="container">
-                        <div id="builder">
-                            <div class="maingrid">
-                                <div id="gridElement" class="grid-stack"></div>
+                        <div id="builder" style="padding: 3vh 4vw 3vh 4vw;">
+                            <div style="padding: 24px; display: flex; justify-content: center; align-items: center;">
+                                <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" outlined label="100%"></or-mwc-input>
+                                <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
+                                <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="Width" min="100" value="1920" style="width: 90px"></or-mwc-input>
+                                <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="Height" min="100" value="1080" style="width: 90px;"></or-mwc-input>
+                                <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"></or-mwc-input>
+                            </div>
+                            <div style="display: flex; width: 100%; justify-content: center;">
+                                <div class="maingrid" style="border: 3px solid #909090; background: #FFFFFF; border-radius: 8px; height: 500px; overflow: auto; width: 900px; padding: 4px;">
+                                    <div id="gridElement" class="grid-stack"></div>
+                                </div>
                             </div>
                         </div>
                         <or-dashboard-browser id="browser"></or-dashboard-browser>
