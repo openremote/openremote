@@ -164,9 +164,21 @@ Resources:
             - dns_updater
             - s3_backup_service
             - deployment_local_dir
+            - daily_cleanup
           UpdateEnvironment:
             - 02_config-amazon-cloudwatch-agent
             - 03_restart_amazon-cloudwatch-agent
+
+        daily_cleanup:
+          files:
+            "/usr/local/bin/daily-cleanup":
+              content: !Sub |
+                #!/bin/bash
+                journalctl --vacuum-size=500M
+            "/etc/cron.d/cleanup":
+              content: |
+                #!/bin/bash
+                0 3 * * * root /usr/local/bin/daily-cleanup
 
         deployment_local_dir:
           commands:

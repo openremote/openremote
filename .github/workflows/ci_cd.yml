@@ -655,12 +655,10 @@ jobs:
           
           if not os.path.exists(deployScript) and isCustomProject == 'true':
             deployScript = "openremote/.ci_cd/deploy.sh"
-          fi
           
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
             sys.exit(1)
-          fi
           
           for deployment in deployments:
             dep = deployment.split(":")
