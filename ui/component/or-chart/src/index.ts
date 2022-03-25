@@ -587,7 +587,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
                             const bgColor = this.colors[colourIndex] || "";
                             return html`
-                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
+                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(attr.name)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
                                     <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
                                     <div class="attribute-list-item-label">
                                         <span>${this.assets[assetIndex].name}</span>
@@ -660,11 +660,12 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    addDatasetHighlight(bgColor:string) {
+    addDatasetHighlight(attrName?:string) {
+        if (!attrName) return;
 
         if(this._chart && this._chart.data && this._chart.data.datasets){
             this._chart.data.datasets.map((dataset, idx) => {
-                if (dataset.borderColor === bgColor) {
+                if ((dataset as any).attrName === attrName) {
                     return
                 }
                 dataset.borderColor = dataset.borderColor + "36";
@@ -987,6 +988,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
             const colourIndex = index % this.colors.length;
             let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], interval, this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
+            (dataset as any).attrName = attribute.name;
             data.push(dataset);
 
             dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
