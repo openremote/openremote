@@ -659,7 +659,7 @@ jobs:
           if not os.path.exists(deployScript):
             os.system(f"Deploy script not found '{deployScript}'")
             sys.exit(1)
-          sys.exit(0)
+
           for deployment in deployments:
             dep = deployment.split(":")
             env = dep[0]
@@ -741,6 +741,7 @@ jobs:
             
             # Execute deploy script
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
+            sys.exit(0)
             result = subprocess.run(f"bash {deployScript}", shell=True)
             
             if result.returncode != 0:
