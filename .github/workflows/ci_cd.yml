@@ -39,13 +39,16 @@
 #
 # - ENVIRONMENT           - Which environment to deploy (equivalent to deploy/environment in '.ci_cd/ci_cd.json')
 # - MANAGER_TAG           - Which manager docker tag to deploy (equivalent to deploy/managerTags in '.ci_cd/ci_cd.json')
-# - CLEAN_INSTALL
-# - COMMIT
-# - OR_HOST
-# - SSH_USER
-# - SSH_PASSWORD
-# - SSH_PORT
-# - OR_ADMIN_PASSWORD
+#                           leave empty to build a manager image from the repo (must be an openremote repo or have
+#                           an openremote submodule).
+# - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
+#                           assets, rules, etc.)
+# - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
+# - OR_HOST               - FQDN of host to deploy to (e.g. demo.openremote.app)
+# - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
+# - SSH_PASSWORD          - Set/override the SSH password to use for SSH/SCP commands (SSH key should be preferred)
+# - SSH_PORT              - Set/override the SSH port to use for SSH/SCP commands
+# - OR_ADMIN_PASSWORD     - The admin password to set for clean installs
 
 name: CI/CD
 
@@ -78,7 +81,7 @@ on:
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
       OR_HOST:
-        description: 'Host to deploy to'
+        description: 'Host to deploy to (e.g. demo.openremote.app)'
       SSH_PORT:
         description: 'SSH port'
       SSH_USER:
@@ -677,10 +680,6 @@ jobs:
             # ------------------------------------------------------
             # Output env variables to temp env file for POSIX shell
             # ------------------------------------------------------
-            
-            # Output default values for environment variables
-            os.system("echo 'SSH_PORT=\"22\"' >> temp/env")
-            os.system("echo 'SSH_USER=\"root\"' >> temp/env")
             
             # Output env file if exists
             if os.path.exists(".ci_cd/env/.env"):

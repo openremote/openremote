@@ -1,6 +1,9 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------------------------------
-# Script for cleaning up an or deployment; by default it deletes the or_postgresql-data volume
+# Script that is called after a successful stack up; by default it prunes volumes and images
 # -----------------------------------------------------------------------------------------------------
-echo "Deleting existing postgres data volume"
-docker volume rm or_postgresql-data 2> /dev/null
+echo "Pruning volumes"
+docker volume prune -f
+echo "Pruning images"
+docker image prune -f -a
+

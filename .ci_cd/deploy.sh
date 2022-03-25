@@ -1,6 +1,11 @@
 #!/bin/bash
-
-# Must be run from the repo root dir
+# -----------------------------------------------------------------------------------------------------
+#                    !!!!!!!!! MUST BE RUN FROM THE REPO ROOT DIR !!!!!!!!!
+#
+# Script that handles packaging deployment files and executing stack down/up via SCP/SSH. Optionally
+# supports rollback using ROLLBACK_ON_ERROR='true' but CLEAN_INSTALL must also be 'true' for rollback
+# to work.
+# -----------------------------------------------------------------------------------------------------
 
 # Function to be called before exiting to remove runner from AWS ssh-access security group
 revoke_ssh () {
@@ -91,7 +96,7 @@ if [ "$SKIP_HOST_PING" != 'true' ]; then
   if [ $? -ne 0 ]; then
     echo "Host is not reachable by PING"
     if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
-      "temp/aws/start_ec2_instance.sh" "$OR_HOST"
+      "temp/aws/start_stop_host.sh" "START" "$OR_HOST"
       if [ $? -ne 0 ]; then
         # Don't exit as it might just not be reachable by PING we'll fail later on
         echo "EC2 instance start failed"
@@ -171,167 +176,291 @@ tar -zcvf temp.tar.gz temp
 echo "Copying temp dir to host"
 $scpCommandPrefix temp.tar.gz ${hostStr}:~
 
+if [ "$ROLLBACK_ON_ERROR" == 'true' ]; then
+  if [ "$CLEAN_INSTALL" != 'true' ]; then
+    echo "ROLLBACK_ON_ERROR can only be used if CLEAN_INSTALL is set"
+    ROLLBACK_ON_ERROR=false
+  fi
+fi
+
 echo "Running deployment on host"
 $sshCommandPrefix ${hostStr} << EOF
+
+if [ "$ROLLBACK_ON_ERROR" == 'true' ]; then
+  echo "Moving old temp dir to temp_old"
+  mv temp temp_old
+  # Tag existing manager image with previous tag (current tag might not be available in docker hub anymore or it could have been overwritten)
+  docker tag `docker images openremote/manager -q | head -1` openremote/manager:previous
+else
   echo "Removing old temp deployment dir"
   rm -fr temp
-  
-  echo "Extracting temp dir"
-  tar -xvzf temp.tar.gz
-  chmod +x -R temp/
-  
-  set -a
-  . ./temp/env
-  set +a 
+fi
 
-  # Login to AWS if credentials provided
-  AWS_KEY=$AWS_KEY
-  AWS_SECRET=$AWS_SECRET
-  AWS_REGION=$AWS_REGION
-  source temp/aws/login.sh
+echo "Extracting temp dir"
+tar -xvzf temp.tar.gz
+chmod +x -R temp/
 
-  if [ -f "temp/manager.tar.gz" ]; then
-    echo "Loading manager docker image"
-    docker load < temp/manager.tar.gz
-  fi
-  
-  if [ -f "temp/deployment.tar.gz" ]; then
-    echo "Loading deployment docker image"
-    docker load < temp/deployment.tar.gz
-  fi
+set -a
+. ./temp/env
+set +a
 
-  # Make sure we have correct keycloak, proxy and postgres images
-  echo "Pulling requested service versions from docker hub"
-  docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
+# Login to AWS if credentials provided
+AWS_KEY=$AWS_KEY
+AWS_SECRET=$AWS_SECRET
+AWS_REGION=$AWS_REGION
+source temp/aws/login.sh
 
-  if [ \$? -ne 0 ]; then
-    echo "Deployment failed to pull docker images"
+if [ -f "temp/manager.tar.gz" ]; then
+  echo "Loading manager docker image"
+  docker load < temp/manager.tar.gz
+fi
+
+if [ -f "temp/deployment.tar.gz" ]; then
+  echo "Loading deployment docker image"
+  docker load < temp/deployment.tar.gz
+fi
+
+# Make sure we have correct keycloak, proxy and postgres images
+echo "Pulling requested service versions from docker hub"
+docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
+
+if [ \$? -ne 0 ]; then
+  echo "Deployment failed to pull docker images"
+  exit 1
+fi
+
+# Attempt docker compose down
+echo "Stopping existing stack"
+docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+
+if [ \$? -ne 0 ]; then
+  echo "Deployment failed to stop the existing stack"
+  exit 1
+fi
+
+# Run host init
+hostInitCmd=
+if [ -n "$HOST_INIT_SCRIPT" ]; then
+  if [ ! -f "temp/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
+    echo "HOST_INIT_SCRIPT (temp/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
     exit 1
   fi
+  hostInitCmd="temp/host_init/${HOST_INIT_SCRIPT}.sh"
+elif [ -f "temp/host_init/init_${ENVIRONMENT}.sh" ]; then
+  hostInitCmd="temp/host_init/init_${ENVIRONMENT}.sh"
+elif [ -f "temp/host_init/init.sh" ]; then
+  hostInitCmd="temp/host_init/init.sh"
+fi
+if [ -n "$hostInitCmd" ]; then
+  echo "Running host init script: '$hostInitCmd'"
+  sudo $hostInitCmd
+else
+  echo "No host init script"
+fi
 
-  # Attempt docker compose down
-  echo "Stopping existing stack"
-  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+# Delete any deployment volume so we get the latest
+echo "Deleting existing deployment data volume"
+docker volume rm or_deployment-data 1>/dev/null
 
-  if [ \$? -ne 0 ]; then
-    echo "Deployment failed to stop the existing stack"
-    exit 1
+# Start the stack
+echo "Starting the stack"
+docker-compose -f temp/docker-compose.yml -p or up -d
+
+if [ \$? -ne 0 ]; then
+  echo "Deployment failed to start the stack"
+  exit 1
+fi
+
+echo "Waiting for up to 5mins for standard services to be healthy"
+count=0
+ok=false
+while [ \$ok != 'true' ] && [ \$count -lt 60 ]; do
+  echo \"attempt...\$count\"
+  sleep 5
+  postgresOk=false
+  keycloakOk=false
+  managerOk=false
+  proxyOk=false
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
+    postgresOk=true
+  fi
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
+    keycloakOk=true
+  fi
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
+    managerOk=true
+  fi
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
+    proxyOk=true
   fi
 
-  # Run host init
-  hostInitCmd=
-  if [ "$HOST_INIT_SCRIPT" == 'NONE' -o "$HOST_INIT_SCRIPT" == 'none' ]; then
-    echo "No host init requested"
-  elif [ -n "$HOST_INIT_SCRIPT" ]; then
-    if [ ! -f "temp/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
-      echo "HOST_INIT_SCRIPT (temp/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
-      exit 1
-    fi
-    hostInitCmd="temp/host_init/${HOST_INIT_SCRIPT}.sh"
-  elif [ -f "temp/host_init/$ENVIRONMENT.sh" ]; then
-    hostInitCmd="temp/host_init/$ENVIRONMENT.sh"
-  elif [ -f "temp/host_init/init.sh" ]; then
-    hostInitCmd="temp/host_init/init.sh"
-  fi
-  if [ -n "$hostInitCmd" ]; then
-    echo "Running host init script: '$hostInitCmd'"
-    sudo $hostInitCmd
-  else
-    echo "No host init script"
+  if [ \$postgresOk == 'true' -a \$keycloakOk == 'true' -a \$managerOk == 'true' -a \$proxyOk == 'true' ]; then
+    ok=true
   fi
 
-  # Delete any deployment volume so we get the latest
-  echo "Deleting existing deployment data volume"
-  docker volume rm or_deployment-data 1>/dev/null
+  count=\$((count+1))
+done
 
+if [ \$ok != 'true' ]; then
+  echo "Not all containers are healthy"
+  exit 1
+fi
 
+# Run host post init
+hostPostInitCmd=
+if [ -f "temp/host_init/post_init_${ENVIRONMENT}.sh" ]; then
+  hostPostInitCmd="temp/host_init/post_init_${ENVIRONMENT}.sh"
+elif [ -f "temp/host_init/post_init.sh" ]; then
+  hostPostInitCmd="temp/host_init/post_init.sh"
+fi
+if [ -n "$hostPostInitCmd" ]; then
+  echo "Running host post init script: '$hostPostInitCmd'"
+  sudo $hostPostInitCmd
+else
+  echo "No host post init script"
+fi
 
-  # Mount EFS map if specified
-  if [ "$AWS_ENABLED" == 'true' ] && [ -n "\$AWS_EFS_MAP" ]; then
-    echo "Attempting to mount EFS map data"
-    fileSystemId=\$(aws efs describe-file-systems --query "FileSystems[?Name==\'\$AWS_EFS_MAP\'].FileSystemId" --output text)
-    if [ -z "\$fileSystemId" ]; then
-      echo "Requested EFS volume named '$AWS_EFS_MAP' not found"
-      exit 1
-    fi
-    mkdir -p /deployment.local/map
-    echo "Adding EFS mount to /etc/fstab"
-    echo "\$fileSystemId.efs.$AWS_REGION.amazonaws.com:/ /deployment.local/map nfs4 nfsvers=4.1 0 0" >> /etc/fstab
-    echo "Attempting to mount EFS volume"
-    mount -a -v
-  fi
+# Store deployment snapshot data if the host can access S3 bucket with the same name as the host
+docker image inspect $(docker image ls -aq) > temp/image-info.txt
+docker inspect $(docker ps -aq) > temp/container-info.txt
 
-  # Copy any S3 deployment files
-  if [ "$AWS_ENABLED" == 'true' ] && [ "\$SKIP_AWS_S3_FILECOPY" != 'true' ]; then
-    echo "Looking for host specific deployment files on S3 at 'openremote-hosts/$OR_HOST/deployment_files'"
-    aws s3 ls openremote-hosts/$OR_HOST/deployment_files &>/dev/null
-    if [ \$? -ne 0 ]; then
-      echo "No host specific deployment files found on S3"
-    else
-      echo "Files found; copying to /deployment.local/s3"
-      mkdir -p /deployment.local/s3
-      aws s3 cp s3://openremote-hosts/$OR_HOST/deployment_files/ /deployment.local/s3/ --recursive
-    fi
-  fi
-
-  # Start the stack
-  echo "Starting the stack"
-  docker-compose -f temp/docker-compose.yml -p or up -d
-  
-  if [ \$? -ne 0 ]; then
-    echo "Deployment failed to start the stack"
-    exit 1
-  fi
-  
-  echo "Waiting for up to 5mins for standard services to be healthy"
-  count=0
-  ok=false
-  while [ \$ok != 'true' ] && [ \$count -lt 60 ]; do
-    echo \"attempt...\$count\"
-    sleep 5
-    postgresOk=false
-    keycloakOk=false
-    managerOk=false
-    proxyOk=false
-    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
-      postgresOk=true
-    fi
-    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
-      keycloakOk=true
-    fi
-    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
-      managerOk=true
-    fi
-    if [ -n "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
-      proxyOk=true
-    fi
-    
-    if [ \$postgresOk == 'true' -a \$keycloakOk == 'true' -a \$managerOk == 'true' -a \$proxyOk == 'true' ]; then
-      ok=true
-    fi
-    
-    count=\$((count+1))    
-  done
-  
-  if [ \$ok != 'true' ]; then
-    echo "Not all containers are healthy"
-    exit 1
-  fi
-
-  # Cleanup obsolete docker data
-  docker image prune -f -a
-  docker volume prune -f
-  docker image inspect $(docker image ls -aq) > temp/image-info.txt
-  docker inspect $(docker ps -aq) > temp/container-info.txt
-
-  # Copy files to S3
+aws s3 cp temp/image-info.txt s3://${OR_HOST}/image-info.txt &>/dev/null
+aws s3 cp temp/container-info.txt s3://${OR_HOST}/container-info.txt &>/dev/null
 EOF
 
 if [ $? -ne 0 ]; then
   echo "Deployment failed or is unhealthy"
-  revoke_ssh
+  if [ "$ROLLBACK_ON_ERROR" != 'true' ]; then
+    revoke_ssh
+    exit 1
+  else
+    DO_ROLLBACK=true
+  fi
+fi
+
+if [ "$DO_ROLLBACK" == 'true' ]; then
+  echo "Attempting rollback"
+  $sshCommandPrefix ${hostStr} << EOF
+
+if [ ! -d "temp_old" ]; then
+  echo "Previous deployment files not found so cannot rollback"
   exit 1
 fi
+
+rm -fr temp
+mv temp_old temp
+
+# Set MANAGER_VERSION to previous
+echo 'MANAGER_VERSION="previous"' >> temp/env
+
+set -a
+. ./temp/env
+set +a
+
+if [ -f "temp/deployment.tar.gz" ]; then
+  echo "Loading deployment docker image"
+  docker load < temp/deployment.tar.gz
+fi
+
+# Make sure we have correct keycloak, proxy and postgres images
+echo "Pulling requested service versions from docker hub"
+docker-compose -p or -f temp/docker-compose.yml pull --ignore-pull-failures
+
+if [ \$? -ne 0 ]; then
+  echo "Deployment failed to pull docker images"
+  exit 1
+fi
+
+# Attempt docker compose down
+echo "Stopping existing stack"
+docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+
+# Run host init
+hostInitCmd=
+if [ -n "$HOST_INIT_SCRIPT" ]; then
+  if [ ! -f "temp/host_init/${HOST_INIT_SCRIPT}.sh" ]; then
+    echo "HOST_INIT_SCRIPT (temp/host_init/${HOST_INIT_SCRIPT}.sh) does not exist"
+    exit 1
+  fi
+  hostInitCmd="temp/host_init/${HOST_INIT_SCRIPT}.sh"
+elif [ -f "temp/host_init/init_${ENVIRONMENT}.sh" ]; then
+  hostInitCmd="temp/host_init/init_${ENVIRONMENT}.sh"
+elif [ -f "temp/host_init/init.sh" ]; then
+  hostInitCmd="temp/host_init/init.sh"
+fi
+if [ -n "$hostInitCmd" ]; then
+  echo "Running host init script: '$hostInitCmd'"
+  sudo $hostInitCmd
+else
+  echo "No host init script"
+fi
+
+# Delete any deployment volume so we get the latest
+echo "Deleting existing deployment data volume"
+docker volume rm or_deployment-data 1>/dev/null
+
+# Start the stack
+echo "Starting the stack"
+docker-compose -f temp/docker-compose.yml -p or up -d
+
+if [ \$? -ne 0 ]; then
+  echo "Deployment failed to start the stack"
+  exit 1
+fi
+
+echo "Waiting for up to 5mins for standard services to be healthy"
+count=0
+ok=false
+while [ \$ok != 'true' ] && [ \$count -lt 60 ]; do
+  echo \"attempt...\$count\"
+  sleep 5
+  postgresOk=false
+  keycloakOk=false
+  managerOk=false
+  proxyOk=false
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
+    postgresOk=true
+  fi
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
+    keycloakOk=true
+  fi
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
+    managerOk=true
+  fi
+  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
+    proxyOk=true
+  fi
+
+  if [ \$postgresOk == 'true' -a \$keycloakOk == 'true' -a \$managerOk == 'true' -a \$proxyOk == 'true' ]; then
+    ok=true
+  fi
+
+  count=\$((count+1))
+done
+
+if [ \$ok != 'true' ]; then
+  echo "Not all containers are healthy"
+  exit 1
+fi
+
+# Run host post init
+hostPostInitCmd=
+if [ -f "temp/host_init/post_init_${ENVIRONMENT}.sh" ]; then
+  hostPostInitCmd="temp/host_init/post_init_${ENVIRONMENT}.sh"
+elif [ -f "temp/host_init/post_init.sh" ]; then
+  hostPostInitCmd="temp/host_init/post_init.sh"
+fi
+if [ -n "$hostPostInitCmd" ]; then
+  echo "Running host post init script: '$hostPostInitCmd'"
+  sudo $hostPostInitCmd
+else
+  echo "No host post init script"
+fi
+
+EOF
+fi
+
+
 
 echo "Testing manager web server https://$OR_HOST..."
 response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOST/manager/)

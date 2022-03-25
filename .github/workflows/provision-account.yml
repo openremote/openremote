@@ -1,23 +1,29 @@
-# This workflow handles creation of AWS EC2 hosts under the OpenRemote hosted zone
-# You need to be a member of the CI/CD github team to use this
+# This workflow handles creation of AWS member accounts by calling (.ci_cd/aws/provision_account.sh)
+# You need to be a member of the CI/CD github team to use this action as it will incur costs for the organisation.
 name: Provision Host
 
 on:
   workflow_dispatch:
     inputs:
-      HOST:
-        description: 'Host to provision'
+      ACCOUNT_NAME:
+        description: 'New account name (lowercase simple values recommended)'
+        required: false
+        type: string
+      PARENT_DNS_ZONE:
+        description: 'Name of parent hosted domain zone in management account'
+        type: string
+        default: openremote.app
         required: true
-      INSTANCE_TYPE:
-        description: 'EC2 instance type (only change if you know what you are doing)'
-        default: t4g.small
-        options:
-          - t4g.small
-          - t4g.medium
-          - t4g.large
-          - m6g.medium
-          - m6g.large
-        required: true
+      PROVISION_EFS:
+        description: 'Create EFS volume called hosts-filesystem in new account'
+        type: boolean
+        default: true
+        required: false
+      HOSTED_DNS:
+        description: 'Create hosted domain zone in new account'
+        type: boolean
+        required: false
+
 
 jobs:
 
@@ -36,9 +42,11 @@ jobs:
           team: CI/CD
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
 
-      - name: Provision Host
+      - name: Provision Account
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
-        run: .ci_cd/aws/provision_host.sh "$HOST" "$INSTANCE_TYPE"
+        run: .ci_cd/aws/provision_account.sh "$ACCOUNT_NAME" "$PARENT_DNS_ZONE" "HOSTED_DNS" "PROVISION_EFS"
         env:
-          HOST: ${{ github.event.inputs.HOST }}
-          INSTANCE_TYPE: ${{ github.event.inputs.INSTANCE_TYPE }}
+          ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}
+          PARENT_DNS_ZONE: ${{ github.event.inputs.PARENT_DNS_ZONE }}
+          HOSTED_DNS: ${{ github.event.inputs.HOSTED_DNS }}
+          PROVISION_EFS: ${{ github.event.inputs.PROVISION_EFS }}

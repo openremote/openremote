@@ -8,7 +8,7 @@
 #
 # * Create Hosted domain zone (if requested) and will create the NS record in the PARENT_DNS_ZONE to delegate to the
 #   new hosted zone; the zone will use the account name.
-# * Adds SSH whitelist to the ssh-access security group in the new account (see set_ssh_whitelist.sh)
+# * Adds SSH whitelist to the ssh-access security group in the new account (see refresh_ssh_whitelist.sh)
 #
 # Arguments:
 # 1 - ACCOUNT_NAME - Name of the new account (required)
@@ -227,7 +227,7 @@ else
 fi
 
 # Update SSH Whitelist for this account
-"${awsDir}set_ssh_whitelist.sh" "" "" $ACCOUNT_ID
+"${awsDir}refresh_ssh_whitelist.sh" "" "" $ACCOUNT_ID
 
 if [ "$PROVISION_EFS" != 'false' ]; then
   echo "Provisioning EFS for account '$ACCOUNT_NAME' using cloud formation template"

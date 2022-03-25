@@ -1,6 +1,7 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------------------------------
-# Script for cleaning up an or deployment; by default it deletes the or_postgresql-data volume
+# This is called daily by a cron job if DAILY_RESTART=true
+# By default it just restarts the manager service
 # -----------------------------------------------------------------------------------------------------
-echo "Deleting existing postgres data volume"
-docker volume rm or_postgresql-data 2> /dev/null
+echo "Restarting the manager service"
+docker restart or_manager_1

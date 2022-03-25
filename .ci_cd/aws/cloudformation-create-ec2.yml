@@ -55,6 +55,9 @@ Parameters:
   SMTPSecret:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SMTP-User-Secret
+  SShWhitelistRoleArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SSH-Whitelist-Access-Role-Arn
 
 Conditions:
   CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
@@ -200,6 +203,7 @@ Resources:
 
                 [Service]
                 Type=oneshot
+                RandomizedDelaySec=30min
                 ExecStart=/usr/local/bin/s3-backup
 
                 [Install]
@@ -221,6 +225,8 @@ Resources:
             01_init_service:
               command: |
                 chmod +x /usr/local/bin/s3-backup
+                mkdir -p /deployment.local/backup
+                chown ec2-user:ec2-user /deployment.local/backup
                 systemctl daemon-reload
                 systemctl start s3-backup.service
                 systemctl enable s3-backup.timer

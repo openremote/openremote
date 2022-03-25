@@ -9,7 +9,6 @@
 # 1 - OUs comma separated list of OUs to find accounts to apply SSH whitelist to
 # 2 - Account Names comma separated to apply SSH whitelist to
 # 3 - Account IDs to apply SSH whitelist to
-# 4 - AWS_ENABLED indicates if login has already been successfully attempted and not required again
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -20,10 +19,7 @@ fi
 OUS=$1
 ACCOUNT_NAMES=$2
 ACCOUNT_IDS=$3
-
-if [ "$AWS_ENABLED" != true ]; then
-  AWS_ENABLED=${4,,}
-fi
+ACCOUNT_PROFILE="--profile github-da"
 
 echo "Attempting to set the SSH whitelist for the specified account(s)"
 
@@ -61,14 +57,15 @@ fi
 
 SSH_LIST=$(aws ssm get-parameters-by-path --path "/SSH-Whitelist" --query "Parameters[*].[Name,Value]" --output text)
 IFS=$' \t'
+AWS
 for ACCOUNT_ID in $ACCOUNT_IDS; do
   # Update github-da profile with ARN for ACCOUNT_ID
   source "${awsDir}set_github-da_account_arn.sh"
 
   echo "Revoking existing SSH Whitelist for Account '$ACCOUNT_ID'"
-  LIST=$(aws ec2 describe-security-groups --profile github-da --filters Name=ip-permission.from-port,Values=22 Name=group-name,Values=ssh-access --query 'SecurityGroups[0].IpPermissions[?(IpProtocol==`tcp` && FromPort==`22`)]' --output json)
+  LIST=$(aws ec2 describe-security-groups --filters Name=ip-permission.from-port,Values=22 Name=group-name,Values=ssh-access --query 'SecurityGroups[0].IpPermissions[?(IpProtocol==`tcp` && FromPort==`22`)]' --output json $ACCOUNT_PROFILE)
   if [ -n "$LIST" ] && [ "$LIST" != "null" ]; then
-    aws ec2 revoke-security-group-ingress --profile github-da --group-name ssh-access --ip-permissions "$LIST"
+    aws ec2 revoke-security-group-ingress --group-name ssh-access --ip-permissions "$LIST" $ACCOUNT_PROFILE
   fi
 
   if [ -n "$SSH_LIST" ]; then

@@ -9,7 +9,7 @@
 #
 # To be called with arguments:
 # 1 - ACCOUNT_NAME where resources should be created (defaults to callers account)
-# 2 - FQDN for host (e.g. staging.demo.openremote.app)
+# 2 - HOST FQDN for e.g. staging.demo.openremote.app
 # 3 - INSTANCE_TYPE EC2 instance type see cloud formation template parameter
 # 4 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
 # 5 - WAIT_FOR_STACK if 'false' script will not wait until the cloud formation stack is running
@@ -71,13 +71,14 @@ else
   fi
 
   # Determine DNSHostedZoneName and DNSHostedZoneRoleArn (must be set if hosted zone is not in the same account as where the host is being created)
+  echo "Determining DNS parameters"
   TLD_NAME=$(awk -F. '{print $(NF-1)"."$(NF)}' <<< "$HOST")
   COUNT=$(($(awk -F. '{print NF}' <<< "$HOST")-1))
-  HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name]" --output text $ACCOUNT_PROFILE 2>/dev/null)
+  HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name]" --output text $ACCOUNT_PROFILE)
 
   if [ -n "$ACCOUNT_PROFILE" ]; then
     # Append caller account hosted zones
-    HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name,'true']" --output text 2>/dev/null)
+    HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name,'true']" --output text)
   fi
 
   if [ -n "$HOSTED_ZONES" ]; then
