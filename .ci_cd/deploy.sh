@@ -32,6 +32,7 @@ if [ -z "$OR_HOST" ]; then
  echo "Host is not set"
  exit 1
 fi
+HOST="$OR_HOST"
 
 # Load SSH environment variables into this session
 if [ -f "ssh.env" ]; then
@@ -89,36 +90,45 @@ if [ -n "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
 
+# Cannot ping from github runners so commenting this out
 # Check host is reachable (ping must be enabled)
-if [ "$SKIP_HOST_PING" != 'true' ]; then
-  echo "Attempting to ping host"
-  ping -c1 -W1 -q $OR_HOST &>/dev/null
-  if [ $? -ne 0 ]; then
-    echo "Host is not reachable by PING"
-    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
-      "temp/aws/start_stop_host.sh" "START" "$OR_HOST"
-      if [ $? -ne 0 ]; then
-        # Don't exit as it might just not be reachable by PING we'll fail later on
-        echo "EC2 instance start failed"
-      else
-        echo "EC2 instance start succeeded"
-      fi
-    fi
-  fi
-fi
+#if [ "$SKIP_HOST_PING" != 'true' ]; then
+#  echo "Attempting to ping host"
+#  ping -c1 -W1 -q $OR_HOST &>/dev/null
+#  if [ $? -ne 0 ]; then
+#    echo "Host is not reachable by PING"
+#    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
+#      "temp/aws/start_stop_host.sh" "START" "$OR_HOST"
+#      if [ $? -ne 0 ]; then
+#        # Don't exit as it might just not be reachable by PING we'll fail later on
+#        echo "EC2 instance start failed"
+#      else
+#        echo "EC2 instance start succeeded"
+#      fi
+#    fi
+#  fi
+#fi
 
 # Grant SSH access to this runner's public IP on AWS
 if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
-  echo "Attempting to add runner to AWS SSH whitelist"
-  if [ "$AWS_ENABLED" == 'true' ]; then
-    if [ -n "$CIDR" ]; then
-      "temp/aws/ssh_whitelist.sh" "$CIDR" "github-da"
+  if [ -n "$CIDR" ]; then
+    if [ -z "$ACCOUNT_NAME" ] && [ -z "$ACCOUNT_ID" ]; then
+      echo "Account ID or name is not set so searching for it"
+      source temp/aws/get_account_id_from_host.sh
+
+      if [ -z "$ACCOUNT_ID" ]; then
+        echo "Unable to determine account for host '$HOST'"
+        exit 1
+      fi
     fi
+
+    source temp/aws/set_github-da_account_arn.sh
+
+    echo "Attempting to add runner to AWS SSH whitelist"
+    "temp/aws/ssh_whitelist.sh" "$CIDR" "github-da"
     if [ $? -eq 0 ]; then
       SSH_GRANTED=true
     fi
-  else
-    echo "AWS not enabled so cannot grant SSH access"
   fi
 fi
 
