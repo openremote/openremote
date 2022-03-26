@@ -55,6 +55,9 @@ if [ -d ".ci_cd/aws" ]; then
   cp -r .ci_cd/aws temp/
 fi
 
+chmod +x temp/aws/*
+chmod +x temp/host_int/*
+
 # Determine compose file to use and copy to temp dir (do this here as all env variables are loaded)
 if [ -z "$ENV_COMPOSE_FILE" ]; then
   if [ -f "profile/$ENVIRONMENT.yml" ]; then
