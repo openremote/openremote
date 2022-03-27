@@ -388,7 +388,7 @@ jobs:
           if [ "$EVENT_NAME" == 'workflow_dispatch' ]; then
             tag="$INPUT_MANAGER_TAG"
             if [ -z "$INPUT_MANAGER_TAG" ]; then
-              tag='$ref'
+              tag='#ref'
             fi
             deployments="$INPUT_ENVIRONMENT:$tag"
           fi
