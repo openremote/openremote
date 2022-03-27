@@ -388,11 +388,8 @@ jobs:
           if [ "$EVENT_NAME" == 'workflow_dispatch' ]; then
             tag="$INPUT_MANAGER_TAG"
             if [ -z "$INPUT_MANAGER_TAG" ]; then
-              tag="$ref"
-            else
-              echo "TAG is '$INPUT_MANAGER_TAG'"
+              tag='$ref'
             fi
-            exit 1
             deployments="$INPUT_ENVIRONMENT:$tag"
           fi
           echo "::set-output name=value::$deployments"
