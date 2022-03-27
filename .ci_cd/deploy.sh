@@ -264,9 +264,9 @@ elif [ -f "temp/host_init/init_${ENVIRONMENT}.sh" ]; then
 elif [ -f "temp/host_init/init.sh" ]; then
   hostInitCmd="temp/host_init/init.sh"
 fi
-if [ -n "$hostInitCmd" ]; then
-  echo "Running host init script: '$hostInitCmd'"
-  sudo $hostInitCmd
+if [ -n "\$hostInitCmd" ]; then
+  echo "Running host init script: '\$hostInitCmd'"
+  sudo \$hostInitCmd
 else
   echo "No host init script"
 fi
