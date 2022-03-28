@@ -79,10 +79,10 @@ services:
       OR_EMAIL_USER:
       OR_EMAIL_PASSWORD:
       OR_EMAIL_FROM:
-      OR_EMAIL_FROM:
+      OR_EMAIL_ADMIN:
       OR_SSL_PORT: ${OR_SSL_PORT:-443}
       OR_HOST: ${OR_HOST:-localhost}
-      OR_DEV_MODE:
+      OR_DEV_MODE: ${OR_DEV_MODE:-false}
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:
       OR_OPEN_WEATHER_API_APP_ID:

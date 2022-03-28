@@ -30,7 +30,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
-import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.*;
 import org.openremote.model.apps.ConsoleAppConfig;
@@ -355,7 +354,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         }
     }
 
-    public boolean isSetupWipeCleanInstall() {
+    public boolean isCleanInstall() {
         return forceClean;
     }
 

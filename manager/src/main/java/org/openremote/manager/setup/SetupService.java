@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 /**
  * Executes setup tasks for a clean installation when the application starts.
  * <p>
- * This service is disabled when {@link PersistenceService#isSetupWipeCleanInstall} is <code>false</code>.
+ * This service is disabled when {@link PersistenceService#isCleanInstall} is <code>false</code>.
  * <p>
  * First, this service will load an implementation of {@link SetupTasks} from the
  * classpath using {@link ServiceLoader}. If multiple providers are found, an error
@@ -55,7 +55,7 @@ public class SetupService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
 
-        boolean isClean = container.getService(PersistenceService.class).isSetupWipeCleanInstall();
+        boolean isClean = container.getService(PersistenceService.class).isCleanInstall();
 
         if (!isClean) {
             LOG.info("Setup service disabled, clean install = false");
@@ -76,6 +76,7 @@ public class SetupService implements ContainerService {
             .flatMap(discoveredSetupTasks -> {
                 LOG.info("Found custom SetupTasks provider on classpath: " + discoveredSetupTasks.getClass().getName());
                 List<Setup> tasks = discoveredSetupTasks.createTasks(container, setupType, keycloakEnabled);
+                LOG.info("Custom SetupTasks provider task count for setupType '" + setupType + "' = " + (tasks == null ? 0 : tasks.size()));
                 return tasks != null ? tasks.stream() : null;
             }).toList());
 
@@ -83,6 +84,7 @@ public class SetupService implements ContainerService {
             if (tasks.size() > 0) {
                 LOG.info("--- EXECUTING INIT TASKS ---");
                 for (Setup setup : tasks) {
+                    LOG.info("Executing setup task '" + setup.getClass().getName() + "'");
                     setup.onInit();
                 }
                 LOG.info("--- INIT TASKS COMPLETED SUCCESSFULLY ---");
@@ -99,6 +101,7 @@ public class SetupService implements ContainerService {
             if (tasks.size() > 0) {
                 LOG.info("--- EXECUTING START TASKS ---");
                 for (Setup setup : tasks) {
+                    LOG.info("Executing setup task '" + setup.getClass().getName() + "'");
                     setup.onStart();
                 }
                 LOG.info("--- START TASKS COMPLETED SUCCESSFULLY ---");
