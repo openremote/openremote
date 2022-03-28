@@ -6,11 +6,15 @@
 # The customisations for control tower will perform some standard customisations of the provisioned account as defined
 # in the custom-control-tower-configuration CodeCommit repo. Also does the following:
 #
+# * Add /SSH-Key/developers store parameter to the new account's list of SSH public keys (this is used when provisioning
+#   hosts to ensure it is possible to SSH into the new host)
 # * Create Hosted domain zone (if requested) and will create the NS record in the PARENT_DNS_ZONE to delegate to the
 #   new hosted zone; the zone will use the account name.
 # * Adds SSH whitelist to the ssh-access security group in the new account (see refresh_ssh_whitelist.sh)
+# * Create EFS filesystem for sharing data between instances (see cloudformation-create-efs.yml)
 #
 # Arguments:
+# 1 - OU - Name of organizational unit where account should be provisioned (defaults to account root if not set)
 # 1 - ACCOUNT_NAME - Name of the new account (required)
 # 2 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
 # 3 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
@@ -23,10 +27,11 @@ else
   awsDir=./
 fi
 
-ACCOUNT_NAME=${1,,}
-PARENT_DNS_ZONE=${2,,}
-HOSTED_DNS=${3,,}
-PROVISION_EFS=${4,,}
+OU=${1,,}
+ACCOUNT_NAME=${2,,}
+PARENT_DNS_ZONE=${3,,}
+HOSTED_DNS=${4,,}
+PROVISION_EFS=${5,,}
 ACCOUNT_PROFILE='--profile github-da'
 
 if [ -z "$ACCOUNT_NAME" ]; then
@@ -115,7 +120,7 @@ if [ -z "$ACCOUNT_ID" ]; then
   exit 1
 fi
 
-# Update developers access profile with ARN for ACCOUNT_ID
+# Update developers access AWS CLI profile with ARN for ACCOUNT_ID
 RETRY=true
 source "${awsDir}set_github-da_account_arn.sh"
 
@@ -206,6 +211,7 @@ fi
 # Update SSH Whitelist for this account
 "${awsDir}refresh_ssh_whitelist.sh" "" "" $ACCOUNT_ID
 
+# Provision EFS unless set to false
 if [ "$PROVISION_EFS" != 'false' ]; then
   echo "Provisioning EFS for account '$ACCOUNT_NAME' using cloud formation template"
 

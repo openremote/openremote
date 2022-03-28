@@ -1,19 +1,23 @@
-# ---------------------------------------------------------------------------------------------
-# Standard OpenRemote CloudFormation template for provisioning an EC2 instance with docker
-# support for running the OpenRemote stack. SMTP credentials are optionally read from
-# the parameter store and added to the /etc/environment file to essentially preconfigure standard
-# OpenRemote SMTP environment variables.
-# DNS parameters allow for DNS A record for the created EC2 instance to be dynamically updated
-# between restarts.
+# ---------------------------------------------------------------------------------------------------------------------
+# Standard OpenRemote CloudFormation template for provisioning an EC2 instance with docker support for running the
+# OpenRemote stack. SMTP credentials are optionally read from the parameter store and added to the /etc/environment
+# file to essentially preconfigure standard OpenRemote SMTP environment variables.
+# DNS parameters allow for DNS A record for the created EC2 instance to be dynamically updated between restarts.
 #
 # A standard access security group is also created for the standard OpenRemote stack services; the ssh-access security
-# group is also linked to the EC2 instance and this security group must already exist.
+# group is also linked to the EC2 instance and this security group must already exist within the account.
 #
 # Systemd services are also created to:
 #
 # - Mount EFS volume named 'hosts-filesystem' at /deployment.local/efs on restart
 # - Perform daily backup of /deployment.local/backup if an S3 bucket with the same name as the FQDN for this host exists
 #   (periods replaced with hyphen e.g. demo.openremote.app -> demo-openremote-app)
+# - Update DNS A record on restart
+#
+# Cron jobs are also created to:
+#
+# - [DAILY] - Cleanup journalctl logs
+#
 # ---------------------------------------------------------------------------------------------
 
 AWSTemplateFormatVersion: '2010-09-09'

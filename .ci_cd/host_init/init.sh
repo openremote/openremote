@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# -----------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
 # Host init script that runs between stack down/up and can be configured with environment variables
 #
 # CLEAN_INSTALL - Run clean.sh if set to 'true'
@@ -9,7 +9,7 @@
 #
 # This file and referenced scripts can be modified here or in a custom project repo or an alternative init script can be
 # specified using the HOST_INIT_SCRIPT environment variable.
-# -----------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
 
 if [[ $BASH_SOURCE = */* ]]; then
  DIR=${BASH_SOURCE%/*}/

@@ -1,11 +1,18 @@
 #!/bin/bash
-# -----------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------
 #                    !!!!!!!!! MUST BE RUN FROM THE REPO ROOT DIR !!!!!!!!!
 #
-# Script that handles packaging deployment files and executing stack down/up via SCP/SSH. Optionally
-# supports rollback using ROLLBACK_ON_ERROR='true' but CLEAN_INSTALL must also be 'true' for rollback
-# to work.
-# -----------------------------------------------------------------------------------------------------
+# Script that handles packaging deployment files and executing stack down/up via SCP/SSH; between stack down/up the
+# host init script is executed (see .ci_cd/host_init/init.sh) this initialises the host and configures any standard
+# deployment maintenance tasks (daily restart, daily backups, etc.).
+#
+# If AWS CLI authentication variables are configured then this script can use the AWS CLI to perform AWS specific
+# configuration; if CIDR env variable is set then this will be temporarily added to the ssh-access security group
+# ingress for SSH access on TCP port 22.
+#
+# Optionally supports rollback using ROLLBACK_ON_ERROR='true' but CLEAN_INSTALL must also be 'true' for rollback to
+# work.
+# ---------------------------------------------------------------------------------------------------------------------
 
 # Function to be called before exiting to remove runner from AWS ssh-access security group
 revoke_ssh () {

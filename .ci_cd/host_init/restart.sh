@@ -4,4 +4,4 @@
 # By default it just restarts the manager service
 # -----------------------------------------------------------------------------------------------------
 echo "Restarting the manager service"
-docker restart or_manager_1
+docker restart or-manager-1

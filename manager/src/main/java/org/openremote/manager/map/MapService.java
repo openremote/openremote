@@ -288,6 +288,10 @@ public class MapService implements ContainerService {
             return mapSettings.get(realm);
         }
 
+        if (mapConfig == null) {
+            return null;
+        }
+
         final ObjectNode settings = mapSettings.computeIfAbsent(realm, r -> {
             if (metadata.isValid() && !mapConfig.isEmpty()) {
                 // Use config as a settings base and convert URLs
