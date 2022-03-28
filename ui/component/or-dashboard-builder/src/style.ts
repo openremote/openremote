@@ -26,8 +26,19 @@ export const style = css`
         width: 100%;
         background-color: var(--internal-or-asset-tree-background-color);
     }
+
+    #content {
+        width: 100%;
+        display: table-row;
+        /*height: 100%;*/
+    }
+    #container {
+        display: flex;
+        width: 100%;
+        height: 100%;
+    }
         
-    #header {
+    #menu-header {
         background-color: var(--internal-or-asset-tree-header-color);
         display: flex;
         align-items: center;
@@ -50,48 +61,5 @@ export const style = css`
     #title {
         font-weight: 500;
         font-size: 16px;
-    }
-
-    #sidebarElement, #sidebarBgElement {
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    #sidebar {
-        display: grid;
-    }
-
-    #item {
-        display: block;
-        flex-basis: auto;
-        align-self: auto;
-        order: 0;
-        padding: 32px;
-    }
-
-    .sidebarItem {
-        height: 100%;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border: 1px solid #E0E0E0;
-        border-radius: 8px;
-        box-sizing: border-box;
-        flex-direction: column;
-        font-size: 14px;
-    }
-    
-    
-    /* Material Design Tab Bar overrides (for now just placed them here) */
-    .mdc-tab--active .mdc-tab__text-label {
-        color: white !important;
-    }
-    .mdc-tab .mdc-tab__text-label {
-        color: rgba(255, 255, 255, 0.74);
-    }
-    .mdc-tab-indicator .mdc-tab-indicator__content--underline {
-        border-color: white;
     }
 `

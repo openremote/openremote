@@ -16,13 +16,13 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
 
     @Override
-    public Dashboard<?>[] getAllUserDashboards(RequestParams requestParams) {
+    public Dashboard[] getAllUserDashboards(RequestParams requestParams) {
         System.out.println("Getting all User Dashboards...");
         return new Dashboard[0];
     }
 
     @Override
-    public Dashboard<?>[] create(RequestParams requestParams, Dashboard<?> dashboard) {
+    public Dashboard[] create(RequestParams requestParams, Dashboard dashboard) {
         System.out.println("Creating new User Dashboards...");
         return new Dashboard[0];
     }

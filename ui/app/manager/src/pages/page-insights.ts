@@ -51,6 +51,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
                 flex-grow: 2;
                 align-items: stretch;
                 z-index: 0;
+                background: transparent;
             }
 
             .hideMobile {

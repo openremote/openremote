@@ -1,50 +1,38 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import "./or-dashboard-tree";
+import "./or-dashboard-browser";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {GridStack, GridStackWidget } from 'gridstack';
 import 'gridstack/dist/h5/gridstack-dd-native'; // drag and drop feature
+import {style} from "./style";
+import { MDCTabBar } from "@material/tab-bar";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
 const extracss = require('gridstack/dist/gridstack-extra.css');
+const tabStyle = require("@material/tab/dist/mdc.tab.css");
+const tabbarStyle = require("@material/tab-bar/dist/mdc.tab-bar.css");
+const tabIndicatorStyle = require("@material/tab-indicator/dist/mdc.tab-indicator.css");
+const tabScrollerStyle = require("@material/tab-scroller/dist/mdc.tab-scroller.css");
 
 // language=CSS
 const styling = css`
-
-    #content {
-        width: 100%;
-        display: table-row;
-        /*height: 100%;*/
-    }
-    #container {
-        display: flex;
-        width: 100%;
-        height: 100%;
-    }
-    /* ----------------------------- */
+    
     /* Header related styling */
     #header {
         display: table-row;
         height: 0.1%;
         background: white;
-        border-bottom: solid 1px #e5e5e5;
     }
     #header-wrapper {
-        /*height: 100%;*/
-        /*width: 100%;*/
         padding: 20px 20px 14px 20px;
         display: flex;
         flex-direction: row;
     }
     #header-title {
-        flex: 1 1 auto;
         font-size: 18px;
-        font-weight: bold;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
     }
     #header-title > or-icon {
         margin-right: 10px;
@@ -53,12 +41,20 @@ const styling = css`
         flex: 1 1 auto;
         text-align: right;
     }
+    #header-actions-content {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        float: right;
+    }
+    
     /* ----------------------------- */
     /* Editor/builder related styling */
     #builder {
         flex-grow: 2;
         align-items: stretch;
         z-index: 0;
+        padding: 3vh 4vw 3vh 4vw;
     }
     #view-options {
         padding: 24px;
@@ -93,7 +89,12 @@ const styling = css`
     }
     
     /* ----------------------------- */
-    /* Browser (drag and drop widgets) related styling */
+    /* Sidebar related styling (drag and drop widgets / configuration) */
+    #sidebar {
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
     #browser {
         flex-grow: 1;
         align-items: stretch;
@@ -107,6 +108,18 @@ const styling = css`
     #width-input { margin-left: 20px; }
     #height-input { margin-left: 10px; }
     #rotate-btn { margin-left: 10px; }
+
+    
+    /* Material Design Tab Bar overrides (for now just placed them here) */
+    .mdc-tab--active .mdc-tab__text-label {
+        color: white !important;
+    }
+    .mdc-tab .mdc-tab__text-label {
+        color: rgba(255, 255, 255, 0.74);
+    }
+    .mdc-tab-indicator .mdc-tab-indicator__content--underline {
+        border-color: white;
+    }
 `;
 
 @customElement("or-dashboard-builder")
@@ -114,16 +127,24 @@ export class OrDashboardBuilder extends LitElement {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), styling]
+        return [unsafeCSS(gridcss), unsafeCSS(extracss), unsafeCSS(tabStyle), unsafeCSS(tabbarStyle), unsafeCSS(tabIndicatorStyle), unsafeCSS(tabScrollerStyle), styling, style]
     }
 
     // Variables
     mainGrid: GridStack | undefined;
 
+    @state()
+    protected selectedWidgetId: number | undefined;
+
+    @state()
+    protected sidebarMenuIndex: number;
+
 
     // Main constructor; after the component is rendered/updated, we start rendering the grid.
     constructor() {
-        super(); this.updateComplete.then(() => {
+        super();
+        this.sidebarMenuIndex = 0;
+        this.updateComplete.then(() => {
             if(this.shadowRoot != null) {
 
                 // Setting up main center Grid
@@ -192,6 +213,16 @@ export class OrDashboardBuilder extends LitElement {
                         }
                     }
                 });
+
+                // Setting up tabs in sidebar.
+                const tabBar = this.shadowRoot.getElementById("tab-bar");
+                if (tabBar != null) {
+                    const mdcTabBar = new MDCTabBar(tabBar);
+                    mdcTabBar.activateTab(this.sidebarMenuIndex); // Activate initial tab
+                    mdcTabBar.listen("MDCTabBar:activated", (event: CustomEvent) => {
+                        this.sidebarMenuIndex = event.detail.index; // 0 = Widget Browser, and 1 = Settings menu.
+                    })
+                }
             }
         });
     }
@@ -211,7 +242,7 @@ export class OrDashboardBuilder extends LitElement {
                             <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" value="Dashboard 1" style="min-width: 320px;"></or-mwc-input>
                         </div>
                         <div id="header-actions">
-                            <div style="display: flex; flex-direction: row; align-items: center; float: right;">
+                            <div id="header-actions-content">
                                 <or-mwc-input id="share-btn" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
                                 <or-mwc-input id="save-btn" type="${InputType.BUTTON}" raised label="Save"></or-mwc-input>
                                 <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="View"></or-mwc-input>
@@ -221,7 +252,7 @@ export class OrDashboardBuilder extends LitElement {
                 </div>
                 <div id="content">
                     <div id="container">
-                        <div id="builder" style="padding: 3vh 4vw 3vh 4vw;">
+                        <div id="builder">
                             <div id="view-options">
                                 <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" outlined label="100%"></or-mwc-input>
                                 <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
@@ -235,7 +266,42 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                             </div>
                         </div>
-                        <or-dashboard-browser id="browser"></or-dashboard-browser>
+                        <div id="sidebar">
+                            <div id="menu-header" style="display: table-row;">
+                                <div class="mdc-tab-bar" role="tablist" id="tab-bar">
+                                    <div class="mdc-tab-scroller">
+                                        <div class="mdc-tab-scroller__scroll-area">
+                                            <div class="mdc-tab-scroller__scroll-content">
+                                                <button class="mdc-tab" role="tab" aria-selected="false" tabindex="0">
+                                                    <span class="mdc-tab__content">
+                                                        <span class="mdc-tab__text-label">WIDGETS</span>
+                                                    </span>
+                                                    <span class="mdc-tab-indicator">
+                                                        <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                                                    </span>
+                                                    <span class="mdc-tab__ripple"></span>
+                                                </button>
+                                                <button class="mdc-tab" role="tab" aria-selected="false" tabindex="1">
+                                                    <span class="mdc-tab__content">
+                                                        <span class="mdc-tab__text-label">SETTINGS</span>
+                                                    </span>
+                                                    <span class="mdc-tab-indicator">
+                                                        <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                                                    </span>
+                                                    <span class="mdc-tab__ripple"></span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
+                                <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
+                                <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
+                                    <span>Settings to display here.</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
