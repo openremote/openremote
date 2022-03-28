@@ -27,8 +27,8 @@ export class OrDashboardTree extends LitElement {
                     <span id="title">Dashboards</span>
                 </div>
                 <div>
-                    <or-mwc-input type="${InputType.BUTTON}" icon="delete"></or-mwc-input>
-                    <or-mwc-input type="${InputType.BUTTON}" icon="plus"></or-mwc-input>
+                    <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;"></or-mwc-input>
+                    <or-mwc-input type="${InputType.BUTTON}" icon="plus" style="margin-left: -4px;"></or-mwc-input>
                 </div>
             </div>
             <div id="content">
