@@ -72,7 +72,7 @@ services:
         condition: service_healthy
     environment:
       # Set this variable `demo` to auto provision demo assets etc.
-      OR_SETUP_TYPE:
+      OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
       OR_ADMIN_PASSWORD:
       OR_SETUP_RUN_ON_RESTART:
       OR_EMAIL_HOST:
