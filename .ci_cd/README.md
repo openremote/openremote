@@ -20,7 +20,7 @@ docker image tag updates. The file layout is:
       },
       // Singleton or array of deployments to execute, a deployment consists of (environment and/or managerTag see variables for explanation)
       "deploy": {
-        "managerTag": "develop", // Can use #ref or exclude this to build COMMIT specific maanger docker image  
+        "managerTag": "develop", // Can use #ref or exclude this to build COMMIT specific maanger docker image (i.e. don't use an image from docker hub)
         "environment": "staging"
       }
     },
@@ -81,13 +81,15 @@ The naming convention should be as follows:
 * `env/.env` - File containing environment variables that will be loaded for all deployments
 * `${ENVIRONMENT}.env` - File containing environment specific environment variables will be loaded if `ENVIRONMENT` variable
 is set for the workflow run; these will be loaded after the `env` file and so can override any value defined there as well
-as being able to add new environment specific values
+as being able to add new environment specific values.
 
 # `host_init` Directory
-Contains scripts/files required to initialise the host ready for running the stack (e.g. download map tiles etc.);
-the workflow looks for one of the following bash scripts (in priority order):
+Contains scripts/files required to initialise the host ready for running the stack (e.g. download map tiles etc.); if
+the repo is a custom project then any files in the same path of the custom repo will be overlaid on top of the
+standard openremote repo files (thus allowing custom project override of any behaviour). The workflow looks for one of
+the following bash scripts (in priority order):
 
-* `host_init/${ENVIRONMENT}.sh` - Bash script for environment specific host initialisation
+* `host_init/init_${ENVIRONMENT}.sh` - Bash script for environment specific host initialisation
 * `host_init/init.sh` - Bash script that can be used by any environment as a fallback if no environment specific script
 exists
 
@@ -96,6 +98,9 @@ will be executed; by copying the entire directory additional files can be includ
 script as required.
 
 # `aws` Directory
+Contains AWS scripts and resources for CI/CD within AWS. If the repo is a custom project then any files in the same path
+of the custom repo will be overlaid on top of the standard openremote repo files (thus allowing custom project override
+of any behaviour).
 
 # Variables
 The following variables are supported by deployments; any additional variables can also be used and these are made

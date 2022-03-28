@@ -1,4 +1,6 @@
+# ---------------------------------------------------------------------------------------------------------------------s
 # This workflow handles starting/stopping/restarting an AWS EC2 instance by calling (.ci_cd/aws/start_stop_host.sh).
+# ---------------------------------------------------------------------------------------------------------------------
 name: Start/Stop Host
 
 on:
@@ -22,9 +24,14 @@ jobs:
 
     steps:
 
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Perform Action
         run: |
           .ci_cd/aws/start_stop_host.sh "$ACTION" "$HOST"
         env:
           HOST: ${{ github.event.inputs.HOST }}
           ACTION: ${{ github.event.inputs.ACTION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

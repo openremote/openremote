@@ -1,3 +1,4 @@
+# ---------------------------------------------------------------------------------------------------------------------
 # This workflow handles all CI/CD related tasks and can be re-used in custom projects
 # (https://github.com/openremote/custom-project i.e. has openremote submodule) or forks of this repo, it handles:
 #
@@ -49,6 +50,7 @@
 # - SSH_PASSWORD          - Set/override the SSH password to use for SSH/SCP commands (SSH key should be preferred)
 # - SSH_PORT              - Set/override the SSH port to use for SSH/SCP commands
 # - OR_ADMIN_PASSWORD     - The admin password to set for clean installs
+# ---------------------------------------------------------------------------------------------------------------------
 
 name: CI/CD
 
