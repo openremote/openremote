@@ -1,17 +1,14 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import "./or-dashboard-tree";
-// import "../../or-mwc-components/src/or-mwc-input"; // temporarily
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
-import {GridItemHTMLElement, GridStack, GridStackNode, GridStackWidget } from 'gridstack';
+import {GridStack, GridStackWidget } from 'gridstack';
 import 'gridstack/dist/h5/gridstack-dd-native'; // drag and drop feature
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
 const extracss = require('gridstack/dist/gridstack-extra.css');
-const buttonStyle = require("@material/button/dist/mdc.button.css");
-const inputStyle = require("@material/textfield/dist/mdc.textfield.css");
 
 // language=CSS
 const styling = css`
@@ -117,7 +114,7 @@ export class OrDashboardBuilder extends LitElement {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
-        return [unsafeCSS(gridcss), unsafeCSS(extracss), unsafeCSS(buttonStyle), unsafeCSS(inputStyle), styling]
+        return [unsafeCSS(gridcss), unsafeCSS(extracss), styling]
     }
 
     // Variables

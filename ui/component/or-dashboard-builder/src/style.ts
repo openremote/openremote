@@ -66,7 +66,6 @@ export const style = css`
         flex-basis: auto;
         align-self: auto;
         order: 0;
-        border: 1px solid #E0E0E0;
         padding: 32px;
     }
 
@@ -82,5 +81,17 @@ export const style = css`
         box-sizing: border-box;
         flex-direction: column;
         font-size: 14px;
+    }
+    
+    
+    /* Material Design Tab Bar overrides (for now just placed them here) */
+    .mdc-tab--active .mdc-tab__text-label {
+        color: white !important;
+    }
+    .mdc-tab .mdc-tab__text-label {
+        color: rgba(255, 255, 255, 0.74);
+    }
+    .mdc-tab-indicator .mdc-tab-indicator__content--underline {
+        border-color: white;
     }
 `

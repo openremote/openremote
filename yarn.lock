@@ -2127,6 +2127,56 @@
     "@material/theme" "^9.0.0"
     tslib "^1.9.3"
 
+"@material/tab-bar@^9.0.0":
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/@material/tab-bar/-/tab-bar-9.0.0.tgz#f0a8c8067e11bf52679482ba30a60f3eadbf3098"
+  integrity sha512-kHYTqfmAIyu2Wue/bBlwHMgkzXdZLCEfLyulmM9P9CHRB/It11ofT3q3VtJBmtogh8bmA0PSZ7NaOtl2r6YiVQ==
+  dependencies:
+    "@material/animation" "^9.0.0"
+    "@material/base" "^9.0.0"
+    "@material/density" "^9.0.0"
+    "@material/feature-targeting" "^9.0.0"
+    "@material/tab" "^9.0.0"
+    "@material/tab-scroller" "^9.0.0"
+    tslib "^1.9.3"
+
+"@material/tab-indicator@^9.0.0":
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/@material/tab-indicator/-/tab-indicator-9.0.0.tgz#adcad3621d5c35bad7a7983dad8b6fb6aed3ef61"
+  integrity sha512-4gjbdMq+bgRsegle8pckT0NBHYYoPCfOPJwrwWn3zPVsy/0Nm+XCbseXUDyLXRyCxaytqA7zEsIgBOufkdnB1g==
+  dependencies:
+    "@material/animation" "^9.0.0"
+    "@material/base" "^9.0.0"
+    "@material/feature-targeting" "^9.0.0"
+    "@material/theme" "^9.0.0"
+    tslib "^1.9.3"
+
+"@material/tab-scroller@^9.0.0":
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/@material/tab-scroller/-/tab-scroller-9.0.0.tgz#2309e7d40fff8b2be36da36834d49f600be8329e"
+  integrity sha512-kNndv+MJIi/A+MRyYv6iAzu8KjkBOa7vkpWRl7Lqo1j8iMyb4q1o9klEFfYD1/qeK0tLgcuUE4TZUGluz38/9w==
+  dependencies:
+    "@material/animation" "^9.0.0"
+    "@material/base" "^9.0.0"
+    "@material/dom" "^9.0.0"
+    "@material/feature-targeting" "^9.0.0"
+    "@material/tab" "^9.0.0"
+    tslib "^1.9.3"
+
+"@material/tab@^9.0.0":
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/@material/tab/-/tab-9.0.0.tgz#00ebc1c8f1d31cc87a56426b1dbc40c0c0888fab"
+  integrity sha512-fXO5/n1i9Os6u9+vmgEvdMAIpTMnZpvlye9QD2rbiMBj5Q7oQIcorlJ9V9N2DlmV+cpIylyZI9SGo2/8muaLEA==
+  dependencies:
+    "@material/base" "^9.0.0"
+    "@material/feature-targeting" "^9.0.0"
+    "@material/ripple" "^9.0.0"
+    "@material/rtl" "^9.0.0"
+    "@material/tab-indicator" "^9.0.0"
+    "@material/theme" "^9.0.0"
+    "@material/typography" "^9.0.0"
+    tslib "^1.9.3"
+
 "@material/textfield@^9.0.0":
   version "9.0.0"
   resolved "https://registry.npmjs.org/@material/textfield/-/textfield-9.0.0.tgz"
