@@ -47,7 +47,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     public void init(Container container) {
         super.init(container);
         this.identityService = container.getService(ManagerIdentityService.class);
-        adminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
+        adminPassword = container.getConfig().getOrDefault(OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT);
     }
 
     @Override

@@ -27,8 +27,8 @@ import org.openremote.model.Container;
  */
 public interface IdentityProvider {
 
-    String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
-    String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
+    String OR_ADMIN_PASSWORD = "OR_ADMIN_PASSWORD";
+    String OR_ADMIN_PASSWORD_DEFAULT = "secret";
 
     void init(Container container) throws Exception;
 

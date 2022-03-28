@@ -73,16 +73,16 @@ public class EmailNotificationHandler implements NotificationHandler {
         assetStorageService = container.getService(AssetStorageService.class);
 
         // Configure SMTP
-        String host = container.getConfig().getOrDefault(SETUP_EMAIL_HOST, null);
-        int port = getInteger(container.getConfig(), SETUP_EMAIL_PORT, SETUP_EMAIL_PORT_DEFAULT);
-        String user = container.getConfig().getOrDefault(SETUP_EMAIL_USER, null);
-        String password = container.getConfig().getOrDefault(SETUP_EMAIL_PASSWORD, null);
+        String host = container.getConfig().getOrDefault(OR_EMAIL_HOST, null);
+        int port = getInteger(container.getConfig(), OR_EMAIL_PORT, OR_EMAIL_PORT_DEFAULT);
+        String user = container.getConfig().getOrDefault(OR_EMAIL_USER, null);
+        String password = container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null);
 
-        defaultFrom = container.getConfig().getOrDefault(SETUP_EMAIL_FROM, SETUP_EMAIL_FROM_DEFAULT);
+        defaultFrom = container.getConfig().getOrDefault(OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT);
 
         if (!TextUtil.isNullOrEmpty(host) && !TextUtil.isNullOrEmpty(user) && !TextUtil.isNullOrEmpty(password)) {
             MailerBuilder.MailerRegularBuilder mailerBuilder = MailerBuilder.withSMTPServer(host, port, user, password);
-            boolean startTls = getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT);
+            boolean startTls = getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT);
 
             mailerBuilder.withTransportStrategy(startTls ? TransportStrategy.SMTP_TLS : TransportStrategy.SMTP);
             mailer = mailerBuilder.buildMailer();

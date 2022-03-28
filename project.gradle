@@ -1,32 +1,65 @@
 // Common configuration applied to all projects
-import java.nio.file.Paths
-
+import java.nio.file.*
+import java.nio.file.attribute.*
+import java.util.Set
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
 import org.jetbrains.gradle.ext.Application
 import org.jetbrains.gradle.ext.JUnit
 
-// Build plugins
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
+// Ensure git hook creation task is executed
+if (project == rootProject) {
+
+    if (rootProject.hasProperty("gradleFileEncrypt")) {
+        // Write git hook for encryption plugin checks before any commit
+        def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
+        if (!Files.exists(path)) {
+            def f = path.toFile()
+            f.text = """#!/bin/sh
+
+echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
+
+./gradlew checkFilesGitIgnored
+
+status=\$?
+
+exit \$status
+"""
+            Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
+            perms.add(PosixFilePermission.OWNER_WRITE)
+            perms.add(PosixFilePermission.OWNER_READ)
+            perms.add(PosixFilePermission.OWNER_EXECUTE)
+            perms.add(PosixFilePermission.GROUP_WRITE)
+            perms.add(PosixFilePermission.GROUP_READ)
+            perms.add(PosixFilePermission.GROUP_EXECUTE)
+            perms.add(PosixFilePermission.OTHERS_READ)
+            perms.add(PosixFilePermission.OTHERS_EXECUTE)
+            Files.setPosixFilePermissions(path, perms)
         }
-    }
-    dependencies {
-        classpath "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.1"
+
+        // Add dependency on decrypt task for deployment installDist
+        Task decryptTask = getTasksByName("decryptFiles", false)[0]
+
+        try {
+            def installDist = tasks.getByPath(":deployment:installDist")
+            installDist.dependsOn decryptTask
+            installDist.mustRunAfter(decryptTask)
+        } catch (Exception ignored) {}
+    } else {
+        // Remove git hook
+        try {
+            Files.delete(Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit"))
+        } catch (Exception ignored) {}
     }
 }
 
-// Configure IDEA project (needs to be applied to the root project only)
+
+// Configure Conditional plugins
 if (project == rootProject) {
-    try {
-        apply plugin: "org.jetbrains.gradle.plugin.idea-ext"
-    } catch(Exception e) {
+    apply plugin: "org.jetbrains.gradle.plugin.idea-ext"
 
-    }
-
+    // Configure IDEA
     if (project.hasProperty("idea") && idea.project) {
         // IDEA settings
         idea.project.settings {
@@ -48,15 +81,15 @@ if (project == rootProject) {
                 "Demo Setup"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                     envs = [
-                            SETUP_TYPE: "demo"
+                            OR_SETUP_TYPE: "demo"
                     ]
                 }
                 "Demo Setup with Proxy"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                     envs = [
-                            SETUP_TYPE: "demo",
-                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            EXTERNAL_URL: "https://localhost:8443"
+                            OR_SETUP_TYPE: "demo",
+                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            OR_SSL_PORT: "8443"
                     ]
                 }
                 "Empty"(Application) {
@@ -65,8 +98,8 @@ if (project == rootProject) {
                 "Empty with Proxy"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
-                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            EXTERNAL_URL: "https://localhost:8443"
+                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            OR_SSL_PORT: "8443"
                     ]
                 }
             }
@@ -77,10 +110,10 @@ if (project == rootProject) {
                 "Custom Deployment"(Application) {
                     moduleName = "${getProject().idea.module.name}.setup.main"
                     envs = [
-                        MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
-                        MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
-                        CUSTOM_APP_DOCROOT: "../deployment/manager/app",
-                        CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
+                        OR_MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
+                        OR_MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
+                        OR_CUSTOM_APP_DOCROOT: "../deployment/manager/app",
+                        OR_CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
                     ]
                 }
             }

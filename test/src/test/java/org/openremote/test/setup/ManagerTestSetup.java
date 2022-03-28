@@ -448,7 +448,7 @@ public class ManagerTestSetup extends ManagerSetup {
                         .addMeta(
                                 new MetaItem<>(LABEL, "All Lights Off Switch"),
                                 new MetaItem<>(RULE_EVENT, true),
-                                new MetaItem<>(RULE_EVENT_EXPIRES, "PT3S")
+                                new MetaItem<>(OR_RULE_EVENT_EXPIRES, "PT3S")
                         )
         );
         apartment2 = assetStorageService.merge(apartment2);

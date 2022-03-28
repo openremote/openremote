@@ -70,7 +70,7 @@ import static org.openremote.model.notification.PushNotificationMessage.TargetTy
 public class PushNotificationHandler extends RouteBuilder implements NotificationHandler {
 
     private static final Logger LOG = Logger.getLogger(PushNotificationHandler.class.getName());
-    public static final String FIREBASE_CONFIG_FILE = "FIREBASE_CONFIG_FILE";
+    public static final String OR_FIREBASE_CONFIG_FILE = "OR_FIREBASE_CONFIG_FILE";
     public static final int CONNECT_TIMEOUT_MILLIS = 3000;
     public static final int READ_TIMEOUT_MILLIS = 3000;
     public static final String FCM_PROVIDER_NAME = "fcm";
@@ -93,15 +93,15 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         this.gatewayService = container.getService(GatewayService.class);
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
 
-        String firebaseConfigFilePath = container.getConfig().get(FIREBASE_CONFIG_FILE);
+        String firebaseConfigFilePath = container.getConfig().get(OR_FIREBASE_CONFIG_FILE);
 
         if (TextUtil.isNullOrEmpty(firebaseConfigFilePath)) {
-            LOG.warning(FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
+            LOG.warning(OR_FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
             return;
         }
 
         if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
-            LOG.warning(FIREBASE_CONFIG_FILE + " invalid path or file not readable: " + firebaseConfigFilePath);
+            LOG.warning(OR_FIREBASE_CONFIG_FILE + " invalid path or file not readable: " + firebaseConfigFilePath);
             return;
         }
 

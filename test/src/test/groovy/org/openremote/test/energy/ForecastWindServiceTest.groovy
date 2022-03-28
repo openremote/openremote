@@ -26,7 +26,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 
-import static org.openremote.manager.energy.ForecastWindService.OPEN_WEATHER_API_APP_ID
+import static org.openremote.manager.energy.ForecastWindService.OR_OPEN_WEATHER_API_APP_ID
 
 @Ignore
 class ForecastWindServiceTest extends Specification implements ManagerContainerTrait {
@@ -640,7 +640,7 @@ class ForecastWindServiceTest extends Specification implements ManagerContainerT
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
-        config << [(OPEN_WEATHER_API_APP_ID): "test-key"]
+        config << [(OR_OPEN_WEATHER_API_APP_ID): "test-key"]
 
         if (!ForecastWindService.resteasyClient.configuration.isRegistered(mockServer)) {
             ForecastWindService.resteasyClient.register(mockServer, Integer.MAX_VALUE)
