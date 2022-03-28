@@ -31,11 +31,11 @@ if [ "$DAILY_RESTART" == 'true' ]; then
     username=$SUDO_USER
   fi
   dir=~
-  echo '#!/bin/bash' >> /etc/cron.d/or-restart
+  echo '#!/bin/bash' > /etc/cron.d/or-restart
   echo "0 5 * * * $username $dir/temp/host_init/restart.sh" >> /etc/cron.d/or-restart
 else
   echo "Removing any existing daily restart cron job"
-  rm /etc/cron.d/or-restart &>/dev/null
+  rm -f /etc/cron.d/or-restart &>/dev/null
 fi
 
 if [ "$DAILY_BACKUP" != 'false' ]; then
@@ -46,9 +46,9 @@ if [ "$DAILY_BACKUP" != 'false' ]; then
     username=$SUDO_USER
   fi
   dir=~
-  echo '#!/bin/bash' >> /etc/cron.d/or-backup
+  echo '#!/bin/bash' > /etc/cron.d/or-backup
   echo "0 4 * * * $username $dir/temp/host_init/backup.sh" >> /etc/cron.d/or-backup
 else
   echo "Removing any existing daily backup cron job"
-  rm /etc/cron.d/or-backup &>/dev/null
+  rm -f /etc/cron.d/or-backup &>/dev/null
 fi

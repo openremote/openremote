@@ -154,29 +154,6 @@ else
   echo "Failed to retrieve developers SSH key cloud formation deployments will not succeed until this is resolved"
 fi
 
-# Authorise SMTP user in new account to use SES verified domain
-echo "Authorising new account SMTP user to use openremote.io verified identity"
-read -r -d '' POLICY << EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::$ACCOUNT_ID:user/smtp"
-      },
-      "Action": [
-        "ses:SendRawEmail",
-        "ses:SendEmail"
-      ],
-      "Resource": "arn:aws:ses:$AWS_REGION:$CALLER_ACCOUNT_ID:identity/openremote.io",
-      "Condition": {}
-    }
-  ]
-}
-EOF
-aws ses put-identity-policy --identity openremote.io --policy-name smtp-$ACCOUNT_ID --policy "$POLICY" 1>/dev/null
-
 # Create/remove hosted zone as requested
 if [ -n "$PARENT_DNS_ZONE" ]; then
   HOSTED_ZONE="$ACCOUNT_NAME.$PARENT_DNS_ZONE"

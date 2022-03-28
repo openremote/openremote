@@ -328,7 +328,9 @@ elif [ -f "temp/host_init/post_init.sh" ]; then
 fi
 if [ -n "$hostPostInitCmd" ]; then
   echo "Running host post init script: '$hostPostInitCmd'"
-  sudo $hostPostInitCmd
+  sudo -s
+  source $hostPostInitCmd
+  exit
 else
   echo "No host post init script"
 fi
