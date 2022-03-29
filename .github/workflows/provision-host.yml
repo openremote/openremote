@@ -52,6 +52,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          ## limits ssh access and adds the ssh public key for the user which triggered the workflow
+          limit-access-to-actor: true
+
       - name: Provision Host
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
         run: .ci_cd/aws/provision_host.sh "$HOST" "$INSTANCE_TYPE"
