@@ -273,9 +273,7 @@ elif [ -f "temp/host_init/init.sh" ]; then
 fi
 if [ -n "\$hostInitCmd" ]; then
   echo "Running host init script: '\$hostInitCmd'"
-  sudo -sE
-  \$hostInitCmd
-  exit
+  sudo \$hostInitCmd
 else
   echo "No host init script"
 fi
@@ -334,9 +332,7 @@ elif [ -f "temp/host_init/post_init.sh" ]; then
 fi
 if [ -n "\$hostPostInitCmd" ]; then
   echo "Running host post init script: '\$hostPostInitCmd'"
-  sudo -sE
-  source \$hostPostInitCmd
-  exit
+  sudo \$hostPostInitCmd
 else
   echo "No host post init script"
 fi
@@ -411,9 +407,7 @@ elif [ -f "temp/host_init/init.sh" ]; then
 fi
 if [ -n "\$hostInitCmd" ]; then
   echo "Running host init script: '\$hostInitCmd'"
-  sudo -sE
-  \$hostInitCmd
-  exit
+  sudo \$hostInitCmd
 else
   echo "No host init script"
 fi
@@ -472,9 +466,7 @@ elif [ -f "temp/host_init/post_init.sh" ]; then
 fi
 if [ -n "\$hostPostInitCmd" ]; then
   echo "Running host post init script: '\$hostPostInitCmd'"
-  sudo -sE
-  \$hostPostInitCmd
-  exit
+  sudo \$hostPostInitCmd
 else
   echo "No host post init script"
 fi
