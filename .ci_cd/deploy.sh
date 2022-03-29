@@ -293,38 +293,35 @@ if [ \$? -ne 0 ]; then
   exit 1
 fi
 
-echo "Waiting for up to 5mins for standard services to be healthy"
-count=0
-ok=false
-while [ \$ok != 'true' ] && [ \$count -lt 60 ]; do
-  echo \"attempt...\$count\"
-  sleep 5
-  postgresOk=false
-  keycloakOk=false
-  managerOk=false
-  proxyOk=false
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
-    postgresOk=true
-  fi
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
-    keycloakOk=true
-  fi
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
-    managerOk=true
-  fi
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
-    proxyOk=true
-  fi
+echo "Waiting for up to 5mins for all services to be healthy"
+COUNT=1
+STATUSES_OK=false
+IFS=\$'\n'
+while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
 
-  if [ \$postgresOk == 'true' -a \$keycloakOk == 'true' -a \$managerOk == 'true' -a \$proxyOk == 'true' ]; then
-    ok=true
-  fi
+   echo "Checking service health...attempt \$COUNT"
+   STATUSES=$(docker ps --format "{{.Names}} {{.Status}}")
+   STATUSES_OK=true
 
-  count=\$((count+1))
+   for STATUS in \$STATUSES; do
+     if [[ "\$STATUS" != *"healthy"* ]]; then
+       STATUSES_OK=false
+       break
+     fi
+   done
+
+   if [ "\$STATUSES_OK" == 'true' ]; then
+      break
+   fi
+
+   sleep 5
+   COUNT=\$((COUNT+1))
 done
 
-if [ \$ok != 'true' ]; then
-  echo "Not all containers are healthy"
+if [ "\$STATUSES_OK" == 'true' ]; then
+  echo "All services are healthy"
+else
+  echo "One or more services are unhealthy"
   exit 1
 fi
 
@@ -335,10 +332,10 @@ if [ -f "temp/host_init/post_init_${ENVIRONMENT}.sh" ]; then
 elif [ -f "temp/host_init/post_init.sh" ]; then
   hostPostInitCmd="temp/host_init/post_init.sh"
 fi
-if [ -n "$hostPostInitCmd" ]; then
-  echo "Running host post init script: '$hostPostInitCmd'"
-  sudo -s
-  source $hostPostInitCmd
+if [ -n "\$hostPostInitCmd" ]; then
+  echo "Running host post init script: '\$hostPostInitCmd'"
+  sudo -sE
+  source \$hostPostInitCmd
   exit
 else
   echo "No host post init script"
@@ -412,9 +409,11 @@ elif [ -f "temp/host_init/init_${ENVIRONMENT}.sh" ]; then
 elif [ -f "temp/host_init/init.sh" ]; then
   hostInitCmd="temp/host_init/init.sh"
 fi
-if [ -n "$hostInitCmd" ]; then
-  echo "Running host init script: '$hostInitCmd'"
-  sudo $hostInitCmd
+if [ -n "\$hostInitCmd" ]; then
+  echo "Running host init script: '\$hostInitCmd'"
+  sudo -sE
+  \$hostInitCmd
+  exit
 else
   echo "No host init script"
 fi
@@ -432,38 +431,35 @@ if [ \$? -ne 0 ]; then
   exit 1
 fi
 
-echo "Waiting for up to 5mins for standard services to be healthy"
-count=0
-ok=false
-while [ \$ok != 'true' ] && [ \$count -lt 60 ]; do
-  echo \"attempt...\$count\"
-  sleep 5
-  postgresOk=false
-  keycloakOk=false
-  managerOk=false
-  proxyOk=false
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_postgresql_1)" ]; then
-    postgresOk=true
-  fi
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_keycloak_1)" ]; then
-    keycloakOk=true
-  fi
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_manager_1)" ]; then
-    managerOk=true
-  fi
-  if [ -n "\$(docker ps -aq -f health=healthy -f name=or_proxy_1)" ]; then
-    proxyOk=true
-  fi
+echo "Waiting for up to 5mins for all services to be healthy"
+COUNT=1
+STATUSES_OK=false
+IFS=\$'\n'
+while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
 
-  if [ \$postgresOk == 'true' -a \$keycloakOk == 'true' -a \$managerOk == 'true' -a \$proxyOk == 'true' ]; then
-    ok=true
-  fi
+   echo "Checking service health...attempt \$COUNT"
+   STATUSES=$(docker ps --format "{{.Names}} {{.Status}}")
+   STATUSES_OK=true
 
-  count=\$((count+1))
+   for STATUS in \$STATUSES; do
+     if [[ "\$STATUS" != *"healthy"* ]]; then
+       STATUSES_OK=false
+       break
+     fi
+   done
+
+   if [ "\$STATUSES_OK" == 'true' ]; then
+      break
+   fi
+
+   sleep 5
+   COUNT=\$((COUNT+1))
 done
 
-if [ \$ok != 'true' ]; then
-  echo "Not all containers are healthy"
+if [ "\$STATUSES_OK" == 'true' ]; then
+  echo "All services are healthy"
+else
+  echo "One or more services are unhealthy"
   exit 1
 fi
 
@@ -474,9 +470,11 @@ if [ -f "temp/host_init/post_init_${ENVIRONMENT}.sh" ]; then
 elif [ -f "temp/host_init/post_init.sh" ]; then
   hostPostInitCmd="temp/host_init/post_init.sh"
 fi
-if [ -n "$hostPostInitCmd" ]; then
-  echo "Running host post init script: '$hostPostInitCmd'"
-  sudo $hostPostInitCmd
+if [ -n "\$hostPostInitCmd" ]; then
+  echo "Running host post init script: '\$hostPostInitCmd'"
+  sudo -sE
+  \$hostPostInitCmd
+  exit
 else
   echo "No host post init script"
 fi
