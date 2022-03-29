@@ -46,7 +46,6 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.NameValuePredicate;
-import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.User;
 import org.openremote.model.util.TextUtil;
@@ -200,6 +199,27 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         if (targets != null) {
 
+            // Filter out console targets
+            String[] assetTargets = targets.stream().filter(target -> target.getType() == Notification.TargetType.ASSET)
+                    .map(Notification.Target::getId).toArray(String[]::new);
+
+            if (assetTargets.length > 0) {
+                List<String> consoleAssets = assetStorageService.findAll(new AssetQuery().ids(assetTargets)
+                        .select(new AssetQuery.Select().excludeAttributes()).types(ConsoleAsset.class))
+                    .stream().map(Asset::getId).toList();
+
+                if (!consoleAssets.isEmpty()) {
+                    targets = targets.stream()
+                        .filter(target -> {
+                            boolean isConsoleAsset = consoleAssets.contains(target.getId());
+                            if (isConsoleAsset) {
+                                mappedTargets.add(new Notification.Target(Notification.TargetType.ASSET, target.getId()));
+                            }
+                            return !isConsoleAsset;
+                        }).collect(Collectors.toList());
+                }
+            }
+
             targets.forEach(target -> {
 
                 Notification.TargetType targetType = target.getType();
@@ -267,6 +287,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     mappedTargets.addAll(
                         consoleAssetIds
                             .stream()
+                            .filter(id -> mappedTargets.stream().noneMatch(t -> t.getId().equals(id)))
                             .map(id -> new Notification.Target(Notification.TargetType.ASSET, id))
                             .toList());
                 }

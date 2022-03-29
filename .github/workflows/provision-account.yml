@@ -3,7 +3,7 @@
 # You need to be a member of the CI/CD github team to use this action as it will incur costs for the organisation.
 # ---------------------------------------------------------------------------------------------------------------------
 
-name: Provision Host
+name: Provision Account
 
 on:
   workflow_dispatch:

@@ -27,7 +27,7 @@ on:
           - m6g.large
         required: true
       PROVISION_S3_BUCKET:
-        description: 'Create S3 bucket with name of HOST'
+        description: 'Create S3 bucket for backups'
         type: boolean
         default: true
         required: false

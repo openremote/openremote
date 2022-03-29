@@ -145,14 +145,15 @@ public class EmailNotificationHandler implements NotificationHandler {
             targets.forEach(target -> {
                 Notification.TargetType targetType = target.getType();
                 String targetId = target.getId();
-                UserQuery userQuery = new UserQuery();
+                UserQuery userQuery = null;
 
                 switch (targetType) {
 
                     case TENANT:
-                        userQuery.tenant(new TenantPredicate(targetId));
+                        userQuery = new UserQuery().tenant(new TenantPredicate(targetId));
+                        break;
                     case USER:
-                        userQuery.ids(targetId);
+                        userQuery = new UserQuery().ids(targetId);
                         break;
                     case CUSTOM:
                         // Nothing to do here
@@ -170,26 +171,32 @@ public class EmailNotificationHandler implements NotificationHandler {
                             ).ifPresent(mappedTargets::add);
                         }
 
-                        userQuery.asset(new UserAssetPredicate(targetId));
+                        userQuery = new UserQuery().asset(new UserAssetPredicate(targetId));
                         break;
                 }
 
                 // Filter users that don't have disabled email notifications attribute
-                List<Notification.Target> userTargets = Arrays.stream(managerIdentityService
-                        .getIdentityProvider()
-                        .queryUsers(userQuery))
-                    .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
-                    .filter(user -> !TextUtil.isNullOrEmpty(user.getEmail()))
-                    .map(user -> {
-                        Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
-                        emailTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
-                        return emailTarget;
-                    }).toList();
+                if (userQuery != null) {
+                    List<Notification.Target> userTargets = Arrays.stream(managerIdentityService
+                            .getIdentityProvider()
+                            .queryUsers(userQuery))
+                        .filter(user -> !Boolean.parseBoolean(user.getAttributes().getOrDefault(KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED, Collections.singletonList("false")).get(0)))
+                        .filter(user -> !TextUtil.isNullOrEmpty(user.getEmail()))
+                        .map(user -> {
+                            Notification.Target emailTarget = new Notification.Target(Notification.TargetType.USER, user.getId());
+                            emailTarget.setData(new EmailNotificationMessage.Recipient(user.getFullName(), user.getEmail()));
+                            return emailTarget;
+                        }).toList();
 
-                if (userTargets.isEmpty()) {
-                    LOG.info("No email targets have been mapped");
-                } else {
-                    mappedTargets.addAll(userTargets);
+                    if (userTargets.isEmpty()) {
+                        LOG.info("No email targets have been mapped");
+                    } else {
+                        mappedTargets.addAll(
+                            userTargets
+                                .stream()
+                                .filter(userTarget -> mappedTargets.stream().noneMatch(t -> t.getId().equals(userTarget.getId())))
+                                .toList());
+                    }
                 }
             });
         }
