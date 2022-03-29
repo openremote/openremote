@@ -52,16 +52,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        with:
-          limit-access-to-users: richturner
-
       - name: Provision Host
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
         run: |
           chmod +x .ci_cd/aws/*
-          .ci_cd/aws/provision_host.sh "$HOST" "$INSTANCE_TYPE"
+          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$PROVISION_S3_BUCKET"
         env:
           ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}
           HOST: ${{ github.event.inputs.HOST }}
