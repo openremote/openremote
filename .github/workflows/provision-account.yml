@@ -53,7 +53,9 @@ jobs:
 
       - name: Provision Account
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
-        run: .ci_cd/aws/provision_account.sh "$OU" "$ACCOUNT_NAME" "$PARENT_DNS_ZONE" "HOSTED_DNS" "PROVISION_EFS"
+        run: |
+          chmod +x .ci_cd/aws/*
+          .ci_cd/aws/provision_account.sh "$OU" "$ACCOUNT_NAME" "$PARENT_DNS_ZONE" "HOSTED_DNS" "PROVISION_EFS"
         env:
           OU: ${{ github.event.inputs.OU }}
           ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}

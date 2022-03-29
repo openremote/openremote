@@ -29,6 +29,7 @@ jobs:
 
       - name: Perform Action
         run: |
+          chmod +x .ci_cd/aws/*
           .ci_cd/aws/start_stop_host.sh "$ACTION" "$HOST"
         env:
           HOST: ${{ github.event.inputs.HOST }}

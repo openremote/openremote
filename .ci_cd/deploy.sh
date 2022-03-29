@@ -273,7 +273,9 @@ elif [ -f "temp/host_init/init.sh" ]; then
 fi
 if [ -n "\$hostInitCmd" ]; then
   echo "Running host init script: '\$hostInitCmd'"
-  sudo \$hostInitCmd
+  sudo -sE
+  \$hostInitCmd
+  exit
 else
   echo "No host init script"
 fi
