@@ -298,7 +298,7 @@ IFS=\$'\n'
 while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
 
    echo "Checking service health...attempt \$COUNT"
-   STATUSES=$(docker ps --format "{{.Names}} {{.Status}}")
+   STATUSES=\$(docker ps --format "{{.Names}} {{.Status}}")
    STATUSES_OK=true
 
    for STATUS in \$STATUSES; do
@@ -338,11 +338,12 @@ else
 fi
 
 # Store deployment snapshot data if the host can access S3 bucket with the same name as the host
-docker image inspect $(docker image ls -aq) > temp/image-info.txt
-docker inspect $(docker ps -aq) > temp/container-info.txt
+docker image inspect \$(docker image ls -aq) > temp/image-info.txt
+docker inspect \$(docker ps -aq) > temp/container-info.txt
 
 aws s3 cp temp/image-info.txt s3://${OR_HOST}/image-info.txt &>/dev/null
 aws s3 cp temp/container-info.txt s3://${OR_HOST}/container-info.txt &>/dev/null
+exit 0
 EOF
 
 if [ $? -ne 0 ]; then
@@ -432,7 +433,7 @@ IFS=\$'\n'
 while [ "\$STATUSES_OK" != 'true' ] && [ \$COUNT -le 60 ]; do
 
    echo "Checking service health...attempt \$COUNT"
-   STATUSES=$(docker ps --format "{{.Names}} {{.Status}}")
+   STATUSES=\$(docker ps --format "{{.Names}} {{.Status}}")
    STATUSES_OK=true
 
    for STATUS in \$STATUSES; do
@@ -473,8 +474,6 @@ fi
 
 EOF
 fi
-
-
 
 echo "Testing manager web server https://$OR_HOST..."
 response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOST/manager/)
