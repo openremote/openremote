@@ -307,7 +307,9 @@ services:
       KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
       KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING:-true}
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}/auth
+      # Use the following if OR_SSL_PORT is not the default 443
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:--XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m

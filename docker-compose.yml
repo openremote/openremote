@@ -57,7 +57,9 @@ services:
       - ./deployment:/deployment
     environment:
       KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}/auth
+      # Use the following if OR_SSL_PORT is not the default 443
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
       
   manager:
 #    privileged: true
