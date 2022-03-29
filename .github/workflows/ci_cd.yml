@@ -756,7 +756,7 @@ jobs:
             os.system("echo 'One or more deployments failed'")
             sys.exit(1)
         env:
-          IS_CUSTOM_PROJECT: $${{ steps.check_custom_project.outputs.files_exists }}
+          IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
           REPO_NAME: ${{ github.repository }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
           MANAGER_DOCKER_BUILD_PATH: ${{ steps.manager-docker-command.outputs.buildPath }}
@@ -764,7 +764,6 @@ jobs:
           MANAGER_REF: ${{ steps.manager-docker-command.outputs.refTag }}
           DEPLOYMENT_REF: ${{ steps.deployment-docker-command.outputs.refTag }}
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
-          DEPLOY_SCRIPT_COMMAND: ${{ steps.deploy-script-command.outputs.value }}
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
 
