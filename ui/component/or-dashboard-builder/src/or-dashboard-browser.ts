@@ -31,6 +31,10 @@ const browserStyling = css`
         box-sizing: border-box;
         flex-direction: column;
         font-size: 14px;
+        --or-icon-width: 36px;
+    }
+    .itemText {
+        margin-top: 10px;
     }
 `
 
@@ -49,10 +53,10 @@ export class OrDashboardBrowser extends LitElement {
                 // Setup of Sidebar
                 const sidebarElement = this.shadowRoot.getElementById("sidebarElement");
                 const sidebarItems = [
-                    {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
-                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
-                    {x: 0, y: 2, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},
-                    {x: 2, y: 2, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.MAP, locked: true, content: '<div class="sidebarItem"><or-icon icon="table-large"></or-icon><span>Table</span></div>'},
+                    {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span class="itemText">Line Chart</span></div>'},
+/*                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
+                    {x: 0, y: 2, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},*/
+                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.MAP, locked: true, content: '<div class="sidebarItem"><or-icon icon="map"></or-icon><span class="itemText">Map</span></div>'},
                     //{x: 2, y: 3, w: 2, h: 2, locked: true, noMove: true, content: 'w'} // Invisible widget
                 ];
                 const sidebarGrid = GridStack.init({

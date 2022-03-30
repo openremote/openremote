@@ -40,6 +40,7 @@ const editorStyling = css`
         box-sizing: border-box;
         border: 2px solid #E0E0E0;
         border-radius: 4px;
+        overflow: hidden;
     }
     .gridItem__active {
         border: 2px solid green;    

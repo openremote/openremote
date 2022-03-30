@@ -132,9 +132,9 @@ export class OrDashboardBuilder extends LitElement {
     // Method for creating Widgets (reused at many places)
     createWidget(gridStackNode: ORGridStackNode): DashboardWidget {
         const randomId = (Math.random() + 1).toString(36).substring(2);
-        const gridItem: DashboardGridItem = this.generateGridItem(gridStackNode);
         let displayName = this.generateWidgetDisplayName(gridStackNode.widgetType);
         if(displayName == undefined) { displayName = "Widget #" + randomId; } // If no displayName, set random ID as name.
+        const gridItem: DashboardGridItem = this.generateGridItem(gridStackNode, displayName);
 
         const widget = {
             id: randomId,
@@ -146,7 +146,7 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     // Generating the Grid Item details like X and Y coordinates for GridStack to work.
-    generateGridItem(gridstackNode: ORGridStackNode): DashboardGridItem {
+    generateGridItem(gridstackNode: ORGridStackNode, displayName: string): DashboardGridItem {
         const randomId = (Math.random() + 1).toString(36).substring(2);
         return {
             id: randomId,
@@ -159,7 +159,7 @@ export class OrDashboardBuilder extends LitElement {
             noResize: false,
             noMove: false,
             locked: false,
-            content: this.getWidgetContent(gridstackNode.widgetType)
+            content: this.getWidgetContent(gridstackNode.widgetType, displayName)
         }
     }
     generateWidgetDisplayName(widgetType: DashboardWidgetType): string | undefined {
@@ -178,12 +178,12 @@ export class OrDashboardBuilder extends LitElement {
             case DashboardWidgetType.MAP: return 4;
         }
     }
-    getWidgetContent(widgetType: DashboardWidgetType): any {
+    getWidgetContent(widgetType: DashboardWidgetType, displayName: string): any {
         switch (widgetType) {
             case DashboardWidgetType.CHART: {
-                return '<div class="gridItem"><span>This is a very new Line Chart widget.</span></div>';
+                return ('<div class="gridItem"><or-chart></or-chart></div>');
             } case DashboardWidgetType.MAP: {
-                return '<div class="gridItem"><span>This is the newest Map widget.</span></div>';
+                return ('<div class="gridItem"><or-map center="5.454250, 51.445990" zoom="5" style="height: 500px; width: 100%;"></or-map></div>');
             }
         }
     }
