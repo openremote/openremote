@@ -2,6 +2,8 @@ import { GridStack } from "gridstack";
 import {css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import {style} from "./style";
+import {ORGridStackNode} from "./or-dashboard-editor";
+import { DashboardWidgetType } from "@openremote/model";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -46,12 +48,11 @@ export class OrDashboardBrowser extends LitElement {
 
                 // Setup of Sidebar
                 const sidebarElement = this.shadowRoot.getElementById("sidebarElement");
-                console.log(sidebarElement);
                 const sidebarItems = [
-                    {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-linechart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
-                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-barchart', locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
-                    {x: 0, y: 2, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-gauge', locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},
-                    {x: 2, y: 2, w: 2, h: 2, autoPosition: false, widgetId: 'sidebar-table', locked: true, content: '<div class="sidebarItem"><or-icon icon="table-large"></or-icon><span>Table</span></div>'},
+                    {x: 0, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bell-curve-cumulative"></or-icon><span>Line Chart</span></div>'},
+                    {x: 2, y: 0, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="chart-bar"></or-icon><span>Bar Chart</span></div>'},
+                    {x: 0, y: 2, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.CHART, locked: true, content: '<div class="sidebarItem"><or-icon icon="speedometer"></or-icon><span>Gauge</span></div>'},
+                    {x: 2, y: 2, w: 2, h: 2, autoPosition: false, widgetType: DashboardWidgetType.MAP, locked: true, content: '<div class="sidebarItem"><or-icon icon="table-large"></or-icon><span>Table</span></div>'},
                     //{x: 2, y: 3, w: 2, h: 2, locked: true, noMove: true, content: 'w'} // Invisible widget
                 ];
                 const sidebarGrid = GridStack.init({
