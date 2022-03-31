@@ -22,6 +22,7 @@ var global = {
 }
 
 class CustomWorld {
+
     async navigate() {
         var context
         if (fs.existsSync('storageState.json')) {
@@ -29,19 +30,19 @@ class CustomWorld {
                 storageState: 'storageState.json',
             });
             this.page = await context.newPage();
-            await this.page.goto(process.env.DEMO_URL);
+            await this.page.goto(process.env.LOCAL_URL);
         }
         else {
             context = await global.browser.newContext();
             this.page = await context.newPage();
-            await this.page.goto(process.env.DEMO_URL);
+            await this.page.goto(process.env.LOCAL_URL);
             this.login()
         }      
     }
 
     async login() {
-        await this.page?.fill('#username', process.env.USERID)
-        await this.page?.fill('#password', process.env.PASSWORD)
+        await this.page?.fill('#username', process.env.USER_LOCAL_ID)
+        await this.page?.fill('#password', process.env.LOCAL_PASSWORD)
         await this.page?.press('body', 'Enter');
         await this.page?.context().storageState({ path: 'storageState.json' });
     }
@@ -56,7 +57,7 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
-        slowMo: 300
+        slowMo: 100
     });
 })
 

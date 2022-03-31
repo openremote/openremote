@@ -5,6 +5,13 @@ const { join } = require('path');
  * General steps 
  */
 
+
+
+
+
+/**
+ * snapshots
+ */
 Then('Snapshot', async function () {
     const { page } = this;
     const image = await page?.screenshot();

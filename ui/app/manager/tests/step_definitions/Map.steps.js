@@ -2,7 +2,6 @@ const { Given, When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
 
 /**   Map attribute  **/
-
 Given('Login OpenRemote demo website', { timeout: 10000 }, async function () {
     await this.navigate()
 })
@@ -42,7 +41,7 @@ Then('Asset option is selected', async function () {
 
 /**   Click on Assets  **/
 
-When('Click on the Asset option', async function () {
+When('Navigate to asset page', async function () {
     await this.click('#desktop-left a:nth-child(2)')
 })
 

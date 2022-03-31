@@ -17,7 +17,7 @@ Feature: Map
 
   @Desktop @map @navigate
   Scenario: navigate to assets
-    When Click on the Asset option
+    When Navigate to asset page
     Then Asset option is selected
     And We see the collapsed asset tree with nothing selected
     And We see text on the main panel

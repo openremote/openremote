@@ -11,4 +11,4 @@ openremote/**/*.js
 openremote/**/*.js.map
 screenshots/
 .env
-reports/
+reports/**
