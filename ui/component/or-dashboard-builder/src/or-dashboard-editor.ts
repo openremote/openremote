@@ -155,6 +155,17 @@ export class OrDashboardEditor extends LitElement{
         if(name?.toString() === "widgets" && this.widgets != null) {
             const gridItems = this.mainGrid?.getGridItems();
             if(gridItems != null) {
+
+                // Remove item if the GridStack items are incorrect
+                if(gridItems.length > this.widgets.length) {
+                    gridItems.forEach((gridItem) => {
+                        const widget = this.widgets?.find((widget) => { return widget.gridItem?.id == gridItem.id });
+                        if(widget == undefined) {
+                            this.mainGrid?.removeWidget(gridItem);
+                        }
+                    })
+                }
+                // Add item if there is a GridStack item missing.
                 this.widgets.forEach((widget) => {
                     const foundItem = gridItems.find((item) => { return item.gridstackNode?.id == widget.gridItem?.id});
                     if(foundItem == null && widget.gridItem != null && this.mainGrid != null) {

@@ -3,6 +3,7 @@ import { customElement, state } from "lit/decorators.js";
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-editor";
+import "./or-dashboard-widgetsettings";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
@@ -201,6 +202,17 @@ export class OrDashboardBuilder extends LitElement {
         console.log("Deselecting a widget..");
         this.selectedWidget = undefined;
     }
+    deleteCurrentWidget() {
+        if(this.selectedWidget != null) {
+            const index = this.dashboard.template?.widgets?.indexOf(this.selectedWidget);
+            if(index != null) {
+                this.dashboard.template?.widgets?.splice(index, 1);
+                console.log("Removed the selected Widget from the dashboard! Current dashboard:");
+                console.log(this.dashboard);
+                this.requestUpdate();
+            }
+        }
+    }
 
     /* ----------------- */
 
@@ -242,8 +254,8 @@ export class OrDashboardBuilder extends LitElement {
                                         <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @click="${(event: any) => { this.deselectCurrentWidget(); }}"></or-mwc-input>
                                     </div>
                                 </div>
-                                <div id="content">
-                                    <span>Settings to display here.</span>
+                                <div id="content" style="display: block;">
+                                    <or-dashboard-widgetsettings .selectedWidget="${this.selectedWidget}" @delete="${() => { this.deleteCurrentWidget(); }}"></or-dashboard-widgetsettings>
                                 </div>
                             </div>
                             <div style="${this.selectedWidget != null ? css`display: none` : null}">
