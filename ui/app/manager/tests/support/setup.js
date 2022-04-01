@@ -6,13 +6,13 @@ require('dotenv').config();
 
 /**
  * command for running all the test
- *         npm test
+ *         yarn test
  * 
  * command for running certain test/tests with the "tag"(@OpenRemote) 
- *         npm run tags "tag" (npm run tags "@OpenRemote")
+ *         yarn run tags "tag" (yarn run tags "@OpenRemote")
  * 
  * command for viewing the reports
- *         npm run report
+ *         yarn run report
  * 
  * command for more.....
  */
@@ -23,26 +23,40 @@ var global = {
 
 class CustomWorld {
 
-    async navigate() {
+    async navigate(realm,user) {
         var context
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
                 storageState: 'storageState.json',
             });
             this.page = await context.newPage();
-            await this.page.goto(process.env.LOCAL_URL);
+            if (realm == "admin")
+                await this.page.goto(process.env.LOCAL_URL);
+            else
+                await this.page.goto(process.env.SMARTCITY_URL)
         }
         else {
             context = await global.browser.newContext();
             this.page = await context.newPage();
-            await this.page.goto(process.env.LOCAL_URL);
-            this.login()
-        }      
+            if (realm == "admin")
+                await this.page.goto(process.env.LOCAL_URL);
+            else
+                await this.page.goto(process.env.SMARTCITY_URL)
+            this.login(user)
+        }
     }
 
-    async login() {
-        await this.page?.fill('#username', process.env.USER_LOCAL_ID)
-        await this.page?.fill('#password', process.env.LOCAL_PASSWORD)
+    async login(user) {
+        if (user == "admin") {
+            await this.page?.fill('#username', process.env.USER_LOCAL_ID)
+            await this.page?.fill('#password', process.env.LOCAL_PASSWORD)
+        }
+        else
+        {
+            await this.page?.fill('#username', process.env.SMARTCITY)
+            await this.page?.fill('#password', process.env.SMARTCITY)
+        }
+
         await this.page?.press('body', 'Enter');
         await this.page?.context().storageState({ path: 'storageState.json' });
     }
