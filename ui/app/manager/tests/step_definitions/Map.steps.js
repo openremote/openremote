@@ -11,8 +11,7 @@ Given('Login OpenRemote demo website', { timeout: 10000 }, async function () {
 // now it's using nth decorater to select item
 // skip if there is no such marker 
 When('Click on the Parking Erasmusbrug', { timeout: 10000 }, async function () {
-    const { page } = this;
-    await page.locator('div:nth-child(30) .marker-container div or-icon svg path').click();
+    await this.click('div:nth-child(30) .marker-container div or-icon svg path')
 })
 
 // skip if the last step does not finish

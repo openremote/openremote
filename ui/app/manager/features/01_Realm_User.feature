@@ -23,5 +23,5 @@ Feature: Add_Settings
     @Desktop @Switch_user
     Scenario: Switch user
         When Logout
-        Then Goes to new Realm's manager
-        Then Login as new user
+        Then Go to new Realm and login
+        Then Snapshot "smartcity and user"

@@ -7,21 +7,20 @@ Given('Login OpenRemote local website as admin', { timeout: 10000 }, async funct
 
 // add new realm
 When('Navigate to Realm page', async function () {
-    const { page } = this;
 
-    await page.locator('button[id="menu-btn-desktop"]').click()
-    await page.locator('text=Realms').click();
+    await this.click('button[id="menu-btn-desktop"]');
+    await this.click('text=Realms');
 })
 
 Then('Add a new Realm', async function () {
     const { page } = this;
 
-    await page.locator('text=Add Realm').click();
+    await this.click('text=Add Realm');
     await page.locator('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]').fill('smartcity');
     await page.locator('input[type="text"]').nth(3).fill('smartcity');
     await Promise.all([
         page.waitForNavigation(`${process.env.LOCAL_URL}/manager/#/realms`),
-        page.locator('button:has-text("create")').click()
+        this.click('button:has-text("create")')
     ]);
 })
 
@@ -31,10 +30,8 @@ Then('Add a new Realm', async function () {
  * switch realm 
 */
 When('Select smartcity realm', async function () {
-    const { page } = this;
-
-    await page.locator('#realm-picker').click();
-    await page.locator('li[role="menuitem"]:has-text("smartcity")').click();
+    await this.click('#realm-picker');
+    await this.click('li[role="menuitem"]:has-text("smartcity")');
 })
 
 Then('We see the smartcity realm', async function () {
@@ -50,18 +47,15 @@ Then('We see the smartcity realm', async function () {
  * add new user
  */
 Given("Switch to smartcity realm", async function () {
-    const { page } = this;
 
-    await page.locator('#realm-picker').click();
-    await page.locator('li[role="menuitem"]:has-text("smartcity")').click();
+    await this.click('#realm-picker');
+    await this.click('li[role="menuitem"]:has-text("smartcity")');
 })
 
 
 When("Navigate to user page", async function () {
-    const { page } = this;
-
-    await page.locator('#menu-btn-desktop').click();
-    await page.locator('text=Users').click();
+    await this.click('#menu-btn-desktop');
+    await this.click('text=Users');
 })
 
 Then("Add a new user", { timeout: 10000 }, async function () {
@@ -86,15 +80,30 @@ Then("Add a new user", { timeout: 10000 }, async function () {
     await page.locator('#repeatPassword-user0 input[type="password"]').fill('smartcity');
 
     // select permissions
-    await page.locator('div[role="button"]:has-text("Roles")').click();
-    await page.locator('li[role="menuitem"]:has-text("Read")').click();
-    await page.locator('li[role="menuitem"]:has-text("Write")').click();
-    await page.keyboard.press("Enter")
+    await this.click('div[role="button"]:has-text("Roles")');
+    await this.click('li[role="menuitem"]:has-text("Read")');
+    await this.click('li[role="menuitem"]:has-text("Write")');
+    await page.locator('div[role="button"]:has-text("Roles")').click({timeout: 1000});
 
     //create
     await page.locator('button:has-text("create")').click();
 })
 
+/**
+ * switch user
+ */
+When('Logout',async function(){
 
 
+    await this.click('#menu-btn-desktop');
+    await this.click('text=Log out');
+    await this.logout();
+})
+
+Then('Go to new Realm and login',async function(){
+    const { page } = this;
+
+    await page.goto(process.env.SMARTCITY_URL)
+    await this.login("smartcity")
+})
 

@@ -9,13 +9,13 @@ Given('Nevigate to asset page', async function () {
 Then("Create a {string} with name of {string}", async function (asset, name) {
     const { page } = this;
 
-    await page.locator('.mdi-plus').click();
-    await page.locator(`text=${asset}`).click();
+    await this.click('.mdi-plus');
+    await this.click(`text=${asset}`);
     await page.locator('#name-input input[type="text"]').fill(name);
-    await page.locator('#add-btn').click()
+    await this.click('#add-btn')
 })
 
-When("Goes to asset {string} info page", async function (name) {
+When("Go to asset {string} info page", async function (name) {
     const { page } = this;
     await page.locator(`#list-container div:has-text(${name})`).nth(1).click();
 })

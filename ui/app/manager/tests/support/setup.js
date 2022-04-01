@@ -23,7 +23,7 @@ var global = {
 
 class CustomWorld {
 
-    async navigate(realm,user) {
+    async navigate(realm, user) {
         var context
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
@@ -46,23 +46,31 @@ class CustomWorld {
         }
     }
 
+
     async login(user) {
         if (user == "admin") {
             await this.page?.fill('#username', process.env.USER_LOCAL_ID)
             await this.page?.fill('#password', process.env.LOCAL_PASSWORD)
         }
-        else
-        {
+        else {
             await this.page?.fill('#username', process.env.SMARTCITY)
             await this.page?.fill('#password', process.env.SMARTCITY)
         }
 
-        await this.page?.press('body', 'Enter');
+        await this.page?.keyboard.press('Enter');
         await this.page?.context().storageState({ path: 'storageState.json' });
     }
 
+
     async click(button) {
         await this.page?.locator(button).click()
+    }
+
+
+    async logout() {
+        if (fs.existsSync('storageState.json')) {
+            fs.unlinkSync('storageState.json')
+        }
     }
 
 }
@@ -71,7 +79,7 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
-        slowMo: 100
+        slowMo: 500
     });
 })
 

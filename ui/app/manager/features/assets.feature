@@ -8,7 +8,7 @@ Feature: Assets
     Scenario: Add new asset
         Given Nevigate to asset page
         Then Create a "<asset>" with name of "<name>"
-        When Goes to asset "<name>" info page
+        When Go to asset "<name>" info page
         Then Give value to the "<attribute_1>" of "<value_1>"
         Then Give value to the "<attribute_2>" of "<value_2>"
 
