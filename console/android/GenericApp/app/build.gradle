@@ -10,7 +10,7 @@ android {
         applicationId "io.openremote.app"
         minSdkVersion 25
         targetSdkVersion 32
-        versionCode 31
+        versionCode 32
         versionName "1.0.10"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
