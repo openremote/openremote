@@ -33,8 +33,8 @@ import spock.lang.Specification
 
 import javax.ws.rs.ForbiddenException
 
-import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD
-import static org.openremote.container.security.IdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD
+import static org.openremote.container.security.IdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
@@ -59,7 +59,7 @@ class UserResourceTest extends Specification implements ManagerContainerTrait {
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
-            getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
+            getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
 
         def regularAccessToken = authenticate(

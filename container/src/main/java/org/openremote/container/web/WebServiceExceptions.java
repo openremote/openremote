@@ -229,7 +229,7 @@ public class WebServiceExceptions {
         }
 
         if (LOG.isLoggable(Level.FINE)) {
-            LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'", throwable);
+            LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'" + " type = " + throwable.getClass().getSimpleName() + ", message=" + throwable.getMessage(), throwable);
         } else {
             LOG.log(Level.INFO, "Web service exception in '" + origin + "' for '" + info + "', root cause: " + getRootCause(throwable));
         }

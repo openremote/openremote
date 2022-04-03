@@ -27,6 +27,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
@@ -56,6 +57,7 @@ import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.security.User
 
+import javax.persistence.TypedQuery
 import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
 import javax.websocket.Session
@@ -385,7 +387,10 @@ trait ContainerTrait {
         if (!container.hasService(AssetStorageService.class)) {
             return Collections.emptyList()
         }
-        container.getService(AssetStorageService.class).findUserAssetLinks(null, null, null)
+        return container.getService(PersistenceService.class).doReturningTransaction {
+            TypedQuery<UserAssetLink> query = it.createQuery("select ua from UserAssetLink ua", UserAssetLink.class)
+            return query.getResultList()
+        }
     }
 
     List<GatewayConnection> getGatewayConnections() {

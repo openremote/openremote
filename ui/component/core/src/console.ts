@@ -307,6 +307,19 @@ export class Console {
                 console.debug("Console: updating registration");
 
                 try {
+                    // Ensure console name, platform, version and providers are not null
+                    if (!this._registration.name) {
+                        this._registration.name = "Console";
+                    }
+                    if (!this._registration.platform) {
+                        this._registration.platform = "N/A";
+                    }
+                    if (!this._registration.version) {
+                        this._registration.version = "N/A"
+                    }
+                    if (!this._registration.providers) {
+                        this._registration.providers = {};
+                    }
                     manager.rest.api.ConsoleResource.register(this._registration).then((response: AxiosResponse<ConsoleRegistration>) => {
                         if (response.status !== 200) {
                             throw new Error("Failed to register console");

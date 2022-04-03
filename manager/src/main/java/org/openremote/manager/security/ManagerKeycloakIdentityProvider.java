@@ -82,8 +82,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String REALM_KEYCLOAK_THEME_SUFFIX = "_REALM_KEYCLOAK_THEME";
     public static final String DEFAULT_REALM_KEYCLOAK_THEME = "DEFAULT_REALM_KEYCLOAK_THEME";
     public static final String DEFAULT_REALM_KEYCLOAK_THEME_DEFAULT = "openremote";
-    public static final String KEYCLOAK_GRANT_FILE = "KEYCLOAK_GRANT_FILE";
-    public static final String KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
+    public static final String OR_KEYCLOAK_GRANT_FILE = "OR_KEYCLOAK_GRANT_FILE";
+    public static final String OR_KEYCLOAK_GRANT_FILE_DEFAULT = "manager/build/keycloak.json";
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
     public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED = "emailNotificationsDisabled";
     public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED = "pushNotificationsDisabled";
@@ -107,7 +107,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             setActiveCredentials(grant);
         }
 
-        this.keycloakAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
+        this.keycloakAdminPassword = container.getConfig().getOrDefault(OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT);
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
@@ -875,17 +875,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      */
     public OAuthGrant loadCredentials() {
         // Try and load keycloak proxy credentials from file
-        String grantFile = getString(container.getConfig(), KEYCLOAK_GRANT_FILE, KEYCLOAK_GRANT_FILE_DEFAULT);
+        String grantFile = getString(container.getConfig(), OR_KEYCLOAK_GRANT_FILE, OR_KEYCLOAK_GRANT_FILE_DEFAULT);
         Path grantPath = TextUtil.isNullOrEmpty(grantFile) ? null : Paths.get(grantFile);
         OAuthGrant grant = null;
 
         if (grantPath != null && Files.isReadable(grantPath)) {
-            LOG.info("Loading KEYCLOAK_GRANT_FILE: " + grantFile);
+            LOG.info("Loading OR_KEYCLOAK_GRANT_FILE: " + grantFile);
 
             try (InputStream is = Files.newInputStream(grantPath)) {
                 String grantJson = IOUtils.toString(is, StandardCharsets.UTF_8);
                 grant = ValueUtil.parse(grantJson, OAuthGrant.class).orElseGet(() -> {
-                    LOG.info("Failed to load KEYCLOAK_GRANT_FILE: " + grantFile);
+                    LOG.info("Failed to load OR_KEYCLOAK_GRANT_FILE: " + grantFile);
                     return null;
                 });
             } catch (Exception ex) {
@@ -899,7 +899,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      * Save Keycloak proxy credentials to the file system
      */
     public void saveCredentials(OAuthGrant grant) {
-        String grantFile = getString(container.getConfig(), KEYCLOAK_GRANT_FILE, KEYCLOAK_GRANT_FILE_DEFAULT);
+        String grantFile = getString(container.getConfig(), OR_KEYCLOAK_GRANT_FILE, OR_KEYCLOAK_GRANT_FILE_DEFAULT);
 
         if (TextUtil.isNullOrEmpty(grantFile)) {
             return;
@@ -912,7 +912,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING);
         } catch (Exception e) {
-            LOG.info("Failed to write KEYCLOAK_GRANT_FILE: " + grantFile);
+            LOG.info("Failed to write OR_KEYCLOAK_GRANT_FILE: " + grantFile);
         }
     }
 
@@ -1114,17 +1114,17 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
 
         // Configure SMTP
-        String host = container.getConfig().getOrDefault(SETUP_EMAIL_HOST, null);
+        String host = container.getConfig().getOrDefault(OR_EMAIL_HOST, null);
         if (!TextUtil.isNullOrEmpty(host) && (realmRepresentation.getSmtpServer() == null || realmRepresentation.getSmtpServer().isEmpty())) {
             LOG.info("Configuring Keycloak SMTP settings for realm: " + realmRepresentation.getRealm());
             Map<String, String> emailConfig = new HashMap<>();
             emailConfig.put("host", host);
-            emailConfig.put("port", container.getConfig().getOrDefault(SETUP_EMAIL_PORT, Integer.toString(SETUP_EMAIL_PORT_DEFAULT)));
-            emailConfig.put("user", container.getConfig().getOrDefault(SETUP_EMAIL_USER, null));
-            emailConfig.put("password", container.getConfig().getOrDefault(SETUP_EMAIL_PASSWORD, null));
-            emailConfig.put("auth", container.getConfig().containsKey(SETUP_EMAIL_USER) ? "true" : "false");
-            emailConfig.put("tls", Boolean.toString(getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT)));
-            emailConfig.put("from", getString(container.getConfig(), SETUP_EMAIL_FROM, SETUP_EMAIL_FROM_DEFAULT));
+            emailConfig.put("port", container.getConfig().getOrDefault(OR_EMAIL_PORT, Integer.toString(OR_EMAIL_PORT_DEFAULT)));
+            emailConfig.put("user", container.getConfig().getOrDefault(OR_EMAIL_USER, null));
+            emailConfig.put("password", container.getConfig().getOrDefault(OR_EMAIL_PASSWORD, null));
+            emailConfig.put("auth", container.getConfig().containsKey(OR_EMAIL_USER) ? "true" : "false");
+            emailConfig.put("tls", Boolean.toString(getBoolean(container.getConfig(), OR_EMAIL_TLS, OR_EMAIL_TLS_DEFAULT)));
+            emailConfig.put("from", getString(container.getConfig(), OR_EMAIL_FROM, OR_EMAIL_FROM_DEFAULT));
             realmRepresentation.setSmtpServer(emailConfig);
         }
 

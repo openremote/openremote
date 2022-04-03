@@ -3,6 +3,10 @@
 		"develop": {
 			"distribute": {
 				"tags": "develop"
+			},
+			"deploy": {
+				"managerTag": "develop",
+				"environment": "staging"
 			}
 		},
 		"master": {
