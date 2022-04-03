@@ -70,7 +70,7 @@ export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> 
 
     public static readonly NAME = "or-mwc-input-changed";
 
-    constructor(value?: any, previousValue?: any, enterPressed?: boolean) {
+    constructor(value?: any | any[], previousValue?: any | any[], enterPressed?: boolean) {
         super(OrInputChangedEvent.NAME, {
             detail: {
                 value: value,
@@ -84,8 +84,8 @@ export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> 
 }
 
 export interface OrInputChangedEventDetail {
-    value?: any;
-    previousValue?: any;
+    value?: any | any[];
+    previousValue?: any[];
     enterPressed?: boolean;
 }
 
@@ -1118,11 +1118,15 @@ export class OrMwcInput extends LitElement {
                                                 @change="${(e: Event) => {
                                                     let val: any[] = this.value;
                                                     if ((e.target as HTMLInputElement).checked) {
-                                                        val = [optValue,...val];
+                                                        if (!val.includes(optValue)) {
+                                                            /*val = val.filter((v: any) => v !== optValue);
+                                                            val.push(optValue);*/
+                                                            val = [optValue,...val];
+                                                        }
                                                     } else {
                                                         val = val.filter((v: any) => v !== optValue);
                                                     }
-                                                    this.onValueChange((e.target as HTMLInputElement), val);
+                                                    this.onValueChange((e.target as HTMLInputElement), val as any[]);
                                                 }}"
                                                 class="mdc-checkbox__native-control" id="elem-${optValue}"/>
 
@@ -1567,8 +1571,7 @@ export class OrMwcInput extends LitElement {
         return isValid;
     }
 
-    protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined, enterPressed?: boolean) {
-
+    protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | any[] | undefined, enterPressed?: boolean) {
         let previousValue = this.value;
         let errorMsg: string | undefined;
 
@@ -1622,7 +1625,7 @@ export class OrMwcInput extends LitElement {
         this.setCustomValidity(errorMsg);
         this.reportValidity();
 
-        if (newValue !== previousValue) {
+        if (this.type !== InputType.CHECKBOX_LIST && newValue !== previousValue) {
             if (this.type === InputType.RANGE) {
                 (this._mdcComponent as MDCSlider).setValue(newValue);
                 if (this._mdcComponent2) {
@@ -1638,6 +1641,10 @@ export class OrMwcInput extends LitElement {
                 this.searchableValue = undefined;
                 (searchableElement as HTMLInputElement).value = "";
             }
+        }
+
+        if (this.type === InputType.CHECKBOX_LIST) {
+            this.dispatchEvent(new OrInputChangedEvent(newValue.join(','), previousValue, enterPressed));
         }
     }
 

@@ -73,7 +73,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     }
 
     protected setRRuleValue(value: any, key: string) {
-        const origOptions = this._rrule ? this._rrule.origOptions : undefined;
+        let origOptions = this._rrule ? this._rrule.origOptions : undefined;
         const validity = this._validity!;
 
         switch (key) {
@@ -113,12 +113,14 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
             case "byweekday":
                 if (!origOptions!.byweekday) origOptions!.byweekday = [];
                 if (!Array.isArray(origOptions!.byweekday)) origOptions!.byweekday = [origOptions!.byweekday as ByWeekday];
-                if (value.checked) {
-                    const weekDay = this.getWeekDay(value.name);
-                    if (weekDay) origOptions!.byweekday.push(weekDay);
-                } else {
-                    origOptions!.byweekday = origOptions!.byweekday.filter((day) => day !== this.getWeekDay(value.name));
-                }
+                const newDays = value.split(',');
+                origOptions!.byweekday = [];
+                newDays.forEach((d: any) => {
+                    const weekDay = this.getWeekDay(d);
+                    if (weekDay) {
+                        (origOptions!.byweekday! as ByWeekday[]).push(weekDay);
+                    }
+                });
                 if (this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
                 break;
             case "until":
@@ -130,20 +132,32 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 break;
             case "dtstart-time":
                 const timeParts = value.split(':');
-                origOptions!.dtstart = moment(origOptions!.dtstart).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).toDate();
+                if (origOptions) {
+                    origOptions!.dtstart = moment(origOptions.dtstart).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).toDate();
+                } else {
+                    origOptions = new RRule({
+                        dtstart: moment(this._validity!.start).set({hour:timeParts[0],minute:timeParts[1],second:0,millisecond:0}).toDate()
+                    }).origOptions;
+                }
                 validity.start = moment(origOptions!.dtstart).toDate().getTime();
                 if (this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
                 break;
             case "until-time":
                 const untilParts = value.split(':');
-                if (this._rrule!.options.until) {
-                    origOptions!.until = moment(origOptions!.until).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate()
+                if (this._rrule && this._rrule.options.until) {
+                    if (origOptions) {
+                        origOptions!.until = moment(origOptions.until).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate();
+                    } else {
+                        origOptions = new RRule({
+                            until: moment(this._validity!.end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate()
+                        }).origOptions;
+                    }
                 }
                 validity.end = moment(validity.end).set({hour:untilParts[0],minute:untilParts[1],second:0,millisecond:0}).toDate().getTime();
                 if(this.getValidityType() === "validityRecurrence") this._rrule = new RRule(origOptions);
                 break;
         }
-        this._validity = {...validity}
+        this._validity = {...validity};
         this._dialog!.requestUpdate();
     }
 
@@ -223,7 +237,6 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
     }
 
     protected showDialog() {
-
         this._dialog = showDialog(new OrMwcDialog()
             .setHeading(i18next.t("scheduleRuleActivity"))
             .setStyles(html`
@@ -315,7 +328,13 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
                 ${validityType  === "validityRecurrence" ? html`
                     <label style="display: block; margin-top: 20px;"><or-translate value="repeatOccurrenceEvery"></or-translate></label>
                     <div class="layout horizontal">
-                        <or-mwc-input .value="${selectedOptions}" .type="${InputType.CHECKBOX_LIST}" .options="${options}" .label="${i18next.t("daysOfTheWeek")}" @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.setRRuleValue(e.detail.value, "byweekday")}" ></or-mwc-input>
+                        <or-mwc-input .value="${selectedOptions}" 
+                                      .type="${InputType.CHECKBOX_LIST}" 
+                                      .options="${options}" 
+                                      .label="${i18next.t("daysOfTheWeek")}" 
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => { 
+                                          this.setRRuleValue(e.detail.value, "byweekday"); 
+                                        }}" ></or-mwc-input>
                     </div>
 
                     <label style="display:block; margin-top: 20px;"><or-translate value="repetitionEnds"></or-translate></label>
