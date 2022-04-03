@@ -85,6 +85,7 @@ services:
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
       OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:
       OR_OPEN_WEATHER_API_APP_ID:
