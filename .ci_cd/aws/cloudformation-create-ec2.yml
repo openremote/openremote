@@ -89,6 +89,7 @@ Resources:
   CloudFormationLogs:
     Type: AWS::Logs::LogGroup
     Properties:
+      LogGroupName: !Ref Host
       RetentionInDays: 7
 
   StandardSecurityGroup:

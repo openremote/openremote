@@ -20,6 +20,15 @@ volumes:
   postgresql-data:
   deployment-data:
 
+x-logging: &awslogs
+  logging:
+    driver: awslogs
+    options:
+      awslogs-region: ${AWS_REGION:-eu-west-1}
+      awslogs-group: ${OR_HOSTNAME}
+      awslogs-create-group: 'true'
+      tag: "{{.Name}}/{{.ID}}"
+
 services:
 
   deployment:
@@ -45,13 +54,15 @@ services:
       DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
-      
+    <<: *awslogs
+
   postgresql:
     restart: always
     image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp
+    <<: *awslogs
 
   keycloak:
     restart: always
@@ -64,7 +75,8 @@ services:
     environment:
       KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
       KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
-      
+    <<: *awslogs
+
   manager:
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
@@ -94,3 +106,5 @@ services:
     volumes:
       - temp-data:/tmp
       - deployment-data:/deployment
+    <<: *awslogs
+
