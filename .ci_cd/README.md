@@ -111,7 +111,7 @@ profile can be specified in any of the places variables are loaded from (github 
 * `MANAGER_TAG` - The docker tag to pull for the manager image (if not specified)
 * `CLEAN_INSTALL` - Indicates if the or_postgresql-data volume should be removed before starting the stack
 * `COMMIT` - Which commit or branch to checkout and use on this repo (default: branch/SHA on which workflow is executed)
-* `OR_HOST` - FQDN for the host (default: env/secrets.OR_HOST)
+* `OR_HOSTNAME` - FQDN for the host (default: env/secrets.OR_HOSTNAME)
 * `SSH_USER` - SSH username (default: root)
 * `SSH_KEY` - SSH private key (this is written to `ssh.key` file and loaded by `deploy.sh` for SSH/SCP commands)
 * `SSH_PASSWORD` - SSH password (alternative to private key authentication)
@@ -123,7 +123,7 @@ profile can be specified in any of the places variables are loaded from (github 
 * `ENV_COMPOSE_FILE` - The full path to the docker compose file to use for the deployment
 * `SKIP_HOST_PING` - Will skip host ping check before deploying (default: false)
 * `SKIP_SSH_WHITELIST` - Will skip whitelisting the runner in AWS ssh-access security group
-* `SKIP_AWS_EC2_START` - Will skip attempt to start EC2 instance named $OR_HOST when PING fails
+* `SKIP_AWS_EC2_START` - Will skip attempt to start EC2 instance named $OR_HOSTNAME when PING fails
 * `SKIP_AWS_S3_FILECOPY` - Will skip attempt to copy host deployment files from AWS S3 bucket to `/deployment.local/s3`
 * `AWS_EFS_MAP` - Name of EFS map volume to mount at `/deployment.local/map`
 

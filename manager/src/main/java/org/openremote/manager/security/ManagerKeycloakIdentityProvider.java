@@ -67,8 +67,6 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS;
-import static org.openremote.container.web.WebService.WEBSERVER_ALLOWED_ORIGINS_DEFAULT;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.util.ValueUtil.convert;
 
@@ -87,6 +85,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String KEYCLOAK_DEFAULT_ROLES_PREFIX = "default-roles-";
     public static final String KEYCLOAK_USER_ATTRIBUTE_EMAIL_NOTIFICATIONS_DISABLED = "emailNotificationsDisabled";
     public static final String KEYCLOAK_USER_ATTRIBUTE_PUSH_NOTIFICATIONS_DISABLED = "pushNotificationsDisabled";
+    public static final String KEYCLOAK_FRONTEND_URL = "KEYCLOAK_FRONTEND_URL";
 
     protected PersistenceService persistenceService;
     protected TimerService timerService;
@@ -95,6 +94,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     protected ConsoleAppService consoleAppService;
     protected String keycloakAdminPassword;
     protected Container container;
+    protected String frontendUrl;
+    protected List<String> validRedirectUris;
 
     @Override
     public void init(Container container) {
@@ -107,12 +108,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             setActiveCredentials(grant);
         }
 
-        this.keycloakAdminPassword = container.getConfig().getOrDefault(OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT);
-        this.timerService = container.getService(TimerService.class);
-        this.persistenceService = container.getService(PersistenceService.class);
-        this.messageBrokerService = container.getService(MessageBrokerService.class);
-        this.clientEventService = container.getService(ClientEventService.class);
-        this.consoleAppService = container.getService(ConsoleAppService.class);
+        frontendUrl = getString(container.getConfig(), KEYCLOAK_FRONTEND_URL, null);
+        keycloakAdminPassword = container.getConfig().getOrDefault(OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT);
+        timerService = container.getService(TimerService.class);
+        persistenceService = container.getService(PersistenceService.class);
+        messageBrokerService = container.getService(MessageBrokerService.class);
+        clientEventService = container.getService(ClientEventService.class);
+        consoleAppService = container.getService(ConsoleAppService.class);
+
+        // Allow all external hostnames with wildcard and same host with wildcard
+        validRedirectUris = new ArrayList<>();
+        validRedirectUris.add("/*");
+        validRedirectUris.addAll(WebService.getExternalHostnames(container).stream().map(hostname -> "https://" + hostname + "/*").toList());
     }
 
     @Override
@@ -931,20 +938,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             client.setWebOrigins(Collections.singletonList("*"));
             client.setRedirectUris(Collections.singletonList("*"));
         } else {
-            // TODO: Decide how clients should be handled
             client.setWebOrigins(Collections.singletonList("+"));
-            client.setRedirectUris(Collections.singletonList("/*"));
-//            List<String> redirectUris = new ArrayList<>();
-//            try {
-//                for (String consoleName : consoleAppService.getInstalled()) {
-//                    addClientRedirectUris(consoleName, redirectUris, devMode);
-//                }
-//            } catch (Exception exception) {
-//                LOG.log(Level.WARNING, exception.getMessage(), exception);
-//                addClientRedirectUris(realm, redirectUris, devMode);
-//            }
-//
-//            client.setRedirectUris(redirectUris);
+            client.setRedirectUris(validRedirectUris);
         }
 
         return client;
@@ -1087,6 +1082,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         return false;
     }
 
+    @Override
+    public String getFrontendUrl() {
+        return frontendUrl;
+    }
+
     protected void configureRealm(RealmRepresentation realmRepresentation) {
 
         realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
@@ -1138,7 +1138,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         if (container.isDevMode()) {
                 headers.computeIfPresent("contentSecurityPolicy", (hdrName, hdrValue) -> "frame-src *; frame-ancestors *; object-src 'none'");
         } else {
-            String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
+            String allowedOriginsStr = String.join(" ", WebService.getAllowedOrigins(container));
             if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
                 headers.compute("contentSecurityPolicy", (hdrName, hdrValue) ->
                         "frame-src 'self' " +

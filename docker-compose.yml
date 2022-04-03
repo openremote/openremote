@@ -1,7 +1,7 @@
 # OpenRemote v3
 #
 # Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
-# but optionally on https://$OR_HOST with an auto generated SSL certificate from Letsencrypt.
+# but optionally on https://$OR_HOSTNAME with an auto generated SSL certificate from Letsencrypt.
 #
 # It is possible to specify OR_SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
 # is shown at https://demo.openremote.io)
@@ -23,7 +23,7 @@ volumes:
 services:
 
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.5.0.3}
+    image: openremote/proxy:${PROXY_VERSION:-latest}
     restart: always
     depends_on:
       manager:
@@ -36,20 +36,21 @@ services:
       - proxy-data:/deployment
     environment:
       LE_EMAIL: ${OR_EMAIL_ADMIN:-}
-      DOMAINNAME: ${OR_HOST:-localhost}
+      DOMAINNAME: ${OR_HOSTNAME:-localhost}
+      DOMAINNAMES: ${OR_ADDTIONAL_HOSTNAMES:-}
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
       
   postgresql:
     restart: always
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp
 
   keycloak:
     restart: always
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-16.0.0.0}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -57,9 +58,9 @@ services:
       - ./deployment:/deployment
     environment:
       KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}/auth
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
       # Use the following if OR_SSL_PORT is not the default 443
-      #KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
       
   manager:
 #    privileged: true
@@ -78,9 +79,14 @@ services:
       OR_EMAIL_PASSWORD:
       OR_EMAIL_FROM:
       OR_EMAIL_ADMIN:
-      OR_HOST: ${OR_HOST:-localhost}
+      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
       OR_SSL_PORT: ${OR_SSL_PORT:-443}
       OR_DEV_MODE: ${OR_DEV_MODE:-false}
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
+      # Use the following if OR_SSL_PORT is not the default 443
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
+
       # The following variables will configure the demo
       OR_FORECAST_SOLAR_API_KEY:
       OR_OPEN_WEATHER_API_APP_ID:

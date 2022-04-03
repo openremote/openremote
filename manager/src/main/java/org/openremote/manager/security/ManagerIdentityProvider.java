@@ -104,6 +104,10 @@ public interface ManagerIdentityProvider extends IdentityProvider {
      */
     boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles);
 
+    /**
+     * Returns the frontend URL to be used for frontend apps to authenticate
+     */
+    String getFrontendUrl();
 
     /*
      * BELOW ARE STATIC HELPER METHODS

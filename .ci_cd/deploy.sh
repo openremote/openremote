@@ -35,11 +35,11 @@ if [ -f "temp/env" ]; then
 fi
 
 # Check host is defined
-if [ -z "$OR_HOST" ]; then
+if [ -z "$OR_HOSTNAME" ]; then
  echo "Host is not set"
  exit 1
 fi
-HOST="$OR_HOST"
+HOST="$OR_HOSTNAME"
 
 # Load SSH environment variables into this session
 if [ -f "ssh.env" ]; then
@@ -95,7 +95,7 @@ if [ -f "ssh.key" ]; then
   sshCommandPrefix="$sshCommandPrefix -i ssh.key"
   scpCommandPrefix="$scpCommandPrefix -i ssh.key"
 fi
-hostStr="$OR_HOST"
+hostStr="$OR_HOSTNAME"
 if [ -n "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
@@ -104,11 +104,11 @@ fi
 # Check host is reachable (ping must be enabled)
 #if [ "$SKIP_HOST_PING" != 'true' ]; then
 #  echo "Attempting to ping host"
-#  ping -c1 -W1 -q $OR_HOST &>/dev/null
+#  ping -c1 -W1 -q $OR_HOSTNAME &>/dev/null
 #  if [ $? -ne 0 ]; then
 #    echo "Host is not reachable by PING"
 #    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
-#      "temp/aws/start_stop_host.sh" "START" "$OR_HOST"
+#      "temp/aws/start_stop_host.sh" "START" "$OR_HOSTNAME"
 #      if [ $? -ne 0 ]; then
 #        # Don't exit as it might just not be reachable by PING we'll fail later on
 #        echo "EC2 instance start failed"
@@ -341,8 +341,8 @@ fi
 docker image inspect \$(docker image ls -aq) > temp/image-info.txt
 docker inspect \$(docker ps -aq) > temp/container-info.txt
 
-aws s3 cp temp/image-info.txt s3://${OR_HOST}/image-info.txt &>/dev/null
-aws s3 cp temp/container-info.txt s3://${OR_HOST}/container-info.txt &>/dev/null
+aws s3 cp temp/image-info.txt s3://${OR_HOSTNAME}/image-info.txt &>/dev/null
+aws s3 cp temp/container-info.txt s3://${OR_HOSTNAME}/container-info.txt &>/dev/null
 exit 0
 EOF
 
@@ -475,8 +475,8 @@ fi
 EOF
 fi
 
-echo "Testing manager web server https://$OR_HOST..."
-response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOST/manager/)
+echo "Testing manager web server https://$OR_HOSTNAME..."
+response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
 if [ $response -ne 200 ]; then
   echo "Response code = $response"
   revoke_ssh

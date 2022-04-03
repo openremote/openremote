@@ -11,7 +11,7 @@
 # Here's a list of commonly customised environment variables:
 #
 # OR_ADMIN_PASSWORD
-# OR_HOST
+# OR_HOSTNAME
 # OR_EMAIL_HOST
 # OR_EMAIL_USER
 # OR_EMAIL_PASSWORD
@@ -29,41 +29,47 @@ volumes:
 
 services:
 
-  # Reverse proxy which uses self signed certificate when DOMAINNAME=localhost. You can
-  # map a Docker volume or host directory to access/store proxy configuration files
-  # and SSL certificates.
+  # Reverse proxy which auto-generates any Internet Assigned Numbers Authority TLD subdomain SSL certificates using
+  # Lets Encrypt the domain name to generate a certificate for should be specified using DOMAINNAME (single domain name)
+  # or DOMAINNAMES (multiple comma separated list of domain names). The proxy will fallback to self-signed certificate
+  # for any requests for which a certificate doesn't exist. Custom certificates can be volume mapped into
+  # /etc/haproxy/certs (note custom certificates must include the full chain including the private key). Can also volume
+  # map a custom proxy config file.
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.5.0.3}
+    image: openremote/proxy:${PROXY_VERSION:-latest}
     restart: always
-    volumes:
-      - proxy-data:/deployment
+#    volumes:
+#      - proxy-data:/deployment
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: ${TZ:-Europe/Amsterdam}
 
-      # File to which std out will be logged
+      # File to which entrypoint logs are written in addition to std out
       LOGFILE: ${PROXY_LOGFILE:-/var/log/proxy.log}
 
       # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
       # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
       PROXY_LOGLEVEL: ${PROXY_LOGLEVEL:-notice}
 
-      # The public host name of this OpenRemote installation. Set this to request/manage an SSL
-      # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
-      # rely on a baked-in self-signed certificate.
-      DOMAINNAME: ${OR_HOST:-localhost}
+      # IANA TLD subdomain for which an SSL certificate should be requested (leave blank for private/externally
+      # generated certificates).
+      DOMAINNAME: ${OR_HOSTNAME:-localhost}
+
+      # IANA TLD comma separated subdomains for which an SSL certificates should be requested (leave blank for
+      # private/externally generated certificates); this is an alternative to DOMAINNAME for multiple domains.
+      DOMAINNAMES: ${OR_ADDTIONAL_HOSTNAMES:-}
 
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
-      HAPROXY_CONFIG: ${HAPROXY_CONFIG}
+      HAPROXY_CONFIG: ${HAPROXY_CONFIG:-/etc/haproxy/haproxy.cfg}
 
       # Email address for SSL certificate issuance and expiration notifications.
-      LE_EMAIL: ${OR_EMAIL_ADMIN}
+      LE_EMAIL: ${OR_EMAIL_ADMIN:-}
 
       # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)
-      # e.g. '--staging --logs-dir=/etc/letsencrypt'
+      # e.g. '--staging'
       LE_EXTRA_ARGS: ${PROXY_EXTRA_ARGS:-}
 
       # The proxy supports up to 10 custom redirects from hostname to any path on the
@@ -138,16 +144,17 @@ services:
       # the keycloak identity provider).
       OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
 
-      # Can be used by SetupTasks to determine what assets etc. should be setup for this deployment
-      # the available values and general use of this is dependent on the actual SetupTasks available
-      # in the instance being deployed some basic recommendations are 'production', 'staging'
+      # This value is passed to SetupTasks can be used to determine what assets etc. should be setup for this deployment
+      # the available values and general use of this is dependent on the actual SetupTasks available in the instance
+      # being deployed some basic recommendations are 'production', 'staging'
       OR_SETUP_TYPE: ${OR_SETUP_TYPE}
 
-      # The public HOSTNAME and SSL PORT of the proxy in front of this manager; must match the proxy#OR_HOST (unfortunately
-      # docker compose doesn't support chaining environment variables at time of writing, hence the need for
-      # two environment variables)
+      # The public HOSTNAME and SSL PORT of this manager
       OR_SSL_PORT: ${OR_SSL_PORT:-443}
-      OR_HOST: ${OR_HOST:-localhost}
+      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
+
+      # Additional hostnames that should be allowed to access the auth server
+      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
 
       # Configure Email, SMTP server to send password reset emails etc.
       OR_EMAIL_HOST:
@@ -173,8 +180,24 @@ services:
       # Default behaviour is false unless OR_DEV_MODE = true or openremote database doesn't already exist
       OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-false}
 
-      # Manager web server interface binding; default:
+      # Manager web server interface binding; default: 0.0.0.0
       OR_WEBSERVER_LISTEN_HOST: ${OR_WEBSERVER_LISTEN_HOST:-0.0.0.0}
+
+      # Manager web server port (default: 8080)
+      OR_WEBSERVER_LISTEN_PORT: ${OR_WEBSERVER_LISTEN_PORT:-8080}
+
+      # Comma separated list of manager web server CORS allowed origins (can be a prefix, exact match or wildcard *)
+      # These are in addition to the OR_HOSTNAME and OR_ADDITIONAL_HOSTNAMES which are implicitly allowed
+      OR_WEBSERVER_ALLOWED_ORIGINS: ${OR_WEBSERVER_ALLOWED_ORIGINS:-}
+
+      # Dump web server requests to logs; default: false
+      OR_WEBSERVER_DUMP_REQUESTS: ${OR_WEBSERVER_DUMP_REQUESTS:-}
+
+      # Manager web server maximum worker thread count; default: Processor core count or 10
+      OR_WEBSERVER_WORKER_THREADS_MAX: ${OR_WEBSERVER_WORKER_THREADS_MAX:-}
+
+      # Manager web server maximum IO thread count; default: Processor core count or 2
+      OR_WEBSERVER_IO_THREADS_MAX: ${OR_WEBSERVER_IO_THREADS_MAX:-}
 
       # Database settings
       OR_DB_VENDOR: ${OR_DB_VENDOR:-postgres}
@@ -191,6 +214,11 @@ services:
       # The service-internal host name and port of the keycloak identity provider; defaults:
       OR_KEYCLOAK_HOST: ${OR_KEYCLOAK_HOST:-keycloak}
       OR_KEYCLOAK_PORT: ${OR_KEYCLOAK_PORT:-8080}
+
+      # The frontend URL of the Keycloak identity provider used by this instance (defaults to http:// https://OR_HOSTNAME:OR_SSL_PORT/auth)
+      # This is used in server info endpoint to inform frontend where the identity provider is for this instance (frontend apps should
+      # assume identity provider is on the same host as this instance if it is not set)
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
 
       # Location of built in web content.
       OR_APP_DOCROOT: ${OR_APP_DOCROOT:-/opt/web}
@@ -278,7 +306,7 @@ services:
 
   # Keycloak identity provider
   keycloak:
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-16.0.0.0}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
     restart: always
     # Map any custom themes into the /deployment/keycloak/themes dir:
     #volumes:
@@ -307,9 +335,9 @@ services:
       KEYCLOAK_USER: ${KEYCLOAK_USER:-admin}
       KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
       PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING:-true}
-      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}/auth
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
       # Use the following if OR_SSL_PORT is not the default 443
-      #KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: ${KEYCLOAK_JAVA_OPTS:--XX:CompressedClassSpaceSize=50m -XX:MaxMetaspaceSize=250m
@@ -323,7 +351,7 @@ services:
 
   # PostgreSQL DBMS
   postgresql:
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     restart: always
     # Docker volume for persistent storage of DB; can alternatively map to host
     volumes:

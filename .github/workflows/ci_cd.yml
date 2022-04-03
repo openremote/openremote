@@ -45,7 +45,7 @@
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
-# - OR_HOST               - FQDN of host to deploy to (e.g. demo.openremote.app)
+# - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
 # - SSH_PASSWORD          - Set/override the SSH password to use for SSH/SCP commands (SSH key should be preferred)
 # - SSH_PORT              - Set/override the SSH port to use for SSH/SCP commands
@@ -82,7 +82,7 @@ on:
         type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
-      OR_HOST:
+      OR_HOSTNAME:
         description: 'Host to deploy to (e.g. demo.openremote.app)'
       SSH_PORT:
         description: 'SSH port'
