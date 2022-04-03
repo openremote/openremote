@@ -11,14 +11,15 @@ import android.widget.Toast
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.openremote.app.databinding.ActivityProjectBinding
+import io.openremote.orlib.ORConstants
 import io.openremote.orlib.network.ApiManager
 import io.openremote.orlib.ui.OrMainActivity
 
 class ProjectActivity : Activity() {
 
     private lateinit var binding: ActivityProjectBinding
+    private lateinit var sharedPreferences: SharedPreferences
 
-    var sharedPreferences: SharedPreferences? = null
     var host: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,17 +50,18 @@ class ProjectActivity : Activity() {
 
     private fun requestAppConfig(project: String, realm: String) {
         binding.progressBar.visibility = View.VISIBLE
-        host = if (URLUtil.isValidUrl(project)) project else "https://${project}.openremote.io/"
-        val url = if (URLUtil.isValidUrl(project)) project.plus("/api/${realm}") else "https://${project}.openremote.io/api/${realm}"
+        host = if (URLUtil.isValidUrl(project)) project else "https://${project}.openremote.app/"
+        val url = if (URLUtil.isValidUrl(project)) project.plus("/api/${realm}") else "https://${project}.openremote.app/api/${realm}"
         val apiManager = ApiManager(url)
         apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
             binding.progressBar.visibility = View.INVISIBLE
             if (statusCode in 200..299) {
-                sharedPreferences?.edit()?.putString("host", host)?.apply()
-                sharedPreferences?.edit()?.putString("realm", realm)?.apply()
+                sharedPreferences.edit().putString(ORConstants.HOST_KEY, host)
+                    .putString(ORConstants.REALM_KEY, realm)
+                    .apply()
                 val intent = Intent(this@ProjectActivity, OrMainActivity::class.java)
-                intent.putExtra(OrMainActivity.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
-                intent.putExtra(OrMainActivity.BASE_URL_KEY, host)
+                intent.putExtra(ORConstants.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
+                intent.putExtra(ORConstants.BASE_URL_KEY, host)
                 startActivity(intent)
                 finish()
             } else {
