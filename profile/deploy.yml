@@ -59,7 +59,7 @@ services:
 
       # IANA TLD comma separated subdomains for which an SSL certificates should be requested (leave blank for
       # private/externally generated certificates); this is an alternative to DOMAINNAME for multiple domains.
-      DOMAINNAMES: ${OR_ADDTIONAL_HOSTNAMES:-}
+      DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
 
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       HAPROXY_CONFIG: ${HAPROXY_CONFIG:-/etc/haproxy/haproxy.cfg}
