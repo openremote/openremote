@@ -160,8 +160,7 @@ Resources:
         configSets:
           default:
             - 01_setupCfnHup
-            - 02_config-amazon-cloudwatch-agent
-            - 03_restart_amazon-cloudwatch-agent
+            - 02_restart_amazon-cloudwatch-agent
             - docker_setup
             - cron_setup
             - env_vars
@@ -170,9 +169,6 @@ Resources:
             - s3_backup_service
             - deployment_local_dir
             - daily_cleanup
-          UpdateEnvironment:
-            - 02_config-amazon-cloudwatch-agent
-            - 03_restart_amazon-cloudwatch-agent
 
         daily_cleanup:
           files:
@@ -268,8 +264,9 @@ Resources:
                   exit 0
                 fi
                 
-                echo "Running DNS A record update"
-                PUBLIC_IP=$(curl ident.me)
+                echo "Running DNS record update"
+                PUBLIC_IPV4=$(curl v4.ident.me 2>/dev/null)
+                PUBLIC_IPV6=$(curl v6.ident.me 2>/dev/null)
                 
                 if [ -n "${DNSHostedZoneRoleArn}" ]; then
                   echo "Assuming role '${DNSHostedZoneRoleArn}' for DNS A record update"
@@ -295,21 +292,55 @@ Resources:
 
                 read -r -d '' RECORDSET << EOF
                 {
-                  "Comment": "Creating NS record for '${Host}' subdomain",
+                  "Comment": "Creating NS record(s) for '${Host}' subdomain",
                   "Changes": [
+                EOF
+
+                if [ -n "$PUBLIC_IPV4" ]; then
+                
+                read -r -d '' RECORDSET << EOF
+                $RECORDSET
                     {
                       "Action": "UPSERT",
                       "ResourceRecordSet": {
                           "Name": "${Host}.",
                           "Type": "A",
                           "TTL": 300,
-                        "ResourceRecords": [{ "Value": "$PUBLIC_IP"}]
+                        "ResourceRecords": [{ "Value": "$PUBLIC_IPV4"}]
                       }
                     }
+                EOF
+
+                fi
+                
+                
+                if [ -n "$PUBLIC_IPV6" ]; then
+                
+                  if [ -n "$PUBLIC_IPV4" ]; then
+                    RECORDSET="$RECORDSET,"
+                  fi
+                
+                read -r -d '' RECORDSET << EOF
+                $RECORDSET
+                    {
+                      "Action": "UPSERT",
+                      "ResourceRecordSet": {
+                          "Name": "${Host}.",
+                          "Type": "AAAA",
+                          "TTL": 300,
+                        "ResourceRecords": [{ "Value": "$PUBLIC_IPV6"}]
+                      }
+                    }
+                EOF
+                fi
+                
+                read -r -d '' RECORDSET << EOF
+                $RECORDSET
                   ]
                 }
                 EOF
-
+                
+                echo "$RECORDSET"
                 aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "$RECORDSET"
 
             "/lib/systemd/system/dns-updater.service":
