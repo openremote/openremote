@@ -41,11 +41,11 @@ if [ -z "$OR_HOSTNAME" ]; then
 fi
 HOST="$OR_HOSTNAME"
 
-# Load SSH environment variables into this session
-if [ -f "ssh.env" ]; then
-  echo "Loading SSH password environment variable: 'ssh.env'"
+# Load temp environment variables into this session
+if [ -f "temp.env" ]; then
+  echo "Loading SSH password environment variable: 'temp.env'"
   set -a
-  . ./ssh.env
+  . ./temp.env
   set +x
 fi
 
@@ -62,8 +62,7 @@ if [ -d ".ci_cd/aws" ]; then
   cp -r .ci_cd/aws temp/
 fi
 
-chmod +x temp/aws/*
-chmod +x temp/host_int/*
+chmod -R +rx temp/
 
 # Determine compose file to use and copy to temp dir (do this here as all env variables are loaded)
 if [ -z "$ENV_COMPOSE_FILE" ]; then
