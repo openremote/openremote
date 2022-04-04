@@ -7,7 +7,7 @@
 # 3 - AWS_ENABLED (optional default false)
 
 CIDR=$1
-AWS_PROFILE=$2
+PROFILE=$2
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -21,8 +21,8 @@ if [ "$AWS_ENABLED" != 'true' ]; then
   exit 1
 fi
 
-if [ -n "$AWS_PROFILE" ]; then
-  PROFILE="--profile $AWS_PROFILE"
+if [ -n "$PROFILE" ]; then
+  PROFILE="--profile $PROFILE"
 fi
 
 if [ -n "$CIDR" ]; then
