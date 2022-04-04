@@ -208,6 +208,7 @@ $sshCommandPrefix ${hostStr} << EOF
 
 if [ "$ROLLBACK_ON_ERROR" == 'true' ]; then
   echo "Moving old temp dir to temp_old"
+  rm -fr temp_old
   mv temp temp_old
   # Tag existing manager image with previous tag (current tag might not be available in docker hub anymore or it could have been overwritten)
   docker tag `docker images openremote/manager -q | head -1` openremote/manager:previous

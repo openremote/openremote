@@ -692,11 +692,20 @@ jobs:
               os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
             
             # Output inputs and secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
-            # _ENV_ prefixed keys are output last (to override any non env specific keys)
+            # _$ENV_ prefixed keys are output last (to override any non env specific keys)
+            # some sensitive secrets are excluded
             for key, value in inputsAndSecrets.items():
               if "." in key:
                 continue
               if key.startswith("_"):
+                continue
+              if key == "AWS_SECRET_ACCESS_KEY":
+                continue
+              if key == "AWS_ACCESS_KEY_ID":
+                continue
+              if key == "DOCKERHUB_PASSWORD":
+                continue
+              if key == "github_token":
                 continue
               os.system(f"echo 'Secret found {key}...'")
               if key == "SSH_KEY":
@@ -715,6 +724,14 @@ jobs:
               if "." in key:
                 continue
               if not key.startswith("_"):
+                continue
+              if key == "AWS_SECRET_ACCESS_KEY":
+                continue
+              if key == "AWS_ACCESS_KEY_ID":
+                continue
+              if key == "DOCKERHUB_PASSWORD":
+                continue
+              if key == "github_token":
                 continue
               environment = (env if env else "").upper()
               prefix = "_" + environment + "_"
