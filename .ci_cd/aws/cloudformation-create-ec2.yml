@@ -489,15 +489,7 @@ Resources:
                 enabled: "true"
                 ensureRunning: "true"
 
-        # Definition of a dummy file, that change the contents of the dummy file can trigger the agent to reload the configuration from SSM parameter store.
-        02_config-amazon-cloudwatch-agent:
-          files:
-            '/opt/aws/amazon-cloudwatch-agent/etc/dummy.version':
-              content: !Sub |
-                "You can change the VERSION below to to simulate the update of metadata"
-                "VERSION=1.0"
-        # Invoke amazon-cloudwatch-agent-ctl to restart the AmazonCloudWatchAgent.
-        03_restart_amazon-cloudwatch-agent:
+        02_restart_amazon-cloudwatch-agent:
           commands:
             01_stop_service:
               command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
@@ -520,8 +512,8 @@ Resources:
               content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
-                path=Resources.EC2Instance.Metadata.AWS::CloudFormation::Init.02_config-amazon-cloudwatch-agent
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets UpdateEnvironment
+                path=Resources.EC2Instance.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets default
                 runas=root
               mode: '000400'
               owner: root
