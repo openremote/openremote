@@ -28,7 +28,7 @@ if [ -f "temp/env" ]; then
   echo "Loading environment variables: 'temp/env'"
   set -a
   . ./temp/env
-  set +x
+  set +a
 
   echo "Environment variables loaded:"
   cat temp/env
@@ -43,10 +43,10 @@ HOST="$OR_HOSTNAME"
 
 # Load temp environment variables into this session
 if [ -f "temp.env" ]; then
-  echo "Loading SSH password environment variable: 'temp.env'"
+  echo "Loading temp environment variables: 'temp.env'"
   set -a
   . ./temp.env
-  set +x
+  set +a
 fi
 
 # Copy CI/CD files into temp dir
