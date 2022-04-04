@@ -21,7 +21,7 @@ import {
 } from "@openremote/or-asset-tree";
 import manager, {DefaultBoxShadow, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
-import {EnhancedStore, createSelector} from "@reduxjs/toolkit";
+import {Store, createSelector} from "@reduxjs/toolkit";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import i18next from "i18next";
 import {AssetEventCause, WellknownAssets} from "@openremote/model";
@@ -33,7 +33,7 @@ export interface PageAssetsConfig {
     tree?: AssetTreeConfig;
 }
 
-export function pageAssetsProvider(store: EnhancedStore<AppStateKeyed>, config?: PageAssetsConfig): PageProvider<AppStateKeyed> {
+export function pageAssetsProvider(store: Store<AppStateKeyed>, config?: PageAssetsConfig): PageProvider<AppStateKeyed> {
     return {
         name: "assets",
         routes: [
@@ -141,7 +141,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
         }
     )
 
-    constructor(store: EnhancedStore<AppStateKeyed>) {
+    constructor(store: Store<AppStateKeyed>) {
         super(store);
         this.addEventListener(OrAssetTreeRequestSelectionEvent.NAME, this._onAssetSelectionRequested);
         this.addEventListener(OrAssetTreeSelectionEvent.NAME, this._onAssetSelectionChanged);

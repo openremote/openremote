@@ -3157,7 +3157,7 @@ __metadata:
     "@openremote/or-timeline": ^1.0.4
     "@openremote/rest": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@reduxjs/toolkit": ^1.6.2
+    "@reduxjs/toolkit": ^1.8.1
     "@webcomponents/webcomponentsjs": ^2.6.0
     lit: ^2.0.2
     moment: ^2.24.0
@@ -3581,23 +3581,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reduxjs/toolkit@npm:^1.6.2":
-  version: 1.7.1
-  resolution: "@reduxjs/toolkit@npm:1.7.1"
+"@reduxjs/toolkit@npm:^1.8.1":
+  version: 1.8.1
+  resolution: "@reduxjs/toolkit@npm:1.8.1"
   dependencies:
     immer: ^9.0.7
     redux: ^4.1.2
     redux-thunk: ^2.4.1
     reselect: ^4.1.5
   peerDependencies:
-    react: ^16.9.0 || ^17.0.0 || 18.0.0-beta
+    react: ^16.9.0 || ^17.0.0 || ^18
     react-redux: ^7.2.1 || ^8.0.0-beta
   peerDependenciesMeta:
     react:
       optional: true
     react-redux:
       optional: true
-  checksum: 77e027b9480e83e503509863eb6480ffae7766180c0e746c3a055df4571ebf1dd1cd9f2323399edea6e6cb3be86c7394218a75d8e3f25be3f9c1d67b596ee381
+  checksum: be5cdea975a8a631fe2d88cafc7077554c7bc3621a4a7031556cc17e5dec26359018f2614c325895e7ab50865f5c511025d1e589ca01de7e2bd88d95e0a1a963
   languageName: node
   linkType: hard
 

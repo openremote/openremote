@@ -16,7 +16,7 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Tenant} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
-import {AnyAction, EnhancedStore} from "@reduxjs/toolkit";
+import {AnyAction, Store} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 
 export interface HeaderConfig {
@@ -341,7 +341,7 @@ export class OrHeader extends LitElement {
     public realm!: string;
 
     @property({type: Object})
-    public store!: EnhancedStore<AppStateKeyed, AnyAction, ReadonlyArray<ThunkMiddleware<AppStateKeyed>>>;
+    public store!: Store<AppStateKeyed, AnyAction>;
 
     @property({type: String})
     public logo?: string;

@@ -13,15 +13,6 @@ volumes:
   postgresql-data:
   btmesh-data:
 
-x-logging: &awslogs
-  logging:
-    driver: awslogs
-    options:
-      awslogs-region: ${AWS_REGION:-eu-west-1}
-      awslogs-group: ${OR_HOSTNAME}
-      awslogs-create-group: 'true'
-      tag: "{{.Name}}/{{.ID}}"
-
 services:
 
   proxy:
@@ -42,7 +33,6 @@ services:
       DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
-    <<: *awslogs
 
   postgresql:
     restart: always
@@ -50,7 +40,6 @@ services:
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp
-    <<: *awslogs
 
   keycloak:
     restart: always
@@ -65,7 +54,6 @@ services:
       KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
       # Use the following if OR_SSL_PORT is not the default 443
       #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
-    <<: *awslogs
 
   manager:
 #    privileged: true
@@ -102,4 +90,3 @@ services:
 #      - btmesh-data:/btmesh
 #   devices:
 #     - /dev/ttyACM0:/dev/ttyS0
-    <<: *awslogs
