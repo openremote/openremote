@@ -16,7 +16,7 @@ base is 100% open source then the applications are limitless. Here's an architec
 
 You can quickly try the online demo with restricted access, login credentials are `smartcity:smartcity`:
 
-[Online demo](https://demo.openremote.io/manager/?realm=smartcity)
+[Online demo](https://demo.openremote.app/manager/?realm=smartcity)
 
 The quickest way to get your own environment with full access is to make use of our docker images (both `amd64` and `arm64` are supported). 
 1. Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed (v18+). 
