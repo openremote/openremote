@@ -734,7 +734,7 @@ jobs:
             # Execute deploy script
             os.system(f"echo 'Executing deploy script for deployment: managerTag={managerTag} deploymentTag={deploymentRef} environment={env}'")
             # Uncomment this in combination with the SSH debug step afterwards to debug deployment script
-            #sys.exit(0)
+            sys.exit(0)
             result = subprocess.run(f"bash {deployScript}", shell=True)
             
             if result.returncode != 0:
@@ -757,8 +757,8 @@ jobs:
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
 
-#      - name: Setup upterm session
-#        uses: lhotari/action-upterm@v1
-#        with:
-#          ## limits ssh access and adds the ssh public keys of the listed GitHub users
-#          limit-access-to-actor: true
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          ## limits ssh access and adds the ssh public keys of the listed GitHub users
+          limit-access-to-actor: true
