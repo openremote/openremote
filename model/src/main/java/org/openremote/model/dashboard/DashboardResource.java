@@ -18,13 +18,13 @@ public interface DashboardResource {
     @GET
     @Path("user/all")
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    // @RolesAllowed({Constants.READ_ASSETS_ROLE}) TODO: enable back again
     Dashboard[] getAllUserDashboards(@BeanParam RequestParams requestParams);
 
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    // @RolesAllowed({Constants.WRITE_ASSETS_ROLE}) TODO: enable back again
     Dashboard[] create(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
 }
