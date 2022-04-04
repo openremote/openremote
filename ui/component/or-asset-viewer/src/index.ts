@@ -569,8 +569,15 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
             return [attr.name, label];
         });
-        const attrName: string = historyAttrs[0].name!;
-        onRenderComplete.addCallback(() => attributeChanged(attrName));
+        let attrName: string = historyAttrs[0].name!;
+        onRenderComplete.addCallback(() => {
+            if (hostElement.shadowRoot) {
+                const historyAttributePicker = hostElement.shadowRoot.getElementById("history-attribute-picker") as OrMwcInput;
+
+                attrName = historyAttributePicker.value;
+            }
+            attributeChanged(attrName);
+        });
         return html`
             <style>
                or-attribute-history{
