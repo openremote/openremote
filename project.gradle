@@ -11,12 +11,16 @@ import org.jetbrains.gradle.ext.JUnit
 // Ensure git hook creation task is executed
 if (project == rootProject) {
 
-    if (rootProject.hasProperty("gradleFileEncrypt")) {
-        // Write git hook for encryption plugin checks before any commit
-        def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
-        if (!Files.exists(path)) {
-            def f = path.toFile()
-            f.text = """#!/bin/sh
+    project.afterEvaluate {
+
+        if (rootProject.hasProperty("gradleFileEncrypt")) {
+            println("File encryption plugin config found, configuring git pre commit hook and decrypt task dependency")
+
+            // Write git hook for encryption plugin checks before any commit
+            def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
+            if (!Files.exists(path)) {
+                def f = path.toFile()
+                f.text = """#!/bin/sh
 
 echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
 
@@ -26,31 +30,37 @@ status=\$?
 
 exit \$status
 """
-            Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
-            perms.add(PosixFilePermission.OWNER_WRITE)
-            perms.add(PosixFilePermission.OWNER_READ)
-            perms.add(PosixFilePermission.OWNER_EXECUTE)
-            perms.add(PosixFilePermission.GROUP_WRITE)
-            perms.add(PosixFilePermission.GROUP_READ)
-            perms.add(PosixFilePermission.GROUP_EXECUTE)
-            perms.add(PosixFilePermission.OTHERS_READ)
-            perms.add(PosixFilePermission.OTHERS_EXECUTE)
-            Files.setPosixFilePermissions(path, perms)
+                try {
+                    Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
+                    perms.add(PosixFilePermission.OWNER_WRITE)
+                    perms.add(PosixFilePermission.OWNER_READ)
+                    perms.add(PosixFilePermission.OWNER_EXECUTE)
+                    perms.add(PosixFilePermission.GROUP_WRITE)
+                    perms.add(PosixFilePermission.GROUP_READ)
+                    perms.add(PosixFilePermission.GROUP_EXECUTE)
+                    perms.add(PosixFilePermission.OTHERS_READ)
+                    perms.add(PosixFilePermission.OTHERS_EXECUTE)
+                    Files.setPosixFilePermissions(path, perms)
+                } catch (Exception ignored) {}
+            }
+
+            // Add dependency on decrypt task for deployment installDist
+            Task decryptTask = getTasksByName("decryptFiles", false)[0]
+
+            try {
+                def installDist = tasks.getByPath(":deployment:installDist")
+                installDist.dependsOn decryptTask
+                installDist.mustRunAfter(decryptTask)
+            } catch (Exception ex) {
+                println("Failed to add decryptFiles task dependency: " + ex)
+            }
+        } else {
+            // Remove git hook
+            try {
+                Files.delete(Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit"))
+            } catch (Exception ignored) {
+            }
         }
-
-        // Add dependency on decrypt task for deployment installDist
-        Task decryptTask = getTasksByName("decryptFiles", false)[0]
-
-        try {
-            def installDist = tasks.getByPath(":deployment:installDist")
-            installDist.dependsOn decryptTask
-            installDist.mustRunAfter(decryptTask)
-        } catch (Exception ignored) {}
-    } else {
-        // Remove git hook
-        try {
-            Files.delete(Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit"))
-        } catch (Exception ignored) {}
     }
 }
 
