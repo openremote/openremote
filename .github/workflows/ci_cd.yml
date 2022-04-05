@@ -83,12 +83,6 @@ on:
         description: 'Repo branch or commit SHA to checkout'
       OR_HOSTNAME:
         description: 'Host to deploy to (e.g. demo.openremote.app)'
-      SSH_PORT:
-        description: 'SSH port'
-      SSH_USER:
-        description: 'SSH Username'
-      SSH_PASSWORD:
-        description: 'SSH password'
       OR_ADMIN_PASSWORD:
         description: 'Admin password override'
 
@@ -498,8 +492,8 @@ jobs:
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
         uses: docker/login-action@v1
         with:
-          username: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
-          password: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
+          username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
+          password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD || steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
           
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
