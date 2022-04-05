@@ -18,9 +18,8 @@ if (project == rootProject) {
 
             // Write git hook for encryption plugin checks before any commit
             def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
-            if (!Files.exists(path)) {
-                def f = path.toFile()
-                f.text = """#!/bin/sh
+            def f = path.toFile()
+            f.text = """#!/bin/sh
 
 echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
 
@@ -30,19 +29,18 @@ status=\$?
 
 exit \$status
 """
-                try {
-                    Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
-                    perms.add(PosixFilePermission.OWNER_WRITE)
-                    perms.add(PosixFilePermission.OWNER_READ)
-                    perms.add(PosixFilePermission.OWNER_EXECUTE)
-                    perms.add(PosixFilePermission.GROUP_WRITE)
-                    perms.add(PosixFilePermission.GROUP_READ)
-                    perms.add(PosixFilePermission.GROUP_EXECUTE)
-                    perms.add(PosixFilePermission.OTHERS_READ)
-                    perms.add(PosixFilePermission.OTHERS_EXECUTE)
-                    Files.setPosixFilePermissions(path, perms)
-                } catch (Exception ignored) {}
-            }
+            try {
+                Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
+                perms.add(PosixFilePermission.OWNER_WRITE)
+                perms.add(PosixFilePermission.OWNER_READ)
+                perms.add(PosixFilePermission.OWNER_EXECUTE)
+                perms.add(PosixFilePermission.GROUP_WRITE)
+                perms.add(PosixFilePermission.GROUP_READ)
+                perms.add(PosixFilePermission.GROUP_EXECUTE)
+                perms.add(PosixFilePermission.OTHERS_READ)
+                perms.add(PosixFilePermission.OTHERS_EXECUTE)
+                Files.setPosixFilePermissions(path, perms)
+            } catch (Exception ignored) {}
 
             // Add dependency on decrypt task for deployment installDist
             Task decryptTask = getTasksByName("decryptFiles", false)[0]
