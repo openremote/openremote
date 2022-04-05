@@ -58,14 +58,12 @@ docker image tag updates. The file layout is:
 
 # `deploy.sh` Bash script
 Bash script that handles the actual deployment to a specific host; environment variables should be already loaded into
-the shell or be available in `temp/env` file which will be automatically loaded. If `ssh.env` is found this env file is
-also automatically loaded. See [Variables section below](#variables) for available and required values. The `deploy.sh`
-in this repository is tailored for deployments on AWS and as such it performs the following functions:
+the shell or be available in `temp.env` file (for environment variables not to be sent to the host) or `temp/env` file (for environment variables that should also be sent to the host) which will be automatically loaded. See [Variables section below](#variables) for available and required values. The `deploy.sh`
+in this repository is tailored for deployments on AWS and as such it makes use of the AWS scripts included (to use this functionality then the required environment variables must also be defined), AWS functionality used is as follows:
 
-1. Login to AWS - If `AWS_KEY` and `AWS_SECRET` variables are defined, also sets the region to `AWS_REGION`
-1. Whitelist deployment runner (machine actioning the deployment) - If `IPV4` variable is defined then this IP address will be added to the `ssh-access` security group in the default VPC
-1. Executes deployment docker logic (refer to `deploy.sh` for details)
-1. Remove deployment runner from whitelist - Once deployment is completed or failed the deployment runner will be removed from the whitelist
+1. Login to AWS
+1. Whitelist deployment runner (machine actioning the deployment) - If `IPV4` or `IPV6` variable is defined
+1. Revoke deployment runner from whitelist - Once deployment is completed or failed the deployment runner will be removed from the whitelist
 
 ## Docker compose file resolution
 The docker compose file used for the deployment is resolved as follows; if resolved file does not exist then deployment
@@ -107,6 +105,8 @@ The following variables are supported by deployments; any additional variables c
 available to the shell where the docker compose stack is brought up; so any variables required in the docker compose
 profile can be specified in any of the places variables are loaded from (github secrets, inputs, and/or env files).
 
+Standard variables:
+
 * `ENVIRONMENT` - Used to control which env file(s), docker compose file and github secrets to use for deployment.
 * `MANAGER_TAG` - The docker tag to pull for the manager image (if not specified)
 * `CLEAN_INSTALL` - Indicates if the or_postgresql-data volume should be removed before starting the stack
@@ -116,7 +116,7 @@ profile can be specified in any of the places variables are loaded from (github 
 * `SSH_KEY` - SSH private key (this is written to `ssh.key` file and loaded by `deploy.sh` for SSH/SCP commands)
 * `SSH_PASSWORD` - SSH password (alternative to private key authentication)
 * `SSH_PORT` - SSH port (default: 22)
-* `AWS_KEY` - AWS access key ID
+* `AWS_KEY` - AWS access key ID (should be prefixed with `_TEMP_`
 * `AWS_SECRET` - AWS access key secret
 * `AWS_REGION` - AWS region to use
 * `OR_ADMIN_PASSWORD` - Admin password to be set on deployment; sets the OR_ADMIN_PASSWORD env variable
@@ -128,7 +128,7 @@ profile can be specified in any of the places variables are loaded from (github 
 * `AWS_EFS_MAP` - Name of EFS map volume to mount at `/deployment.local/map`
 
 ## Github secrets
-Variables are also loaded from Github secrets using the '_{ENVIRONMENT}_' prefix naming convention (note it doesn't use
-github environment secrets as these only seem to be supported for public repositories); any secrets that begin with `_`
-will only be loaded if they begin with `_{ENVIRONMENT}_` and this prefix will be removed, all other secrets will be
-loaded independent of the `ENVIRONMENT` variable.
+Variables stored as github secrets can use the following prefixes (the prefixes will be automatically stripped); any github secrets that begin with `_` but don't match the following prefixes as well as secrets that contain `.` will be excluded:
+
+* `_TEMP_` - Indicates that the variable should only be used by the deploy script and should not be made available to the host (useful for AWS credentials etc.)
+* `_$ENVIRONMENT_` - Variables prefixed with requested `ENVIRONMENT` name (useful for environment specific variable values)
