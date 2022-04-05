@@ -46,7 +46,7 @@ jobs:
           username: ${{ github.actor }}
           organization: openremote
           team: CI/CD
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
+          GITHUB_TOKEN: ${{ secrets._TEMP_ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
 
       - name: Checkout
         uses: actions/checkout@v2
