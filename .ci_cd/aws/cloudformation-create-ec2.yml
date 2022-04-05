@@ -486,11 +486,11 @@ Resources:
             01_output_smtp_credentials:
               command: !Sub |
                 PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${AWS::Region})
-                echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" >> /etc/environment
+                echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" > /etc/environment
                 echo "OR_EMAIL_USER=${SMTPKey}" >> /etc/environment
                 echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
-                echo "AWS_REGION=${AWS::Region}" >> /etc/environment
                 echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
+                echo "AWS_REGION=${AWS::Region}" >> /etc/environment
 
         docker_setup:
           packages:
