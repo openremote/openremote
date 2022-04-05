@@ -716,7 +716,7 @@ jobs:
                 if key == "SSH_KEY":
                   os.system(f"echo \"{value}\" > ssh.key")
                 elif key == "SSH_PASSWORD" or key == "AWS_ACCESS_KEY_ID" or key == "AWS_SECRET_ACCESS_KEY":
-                  os.system(f"echo '{key}=\"{value}\"' ?> temp.env")
+                  os.system(f"echo '{key}=\"{value}\"' >> temp.env")
                 else:
                   lines = len(value.split("\n"))
                   if lines > 1:
