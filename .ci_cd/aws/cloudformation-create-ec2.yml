@@ -535,7 +535,7 @@ Resources:
                 [main]
                 stack=${AWS::StackId}
                 region=${AWS::Region}
-                interval=1
+                interval=10
               mode: 000400
               owner: root
               group: root
