@@ -34,13 +34,6 @@ if [ -f "temp/env" ]; then
   cat temp/env
 fi
 
-# Check host is defined
-if [ -z "$OR_HOSTNAME" ]; then
- echo "Host is not set"
- exit 1
-fi
-HOST="$OR_HOSTNAME"
-
 # Load temp environment variables into this session
 if [ -f "temp.env" ]; then
   echo "Loading temp environment variables: 'temp.env'"
@@ -48,6 +41,13 @@ if [ -f "temp.env" ]; then
   . ./temp.env
   set +a
 fi
+
+# Check host is defined
+if [ -z "$OR_HOSTNAME" ]; then
+ echo "Host is not set"
+ exit 1
+fi
+HOST="$OR_HOSTNAME"
 
 # Copy CI/CD files into temp dir
 echo "Copying CI/CD files into temp dir"
