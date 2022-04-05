@@ -618,7 +618,40 @@ jobs:
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
-        run: ${{ steps.install-command.outputs.value }}
+        shell: python
+        run: |
+          import json
+          
+          inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          
+          # Output inputs and secrets as environment variables for build
+          for key, value in inputsAndSecrets.items():
+            if "." in key:
+              continue
+
+            # Look for temp and env prefixed keys
+            if key.startswith("_"):
+              if key.startswith("_TEMP_"):
+                key = key.replace("_TEMP_", "")
+                envFile = "temp.env"
+              elif key.startswith(prefix):
+                key = key.replace(prefix, "")
+              else:
+                continue
+              
+            os.system(f"echo 'Setting environment variable {key}...'")
+            os.putenv(key, value)
+                    
+          buildCmd = os.getenv("CMD")
+          result = subprocess.run(f"bash {buildCmd}", shell=True)
+            
+          if result.returncode != 0:
+            os.system("echo 'installDist failed'")
+            sys.exit(result.returncode)
+
+        env:
+          CMD: ${{ steps.install-command.outputs.value }}
+          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 10
         
       - name: Run manager docker command
@@ -699,31 +732,32 @@ jobs:
             for key, value in inputsAndSecrets.items():
               if "." in key:
                 continue
-              
-              # Look for env prefixed keys
+
+              envFile = "temp/env"
+
+              # Look for temp and env prefixed keys
               if key.startswith("_"):
-                if key.startswith(prefix):
+                if key.startswith("_TEMP_"):
+                  key = key.replace("_TEMP_", "")
+                  envFile = "temp.env"
+                elif key.startswith(prefix):
                   key = key.replace(prefix, "")
                 else:
                   continue
-          
-              if key == "DOCKERHUB_PASSWORD":
-                continue
+
               if key == "github_token":
                 continue
               else:                
                 os.system(f"echo 'Secret found {key}...'")
                 if key == "SSH_KEY":
                   os.system(f"echo \"{value}\" > ssh.key")
-                elif key == "SSH_PASSWORD" or key == "AWS_ACCESS_KEY_ID" or key == "AWS_SECRET_ACCESS_KEY":
-                  os.system(f"echo '{key}=\"{value}\"' >> temp.env")
                 else:
                   lines = len(value.split("\n"))
                   if lines > 1:
-                      os.system(f"echo '{key}=\"' >> temp/env")
-                      os.system(f"echo '{value}\"' >> temp/env")
+                      os.system(f"echo '{key}=\"' >> {envFile}")
+                      os.system(f"echo '{value}\"' >> {envFile}")
                   else:
-                      os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+                      os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
             
             # Set CIDR environment variable
             if ipv4 is not None and ipv4 != '':
