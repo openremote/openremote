@@ -20,8 +20,7 @@
 #
 # - '.ci_cd/env/.env'
 # - '.ci_cd/env/{ENVIRONMENT}.env'
-# - secrets without '_' prefix
-# - secrets with '_{ENVIRONMENT}_' prefix (secrets with any other '_' prefix will be excluded)
+# - secrets
 # - inputs (from manual trigger using workflow_dispatch)
 #
 # The above variables are output to 'temp/env' file for each requested deployment. If a secret called 'SSH_PASSWORD' is
