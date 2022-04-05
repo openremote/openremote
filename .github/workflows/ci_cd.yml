@@ -422,6 +422,7 @@ jobs:
             
             if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
+              echo "::set-output name=pushRequired::true"
             else
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
             fi
@@ -489,7 +490,7 @@ jobs:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
 
       - name: Login to DockerHub
-        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
         uses: docker/login-action@v1
         with:
           username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
