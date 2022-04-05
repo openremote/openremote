@@ -631,8 +631,6 @@ jobs:
               if key.startswith("_TEMP_"):
                 key = key.replace("_TEMP_", "")
                 envFile = "temp.env"
-              elif key.startswith(prefix):
-                key = key.replace(prefix, "")
               else:
                 continue
               
