@@ -49,7 +49,8 @@ services:
     volumes:
       - temp-data:/tmp
     environment:
-      OR_SETUP_RUN_ON_RESTART: "true"
-      OR_DEV_MODE: "true"
+      OR_SETUP_RUN_ON_RESTART: ${OR_SETUP_RUN_ON_RESTART:-true}
+      OR_DEV_MODE: ${OR_DEV_MODE:-true}
+      KEYCLOAK_FRONTEND_URL:
     ports:
       - "8080:8080"
