@@ -24,7 +24,7 @@ if (project == rootProject) {
 
 echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
 
-./gradlew checkFilesGitIgnored
+./gradlew checkFilesGitIgnoredNew
 
 status=\$?
 
