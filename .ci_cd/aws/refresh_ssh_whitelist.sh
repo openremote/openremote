@@ -57,7 +57,7 @@ fi
 
 SSH_LIST=$(aws ssm get-parameters-by-path --path "/SSH-Whitelist" --query "Parameters[*].[Name,Value]" --output text)
 IFS=$' \t'
-AWS
+
 for ACCOUNT_ID in $ACCOUNT_IDS; do
   # Update github-da profile with ARN for ACCOUNT_ID
   source "${awsDir}set_github-da_account_arn.sh"

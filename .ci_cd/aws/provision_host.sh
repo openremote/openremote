@@ -43,7 +43,7 @@ else
 fi
 
 # Optionally login if AWS_ENABLED != 'true'
-source "${awsDir}login.sh"
+#source "${awsDir}login.sh"
 
 ACCOUNT_PROFILE=
 if [ -n "$ACCOUNT_NAME" ]; then
@@ -55,7 +55,7 @@ fi
 STACK_NAME=$(tr '.' '-' <<< "$HOST")
 
 # Check stack doesn't already exist
-STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+#STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
   echo "Stack already exists for this host '$HOST' current status is '$STATUS'"
@@ -78,7 +78,11 @@ else
 
   if [ -n "$ACCOUNT_PROFILE" ]; then
     # Append caller account hosted zones
-    HOSTED_ZONES=$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name,'true']" --output text)
+    read -r -d '' HOSTED_ZONES << EOF
+$HOSTED_ZONES
+$(aws route53 list-hosted-zones --query "HostedZones[?contains(Name, '$TLD_NAME.')].[Name,'true']" --output text)
+EOF
+    echo "$HOSTED_ZONES"
   fi
 
   if [ -n "$HOSTED_ZONES" ]; then
@@ -106,10 +110,15 @@ else
               exit 1
             fi
           fi
+          break
         fi
       done
 
-      i=$(($i+1))
+      if [ -n "$DNSHostedZoneName" ]; then
+        break
+      fi
+
+      i=$((i+1))
     done
   fi
 
@@ -119,7 +128,7 @@ else
   if [ -n "$DNSHostedZoneRoleArn" ]; then
     PARAMS="$PARAMS ParameterKey=DNSHostedZoneRoleArn,ParameterValue=$DNSHostedZoneRoleArn"
   fi
-
+exit 1
   # Create standard stack resources in specified account
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 

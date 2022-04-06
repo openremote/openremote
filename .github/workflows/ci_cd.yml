@@ -20,8 +20,7 @@
 #
 # - '.ci_cd/env/.env'
 # - '.ci_cd/env/{ENVIRONMENT}.env'
-# - secrets without '_' prefix
-# - secrets with '_{ENVIRONMENT}_' prefix (secrets with any other '_' prefix will be excluded)
+# - secrets
 # - inputs (from manual trigger using workflow_dispatch)
 #
 # The above variables are output to 'temp/env' file for each requested deployment. If a secret called 'SSH_PASSWORD' is
@@ -45,7 +44,7 @@
 # - CLEAN_INSTALL         - Should the .ci_cd/host_init/clean.sh script be run during deployment (warning this will delete
 #                           assets, rules, etc.)
 # - COMMIT                - Which branch/SHA should be checked out for the deployment (defaults to trigger commit)
-# - OR_HOST               - FQDN of host to deploy to (e.g. demo.openremote.app)
+# - OR_HOSTNAME           - FQDN of host to deploy to (e.g. demo.openremote.app)
 # - SSH_USER              - Set/override the SSH user to use for SSH/SCP commands
 # - SSH_PASSWORD          - Set/override the SSH password to use for SSH/SCP commands (SSH key should be preferred)
 # - SSH_PORT              - Set/override the SSH port to use for SSH/SCP commands
@@ -82,14 +81,8 @@ on:
         type: boolean
       COMMIT:
         description: 'Repo branch or commit SHA to checkout'
-      OR_HOST:
+      OR_HOSTNAME:
         description: 'Host to deploy to (e.g. demo.openremote.app)'
-      SSH_PORT:
-        description: 'SSH port'
-      SSH_USER:
-        description: 'SSH Username'
-      SSH_PASSWORD:
-        description: 'SSH password'
       OR_ADMIN_PASSWORD:
         description: 'Admin password override'
 
@@ -429,6 +422,7 @@ jobs:
             
             if [ -n "$MANAGER_TAGS" ]; then
               command="docker build --push --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 $MANAGER_TAGS $buildPath"
+              echo "::set-output name=pushRequired::true"
             else
               command="docker build --build-arg GIT_COMMIT=$commitSha --platform linux/amd64,linux/aarch64 -t openremote/manager:$commitShaShort $buildPath"
             fi
@@ -496,11 +490,11 @@ jobs:
           IS_CUSTOM_PROJECT: ${{ steps.check_custom_project.outputs.files_exists }}
 
       - name: Login to DockerHub
-        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+        if: ${{ steps.manager-docker-command.outputs.pushRequired == 'true' }}
         uses: docker/login-action@v1
         with:
-          username: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
-          password: ${{ steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
+          username: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_USER || steps.inputs-and-secrets.outputs.DOCKERHUB_USER }}
+          password: ${{ steps.inputs-and-secrets.outputs._TEMP_DOCKERHUB_PASSWORD || steps.inputs-and-secrets.outputs.DOCKERHUB_PASSWORD }}
           
       - name: set up QEMU
         if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
@@ -618,7 +612,41 @@ jobs:
 
       - name: Run install dist
         if: steps.install-command.outputs.value != ''
-        run: ${{ steps.install-command.outputs.value }}
+        shell: python
+        run: |
+          import json
+          import os
+          import sys
+          import subprocess
+          
+          inputsAndSecrets = json.loads(os.getenv("INPUTS_AND_SECRETS"))
+          
+          # Output inputs and secrets as environment variables for build
+          for key, value in inputsAndSecrets.items():
+            if "." in key:
+              continue
+
+            # Look for temp and env prefixed keys
+            if key.startswith("_"):
+              if key.startswith("_TEMP_"):
+                key = key.replace("_TEMP_", "")
+                envFile = "temp.env"
+              else:
+                continue
+              
+            os.system(f"echo 'Setting environment variable {key}...'")
+            os.putenv(key, value)
+                    
+          buildCmd = os.getenv("CMD")
+          result = subprocess.run(f"bash {buildCmd}", shell=True)
+            
+          if result.returncode != 0:
+            os.system("echo 'installDist failed'")
+            sys.exit(result.returncode)
+
+        env:
+          CMD: ${{ steps.install-command.outputs.value }}
+          INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 10
         
       - name: Run manager docker command
@@ -672,7 +700,7 @@ jobs:
             os.putenv("ENVIRONMENT", env)
                       
             # Clean stale ssh credentials and temp files
-            os.system("rm ssh.env 2>/dev/null")
+            os.system("rm temp.env 2>/dev/null")
             os.system("rm ssh.key 2>/dev/null")
             os.system("rm -r temp 2>/dev/null")
             os.system("mkdir temp")
@@ -691,49 +719,40 @@ jobs:
               os.system(f"echo 'Outputting .ci_cd/env/{env}.env to temp/env'")
               os.system(f"cat .ci_cd/env/{env}.env >> temp/env")
             
-            # Output inputs and secrets (spacial handling for SSH_KEY and SSH_PASSWORD)
-            # _ENV_ prefixed keys are output last (to override any non env specific keys)
+            # Output inputs and secrets (spacial handling for SSH_KEY and some other variables)
+            # _$ENV_ prefixed keys are output last (to override any non env specific keys)
+            environment = (env if env else "").upper()
+            prefix = "_" + environment + "_"
+          
             for key, value in inputsAndSecrets.items():
               if "." in key:
                 continue
-              if key.startswith("_"):
-                continue
-              os.system(f"echo 'Secret found {key}...'")
-              if key == "SSH_KEY":
-                os.system(f"echo \"{value}\" > ssh.key")
-              elif key == "SSH_PASSWORD":
-                os.system(f"echo '{key}=\"{value}\"' > ssh.env")
-              else:
-                lines = len(value.split("\n"))
-                if lines > 1:
-                    os.system(f"echo '{key}=\"' >> temp/env")
-                    os.system(f"echo '{value}\"' >> temp/env")
-                else:
-                    os.system(f"echo '{key}=\"{value}\"' >> temp/env")
 
-            for key, value in inputsAndSecrets.items():
-              if "." in key:
-                continue
-              if not key.startswith("_"):
-                continue
-              environment = (env if env else "").upper()
-              prefix = "_" + environment + "_"
-              if not key.startswith(prefix):
-                continue
-              else:
-                key = key.replace(prefix, "")
-              os.system(f"echo 'Secret found {key}...'")
-              if key == "SSH_KEY":
-                os.system(f"echo \"{value}\" > ssh.key")
-              elif key == "SSH_PASSWORD":
-                os.system(f"echo '{key}=\"{value}\"' > ssh.env")
-              else:
-                lines = len(value.split("\n"))
-                if lines > 1:
-                    os.system(f"echo '{key}=\"' >> temp/env")
-                    os.system(f"echo '{value}\"' >> temp/env")
+              envFile = "temp/env"
+
+              # Look for temp and env prefixed keys
+              if key.startswith("_"):
+                if key.startswith("_TEMP_"):
+                  key = key.replace("_TEMP_", "")
+                  envFile = "temp.env"
+                elif key.startswith(prefix):
+                  key = key.replace(prefix, "")
                 else:
-                    os.system(f"echo '{key}=\"{value}\"' >> temp/env")
+                  continue
+
+              if key == "github_token":
+                continue
+              else:                
+                os.system(f"echo 'Secret found {key}...'")
+                if key == "SSH_KEY":
+                  os.system(f"echo \"{value}\" > ssh.key")
+                else:
+                  lines = len(value.split("\n"))
+                  if lines > 1:
+                      os.system(f"echo '{key}=\"' >> {envFile}")
+                      os.system(f"echo '{value}\"' >> {envFile}")
+                  else:
+                      os.system(f"echo '{key}=\"{value}\"' >> {envFile}")
             
             # Set CIDR environment variable
             if ipv4 is not None and ipv4 != '':
@@ -767,8 +786,8 @@ jobs:
           IPV4: ${{ steps.ip-address.outputs.ipv4 }}
           IPV6: ${{ steps.ip-address.outputs.ipv6 }}
 
-#      - name: Setup upterm session
-#        uses: lhotari/action-upterm@v1
-#        with:
-#          ## limits ssh access and adds the ssh public keys of the listed GitHub users
-#          limit-access-to-actor: true
+#       - name: Setup upterm session
+#         uses: lhotari/action-upterm@v1
+#         with:
+#           ## limits ssh access and adds the ssh public keys of the listed GitHub users
+#           limit-access-to-actor: true

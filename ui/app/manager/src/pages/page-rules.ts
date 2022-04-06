@@ -3,7 +3,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import "@openremote/or-rules";
 import {OrRules, RulesConfig} from "@openremote/or-rules";
 import {NotificationTargetType, RulesetLang, WellknownAssets} from "@openremote/model";
-import {EnhancedStore} from "@reduxjs/toolkit";
+import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import manager from "@openremote/core";
@@ -13,7 +13,7 @@ export interface PageRulesConfig {
     rules: RulesConfig;
 }
 
-export function pageRulesProvider(store: EnhancedStore<AppStateKeyed>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT): PageProvider<AppStateKeyed> {
+export function pageRulesProvider(store: Store<AppStateKeyed>, config: PageRulesConfig = PAGE_RULES_CONFIG_DEFAULT): PageProvider<AppStateKeyed> {
     return {
         name: "rules",
         routes: [
@@ -96,7 +96,7 @@ export class PageRules extends Page<AppStateKeyed>  {
         return "rules";
     }
 
-    constructor(store: EnhancedStore<AppStateKeyed>) {
+    constructor(store: Store<AppStateKeyed>) {
         super(store);
     }
 

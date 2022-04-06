@@ -98,7 +98,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     public static final String KEYCLOAK_AUTH_PATH = "auth";
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
-    // The (internal) URI where Keycloak can be found
+    // The URI where Keycloak can be found
     protected UriBuilder keycloakServiceUri;
     // Configuration options for new realms
     protected int sessionTimeoutSeconds;

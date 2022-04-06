@@ -28,26 +28,26 @@ if [ -f "temp/env" ]; then
   echo "Loading environment variables: 'temp/env'"
   set -a
   . ./temp/env
-  set +x
+  set +a
 
   echo "Environment variables loaded:"
   cat temp/env
 fi
 
+# Load temp environment variables into this session
+if [ -f "temp.env" ]; then
+  echo "Loading temp environment variables: 'temp.env'"
+  set -a
+  . ./temp.env
+  set +a
+fi
+
 # Check host is defined
-if [ -z "$OR_HOST" ]; then
+if [ -z "$OR_HOSTNAME" ]; then
  echo "Host is not set"
  exit 1
 fi
-HOST="$OR_HOST"
-
-# Load SSH environment variables into this session
-if [ -f "ssh.env" ]; then
-  echo "Loading SSH password environment variable: 'ssh.env'"
-  set -a
-  . ./ssh.env
-  set +x
-fi
+HOST="$OR_HOSTNAME"
 
 # Copy CI/CD files into temp dir
 echo "Copying CI/CD files into temp dir"
@@ -62,8 +62,7 @@ if [ -d ".ci_cd/aws" ]; then
   cp -r .ci_cd/aws temp/
 fi
 
-chmod +x temp/aws/*
-chmod +x temp/host_int/*
+chmod -R +rx temp/
 
 # Determine compose file to use and copy to temp dir (do this here as all env variables are loaded)
 if [ -z "$ENV_COMPOSE_FILE" ]; then
@@ -95,7 +94,7 @@ if [ -f "ssh.key" ]; then
   sshCommandPrefix="$sshCommandPrefix -i ssh.key"
   scpCommandPrefix="$scpCommandPrefix -i ssh.key"
 fi
-hostStr="$OR_HOST"
+hostStr="$OR_HOSTNAME"
 if [ -n "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
@@ -104,11 +103,11 @@ fi
 # Check host is reachable (ping must be enabled)
 #if [ "$SKIP_HOST_PING" != 'true' ]; then
 #  echo "Attempting to ping host"
-#  ping -c1 -W1 -q $OR_HOST &>/dev/null
+#  ping -c1 -W1 -q $OR_HOSTNAME &>/dev/null
 #  if [ $? -ne 0 ]; then
 #    echo "Host is not reachable by PING"
 #    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
-#      "temp/aws/start_stop_host.sh" "START" "$OR_HOST"
+#      "temp/aws/start_stop_host.sh" "START" "$OR_HOSTNAME"
 #      if [ $? -ne 0 ]; then
 #        # Don't exit as it might just not be reachable by PING we'll fail later on
 #        echo "EC2 instance start failed"
@@ -208,6 +207,7 @@ $sshCommandPrefix ${hostStr} << EOF
 
 if [ "$ROLLBACK_ON_ERROR" == 'true' ]; then
   echo "Moving old temp dir to temp_old"
+  rm -fr temp_old
   mv temp temp_old
   # Tag existing manager image with previous tag (current tag might not be available in docker hub anymore or it could have been overwritten)
   docker tag `docker images openremote/manager -q | head -1` openremote/manager:previous
@@ -273,7 +273,7 @@ elif [ -f "temp/host_init/init.sh" ]; then
 fi
 if [ -n "\$hostInitCmd" ]; then
   echo "Running host init script: '\$hostInitCmd'"
-  sudo \$hostInitCmd
+  sudo -E \$hostInitCmd
 else
   echo "No host init script"
 fi
@@ -332,7 +332,7 @@ elif [ -f "temp/host_init/post_init.sh" ]; then
 fi
 if [ -n "\$hostPostInitCmd" ]; then
   echo "Running host post init script: '\$hostPostInitCmd'"
-  sudo \$hostPostInitCmd
+  sudo -E \$hostPostInitCmd
 else
   echo "No host post init script"
 fi
@@ -341,8 +341,8 @@ fi
 docker image inspect \$(docker image ls -aq) > temp/image-info.txt
 docker inspect \$(docker ps -aq) > temp/container-info.txt
 
-aws s3 cp temp/image-info.txt s3://${OR_HOST}/image-info.txt &>/dev/null
-aws s3 cp temp/container-info.txt s3://${OR_HOST}/container-info.txt &>/dev/null
+aws s3 cp temp/image-info.txt s3://${OR_HOSTNAME}/image-info.txt &>/dev/null
+aws s3 cp temp/container-info.txt s3://${OR_HOSTNAME}/container-info.txt &>/dev/null
 exit 0
 EOF
 
@@ -408,7 +408,7 @@ elif [ -f "temp/host_init/init.sh" ]; then
 fi
 if [ -n "\$hostInitCmd" ]; then
   echo "Running host init script: '\$hostInitCmd'"
-  sudo \$hostInitCmd
+  sudo -E \$hostInitCmd
 else
   echo "No host init script"
 fi
@@ -467,7 +467,7 @@ elif [ -f "temp/host_init/post_init.sh" ]; then
 fi
 if [ -n "\$hostPostInitCmd" ]; then
   echo "Running host post init script: '\$hostPostInitCmd'"
-  sudo \$hostPostInitCmd
+  sudo -E \$hostPostInitCmd
 else
   echo "No host post init script"
 fi
@@ -475,8 +475,8 @@ fi
 EOF
 fi
 
-echo "Testing manager web server https://$OR_HOST..."
-response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOST/manager/)
+echo "Testing manager web server https://$OR_HOSTNAME..."
+response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
 if [ $response -ne 200 ]; then
   echo "Response code = $response"
   revoke_ssh
