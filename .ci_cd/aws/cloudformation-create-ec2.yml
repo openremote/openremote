@@ -216,7 +216,7 @@ Resources:
 
                 [Service]
                 Type=oneshot
-                RandomizedDelaySec=30min
+                RandomizedDelaySec=1800
                 ExecStart=/usr/local/bin/s3-backup
 
                 [Install]
