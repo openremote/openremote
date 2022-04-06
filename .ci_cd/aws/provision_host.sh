@@ -43,7 +43,7 @@ else
 fi
 
 # Optionally login if AWS_ENABLED != 'true'
-#source "${awsDir}login.sh"
+source "${awsDir}login.sh"
 
 ACCOUNT_PROFILE=
 if [ -n "$ACCOUNT_NAME" ]; then
@@ -55,7 +55,7 @@ fi
 STACK_NAME=$(tr '.' '-' <<< "$HOST")
 
 # Check stack doesn't already exist
-#STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
+STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
 if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
   echo "Stack already exists for this host '$HOST' current status is '$STATUS'"
@@ -128,7 +128,7 @@ EOF
   if [ -n "$DNSHostedZoneRoleArn" ]; then
     PARAMS="$PARAMS ParameterKey=DNSHostedZoneRoleArn,ParameterValue=$DNSHostedZoneRoleArn"
   fi
-exit 1
+
   # Create standard stack resources in specified account
   STACK_ID=$(aws cloudformation create-stack --capabilities CAPABILITY_NAMED_IAM --stack-name $STACK_NAME --template-body file://$TEMPLATE_PATH --parameters $PARAMS --output text $ACCOUNT_PROFILE)
 
