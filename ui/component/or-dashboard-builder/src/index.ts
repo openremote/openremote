@@ -10,6 +10,7 @@ import {style} from "./style";
 import { MDCTabBar } from "@material/tab-bar";
 import {AddOutput, ORGridStackNode, SelectOutput} from "./or-dashboard-editor";
 import {Dashboard, DashboardGridItem, DashboardScalingPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import manager from "@openremote/core";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tabStyle = require("@material/tab/dist/mdc.tab.css");
@@ -100,7 +101,10 @@ export class OrDashboardBuilder extends LitElement {
     protected sidebarMenuIndex: number;
 
     @state()
-    protected dashboard: Dashboard;
+    protected isLoading: boolean;
+
+    @state()
+    protected dashboard: Dashboard | undefined;
 
     @state()
     protected selectedWidget: DashboardWidget | undefined;
@@ -110,7 +114,15 @@ export class OrDashboardBuilder extends LitElement {
     constructor() {
         super();
         this.sidebarMenuIndex = 0;
-        this.dashboard = this.generateInitialDashboard();
+        this.isLoading = true;
+        //this.dashboard = this.generateInitialDashboard();
+        manager.rest.api.DashboardResource.getAllUserDashboards().then(result => {
+            if(result.data[1] != null) {
+                this.dashboard = result.data[1];
+            }
+            this.isLoading = false;
+        });
+
 
         this.updateComplete.then(() => {
             if(this.shadowRoot != null) {
@@ -179,6 +191,8 @@ export class OrDashboardBuilder extends LitElement {
             case DashboardWidgetType.MAP: return 4;
         }
     }
+
+    // TODO: Remove this temporary method for getting div object
     getWidgetContent(widgetType: DashboardWidgetType, displayName: string): any {
         switch (widgetType) {
             case DashboardWidgetType.CHART: {
@@ -192,10 +206,12 @@ export class OrDashboardBuilder extends LitElement {
     /* ----------------- */
 
     selectWidget(event: SelectOutput): void {
-        const foundWidget = this.dashboard.template?.widgets?.find((x) => { return x.gridItem?.id == event.gridItem?.id; });
-        if(foundWidget != null) {
-            console.log("Selected a new Widget! [" + foundWidget.displayName + "]");
-            this.selectedWidget = foundWidget;
+        if(this.dashboard != null) {
+            const foundWidget = this.dashboard.template?.widgets?.find((x) => { return x.gridItem?.id == event.gridItem?.id; });
+            if(foundWidget != null) {
+                console.log("Selected a new Widget! [" + foundWidget.displayName + "]");
+                this.selectedWidget = foundWidget;
+            }
         }
     }
     deselectCurrentWidget() {
@@ -203,7 +219,7 @@ export class OrDashboardBuilder extends LitElement {
         this.selectedWidget = undefined;
     }
     deleteCurrentWidget() {
-        if(this.selectedWidget != null) {
+        if(this.selectedWidget != null && this.dashboard != null) {
             const index = this.dashboard.template?.widgets?.indexOf(this.selectedWidget);
             if(index != null) {
                 this.dashboard.template?.widgets?.splice(index, 1);
@@ -238,11 +254,17 @@ export class OrDashboardBuilder extends LitElement {
                 <div id="content">
                     <div id="container">
                         <div id="builder">
-                            <or-dashboard-editor style="background: transparent;" .widgets="${this.dashboard.template?.widgets}" .selected="${this.selectedWidget}"
+                            ${(this.dashboard != null && !this.isLoading) ? html`
+                                <or-dashboard-editor style="background: transparent;" .widgets="${this.dashboard.template?.widgets}" .selected="${this.selectedWidget}"
                                                  @select="${(event: CustomEvent) => { this.selectWidget(event.detail as SelectOutput); }}"
                                                  @deselect="${(event: CustomEvent) => { this.deselectCurrentWidget(); }}"
-                                                 @add="${(event: CustomEvent) => { this.dashboard.template?.widgets?.push(this.createWidget((event.detail as AddOutput).gridStackNode)); this.requestUpdate(); }}"
-                            ></or-dashboard-editor>
+                                                 @add="${(event: CustomEvent) => { this.dashboard?.template?.widgets?.push(this.createWidget((event.detail as AddOutput).gridStackNode)); this.requestUpdate(); }}"
+                                ></or-dashboard-editor>
+                            ` : (this.isLoading ? html`
+                                <span>Loading Dashboard..</span>
+                            ` : html`
+                                <span>Cannot find Dashboard!</span>
+                            `)}
                         </div>
                         <div id="sidebar">
                             <div style="${this.selectedWidget == null ? css`display: none` : null}">
@@ -265,21 +287,21 @@ export class OrDashboardBuilder extends LitElement {
                                             <div class="mdc-tab-scroller__scroll-area">
                                                 <div class="mdc-tab-scroller__scroll-content">
                                                     <button class="mdc-tab" role="tab" aria-selected="false" tabindex="0">
-                                                    <span class="mdc-tab__content">
-                                                        <span class="mdc-tab__text-label">WIDGETS</span>
-                                                    </span>
+                                                        <span class="mdc-tab__content">
+                                                            <span class="mdc-tab__text-label">WIDGETS</span>
+                                                        </span>
                                                         <span class="mdc-tab-indicator">
-                                                        <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
-                                                    </span>
+                                                            <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                                                        </span>
                                                         <span class="mdc-tab__ripple"></span>
                                                     </button>
                                                     <button class="mdc-tab" role="tab" aria-selected="false" tabindex="1">
-                                                    <span class="mdc-tab__content">
-                                                        <span class="mdc-tab__text-label">SETTINGS</span>
-                                                    </span>
+                                                        <span class="mdc-tab__content">
+                                                            <span class="mdc-tab__text-label">SETTINGS</span>
+                                                        </span>
                                                         <span class="mdc-tab-indicator">
-                                                        <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
-                                                    </span>
+                                                            <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                                                        </span>
                                                         <span class="mdc-tab__ripple"></span>
                                                     </button>
                                                 </div>

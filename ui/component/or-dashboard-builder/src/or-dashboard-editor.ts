@@ -34,16 +34,18 @@ const editorStyling = css`
         width: 900px; /* Should be set according to input */
         padding: 4px;
     }
-    .gridItem {
+    .grid-stack-item-content {
         background: white;
-        height: 100%;
         box-sizing: border-box;
         border: 2px solid #E0E0E0;
         border-radius: 4px;
         overflow: hidden;
     }
-    .gridItem__active {
+    .grid-stack-item-content__active {
         border: 2px solid green;    
+    }
+    .gridItem {
+        height: 100%;
     }
     
     /* Grid lines on the background of the grid */
@@ -208,14 +210,14 @@ export class OrDashboardEditor extends LitElement{
     selectGridItem(gridItem: GridItemHTMLElement) {
         if(this.mainGrid != null) {
             this.mainGrid.getGridItems().forEach(item => { this.deselectGridItem(item); }); // deselecting all other items
-            gridItem.querySelectorAll<HTMLElement>(".gridItem").forEach((item: HTMLElement) => {
-                item.classList.add('gridItem__active'); // Apply active CSS class
+            gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
+                item.classList.add('grid-stack-item-content__active'); // Apply active CSS class
             });
         }
     }
     deselectGridItem(gridItem: GridItemHTMLElement) {
-        gridItem.querySelectorAll<HTMLElement>(".gridItem__active").forEach((item: HTMLElement) => {
-            item.classList.remove('gridItem__active'); // Remove active CSS class
+        gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content__active").forEach((item: HTMLElement) => {
+            item.classList.remove('grid-stack-item-content__active'); // Remove active CSS class
         });
     }
 
