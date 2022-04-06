@@ -62,5 +62,5 @@ jobs:
           PARENT_DNS_ZONE: ${{ github.event.inputs.PARENT_DNS_ZONE }}
           HOSTED_DNS: ${{ github.event.inputs.HOSTED_DNS }}
           PROVISION_EFS: ${{ github.event.inputs.PROVISION_EFS }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
