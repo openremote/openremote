@@ -101,9 +101,11 @@ fi
 
 # Grant SSH access to this runner's public IP on AWS
 if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
+
+  source temp/aws/login.sh
+
   if [ -n "$CIDR" ]; then
     if [ -z "$AWS_ACCOUNT_NAME" ] && [ -z "$AWS_ACCOUNT_ID" ]; then
-      source temp/aws/login.sh
 
       echo "Account ID or name is not set so searching for it"
       source temp/aws/get_account_id_from_host.sh
