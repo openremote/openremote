@@ -162,6 +162,7 @@ services:
       OR_EMAIL_PASSWORD:
       OR_EMAIL_PORT: ${OR_EMAIL_PORT}
       OR_EMAIL_TLS: ${OR_EMAIL_TLS}
+      OR_EMAIL_X_HEADERS: ${OR_EMAIL_X_HEADERS:-} # Headers to set on all outbound emails
 
       # Where to send admin emails to
       OR_EMAIL_ADMIN: ${OR_EMAIL_ADMIN}

@@ -69,6 +69,7 @@ services:
       OR_EMAIL_HOST:
       OR_EMAIL_USER:
       OR_EMAIL_PASSWORD:
+      OR_EMAIL_X_HEADERS:
       OR_EMAIL_FROM:
       OR_EMAIL_ADMIN:
       OR_HOSTNAME: ${OR_HOSTNAME:-localhost}

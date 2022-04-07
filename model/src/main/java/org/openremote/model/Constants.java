@@ -59,6 +59,7 @@ public interface Constants {
     int OR_EMAIL_PORT_DEFAULT = 587;
     String OR_EMAIL_TLS = "OR_EMAIL_TLS";
     boolean OR_EMAIL_TLS_DEFAULT = true;
+    String OR_EMAIL_X_HEADERS = "OR_EMAIL_X_HEADERS";
     String OR_EMAIL_FROM = "OR_EMAIL_FROM";
     String OR_EMAIL_FROM_DEFAULT = "no-reply@localhost";
     String OR_EMAIL_ADMIN = "OR_EMAIL_ADMIN";

@@ -7,6 +7,8 @@
 # A standard access security group is also created for the standard OpenRemote stack services; the ssh-access security
 # group is also linked to the EC2 instance and this security group must already exist within the account.
 #
+# Optionally assign an Elastic IP address by setting the ElasticIP parameter to true.
+#
 # Systemd services are also created to:
 #
 # - Mount EFS volume named 'hosts-filesystem' at /deployment.local/efs on restart
@@ -53,6 +55,13 @@ Parameters:
   SMTPORArn:
     Description: SES Verified identity trust policy ARN for SMTP X-Headers
     Type: String
+  ElasticIP:
+    Description: Assign elastic IP address
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
   SMTPKey:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SMTP-User-Key
@@ -65,6 +74,7 @@ Parameters:
 
 Conditions:
   CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
+  AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
 
 Resources:
 
@@ -596,3 +606,18 @@ Resources:
           
           # All done so signal success
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
+
+  IPAddress:
+    Type: AWS::EC2::EIP
+    Condition: AssignElasticIP
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Ref Host
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Condition: AssignElasticIP
+    Properties:
+      InstanceId: !Ref 'EC2Instance'
+      EIP: !Ref 'IPAddress'
