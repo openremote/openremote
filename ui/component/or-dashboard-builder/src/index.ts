@@ -1,5 +1,5 @@
 import {html, css, LitElement, unsafeCSS } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-editor";
@@ -97,33 +97,26 @@ export class OrDashboardBuilder extends LitElement {
         return [unsafeCSS(tabStyle), unsafeCSS(tabbarStyle), unsafeCSS(tabIndicatorStyle), unsafeCSS(tabScrollerStyle), styling, style]
     }
 
+    @property()
+    protected isLoading: boolean | undefined;
+
+    @property()
+    protected dashboard: Dashboard | undefined;
+
+
+
     @state()
     protected sidebarMenuIndex: number;
 
     @state()
-    protected isLoading: boolean;
-
-    @state()
-    protected dashboard: Dashboard | undefined;
-
-    @state()
     protected selectedWidget: DashboardWidget | undefined;
 
+    /* ------------- */
 
-    // Main constructor; after the component is rendered/updated, we start rendering the grid.
     constructor() {
         super();
         this.sidebarMenuIndex = 0;
-        this.isLoading = true;
-        //this.dashboard = this.generateInitialDashboard();
-        manager.rest.api.DashboardResource.getAllUserDashboards().then(result => {
-            if(result.data[1] != null) {
-                this.dashboard = result.data[1];
-            }
-            this.isLoading = false;
-        });
-
-
+        if(this.isLoading == null) { this.isLoading = false; } // TODO: There is currently no usecase for it, but still
         this.updateComplete.then(() => {
             if(this.shadowRoot != null) {
 
@@ -138,6 +131,19 @@ export class OrDashboardBuilder extends LitElement {
                 }
             }
         });
+    }
+
+    updated(changedProperties: Map<string, any>) {
+        console.log(changedProperties);
+        if(changedProperties.has("dashboard")) {
+            if(this.dashboard != null) {
+
+                // Set widgets to an empty array for GridStack to work.
+                if(this.dashboard.template != null && this.dashboard.template.widgets == null) {
+                    this.dashboard.template.widgets = [];
+                }
+            }
+        }
     }
 
     /* ----------------- */
@@ -192,7 +198,6 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
-    // TODO: Remove this temporary method for getting div object
     getWidgetContent(widgetType: DashboardWidgetType, displayName: string): any {
         switch (widgetType) {
             case DashboardWidgetType.CHART: {
@@ -215,7 +220,6 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
     deselectCurrentWidget() {
-        console.log("Deselecting a widget..");
         this.selectedWidget = undefined;
     }
     deleteCurrentWidget() {
@@ -223,8 +227,6 @@ export class OrDashboardBuilder extends LitElement {
             const index = this.dashboard.template?.widgets?.indexOf(this.selectedWidget);
             if(index != null) {
                 this.dashboard.template?.widgets?.splice(index, 1);
-                console.log("Removed the selected Widget from the dashboard! Current dashboard:");
-                console.log(this.dashboard);
                 this.requestUpdate();
             }
         }
@@ -240,13 +242,13 @@ export class OrDashboardBuilder extends LitElement {
                     <div id="header-wrapper">
                         <div id="header-title">
                             <!--<or-icon icon="view-dashboard"></or-icon>-->
-                            <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" value="Dashboard 1" style="min-width: 320px;"></or-mwc-input>
+                            <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" .value="${this.dashboard != null ? this.dashboard.displayName : ' '}" .disabled="${this.isLoading || (this.dashboard == null)}" style="min-width: 320px;"></or-mwc-input>
                         </div>
                         <div id="header-actions">
                             <div id="header-actions-content">
-                                <or-mwc-input id="share-btn" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
-                                <or-mwc-input id="save-btn" type="${InputType.BUTTON}" raised label="Save"></or-mwc-input>
-                                <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="View"></or-mwc-input>
+                                <or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.dashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
+                                <or-mwc-input id="save-btn" .disabled="${this.isLoading || (this.dashboard == null)}" type="${InputType.BUTTON}" raised label="Save"></or-mwc-input>
+                                <or-mwc-input id="view-btn" .disabled="${this.isLoading || (this.dashboard == null)}" type="${InputType.BUTTON}" outlined icon="eye" label="View"></or-mwc-input>
                             </div>
                         </div>
                     </div>
@@ -255,7 +257,7 @@ export class OrDashboardBuilder extends LitElement {
                     <div id="container">
                         <div id="builder">
                             ${(this.dashboard != null && !this.isLoading) ? html`
-                                <or-dashboard-editor style="background: transparent;" .widgets="${this.dashboard.template?.widgets}" .selected="${this.selectedWidget}"
+                                <or-dashboard-editor style="background: transparent;" .template="${this.dashboard.template}" .selected="${this.selectedWidget}"
                                                  @select="${(event: CustomEvent) => { this.selectWidget(event.detail as SelectOutput); }}"
                                                  @deselect="${(event: CustomEvent) => { this.deselectCurrentWidget(); }}"
                                                  @add="${(event: CustomEvent) => { this.dashboard?.template?.widgets?.push(this.createWidget((event.detail as AddOutput).gridStackNode)); this.requestUpdate(); }}"
@@ -325,8 +327,7 @@ export class OrDashboardBuilder extends LitElement {
 
     /* ----------------- */
 
-
-    generateInitialDashboard(): Dashboard {
+    /*generateInitialDashboard(): Dashboard {
         let dashboard: Dashboard = {
             id: ((Math.random() + 1).toString(36).substring(2)),
             createdOn: Date.now(),
@@ -370,5 +371,5 @@ export class OrDashboardBuilder extends LitElement {
         console.log("Initiated the following dashboard:");
         console.log(dashboard);
         return dashboard;
-    }
+    }*/
 }

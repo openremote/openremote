@@ -1,5 +1,5 @@
 import {css, html, TemplateResult} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
+import {customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
 import {Page, PageProvider} from "@openremote/or-app";
@@ -155,11 +155,14 @@ export class PageInsights extends Page<AppStateKeyed>  {
         super.connectedCallback();
     }
 
+    @state()
+    private selectedDashboard: any;
+
     protected render(): TemplateResult | void {
         return html`
             <div id="container">
-                <or-dashboard-tree id="tree"></or-dashboard-tree>
-                <or-dashboard-builder id="builder"></or-dashboard-builder>
+                <or-dashboard-tree id="tree" @created="${() => { this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectedDashboard = event.detail; }}"></or-dashboard-tree>
+                <or-dashboard-builder id="builder" .dashboard="${this.selectedDashboard}"></or-dashboard-builder>
             </div>
             <!--<div id="wrapper">
                 <div id="title">

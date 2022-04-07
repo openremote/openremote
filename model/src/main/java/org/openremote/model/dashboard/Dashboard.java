@@ -84,4 +84,17 @@ public class Dashboard {
     public String getOwnerId() { return this.ownerId; }
     public String getDisplayName() { return this.displayName; }
     public DashboardTemplate getTemplate() { return this.template; }
+
+
+    // TODO: still not proud of the validity check here, probably needs to move
+    public boolean checkValidity() {
+        if(realm != null && !realm.isEmpty() && ownerId != null && !ownerId.isEmpty()) {
+            // TODO: check for realm;
+            // TODO: check for ownerId;
+            if(template.checkValidity()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -19,13 +19,15 @@ public class DashboardTemplate {
     public DashboardTemplate() {
     }
 
+    // TODO: still not proud of the validity check here, probably needs to move
     public boolean checkValidity() {
         if(!(maxScreenWidth > 0)) { maxScreenWidth = MAX_SCREEN_WIDTH_DEFAULT; }
-        if(id != null && !id.isEmpty() && columns > 0 && screenPresets != null && screenPresets.length > 0) {
+        if(widgets == null) { widgets = new DashboardWidget[0]; }
+        if(columns > 0 && screenPresets != null && screenPresets.length > 0) {
             if(Arrays.stream(screenPresets).anyMatch(preset -> !preset.checkValidity())) {
                 return false; // If a screenPreset is invalid
             }
-            if(widgets != null && widgets.length > 0) {
+            if(widgets.length > 0) {
                 if(Arrays.stream(widgets).anyMatch(widget -> !widget.checkValidity())) {
                     return false; // If a widget is invalid
                 }

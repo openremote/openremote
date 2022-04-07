@@ -12,6 +12,7 @@ import org.openremote.model.util.ValueUtil;
 import javax.ws.rs.WebApplicationException;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 public class DashboardResourceImpl extends ManagerWebResource implements DashboardResource {
 
@@ -34,17 +35,19 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     @Override
     public Dashboard[] create(RequestParams requestParams, Dashboard dashboard) {
         try {
+            System.out.println("Creating a new Dashboard..");
             /* TODO: temporarily disabled for executing without authorization
             //  if(!isTenantActiveAndAccessible(dashboard.getRealm())) {
             //    throw new WebApplicationException(FORBIDDEN);
             //}*/
-            if(!dashboard.getTemplate().checkValidity()) {
+            if(!dashboard.checkValidity()) {
                 throw new WebApplicationException(BAD_REQUEST);
             }
             Dashboard storedDashboard = this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
 
         } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
+            ex.printStackTrace();
+            throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
         return new Dashboard[0];
     }
