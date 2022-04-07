@@ -456,8 +456,15 @@ fi
 
 echo "Testing manager web server https://$OR_HOSTNAME..."
 response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+count=0
+while [[ $response -ne 200 ]] && [ $count -lt 12 ]; do
+  echo "https://$OR_HOSTNAME/manager/ RESPONSE CODE: $response...Sleeping 5 seconds"
+  sleep 5
+  response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+  count=$((count+1))
+done
+
 if [ $response -ne 200 ]; then
-  echo "Response code = $response"
   revoke_ssh
   exit 1
 fi
