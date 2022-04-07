@@ -5,7 +5,7 @@
 # Arguments:
 # 1 - start/stop
 # 2 - HOST name of the instance (host FQDN)
-# 3 - ACCOUNT_NAME name of the account that contains the instance (optional)
+# 3 - AWS_ACCOUNT_NAME name of the account that contains the instance (optional)
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -15,7 +15,7 @@ fi
 
 ACTION=${1,,}
 HOST=${2,,}
-ACCOUNT_NAME=${3,,}
+AWS_ACCOUNT_NAME=${3,,}
 
 source "${awsDir}login.sh"
 
@@ -24,16 +24,16 @@ if [ -z "$HOST" ]; then
   exit 1
 fi
 
-if [ -z "$ACCOUNT_NAME" ]; then
+if [ -z "$AWS_ACCOUNT_NAME" ]; then
   echo "Attempting to find owning account for host '$HOST'"
   source "${awsDir}get_account_id_from_host.sh" $HOST
-  if [ -z "$ACCOUNT_ID" ]; then
+  if [ -z "$AWS_ACCOUNT_ID" ]; then
     echo "Failed to find owning account"
     exit 1
   fi
 fi
 
-# Update github-da profile with ARN for ACCOUNT_ID
+# Update github-da profile with ARN for AWS_ACCOUNT_ID
 source "${awsDir}set_github-da_account_arn.sh"
 ACCOUNT_PROFILE="--profile github-da"
 

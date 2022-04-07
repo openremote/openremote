@@ -15,10 +15,10 @@
 #
 # Arguments:
 # 1 - OU - Name of organizational unit where account should be provisioned (defaults to account root if not set)
-# 1 - ACCOUNT_NAME - Name of the new account (required)
+# 1 - AWS_ACCOUNT_NAME - Name of the new account (required)
 # 2 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
 # 3 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
-#     PARENT_DNS_ZONE in the callee account (e.g. x.y -> ACCOUNT_NAME.x.y)
+#     PARENT_DNS_ZONE in the callee account (e.g. x.y -> AWS_ACCOUNT_NAME.x.y)
 # 4 - PROVISION_EFS set to 'false' to not provision an EFS volume for the default VPC using (cloudformation-create-efs.yml)
 
 if [[ $BASH_SOURCE = */* ]]; then
@@ -28,14 +28,14 @@ else
 fi
 
 OU=${1}
-ACCOUNT_NAME=${2,,}
+AWS_ACCOUNT_NAME=${2,,}
 PARENT_DNS_ZONE=${3,,}
 HOSTED_DNS=${4,,}
 PROVISION_EFS=${5,,}
 ACCOUNT_PROFILE='--profile github-da'
 
-if [ -z "$ACCOUNT_NAME" ]; then
-  echo "ACCOUNT_NAME must be set"
+if [ -z "$AWS_ACCOUNT_NAME" ]; then
+  echo "AWS_ACCOUNT_NAME must be set"
   exit 1
 fi
 
@@ -43,14 +43,14 @@ fi
 source "${awsDir}login.sh"
 
 # Get github account ID from github profile
-CALLER_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+CALLER_AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 
 # Check account doesn't already exist
 source "${awsDir}get_account_id.sh"
 
-CatalogName="account-$ACCOUNT_NAME"
+CatalogName="account-$AWS_ACCOUNT_NAME"
 
-if [ -n "$ACCOUNT_ID" ]; then
+if [ -n "$AWS_ACCOUNT_ID" ]; then
   echo "Account already exists so skipping initial provisioning step"
 else
   RandomToken=$(echo $(( $RANDOM * 99999999999 )) | cut -c 1-13)
@@ -72,7 +72,7 @@ else
     echo "Provisioning artifact ID: $pa_id"
   fi
 
-  PARAMS="Key=SSOUserFirstName,Value=$ACCOUNT_NAME Key=SSOUserLastName,Value=$ACCOUNT_NAME Key=SSOUserEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$ACCOUNT_NAME"
+  PARAMS="Key=SSOUserFirstName,Value=$AWS_ACCOUNT_NAME Key=SSOUserLastName,Value=$AWS_ACCOUNT_NAME Key=SSOUserEmail,Value=$AWS_ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$AWS_ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$AWS_ACCOUNT_NAME"
   if [ -n "$OU" ]; then
     ROOT_ID=$(aws organizations list-roots --query "Roots[0].Id" --output text)
     OU_ID=$(aws organizations list-organizational-units-for-parent --parent-id $ROOT_ID --query "OrganizationalUnits[?Name=='$OU'].Id" --output text)
@@ -107,17 +107,17 @@ else
 
   # Get account ID of newly provisioned account
   ProvisionedProductId=$(aws servicecatalog scan-provisioned-products --query "ProvisionedProducts[?Name=='$CatalogName'].Id" --output text)
-  ACCOUNT_ID=$(aws servicecatalog get-provisioned-product-outputs --provisioned-product-id $ProvisionedProductId --query "Outputs[?OutputKey=='AccountId'].OutputValue" --output text 2>/dev/null)
+  AWS_ACCOUNT_ID=$(aws servicecatalog get-provisioned-product-outputs --provisioned-product-id $ProvisionedProductId --query "Outputs[?OutputKey=='AccountId'].OutputValue" --output text 2>/dev/null)
 fi
 
-if [ -z "$ACCOUNT_ID" ]; then
+if [ -z "$AWS_ACCOUNT_ID" ]; then
   echo "Failed to get ID of new account"
   exit 1
 fi
 
 # Store account ID in SSM (aws organizations list-accounts doesn't support server side filtering)
 echo "Storing account ID for future reference"
-aws ssm put-parameter --name "/Account-Ids/$ACCOUNT_NAME" --value "$ACCOUNT_ID" --type String &>/dev/null
+aws ssm put-parameter --name "/Account-Ids/$AWS_ACCOUNT_NAME" --value "$AWS_ACCOUNT_ID" --type String &>/dev/null
 
 # Wait for control tower customisations to complete
 STATUS=$(aws codepipeline list-pipeline-executions --pipeline-name Custom-Control-Tower-CodePipeline --query "pipelineExecutionSummaries[0].status" --output text)
@@ -182,7 +182,7 @@ fi
 
 # Create/remove hosted zone as requested
 if [ -n "$PARENT_DNS_ZONE" ]; then
-  HOSTED_ZONE="$ACCOUNT_NAME.$PARENT_DNS_ZONE"
+  HOSTED_ZONE="$AWS_ACCOUNT_NAME.$PARENT_DNS_ZONE"
   PARENT_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$PARENT_DNS_ZONE.'].Id" --output text 2>/dev/null)
   SUB_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$HOSTED_ZONE.'].Id" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -200,7 +200,7 @@ if [ -n "$PARENT_DNS_ZONE" ]; then
 
 read -r -d '' RECORDSET << EOF
 {
-  "Comment": "Creating NS record for account '$ACCOUNT_ID' subdomain",
+  "Comment": "Creating NS record for account '$AWS_ACCOUNT_ID' subdomain",
   "Changes": [
     {
       "Action": "UPSERT",
@@ -231,12 +231,12 @@ fi
 
 # Update SSH Whitelist for this account
 if [ -n "$SGID" ]; then
-  "${awsDir}refresh_ssh_whitelist.sh" "" "" $ACCOUNT_ID
+  "${awsDir}refresh_ssh_whitelist.sh" "" "" $AWS_ACCOUNT_ID
 fi
 
 # Provision EFS unless set to false
 if [ "$PROVISION_EFS" != 'false' ]; then
-  echo "Provisioning EFS for account '$ACCOUNT_NAME' using cloud formation template"
+  echo "Provisioning EFS for account '$AWS_ACCOUNT_NAME' using cloud formation template"
 
   if [ -f "${awsDir}cloudformation-create-efs.yml" ]; then
     TEMPLATE_PATH="${awsDir}cloudformation-create-efs.yml"

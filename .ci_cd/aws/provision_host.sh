@@ -3,12 +3,13 @@
 # Provisions the standard stack of resources using CloudFormation template (cloudformation-create-ec2.yml) in the
 # specified AWS member account; if no account specified then the account of the authenticated user will be used.
 # The account must already exist and be provisioned in the standard way (see provision_account.sh). To access the
-# account the developers-access role in that account will be assumed. This script will determine the DNS hosted
+# account the $AWS_ROLE_NAME role in that account will be assumed (this role must exist and must have sufficient
+# privileges to run the commands contained in this script). This script will determine the DNS hosted
 # zone into which the A record for the host should be inserted by searching up the domain levels of the hosts FQDN.
 # Will also provision an S3 bucket with the name of host (periods replaced with hyphens) unless set to false.
 #
 # To be called with arguments:
-# 1 - ACCOUNT_NAME where resources should be created (defaults to callers account)
+# 1 - AWS_ACCOUNT_NAME where resources should be created (defaults to callers account)
 # 2 - HOST FQDN for e.g. staging.demo.openremote.app
 # 3 - INSTANCE_TYPE EC2 instance type see cloud formation template parameter
 # 4 - PROVISION_S3_BUCKET set to 'false' to not provision an S3 bucket for this host
@@ -20,7 +21,7 @@ else
   awsDir=./
 fi
 
-ACCOUNT_NAME=${1,,}
+AWS_ACCOUNT_NAME=${1,,}
 HOST=${2,,}
 INSTANCE_TYPE=${3,,}
 PROVISION_S3_BUCKET=${4,,}
@@ -46,8 +47,8 @@ fi
 source "${awsDir}login.sh"
 
 ACCOUNT_PROFILE=
-if [ -n "$ACCOUNT_NAME" ]; then
-  # Update github-da profile with ARN for ACCOUNT_ID
+if [ -n "$AWS_ACCOUNT_NAME" ]; then
+  # Update github-da profile with ARN for AWS_ACCOUNT_ID
   source "${awsDir}set_github-da_account_arn.sh"
   ACCOUNT_PROFILE="--profile github-da"
 fi
@@ -62,8 +63,8 @@ if [ -n "$STATUS" ] && [ "$STATUS" != 'DELETE_COMPLETE' ]; then
   STACK_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 else
   #Configure parameters
-  CALLER_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
-  SMTP_ARN="arn:aws:ses:$AWS_REGION:$CALLER_ACCOUNT_ID:identity/openremote.io"
+  CALLER_AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+  SMTP_ARN="arn:aws:ses:$AWS_REGION:$CALLER_AWS_ACCOUNT_ID:identity/openremote.io"
   PARAMS="ParameterKey=Host,ParameterValue=$HOST ParameterKey=SMTPORArn,ParameterValue=$SMTP_ARN"
 
   if [ -n "$INSTANCE_TYPE" ]; then

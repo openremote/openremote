@@ -68,9 +68,6 @@ Parameters:
   SMTPSecret:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SMTP-User-Secret
-  SShWhitelistRoleArn:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SSH-Whitelist-Access-Role-Arn
 
 Conditions:
   CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
@@ -107,6 +104,9 @@ Resources:
     Properties:
       GroupDescription: "Access OpenRemote stack services"
       GroupName: !Ref Host
+      Tags:
+        - Key: Name
+          Value: !Ref Host
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '80'
@@ -582,7 +582,7 @@ Resources:
         - Ref: StandardSecurityGroup
       Ipv6AddressCount: 1
       Tags:
-        - Key: "Name"
+        - Key: Name
           Value: !Ref Host
       IamInstanceProfile: !Ref 'InstanceRoleProfile'
       UserData:
@@ -612,12 +612,12 @@ Resources:
     Condition: AssignElasticIP
     Properties:
       Tags:
-        - Key: "Name"
+        - Key: Name
           Value: !Ref Host
 
   IPAssoc:
     Type: AWS::EC2::EIPAssociation
     Condition: AssignElasticIP
     Properties:
-      InstanceId: !Ref 'EC2Instance'
-      EIP: !Ref 'IPAddress'
+      InstanceId: !Ref EC2Instance
+      EIP: !Ref IPAddress
