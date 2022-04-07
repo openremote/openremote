@@ -103,6 +103,8 @@ fi
 if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
   if [ -n "$CIDR" ]; then
     if [ -z "$AWS_ACCOUNT_NAME" ] && [ -z "$AWS_ACCOUNT_ID" ]; then
+      source temp/aws/login.sh
+
       echo "Account ID or name is not set so searching for it"
       source temp/aws/get_account_id_from_host.sh
 
@@ -204,12 +206,6 @@ chmod +x -R temp/
 set -a
 . ./temp/env
 set +a
-
-# Login to AWS if credentials provided
-AWS_KEY=$AWS_KEY
-AWS_SECRET=$AWS_SECRET
-AWS_REGION=$AWS_REGION
-source temp/aws/login.sh
 
 if [ -f "temp/manager.tar.gz" ]; then
   echo "Loading manager docker image"
