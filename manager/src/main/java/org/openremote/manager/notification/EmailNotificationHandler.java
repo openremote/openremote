@@ -79,10 +79,10 @@ public class EmailNotificationHandler implements NotificationHandler {
         String headersStr = container.getConfig().getOrDefault(OR_EMAIL_X_HEADERS, null);
         if (!TextUtil.isNullOrEmpty(headersStr)) {
             headers = Arrays.stream(headersStr.split("\\R"))
-                .map(s -> s.split("=", 2))
+                .map(s -> s.split(":", 2))
                 .collect(Collectors.toMap(
-                    arr -> arr[0],
-                    arr -> arr[1]
+                    arr -> arr[0].trim(),
+                    arr -> arr.length == 2 ? arr[1].trim() : ""
                 ));
         }
 
