@@ -40,7 +40,7 @@ import {classMap} from "lit/directives/class-map.js";
 import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
-import {OrAssetTouchedEvent, OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
+import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 

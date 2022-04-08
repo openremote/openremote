@@ -148,23 +148,9 @@ export class OrEditAssetModifiedEvent extends CustomEvent<ValidatorResult[]> {
     }
 }
 
-export class OrAssetTouchedEvent extends CustomEvent<any> {
-
-    public static readonly NAME = "or-asset-touched";
-
-    constructor(ev: any) {
-        super(OrAssetTouchedEvent.NAME, {
-            bubbles: true,
-            composed: true,
-            detail: ev
-        });
-    }
-}
-
 declare global {
     export interface HTMLElementEventMap {
         [OrEditAssetModifiedEvent.NAME]: OrEditAssetModifiedEvent;
-        [OrAssetTouchedEvent.NAME]: OrAssetTouchedEvent;
     }
 }
 
