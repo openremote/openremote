@@ -52,9 +52,6 @@ Parameters:
   DNSHostedZoneRoleArn:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
-  SMTPORArn:
-    Description: SES Verified identity trust policy ARN for SMTP X-Headers
-    Type: String
   ElasticIP:
     Description: Assign elastic IP address
     Type: String
@@ -62,12 +59,21 @@ Parameters:
       - true
       - false
     Default: false
-  SMTPKey:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SMTP-User-Key
+  SMTPHost:
+    Type: String
+  SMTPUser:
+    Type: String
+  SMTPPassword:
+    Type: String
   SMTPSecret:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SMTP-User-Secret
+    Type: String
+    Description: SMTP CLI user secret (used to generate an SMTP password from)
+  SMTPRegion:
+    Type: String
+    Description: SMTP CLI user region (used to generate an SMTP password from)
+  SMTPORArn:
+    Description: SES Verified identity trust policy ARN for SMTP X-Headers
+    Type: String
 
 Conditions:
   CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
@@ -495,12 +501,22 @@ Resources:
           commands:
             01_output_smtp_credentials:
               command: !Sub |
-                PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${AWS::Region})
-                echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" > /etc/environment
-                echo "OR_EMAIL_USER=${SMTPKey}" >> /etc/environment
-                echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
-                echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
-                echo "AWS_REGION=${AWS::Region}" >> /etc/environment
+                echo "AWS_REGION=${AWS::Region}" > /etc/environment
+                if [ -n "${SMTPHost}" ]; then
+                  echo "OR_EMAIL_HOST=${SMTPHost}" >> /etc/environment
+                fi
+                if [ -n "${SMTPUser}" ]; then
+                  echo "OR_EMAIL_USER=${SMTPUser}" >> /etc/environment
+                fi
+                if [ -n "${SMTPPassword}" ]; then
+                  echo "OR_EMAIL_PASSWORD=${SMTPPassword}" >> /etc/environment
+                elif [ -n "${SMTPSecret}" ] && [ -n "${SMTPRegion}" ]; then
+                  PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${SMTPRegion})
+                  echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
+                fi
+                if [ -n "${SMTPORArn}" ]; then
+                  echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
+                fi
 
         docker_setup:
           packages:
