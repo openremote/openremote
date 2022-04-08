@@ -22,7 +22,6 @@ import i18next from "i18next";
 import {GenericAxiosResponse} from "@openremote/rest";
 import {showErrorDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {project} from "./flow-viewer/components/flow-editor";
-import { OrAttributeInputChangedEvent } from "@openremote/or-attribute-input";
 
 // language=CSS
 export const style = css`
@@ -133,7 +132,6 @@ export class OrRuleViewer extends translate(i18next)(LitElement) {
     constructor() {
         super();
 
-        this.addEventListener(OrAttributeInputChangedEvent.NAME, () => this._onRuleChanged);
         this.addEventListener(OrRulesRuleChangedEvent.NAME, this._onRuleChanged);
         this.addEventListener(OrRulesRuleUnsupportedEvent.NAME, this._onRuleUnsupported);
     }
