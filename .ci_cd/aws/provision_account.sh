@@ -15,10 +15,10 @@
 #
 # Arguments:
 # 1 - OU - Name of organizational unit where account should be provisioned (defaults to account root if not set)
-# 1 - ACCOUNT_NAME - Name of the new account (required)
+# 1 - AWS_ACCOUNT_NAME - Name of the new account (required)
 # 2 - PARENT_DNS_ZONE - name of parent hosted domain zone in management account
 # 3 - HOSTED_DNS - If set to 'true' a sub domain hosted zone will be provisioned in the new account and delegated from the
-#     PARENT_DNS_ZONE in the callee account (e.g. x.y -> ACCOUNT_NAME.x.y)
+#     PARENT_DNS_ZONE in the callee account (e.g. x.y -> AWS_ACCOUNT_NAME.x.y)
 # 4 - PROVISION_EFS set to 'false' to not provision an EFS volume for the default VPC using (cloudformation-create-efs.yml)
 
 if [[ $BASH_SOURCE = */* ]]; then
@@ -27,15 +27,15 @@ else
   awsDir=./
 fi
 
-OU=${1,,}
-ACCOUNT_NAME=${2,,}
+OU=${1}
+AWS_ACCOUNT_NAME=${2,,}
 PARENT_DNS_ZONE=${3,,}
 HOSTED_DNS=${4,,}
 PROVISION_EFS=${5,,}
 ACCOUNT_PROFILE='--profile github-da'
 
-if [ -z "$ACCOUNT_NAME" ]; then
-  echo "ACCOUNT_NAME must be set"
+if [ -z "$AWS_ACCOUNT_NAME" ]; then
+  echo "AWS_ACCOUNT_NAME must be set"
   exit 1
 fi
 
@@ -43,18 +43,20 @@ fi
 source "${awsDir}login.sh"
 
 # Get github account ID from github profile
-CALLER_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+CALLER_AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 
 # Check account doesn't already exist
 source "${awsDir}get_account_id.sh"
 
-if [ -n "$ACCOUNT_ID" ]; then
+CatalogName="account-$AWS_ACCOUNT_NAME"
+
+if [ -n "$AWS_ACCOUNT_ID" ]; then
   echo "Account already exists so skipping initial provisioning step"
 else
   RandomToken=$(echo $(( $RANDOM * 99999999999 )) | cut -c 1-13)
   prod_id=$(aws servicecatalog search-products --filters FullTextSearch='AWS Control Tower Account Factory' --query "ProductViewSummaries[*].ProductId" --output text)
 
-  if [ $? -ne 0 ]; then
+  if [ $? -ne 0 ] || [ -z "$prod_id" ]; then
     echo "Failed to get product ID for Control Tower Account Factory you must be logged in to the management account"
     exit 1
   else
@@ -63,15 +65,14 @@ else
 
   pa_id=$(aws servicecatalog describe-product --id $prod_id --query "ProvisioningArtifacts[-1].Id" --output text)
 
-  if [ $? -ne 0 ]; then
+  if [ $? -ne 0 ]  || [ -z "$pa_id" ]; then
     echo "Failed to get provisioning artifact ID for Control Tower Account Factory"
     exit 1
   else
     echo "Provisioning artifact ID: $pa_id"
   fi
 
-  CatalogName="account-$ACCOUNT_NAME"
-  PARAMS="Key=SSOUserFirstName,Value=$ACCOUNT_NAME Key=SSOUserLastName,Value=$ACCOUNT_NAME Key=SSOUserEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$ACCOUNT_NAME"
+  PARAMS="Key=SSOUserFirstName,Value=$AWS_ACCOUNT_NAME Key=SSOUserLastName,Value=$AWS_ACCOUNT_NAME Key=SSOUserEmail,Value=$AWS_ACCOUNT_NAME@aws.openremote.io Key=AccountEmail,Value=$AWS_ACCOUNT_NAME@aws.openremote.io Key=AccountName,Value=$AWS_ACCOUNT_NAME"
   if [ -n "$OU" ]; then
     ROOT_ID=$(aws organizations list-roots --query "Roots[0].Id" --output text)
     OU_ID=$(aws organizations list-organizational-units-for-parent --parent-id $ROOT_ID --query "OrganizationalUnits[?Name=='$OU'].Id" --output text)
@@ -92,7 +93,7 @@ else
 
   STATUS=$(aws servicecatalog scan-provisioned-products --query "ProvisionedProducts[?Name=='$CatalogName'].Status" --output text)
   count=0
-  while [[ $STATUS != 'AVAILABLE' ]] && [ $count -lt 20 ]; do
+  while [[ $STATUS != 'AVAILABLE' ]] && [ $count -lt 30 ]; do
     echo "Found provisioned account status $STATUS .. Sleeping 30 seconds"
     sleep 30
     STATUS=$(aws servicecatalog scan-provisioned-products --query "ProvisionedProducts[?Name=='$CatalogName'].Status" --output text)
@@ -106,28 +107,22 @@ else
 
   # Get account ID of newly provisioned account
   ProvisionedProductId=$(aws servicecatalog scan-provisioned-products --query "ProvisionedProducts[?Name=='$CatalogName'].Id" --output text)
-  ACCOUNT_ID=$(aws servicecatalog get-provisioned-product-outputs --provisioned-product-id $ProvisionedProductId --query "Outputs[?OutputKey=='AccountId'].OutputValue" --output text)
-
-  # Store account ID in SSM (aws organizations list-accounts doesn't support server side filtering)
-  if [ -n "$ACCOUNT_ID" ]; then
-    echo "Storing account ID for future reference"
-    aws ssm put-parameter --name "/Account-Ids/$ACCOUNT_NAME" --value "$ACCOUNT_ID" --type String &>/dev/null
-  fi
+  AWS_ACCOUNT_ID=$(aws servicecatalog get-provisioned-product-outputs --provisioned-product-id $ProvisionedProductId --query "Outputs[?OutputKey=='AccountId'].OutputValue" --output text 2>/dev/null)
 fi
 
-if [ -z "$ACCOUNT_ID" ]; then
+if [ -z "$AWS_ACCOUNT_ID" ]; then
   echo "Failed to get ID of new account"
   exit 1
 fi
 
-# Update developers access AWS CLI profile with ARN for ACCOUNT_ID
-RETRY=true
-source "${awsDir}set_github-da_account_arn.sh"
+# Store account ID in SSM (aws organizations list-accounts doesn't support server side filtering)
+echo "Storing account ID for future reference"
+aws ssm put-parameter --name "/Account-Ids/$AWS_ACCOUNT_NAME" --value "$AWS_ACCOUNT_ID" --type String &>/dev/null
 
 # Wait for control tower customisations to complete
 STATUS=$(aws codepipeline list-pipeline-executions --pipeline-name Custom-Control-Tower-CodePipeline --query "pipelineExecutionSummaries[0].status" --output text)
 count=0
-while [[ "$STATUS" != 'Succeeded' ]] && [ $count -lt 30 ]; do
+while [ "$STATUS" == 'InProgress' ] && [ $count -lt 30 ]; do
   echo "Code pipeline for control tower customisations status is $STATUS .. Sleeping 30 seconds"
   sleep 30
   STATUS=$(aws codepipeline list-pipeline-executions --pipeline-name Custom-Control-Tower-CodePipeline --query "pipelineExecutionSummaries[0].status" --output text)
@@ -135,10 +130,36 @@ while [[ "$STATUS" != 'Succeeded' ]] && [ $count -lt 30 ]; do
 done
 
 if [ "$STATUS" != 'Succeeded' ]; then
-  echo "Control tower customisation pipeline has failed"
+  echo "Control tower customisation pipeline has failed cannot continue until this is resolved"
   exit 1
 else
   echo "Control tower customisation pipeline has succeeded"
+fi
+
+# Update aws github-da profile with this account
+source "${awsDir}set_github-da_account_arn.sh"
+
+# Re-instate default VPC (Control Tower removes it)
+VPCID=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+if [ "$VPCID" == 'None' ]; then
+  echo "Provisioning default VPC"
+  VPCID=$(aws ec2 create-default-vpc --query "Vpc.VpcId" --output text $ACCOUNT_PROFILE)
+else
+  echo "Default VPC already exists"
+fi
+
+# Create ssh-access security group
+SGID=$(aws ec2 describe-security-groups --filters Name=vpc-id,Values=$VPCID --group-names 'ssh-access' --query "SecurityGroups[0].GroupId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+if [ -z "$SGID" ]; then
+  echo "Provisioning ssh-access security group"
+  SGID=$(aws ec2 create-security-group --description "SSH access for all EC2 instances" --group-name "ssh-access" --query "GroupId" --output text $ACCOUNT_PROFILE)
+
+  if [ -z "$SGID" ]; then
+    echo "Failed to provision ssh-access security group"
+  fi
+else
+  echo "ssh-access security group already exists '$SGID'"
 fi
 
 # Get developers SSH public key from Parameter Store /SSH-Key/ and store as ~/.ssh/developers.pub
@@ -161,7 +182,7 @@ fi
 
 # Create/remove hosted zone as requested
 if [ -n "$PARENT_DNS_ZONE" ]; then
-  HOSTED_ZONE="$ACCOUNT_NAME.$PARENT_DNS_ZONE"
+  HOSTED_ZONE="$AWS_ACCOUNT_NAME.$PARENT_DNS_ZONE"
   PARENT_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$PARENT_DNS_ZONE.'].Id" --output text 2>/dev/null)
   SUB_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='$HOSTED_ZONE.'].Id" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -179,7 +200,7 @@ if [ -n "$PARENT_DNS_ZONE" ]; then
 
 read -r -d '' RECORDSET << EOF
 {
-  "Comment": "Creating NS record for account '$ACCOUNT_ID' subdomain",
+  "Comment": "Creating NS record for account '$AWS_ACCOUNT_ID' subdomain",
   "Changes": [
     {
       "Action": "UPSERT",
@@ -209,11 +230,13 @@ else
 fi
 
 # Update SSH Whitelist for this account
-"${awsDir}refresh_ssh_whitelist.sh" "" "" $ACCOUNT_ID
+if [ -n "$SGID" ]; then
+  "${awsDir}refresh_ssh_whitelist.sh" "" "" $AWS_ACCOUNT_ID
+fi
 
 # Provision EFS unless set to false
 if [ "$PROVISION_EFS" != 'false' ]; then
-  echo "Provisioning EFS for account '$ACCOUNT_NAME' using cloud formation template"
+  echo "Provisioning EFS for account '$AWS_ACCOUNT_NAME' using cloud formation template"
 
   if [ -f "${awsDir}cloudformation-create-efs.yml" ]; then
     TEMPLATE_PATH="${awsDir}cloudformation-create-efs.yml"
@@ -234,8 +257,7 @@ if [ "$PROVISION_EFS" != 'false' ]; then
     echo "EFS stack already exists"
   else
 
-    # Find Default VPC and security groups
-    VPCID=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].VpcId" --output text $ACCOUNT_PROFILE 2>/dev/null)
+    # Find Default VPC security group and IP CIDRs
     VPCIP4CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].CidrBlockAssociationSet[0].CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
     VPCIP6CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
 
@@ -247,6 +269,7 @@ if [ "$PROVISION_EFS" != 'false' ]; then
 
       if [ -z "$SGID" ]; then
         echo "Security group for default VPC not found"
+        exit 1
       else
         SUBNETIDS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPCID --query "Subnets[*].SubnetId" --output text $ACCOUNT_PROFILE 2>/dev/null)
 

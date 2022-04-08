@@ -31,7 +31,7 @@
     "@openremote/or-smart-notify": "^1.0.4",
     "@openremote/or-timeline": "^1.0.4",
     "@openremote/rest": "workspace:*",
-    "@reduxjs/toolkit": "^1.6.2",
+    "@reduxjs/toolkit": "^1.8.1",
     "@webcomponents/webcomponentsjs": "^2.6.0",
     "lit": "^2.0.2",
     "moment": "^2.24.0",

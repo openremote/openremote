@@ -33,6 +33,8 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
+import static org.openremote.container.timer.TimerService.Clock.REAL
+import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
 import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
@@ -551,7 +553,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
+        def container = startContainer(defaultConfig() << [(OR_EMAIL_X_HEADERS): "Test 1=Hello World 1\nTest2=Hello World 2"], defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
@@ -591,6 +593,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert sentEmails.size() == 2
             assert sentEmails.every {it.getPlainText() == "Hello world!"}
             assert sentEmails.every {it.getSubject() == "Test"}
+            assert sentEmails.every {it.getHeaders() != null && it.getHeaders().size() == 2 && it.getHeaders().get("Test 1") == "Hello World 1" && it.getHeaders().get("Test2") == "Hello World 2" }
             assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser2@openremote.local"}
             assert !sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser3@openremote.local"}
             assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "building@openremote.local"}

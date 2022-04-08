@@ -21,7 +21,7 @@ if [ "$AWS_ENABLED" != 'true' ]; then
   exit 1
 fi
 
-if [ "$AWS_PROFILE" ]; then
+if [ -n "$AWS_PROFILE" ]; then
   PROFILE="--profile $AWS_PROFILE"
 fi
 

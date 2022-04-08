@@ -2,7 +2,7 @@ import {css, html, PropertyValues} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
 import {NavigationControl} from "maplibre-gl";
-import {EnhancedStore} from "@reduxjs/toolkit";
+import {Store} from "@reduxjs/toolkit";
 import manager, {Util} from "@openremote/core";
 import {JsonRulesetDefinition} from "@openremote/model";
 import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@openremote/or-map";
@@ -10,7 +10,7 @@ import {OrMap, OrMapClickedEvent, OrMapMarker, OrMapMarkerClickedEvent} from "@o
 export interface GeofencesConfig {
 }
 
-export function pageMobileGeofencesProvider(store: EnhancedStore<AppStateKeyed>, config?: GeofencesConfig): PageProvider<AppStateKeyed> {
+export function pageMobileGeofencesProvider(store: Store<AppStateKeyed>, config?: GeofencesConfig): PageProvider<AppStateKeyed> {
     return {
         name: "geofences",
         routes: [
@@ -202,7 +202,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         return "mobile-geofences";
     }
 
-    constructor(store: EnhancedStore<AppStateKeyed>) {
+    constructor(store: Store<AppStateKeyed>) {
         super(store);
         this.getGeoNotifications();
         this.addEventListener(OrMapMarkerClickedEvent.NAME, this.onMapMarkerClick);
