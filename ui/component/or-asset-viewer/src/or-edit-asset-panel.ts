@@ -316,7 +316,6 @@ export class OrEditAssetPanel extends LitElement {
                                         .comfortable="${true}" .assetType="${assetType}" .label=${null} 
                                         .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
                                         disableWrite disableSubscribe disableButton compact 
-                                        @keyup="${(e: KeyboardEvent) => this._onAttributeTouched(e)}"
                                         @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
@@ -350,10 +349,6 @@ export class OrEditAssetPanel extends LitElement {
 
     public validate(): ValidatorResult[] {
         return this.attributeTemplatesAndValidators.map((attrTemplateAndValidator) => attrTemplateAndValidator.validator());
-    }
-
-    protected _onAttributeTouched(event: KeyboardEvent) {
-        this.dispatchEvent(new OrAssetTouchedEvent(event));
     }
 
     protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {

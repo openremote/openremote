@@ -1040,7 +1040,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
-        this.addEventListener(OrAssetTouchedEvent.NAME, (ev: OrAssetTouchedEvent) => this._onAssetTouched(ev));
+        this.addEventListener('keyup', () => this._assetModified = true)
     }
 
     public isModified() {
@@ -1280,10 +1280,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _onAssetModified(validationResults: ValidatorResult[]) {
         this._assetModified = true;
         this._validationResults = validationResults;
-    }
-
-    protected _onAssetTouched(event: OrAssetTouchedEvent) {
-        this._assetModified = true;
     }
 
     public static generateGrid(shadowRoot: ShadowRoot | null) {
