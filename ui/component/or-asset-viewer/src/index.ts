@@ -40,7 +40,7 @@ import {classMap} from "lit/directives/class-map.js";
 import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
-import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
+import {OrAssetTouchedEvent, OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
@@ -1014,8 +1014,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _loading: boolean = false;
 
     @state()
-    protected _validationResults: ValidatorResult[] = [];
     protected _assetModified = false;
+
+    @state()
+    protected _validationResults: ValidatorResult[] = [];
     protected _viewerConfig?: AssetViewerConfig;
     protected _attributes?: { [index: string]: Attribute<any> };
     protected resizeHandler = () => OrAssetViewer.generateGrid(this.shadowRoot);
@@ -1038,6 +1040,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
+        this.addEventListener(OrAssetTouchedEvent.NAME, (ev: OrAssetTouchedEvent) => this._onAssetTouched(ev));
     }
 
     public isModified() {
@@ -1277,6 +1280,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _onAssetModified(validationResults: ValidatorResult[]) {
         this._assetModified = true;
         this._validationResults = validationResults;
+    }
+
+    protected _onAssetTouched(event: OrAssetTouchedEvent) {
+        this._assetModified = true;
     }
 
     public static generateGrid(shadowRoot: ShadowRoot | null) {

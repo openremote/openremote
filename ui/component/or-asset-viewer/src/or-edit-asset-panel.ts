@@ -148,9 +148,23 @@ export class OrEditAssetModifiedEvent extends CustomEvent<ValidatorResult[]> {
     }
 }
 
+export class OrAssetTouchedEvent extends CustomEvent<any> {
+
+    public static readonly NAME = "or-asset-touched";
+
+    constructor(ev: any) {
+        super(OrAssetTouchedEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: ev
+        });
+    }
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrEditAssetModifiedEvent.NAME]: OrEditAssetModifiedEvent;
+        [OrAssetTouchedEvent.NAME]: OrAssetTouchedEvent;
     }
 }
 
@@ -298,7 +312,12 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
-                    <or-attribute-input ${ref(attributeInputRef)} compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
+                    <or-attribute-input ${ref(attributeInputRef)} 
+                                        .comfortable="${true}" .assetType="${assetType}" .label=${null} 
+                                        .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
+                                        disableWrite disableSubscribe disableButton compact 
+                                        @keyup="${(e: KeyboardEvent) => this._onAttributeTouched(e)}"
+                                        @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>
@@ -331,6 +350,10 @@ export class OrEditAssetPanel extends LitElement {
 
     public validate(): ValidatorResult[] {
         return this.attributeTemplatesAndValidators.map((attrTemplateAndValidator) => attrTemplateAndValidator.validator());
+    }
+
+    protected _onAttributeTouched(event: KeyboardEvent) {
+        this.dispatchEvent(new OrAssetTouchedEvent(event));
     }
 
     protected _onAttributeModified(attribute: Attribute<any>, newValue: any) {
