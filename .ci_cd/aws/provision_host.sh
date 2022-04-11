@@ -132,7 +132,7 @@ else
     PARAMS="$PARAMS ParameterKey=SMTPUser,ParameterValue=$SMTP_USER"
   fi
   if [ -n "$SMTP_SECRET" ]; then
-    PARAMS="$PARAMS ParameterKey=SMTPSecret,ParameterValue=$SMTP_USER ParameterKey=SMTPRegion,ParameterValue=$AWS_REGION"
+    PARAMS="$PARAMS ParameterKey=SMTPSecret,ParameterValue=$SMTP_SECRET ParameterKey=SMTPRegion,ParameterValue=$AWS_REGION"
   fi
 
   # Determine DNSHostedZoneName and DNSHostedZoneRoleArn (must be set if hosted zone is not in the same account as where the host is being created)

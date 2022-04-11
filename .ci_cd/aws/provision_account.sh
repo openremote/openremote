@@ -145,6 +145,7 @@ VPCID=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpc
 if [ "$VPCID" == 'None' ]; then
   echo "Provisioning default VPC"
   VPCID=$(aws ec2 create-default-vpc --query "Vpc.VpcId" --output text $ACCOUNT_PROFILE)
+  aws ec2 associate-vpc-cidr-block --amazon-provided-ipv6-cidr-block --ipv6-cidr-block-network-border-group $AWS_REGION --vpc-id $VPCID $ACCOUNT_PROFILE
 else
   echo "Default VPC already exists"
 fi
@@ -260,6 +261,13 @@ if [ "$PROVISION_EFS" != 'false' ]; then
     # Find Default VPC security group and IP CIDRs
     VPCIP4CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].CidrBlockAssociationSet[0].CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
     VPCIP6CIDR=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpcs[0].Ipv6CidrBlockAssociationSet[0].Ipv6CidrBlock" --output text $ACCOUNT_PROFILE 2>/dev/null)
+
+    if [ "$VPCIP4CIDR" == 'None' ]; then
+      unset VPCIP4CIDR
+    fi
+    if [ "$VPCIP6CIDR" == 'None' ]; then
+      unset VPCIP6CIDR
+    fi
 
     if [ -z "$VPCIP4CIDR" ] && [ -z "$VPCIP6CIDR" ]; then
       echo "Default VPC not found"
