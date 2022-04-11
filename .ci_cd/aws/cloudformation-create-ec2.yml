@@ -85,21 +85,9 @@ Parameters:
     Default: ""
 
 Conditions:
-  CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
   AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
 
 Resources:
-
-  DNSRecord:
-    Type: AWS::Route53::RecordSet
-    Condition: CreateDNSRecord
-    Properties:
-      HostedZoneName: !Sub "${DNSHostedZoneName}."
-      Name: !Ref Host
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
-      TTL: '60'
-      Type: A
 
   InstanceRoleProfile:
     Type: AWS::IAM::InstanceProfile
