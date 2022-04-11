@@ -145,7 +145,33 @@ VPCID=$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query "Vpc
 if [ "$VPCID" == 'None' ]; then
   echo "Provisioning default VPC"
   VPCID=$(aws ec2 create-default-vpc --query "Vpc.VpcId" --output text $ACCOUNT_PROFILE)
-  aws ec2 associate-vpc-cidr-block --amazon-provided-ipv6-cidr-block --ipv6-cidr-block-network-border-group $AWS_REGION --vpc-id $VPCID $ACCOUNT_PROFILE
+
+  # Add IPv6 CIDR
+  IPV6CIDR=$(aws ec2 associate-vpc-cidr-block --amazon-provided-ipv6-cidr-block --ipv6-cidr-block-network-border-group $AWS_REGION --vpc-id $VPCID --query "Ipv6CidrBlockAssociation.Ipv6CidrBlock" --output text $ACCOUNT_PROFILE)
+
+  # Add IPv6 CIDR to each subnet and add IPv6 route for internet gateway
+  SUBNETID1=$(aws ec2 describe-subnets --filter "Name=vpc-id,Values=$VPCID" --query "Subnets[0].[SubnetId]" --output text $ACCOUNT_PROFILE)
+  SUBNETID2=$(aws ec2 describe-subnets --filter "Name=vpc-id,Values=$VPCID" --query "Subnets[1].[SubnetId]" --output text $ACCOUNT_PROFILE)
+  SUBNETID3=$(aws ec2 describe-subnets --filter "Name=vpc-id,Values=$VPCID" --query "Subnets[2].[SubnetId]" --output text $ACCOUNT_PROFILE)
+  ROUTETABLEID=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPCID" --query "RouteTables[0].RouteTableId" --output text $ACCOUNT_PROFILE)
+  IGWID=$(aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$VPCID" --query "InternetGateways[0].InternetGatewayId" --output text $ACCOUNT_PROFILE)
+  if [ -n "$SUBNETID1" ] && [ "$SUBNETID1" != 'None' ] && [ "$SUBNETID1" != 'none' ]; then
+    echo "Adding IPv6 support to subnet '$SUBNETID1'"
+    aws ec2 associate-subnet-cidr-block --ipv6-cidr-block ${IPV6CIDR%0::/56}1::/64 --subnet-id $SUBNETID1 $ACCOUNT_PROFILE
+    aws ec2 modify-subnet-attribute --assign-ipv6-address-on-creation --subnet-id "$SUBNETID1" $ACCOUNT_PROFILE
+  fi
+  if [ -n "$SUBNETID2" ] && [ "$SUBNETID2" != 'None' ] && [ "$SUBNETID2" != 'none' ]; then
+    echo "Adding IPv6 support to subnet '$SUBNETID3'"
+    aws ec2 associate-subnet-cidr-block --ipv6-cidr-block ${IPV6CIDR%0::/56}2::/64 --subnet-id $SUBNETID2 $ACCOUNT_PROFILE
+    aws ec2 modify-subnet-attribute --assign-ipv6-address-on-creation --subnet-id "$SUBNETID2" $ACCOUNT_PROFILE
+  fi
+  if [ -n "$SUBNETID3" ] && [ "$SUBNETID3" != 'None' ] && [ "$SUBNETID3" != 'none' ]; then
+    echo "Adding IPv6 support to subnet '$SUBNETID3'"
+    aws ec2 associate-subnet-cidr-block --ipv6-cidr-block ${IPV6CIDR%0::/56}3::/64 --subnet-id $SUBNETID3 $ACCOUNT_PROFILE
+    aws ec2 modify-subnet-attribute --assign-ipv6-address-on-creation --subnet-id "$SUBNETID3" $ACCOUNT_PROFILE
+  fi
+  aws ec2 create-route --destination-ipv6-cidr-block ::/0 --route-table-id $ROUTETABLEID --gateway-id $IGWID $ACCOUNT_PROFILE
+
 else
   echo "Default VPC already exists"
 fi
