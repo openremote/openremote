@@ -238,7 +238,7 @@ if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
     else
       echo "Bucket created successfully '$LOCATION'"
       aws s3api put-bucket-versioning --bucket $HOST --versioning-configuration Status=Enabled $ACCOUNT_PROFILE
-      aws s3api put-public-access-block --bucket $HOST --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+      aws s3api put-public-access-block --bucket $HOST --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" $ACCOUNT_PROFILE
     fi
   fi
 fi
