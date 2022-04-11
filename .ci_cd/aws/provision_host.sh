@@ -237,6 +237,7 @@ if [ "$PROVISION_S3_BUCKET" != 'false' ]; then
       echo "Bucket creation failed"
     else
       echo "Bucket created successfully '$LOCATION'"
+      aws s3api put-bucket-versioning --bucket $HOST --versioning-configuration Status=Enabled
     fi
   fi
 fi

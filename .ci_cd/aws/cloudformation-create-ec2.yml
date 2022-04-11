@@ -29,7 +29,7 @@ Parameters:
     Description: FQDN for host
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
-    ConstraintDescription: Must be a valid FQDN
+    Default: ""
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -38,6 +38,7 @@ Parameters:
     # then we need to be flexible here and bear in mind use case and acceptable cost.
     Default: t4g.small
     AllowedValues:
+      - t4g.micro
       - t4g.small
       - t4g.medium
       - t4g.large
@@ -49,9 +50,11 @@ Parameters:
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     ConstraintDescription: Must be a valid FQDN
+    Default: ""
   DNSHostedZoneRoleArn:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
+    Default: ""
   ElasticIP:
     Description: Assign elastic IP address
     Type: String
@@ -61,19 +64,25 @@ Parameters:
     Default: false
   SMTPHost:
     Type: String
+    Default: ""
   SMTPUser:
     Type: String
+    Default: ""
   SMTPPassword:
     Type: String
+    Default: ""
   SMTPSecret:
     Type: String
     Description: SMTP CLI user secret (used to generate an SMTP password from)
+    Default: ""
   SMTPRegion:
     Type: String
     Description: SMTP CLI user region (used to generate an SMTP password from)
+    Default: ""
   SMTPORArn:
     Description: SES Verified identity trust policy ARN for SMTP X-Headers
     Type: String
+    Default: ""
 
 Conditions:
   CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
