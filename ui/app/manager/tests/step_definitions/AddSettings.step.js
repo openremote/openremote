@@ -24,8 +24,6 @@ Then('Add a new Realm', async function () {
     ]);
 })
 
-
-
 /**
  * switch realm 
 */
@@ -33,6 +31,7 @@ When('Select smartcity realm', async function () {
     await this.click('#realm-picker');
     await this.click('li[role="menuitem"]:has-text("smartcity")');
 })
+
 
 Then('We see the smartcity realm', async function () {
     const { page } = this;

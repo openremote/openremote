@@ -1,12 +1,15 @@
 const { Given, When, Then } = require("@cucumber/cucumber");
 
+Given('Login to smartcity realm',async function(){
+    await this.navigate('smart')
+})
 
 // add new asset
 Given('Nevigate to asset page', async function () {
     await this.click('#desktop-left a:nth-child(2)')
 });
 
-Then("Create a {string} with name of {string}", async function (asset, name) {
+Then('Create a {string} with name of {string}', async function (asset, name) {
     const { page } = this;
 
     await this.click('.mdi-plus');
@@ -15,12 +18,18 @@ Then("Create a {string} with name of {string}", async function (asset, name) {
     await this.click('#add-btn')
 })
 
-When("Go to asset {string} info page", async function (name) {
+When('Go to asset {string} info page', async function (name) {
     const { page } = this;
-    await page.locator(`#list-container div:has-text(${name})`).nth(1).click();
+    
+    await page.locator(`#list-container div:has-text("${name}")`).nth(1).click();
 })
 
-Then("Give value to the {string} of {string}", async function (attribute, value) {
+Then('Go to modify mode', async function(){
+    await this.click('button:has-text("Modify")')
+})
+
+Then('Give value to the {string} of {string}', async function (attribute, value) {
     const { page } = this;
-    await page.locator()
+    
+    await page.locator(`text=${attribute} Positive integer >> input[type="number"]`).fill(value);
 })

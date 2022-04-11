@@ -79,7 +79,7 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
-        slowMo: 500
+        slowMo: 200
     });
 })
 
