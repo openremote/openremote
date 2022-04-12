@@ -2718,6 +2718,64 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@material/tab-bar@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "@material/tab-bar@npm:9.0.0"
+  dependencies:
+    "@material/animation": ^9.0.0
+    "@material/base": ^9.0.0
+    "@material/density": ^9.0.0
+    "@material/feature-targeting": ^9.0.0
+    "@material/tab": ^9.0.0
+    "@material/tab-scroller": ^9.0.0
+    tslib: ^1.9.3
+  checksum: 8b7b3dd20143ab30196c001c5e855a0d20796b64a0854454cc3e4683c6e183848936ed5444f061c536777d15510284d5e81149ff384d5d2f23aeae5377c04811
+  languageName: node
+  linkType: hard
+
+"@material/tab-indicator@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "@material/tab-indicator@npm:9.0.0"
+  dependencies:
+    "@material/animation": ^9.0.0
+    "@material/base": ^9.0.0
+    "@material/feature-targeting": ^9.0.0
+    "@material/theme": ^9.0.0
+    tslib: ^1.9.3
+  checksum: b34d32da55f8f3eee71bf3bde6f821ec5190a8b820ee0d91e4aade2e1818617b873e48a44ffb3c9975946d675bb47c0f0fc08910684d34db829b9e834f7b045d
+  languageName: node
+  linkType: hard
+
+"@material/tab-scroller@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "@material/tab-scroller@npm:9.0.0"
+  dependencies:
+    "@material/animation": ^9.0.0
+    "@material/base": ^9.0.0
+    "@material/dom": ^9.0.0
+    "@material/feature-targeting": ^9.0.0
+    "@material/tab": ^9.0.0
+    tslib: ^1.9.3
+  checksum: e93c2d97f6a5f01c74c37ae70f7be3abf2e2c3a243de744d0c06fcb787bad02293bc975d1b5583049deb6278e07c184041015a9a5ebb6690db27ab3b7a1bad8a
+  languageName: node
+  linkType: hard
+
+"@material/tab@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "@material/tab@npm:9.0.0"
+  dependencies:
+    "@material/base": ^9.0.0
+    "@material/feature-targeting": ^9.0.0
+    "@material/ripple": ^9.0.0
+    "@material/rtl": ^9.0.0
+    "@material/tab-indicator": ^9.0.0
+    "@material/theme": ^9.0.0
+    "@material/typography": ^9.0.0
+    tslib: ^1.9.3
+  checksum: 1d2a7d858a96fb4f2d4743cb4018af71cf5a92f833cfea8d86ccb731399ee503bb9eb64a1f02520170a43e6417a1dbbfbaf136538b1611369f73b34e57ca142f
+  languageName: node
+  linkType: hard
+
 "@material/textfield@npm:^9.0.0":
   version: 9.0.0
   resolution: "@material/textfield@npm:9.0.0"
@@ -3414,6 +3472,7 @@ __metadata:
     "@material/slider": ^9.0.0
     "@material/snackbar": ^9.0.0
     "@material/switch": ^9.0.0
+    "@material/tab-bar": ^9.0.0
     "@material/textfield": ^9.0.0
     "@openremote/core": "workspace:*"
     "@openremote/or-icon": ^1.0.4
