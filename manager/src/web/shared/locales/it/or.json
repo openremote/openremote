@@ -435,5 +435,7 @@
     "invalidJSON": "JSON non valido",
     "invalidDate": "Fecha non valida",
     "keyAlreadyExists": "La chiave non esiste"
-  }
+  },
+  "yes": "Sì",
+  "no": "No"
 }

@@ -178,6 +178,7 @@
   "matchedOfType": "Matched of type {{type}}",
   "unmatched": "Unmatched",
   "wait": "Wait",
+  "linkedUsers": "Linked users",
   "setup": "Setup",
   "selectFile": "Select file",
   "discoverAssets": "Discover assets",
@@ -467,5 +468,7 @@
   "saveUserFailed": "Save user failed",
   "invalidUsername": "Username must be 3-255 alpha numerical characters",
   "invalidEmail": "Invalid email address",
+  "yes": "Yes",
+  "no": "No",
   "linked": "Linked"
 }

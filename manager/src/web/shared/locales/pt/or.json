@@ -423,5 +423,7 @@
     "invalidJSON": "JSON inválido",
     "invalidDate": "Data inválida",
     "keyAlreadyExists": "A chave já existe"
-  }
+  },
+  "yes": "Sim",
+  "no": "Não"
 }
