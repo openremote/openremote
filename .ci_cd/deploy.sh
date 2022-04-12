@@ -119,7 +119,7 @@ if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
     source temp/aws/set_github-da_account_arn.sh
 
     echo "Attempting to add runner to AWS SSH whitelist"
-    "temp/aws/ssh_whitelist.sh" "$CIDR" "github-da"
+    "temp/aws/ssh_whitelist.sh" "$CIDR" "github-runner" "github-da"
     if [ $? -eq 0 ]; then
       SSH_GRANTED=true
     fi

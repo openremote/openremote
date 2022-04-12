@@ -491,10 +491,8 @@ public class RulesEngine<T extends Ruleset> {
                     RULES_LOG.fine("Executing rules @" + clock + " of: " + deployment);
 
                     // If full detail logging is enabled
-                    if (RULES_LOG.isLoggable(Level.FINEST)) {
-                        // Log asset states and events before firing (note that this will log at INFO)
-                        facts.logFacts(RULES_LOG);
-                    }
+                    // Log asset states and events before firing
+                    facts.logFacts(RULES_LOG, Level.FINEST);
 
                     // Reset facts for this firing (loop detection etc.)
                     facts.reset();
@@ -593,9 +591,7 @@ public class RulesEngine<T extends Ruleset> {
                 + ", Temporary: " + temporaryFactsCount);
 
             // Additional details if FINEST is enabled
-            if (STATS_LOG.isLoggable(Level.FINEST)) {
-                facts.logFacts(STATS_LOG);
-            }
+            facts.logFacts(STATS_LOG, Level.FINEST);
         });
     }
 
