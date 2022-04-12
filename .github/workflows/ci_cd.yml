@@ -251,7 +251,7 @@ jobs:
         
       - name: Load manager tag cache
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && github.event_name == 'schedule' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.1
         id: manager-tag-cache
         with:
           path: |
@@ -523,7 +523,7 @@ jobs:
         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
 
       - name: Yarn cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.1
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -532,7 +532,7 @@ jobs:
             ${{ runner.os }}-yarn---
             
       - name: Docker image cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3.0.1
         if: steps.test-backend-command.outputs.value != ''
         id: docker-cache
         with:
