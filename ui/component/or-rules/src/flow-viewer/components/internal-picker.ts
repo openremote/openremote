@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from "lit";
 import {customElement, property} from "lit/decorators.js";
-import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef } from "@openremote/model";
+import { Node, PickerType, AttributeInternalValue, Asset, NodeDataType, AttributeRef, AssetModelUtil } from "@openremote/model";
 import { nodeConverter } from "../converters/node-converter";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import rest from "@openremote/rest";
@@ -10,9 +10,10 @@ import { project } from "./flow-editor";
 import { NodeUtilities } from "../node-structure";
 import { translate, i18next } from "@openremote/or-translate";
 import { PickerStyle } from "../styles/picker-styles";
-import { AssetModelUtil, Util } from "@openremote/core";
+import { Util } from "@openremote/core";
 import { OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import {getAssetDescriptorIconTemplate} from "@openremote/or-icon";
 
 @customElement("internal-picker")
 export class InternalPicker extends translate(i18next)(LitElement) {
@@ -38,8 +39,41 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 margin: 0;
                 display: flex;
                 flex-direction: column;
+                --or-app-color4: var(--or-mwc-input-color);
             }`,
-            PickerStyle];
+            PickerStyle,
+            css`.attribute-label-white {
+                background: #ffffff;
+            }
+            .selected-asset-container {
+                display: flex;
+                align-items: center;
+            }
+            .selected-asset-container:hover {
+                cursor: pointer;
+                background-color: #F9F9F9;
+            }
+            .selected-asset-label {
+                padding: 5px;
+                display: flex;
+                flex-direction: column;
+                line-height: 16px;
+                justify-content: flex-start;
+                font-size: 14px;
+                text-align: left;
+            }
+            .selected-asset-label .asset {
+                color: rgb(76, 76, 76);
+            }
+            .selected-asset-label .asset-attribute {
+                color: grey;
+            }
+            .selected-asset-icon {
+                display: flex;
+                justify-content: center;
+                padding: 0px 5px 0px 5px;
+                --or-icon-width: 20px;
+            }`];
     }
 
     protected firstUpdated() {
@@ -86,8 +120,6 @@ export class InternalPicker extends translate(i18next)(LitElement) {
         const results = (await rest.api.AssetResource.queryAssets({
             ids: [value.assetId!],
             select: {
-                excludeParentInfo: true,
-                excludePath: true,
                 attributes: [
                     value.attributeName!
                 ]
@@ -111,11 +143,7 @@ export class InternalPicker extends translate(i18next)(LitElement) {
 
     private async setSelectedAssetFromInternalValue(){
         const response = await rest.api.AssetResource.queryAssets({
-            ids: [this.internal.value.assetId],
-            select: {
-                excludeParentInfo: true,
-                excludePath: true
-            }
+            ids: [this.internal.value.assetId]
         });
 
         if (response.data.length === 0) {
@@ -129,7 +157,9 @@ export class InternalPicker extends translate(i18next)(LitElement) {
 
         const openDialog = () => {
             let _selectedAttributes : AttributeRef[] = [];
+            let _selectedAssets: string[] = [];
             let val = this.node.internals![this.internalIndex].value;
+
             if (val){
                 _selectedAttributes = [{
                     id: val.assetId,
@@ -137,11 +167,16 @@ export class InternalPicker extends translate(i18next)(LitElement) {
                 }];
             }
 
+            if (this.selectedAsset && this.selectedAsset.id) {
+                _selectedAssets = [ this.selectedAsset.id ];
+            }
+
             const dialog = showDialog(new OrAttributePicker()
                 .setShowOnlyRuleStateAttrs(true)
                 .setShowOnlyDatapointAttrs(false)
                 .setMultiSelect(false)
-                .setSelectedAttributes(_selectedAttributes));
+                .setSelectedAttributes(_selectedAttributes))
+                .setSelectedAssets(_selectedAssets);
 
             dialog.addEventListener(OrAttributePickerPickedEvent.NAME, async (ev: OrAttributePickerPickedEvent) => {
                 const value: AttributeInternalValue = {
@@ -160,14 +195,26 @@ export class InternalPicker extends translate(i18next)(LitElement) {
             const attrName = this.internal?.value?.attributeName;
             const attributeDescriptor = AssetModelUtil.getAttributeDescriptor(attrName, this.selectedAsset.type!);
             let attr = this.selectedAsset.attributes[attrName];
-            if (attr)
-                selectedAttrLabel = Util.getAttributeLabel(attr, attributeDescriptor, this.selectedAsset.type!, true)
+            if (attr) {
+                selectedAttrLabel = Util.getAttributeLabel(attr, attributeDescriptor, this.selectedAsset.type!, true);
+            }
         }
 
-        return html`
-        ${(this.selectedAsset ? html`<span class="attribute-label">${selectedAttrLabel}</span>` : null)}
-        <or-mwc-input class="button" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="format-list-bulleted-square" @click="${() => openDialog()}"></or-mwc-input>
-        `;
+        const descriptor = this.selectedAsset ? AssetModelUtil.getAssetDescriptor(this.selectedAsset!.type!) : undefined;
+        const myIcon = getAssetDescriptorIconTemplate(descriptor);
+
+        return html`<div>
+            ${(this.selectedAsset ? 
+                    html`<div class="attribute-label attribute-label-white selected-asset-container" @click="${() => openDialog()}">
+                        <div class="selected-asset-icon">${myIcon}</div>
+                        <div class="selected-asset-label">
+                            <div class="asset">${this.selectedAsset.name}</div>
+                            <div class="asset-attribute">${selectedAttrLabel}</div>
+                        </div>
+                    </div>` : 
+                    html`<or-mwc-input class="attribute-label-white" .type="${InputType.BUTTON}" label="${i18next.t("attribute")}" icon="plus" @click="${() => openDialog()}"></or-mwc-input>`
+            )}
+        </div>`;
     }
 
     private get colorInput(): TemplateResult {

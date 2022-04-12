@@ -26,7 +26,6 @@ Notifications notifications = binding.notifications
 @ToString(includeNames = true)
 class AlarmTrigger {
     String residenceId
-    String residenceName
     String roomName
 }
 
@@ -36,7 +35,6 @@ class AlarmTrigger {
 @ToString(includeNames = true)
 class AlertSilence {
     static String DURATION = "PT30M"
-    String residenceName
     String residenceId
 }
 
@@ -63,7 +61,6 @@ rules.add()
                 it.get()
             }.findFirst().map { roomWithPresence ->
                 facts.bind("residenceId", roomWithPresence.parentId)
-                        .bind("residenceName", roomWithPresence.parentName)
                         .bind("roomName", roomWithPresence.assetName)
                 true
             }.orElse(false)
@@ -72,7 +69,6 @@ rules.add()
         { facts ->
             AlarmTrigger alarmTrigger = new AlarmTrigger(
                     residenceId: facts.bound("residenceId"),
-                    residenceName: facts.bound("residenceName"),
                     roomName: facts.bound("roomName")
             )
             LOG.info("Alarm enabled and presence detected in residence, creating: $alarmTrigger")
@@ -173,7 +169,6 @@ rules.add()
             notifications.send(notification)
 
             AlertSilence alertSilence = new AlertSilence(
-                    residenceName: alarmTrigger.residenceName,
                     residenceId: alarmTrigger.residenceId
             )
             facts.putTemporary(AlertSilence.DURATION, alertSilence)

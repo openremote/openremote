@@ -47,7 +47,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     public void init(Container container) {
         super.init(container);
         this.identityService = container.getService(ManagerIdentityService.class);
-        adminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
+        adminPassword = container.getConfig().getOrDefault(OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
             String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, FIRST_NAME, LAST_NAME, EMAIL, ENABLED) values (?, ?, ?, ?, ?, ?, ?, ?)" +
                 "ON CONFLICT (ID) DO UPDATE " +
-                "SET username = excluded.username, password = excluded.pasword, first_name = excluded.first_name, last_name = excluded.last_name, email = excluded.email, enabled = excluded.enabled";
+                "SET username = excluded.username, password = excluded.password, first_name = excluded.first_name, last_name = excluded.last_name, email = excluded.email, enabled = excluded.enabled";
             try (PreparedStatement st = connection.prepareStatement(sql)) {
                 st.setString(1, UUID.randomUUID().toString());
                 st.setString(2, MASTER_REALM); // For master REALM NAME and ID are the same
@@ -255,6 +255,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     public boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles) {
         // TODO Doesn't really respect the description of the interface
         return auth.isSuperUser();
+    }
+
+    @Override
+    public String getFrontendUrl() {
+        return null;
     }
 
     @Override

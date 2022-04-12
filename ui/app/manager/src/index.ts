@@ -1,35 +1,26 @@
 // Declare require method which we'll use for importing webpack resources (using ES6 imports will confuse typescript parser)
 import {pageProvisioningProvider} from "./pages/page-provisioning";
-
-declare var CONFIG_URL_PREFIX: string;
-
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import "@openremote/or-app";
+import {AppConfig, appReducer, HeaderConfig, HeaderItem, OrApp, PageProvider, RealmAppConfig} from "@openremote/or-app";
 import {
-    OrApp,
-    AppConfig,
-    appReducer,
-    PageProvider,
-    RealmAppConfig,
-    HeaderConfig,
-    HeaderItem} from "@openremote/or-app";
-import {
+    headerItemAccount,
+    headerItemAssets,
+    headerItemExport,
     headerItemGatewayConnection,
+    headerItemInsights,
     headerItemLanguage,
     headerItemLogout,
     headerItemLogs,
     headerItemMap,
-    headerItemAssets,
-    headerItemRules,
-    headerItemAccount,
-    headerItemUsers,
-    headerItemRoles,
+    headerItemProvisioning,
     headerItemRealms,
-    headerItemInsights,
-    headerItemExport, headerItemProvisioning
+    headerItemRoles,
+    headerItemRules,
+    headerItemUsers
 } from "./headers";
 import "./pages/page-map";
-import {pageMapReducer, pageMapProvider, PageMapConfig} from "./pages/page-map";
+import {PageMapConfig, pageMapProvider, pageMapReducer} from "./pages/page-map";
 import "./pages/page-assets";
 import {PageAssetsConfig, pageAssetsProvider} from "./pages/page-assets";
 import "./pages/page-gateway";
@@ -48,9 +39,10 @@ import "./pages/page-roles";
 import {pageRolesProvider} from "./pages/page-roles";
 import "./pages/page-realms";
 import {pageRealmsProvider} from "./pages/page-realms";
-import "./pages/page-realms";
 import {pageExportProvider} from "./pages/page-export";
-import { ManagerConfig } from "@openremote/core";
+import {ManagerConfig} from "@openremote/core";
+
+declare var CONFIG_URL_PREFIX: string;
 
 const rootReducer = combineReducers({
     app: appReducer,

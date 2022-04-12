@@ -1,16 +1,14 @@
 # OpenRemote v3
 #
-# Profile that runs the vanilla stack on https://localhost using a self-signed SSL certificate,
-# with username 'admin' and password 'secret'. There is no map data available in the vanilla
-# system so the map tile server will not function. Persistent data is stored in a docker
-# volume called postgresql-data between restarts, simply delete this volume to reset the
-# system to an empty state.
+# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
+# but optionally on https://$OR_HOSTNAME with an auto generated SSL certificate from Letsencrypt.
 #
-# Please see profile/deploy.yml for configuration details for each service.
+# It is configured to use the AWS logging driver.
 #
 version: '2.4'
 
 volumes:
+  proxy-data:
   temp-data:
   postgresql-data:
   btmesh-data:
@@ -18,47 +16,78 @@ volumes:
 services:
 
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.5.0.1}
+    image: openremote/proxy:${PROXY_VERSION:-latest}
     restart: always
     depends_on:
       manager:
         condition: service_healthy
     ports:
       - "80:80"
-      - "443:443"
+      - "${OR_SSL_PORT:-443}:443"
       - "8883:8883"
+    volumes:
+      - proxy-data:/deployment
+    environment:
+      LE_EMAIL: ${OR_EMAIL_ADMIN:-}
+      DOMAINNAME: ${OR_HOSTNAME:-localhost}
+      DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
 
   postgresql:
     restart: always
-    image: openremote/postgresql:${POSTGRESQL_VERSION:-14.1.0.1}
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
     volumes:
       - postgresql-data:/var/lib/postgresql/data
       - temp-data:/tmp
 
   keycloak:
     restart: always
-    image: openremote/keycloak:${KEYCLOAK_VERSION:-16.0.0.0}
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
     depends_on:
       postgresql:
         condition: service_healthy
+    volumes:
+      - ./deployment:/deployment
     environment:
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
-      KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+      KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
+      # Use the following if OR_SSL_PORT is not the default 443
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
 
   manager:
-    privileged: true
+#    privileged: true
     restart: always
     image: openremote/manager:${MANAGER_VERSION:-latest}
     depends_on:
       keycloak:
         condition: service_healthy
     environment:
-      DEV_MODE: ${DEV_MODE:-false}
-      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+      OR_SETUP_TYPE:
+      OR_ADMIN_PASSWORD:
+      OR_SETUP_RUN_ON_RESTART:
+      OR_EMAIL_HOST:
+      OR_EMAIL_USER:
+      OR_EMAIL_PASSWORD:
+      OR_EMAIL_X_HEADERS:
+      OR_EMAIL_FROM:
+      OR_EMAIL_ADMIN:
+      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      OR_SSL_PORT: ${OR_SSL_PORT:-443}
+      OR_DEV_MODE: ${OR_DEV_MODE:-false}
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
+      # Use the following if OR_SSL_PORT is not the default 443
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
+
+      # The following variables will configure the demo
+      OR_FORECAST_SOLAR_API_KEY:
+      OR_OPEN_WEATHER_API_APP_ID:
+      OR_SETUP_IMPORT_DEMO_AGENT_KNX:
+      OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - temp-data:/tmp
-      - /var/run/dbus:/var/run/dbus
-      - btmesh-data:/btmesh
+#      - /var/run/dbus:/var/run/dbus
+#      - btmesh-data:/btmesh
 #   devices:
 #     - /dev/ttyACM0:/dev/ttyS0
-

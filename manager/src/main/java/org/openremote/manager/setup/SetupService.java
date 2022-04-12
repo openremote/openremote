@@ -19,9 +19,13 @@
  */
 package org.openremote.manager.setup;
 
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.container.persistence.PersistenceService;
+import org.openremote.model.setup.Setup;
+import org.openremote.model.setup.SetupTasks;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -30,22 +34,18 @@ import java.util.logging.Logger;
 /**
  * Executes setup tasks for a clean installation when the application starts.
  * <p>
- * This service is disabled when {@link PersistenceService#isSetupWipeCleanInstall} is <code>false</code>.
+ * This service is disabled when {@link PersistenceService#isCleanInstall} is <code>false</code>.
  * <p>
  * First, this service will load an implementation of {@link SetupTasks} from the
  * classpath using {@link ServiceLoader}. If multiple providers are found, an error
- * is raised. If a provider is found, only its tasks will be used.
- * <p>
- * If no {@link SetupTasks} provider is found on the classpath, an instance of {@link EmptySetupTasks} is used.
+ * is raised. If a provider is found, its tasks will be used on top of {@link KeycloakCleanSetup}
+ * and {@link KeycloakInitSetup} which are auto-loaded if keycloak is enabled.
  */
 public class SetupService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(SetupService.class.getName());
 
-    final protected List<Setup> setupList = new ArrayList<>();
-
-    // Make demo/test data accessible from Groovy/Java code
-    public SetupTasks setupTasks;
+    final protected List<Setup> tasks = new ArrayList<>();
 
     @Override
     public int getPriority() {
@@ -55,38 +55,36 @@ public class SetupService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
 
-        boolean isClean = container.getService(PersistenceService.class).isSetupWipeCleanInstall();
+        boolean isClean = container.getService(PersistenceService.class).isCleanInstall();
 
         if (!isClean) {
             LOG.info("Setup service disabled, clean install = false");
             return;
         }
 
-        ServiceLoader.load(SetupTasks.class).forEach(
-            discoveredSetupTasks -> {
-                if (setupTasks != null) {
-                    throw new IllegalStateException(
-                        "Only one provider of SetupTasks can be configured, already found '"
-                            + setupTasks.getClass().getName() + ", remove from classpath: "
-                            + discoveredSetupTasks.getClass().getName()
-                    );
-                }
-                LOG.info("Found custom SetupTasks provider on classpath: " + discoveredSetupTasks.getClass().getName());
-                setupTasks = discoveredSetupTasks;
-            }
-        );
+        // If keycloak then we need keycloak clean and init tasks
+        boolean keycloakEnabled = container.getService(ManagerIdentityService.class).isKeycloakEnabled();
+        String setupType = container.getConfig().get(SetupTasks.OR_SETUP_TYPE);
 
-        if (setupTasks == null) {
-            LOG.info("No custom SetupTasks provider found on classpath, system will be empty");
-            setupTasks = new EmptySetupTasks();
+        if (keycloakEnabled) {
+            // Keycloak is not managed by persistence service so need separate clean task
+            tasks.add(new KeycloakCleanSetup(container));
+            tasks.add(new KeycloakInitSetup(container));
         }
 
-        setupList.addAll(setupTasks.createTasks(container));
+        tasks.addAll(ServiceLoader.load(SetupTasks.class).stream().map(ServiceLoader.Provider::get)
+            .flatMap(discoveredSetupTasks -> {
+                LOG.info("Found custom SetupTasks provider on classpath: " + discoveredSetupTasks.getClass().getName());
+                List<Setup> tasks = discoveredSetupTasks.createTasks(container, setupType, keycloakEnabled);
+                LOG.info("Custom SetupTasks provider task count for setupType '" + setupType + "' = " + (tasks == null ? 0 : tasks.size()));
+                return tasks != null ? tasks.stream() : null;
+            }).toList());
 
         try {
-            if (setupList.size() > 0) {
+            if (tasks.size() > 0) {
                 LOG.info("--- EXECUTING INIT TASKS ---");
-                for (Setup setup : setupList) {
+                for (Setup setup : tasks) {
+                    LOG.info("Executing setup task '" + setup.getClass().getName() + "'");
                     setup.onInit();
                 }
                 LOG.info("--- INIT TASKS COMPLETED SUCCESSFULLY ---");
@@ -100,9 +98,10 @@ public class SetupService implements ContainerService {
     public void start(Container container) {
 
         try {
-            if (setupList.size() > 0) {
+            if (tasks.size() > 0) {
                 LOG.info("--- EXECUTING START TASKS ---");
-                for (Setup setup : setupList) {
+                for (Setup setup : tasks) {
+                    LOG.info("Executing setup task '" + setup.getClass().getName() + "'");
                     setup.onStart();
                 }
                 LOG.info("--- START TASKS COMPLETED SUCCESSFULLY ---");
@@ -114,12 +113,16 @@ public class SetupService implements ContainerService {
 
     @Override
     public void stop(Container container) {
-        setupTasks = null;
-        setupList.clear();
+        tasks.clear();
     }
 
+    @SuppressWarnings("unchecked")
     public <S extends Setup> S getTaskOfType(Class<S> setupType) {
-        return setupTasks.getTaskOfType(setupType);
+        for (Setup task : tasks) {
+            if (setupType.isAssignableFrom(task.getClass()))
+                return (S) task;
+        }
+        throw new IllegalStateException("No setup task found of type: " + setupType);
     }
 
     @Override

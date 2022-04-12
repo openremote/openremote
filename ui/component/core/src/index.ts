@@ -3,27 +3,12 @@ import {Console} from "./console";
 import rest from "@openremote/rest";
 import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
-import i18next, { InitOptions } from "i18next";
+import i18next, {InitOptions} from "i18next";
 import i18nextBackend from "i18next-http-backend";
 import moment from "moment";
-import {
-    AgentDescriptor,
-    AssetDescriptor,
-    AssetTypeInfo,
-    Attribute,
-    AttributeDescriptor,
-    ConsoleAppConfig,
-    MetaItemDescriptor,
-    Role,
-    User,
-    ValueDescriptor,
-    ValueDescriptorHolder,
-    ValueHolder,
-    WellknownAssets,
-    WellknownValueTypes
-} from "@openremote/model";
+import {AssetModelUtil, ConsoleAppConfig, Role, User} from "@openremote/model";
 import * as Util from "./util";
-import orIconSet from "./or-icon-set";
+import {IconSets, createSvgIconSet, createMdiIconSet, OrIconSet} from "@openremote/or-icon";
 
 // Re-exports
 export {Util};
@@ -152,10 +137,10 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         if (!normalisedConfig.keycloakUrl || normalisedConfig.keycloakUrl === "") {
             // Assume keycloak is running on same host as the manager
             normalisedConfig.keycloakUrl = normalisedConfig.managerUrl + "/auth";
-        } else {
-            // Normalise by stripping any trailing slashes
-            normalisedConfig.keycloakUrl = normalisedConfig.keycloakUrl.replace(/\/+$/, "");
         }
+
+        // Normalise by stripping any trailing slashes
+        normalisedConfig.keycloakUrl = normalisedConfig.keycloakUrl.replace(/\/+$/, "");
     }
 
     if (normalisedConfig.consoleAutoEnable === undefined) {
@@ -193,298 +178,9 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
     return normalisedConfig;
 }
 
-export class IconSetAddedEvent extends CustomEvent<void> {
-
-    public static readonly NAME = "or-iconset-added";
-
-    constructor() {
-        super(IconSetAddedEvent.NAME, {
-            bubbles: true,
-            composed: true
-        });
-    }
-}
-
 export interface OrManagerEventDetail {
     event: OREvent;
     error?: ORError;
-}
-
-declare global {
-    export interface HTMLElementEventMap {
-        [IconSetAddedEvent.NAME]: IconSetAddedEvent;
-    }
-}
-
-export interface IconSetSvg {
-    size: number;
-    icons: {[name: string]: string};
-}
-
-export class ORIconSets {
-    private _icons: {[name: string]: IconSetSvg} = {};
-
-    addIconSet(name: string, iconset: IconSetSvg) {
-        this._icons[name] = iconset;
-        window.dispatchEvent(new IconSetAddedEvent());
-    }
-
-    getIconSet(name: string) {
-        return this._icons[name];
-    }
-
-    getIcon(icon: string | undefined): Element | undefined {
-        if (!icon) {
-            return undefined;
-        }
-
-        const parts = (icon || "").split(":");
-        const iconName = parts.pop();
-        const iconSetName = parts.pop() || DEFAULT_ICONSET;
-        if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {
-            return;
-        }
-
-        const iconSet = IconSets.getIconSet(iconSetName);
-        // iconName = iconName.replace(/-([a-z])/g, function (g) { return g[1].toUpperCase(); });
-
-        if (!iconSet || !iconSet.icons.hasOwnProperty(iconName)) {
-            return;
-        }
-
-        const iconData = iconSet.icons[iconName];
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("viewBox", "0 0 " + iconSet.size + " " + iconSet.size);
-        svg.style.cssText = "pointer-events: none; display: block; width: 100%; height: 100%;";
-        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-        svg.setAttribute("focusable", "false");
-        if (iconData.startsWith("<")) {
-            svg.innerHTML = iconData;
-        } else {
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", iconData);
-            path.style.pointerEvents = "pointer-events: var(--or-icon-pointer-events, none);";
-            svg.appendChild(path);
-        }
-        return svg;
-    }
-}
-
-export class AssetModelUtil {
-
-    static _assetTypeInfos: AssetTypeInfo[] = [];
-    static _metaItemDescriptors: MetaItemDescriptor[] = [];
-    static _valueDescriptors: ValueDescriptor[] = [];
-
-    public static getAssetDescriptors(): AssetDescriptor[] {
-        return AssetModelUtil._assetTypeInfos.map(info => info.assetDescriptor as AgentDescriptor);
-    }
-
-    public static getMetaItemDescriptors(): MetaItemDescriptor[] {
-        return [...this._metaItemDescriptors];
-    }
-
-    public static getValueDescriptors(): ValueDescriptor[] {
-        return [...this._valueDescriptors];
-    }
-
-    public static getAssetTypeInfos(): AssetTypeInfo[] {
-        return [...this._assetTypeInfos];
-    }
-
-    public static getAssetTypeInfo(type: string | AssetDescriptor | AssetTypeInfo): AssetTypeInfo | undefined {
-        if (!type) {
-            return;
-        }
-
-        if ((type as AssetTypeInfo).assetDescriptor) {
-            return type as AssetTypeInfo;
-        }
-
-        if (typeof(type) !== "string") {
-            type = (type as AssetDescriptor).name!;
-        }
-
-        return this._assetTypeInfos.find((assetTypeInfo) => {
-            return assetTypeInfo.assetDescriptor!.name === type;
-        });
-    }
-
-    public static getAssetDescriptor(type?: string | AssetDescriptor | AssetTypeInfo): AssetDescriptor | undefined {
-        if (!type) {
-            return;
-        }
-
-        if ((type as AssetTypeInfo).assetDescriptor) {
-            return (type as AssetTypeInfo).assetDescriptor;
-        }
-
-        if (typeof(type) !== "string") {
-            return type as AssetDescriptor;
-        }
-
-        const match = this._assetTypeInfos.find((assetTypeInfo) => {
-            return assetTypeInfo.assetDescriptor!.name === type;
-        });
-        return match ? match.assetDescriptor : undefined;
-    }
-
-    public static getAttributeDescriptor(attributeName: string, assetTypeOrDescriptor: string | AssetDescriptor | AssetTypeInfo): AttributeDescriptor | undefined {
-        if (!attributeName) {
-            return;
-        }
-
-        const assetTypeInfo = this.getAssetTypeInfo(assetTypeOrDescriptor || WellknownAssets.UNKNOWNASSET);
-
-        if (!assetTypeInfo || !assetTypeInfo.attributeDescriptors) {
-            return;
-        }
-
-        return assetTypeInfo.attributeDescriptors.find((attributeDescriptor) => attributeDescriptor.name === attributeName);
-    }
-
-    public static getValueDescriptor(name?: string): ValueDescriptor | undefined {
-        if (!name) {
-            return;
-        }
-
-        // If name ends with [] then it's an array value type so lookup the base type and then convert to array
-        let arrayDimensions: number | undefined;
-
-        if (name.endsWith("[]")) {
-            arrayDimensions = 0;
-            while(name.endsWith("[]")) {
-                name = name.substring(0, name.length - 2);
-                arrayDimensions++;
-            }
-        }
-
-        // Value descriptor names are globally unique
-        let valueDescriptor = this._valueDescriptors.find((valueDescriptor) => valueDescriptor.name === name);
-        if (valueDescriptor && arrayDimensions) {
-            valueDescriptor = {...valueDescriptor, arrayDimensions: arrayDimensions};
-        }
-        return valueDescriptor;
-    }
-
-    public static resolveValueDescriptor(valueHolder: ValueHolder<any> | undefined, descriptorOrValueType: ValueDescriptorHolder | ValueDescriptor | string | undefined): ValueDescriptor | undefined {
-        let valueDescriptor: ValueDescriptor | undefined;
-
-        if (descriptorOrValueType) {
-            if (typeof(descriptorOrValueType) === "string") {
-                valueDescriptor = AssetModelUtil.getValueDescriptor(descriptorOrValueType);
-            }
-            if ((descriptorOrValueType as ValueDescriptor).jsonType) {
-                valueDescriptor = descriptorOrValueType as ValueDescriptor;
-            } else {
-                // Must be a value descriptor holder or value holder
-                valueDescriptor = AssetModelUtil.getValueDescriptor((descriptorOrValueType as ValueDescriptorHolder).type);
-            }
-        }
-
-        if (!valueDescriptor && valueHolder) {
-            // Try and determine the value descriptor based on the value type
-            valueDescriptor = this.resolveValueDescriptorFromValue(valueHolder.value);
-        }
-
-        return valueDescriptor;
-    }
-
-    public static resolveValueTypeFromValue(value: any): string {
-        if (value === null || value === undefined) {
-            return WellknownValueTypes.JSON;
-        }
-
-        if (typeof value === "number") {
-            return WellknownValueTypes.NUMBER;
-        }
-        if (typeof value === "string") {
-            return WellknownValueTypes.TEXT;
-        }
-        if (typeof value === "boolean") {
-            return WellknownValueTypes.BOOLEAN;
-        }
-        if (Array.isArray(value)) {
-            let dimensions = 1;
-            let v = (value as any[]).find(v => v !== undefined && v !== null);
-
-            while (Array.isArray(v)) {
-                v = (v as any[]).find(v => v !== undefined && v !== null);
-                dimensions++;
-            }
-
-            let valueType = this.resolveValueTypeFromValue(v);
-
-            while (dimensions > 0) {
-                valueType += "[]";
-                dimensions--;
-            }
-
-            return valueType;
-        }
-        if (value instanceof Date) {
-            return WellknownValueTypes.DATEANDTIME;
-        } else {
-            return WellknownValueTypes.JSONOBJECT;
-        }
-    }
-
-    public static resolveValueDescriptorFromValue(value: any): ValueDescriptor | undefined {
-        const valueType = AssetModelUtil.resolveValueTypeFromValue(value);
-        return AssetModelUtil.getValueDescriptor(valueType);
-    }
-
-    public static getAttributeAndValueDescriptors(assetType: string | undefined, attributeNameOrDescriptor: string | AttributeDescriptor | undefined, attribute?: Attribute<any>): [AttributeDescriptor | undefined, ValueDescriptor | undefined] {
-        let attributeDescriptor: AttributeDescriptor | undefined;
-        let valueDescriptor: ValueDescriptor | undefined;
-
-        if (attributeNameOrDescriptor && typeof attributeNameOrDescriptor !== "string") {
-            attributeDescriptor = attributeNameOrDescriptor as AttributeDescriptor;
-        } else {
-            const assetTypeInfo = this.getAssetTypeInfo(assetType || WellknownAssets.UNKNOWNASSET);
-
-            if (!assetTypeInfo) {
-                return [undefined, undefined];
-            }
-
-            if (typeof (attributeNameOrDescriptor) === "string") {
-                attributeDescriptor = this.getAttributeDescriptor(attributeNameOrDescriptor as string, assetTypeInfo);
-            }
-
-            if (!attributeDescriptor && attribute) {
-                attributeDescriptor = {
-                    type: attribute.type,
-                    name: attribute.name,
-                    meta: attribute.meta
-                };
-            }
-        }
-
-        if (attributeDescriptor) {
-            valueDescriptor = this.getValueDescriptor(attributeDescriptor.type);
-        }
-
-        return [attributeDescriptor, valueDescriptor];
-    }
-
-    public static getMetaItemDescriptor(name?: string): MetaItemDescriptor | undefined {
-        if (!name) {
-            return;
-        }
-
-        // Meta item descriptor names are globally unique
-        return this._metaItemDescriptors.find((metaItemDescriptor) => metaItemDescriptor.name === name);
-    }
-
-    public static getAssetDescriptorColour(typeOrDescriptor: string | AssetTypeInfo | AssetDescriptor | undefined, fallbackColor?: string): string | undefined {
-        const assetDescriptor = this.getAssetDescriptor(typeOrDescriptor);
-        return assetDescriptor && assetDescriptor.colour ? assetDescriptor.colour : fallbackColor;
-    }
-
-    public static getAssetDescriptorIcon(typeOrDescriptor: string | AssetTypeInfo | AssetDescriptor | undefined, fallbackIcon?: string): string | undefined {
-        const assetDescriptor = this.getAssetDescriptor(typeOrDescriptor);
-        return assetDescriptor && assetDescriptor.icon ? assetDescriptor.icon : fallbackIcon;
-    }
 }
 
 export type EventCallback = (event: OREvent) => void;
@@ -614,6 +310,7 @@ export class Manager implements EventProviderFactory {
     };
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
+    public _authServerUrl: string = "";
     private _listeners: EventCallback[] = [];
     private _console!: Console;
     private _consoleAppConfig?: ConsoleAppConfig;
@@ -651,14 +348,20 @@ export class Manager implements EventProviderFactory {
             console.log("Already initialised");
         }
 
-        let success = false;
         this._config = normaliseConfig(config);
 
+        let success = await this.loadManagerInfo();
+
         if (this._config.auth === Auth.BASIC) {
-            // BASIC auth will likely require UI so let's init translation at least
+            // BASIC auth will likely require UI so lets init translation at least
             success = await this.doTranslateInit() && success;
             success = await this.doAuthInit();
         } else {
+
+            if (this._authServerUrl) {
+                this.config.keycloakUrl = this._authServerUrl;
+            }
+
             success = await this.doAuthInit();
 
             // If failed then we can assume keycloak auth requested but unavailable
@@ -668,10 +371,6 @@ export class Manager implements EventProviderFactory {
                 this._config.auth = Auth.BASIC;
                 success = await this.doAuthInit();
             }
-        }
-
-        if (success) {
-            success = await this.doInit();
         }
 
         if (success) {
@@ -686,6 +385,8 @@ export class Manager implements EventProviderFactory {
             success = await this.doDescriptorsInit();
             success = await this.getConsoleAppConfig();
         }
+
+        this.doIconInit();
 
         // TODO: Reinstate this once websocket supports anonymous connections
         // if (success) {
@@ -707,7 +408,7 @@ export class Manager implements EventProviderFactory {
         return success;
     }
 
-    protected async doInit(): Promise<boolean> {
+    protected async loadManagerInfo(): Promise<boolean> {
         // Check manager exists by calling the info endpoint
         try {
             const json = await new Promise<any>((resolve, reject) => {
@@ -722,14 +423,7 @@ export class Manager implements EventProviderFactory {
                 oReq.send();
             });
             this._managerVersion = json && json.version ? json.version : "";
-
-            // Load material design and OR icon sets if requested
-            if (this._config.loadIcons) {
-                const response = await fetch(manager.config.managerUrl + "/shared/mdi-icons.json");
-                const mdiIconSet = await response.json();
-                IconSets.addIconSet("mdi", mdiIconSet);
-                IconSets.addIconSet("or", orIconSet);
-            }
+            this._authServerUrl = json && json.authServerUrl ? json.authServerUrl : "";
 
             return true;
         } catch (e) {
@@ -909,6 +603,20 @@ export class Manager implements EventProviderFactory {
         } catch (e) {
             this._setError(ORError.CONSOLE_ERROR);
             return false;
+        }
+    }
+
+    protected doIconInit() {
+        // Load material design and OR icon sets if requested
+        if (this._config.loadIcons) {
+            IconSets.addIconSet(
+                "mdi",
+                createMdiIconSet(manager.config.managerUrl!)
+            );
+            IconSets.addIconSet(
+                "or",
+                createSvgIconSet(OrIconSet.size, OrIconSet.icons)
+            );
         }
     }
 
@@ -1138,7 +846,7 @@ export class Manager implements EventProviderFactory {
             let keycloakPromise: any = null;
 
             // Load the keycloak JS API
-            await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.js");
+            await Util.loadJs(this._config.keycloakUrl + "/js/keycloak.min.js");
 
             // Should have Keycloak global var now
             if (!(window as any).Keycloak) {
@@ -1214,7 +922,7 @@ export class Manager implements EventProviderFactory {
             console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
         } catch (e) {
             // Refresh token expired (either SSO max session duration or offline idle timeout), see
-            // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
+            // OR_IDENTITY_SESSION_MAX_MINUTES and OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
             console.info("Access token update failed, refresh token expired, login required");
             this._keycloak!.clearToken();
             this._keycloak!.login();
@@ -1258,5 +966,4 @@ export class Manager implements EventProviderFactory {
 }
 
 export const manager = new Manager(); // Needed for webpack bundling
-export const IconSets = new ORIconSets();
 export default manager;

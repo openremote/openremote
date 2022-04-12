@@ -50,10 +50,7 @@ class OrSmartNotify extends LitElement {
         const self: any = this;
         return new Promise((resolve: any, reject: any) => {
             const smartNotifyQuery: AssetQuery = {
-                names: [{predicateType: "string", value: "SMART_NOTIFY_ASSET"}],
-                select: {
-                    excludePath: true
-                }
+                names: [{predicateType: "string", value: "SMART_NOTIFY_ASSET"}]
             };
             manager.rest.api.AssetResource.queryAssets(smartNotifyQuery).then((response: any) => {
                 console.log("Setting Smart Notify");

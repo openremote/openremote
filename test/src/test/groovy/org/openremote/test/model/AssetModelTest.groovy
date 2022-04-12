@@ -195,6 +195,6 @@ class AssetModelTest extends Specification implements ManagerContainerTrait {
         def assetStateObjectNode = ValueUtil.parse(assetStateStr, ObjectNode.class).get()
         assetStateObjectNode.get("name").asText() == LightAsset.COLOUR_RGB.name
         assetStateObjectNode.get("value").isTextual()
-        assetStateObjectNode.get("value").asText() == "#3264c8"
+        assetStateObjectNode.get("value").asText() == "#3264C8"
     }
 }

@@ -29,9 +29,6 @@ class AttributeLinkingTest extends Specification implements ManagerContainerTrai
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
 
-        and: "the clock is stopped for testing purposes"
-        stopPseudoClock()
-
         then: "the system should settle down"
         conditions.eventually {
             assert noEventProcessedIn(assetProcessingService, 300)

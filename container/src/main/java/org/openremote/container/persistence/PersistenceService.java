@@ -20,6 +20,8 @@
 package org.openremote.container.persistence;
 
 import org.apache.camel.ExchangePattern;
+import org.apache.camel.Predicate;
+import org.apache.camel.ProducerTemplate;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.output.MigrateResult;
@@ -29,9 +31,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.model.Container;
-import org.openremote.model.ContainerService;
-import org.openremote.model.EntityClassProvider;
+import org.openremote.model.*;
 import org.openremote.model.apps.ConsoleAppConfig;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetDescriptor;
@@ -68,7 +68,7 @@ import java.util.stream.IntStream;
 
 import static org.openremote.container.util.MapAccess.*;
 
-public class PersistenceService implements ContainerService {
+public class PersistenceService implements ContainerService, Consumer<PersistenceEvent<?>> {
 
     /**
      * Programmatic definition of OpenRemotePU for hibernate
@@ -182,6 +182,11 @@ public class PersistenceService implements ContainerService {
         }
     }
 
+    // TODO: Make configurable
+    public static final String PERSISTENCE_TOPIC =
+        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=25000";
+    public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
+
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
 
     /**
@@ -191,29 +196,29 @@ public class PersistenceService implements ContainerService {
      * database artifacts from wipe/migrate in FlywayDB...) you must have it in the 'public'
      * schema. Hence we need a different schema here.
      */
-    public static final String SETUP_WIPE_CLEAN_INSTALL = "SETUP_WIPE_CLEAN_INSTALL";
+    public static final String OR_SETUP_RUN_ON_RESTART = "OR_SETUP_RUN_ON_RESTART";
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
     public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "OpenRemotePU";
-    public static final String DB_VENDOR = "DB_VENDOR";
-    public static final String DB_VENDOR_DEFAULT = Database.Product.POSTGRES.name();
-    public static final String DB_HOST = "DB_HOST";
-    public static final String DB_HOST_DEFAULT = "localhost";
-    public static final String DB_PORT = "DB_PORT";
-    public static final int DB_PORT_DEFAULT = 5432;
-    public static final String DB_NAME = "DB_NAME";
-    public static final String DB_NAME_DEFAULT = "openremote";
-    public static final String DB_SCHEMA = "DB_SCHEMA";
-    public static final String DB_SCHEMA_DEFAULT = "openremote";
-    public static final String DB_USERNAME = "DB_USERNAME";
-    public static final String DB_USERNAME_DEFAULT = "postgres";
-    public static final String DB_PASSWORD = "DB_PASSWORD";
-    public static final String DB_PASSWORD_DEFAULT = "postgres";
-    public static final String DB_MIN_POOL_SIZE = "DB_MIN_POOL_SIZE";
-    public static final int DB_MIN_POOL_SIZE_DEFAULT = 5;
-    public static final String DB_MAX_POOL_SIZE = "DB_MAX_POOL_SIZE";
-    public static final int DB_MAX_POOL_SIZE_DEFAULT = 20;
-    public static final String DB_CONNECTION_TIMEOUT_SECONDS = "DB_CONNECTION_TIMEOUT_SECONDS";
-    public static final int DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
+    public static final String OR_DB_VENDOR = "OR_DB_VENDOR";
+    public static final String OR_DB_VENDOR_DEFAULT = Database.Product.POSTGRES.name();
+    public static final String OR_DB_HOST = "OR_DB_HOST";
+    public static final String OR_DB_HOST_DEFAULT = "localhost";
+    public static final String OR_DB_PORT = "OR_DB_PORT";
+    public static final int OR_DB_PORT_DEFAULT = 5432;
+    public static final String OR_DB_NAME = "OR_DB_NAME";
+    public static final String OR_DB_NAME_DEFAULT = "openremote";
+    public static final String OR_DB_SCHEMA = "OR_DB_SCHEMA";
+    public static final String OR_DB_SCHEMA_DEFAULT = "openremote";
+    public static final String OR_DB_USER = "OR_DB_USER";
+    public static final String OR_DB_USER_DEFAULT = "postgres";
+    public static final String OR_DB_PASSWORD = "OR_DB_PASSWORD";
+    public static final String OR_DB_PASSWORD_DEFAULT = "postgres";
+    public static final String OR_DB_MIN_POOL_SIZE = "OR_DB_MIN_POOL_SIZE";
+    public static final int OR_DB_MIN_POOL_SIZE_DEFAULT = 5;
+    public static final String OR_DB_MAX_POOL_SIZE = "OR_DB_MAX_POOL_SIZE";
+    public static final int OR_DB_MAX_POOL_SIZE_DEFAULT = 20;
+    public static final String OR_DB_CONNECTION_TIMEOUT_SECONDS = "OR_DB_CONNECTION_TIMEOUT_SECONDS";
+    public static final int OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
     public static final int PRIORITY = Integer.MIN_VALUE + 100;
 
     protected MessageBrokerService messageBrokerService;
@@ -221,11 +226,17 @@ public class PersistenceService implements ContainerService {
     protected String persistenceUnitName;
     protected Properties persistenceUnitProperties;
     protected EntityManagerFactory entityManagerFactory;
-
     protected Flyway flyway;
     protected boolean forceClean;
     protected Set<String> defaultSchemaLocations = new HashSet<>();
     protected Set<String> schemas = new HashSet<>();
+
+    public static Predicate isPersistenceEventForEntityType(Class<?> type) {
+        return exchange -> {
+            Class<?> entityType = exchange.getIn().getHeader(HEADER_ENTITY_TYPE, Class.class);
+            return type.isAssignableFrom(entityType);
+        };
+    }
 
     @Override
     public int getPriority() {
@@ -238,22 +249,22 @@ public class PersistenceService implements ContainerService {
             ? container.getService(MessageBrokerService.class)
             : null;
 
-        String dbVendor = getString(container.getConfig(), DB_VENDOR, DB_VENDOR_DEFAULT).toUpperCase(Locale.ROOT);
+        String dbVendor = getString(container.getConfig(), OR_DB_VENDOR, OR_DB_VENDOR_DEFAULT).toUpperCase(Locale.ROOT);
         LOG.info("Preparing persistence service for database: " + dbVendor);
 
         try {
             database = Database.Product.valueOf(dbVendor);
         } catch (Exception e) {
-            LOG.severe("Requested DB_VENDOR is not supported: " + dbVendor);
-            throw new UnsupportedOperationException("Requested DB_VENDOR is not supported: " + dbVendor);
+            LOG.severe("Requested OR_DB_VENDOR is not supported: " + dbVendor);
+            throw new UnsupportedOperationException("Requested OR_DB_VENDOR is not supported: " + dbVendor);
         }
 
-        String dbHost = getString(container.getConfig(), DB_HOST, DB_HOST_DEFAULT);
-        int dbPort = getInteger(container.getConfig(), DB_PORT, DB_PORT_DEFAULT);
-        String dbName = getString(container.getConfig(), DB_NAME, DB_NAME_DEFAULT);
-        String dbSchema = getString(container.getConfig(), DB_SCHEMA, DB_SCHEMA_DEFAULT);
-        String dbUsername = getString(container.getConfig(), DB_USERNAME, DB_USERNAME_DEFAULT);
-        String dbPassword = getString(container.getConfig(), DB_PASSWORD, DB_PASSWORD_DEFAULT);
+        String dbHost = getString(container.getConfig(), OR_DB_HOST, OR_DB_HOST_DEFAULT);
+        int dbPort = getInteger(container.getConfig(), OR_DB_PORT, OR_DB_PORT_DEFAULT);
+        String dbName = getString(container.getConfig(), OR_DB_NAME, OR_DB_NAME_DEFAULT);
+        String dbSchema = getString(container.getConfig(), OR_DB_SCHEMA, OR_DB_SCHEMA_DEFAULT);
+        String dbUsername = getString(container.getConfig(), OR_DB_USER, OR_DB_USER_DEFAULT);
+        String dbPassword = getString(container.getConfig(), OR_DB_PASSWORD, OR_DB_PASSWORD_DEFAULT);
         String connectionUrl = "jdbc:" + database.getConnectorName() + "://" + dbHost + ":" + dbPort + "/" + dbName;
         connectionUrl = UriBuilder.fromUri(connectionUrl).replaceQueryParam("currentSchema", dbSchema).build().toString();
 
@@ -261,16 +272,19 @@ public class PersistenceService implements ContainerService {
 
         if (messageBrokerService != null) {
             persistenceUnitProperties.put(
-                org.hibernate.cfg.AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
+                AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
                 PersistenceEventInterceptor.class.getName()
             );
         }
 
         persistenceUnitProperties.put(AvailableSettings.DEFAULT_SCHEMA, dbSchema);
 
+        // Add custom integrator so we can register a custom flush entity event listener
+        persistenceUnitProperties.put(EntityManagerFactoryBuilderImpl.INTEGRATOR_PROVIDER, IntegratorProvider.class.getName());
+
         persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
 
-        forceClean = getBoolean(container.getConfig(), SETUP_WIPE_CLEAN_INSTALL, container.isDevMode());
+        forceClean = getBoolean(container.getConfig(), OR_SETUP_RUN_ON_RESTART, container.isDevMode());
 
         openDatabase(container, database, dbUsername, dbPassword, connectionUrl);
         prepareSchema(connectionUrl, dbUsername, dbPassword, dbSchema);
@@ -340,7 +354,7 @@ public class PersistenceService implements ContainerService {
         }
     }
 
-    public boolean isSetupWipeCleanInstall() {
+    public boolean isCleanInstall() {
         return forceClean;
     }
 
@@ -353,7 +367,7 @@ public class PersistenceService implements ContainerService {
             Session session = entityManager.unwrap(Session.class);
             PersistenceEventInterceptor persistenceEventInterceptor =
                 (PersistenceEventInterceptor) ((SharedSessionContractImplementor) session).getInterceptor();
-            persistenceEventInterceptor.setMessageBrokerService(messageBrokerService);
+            persistenceEventInterceptor.setEventConsumer(this);
         }
 
         return entityManager;
@@ -439,10 +453,10 @@ public class PersistenceService implements ContainerService {
 
         if (messageBrokerService.getProducerTemplate() != null) {
             messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                PersistenceEvent.PERSISTENCE_TOPIC,
+                PERSISTENCE_TOPIC,
                 ExchangePattern.InOnly,
                 persistenceEvent,
-                PersistenceEvent.HEADER_ENTITY_TYPE,
+                HEADER_ENTITY_TYPE,
                 persistenceEvent.getEntity().getClass()
             );
         }
@@ -450,9 +464,9 @@ public class PersistenceService implements ContainerService {
 
     protected void openDatabase(Container container, Database database, String username, String password, String connectionUrl) {
 
-        int databaseMinPoolSize = getInteger(container.getConfig(), DB_MIN_POOL_SIZE, DB_MIN_POOL_SIZE_DEFAULT);
-        int databaseMaxPoolSize = getInteger(container.getConfig(), DB_MAX_POOL_SIZE, DB_MAX_POOL_SIZE_DEFAULT);
-        int connectionTimeoutSeconds = getInteger(container.getConfig(), DB_CONNECTION_TIMEOUT_SECONDS, DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
+        int databaseMinPoolSize = getInteger(container.getConfig(), OR_DB_MIN_POOL_SIZE, OR_DB_MIN_POOL_SIZE_DEFAULT);
+        int databaseMaxPoolSize = getInteger(container.getConfig(), OR_DB_MAX_POOL_SIZE, OR_DB_MAX_POOL_SIZE_DEFAULT);
+        int connectionTimeoutSeconds = getInteger(container.getConfig(), OR_DB_CONNECTION_TIMEOUT_SECONDS, OR_DB_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
         LOG.info("Opening database connection: " + connectionUrl);
         database.open(persistenceUnitProperties, connectionUrl, username, password, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
     }
@@ -500,6 +514,22 @@ public class PersistenceService implements ContainerService {
 
     protected void appendSchemas(List<String> schemas) {
         schemas.addAll(this.schemas);
+    }
+
+    @Override
+    public void accept(PersistenceEvent<?> persistenceEvent) {
+
+        ProducerTemplate producerTemplate = messageBrokerService.getProducerTemplate();
+
+        if (producerTemplate != null) {
+            producerTemplate.sendBodyAndHeader(
+                PersistenceService.PERSISTENCE_TOPIC,
+                ExchangePattern.InOnly,
+                persistenceEvent,
+                PersistenceService.HEADER_ENTITY_TYPE,
+                persistenceEvent.getEntity().getClass()
+            );
+        }
     }
 
     @Override

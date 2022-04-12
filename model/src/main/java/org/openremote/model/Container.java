@@ -28,8 +28,8 @@ import java.util.concurrent.ScheduledExecutorService;
 @TsIgnore
 public interface Container {
 
-    String DEV_MODE = "DEV_MODE";
-    boolean DEV_MODE_DEFAULT = true;
+    String OR_DEV_MODE = "OR_DEV_MODE";
+    boolean OR_DEV_MODE_DEFAULT = true;
 
     boolean isDevMode();
 

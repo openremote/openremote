@@ -5,7 +5,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.datapoint.AssetPredictedDatapointService;
@@ -35,8 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebTargetBuilder.createClient;
 import static org.openremote.manager.gateway.GatewayService.isNotForGateway;
@@ -107,7 +107,7 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         }
     }
 
-    public static final String OPEN_WEATHER_API_APP_ID = "OPEN_WEATHER_API_APP_ID";
+    public static final String OR_OPEN_WEATHER_API_APP_ID = "OR_OPEN_WEATHER_API_APP_ID";
 
     protected static final Logger LOG = SyslogCategory.getLogger(DATA, ForecastWindService.class.getName());
     protected AssetStorageService assetStorageService;
@@ -149,13 +149,13 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
         executorService = container.getExecutorService();
         rulesService = container.getService(RulesService.class);
 
-        openWeatherAppId = getString(container.getConfig(), OPEN_WEATHER_API_APP_ID, null);
+        openWeatherAppId = getString(container.getConfig(), OR_OPEN_WEATHER_API_APP_ID, null);
     }
 
     @Override
     public void start(Container container) throws Exception {
         if (openWeatherAppId == null) {
-            LOG.info("No value found for OPEN_WEATHER_API_APP_ID, ForecastWindService won't start");
+            LOG.info("No value found for OR_OPEN_WEATHER_API_APP_ID, ForecastWindService won't start");
             return;
         }
 
@@ -172,7 +172,6 @@ public class ForecastWindService extends RouteBuilder implements ContainerServic
 
         List<ElectricityProducerWindAsset> electricityProducerWindAssets = assetStorageService.findAll(
                         new AssetQuery()
-                                .select(new AssetQuery.Select().excludeParentInfo(true))
                                 .types(ElectricityProducerWindAsset.class)
                 )
                 .stream()

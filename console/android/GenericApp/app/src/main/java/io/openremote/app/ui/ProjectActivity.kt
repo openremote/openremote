@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.webkit.URLUtil
 import android.widget.Toast
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -18,7 +19,7 @@ class ProjectActivity : Activity() {
     private lateinit var binding: ActivityProjectBinding
 
     var sharedPreferences: SharedPreferences? = null
-
+    var host: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,11 +49,13 @@ class ProjectActivity : Activity() {
 
     private fun requestAppConfig(project: String, realm: String) {
         binding.progressBar.visibility = View.VISIBLE
-        val apiManager = ApiManager("https://${project}.openremote.io/api/${realm}")
-        apiManager.getAppConfig { statusCode, appConfig, error ->
+        host = if (URLUtil.isValidUrl(project)) project else "https://${project}.openremote.io/"
+        val url = if (URLUtil.isValidUrl(project)) project.plus("/api/${realm}") else "https://${project}.openremote.io/api/${realm}"
+        val apiManager = ApiManager(url)
+        apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
             binding.progressBar.visibility = View.INVISIBLE
             if (statusCode in 200..299) {
-                sharedPreferences?.edit()?.putString("project", project)?.apply()
+                sharedPreferences?.edit()?.putString("host", host)?.apply()
                 sharedPreferences?.edit()?.putString("realm", realm)?.apply()
                 val intent = Intent(this@ProjectActivity, OrMainActivity::class.java)
                 intent.putExtra(OrMainActivity.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))

@@ -3,7 +3,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import manager, {DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {EnhancedStore} from "@reduxjs/toolkit";
+import {Store} from "@reduxjs/toolkit";
 import {AppStateKeyed, Page, PageProvider} from "@openremote/or-app";
 import {ClientRole, RealmRole, Role, User, UserAssetLink, UserQuery} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
@@ -16,7 +16,7 @@ import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageUsersProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageUsersProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "users",
         routes: ["users"],

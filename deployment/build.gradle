@@ -1,0 +1,10 @@
+task installDist(type: Copy) {
+    into("$buildDir")
+
+    from "Dockerfile"
+
+    into("image") {
+        from projectDir
+        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore", "**/*.encrypted"
+    }
+}

@@ -1,0 +1,111 @@
+# OpenRemote v3
+#
+# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
+# but optionally on https://$HOST with an auto generated SSL certificate from Letsencrypt.
+#
+# It is possible to specify OR_SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
+# is shown at https://demo.openremote.io)
+# with username 'admin' and password 'secret'. There is no map data available in the vanilla
+# system so the map tile server will not function. Persistent data is stored in a docker
+# volume called postgresql-data between restarts, simply delete this volume to reset the
+# system to an empty state.
+#
+# Please see profile/deploy.yml for configuration details for each service.
+#
+version: '2.4'
+
+volumes:
+  proxy-data:
+  temp-data:
+  postgresql-data:
+  deployment-data:
+
+x-logging: &awslogs
+  logging:
+    driver: awslogs
+    options:
+      awslogs-region: ${AWS_REGION:-eu-west-1}
+      awslogs-group: ${OR_HOSTNAME}
+      awslogs-create-group: 'true'
+      tag: "{{.Name}}/{{.ID}}"
+
+services:
+
+  deployment:
+    image: openremote/deployment:${DEPLOYMENT_VERSION?DEPLOYMENT_VERSION must be set}
+    volumes:
+      - deployment-data:/deployment
+
+  proxy:
+    image: openremote/proxy:${PROXY_VERSION:-latest}
+    restart: always
+    depends_on:
+      manager:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8883:8883"
+    volumes:
+      - proxy-data:/deployment
+    environment:
+      LE_EMAIL: ${OR_EMAIL_FROM:-}
+      DOMAINNAME: ${OR_HOSTNAME:-localhost}
+      DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
+      #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
+    <<: *awslogs
+
+  postgresql:
+    restart: always
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest}
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - temp-data:/tmp
+    <<: *awslogs
+
+  keycloak:
+    restart: always
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    volumes:
+      - ./deployment:/deployment
+    environment:
+      KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
+    <<: *awslogs
+
+  manager:
+    restart: always
+    image: openremote/manager:${MANAGER_VERSION:-latest}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      # Set this variable `demo` to auto provision demo assets etc.
+      OR_SETUP_TYPE: ${OR_SETUP_TYPE:-demo}
+      OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD?OR_ADMIN_PASSWORD must be set}
+      OR_SETUP_RUN_ON_RESTART:
+      OR_EMAIL_HOST:
+      OR_EMAIL_USER:
+      OR_EMAIL_PASSWORD:
+      OR_EMAIL_X_HEADERS:
+      OR_EMAIL_FROM:
+      OR_EMAIL_ADMIN:
+      OR_SSL_PORT: ${OR_SSL_PORT:-443}
+      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      OR_ADDITIONAL_HOSTNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      OR_DEV_MODE: ${OR_DEV_MODE:-false}
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
+      # The following variables will configure the demo
+      OR_FORECAST_SOLAR_API_KEY:
+      OR_OPEN_WEATHER_API_APP_ID:
+      OR_SETUP_IMPORT_DEMO_AGENT_KNX:
+      OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
+    volumes:
+      - temp-data:/tmp
+      - deployment-data:/deployment
+    <<: *awslogs
+

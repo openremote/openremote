@@ -20,11 +20,12 @@ import {
     Attribute,
     ClientRole,
     SharedEvent,
-    WellknownAssets
+    WellknownAssets,
+    AssetModelUtil
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
-import manager, {AssetModelUtil, EventCallback, subscribe, Util} from "@openremote/core";
+import manager, {EventCallback, subscribe, Util} from "@openremote/core";
 import Qs from "qs";
 import {getAssetDescriptorIconTemplate, OrIcon} from "@openremote/or-icon";
 import "@openremote/or-mwc-components/or-mwc-menu";
@@ -210,9 +211,7 @@ declare global {
 export const getAssetTypes = async () => {
     const response = await manager.rest.api.AssetResource.queryAssets({
         select: {
-            excludeAttributes: true,
-            excludeParentInfo: true,
-            excludePath: true
+            attributes: []
         },
         recursive: true
     });
@@ -945,7 +944,6 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         } else {
             this._doFiltering();
         }
-
     }
 
     protected async _doFiltering() {
@@ -1413,9 +1411,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     realm: manager.displayRealm
                 },
                 select: { // Just need the basic asset info
-                    excludeAttributes: true,
-                    excludePath: !manager.isRestrictedUser(),
-                    excludeParentInfo: true
+                    attributes: []
                 }
             };
 

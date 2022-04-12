@@ -436,6 +436,8 @@
     "invalidDate": "Fecha no válida",
     "keyAlreadyExists": "La clave ya existe"
   },
+  "yes": "Sí",
+  "no": "No",
   "filter": {
     "action": "FILTER",
     "assetTypeLabel": "Asset type",

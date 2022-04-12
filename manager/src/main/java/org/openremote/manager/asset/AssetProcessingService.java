@@ -221,6 +221,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void configure() throws Exception {
 
@@ -293,8 +294,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
 
                     switch (source) {
-                        case CLIENT:
-
+                        case CLIENT -> {
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                             if (authContext == null) {
                                 // Check attribute has public write flag
@@ -327,17 +327,16 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                     }
                                 }
                             }
-                            break;
-
-                        case SENSOR:
+                        }
+                        case SENSOR -> {
                             Optional<Protocol<?>> protocol = oldAttribute.getMetaValue(AGENT_LINK)
                                 .map(agentLink -> agentService.getProtocolInstance(agentLink.getId()));
 
                             // Sensor event must be for an attribute linked to an agent
-                            if (!protocol.isPresent()) {
+                            if (protocol.isEmpty()) {
                                 throw new AssetProcessingException(INVALID_AGENT_LINK);
                             }
-                            break;
+                        }
                     }
 
                     // For executable attributes, non-sensor sources can set a writable attribute execute status
@@ -375,45 +374,38 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 //                            });
 //                    });
 
-                    // Either use the timestamp of the event or set event time to processing time
+                    // Either use the timestamp of the event or set event time to processing time or (old event time + 1)
+                    // We need a different timestamp for Attribute.equals() check
+                    long oldEventTime = oldAttribute.getTimestamp().orElse(0L);
+                    long eventTime = event.getTimestamp();
                     long processingTime = timerService.getCurrentTimeMillis();
-                    long eventTime = event.getTimestamp() > 0 ? event.getTimestamp() : processingTime;
 
-                    // Ensure timestamp of event is not in the future as that would essentially block access to
-                    // the attribute until after that time (maybe that is desirable behaviour)
-                    if (eventTime - processingTime > 0) {
-                        // TODO: Decide how to handle update events in the future - ignore or change timestamp
-                        throw new AssetProcessingException(
-                            EVENT_IN_FUTURE,
-                            "current time: " + new Date(processingTime) + "/" + processingTime
-                                + ", event time: " + new Date(eventTime) + "/" + eventTime
-                        );
+                    if (eventTime > 0) {
+                        // If it's less than previous event but within 10ms then just bump the time to old+1
+                        if (oldEventTime - eventTime > 0 && oldEventTime - eventTime < 10) {
+                            eventTime = oldEventTime + 1;
+                        }
+                    } else {
+                        eventTime = Math.max(oldEventTime + 1, processingTime);
                     }
 
                     // Check the last update timestamp of the attribute, ignoring any event that is older than last update
-                    // TODO This means we drop out-of-sequence events but accept events with the same source timestamp
-                    // TODO Several attribute events can occur in the same millisecond, then order of application is undefined
-                    oldAttribute.getTimestamp().filter(t -> t >= 0 && eventTime < t).ifPresent(
+                    long finalEventTime = eventTime;
+                    oldAttribute.getTimestamp().filter(t -> t >= 0 && finalEventTime < t).ifPresent(
                         lastStateTime -> {
                             throw new AssetProcessingException(
                                 EVENT_OUTDATED,
                                 "last asset state time: " + new Date(lastStateTime) + "/" + lastStateTime
-                                    + ", event time: " + new Date(eventTime) + "/" + eventTime);
+                                    + ", event time: " + new Date(finalEventTime) + "/" + finalEventTime);
                         }
                     );
 
                     // Create a copy of the attribute and set the new value and timestamp
-                    @SuppressWarnings("rawtypes")
                     Attribute updatedAttribute = ValueUtil.clone(oldAttribute);
                     updatedAttribute.setValue(value, eventTime);
 
                     // Push through all processors
-                    boolean consumedCompletely = processAssetUpdate(em, asset, updatedAttribute, source);
-
-                    // Publish a new event for clients if no processor consumed the update completely
-                    if (!consumedCompletely) {
-                        publishClientEvent(asset, updatedAttribute);
-                    }
+                    processAssetUpdate(em, asset, updatedAttribute, source);
                 });
             }))
             .endDoTry()
@@ -479,37 +471,15 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         if (!complete) {
             LOG.fine("No processor consumed the update completely, storing: " + attributeStr);
-            storeAttributeValue(em, asset, attribute);
+            if (!assetStorageService.updateAttributeValue(em, asset, attribute)) {
+                throw new AssetProcessingException(
+                    STATE_STORAGE_FAILED, "database update failed, no rows updated"
+                );
+            }
         }
 
         LOG.fine("<<< Processing complete: " + attributeStr);
         return complete;
-    }
-
-    protected void storeAttributeValue(EntityManager em, Asset<?> asset, Attribute<?> attribute) throws AssetProcessingException {
-
-        if (!assetStorageService.updateAttributeValue(em, asset, attribute)) {
-            throw new AssetProcessingException(
-                STATE_STORAGE_FAILED, "database update failed, no rows updated"
-            );
-        }
-    }
-
-    protected void publishClientEvent(Asset<?> asset, Attribute<?> attribute) {
-        // TODO Catch "queue full" exception (e.g. when producing thousands of INFO messages in rules)?
-        clientEventService.publishEvent(
-            new AttributeEvent(
-                asset.getId(),
-                attribute.getName(),
-                attribute.getValue().orElse(null),
-                timerService.getCurrentTimeMillis()
-            )
-                .setParentId(asset.getParentId())
-                .setRealm(asset.getRealm())
-                .setPath(asset.getPath())
-                .setAccessRestrictedRead(attribute.getMetaValue(MetaItemType.ACCESS_RESTRICTED_READ).orElse(false))
-                .setAccessPublicRead(attribute.getMetaValue(MetaItemType.ACCESS_PUBLIC_READ).orElse(false))
-        );
     }
 
     @Override

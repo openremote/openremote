@@ -143,11 +143,6 @@ export class LayoutVerticalElement extends LayoutBaseElement<VerticalLayout | Gr
         } else if (this.getChildProps().length > 0) {
             contentTemplate = this.getChildProps().map((childProps: OwnPropsOfRenderer & AdditionalProps) => {
 
-                if (childProps.schema) {
-                    // Make root schema definitions available to this schema
-                    childProps.schema.definitions = rootSchema.definitions;
-                }
-
                 if (isControl(childProps.uischema)) {
 
                     const controlProps = childProps as OwnPropsOfControl;

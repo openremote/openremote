@@ -19,18 +19,20 @@
  */
 package org.openremote.agent.protocol.io;
 
+import dev.failsafe.Failsafe;
+import dev.failsafe.RetryPolicy;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import org.openremote.agent.protocol.udp.UDPIOClient;
 import org.openremote.agent.protocol.websocket.WebsocketIOClient;
 import org.openremote.container.Container;
-import org.openremote.model.util.Retry;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.syslog.SyslogCategory;
 
 import javax.validation.constraints.NotNull;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -169,7 +171,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     protected Bootstrap bootstrap;
     protected EventLoopGroup workerGroup;
     protected ScheduledExecutorService executorService;
-    protected Retry connectRetry;
+    protected CompletableFuture<Void> connectRetry;
     protected boolean permanentError;
     protected Supplier<ChannelHandler[]> encoderDecoderProvider;
 
@@ -209,32 +211,46 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
             onConnectionStatusChanged(ConnectionStatus.CONNECTING);
         }
 
-        scheduleDoConnect();
+        scheduleDoConnect(true);
     }
 
-    protected void scheduleDoConnect() {
-        connectRetry = new Retry("Connect to '" + getClientUri() + "'", executorService, () -> {
-            boolean success = false;
-            try {
-                success = doConnect().get();
-                if (success) {
-                    onConnectionStatusChanged(ConnectionStatus.CONNECTED);
-                } else {
-                    // Cleanup resources ready for next connection attempt
-                    doDisconnect();
-                }
-            } catch (Exception e) {
-                LOG.log(Level.INFO, "An exception was thrown during connection attempt", e);
-            }
-            return success;
-        })
-            .setSuccessCallback(() -> this.connectRetry = null)
-            .setLogger(LOG)
-            .setInitialDelay(RECONNECT_DELAY_INITIAL_MILLIS)
-            .setMaxDelay(RECONNECT_DELAY_MAX_MILLIS)
-            .setJitterMargin(RECONNECT_DELAY_JITTER_MILLIS);
+    protected void scheduleDoConnect(boolean immediate) {
+        long jitter = immediate ? 50 : Math.max(50, RECONNECT_DELAY_JITTER_MILLIS);
+        long delay = immediate ? 50 : Math.max(50, RECONNECT_DELAY_INITIAL_MILLIS);
+        long maxDelay = immediate ? 51 : Math.max(delay+1, Math.max(50, RECONNECT_DELAY_MAX_MILLIS));
 
-        connectRetry.run();
+        RetryPolicy<Object> retryPolicy = RetryPolicy.builder()
+            .withJitter(Duration.ofMillis(jitter))
+            .withDelay(Duration.ofMillis(delay))
+            .withBackoff(Duration.ofMillis(delay), Duration.ofMillis(maxDelay))
+            .handle(RuntimeException.class)
+            .onRetryScheduled((execution) ->
+                LOG.fine("Re-connection scheduled in '" + execution.getDelay() + "' for: " + getClientUri()))
+            .onFailedAttempt((execution) ->
+                LOG.fine("Re-connection attempt failed '" + execution.getAttemptCount() + "' for: " + getClientUri()))
+            .withMaxRetries(Integer.MAX_VALUE)
+            .build();
+
+        connectRetry = Failsafe.with(retryPolicy).with(executorService).runAsyncExecution((execution) -> {
+
+            LOG.fine("Connection attempt '" + (execution.getAttemptCount()+1) + "' for: " + getClientUri());
+
+            boolean success = doConnect().get();
+
+            if (connectRetry.isCancelled()) {
+                execution.recordResult(null);
+                return;
+            }
+
+            if (success) {
+                onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+                execution.recordResult(null);
+            } else {
+                // Cleanup resources ready for next connection attempt
+                doDisconnect();
+                execution.recordFailure(new RuntimeException("Connection attempt failed"));
+            }
+        });
     }
 
     protected Future<Boolean> doConnect() {
@@ -272,7 +288,7 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
                     LOG.info("Connection closed un-expectedly: " + getClientUri());
                     onConnectionStatusChanged(ConnectionStatus.CONNECTING);
                     doDisconnect();
-                    scheduleDoConnect();
+                    scheduleDoConnect(false);
                 }
             }
         });
@@ -306,21 +322,27 @@ public abstract class AbstractNettyIOClient<T, U extends SocketAddress> implemen
     @Override
     public void disconnect() {
         synchronized (this) {
-            if (connectionStatus == ConnectionStatus.DISCONNECTED) {
+            if (connectionStatus != ConnectionStatus.CONNECTED && connectionStatus != ConnectionStatus.CONNECTING) {
                 LOG.finest("Already disconnected: " + getClientUri());
                 return;
             }
 
-            LOG.finest("Disconnecting IO client: " + getClientUri());
-            onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+            LOG.fine("Disconnecting IO client: " + getClientUri());
+            onConnectionStatusChanged(ConnectionStatus.DISCONNECTING);
         }
 
         if (connectRetry != null) {
-            connectRetry.cancel(true);
+            connectRetry.cancel(false);
+            try {
+                connectRetry.get();
+            } catch (CancellationException | InterruptedException | ExecutionException ignored) {
+            } catch (Exception e) {
+                LOG.log(Level.FINE, "Failed to wait for connection retry future: " + getClientUri());
+            }
             connectRetry = null;
         }
-
         doDisconnect();
+        onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
     }
 
     protected void doDisconnect() {

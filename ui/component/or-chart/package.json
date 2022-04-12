@@ -18,7 +18,7 @@
   "dependencies": {
     "@material/data-table": "^9.0.0",
     "@material/dialog": "^9.0.0",
-    "@openremote/core": "^1.0.4",
+    "@openremote/core": "workspace:*",
     "@openremote/or-asset-tree": "^1.0.4",
     "@openremote/or-attribute-picker": "^1.0.4",
     "@openremote/or-components": "^1.0.4",
@@ -33,9 +33,9 @@
     "moment": "^2.24.0"
   },
   "devDependencies": {
+    "@openremote/util": "workspace:*",
     "@types/chart.js": "^2.9.34",
-    "@types/offscreencanvas": "^2019.6.4",
-    "@openremote/util": "^1.0.4"
+    "@types/offscreencanvas": "^2019.6.4"
   },
   "publishConfig": {
     "access": "public"

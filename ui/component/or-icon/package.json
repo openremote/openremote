@@ -10,6 +10,7 @@
   },
   "types": "lib/index.d.ts",
   "scripts": {
+    "copyMdiFont": "node mdi-font-copy.js",
     "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0",
     "prepublishOnly": "npx webpack"
@@ -20,6 +21,7 @@
     "lit": "^2.0.2"
   },
   "devDependencies": {
+    "@mdi/font": "^6.5.95",
     "terser-webpack-plugin": "^5.2.5",
     "typescript": ">=4.5.2",
     "webpack": "^5.64.3",

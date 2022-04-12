@@ -16,7 +16,7 @@ import {getContentWithMenuTemplate} from "@openremote/or-mwc-components/or-mwc-m
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import {Tenant} from "@openremote/model";
 import {AppStateKeyed, router, updateRealm} from "./index";
-import {AnyAction, EnhancedStore} from "@reduxjs/toolkit";
+import {AnyAction, Store} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 
 export interface HeaderConfig {
@@ -179,6 +179,8 @@ export class OrHeader extends LitElement {
             
             #menu-btn-mobile {
                 margin-left: auto;
+                --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
+                --or-icon-width: calc(var(--internal-or-header-item-size) - 8px);
             }
     
             #menu-btn-desktop {
@@ -191,7 +193,7 @@ export class OrHeader extends LitElement {
                 display: none;
             }
     
-            #mobile-bottom {
+            .mobile-bottom-border {
                 border-top: 1px solid var(--internal-or-header-drawer-separator-color);
                 margin-top: 16px;
                 padding-top: 8px;
@@ -339,7 +341,7 @@ export class OrHeader extends LitElement {
     public realm!: string;
 
     @property({type: Object})
-    public store!: EnhancedStore<AppStateKeyed, AnyAction, ReadonlyArray<ThunkMiddleware<AppStateKeyed>>>;
+    public store!: Store<AppStateKeyed, AnyAction>;
 
     @property({type: String})
     public logo?: string;
@@ -402,7 +404,7 @@ export class OrHeader extends LitElement {
                         `,
                         getHeaderMenuItems(secondaryItems),
                         undefined,
-                        (values: string | string[]) => this._onSecondaryMenuSelect(values as string)) : ``}
+                        (value) => this._onSecondaryMenuSelect(value as string)) : ``}
                     </div>
                     <div id="menu-btn-mobile">
                         <button id="menu-btn" class="menu-btn" title="Menu" @click="${this._toggleDrawer}"><or-icon icon="${this._drawerOpened ? "close" : "menu"}"></or-icon></button>
@@ -422,12 +424,12 @@ export class OrHeader extends LitElement {
                     </div>
                     
                     ${secondaryItems ? html`
-                        <div id="mobile-bottom">
-                                ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
-                                    return html`
-                                        <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                    `;
-                                })}
+                        <div id="mobile-bottom" class="${mainItems.length > 0 ? 'mobile-bottom-border' : ''}">
+                            ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
+                                return html`
+                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                `;
+                            })}
                         </div>` : ``}
                 </div>
             </div>
@@ -460,7 +462,7 @@ export class OrHeader extends LitElement {
                         realmTemplate,
                         menuItems,
                         currentRealm ? currentRealm.realm : undefined,
-                        (values: string | string[]) => callback(values as string))}
+                        (value) => callback(value as string))}
             `;
         }
 

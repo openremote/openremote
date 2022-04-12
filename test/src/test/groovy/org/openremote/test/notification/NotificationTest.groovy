@@ -33,9 +33,11 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
+import static org.openremote.container.timer.TimerService.Clock.REAL
+import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.notification.PushNotificationAction.writeAttributeValueAction
 import static org.openremote.model.util.ValueUtil.parse
@@ -57,9 +59,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def notificationService = container.getService(NotificationService.class)
         def pushNotificationHandler = container.getService(PushNotificationHandler.class)
         def consoleResource = (ConsoleResourceImpl)container.getService(ManagerWebService.class).apiSingletons.find {it instanceof ConsoleResourceImpl}
-
-        and: "the clock is stopped for testing purposes"
-        stopPseudoClock()
 
         and: "a mock push notification handler"
         PushNotificationHandler mockPushNotificationHandler = Spy(pushNotificationHandler)
@@ -109,7 +108,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
 
         def notification = new Notification("TestAction",
@@ -243,6 +242,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 400
 
         when: "the admin user sends a push notification to the console assets in building realm"
+        notificationIds.clear()
         notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser2Console.id),
                                 new Notification.Target(Notification.TargetType.ASSET, testuser3Console1.id),
                                 new Notification.Target(Notification.TargetType.ASSET, testuser3Console2.id),
@@ -250,10 +250,13 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
 
-        then: "the notification should have been sent (not to testuser2)"
+        then: "the notification should have been sent (inc. testuser2 as message was direct to console)"
         conditions.eventually {
-            assert notificationIds.size() == 8
-            assert !notificationIds.contains(testuser2Console.id)
+            assert notificationIds.size() == 4
+            assert notificationTargetIds.contains(testuser2Console.id)
+            assert notificationTargetIds.contains(testuser3Console1.id)
+            assert notificationTargetIds.contains(testuser3Console2.id)
+            assert notificationTargetIds.contains(anonymousConsole.id)
         }
 
         when: "a regular user sends a push notification to the console assets in a different realm"
@@ -264,22 +267,30 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 400
 
         when: "a regular user sends a push notification to the console assets in the same realm"
+        notificationIds.clear()
         advancePseudoClock(1, TimeUnit.HOURS, container)
         testuser2NotificationResource.sendNotification(null, notification)
 
-        then: "the notification should have been sent (not to testuser2)"
+        then: "the notification should have been sent (inc. testuser2 as message was direct to console)"
         conditions.eventually {
-            assert notificationIds.size() == 11
-            assert !notificationIds.contains(testuser2Console.id)
+            assert notificationIds.size() == 4
+            assert notificationTargetIds.contains(testuser2Console.id)
+            assert notificationTargetIds.contains(testuser3Console1.id)
+            assert notificationTargetIds.contains(testuser3Console2.id)
+            assert notificationTargetIds.contains(anonymousConsole.id)
         }
 
         when: "a notification is sent using the same mechanism as an asset ruleset"
+        notificationIds.clear()
         notificationService.sendNotification(notification, Notification.Source.ASSET_RULESET, consoleResource.getConsoleParentAssetId(realm))
 
-        then: "the notification should have been sent (not to testuser2)"
+        then: "the notification should have been sent (inc. testuser2 as message was direct to console)"
         conditions.eventually {
-            assert notificationIds.size() == 14
-            assert !notificationIds.contains(testuser2Console.id)
+            assert notificationIds.size() == 4
+            assert notificationTargetIds.contains(testuser2Console.id)
+            assert notificationTargetIds.contains(testuser3Console1.id)
+            assert notificationTargetIds.contains(testuser3Console2.id)
+            assert notificationTargetIds.contains(anonymousConsole.id)
         }
 
         when: "a restricted user sends a push notification to the console assets in the same realm"
@@ -290,6 +301,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 400
 
         when: "a restricted user sends a push notification to some consoles linked to them and some not linked to them"
+        notificationIds.clear()
         notification.targets = [new Notification.Target(Notification.TargetType.ASSET, testuser2Console.id),
                                 new Notification.Target(Notification.TargetType.ASSET, testuser3Console1.id),
                                 new Notification.Target(Notification.TargetType.ASSET, testuser3Console2.id),
@@ -301,7 +313,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 400
 
         and: "no new notifications should have been sent"
-        notificationIds.size() == 14
+        notificationIds.size() == 0
 
         when: "a restricted user sends a push notification to some consoles linked to them"
         advancePseudoClock(1, TimeUnit.HOURS, container)
@@ -311,7 +323,9 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notifications should have been sent"
         conditions.eventually {
-            assert notificationIds.size() == 16
+            assert notificationIds.size() == 2
+            assert notificationTargetIds.contains(testuser3Console1.id)
+            assert notificationTargetIds.contains(testuser3Console2.id)
         }
 
         // -----------------------------------------------
@@ -320,7 +334,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         and: "all notifications sent to consoles in the building realm should be available via the REST API"
         conditions.eventually {
-            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id).length == 0
+            assert adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id).length == 3
             notifications = adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id)
             assert notifications.length == 6
             assert notifications.every {n ->
@@ -539,7 +553,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def container = startContainer(defaultConfig(), defaultServices())
+        def container = startContainer(defaultConfig() << [(OR_EMAIL_X_HEADERS): "Test 1=Hello World 1\nTest2=Hello World 2"], defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
@@ -576,39 +590,42 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the email should have been sent to the tenant users"
         conditions.eventually {
-            assert sentEmails.size() >= 2
+            assert sentEmails.size() == 2
             assert sentEmails.every {it.getPlainText() == "Hello world!"}
             assert sentEmails.every {it.getSubject() == "Test"}
+            assert sentEmails.every {it.getHeaders() != null && it.getHeaders().size() == 2 && it.getHeaders().get("Test 1") == "Hello World 1" && it.getHeaders().get("Test2") == "Hello World 2" }
             assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser2@openremote.local"}
             assert !sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "testuser3@openremote.local"}
             assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "building@openremote.local"}
         }
 
         when: "an email attribute is added to an asset"
+        sentEmails.clear()
         def kitchen = assetStorageService.find(managerTestSetup.apartment1KitchenId)
         kitchen.setEmail("kitchen@openremote.local")
         kitchen = assetStorageService.merge(kitchen)
 
         and: "an email notification is sent to a parent asset"
         ((EmailNotificationMessage)notification.message).subject = "Test 2"
-        notification.setTargets([new Notification.Target(Notification.TargetType.ASSET, managerTestSetup.apartment1Id)])
+        notification.setTargets([new Notification.Target(Notification.TargetType.ASSET, managerTestSetup.apartment1KitchenId)])
         notificationService.sendNotification(notification)
 
         then: "the child asset with the email attribute should have been sent an email"
         conditions.eventually {
-            assert sentEmails.size() >= 3
+            assert sentEmails.size() == 1
             assert sentEmails.any { it.getSubject() == "Test 2"}
             assert sentEmails.any { it.getRecipients().size() == 1 && it.getRecipients().get(0).address == "kitchen@openremote.local"}
         }
 
         when: "an email is sent to a custom target"
+        sentEmails.clear()
         ((EmailNotificationMessage)notification.message).subject = "Test Custom"
         notification.setTargets([new Notification.Target(Notification.TargetType.CUSTOM, "custom1@openremote.local;to:custom2@openremote.local;cc:custom3@openremote.local;bcc:custom4@openremote.local")])
         notificationService.sendNotification(notification)
 
         then: "the email should have been sent to all custom recipients"
         conditions.eventually {
-            assert sentEmails.size() >= 4
+            assert sentEmails.size() == 1
             assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().size() == 4}
             assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.TO && it.address == "custom1@openremote.local"}}
             assert sentEmails.any { it.getSubject() == "Test Custom" && it.getRecipients().any{it.type == javax.mail.Message.RecipientType.TO && it.address == "custom2@openremote.local"}}

@@ -226,7 +226,7 @@ export const style = css`
     }
     
     #filterInput {
-        padding: 5px;
+        padding: 7px 10px;
     }
     
     #clearIconContainer {
@@ -237,12 +237,12 @@ export const style = css`
     }
     
     #clearIcon {
-        width: 16px;
-        height: 16px;
+        --or-icon-width: 20px;
+        --or-icon-height: 20px;
+        position: absolute;
+        right: 0;
+        padding-right: 16px;
         cursor: pointer;
-        margin-top: 2px;
-        padding-top: 4px;
-        padding-bottom: 4px;
     }
 
     #filterAssetTypeDownIcon {

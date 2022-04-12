@@ -12,8 +12,8 @@ import {
 import {customElement, property, query} from "lit/decorators.js";
 import i18next from "i18next";
 import {translate} from "@openremote/or-translate";
-import {Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
-import manager, {AssetModelUtil, DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
+import {AssetModelUtil, Attribute, AttributeRef, DatapointInterval, ValueDatapoint, ValueDescriptor} from "@openremote/model";
+import manager, {DefaultColor2, DefaultColor3, DefaultColor4, DefaultColor5} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
@@ -652,8 +652,6 @@ export class OrAttributeHistory extends translate(i18next)(LitElement) {
                 const response = await manager.rest.api.AssetResource.queryAssets({
                     ids: [assetId],
                     select: {
-                        excludeParentInfo: true,
-                        excludePath: true,
                         attributes: [
                             attributeName
                         ]

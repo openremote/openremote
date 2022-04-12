@@ -1,0 +1,63 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "BuildingAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "powerBalance"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "LESS_THAN",
+                          "value": -25
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2wzKB2j39144oTzAJnHpfs"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "6bzhox7vxOKpKQ5yX5Ysoh"
+              ],
+              "types": [
+                "ElectricityBatteryAsset"
+              ]
+            }
+          },
+          "value": 25,
+          "attributeName": "powerSetpoint"
+        }
+      ],
+      "name": "De Rotterdam: Battery use"
+    }
+  ]
+}

@@ -11,9 +11,9 @@ import {
     DatapointInterval,
     ReadAttributeEvent,
     ValueDatapoint,
-    WellknownMetaItems
+    AssetModelUtil
 } from "@openremote/model";
-import {AssetModelUtil, DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
+import {DefaultColor3, DefaultColor4, manager, Util} from "@openremote/core";
 import {Chart, ScatterDataPoint, LineController, LineElement, PointElement, LinearScale, TimeSeriesScale, Title} from "chart.js";
 import "chartjs-adapter-moment";
 import {OrChartConfig} from "@openremote/or-chart";
@@ -382,7 +382,7 @@ export class OrAttributeCard extends LitElement {
                             }
                         ],
                         undefined,
-                        (option: string | string[]) => this.handleMenuSelect(option as ContextMenuOption))}
+                        (option) => this.handleMenuSelect(option as ContextMenuOption))}
                     </div>
                     <div class="panel-content">
                         <div class="mainvalue-wrapper">
@@ -571,10 +571,6 @@ export class OrAttributeCard extends LitElement {
 
         if (!assetIds.every(id => !!this.assets.find(asset => asset.id === id))) {
             const query = {
-                select: {
-                    excludePath: true,
-                    excludeParentInfo: true
-                },
                 ids: assetIds
             } as AssetQuery;
 

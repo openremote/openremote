@@ -1,0 +1,138 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 0
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "WeatherAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "windSpeed"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_THAN",
+                          "value": 2
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2bMjSx0iy1usC9KKhT24h9"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "3QlH8nQWvnevcyxat6tQKJ"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 90,
+          "attributeName": "brightness"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "4Y8sldGAezGSxqSSW3bly5"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 90,
+          "attributeName": "brightness"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "4RYkKKuM1wOw21PNOgHShZ"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 90,
+          "attributeName": "brightness"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "43F9MlyRcnGhY2m2hHlOdz"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 90,
+          "attributeName": "brightness"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "5aID6iE9exaVNirT2flago"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 90,
+          "attributeName": "brightness"
+        },
+        {
+          "action": "write-attribute",
+          "target": {
+            "assets": {
+              "ids": [
+                "3wauEi0ol2th6hXULHV2N4"
+              ],
+              "types": [
+                "LightAsset"
+              ]
+            }
+          },
+          "value": 90,
+          "attributeName": "brightness"
+        }
+      ],
+      "name": "Ons Park: Brighten lights"
+    }
+  ]
+}

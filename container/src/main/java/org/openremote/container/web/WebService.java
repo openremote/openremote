@@ -34,22 +34,22 @@ import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
+import org.openremote.model.util.TextUtil;
 import org.xnio.Options;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.model.Constants.OR_ADDITIONAL_HOSTNAMES;
+import static org.openremote.model.Constants.OR_HOSTNAME;
 
 public abstract class WebService implements ContainerService {
 
@@ -79,17 +79,16 @@ public abstract class WebService implements ContainerService {
 
     // Change this to 0.0.0.0 to bind on all interfaces, enabling
     // access of the manager service from other devices in your LAN
-    public static final String WEBSERVER_LISTEN_HOST = "WEBSERVER_LISTEN_HOST";
-    public static final String WEBSERVER_LISTEN_HOST_DEFAULT = "127.0.0.1";
-    public static final String WEBSERVER_LISTEN_PORT = "WEBSERVER_LISTEN_PORT";
-    public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
-    public static final String WEBSERVER_DUMP_REQUESTS = "WEBSERVER_DUMP_REQUESTS";
-    public static final boolean WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
-    public static final String WEBSERVER_ALLOWED_ORIGINS = "WEBSERVER_ALLOWED_ORIGINS";
-    public static final String WEBSERVER_ALLOWED_ORIGINS_DEFAULT = null;
-    public static final String WEBSERVER_IO_THREADS_MAX = "WEBSERVER_IO_THREADS_MAX";
-    public static final int WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
-    public static final String WEBSERVER_WORKER_THREADS_MAX = "WEBSERVER_WORKER_THREADS_MAX";
+    public static final String OR_WEBSERVER_LISTEN_HOST = "OR_WEBSERVER_LISTEN_HOST";
+    public static final String OR_WEBSERVER_LISTEN_HOST_DEFAULT = "0.0.0.0";
+    public static final String OR_WEBSERVER_LISTEN_PORT = "OR_WEBSERVER_LISTEN_PORT";
+    public static final int OR_WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
+    public static final String OR_WEBSERVER_DUMP_REQUESTS = "OR_WEBSERVER_DUMP_REQUESTS";
+    public static final boolean OR_WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
+    public static final String OR_WEBSERVER_ALLOWED_ORIGINS = "OR_WEBSERVER_ALLOWED_ORIGINS";
+    public static final String OR_WEBSERVER_IO_THREADS_MAX = "OR_WEBSERVER_IO_THREADS_MAX";
+    public static final int OR_WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+    public static final String OR_WEBSERVER_WORKER_THREADS_MAX = "OR_WEBSERVER_WORKER_THREADS_MAX";
     public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
     protected static AtomicReference<CORSFilter> corsFilterRef;
@@ -111,8 +110,8 @@ public abstract class WebService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         devMode = container.isDevMode();
-        host = getString(container.getConfig(), WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
-        port = getInteger(container.getConfig(), WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
+        host = getString(container.getConfig(), OR_WEBSERVER_LISTEN_HOST, OR_WEBSERVER_LISTEN_HOST_DEFAULT);
+        port = getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, OR_WEBSERVER_LISTEN_PORT_DEFAULT);
         String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
                 ? getLocalIpAddress()
                 : host;
@@ -127,8 +126,8 @@ public abstract class WebService implements ContainerService {
                 container,
                 Undertow.builder()
                         .addHttpListener(port, host)
-                        .setIoThreads(getInteger(container.getConfig(), WEBSERVER_IO_THREADS_MAX, WEBSERVER_IO_THREADS_MAX_DEFAULT))
-                        .setWorkerThreads(getInteger(container.getConfig(), WEBSERVER_WORKER_THREADS_MAX, WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
+                        .setIoThreads(getInteger(container.getConfig(), OR_WEBSERVER_IO_THREADS_MAX, OR_WEBSERVER_IO_THREADS_MAX_DEFAULT))
+                        .setWorkerThreads(getInteger(container.getConfig(), OR_WEBSERVER_WORKER_THREADS_MAX, WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
                         .setWorkerOption(Options.WORKER_NAME, "WebService")
                         .setWorkerOption(Options.THREAD_DAEMON, true)
         ).build();
@@ -242,7 +241,7 @@ public abstract class WebService implements ContainerService {
 
         handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, handler);
 
-        if (getBoolean(container.getConfig(), WEBSERVER_DUMP_REQUESTS, WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
+        if (getBoolean(container.getConfig(), OR_WEBSERVER_DUMP_REQUESTS, OR_WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
             handler = new RequestDumpingHandler(handler);
         }
 
@@ -278,15 +277,15 @@ public abstract class WebService implements ContainerService {
             CORSFilter corsFilter = null;
 
             if (!container.isDevMode()) {
-                String allowedOriginsStr = getString(container.getConfig(), WEBSERVER_ALLOWED_ORIGINS, WEBSERVER_ALLOWED_ORIGINS_DEFAULT);
-                if (allowedOriginsStr != null) {
+                Set<String> allowedOrigins = getAllowedOrigins(container);
+
+                if (!allowedOrigins.isEmpty()) {
                     corsFilter = new CORSFilter();
                     corsFilter.setAllowCredentials(true);
                     corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
                     corsFilter.setExposedHeaders("*");
                     corsFilter.setCorsMaxAge(1209600);
-                    String[] allowedOrigins = allowedOriginsStr.split(";");
-                    corsFilter.getAllowedOrigins().addAll(Arrays.asList(allowedOrigins));
+                    corsFilter.getAllowedOrigins().addAll(allowedOrigins);
                 }
             } else {
                 corsFilter = new CORSFilter();
@@ -307,5 +306,40 @@ public abstract class WebService implements ContainerService {
         }
 
         return null;
+    }
+
+    public static List<String> getExternalHostnames(Container container) {
+
+        // Get list of external hostnames
+        String defaultHostname = getString(container.getConfig(), OR_HOSTNAME, null);
+        String additionalHostnamesStr = getString(container.getConfig(), OR_ADDITIONAL_HOSTNAMES, null);
+
+        List<String> externalHostnames = new ArrayList<>();
+
+        if (!TextUtil.isNullOrEmpty(additionalHostnamesStr)) {
+            externalHostnames.addAll(Arrays.stream(additionalHostnamesStr.split(","))
+                .toList());
+        }
+
+        if (!TextUtil.isNullOrEmpty(defaultHostname) && !externalHostnames.contains(defaultHostname)) {
+            externalHostnames.add(defaultHostname);
+        }
+
+        return externalHostnames;
+    }
+
+    public static Set<String> getAllowedOrigins(Container container) {
+        // Set allowed origins using external hostnames and WEBSERVER_ALLOWED_ORIGINS
+        HashSet<String> allowedOrigins = new HashSet<>(
+            getExternalHostnames(container)
+                .stream().map(hostname -> "https://" + hostname).toList()
+        );
+        String allowedOriginsStr = getString(container.getConfig(), OR_WEBSERVER_ALLOWED_ORIGINS, null);
+
+        if (!TextUtil.isNullOrEmpty(allowedOriginsStr)) {
+            allowedOrigins.addAll(Arrays.stream(allowedOriginsStr.split(",")).toList());
+        }
+
+        return allowedOrigins;
     }
 }

@@ -10,9 +10,7 @@ export async function getBuildingAsset(): Promise<Asset | undefined> {
         }],
         types: [WellknownAssets.BUILDINGASSET],
         select: {
-            excludePath: true,
-            excludeAttributes: true,
-            excludeParentInfo: true
+            attributes: []
         }
     };
 
@@ -33,12 +31,7 @@ export async function getElectricityConsumerAsset(): Promise<Asset | undefined> 
             match: AssetQueryMatch.EXACT,
             value: "Consumption Erasmianum"
         }],
-        types: [WellknownAssets.ELECTRICITYCONSUMERASSET],
-        select: {
-            excludePath: true,
-            excludeAttributes: false,
-            excludeParentInfo: true
-        }
+        types: [WellknownAssets.ELECTRICITYCONSUMERASSET]
     };
 
     const response = await manager.rest.api.AssetResource.queryAssets(query);
@@ -58,12 +51,7 @@ export async function getElectricityChargerAsset(): Promise<Asset | undefined> {
             match: AssetQueryMatch.EXACT,
             value: "Charger 1 Markthal"
         }],
-        types: [WellknownAssets.ELECTRICITYCHARGERASSET],
-        select: {
-            excludePath: true,
-            excludeAttributes: false,
-            excludeParentInfo: true
-        }
+        types: [WellknownAssets.ELECTRICITYCHARGERASSET]
     };
 
     const response = await manager.rest.api.AssetResource.queryAssets(query);

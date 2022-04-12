@@ -15,8 +15,8 @@ import spock.util.concurrent.PollingConditions
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 import static org.openremote.model.rules.Ruleset.SHOW_ON_LIST
@@ -43,7 +43,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)
         ).token
 
         and: "the ruleset resource"
@@ -125,7 +125,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         globalRuleset.id == rulesetId
         globalRuleset.version > 0
         globalRuleset.createdOn.time < System.currentTimeMillis()
-        globalRuleset.lastModified.time > lastModified.time
+        globalRuleset.lastModified.time >= lastModified.time
         globalRuleset.name == "Renamed test global definition"
         globalRuleset.rules == "SomeRulesCodeModified"
 

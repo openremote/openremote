@@ -142,7 +142,7 @@ public abstract class AbstractIOClientProtocol<T extends AbstractIOClientProtoco
             LOG.fine("Stopping IO client for protocol: " + this);
             client.removeAllMessageConsumers();
             client.removeAllConnectionStatusConsumers();
-            AbstractIOClientProtocol.LOG.info("Disconnecting IO client");
+            LOG.info("Disconnecting IO client");
             client.disconnect();
         }
         client = null;

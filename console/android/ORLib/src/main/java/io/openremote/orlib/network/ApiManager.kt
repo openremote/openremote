@@ -19,8 +19,16 @@ class ApiManager(private val baseUrl: String) {
         PUT,
     }
 
-    fun getAppConfig(callback: ResponseBlock<ORAppConfig>?) {
-        get(arrayOf("app", "config"), callback)
+    fun getAppConfig(realm: String, callback: ResponseBlock<ORAppConfig>?) {
+        val uri = Uri.parse(baseUrl)
+        val url = URL("${uri.scheme}://${uri.host}/consoleappconfig/${realm}.json")
+        with(url.openConnection() as HttpURLConnection) {
+            requestMethod = HttpMethod.GET.toString()
+            setRequestProperty("Accept", "application/json")
+            thread(start = true) {
+                parseResponse(this, callback)
+            }
+        }
     }
 
     /*********************************Private functions*******************************/
