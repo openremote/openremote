@@ -278,7 +278,7 @@ export class OrMwcDialog extends LitElement {
                 @MDCDialog:opened="${() => this._onDialogOpened()}"
                 @MDCDialog:closed="${(evt: any) => this._onDialogClosed(evt.detail.action)}">
                 <div class="mdc-dialog__container">
-                    <div class="mdc-dialog__surface">
+                    <div class="mdc-dialog__surface" tabindex="0">
 						${typeof(this.heading) === "string" ? html`<h2 class="mdc-dialog__title" id="dialog-title"><or-translate value="${this.heading}"></or-translate></h2>`
                             : this.heading ? html`<span class="mdc-dialog__title" id="dialog-title">${this.heading}</span>` : ``}
                         ${this.content ? html` 
