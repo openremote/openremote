@@ -1106,8 +1106,10 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _loading: boolean = false;
 
     @state()
-    protected _validationResults: ValidatorResult[] = [];
     protected _assetModified = false;
+
+    @state()
+    protected _validationResults: ValidatorResult[] = [];
     protected _viewerConfig?: AssetViewerConfig;
     protected _attributes?: { [index: string]: Attribute<any> };
     protected resizeHandler = () => OrAssetViewer.generateGrid(this.shadowRoot);
@@ -1130,6 +1132,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
+        this.addEventListener('keyup', () => this._assetModified = true)
     }
 
     public isModified() {
