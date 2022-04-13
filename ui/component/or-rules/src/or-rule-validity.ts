@@ -44,6 +44,8 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
 
             if (this._validity && this._validity.recurrence) {
                 this._rrule = RRule.fromString(this._validity.recurrence);
+            } else {
+                this._rrule = undefined;
             }
         }
     }
@@ -113,7 +115,7 @@ export class OrRuleValidity extends translate(i18next)(LitElement) {
             case "byweekday":
                 if (!origOptions!.byweekday) origOptions!.byweekday = [];
                 if (!Array.isArray(origOptions!.byweekday)) origOptions!.byweekday = [origOptions!.byweekday as ByWeekday];
-                const newDays = value.split(',');
+                const newDays: string[] = value;
                 origOptions!.byweekday = [];
                 newDays.forEach((d: any) => {
                     const weekDay = this.getWeekDay(d);

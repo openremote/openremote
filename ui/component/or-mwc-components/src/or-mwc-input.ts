@@ -70,7 +70,7 @@ export class OrInputChangedEvent extends CustomEvent<OrInputChangedEventDetail> 
 
     public static readonly NAME = "or-mwc-input-changed";
 
-    constructor(value?: any | any[], previousValue?: any | any[], enterPressed?: boolean) {
+    constructor(value?: any , previousValue?: any, enterPressed?: boolean) {
         super(OrInputChangedEvent.NAME, {
             detail: {
                 value: value,
@@ -1119,8 +1119,6 @@ export class OrMwcInput extends LitElement {
                                                     let val: any[] = this.value;
                                                     if ((e.target as HTMLInputElement).checked) {
                                                         if (!val.includes(optValue)) {
-                                                            /*val = val.filter((v: any) => v !== optValue);
-                                                            val.push(optValue);*/
                                                             val = [optValue,...val];
                                                         }
                                                     } else {
@@ -1643,8 +1641,8 @@ export class OrMwcInput extends LitElement {
             }
         }
 
-        if (this.type === InputType.CHECKBOX_LIST) {
-            this.dispatchEvent(new OrInputChangedEvent(newValue.join(','), previousValue, enterPressed));
+        if (this.type === InputType.CHECKBOX_LIST && !Util.objectsEqual(newValue, previousValue, true)) {
+            this.dispatchEvent(new OrInputChangedEvent(newValue, previousValue, enterPressed));
         }
     }
 
