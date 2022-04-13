@@ -3,7 +3,10 @@ package io.openremote.orlib.network
 import android.net.Uri
 import android.util.Log
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.openremote.orlib.models.ORAppConfig
+import io.openremote.orlib.models.ORAppInfo
+import io.openremote.orlib.models.ORConsoleConfig
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
@@ -12,6 +15,8 @@ import kotlin.concurrent.thread
 typealias ResponseBlock<T> = (statusCode: Int, model: T?, error: Throwable?) -> Unit
 
 class ApiManager(private val baseUrl: String) {
+
+    val mapper = jacksonObjectMapper()
 
     enum class HttpMethod {
         GET,
@@ -29,6 +34,14 @@ class ApiManager(private val baseUrl: String) {
                 parseResponse(this, callback)
             }
         }
+    }
+
+    fun getAppInfos(callback: ResponseBlock<Map<String, ORAppInfo>>?) {
+        get(arrayOf("apps"), callback)
+    }
+
+    fun getConsoleConfig(callback: ResponseBlock<ORConsoleConfig>?) {
+        get(arrayOf("apps", "consoleConfig"), callback)
     }
 
     /*********************************Private functions*******************************/
@@ -110,9 +123,8 @@ class ApiManager(private val baseUrl: String) {
             val parsedResult = try {
                 if (this.responseCode in 200..299) {
                     Triple(
-                        this.responseCode, jacksonObjectMapper().readValue(
-                            this.inputStream.bufferedReader().readText(),
-                            T::class.java
+                        this.responseCode, mapper.readValue<T>(
+                            this.inputStream.bufferedReader().readText()
                         ), null
                     )
                 } else {
@@ -134,7 +146,7 @@ class ApiManager(private val baseUrl: String) {
     private fun HttpURLConnection.writeBody(item: Any) {
         val outputWriter = outputStream.bufferedWriter()
         outputWriter.write(
-            jacksonObjectMapper().writeValueAsString(item)
+            mapper.writeValueAsString(item)
         )
         outputWriter.flush()
     }

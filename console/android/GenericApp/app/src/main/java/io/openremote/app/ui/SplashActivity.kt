@@ -49,7 +49,7 @@ class SplashActivity : Activity() {
             apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                 if (statusCode in 200..299) {
                     val intent = Intent(this@SplashActivity, OrMainActivity::class.java)
-                    intent.putExtra(ORConstants.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
+//                    intent.putExtra(ORConstants.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
                     intent.putExtra(ORConstants.BASE_URL_KEY, host)
                     startActivity(intent)
                     finish()

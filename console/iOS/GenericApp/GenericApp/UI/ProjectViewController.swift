@@ -77,7 +77,7 @@ extension ProjectViewController: UITextFieldDelegate {
         let apiManager = ApiManager(baseUrl: url)
         apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
             DispatchQueue.main.async {
-                if statusCode == 200 && error == nil {
+                if (statusCode == 200 || statusCode == 404) && error == nil {
                     let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
                     userDefaults?.set(self.host, forKey: DefaultsKey.hostKey)
                     userDefaults?.set(realm, forKey: DefaultsKey.realmKey)
