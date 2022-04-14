@@ -114,7 +114,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
      */
 
     default String[] addRealmRoles(String realm, String userId, String...roles) {
-        Set<String> realmRoles = Arrays.stream(getUserRealmRoles(realm, userId)).map(Role::getName).collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<String> realmRoles = Arrays.stream(getUserRealmRoles(realm, userId)).filter(role -> role.isAssigned() || Arrays.stream(roles).anyMatch(r -> role.getName().equals(r))).map(Role::getName).collect(Collectors.toCollection(LinkedHashSet::new));
         realmRoles.addAll(Arrays.asList(roles));
         return realmRoles.toArray(new String[0]);
     }

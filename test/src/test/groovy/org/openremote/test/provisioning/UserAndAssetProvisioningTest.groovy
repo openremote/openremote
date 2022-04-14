@@ -25,8 +25,11 @@ import com.hivemq.client.mqtt.MqttClientConfig
 import com.hivemq.client.mqtt.MqttClientConnectionConfig
 import io.moquette.BrokerConstants
 import io.netty.channel.socket.SocketChannel
+import org.keycloak.admin.client.resource.RealmResource
+import org.keycloak.representations.idm.RoleRepresentation
 import org.openremote.agent.protocol.mqtt.MQTTMessage
 import org.openremote.agent.protocol.mqtt.MQTT_IOClient
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -46,6 +49,7 @@ import org.openremote.model.attribute.MetaItem
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.provisioning.*
 import org.openremote.model.security.ClientRole
+import org.openremote.model.security.Tenant
 import org.openremote.model.security.User
 import org.openremote.model.util.ValueUtil
 import org.openremote.model.value.MetaItemType
@@ -84,6 +88,20 @@ class UserAndAssetProvisioningTest extends Specification implements ManagerConta
         def userAssetProvisioningMQTTHandler = mqttBrokerService.customHandlers.find {it instanceof UserAssetProvisioningMQTTHandler} as UserAssetProvisioningMQTTHandler
         def mqttHost = getString(container.getConfig(), MQTT_SERVER_LISTEN_HOST, BrokerConstants.HOST)
         def mqttPort = getInteger(container.getConfig(), MQTT_SERVER_LISTEN_PORT, BrokerConstants.PORT)
+
+        and: "a realm is created with some custom realm roles"
+        def tenant = new Tenant()
+        tenant.setRealm("test")
+        tenant.setDisplayName("Test")
+        tenant.setEnabled(true);
+        tenant.setDuplicateEmailsAllowed(true);
+        tenant.setRememberMe(true)
+        tenant = identityService.getIdentityProvider().createTenant(tenant)
+        (identityService.getIdentityProvider() as KeycloakIdentityProvider).getRealms(realmsResource -> {
+            RealmResource realmResource = realmsResource.realm(tenant.getRealm())
+            realmResource.roles().create(new RoleRepresentation("installer", "Installer", false))
+            realmResource.roles().create(new RoleRepresentation("home-owner", "Home owner", false))
+        })
 
         and: "an internal attribute event subscriber is added for test validation purposes"
         List<AttributeEvent> internalAttributeEvents = []
