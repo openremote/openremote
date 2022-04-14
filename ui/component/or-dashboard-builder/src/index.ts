@@ -4,7 +4,7 @@ import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-editor";
 import "./or-dashboard-widgetsettings";
-import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
+import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
 import {MDCTabBar} from "@material/tab-bar";
@@ -266,6 +266,14 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
+    changeDashboardName(value: string) {
+        if(this.selectedDashboard != null) {
+            const dashboard = this.selectedDashboard;
+            dashboard.displayName = value;
+            this.selectedDashboard = Object.assign({}, dashboard);
+        }
+    }
+
     /* ----------------- */
 
     @state()
@@ -281,7 +289,13 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="header-wrapper">
                             <div id="header-title">
                                 <!--<or-icon icon="view-dashboard"></or-icon>-->
-                                <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" .value="${this.selectedDashboard != null ? this.selectedDashboard.displayName : ' '}" .disabled="${this.isLoading || (this.selectedDashboard == null)}" style="min-width: 320px;"></or-mwc-input>
+                                <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" 
+                                              .value="${this.selectedDashboard != null ? this.selectedDashboard.displayName : ' '}"
+                                              .disabled="${this.isLoading || (this.selectedDashboard == null)}" 
+                                              @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.changeDashboardName(event.detail.value); }}"
+                                              style="min-width: 320px;">
+                                    
+                                </or-mwc-input>
                             </div>
                             <div id="header-actions">
                                 <div id="header-actions-content">
