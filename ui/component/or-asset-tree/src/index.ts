@@ -435,7 +435,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                               outlined="true"
                               @input="${(e: KeyboardEvent) => {
                                   // Means some input is occurring so delay filter
-                                  this._onFilterInputEven(e);                                  
+                                  this._onFilterInputEvent(e);                                  
                               }}"
                               @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
                                   // Means field has lost focus so do filter immediately
@@ -900,7 +900,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._doFiltering();
     }
 
-    protected _onFilterInputEven(e: KeyboardEvent) {
+    protected _onFilterInputEvent(e: KeyboardEvent) {
         let value: string | undefined;
 
         if (e.composedPath()) {
@@ -925,10 +925,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
 
-        if (this._filter.asset === currentFilter.asset &&
-            this._filter.assetType.length === currentFilter.assetType.length && this._filter.assetType.filter((val: string) => currentFilter.assetType.indexOf(val) !== -1).length === this._filter.assetType.length &&
-            this._filter.attribute.length === currentFilter.attribute.length && this._filter.attribute.filter((val: string) => currentFilter.attribute.indexOf(val) !== -1).length === this._filter.attribute.length &&
-            this._filter.attributeValue.length === currentFilter.attributeValue.length && this._filter.attributeValue.filter((val: string) => currentFilter.attributeValue.indexOf(val) !== -1).length === this._filter.attributeValue.length) {
+        if (Util.objectsEqual(this._filter, currentFilter,true)) {
             return;
         }
 
