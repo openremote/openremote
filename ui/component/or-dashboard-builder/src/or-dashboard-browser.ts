@@ -2,7 +2,6 @@ import { GridStack } from "gridstack";
 import {css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import {style} from "./style";
-import {ORGridStackNode} from "./or-dashboard-editor";
 import { DashboardWidgetType } from "@openremote/model";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling

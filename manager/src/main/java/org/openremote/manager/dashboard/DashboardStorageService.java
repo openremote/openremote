@@ -46,7 +46,6 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     @Override
     public void start(Container container) throws Exception {
-
     }
 
     @Override
@@ -78,12 +77,13 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     // Creation of initial dashboard (so not updating yet)
     protected <T extends Dashboard> T createNew(T dashboard) {
+        return persistenceService.doReturningTransaction(em -> em.merge(dashboard));
+    }
+
+    protected <T extends Dashboard> T save(T dashboard) {
         return persistenceService.doReturningTransaction(em -> {
-            try {
-                em.merge(dashboard);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            try { em.merge(dashboard); }
+            catch (Exception e) { e.printStackTrace(); }
             return dashboard;
         });
     }

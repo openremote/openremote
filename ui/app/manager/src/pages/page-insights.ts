@@ -9,6 +9,7 @@ import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
 import "../../../../component/or-dashboard-builder";
+import { DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -36,46 +37,10 @@ export class PageInsights extends Page<AppStateKeyed>  {
         // language=CSS
         return css`
 
-            #container {
-                display: flex;
-                width: 100%;
-            }
-            #tree {
-                flex-grow: 1;
-                align-items: stretch;
-                z-index: 1;
-                max-width: 300px;
-                box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
-            }
             #builder {
-                flex-grow: 2;
-                align-items: stretch;
                 z-index: 0;
                 background: transparent;
             }
-
-            .hideMobile {
-                display: none;
-            }
-
-            @media only screen and (min-width: 768px){
-                #tree {
-                    width: 300px;
-                    min-width: 300px;
-                }
-
-                .hideMobile {
-                    display: flex;
-                }
-
-                #builder,
-                #builder.hideMobile {
-                    display: initial;
-                    max-width: calc(100vw - 300px);
-                }
-            }
-            
-            
             
             /*.hideMobile {
                 display: none;
@@ -155,20 +120,37 @@ export class PageInsights extends Page<AppStateKeyed>  {
         super.connectedCallback();
     }
 
-    @state()
-    private selectedDashboard: any;
-
     protected render(): TemplateResult | void {
+        const template = {
+            columns: 8,
+            maxScreenWidth: 400,
+            screenPresets: [],
+            widgets: [
+                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item1', x: 0, y: 0, w: 2, h: 2, content: "<span>Widget 1</span>" }},
+                {widgetType: DashboardWidgetType.CHART, gridItem: { id: 'item2', x: 5, y: 0, w: 2, h: 2, content: "<span>Widget 2</span>" }},
+                {widgetType: DashboardWidgetType.MAP, gridItem: { id: 'item3', x: 2, y: 0, w: 3, h: 3, content: "<span>Widget 3</span>" }},
+            ]
+        } as DashboardTemplate;
         return html`
-            <div id="container">
-                <or-dashboard-tree id="tree" @created="${() => { this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectedDashboard = event.detail; }}"></or-dashboard-tree>
-                <or-dashboard-builder id="builder" .dashboard="${this.selectedDashboard}"></or-dashboard-builder>
+            <!--<or-dashboard-tree id="tree"
+                               @created="${(event: CustomEvent) => { console.log(event); }}"
+                               @select="${(event: CustomEvent) => { console.log(event); }}"
+                               @updated="${(event: CustomEvent) => { console.log(event); }}">
+            </or-dashboard-tree>-->
+            <!--<or-dashboard-editor style="background: transparent;" .template="${template}"
+                                 @selected="${(event: CustomEvent) => { console.log(event); }}"
+                                 @deselected="${(event: CustomEvent) => { console.log(event); }}"
+                                 @dropped="${(event: CustomEvent) => { console.log(event); }}" 
+                                 @changed="${(event: CustomEvent) => { console.log(event); }}"
+            ></or-dashboard-editor>-->
+            <!--<or-dashboard-browser style="width: 500px;"></or-dashboard-browser>-->
+            <div style="width: 100%;">
+                <or-dashboard-builder id="builder"></or-dashboard-builder>
             </div>
             <!--<div id="wrapper">
                 <div id="title">
                     <or-icon icon="chart-areaspline"></or-icon>${i18next.t("insights")}
                 </div>
-                <or-dashboard-builder id="data-viewer"></or-dashboard-builder>
                 <or-data-viewer id="data-viewer" .config="${this.config?.dataViewer}"></or-data-viewer>
             </div>-->
         `;

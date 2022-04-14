@@ -1,8 +1,8 @@
+import { DashboardWidget } from "@openremote/model";
 import {css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType } from "../../or-mwc-components/lib/or-mwc-input";
 import {style} from './style';
-import {AddOutput} from "./or-dashboard-editor";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -19,7 +19,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     }
 
     @property({type: Object})
-    protected selectedWidget: any;
+    protected selectedWidget: DashboardWidget | undefined;
 
     @state()
     protected expandedPanels: string[];
@@ -40,7 +40,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     }
 
     deleteSelected() {
-        this.dispatchEvent(new CustomEvent("delete", {detail: { widget: this.selectedWidget }}));
+        this.dispatchEvent(new CustomEvent("delete", {detail: this.selectedWidget }));
     }
 
     protected render() {

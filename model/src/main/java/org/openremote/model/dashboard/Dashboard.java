@@ -5,7 +5,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-
 import java.util.Date;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
@@ -34,7 +33,6 @@ public class Dashboard {
     @Column(name = "VERSION", nullable = false)
     protected long version;
 
-    @NotBlank(message = "{Dashboard.ownerId.NotBlank}")
     @Column(name = "OWNER_ID", nullable = false)
     protected String ownerId;
 
@@ -72,7 +70,7 @@ public class Dashboard {
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
-    public void setTemplate(DashboardTemplate template) {
+    public void setTemplate(@Valid DashboardTemplate template) {
         this.template = template;
     }
 
@@ -87,7 +85,7 @@ public class Dashboard {
 
 
     // TODO: still not proud of the validity check here, probably needs to move
-    public boolean checkValidity() {
+    /*public boolean checkValidity() {
         if(realm != null && !realm.isEmpty() && ownerId != null && !ownerId.isEmpty()) {
             // TODO: check for realm;
             // TODO: check for ownerId;
@@ -96,5 +94,5 @@ public class Dashboard {
             }
         }
         return false;
-    }
+    }*/
 }

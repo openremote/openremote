@@ -11,8 +11,7 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.WebApplicationException;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static javax.ws.rs.core.Response.Status.*;
 
 public class DashboardResourceImpl extends ManagerWebResource implements DashboardResource {
 
@@ -28,27 +27,44 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
     @Override
     public Dashboard[] getAllUserDashboards(RequestParams requestParams) {
+
         System.out.println("Getting all User Dashboards...");
         return this.dashboardStorageService.getAll();
     }
 
     @Override
-    public Dashboard[] create(RequestParams requestParams, Dashboard dashboard) {
+    public Dashboard create(RequestParams requestParams, Dashboard dashboard) {
         try {
             System.out.println("Creating a new Dashboard..");
-            /* TODO: temporarily disabled for executing without authorization
-            //  if(!isTenantActiveAndAccessible(dashboard.getRealm())) {
-            //    throw new WebApplicationException(FORBIDDEN);
-            //}*/
-            if(!dashboard.checkValidity()) {
-                throw new WebApplicationException(BAD_REQUEST);
+
+            // Check if access to realm
+            if(!isTenantActiveAndAccessible(dashboard.getRealm())) {
+                throw new WebApplicationException(FORBIDDEN);
             }
-            Dashboard storedDashboard = this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
+            dashboard.setOwnerId(getUserId());
+
+            Dashboard created = this.dashboardStorageService.createNew(ValueUtil.clone(dashboard));
+            return created;
 
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
         }
-        return new Dashboard[0];
+    }
+
+    @Override
+    public void update(RequestParams requestParams, Dashboard dashboard) {
+        try {
+            System.out.println("Updating a Dashboard..");
+
+            // Check if access to realm
+            if(!isTenantActiveAndAccessible(dashboard.getRealm())) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+            Dashboard updated = this.dashboardStorageService.save(ValueUtil.clone(dashboard));
+        } catch (IllegalStateException ex) {
+            ex.printStackTrace();
+            throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
+        }
     }
 }

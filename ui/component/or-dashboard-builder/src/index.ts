@@ -1,5 +1,5 @@
-import {html, css, LitElement, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import {css, html, LitElement, unsafeCSS} from "lit";
+import {customElement, property, state} from "lit/decorators.js";
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-editor";
@@ -7,9 +7,9 @@ import "./or-dashboard-widgetsettings";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
-import { MDCTabBar } from "@material/tab-bar";
-import {AddOutput, ORGridStackNode, SelectOutput} from "./or-dashboard-editor";
-import {Dashboard, DashboardGridItem, DashboardScalingPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import {MDCTabBar} from "@material/tab-bar";
+import {ORGridStackNode} from "./or-dashboard-editor";
+import {Dashboard, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
 import manager from "@openremote/core";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -20,6 +20,14 @@ const tabScrollerStyle = require("@material/tab-scroller/dist/mdc.tab-scroller.c
 
 // language=CSS
 const styling = css`
+
+    #tree {
+        flex-grow: 1;
+        align-items: stretch;
+        z-index: 1;
+        max-width: 300px;
+        box-shadow: rgb(0 0 0 / 21%) 0px 1px 3px 0px;
+    }
     
     /* Header related styling */
     #header {
@@ -31,6 +39,7 @@ const styling = css`
         padding: 20px 20px 14px 20px;
         display: flex;
         flex-direction: row;
+        border-bottom: 1px solid #E0E0E0;
     }
     #header-title {
         font-size: 18px;
@@ -65,6 +74,7 @@ const styling = css`
         flex-direction: column;
         width: 300px;
         background: white;
+        border-left: 1px solid #E0E0E0;
     }
     #browser {
         flex-grow: 1;
@@ -89,6 +99,10 @@ const styling = css`
     }
 `;
 
+export interface DashboardBuilderConfig {
+
+}
+
 @customElement("or-dashboard-builder")
 export class OrDashboardBuilder extends LitElement {
 
@@ -98,25 +112,45 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     @property()
-    protected isLoading: boolean | undefined;
-
-    @property()
-    protected dashboard: Dashboard | undefined;
+    protected readonly config: DashboardBuilderConfig | undefined;
 
 
+    /* ------------------- */
 
     @state()
-    protected sidebarMenuIndex: number;
+    protected dashboards: Dashboard[] | undefined;
 
     @state()
-    protected selectedWidget: DashboardWidget | undefined;
+    protected selectedDashboard: Dashboard | undefined;
+
+    @state()
+    protected initialDashboardJSON: string | undefined;
+
+    @state()
+    protected currentTemplate: DashboardTemplate | undefined;
+
+    @state()
+    protected initialTemplateJSON: string | undefined;
+
+    @state()
+    protected currentWidget: DashboardWidget | undefined;
+
+    @state()
+    protected isLoading: boolean;
+
+    @state()
+    protected hasChanged: boolean;
+
 
     /* ------------- */
 
     constructor() {
         super();
-        this.sidebarMenuIndex = 0;
-        if(this.isLoading == null) { this.isLoading = false; } // TODO: There is currently no usecase for it, but still
+        this.isLoading = true;
+        this.hasChanged = false;
+        /*this.getAllDashboards().then((dashboards: Dashboard[]) => {
+            this.dashboards = dashboards;
+        });*/
         this.updateComplete.then(() => {
             if(this.shadowRoot != null) {
 
@@ -135,14 +169,26 @@ export class OrDashboardBuilder extends LitElement {
 
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
-        if(changedProperties.has("dashboard")) {
-            if(this.dashboard != null) {
+        this.isLoading = (this.selectedDashboard == undefined); // Update loading state on whether a dashboard is selected
+        if(changedProperties.has("selectedDashboard")) {
+            this.hasChanged = (JSON.stringify(this.selectedDashboard) != JSON.stringify(this.initialDashboardJSON) || JSON.stringify(this.currentTemplate) != JSON.stringify(this.initialTemplateJSON));
+            if(this.selectedDashboard != null) {
 
-                // Set widgets to an empty array for GridStack to work.
-                if(this.dashboard.template != null && this.dashboard.template.widgets == null) {
-                    this.dashboard.template.widgets = [];
+                // Set widgets to an empty array if null for GridStack to work.
+                if(this.selectedDashboard.template != null && this.selectedDashboard.template.widgets == null) {
+                    this.selectedDashboard.template.widgets = [];
                 }
             }
+            this.currentTemplate = this.selectedDashboard?.template;
+        }
+        if(changedProperties.has("currentTemplate")) {
+            this.hasChanged = !(JSON.stringify(this.selectedDashboard) == this.initialDashboardJSON || JSON.stringify(this.currentTemplate) == this.initialTemplateJSON);
+            if(this.selectedDashboard != null) {
+                this.selectedDashboard.template = this.currentTemplate;
+            }
+        }
+        if(changedProperties.has("dashboards")) {
+            console.log(this.dashboards);
         }
     }
 
@@ -161,8 +207,172 @@ export class OrDashboardBuilder extends LitElement {
             gridItem: gridItem,
             widgetType: gridStackNode.widgetType
         } as DashboardWidget;
+
+        const tempTemplate = this.currentTemplate;
+        tempTemplate?.widgets?.push(widget);
+        this.currentTemplate = Object.assign({}, tempTemplate);
         return widget;
     }
+
+    deleteWidget(widget: DashboardWidget) {
+        if(this.currentTemplate != null && this.currentTemplate.widgets != null) {
+            const tempTemplate = this.currentTemplate;
+            tempTemplate.widgets = tempTemplate.widgets?.filter((x) => { return x.id != widget.id; });
+            this.currentTemplate = Object.assign({}, tempTemplate);
+            // this.requestUpdate();
+        }
+        if(this.currentWidget?.id == widget.id) {
+            this.deselectWidget();
+        }
+    }
+
+    /* ------------------------------ */
+
+    selectWidget(widget: DashboardWidget): void {
+        const foundWidget = this.currentTemplate?.widgets?.find((x) => { return x.gridItem?.id == widget.gridItem?.id; });
+        if(foundWidget != null) {
+            console.log("Selected a new Widget! [" + foundWidget.displayName + "]");
+            this.currentWidget = foundWidget;
+        }
+    }
+    deselectWidget() {
+        this.currentWidget = undefined;
+    }
+
+    /* --------------------- */
+
+    selectDashboard(dashboard: Dashboard) {
+        if(this.dashboards != null) {
+            this.selectedDashboard = this.dashboards.find((x) => { return x.id == dashboard.id; });
+            console.log("Setting initial Dashboard!");
+            this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
+            this.initialTemplateJSON = JSON.stringify(this.selectedDashboard?.template);
+        }
+    }
+
+    saveDashboard() {
+        if(this.selectedDashboard != null) {
+            this.isLoading = true;
+            manager.rest.api.DashboardResource.update(this.selectedDashboard).then((response) => {
+                console.log(response);
+                if(this.dashboards != null && this.selectedDashboard != null) {
+                    this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
+                    this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);
+                    this.dashboards[this.dashboards?.indexOf(this.selectedDashboard)] = this.selectedDashboard;
+                    this.currentTemplate = Object.assign({}, this.selectedDashboard.template);
+                }
+                this.isLoading = false;
+            })
+        }
+    }
+
+    /* ----------------- */
+
+    @state()
+    protected sidebarMenuIndex: number = 0;
+
+    // Rendering the page
+    render(): any {
+        return html`
+            <div id="container">
+                <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"></or-dashboard-tree>
+                <div id="container" style="display: table;">
+                    <div id="header">
+                        <div id="header-wrapper">
+                            <div id="header-title">
+                                <!--<or-icon icon="view-dashboard"></or-icon>-->
+                                <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" .value="${this.selectedDashboard != null ? this.selectedDashboard.displayName : ' '}" .disabled="${this.isLoading || (this.selectedDashboard == null)}" style="min-width: 320px;"></or-mwc-input>
+                            </div>
+                            <div id="header-actions">
+                                <div id="header-actions-content">
+                                    <or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
+                                    <or-mwc-input id="save-btn" .disabled="${this.isLoading || this.selectedDashboard == null || !this.hasChanged}" type="${InputType.BUTTON}" raised label="Save" @click="${() => { this.saveDashboard(); }}"></or-mwc-input>
+                                    <or-mwc-input id="view-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" outlined icon="eye" label="View"></or-mwc-input>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="content">
+                        <div id="container">
+                            <div id="builder">
+                                ${(this.selectedDashboard != null) ? html`
+                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.currentWidget}" .isLoading="${this.isLoading}"
+                                                         @selected="${(event: CustomEvent) => { console.log(event); this.selectWidget(event.detail); }}"
+                                                         @deselected="${(event: CustomEvent) => { console.log(event); this.deselectWidget(); }}"
+                                                         @dropped="${(event: CustomEvent) => { console.log(event); this.createWidget(event.detail); }}"
+                                                         @changed="${(event: CustomEvent) => { console.log(event); this.currentTemplate = Object.assign({}, event.detail.template); }}"
+                                    ></or-dashboard-editor>
+                                ` : html`
+                                    <div style="justify-content: center; display: flex; align-items: center; height: 100%;">
+                                        <span>Please select a Dashboard from the left.</span>
+                                    </div>
+                                `}
+                            </div>
+                            <div id="sidebar">
+                                <div style="${this.currentWidget == null ? css`display: none` : null}">
+                                    <div id="menu-header">
+                                        <div id="title-container">
+                                            <span id="title">${this.currentWidget?.displayName}:</span>
+                                        </div>
+                                        <div>
+                                            <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @click="${(event: CustomEvent) => { this.deselectWidget(); }}"></or-mwc-input>
+                                        </div>
+                                    </div>
+                                    <div id="content" style="display: block;">
+                                        <or-dashboard-widgetsettings .selectedWidget="${this.currentWidget}" @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"></or-dashboard-widgetsettings>
+                                    </div>
+                                </div>
+                                <div style="${this.currentWidget != null ? css`display: none` : null}">
+                                    <div id="menu-header">
+                                        <div class="mdc-tab-bar" role="tablist" id="tab-bar">
+                                            <div class="mdc-tab-scroller">
+                                                <div class="mdc-tab-scroller__scroll-area">
+                                                    <div class="mdc-tab-scroller__scroll-content">
+                                                        <button class="mdc-tab" role="tab" aria-selected="false" tabindex="0">
+                                                            <span class="mdc-tab__content">
+                                                                <span class="mdc-tab__text-label">WIDGETS</span>
+                                                            </span>
+                                                            <span class="mdc-tab-indicator">
+                                                                <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                                                            </span>
+                                                            <span class="mdc-tab__ripple"></span>
+                                                        </button>
+                                                        <button class="mdc-tab" role="tab" aria-selected="false" tabindex="1">
+                                                            <span class="mdc-tab__content">
+                                                                <span class="mdc-tab__text-label">SETTINGS</span>
+                                                            </span>
+                                                            <span class="mdc-tab-indicator">
+                                                                <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
+                                                            </span>
+                                                            <span class="mdc-tab__ripple"></span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
+                                        <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
+                                        <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
+                                            <span>Settings to display here.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `
+    }
+
+    private async getAllDashboards(): Promise<Dashboard[]> {
+        return manager.rest.api.DashboardResource.getAllUserDashboards().then((response) => {
+            return response.data as Dashboard[];
+        });
+    }
+
+    /* ======================== */
 
     // Generating the Grid Item details like X and Y coordinates for GridStack to work.
     generateGridItem(gridstackNode: ORGridStackNode, displayName: string): DashboardGridItem {
@@ -182,8 +392,8 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
     generateWidgetDisplayName(widgetType: DashboardWidgetType): string | undefined {
-        if(this.dashboard != null && this.dashboard.template != null && this.dashboard.template.widgets != null) {
-            const filteredWidgets: DashboardWidget[] = this.dashboard.template.widgets.filter((x) => { return x.widgetType == widgetType; });
+        if(this.selectedDashboard != null && this.currentTemplate != null && this.currentTemplate.widgets != null) {
+            const filteredWidgets: DashboardWidget[] = this.currentTemplate.widgets.filter((x) => { return x.widgetType == widgetType; });
             switch (widgetType) {
                 case DashboardWidgetType.MAP: return "Map #" + (filteredWidgets.length + 1);
                 case DashboardWidgetType.CHART: return "Chart #" + (filteredWidgets.length + 1);
@@ -206,123 +416,6 @@ export class OrDashboardBuilder extends LitElement {
                 return ('<div class="gridItem"><or-map center="5.454250, 51.445990" zoom="5" style="height: 500px; width: 100%;"></or-map></div>');
             }
         }
-    }
-
-    /* ----------------- */
-
-    selectWidget(event: SelectOutput): void {
-        if(this.dashboard != null) {
-            const foundWidget = this.dashboard.template?.widgets?.find((x) => { return x.gridItem?.id == event.gridItem?.id; });
-            if(foundWidget != null) {
-                console.log("Selected a new Widget! [" + foundWidget.displayName + "]");
-                this.selectedWidget = foundWidget;
-            }
-        }
-    }
-    deselectCurrentWidget() {
-        this.selectedWidget = undefined;
-    }
-    deleteCurrentWidget() {
-        if(this.selectedWidget != null && this.dashboard != null) {
-            const index = this.dashboard.template?.widgets?.indexOf(this.selectedWidget);
-            if(index != null) {
-                this.dashboard.template?.widgets?.splice(index, 1);
-                this.requestUpdate();
-            }
-        }
-    }
-
-    /* ----------------- */
-
-    // Rendering the page
-    render(): any {
-        return html`
-            <div id="container" style="display: table;">
-                <div id="header">
-                    <div id="header-wrapper">
-                        <div id="header-title">
-                            <!--<or-icon icon="view-dashboard"></or-icon>-->
-                            <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" .value="${this.dashboard != null ? this.dashboard.displayName : ' '}" .disabled="${this.isLoading || (this.dashboard == null)}" style="min-width: 320px;"></or-mwc-input>
-                        </div>
-                        <div id="header-actions">
-                            <div id="header-actions-content">
-                                <or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.dashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
-                                <or-mwc-input id="save-btn" .disabled="${this.isLoading || (this.dashboard == null)}" type="${InputType.BUTTON}" raised label="Save"></or-mwc-input>
-                                <or-mwc-input id="view-btn" .disabled="${this.isLoading || (this.dashboard == null)}" type="${InputType.BUTTON}" outlined icon="eye" label="View"></or-mwc-input>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="content">
-                    <div id="container">
-                        <div id="builder">
-                            ${(this.dashboard != null && !this.isLoading) ? html`
-                                <or-dashboard-editor style="background: transparent;" .template="${this.dashboard.template}" .selected="${this.selectedWidget}"
-                                                 @select="${(event: CustomEvent) => { this.selectWidget(event.detail as SelectOutput); }}"
-                                                 @deselect="${(event: CustomEvent) => { this.deselectCurrentWidget(); }}"
-                                                 @add="${(event: CustomEvent) => { this.dashboard?.template?.widgets?.push(this.createWidget((event.detail as AddOutput).gridStackNode)); this.requestUpdate(); }}"
-                                ></or-dashboard-editor>
-                            ` : (this.isLoading ? html`
-                                <span>Loading Dashboard..</span>
-                            ` : html`
-                                <span>Cannot find Dashboard!</span>
-                            `)}
-                        </div>
-                        <div id="sidebar">
-                            <div style="${this.selectedWidget == null ? css`display: none` : null}">
-                                <div id="menu-header">
-                                    <div id="title-container">
-                                        <span id="title">${this.selectedWidget?.displayName}:</span>
-                                    </div>
-                                    <div>
-                                        <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @click="${(event: any) => { this.deselectCurrentWidget(); }}"></or-mwc-input>
-                                    </div>
-                                </div>
-                                <div id="content" style="display: block;">
-                                    <or-dashboard-widgetsettings .selectedWidget="${this.selectedWidget}" @delete="${() => { this.deleteCurrentWidget(); }}"></or-dashboard-widgetsettings>
-                                </div>
-                            </div>
-                            <div style="${this.selectedWidget != null ? css`display: none` : null}">
-                                <div id="menu-header">
-                                    <div class="mdc-tab-bar" role="tablist" id="tab-bar">
-                                        <div class="mdc-tab-scroller">
-                                            <div class="mdc-tab-scroller__scroll-area">
-                                                <div class="mdc-tab-scroller__scroll-content">
-                                                    <button class="mdc-tab" role="tab" aria-selected="false" tabindex="0">
-                                                        <span class="mdc-tab__content">
-                                                            <span class="mdc-tab__text-label">WIDGETS</span>
-                                                        </span>
-                                                        <span class="mdc-tab-indicator">
-                                                            <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
-                                                        </span>
-                                                        <span class="mdc-tab__ripple"></span>
-                                                    </button>
-                                                    <button class="mdc-tab" role="tab" aria-selected="false" tabindex="1">
-                                                        <span class="mdc-tab__content">
-                                                            <span class="mdc-tab__text-label">SETTINGS</span>
-                                                        </span>
-                                                        <span class="mdc-tab-indicator">
-                                                            <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
-                                                        </span>
-                                                        <span class="mdc-tab__ripple"></span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
-                                    <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
-                                    <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
-                                        <span>Settings to display here.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `
     }
 
     /* ----------------- */

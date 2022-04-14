@@ -3,7 +3,8 @@ import {css, html, LitElement, PropertyValues, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import {style} from "./style";
-import {Dashboard, DashboardGridItem, DashboardScalingPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import {DefaultColor4} from "@openremote/core";
+import {DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -34,6 +35,10 @@ const editorStyling = css`
         width: 960px; /* TODO: Should be set according to input */
         padding: 4px;
     }
+    .maingrid__disabled {
+        pointer-events: none;
+        opacity: 40%;
+    }
     .grid-stack-item-content {
         background: white;
         box-sizing: border-box;
@@ -42,7 +47,7 @@ const editorStyling = css`
         overflow: hidden;
     }
     .grid-stack-item-content__active {
-        border: 2px solid green;    
+        border: 2px solid ${unsafeCSS(DefaultColor4)};    
     }
     .gridItem {
         height: 100%;
@@ -58,12 +63,6 @@ const editorStyling = css`
     }
 `
 
-export interface SelectOutput {
-    gridItem: DashboardGridItem | undefined;
-}
-export interface AddOutput {
-    gridStackNode: ORGridStackNode;
-}
 export interface ORGridStackNode extends GridStackNode {
     widgetType: DashboardWidgetType;
 }
@@ -78,26 +77,67 @@ export class OrDashboardEditor extends LitElement{
     // Variables
     mainGrid: GridStack | undefined; // TODO: MAKE NOT UNDEFINED ANYMORE
 
-    @property()
-    protected template: DashboardTemplate | undefined;
+    @property() // required to work!
+    protected readonly template: DashboardTemplate | undefined;
 
     @property({type: Object})
     protected selected: DashboardWidget | undefined;
+
+    @property()
+    protected readonly isLoading: boolean | undefined;
 
 
     /* ---------------- */
 
     constructor() {
         super();
+        this.isLoading = false;
     }
+
 
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
+
+        // Template input changes
         if(changedProperties.has("template")) {
             this.renderGrid();
         }
+
+        // When the Loading State changes
+        if(changedProperties.has("isLoading") && this.mainGrid != null && this.shadowRoot != null) {
+            if(this.isLoading) {
+                this.mainGrid.disable();
+                this.shadowRoot.getElementById("maingrid")?.classList.add("maingrid__disabled");
+            } else {
+                this.mainGrid.enable();
+                this.shadowRoot.getElementById("maingrid")?.classList.remove("maingrid__disabled");
+            }
+        }
+
+        // User selected a Widget
+        if(changedProperties.has("selected")) {
+            if(this.selected != undefined) {
+                if(changedProperties.get("selected") != undefined) { // if previous selected state was a different widget
+                    this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selected") as DashboardWidget }));
+                }
+                const foundItem = this.mainGrid?.getGridItems().find((item) => { return item.gridstackNode?.id == this.selected?.gridItem?.id});
+                if(foundItem != null) {
+                    this.selectGridItem(foundItem);
+                }
+                this.dispatchEvent(new CustomEvent("selected", { detail: this.selected }));
+
+            } else {
+                this.mainGrid?.getGridItems().forEach(item => {
+                    this.deselectGridItem(item);
+                });
+                this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selected") as DashboardWidget }));
+            }
+        }
     }
 
+    /* -------------------------------------------------------- */
+
+    // Main large method for rendering the Grid
     private renderGrid(): void {
         if(this.shadowRoot != null) {
 
@@ -108,9 +148,8 @@ export class OrDashboardEditor extends LitElement{
             this.mainGrid = GridStack.init({
                 acceptWidgets: true,
                 animate: true,
-                cellHeight: 'initial',
+                cellHeight: 'auto',
                 cellHeightThrottle: 100,
-                column: this.template?.columns,
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                     scroll: true
@@ -123,6 +162,11 @@ export class OrDashboardEditor extends LitElement{
                 minRow: 10
                 // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
             }, gridElement);
+
+            // Set amount of columns if different from default (which is 12)
+            if(this.template?.columns != null) {
+                this.mainGrid.column(this.template.columns);
+            }
 
             // Add widgets of template onto the Grid
             if(this.template != null && this.template.widgets != null) {
@@ -155,70 +199,58 @@ export class OrDashboardEditor extends LitElement{
             this.mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: GridStackNode | undefined) => {
                 if(this.mainGrid != null && newWidget != null) {
                     this.mainGrid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
-                    this.dispatchEvent(new CustomEvent("add", {detail: { gridStackNode: newWidget } as AddOutput}));
+                    this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget }));
                 }
             });
-        }
-    }
 
-
-    // If ANY update happened (also the fields with a partial update)
-    requestUpdate(name?: PropertyKey, oldValue?: unknown) {
-        console.log("A property has been updated! [" + name?.toString() + "]");
-
-        // When the list of widgets has updated
-        if(name?.toString() === "template" && this.template != null) {
-            const gridItems = this.mainGrid?.getGridItems();
-            if(gridItems != null) {
-
-                // Remove item if the GridStack items are incorrect
-                if(this.template.widgets != null && gridItems.length > this.template.widgets.length) {
-                    gridItems.forEach((gridItem) => {
-                        const widget = this.template?.widgets?.find((widget) => { return widget.gridItem?.id == gridItem.id });
-                        if(widget == undefined) {
-                            this.mainGrid?.removeWidget(gridItem);
-                        }
-                    })
-                }
-                // Add item if there is a GridStack item missing.
-                if(this.template.widgets != null) {
-                    this.template.widgets.forEach((widget) => {
-                        const foundItem = gridItems.find((item) => { return item.gridstackNode?.id == widget.gridItem?.id});
-                        if(foundItem == null && widget.gridItem != null && this.mainGrid != null) {
-                            const htmlElement: GridItemHTMLElement = this.mainGrid.addWidget(widget.gridItem);
-                            this.addWidgetEventListeners(widget.gridItem, htmlElement);
+            // Handling changes of items (resizing, moving around etc)
+            this.mainGrid.on('change', (event: Event, items: any) => {
+                if(this.template != null && this.template.widgets != null) {
+                    (items as GridStackNode[]).forEach(node => {
+                        const widget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
+                        if(widget != null && widget.gridItem != null) {
+                            console.log("Updating properties of " + widget.displayName);
+                            widget.gridItem.x = node.x;
+                            widget.gridItem.y = node.y;
+                            widget.gridItem.w = node.w;
+                            widget.gridItem.h = node.h;
+                            widget.gridItem.content = node.content;
                         }
                     });
+                    this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
                 }
-            }
-        }
+            });
 
-        // On widget selected status change (select AND deselect)
-        if(name?.toString() == "selected") {
-            if(this.selected == undefined) {
-                this.mainGrid?.getGridItems().forEach(item => {
-                    this.deselectGridItem(item);
-                });
-            } else {
-                const foundItem = this.mainGrid?.getGridItems().find((item) => { return item.gridstackNode?.id == this.selected?.gridItem?.id});
-                if(foundItem != null) {
-                    this.selectGridItem(foundItem);
-                }
-            }
+            // Making all GridStack events dispatch on this component as well.
+            this.mainGrid.on("added", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("added", {detail: { event: event, items: items }})); });
+            this.mainGrid.on("change", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("change", { detail: { event: event, items: items }})); });
+            this.mainGrid.on("disable", (event: Event) => { this.dispatchEvent(new CustomEvent("disable", { detail: { event: event }})); });
+            this.mainGrid.on("dragstart", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("dragstart", { detail: { event: event, el: el }})); });
+            this.mainGrid.on("drag", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("drag", { detail: { event: event, el: el }})); });
+            this.mainGrid.on("dragstop", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("dragstop", { detail: { event: event, el: el }})); });
+            this.mainGrid.on("enable", (event: Event) => { this.dispatchEvent(new CustomEvent("enable", { detail: { event: event }})); });
+            this.mainGrid.on("removed", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("removed", { detail: { event: event, items: items }})); });
+            this.mainGrid.on("resizestart", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resizestart", { detail: { event: event, el: el }})); });
+            this.mainGrid.on("resize", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resize", { detail: { event: event, el: el }})); });
+            this.mainGrid.on("resizestop", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resizestop", { detail: { event: event, el: el }})); });
         }
-        return super.requestUpdate(name, oldValue);
     }
+
+
+    /* --------------------- */
 
 
     // Adding HTML event listeners (for example selecting/deselecting)
     addWidgetEventListeners(gridItem: DashboardGridItem, htmlElement: GridItemHTMLElement) {
-        htmlElement.addEventListener("click", (event) => {
-            if(this.selected?.gridItem?.id == gridItem.id) {
-                this.dispatchEvent(new CustomEvent("deselect", { detail: { gridItem: gridItem }}));
-            } else {
-                this.dispatchEvent(new CustomEvent("select", { detail: { gridItem: gridItem } as SelectOutput}));
-            }
-        });
+        if(htmlElement.onclick == null) {
+            htmlElement.onclick = (event) => {
+                if(this.selected?.gridItem?.id == gridItem.id) {
+                    this.selected = undefined;
+                } else {
+                    this.selected = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
+                }
+            };
+        }
     }
 
 
@@ -231,22 +263,24 @@ export class OrDashboardEditor extends LitElement{
         }
     }
     deselectGridItem(gridItem: GridItemHTMLElement) {
-        gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content__active").forEach((item: HTMLElement) => {
+        gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
             item.classList.remove('grid-stack-item-content__active'); // Remove active CSS class
         });
     }
 
+
+    /* ------------------------------ */
 
     // Render
     protected render() {
         return html`
             <div>
                 <div id="view-options">
-                    <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" outlined label="50%"></or-mwc-input>
-                    <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
-                    <or-mwc-input id="width-input" type="${InputType.NUMBER}" outlined label="Width" min="100" value="1920" style="width: 90px"></or-mwc-input>
-                    <or-mwc-input id="height-input" type="${InputType.NUMBER}" outlined label="Height" min="100" value="1080" style="width: 90px;"></or-mwc-input>
-                    <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" icon="screen-rotation"></or-mwc-input>
+                    <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" outlined label="50%"></or-mwc-input>
+                    <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
+                    <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" value="1920" style="width: 90px"></or-mwc-input>
+                    <or-mwc-input id="height-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Height" min="100" value="1080" style="width: 90px;"></or-mwc-input>
+                    <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"></or-mwc-input>
                 </div>
                 <div id="container" style="display: flex; justify-content: center; height: auto;">
                     <div id="maingrid">
