@@ -42,8 +42,8 @@ import spock.util.concurrent.PollingConditions
 import java.util.concurrent.TimeUnit
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
@@ -75,13 +75,6 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 20, delay: 0.2)
-        and: "the IO client reconnect time is set low for test purposes"
-        def initialMillis = AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS
-        def maxMillis = AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS
-        def jitterMillis = AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS
-        AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = 500
-        AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS = 500
-        AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS = 0
 
         and: "the container is started"
         def container = startContainer(defaultConfig(), defaultServices())
@@ -99,7 +92,7 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
                     null,
                     null,
                     MASTER_REALM_ADMIN_USER,
-                    getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)))
+                    getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)))
         client.setEncoderDecoderProvider({
             [new AbstractNettyIOClient.MessageToMessageDecoder<String>(String.class, client)].toArray(new ChannelHandler[0])
         })
@@ -216,9 +209,6 @@ class WebsocketClientTest extends Specification implements ManagerContainerTrait
         }
 
         cleanup: "the server should be stopped"
-        AbstractNettyIOClient.RECONNECT_DELAY_INITIAL_MILLIS = initialMillis
-        AbstractNettyIOClient.RECONNECT_DELAY_MAX_MILLIS = maxMillis
-        AbstractNettyIOClient.RECONNECT_DELAY_JITTER_MILLIS = jitterMillis
         if (client != null) {
             client.disconnect()
         }

@@ -3,8 +3,8 @@ import {until} from "lit/directives/until.js";
 import {customElement, property, state} from "lit/decorators.js";
 import {InputType, OrMwcInput, OrInputChangedEvent, getValueHolderInputTemplateProvider, ValueInputProviderOptions, OrInputChangedEventDetail, ValueInputProvider} from "@openremote/or-mwc-components/or-mwc-input";
 import i18next from "i18next";
-import {Asset, Attribute, NameValueHolder} from "@openremote/model";
-import {AssetModelUtil, DefaultColor5, DefaultColor3, Util} from "@openremote/core";
+import {Asset, Attribute, NameValueHolder, AssetModelUtil} from "@openremote/model";
+import {DefaultColor5, DefaultColor3, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {OrIcon} from "@openremote/or-icon";
 import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
@@ -409,8 +409,12 @@ export class OrEditAssetPanel extends LitElement {
         const asset = this.asset!;
         let attr: Attribute<any>;
 
+        const isDisabled = (attribute: Attribute<any>) => {
+            return !(attribute && attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+        }
+
         const onAttributeChanged = (attribute: Attribute<any>) => {
-            const addDisabled = !(attribute.name && !asset.attributes![attribute.name] && AssetNameRegex.test(attribute.name) && attribute.type);
+            const addDisabled = isDisabled(attribute);
             const addBtn = dialog!.shadowRoot!.getElementById("add-btn") as OrMwcInput;
             addBtn!.disabled = addDisabled;
             attr = attribute;
@@ -442,10 +446,13 @@ export class OrEditAssetPanel extends LitElement {
                     default: true,
                     actionName: "add",
                     action: () => {
-                        this.asset.attributes![attr.name!] = attr;
-                        this._onModified();
+                        if (attr) {
+                            this.asset.attributes![attr.name!] = attr;
+                            this._onModified();
+                        }
                     },
-                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"></or-mwc-input>`
+                    content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"
+                                    @click="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));

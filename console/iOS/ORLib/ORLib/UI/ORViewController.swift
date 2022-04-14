@@ -27,7 +27,7 @@ import Popover
 open class ORViewcontroller : UIViewController {
     
     var data : Data?
-    var menuButton: MDCFloatingButton?
+    public var menuButton: MDCFloatingButton?
     var menuList: UIView?
     var myWebView : WKWebView?
     var webProgressBar: UIProgressView?
@@ -114,15 +114,28 @@ open class ORViewcontroller : UIViewController {
         webProgressBar?.topAnchor.constraint(equalTo: myWebView!.topAnchor, constant: -2).isActive = true
         webProgressBar?.heightAnchor.constraint(equalToConstant: 2).isActive = true
 
+        self.processAppConfig()
+    }
+    
+    public func processAppConfig() {
         if appConfig?.menuEnabled ?? false {
 
+            let sbHeight: CGFloat
+            if #available(iOS 11.0, *) {
+                sbHeight = UIApplication.shared.keyWindow?.safeAreaInsets.top ?? UIApplication.shared.statusBarFrame.height
+            } else {
+                sbHeight = UIApplication.shared.statusBarFrame.height
+            }
+            
+            let bundle = Bundle(for: ORViewcontroller.self)
+            
             menuButton = MDCFloatingButton(shape: .default)
             menuButton?.backgroundColor = UIColor(hexaRGB: appConfig?.primaryColor ?? "#43A047")
             menuButton?.translatesAutoresizingMaskIntoConstraints = false
             menuButton?.addTarget(self, action: #selector(self.pressed(sender:)), for: .touchUpInside)
-            menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .normal)
-            menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .selected)
-            menuButton?.setImage(#imageLiteral(resourceName: "ic_menu"), for: .highlighted)
+            menuButton?.setImage(UIImage(named: "ic_menu", in: bundle, compatibleWith: nil), for: .normal)
+            menuButton?.setImage(UIImage(named: "ic_menu", in: bundle, compatibleWith: nil), for: .selected)
+            menuButton?.setImage(UIImage(named: "ic_menu", in: bundle, compatibleWith: nil), for: .highlighted)
             menuButton?.isHidden = true
 
             if let secondColor = appConfig?.secondaryColor {

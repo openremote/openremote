@@ -462,6 +462,8 @@
       "indexedItem": "Item {{index}}"
     }
   },
+  "yes": "Ja",
+  "no": "Nein",
   "filter": {
     "action": "FILTER",
     "assetTypeLabel": "Asset type",

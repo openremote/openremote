@@ -436,6 +436,8 @@
     "invalidDate": "Fecha non valida",
     "keyAlreadyExists": "La chiave non esiste"
   },
+  "yes": "Sì",
+  "no": "No",
   "filter": {
     "action": "FILTER",
     "assetTypeLabel": "Asset type",

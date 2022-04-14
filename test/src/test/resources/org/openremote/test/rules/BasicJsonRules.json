@@ -53,6 +53,34 @@
         },
         {
           "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "name": "linkedPushTest",
+            "message": {
+              "type": "push",
+              "title": "Linked user test"
+            }
+          }
+        },
+        {
+          "action": "notification",
+          "target": {
+            "linkedUsers": true
+          },
+          "notification": {
+            "name": "linkedEmailTest",
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%",
+              "title": "Linked user test"
+            }
+          }
+        },
+        {
+          "action": "notification",
           "notification": {
             "message": {
               "type": "email",
@@ -73,8 +101,7 @@
             "assets": {
               "parents": [
                 {
-                  "type": "BuildingAsset",
-                  "name": "Apartment 2"
+                  "id": "3jm23JN24m6Yk9oviNro3f"
                 }
               ],
               "types": [
@@ -91,8 +118,7 @@
             "assets": {
               "parents": [
                 {
-                  "type": "BuildingAsset",
-                  "name": "Apartment 2"
+                  "id": "3jm23JN24m6Yk9oviNro3f"
                 }
               ],
               "types": [
@@ -117,8 +143,7 @@
             "assets": {
               "parents": [
                 {
-                  "type": "BuildingAsset",
-                  "name": "Apartment 2"
+                  "id": "3jm23JN24m6Yk9oviNro3f"
                 }
               ],
               "types": [

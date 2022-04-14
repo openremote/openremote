@@ -1,33 +1,73 @@
 // Common configuration applied to all projects
-
-import java.nio.file.Paths
-
+import java.nio.file.*
+import java.nio.file.attribute.*
+import java.util.Set
 import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
 import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 import static org.jetbrains.gradle.ext.ShortenCommandLine.MANIFEST
 import org.jetbrains.gradle.ext.Application
 import org.jetbrains.gradle.ext.JUnit
 
-// Build plugins
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
+// Ensure git hook creation task is executed
+if (project == rootProject) {
+
+    project.afterEvaluate {
+
+        if (rootProject.hasProperty("gradleFileEncrypt")) {
+            println("File encryption plugin config found, configuring git pre commit hook and decrypt task dependency")
+
+            // Write git hook for encryption plugin checks before any commit
+            def path = Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit")
+            def f = path.toFile()
+            f.text = """#!/bin/sh
+
+echo "***** Running gradle encryption plugin checkFilesGitIgnored task ******"
+
+./gradlew checkFilesGitIgnoredNew
+
+status=\$?
+
+exit \$status
+"""
+            try {
+                Set<PosixFilePermission> perms = Files.readAttributes(path, PosixFileAttributes.class).permissions()
+                perms.add(PosixFilePermission.OWNER_WRITE)
+                perms.add(PosixFilePermission.OWNER_READ)
+                perms.add(PosixFilePermission.OWNER_EXECUTE)
+                perms.add(PosixFilePermission.GROUP_WRITE)
+                perms.add(PosixFilePermission.GROUP_READ)
+                perms.add(PosixFilePermission.GROUP_EXECUTE)
+                perms.add(PosixFilePermission.OTHERS_READ)
+                perms.add(PosixFilePermission.OTHERS_EXECUTE)
+                Files.setPosixFilePermissions(path, perms)
+            } catch (Exception ignored) {}
+
+            // Add dependency on decrypt task for deployment installDist
+            Task decryptTask = getTasksByName("decryptFiles", false)[0]
+
+            try {
+                def installDist = tasks.getByPath(":deployment:installDist")
+                installDist.dependsOn decryptTask
+                installDist.mustRunAfter(decryptTask)
+            } catch (Exception ex) {
+                println("Failed to add decryptFiles task dependency: " + ex)
+            }
+        } else {
+            // Remove git hook
+            try {
+                Files.delete(Paths.get(rootProject.projectDir.path, ".git/hooks/pre-commit"))
+            } catch (Exception ignored) {
+            }
         }
-    }
-    dependencies {
-        classpath "gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.1"
     }
 }
 
-// Configure IDEA project (needs to be applied to the root project only)
+
+// Configure Conditional plugins
 if (project == rootProject) {
-    try {
-        apply plugin: "org.jetbrains.gradle.plugin.idea-ext"
-    } catch(Exception e) {
+    apply plugin: "org.jetbrains.gradle.plugin.idea-ext"
 
-    }
-
+    // Configure IDEA
     if (project.hasProperty("idea") && idea.project) {
         // IDEA settings
         idea.project.settings {
@@ -46,24 +86,28 @@ if (project == rootProject) {
                     shortenCommandLine = MANIFEST
                     workingDirectory = (isCustomProject() ? project(":openremote").projectDir.toString() : projectDir.toString())
                 }
+                "Demo Setup"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
+                    envs = [
+                            OR_SETUP_TYPE: "demo"
+                    ]
+                }
+                "Demo Setup with Proxy"(Application) {
+                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
+                    envs = [
+                            OR_SETUP_TYPE: "demo",
+                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            OR_SSL_PORT: "8443"
+                    ]
+                }
                 "Empty"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
-                }
-                "Test Setup"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
                 }
                 "Empty with Proxy"(Application) {
                     moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.manager.main" : ".manager.main")
                     envs = [
-                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            EXTERNAL_URL: "https://localhost:8443"
-                    ]
-                }
-                "Test Setup with Proxy"(Application) {
-                    moduleName = getProject().idea.module.name + (isCustomProject() ? ".openremote.setup.main" : ".setup.main")
-                    envs = [
-                            WEBSERVER_LISTEN_HOST: "0.0.0.0",
-                            EXTERNAL_URL: "https://localhost:8443"
+                            OR_WEBSERVER_LISTEN_HOST: "0.0.0.0",
+                            OR_SSL_PORT: "8443"
                     ]
                 }
             }
@@ -74,10 +118,10 @@ if (project == rootProject) {
                 "Custom Deployment"(Application) {
                     moduleName = "${getProject().idea.module.name}.setup.main"
                     envs = [
-                        MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
-                        MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
-                        CUSTOM_APP_DOCROOT: "../deployment/manager/app",
-                        CONSOLE_APP_CONFIG_ROOT: "../deployment/manager/consoleappconfig"
+                        OR_MAP_SETTINGS_PATH: "../deployment/map/mapsettings.json",
+                        OR_MAP_TILES_PATH: "../deployment/map/mapdata.mbtiles",
+                        OR_CUSTOM_APP_DOCROOT: "../deployment/manager/app",
+                        OR_CONSOLE_APP_CONFIG_DOCROOT: "../deployment/manager/consoleappconfig"
                     ]
                 }
             }
@@ -163,11 +207,31 @@ def getYarnInstallTask() {
     }
 }
 
+// Gets the list of runtime JAR dependencies; can be used in custom project deployment installDist task to populate
+// extensions directory
+def getDeploymentJars() {
+    if (project.configurations.find { it.name == "runtimeClasspath" } == null) {
+        return null;
+    }
+
+    // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
+    // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
+    def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
+
+    return project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll {
+        dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect {
+        println "CopyLibs Artifact: ${it.file.path}"
+        return it.file
+    }
+}
+
 ext {
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
     isCustomProject = this.&isCustomProject
+    getYarnInstallTask = this.&getYarnInstallTask
+    getDeploymentJars = this.&getDeploymentJars
 }
 
 if (project.convention.findPlugin(JavaPluginConvention)) {
@@ -195,60 +259,39 @@ task yarnInstallForce(type: Exec){
     commandLine npmCommand("yarn"), "install", "--force"
 }
 
-// Add npm tasks
-task npmInstall(type: Exec){
-    commandLine npmCommand("npm"), "install"
-}
 task npmClean(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "clean"
+    commandLine npmCommand("yarn"), "run", "clean"
 }
 task npmBuild(type: Exec){
     mustRunAfter npmClean
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "build"
+    commandLine npmCommand("yarn"), "run", "build"
 }
 task npmTest(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "test"
+    commandLine npmCommand("yarn"), "run", "test"
 }
 task npmServe(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "serve"
+    commandLine npmCommand("yarn"), "run", "serve"
 }
 task npmPrepare(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "prepublishOnly"
+    commandLine npmCommand("yarn"), "run", "prepublishOnly"
 }
 task npmPublish(type: Exec){
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "publish"
+    commandLine npmCommand("yarn"), "publish"
 }
 task npmServeProduction(type: Exec) {
     dependsOn getYarnInstallTask()
-    commandLine npmCommand("npm"), "run", "serveProduction"
+    commandLine npmCommand("yarn"), "run", "serveProduction"
 }
 
 // Add typescript tasks
 task tscWatch(type: Exec) {
     commandLine npmCommand("npx"), "tsc", "-b", "--watch"
-}
-
-// A task for copying a custom java projects libs that aren't part of the manager dependencies
-task copyLibs {
-    doLast {
-
-        if (project.configurations.find { it.name == "runtimeClasspath" } != null) {
-            // Get all dependencies that are already part of the openremote manager and exclude these from the libs dir
-            // otherwise they will appear on the classpath twice (once in manager app dir and then again in extensions)
-            def excludeDependencies = resolveProject(":manager").configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts
-            def customLibs = project.configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.findAll { dep -> excludeDependencies.find { it == dep } == null && dep.name != "openremote-manager" }.collect { it.file }
-            copy {
-                from customLibs
-                into "${project.buildDir}/image/manager/extensions"
-            }
-        }
-    }
 }
 
 // Configure Java build

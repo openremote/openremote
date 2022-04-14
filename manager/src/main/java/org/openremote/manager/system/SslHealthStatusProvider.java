@@ -20,15 +20,14 @@
 package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.util.ValueUtil;
 
 import javax.net.ssl.*;
-import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
-import java.net.URI;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -37,19 +36,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.DAYS;
+import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 
 public class SslHealthStatusProvider implements X509TrustManager, HealthStatusProvider, ContainerService {
 
-    public static final String EXTERNAL_URL = "EXTERNAL_URL";
-    public static final String EXTERNAL_URL_DEFAULT = "http://localhost";
     public static final String NAME = "ssl";
     public static final String VERSION = "1.0";
     protected static final Logger LOG = Logger.getLogger(SslHealthStatusProvider.class.getName());
-    protected boolean sslEnabled;
-    protected String hostname;
-    protected int port;
-    protected SSLContext sslContext;
+    protected String host;
+    protected int SSLPort;
+    protected SSLContext SSLContext;
 
     @Override
     public int getPriority() {
@@ -58,19 +55,19 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
     @Override
     public void init(Container container) throws Exception {
-        String externalUrlStr = getString(container.getConfig(), EXTERNAL_URL, EXTERNAL_URL_DEFAULT);
-        URI externalURI = UriBuilder.fromUri(externalUrlStr).build();
-        sslEnabled = "https".equals(externalURI.getScheme());
-        hostname = externalURI.getHost();
-        port = externalURI.getPort() > 0 ? externalURI.getPort() : sslEnabled ? 443 : 80;
+        
+        int SSLPort = getInteger(container.getConfig(), Constants.OR_SSL_PORT, -1);
+        
+        if (SSLPort > 0 && SSLPort <= 65536) {
+            this.SSLPort = SSLPort;
+            host = getString(container.getConfig(), Constants.OR_HOSTNAME, null);
+            SSLContext = SSLContext.getInstance("TLS");
+            SSLContext.init(null, new TrustManager[]{this}, null);
+        }
     }
 
     @Override
     public void start(Container container) throws Exception {
-        if (sslEnabled) {
-            sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[]{this}, null);
-        }
     }
 
     @Override
@@ -90,14 +87,14 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
 
     @Override
     public Object getHealthStatus() {
-        if (!sslEnabled) {
+        if (SSLContext == null) {
             return null;
         }
 
-        SSLSocketFactory ssf = sslContext.getSocketFactory();
+        SSLSocketFactory ssf = SSLContext.getSocketFactory();
 
         try {
-            SSLSocket socket = (SSLSocket) ssf.createSocket(hostname, 443);
+            SSLSocket socket = (SSLSocket) ssf.createSocket(host, SSLPort);
             socket.startHandshake();
 
             X509Certificate[] peerCertificates = (X509Certificate[]) socket.getSession().getPeerCertificates();
@@ -109,7 +106,7 @@ public class SslHealthStatusProvider implements X509TrustManager, HealthStatusPr
             objectValue.put("validDays", validDays);
             return objectValue;
         } catch (IOException e) {
-            LOG.log(Level.WARNING, "Failed to connect to SSL port 443 on host: " + hostname);
+            LOG.log(Level.WARNING, "Failed to connect to SSL port " + SSLPort + " on host: " + host);
             return null;
         }
     }

@@ -18,11 +18,11 @@ import {getItemTemplate, getListTemplate, ListItem, ListType, MDCListActionEvent
 // @ts-ignore
 const menuStyle = require("@material/menu/dist/mdc.menu.css");
 
-export class OrMwcMenuChangedEvent extends CustomEvent<string | string[]> {
+export class OrMwcMenuChangedEvent extends CustomEvent<any[] | any> {
 
     public static readonly NAME = "or-mwc-menu-changed";
 
-    constructor(values: string | string[]) {
+    constructor(values: any[] | any) {
         super(OrMwcMenuChangedEvent.NAME, {
             detail: values,
             bubbles: true,
@@ -110,7 +110,7 @@ export class OrMwcMenu extends LitElement {
     public menuItems?: (ListItem | ListItem[] | null)[];
 
     @property({type: Array})
-    public values?: string[] | string;
+    public values?: any[] | any;
 
     @property({type: Boolean, attribute: true})
     public multiSelect?: boolean;
@@ -179,7 +179,7 @@ export class OrMwcMenu extends LitElement {
                 `;
             }
 
-            return getItemTemplate(item, index, this.values, type, translate, (e, item) => this._itemClicked(e, item));
+            return getItemTemplate(item, index, (Array.isArray(this.values) ? this.values : this.values ? [this.values] : []), type, translate, (e, item) => this._itemClicked(e, item));
         })}`;
     }
 
@@ -222,7 +222,7 @@ export class OrMwcMenu extends LitElement {
             if (!Array.isArray(this.values)) {
                 this.values = this.values ? [this.values] : [];
             }
-            const index = this.values.findIndex((v) => v === value);
+            const index = this.values.findIndex((v: any) => v === value);
             if (index >= 0) {
                 this.values.splice(index, 1);
             } else {
@@ -230,6 +230,6 @@ export class OrMwcMenu extends LitElement {
             }
             this.requestUpdate();
         }
-        this.dispatchEvent(new OrMwcMenuChangedEvent(this.values));
+        this.dispatchEvent(new OrMwcMenuChangedEvent(this.values!));
     }
 }

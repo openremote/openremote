@@ -51,7 +51,7 @@ generateTypeScript {
     optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
     mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
     mapDate = cz.habarta.typescript.generator.DateMapping.asNumber
-    outputFile = "src/index.ts"
+    outputFile = "src/model.ts"
     outputFileType = "implementationFile"
     outputKind = "module"
     jackson2Configuration = [

@@ -16,13 +16,14 @@ import {
     ValueDescriptor,
     ValuePredicateUnion,
     WellknownMetaItems,
-    WellknownValueTypes
+    WellknownValueTypes,
+    AssetModelUtil
 } from "@openremote/model";
 import {AssetQueryOperator, getAssetIdsFromQuery, getAssetTypeFromQuery, RulesConfig} from "../index";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import "@openremote/or-attribute-input";
-import manager, {AssetModelUtil, Util} from "@openremote/core";
+import manager, {Util} from "@openremote/core";
 import i18next from "i18next";
 import {buttonStyle} from "../style";
 import {OrRulesJsonRuleChangedEvent} from "./or-rule-json-viewer";
@@ -693,10 +694,6 @@ export class OrRuleAssetQuery extends translate(i18next)(LitElement) {
             types: [
                 type
             ],
-            select: {
-                excludeParentInfo: true,
-                excludePath: true
-            },
             orderBy: {
                 property: AssetQueryOrderBy$Property.NAME
             }

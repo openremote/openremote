@@ -507,29 +507,34 @@ public class RulesFacts extends Facts implements RuleListener {
         });
     }
 
-    public boolean logFacts(Logger logger) {
+    public boolean logFacts(Logger logger, Level level) {
+
+        if (!logger.isLoggable(level)) {
+            return false;
+        }
+
         boolean haveLog = false;
         if (getAllFacts().count() > 0) {
-            logger.info("--------------------------------- CLOCK ---------------------------------");
-            LOG.info(getClock().toString());
+            logger.log(level, "--------------------------------- CLOCK ---------------------------------");
+            logger.log(level, getClock().toString());
             haveLog = true;
         }
 
         List<AssetState<?>> sortedAssetStates = new ArrayList<>(getAssetStates());
         sortedAssetStates.sort(Comparator.naturalOrder());
         if (sortedAssetStates.size() > 0) {
-            logger.info("--------------------------------- ASSET STATES (" + sortedAssetStates.size() + ") ---------------------------------");
+            logger.log(level, "--------------------------------- ASSET STATES (" + sortedAssetStates.size() + ") ---------------------------------");
             for (AssetState<?> assetState : sortedAssetStates) {
-                logger.info(assetState.toString());
+                logger.log(level, assetState.toString());
             }
             haveLog = true;
         }
         List<TemporaryFact<AssetState<?>>> sortedAssetEvents = new ArrayList<>(getAssetEvents());
         if (sortedAssetEvents.size() > 0) {
-            logger.info("--------------------------------- ASSET EVENTS (" + sortedAssetEvents.size() + ") ---------------------------------");
+            logger.log(level, "--------------------------------- ASSET EVENTS (" + sortedAssetEvents.size() + ") ---------------------------------");
             sortedAssetEvents.sort(Comparator.comparing(TemporaryFact::getTime));
             for (TemporaryFact<AssetState<?>> assetEvent : sortedAssetEvents) {
-                logger.info(assetEvent.toString());
+                logger.log(level, assetEvent.toString());
             }
             haveLog = true;
         }
@@ -537,16 +542,16 @@ public class RulesFacts extends Facts implements RuleListener {
         List<String> names = new ArrayList<>(namedFacts.keySet());
         names.sort(Comparator.naturalOrder());
         if (names.size() > 0) {
-            logger.info("--------------------------------- NAMED FACTS (" + names.size() + ") ---------------------------------");
+            logger.log(level, "--------------------------------- NAMED FACTS (" + names.size() + ") ---------------------------------");
             for (String name : names) {
-                logger.info(String.format("%s => %s", name, namedFacts.get(name)));
+                logger.log(level, String.format("%s => %s", name, namedFacts.get(name)));
             }
             haveLog = true;
         }
         if (getAnonymousFacts().size() > 0) {
-            logger.info("--------------------------------- ANONYMOUS FACTS (" + getAnonymousFacts().size() + ") ---------------------------------");
+            logger.log(level, "--------------------------------- ANONYMOUS FACTS (" + getAnonymousFacts().size() + ") ---------------------------------");
             for (Object o : getAnonymousFacts()) {
-                logger.info(String.format("%s", o));
+                logger.log(level, String.format("%s", o));
             }
             haveLog = true;
         }
@@ -659,7 +664,7 @@ public class RulesFacts extends Facts implements RuleListener {
         if (ruleName.startsWith("--") && LOG.isLoggable(Level.INFO)) {
             boolean haveLog = false;
             if (logFacts)
-                haveLog = logFacts(LOG);
+                haveLog = logFacts(LOG, Level.INFO);
             if (logVars)
                 haveLog = haveLog || logVars(LOG);
             if (haveLog) {

@@ -26,9 +26,6 @@ async function initApartment1Asset(): Promise<string|undefined> {
             predicateType: "string",
             match: AssetQueryMatch.EXACT,
             value: "RoomAsset"
-        },
-        select: {
-            include: AssetQueryInclude.ONLY_ID_AND_NAME
         }
     };
 

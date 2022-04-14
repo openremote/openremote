@@ -75,7 +75,7 @@ extension ProjectViewController: UITextFieldDelegate {
         let url = project.isUrl() ? project.appending("/api/\(realm)") : "https://\(project).openremote.io/api/\(realm)"
         
         let apiManager = ApiManager(baseUrl: url)
-        apiManager.getAppConfig(callback: { statusCode, orAppConfig, error in
+        apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in
             DispatchQueue.main.async {
                 if statusCode == 200 && error == nil {
                     let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)

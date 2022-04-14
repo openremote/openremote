@@ -39,6 +39,8 @@ dependencies {
         // Conflicts with asm version bundled with GWT
         exclude group: "org.ow2.asm"
     }
+
+    implementation "dev.failsafe:failsafe:$failsafeVersion"
 }
 
 jar {

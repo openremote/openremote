@@ -19,6 +19,7 @@
  */
 package org.openremote.model.attribute;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.openremote.model.value.AttributeDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
@@ -67,5 +68,14 @@ public class AttributeMap extends NamedMap<Attribute<?>> {
 
     public <T> void setValue(AttributeDescriptor<T> descriptor, T value) {
         getOrCreate(descriptor).setValue(value);
+    }
+
+    /**
+     * Need to declare equals here as {@link com.vladmihalcea.hibernate.type.json.internal.JsonTypeDescriptor} uses
+     * {@link Class#getDeclaredMethod} to find it...
+     */
+    @Override
+    public boolean equals(@Nullable Object object) {
+        return super.equals(object);
     }
 }

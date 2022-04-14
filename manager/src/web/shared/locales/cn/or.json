@@ -436,6 +436,8 @@
     "invalidDate": "Invalid date",
     "keyAlreadyExists": "Key already exists"
   },
+  "yes": "是的",
+  "no": "不",
   "filter": {
     "action": "FILTER",
     "assetTypeLabel": "Asset type",

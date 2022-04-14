@@ -14,8 +14,8 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
-import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
-import manager, {AssetModelUtil, subscribe, Util} from "@openremote/core";
+import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import manager, {subscribe, Util} from "@openremote/core";
 import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
 import {HistoryConfig, OrAttributeHistory, OrAttributeHistoryEvent} from "@openremote/or-attribute-history";
@@ -23,6 +23,7 @@ import {
     AgentDescriptor,
     Asset,
     AssetEvent,
+    AssetModelUtil,
     Attribute,
     AttributeEvent,
     ClientRole,
@@ -30,13 +31,13 @@ import {
     SharedEvent,
     WellknownAssets,
     WellknownAttributes,
-    WellknownMetaItems
+    WellknownMetaItems,
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
-import i18next, {TOptions, InitOptions} from "i18next";
+import i18next, {InitOptions, TOptions} from "i18next";
 import {styleMap} from "lit/directives/style-map.js";
 import {classMap} from "lit/directives/class-map.js";
-import { GenericAxiosResponse } from "axios";
+import {GenericAxiosResponse} from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
@@ -44,7 +45,7 @@ import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PanelConfig {
-    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results";
+    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers";
     title?: string;
     hide?: boolean;
     hideOnMobile?: boolean;
@@ -290,7 +291,9 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
     }
 
-    if (panelConfig && panelConfig.type === "info") {
+    if (!panelConfig) return undefined;
+
+    if (panelConfig.type === "info") {
 
         // This type of panel shows attributes and/or properties of the asset
         const infoConfig = panelConfig as InfoPanelConfig;
@@ -358,10 +361,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         })}`;
     }
 
-    if (panelConfig && panelConfig.type === "setup") {
+    if (panelConfig.type === "setup") {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
-        
+
         if (!descriptor || !asset.id || descriptor.descriptorType !== "agent" || !descriptor.assetDiscovery && !descriptor.assetImport) {
             return;
         }
@@ -371,13 +374,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement,
                 fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput,
                 str = fileInputElem.value;
-            
+
             if (!str) {
                 return;
             }
-            
+
             fileUploadBtn.disabled = false;
-            
+
             let i;
             if (str.lastIndexOf('\\')) {
                 i = str.lastIndexOf('\\') + 1;
@@ -390,7 +393,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         const discoverAssets = () => {
             const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
                 cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
-            
+
             if (!discoverBtn || !cancelBtn) {
                 return false;
             }
@@ -398,7 +401,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             cancelBtn.hidden = false;
             discoverBtn.disabled = true;
             discoverBtn.label = i18next.t("discovering") + '...';
-            
+
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => {
                     if (response.status !== 200) {
@@ -418,15 +421,15 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     discoverBtn.label = i18next.t("discoverAssets");
                 });
         }
-        
+
         const cancelDiscovery = () => {
             const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
                 cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
-            
+
             discoverBtn.disabled = false;
             discoverBtn.label = i18next.t("discoverAssets");
             cancelBtn.hidden = true;
-            
+
             // TODO: cancel the request to the manager
         }
 
@@ -438,14 +441,14 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             }
 
             fileUploadBtn.disabled = true;
-            
+
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             if (fileInputElem) {
                 const reader = new FileReader();
                 if (fileInputElem.files && fileInputElem.files.length) {
                     reader.readAsDataURL(fileInputElem.files[0]); //convert to base64
                 }
-                
+
                 reader.onload = () => {
                     if (!reader.result) {
                         showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
@@ -477,12 +480,12 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                             .finally(() => {
                                 fileUploadBtn.disabled = false;
                             });
-                  
+
                     }
                 }
             }
         }
-        
+
         let content: TemplateResult = html``;
 
         if (descriptor.assetImport) {
@@ -504,7 +507,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
-        
+
         return html`
             <style>
                 [hidden] {
@@ -513,11 +516,11 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             </style>
             ${content}
         `;
-        
+
     }
 
     // This is not something that should be part of the standard asset-viewer
-    if (panelConfig && panelConfig.type === "survey") {
+    if (panelConfig.type === "survey") {
         return html``;
         // return html`
         //     <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
@@ -525,14 +528,14 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     }
 
     // This is not something that should be part of the standard asset-viewer
-    if (panelConfig && panelConfig.type === "survey-results") {
+    if (panelConfig.type === "survey-results") {
         return html``;
         // return html`
         //     <or-survey-results id="survey-results" .survey="${asset}"></or-survey-results>
         // `;
     }
 
-    if (panelConfig && panelConfig.type === "history") {
+    if (panelConfig.type === "history") {
         // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
         const historyConfig = panelConfig as HistoryPanelConfig;
         const includedAttributes = historyConfig.include ? historyConfig.include : undefined;
@@ -610,7 +613,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         `;
     }
 
-    if (panelConfig && panelConfig.type === "group") {
+    if (panelConfig.type === "group") {
 
         if (asset.type !== "GroupAsset") {
             return;
@@ -630,17 +633,17 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
 
-      
+
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
             selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
         }
-        const configStr = window.localStorage.getItem('OrAssetConfig')
+        const config: any = manager.console.retrieveData("OrAssetConfig");
         const viewSelector = asset.id ? asset.id : window.location.hash;
-        if(configStr) {
-            const config = JSON.parse(configStr);
+
+        if (config && config.views) {
             const view = config.views[viewSelector];
-            if(view) {
+            if (view) {
                 selectedAttributes = [...view]
             }
         }
@@ -718,11 +721,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 return arr;
             });
 
-            let config;
-            const configStr = window.localStorage.getItem('OrAssetConfig')
-            if(configStr) {
-                config = JSON.parse(configStr);
-                if(asset.id) {
+            let config: any = manager.console.retrieveData("OrAssetConfig");
+
+            if (config) {
+                if (asset.id) {
                     config.views[asset.id] = selectedAttributes;
                 }
             } else {
@@ -732,16 +734,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     }
                 }
             }
-           
 
-            const message = {
-                provider: "STORAGE",
-                action: "STORE",
-                key: "OrAssetConfig",
-                value: JSON.stringify(config)
-    
-            }
-            manager.console._doSendProviderMessage(message)
+            manager.console.storeData("OrAssetConfig", config);
             window.setTimeout(() => OrAssetViewer.generateGrid(hostElement.shadowRoot), 0);
         };
 
@@ -771,7 +765,28 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             `;
     }
 
-    return undefined;
+    if (panelConfig.type === "linkedUsers") {
+
+        const createUserTable = (rows: string[][]) => {
+            const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName+"-user-table") as OrMwcTable;
+            userTable.options = {stickyFirstColumn:false};
+            userTable.headers = ['Username', 'Roles', 'Restricted user'];
+            userTable.rows = rows.sort(Util.sortByString(u => u[0]));
+        };
+
+        // Load users and rights, then update the table
+        getLinkedUsers(asset, hostElement).then((linkedUsers) => {
+            Promise.all(linkedUsers).then(res => {
+                if (!res || res.length === 0) {
+                    hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
+                    return;
+                }
+                createUserTable(res);
+            })
+        });
+
+        return html`<or-mwc-table .id="${panelName}-user-table"></or-mwc-table>`;
+    }
 }
 
 export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, itemConfig: InfoPanelItemConfig) {
@@ -799,7 +814,7 @@ export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, ho
     }
 
     return html`
-        <or-attribute-input class="force-btn-padding" .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location' ? true : false}"></or-attribute-input>
+        <or-attribute-input class="force-btn-padding" disablesubscribe .assetType="${asset!.type}" .attribute="${attribute}" .assetId="${asset.id!}" .disabled="${attrDisabled}" .label="${attrLabel}" .readonly="${attrReadonly}" .disableButton="${attrDisableButton}" .inputType="${attrInputType}" .hasHelperText="${!attrDisableHelper}" .fullWidth="${attribute.name === 'location' ? true : false}"></or-attribute-input>
     `;
 }
 
@@ -864,9 +879,7 @@ export function getField(name: string, itemConfig?: InfoPanelItemConfig, content
 async function getAssetNames(ids: string[]): Promise<string[]> {
     const response = await manager.rest.api.AssetResource.queryAssets({
         select: {
-            excludePath: true,
-            excludeParentInfo: true,
-            excludeAttributes: true
+            attributes: []
         },
         ids: ids
     });
@@ -883,10 +896,6 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
 
     try {
         response = await manager.rest.api.AssetResource.queryAssets({
-            select: {
-                excludePath: true,
-                excludeParentInfo: true
-            },
             parents: [
                 {
                     id: id
@@ -903,6 +912,64 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     }
 
     return response.data.filter((asset) => asset.type === childAssetType);
+}
+
+async function getLinkedUsers(asset: Asset, hostElement: LitElement): Promise<Promise<string[]>[]> {
+    let response: Promise<string[]>[];
+
+    try {
+        response = await manager.rest.api.AssetResource.getUserAssetLinks(
+            {realm: manager.displayRealm, assetId: asset.id}
+        ).then((userAssetLinksRes) => {
+            const userIds = userAssetLinksRes.data.map(e => e.id!.userId) as string[];
+            return userIds.map(async (userId) => {
+
+                let row: string[] = [];
+
+                await manager.rest.api.UserResource.get(manager.displayRealm, userId!)
+                    .then((usersRes) => {
+                        row.push(usersRes.data.username!);
+                    });
+
+                await manager.rest.api.UserResource.getRoles(manager.displayRealm)
+                    .then((rolesRes) => {
+                        const roles = rolesRes.data.filter(role => !role.composite);
+                        if (!manager.isSuperUser() && !roles.some(r => r.name === 'write:admin') && !roles.some(r => r.name === 'read:admin')) {
+                            hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
+                            return;
+                        }
+                        const compositeRoles = rolesRes.data.filter(role => role.composite).map(r => r.name);
+                        const roleNames = compositeRoles.join(', ');
+                        row.push(roleNames!);
+                    })
+                    .catch((err) => {
+                        console.info('User not allowed to get roles', err);
+                        hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
+                        return;
+                    });
+
+                await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
+                    .then((rolesRes) => {
+                        const hasRestrictedUser = rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
+
+                        let restrictedUser = hasRestrictedUser ? i18next.t('yes') : i18next.t('no');
+                        row.push(restrictedUser);
+                    });
+
+                return row;
+            });
+        });
+
+    } catch (e) {
+        console.log("Failed to get child assets: " + e);
+        return [];
+    }
+
+    if (!response) {
+        return [];
+    }
+
+    return response;
 }
 
 export async function saveAsset(asset: Asset): Promise<SaveResult> {
@@ -944,62 +1011,66 @@ export async function saveAsset(asset: Asset): Promise<SaveResult> {
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-@customElement("or-asset-viewer")
-export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
+export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
+    viewerStyles: {
 
-    public static DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
-        viewerStyles: {
-
+    },
+    panels: {
+        group: {
+            type: "group",
+            title: "underlyingAssets"
         },
-        panels: {
-            group: {
-                type: "group",
-                title: "underlyingAssets"
-            },
-            info: {
-                type: "info",
-                hideOnMobile: true,
-                properties: {
-                    include:[]
-                },
-                attributes: {
-                    include: ["notes", "manufacturer", "model"]
-                }
-            },
-            setup: {
-                type: "setup",
-                title: "setup",
-                hideOnMobile: false
-            },
-            location: {
-                type: "info",
-                properties: {
-                    include:[]
-                },
-                attributes: {
-                    include: ["location"],
-                    itemConfig: {
-                        location: {
-                            label: "",
-                            readonly: true
-                        }
-                    }
-                }
+        info: {
+            type: "info",
+            hideOnMobile: true,
+            properties: {
+                include:[]
             },
             attributes: {
-                type: "info",
-                properties: {
-                    include:[]
-                },
-                attributes: {
-                    exclude: ["location", "notes", "manufacturer", "model", "status"]
-                }
-            },
-            history: {
-                type: "history"
+                include: ["notes", "manufacturer", "model"]
             }
+        },
+        setup: {
+            type: "setup",
+            title: "setup",
+            hideOnMobile: false
+        },
+        location: {
+            type: "info",
+            properties: {
+                include:[]
+            },
+            attributes: {
+                include: ["location"],
+                itemConfig: {
+                    location: {
+                        label: "",
+                        readonly: true
+                    }
+                }
+            }
+        },
+        attributes: {
+            type: "info",
+            properties: {
+                include:[]
+            },
+            attributes: {
+                exclude: ["location", "notes", "manufacturer", "model"]
+            }
+        },
+        history: {
+            type: "history"
+        },
+        linkedUsers: {
+            type: "linkedUsers",
+            title: "linkedUsers",
         }
-    };
+    }
+};
+
+@customElement("or-asset-viewer")
+export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElement)) {
 
     static get styles() {
         return [
@@ -1162,7 +1233,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 content = html`                
                     <div id="view-container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                         ${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
-        
                             if (panelConfig.hide) {
                                 return ``;
                             }
@@ -1326,18 +1396,26 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
 
         if (event.eventType === "attribute") {
+
+            // Inject the attribute as we don't subscribe to events from individual attribute inputs
             const attributeEvent = event as AttributeEvent;
             const attrName = attributeEvent.attributeState!.ref!.name!;
 
             if (attributeEvent.attributeState!.deleted && this.asset && this.asset.attributes) {
                 delete this.asset.attributes[attrName];
                 this.asset = {...this.asset};
+            } else if (this.asset && this.asset.attributes && this.asset.attributes[attrName]) {
+                const attr = {...this.asset.attributes[attrName]};
+                attr.value = attributeEvent.attributeState!.value;
+                attr.timestamp = attributeEvent.timestamp;
+                this.asset.attributes[attrName] = attr;
+                this.asset = {...this.asset};
             }
         }
     }
 
     protected _getPanelConfig(asset: Asset): AssetViewerConfig {
-        const config = {...OrAssetViewer.DEFAULT_VIEWER_CONFIG};
+        const config = {...DEFAULT_VIEWER_CONFIG};
 
         if (this.config) {
 

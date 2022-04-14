@@ -1,6 +1,6 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
-import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor} from "@openremote/model";
+import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil} from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
 import {
@@ -11,7 +11,7 @@ import {
     OrMwcListChangedEvent
 } from "@openremote/or-mwc-components/or-mwc-list";
 import {i18next} from "@openremote/or-translate";
-import {AssetModelUtil, DefaultColor3, DefaultColor5, Util} from "@openremote/core";
+import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 
 export type OrAddAssetDetail = {

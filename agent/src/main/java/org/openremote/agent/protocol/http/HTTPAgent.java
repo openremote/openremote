@@ -98,6 +98,24 @@ public class HTTPAgent extends Agent<HTTPAgent, HTTPProtocol, HTTPAgentLink> {
         return this;
     }
 
+    public Optional<Boolean> getMessageConvertHex() {
+        return getAttributes().getValue(MESSAGE_CONVERT_HEX);
+    }
+
+    public HTTPAgent setMessageConvertHex(Boolean value) {
+        getAttributes().getOrCreate(MESSAGE_CONVERT_HEX).setValue(value);
+        return this;
+    }
+
+    public Optional<Boolean> getMessageConvertBinary() {
+        return getAttributes().getValue(MESSAGE_CONVERT_BINARY);
+    }
+
+    public HTTPAgent setMessageConvertBinary(Boolean value) {
+        getAttributes().getOrCreate(MESSAGE_CONVERT_BINARY).setValue(value);
+        return this;
+    }
+
     @Override
     public HTTPProtocol getProtocolInstance() {
         return new HTTPProtocol(this);

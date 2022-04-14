@@ -1,0 +1,76 @@
+{
+  "rules": [
+    {
+      "name": "Markthal",
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "ConsoleAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "location"
+                        },
+                        "value": {
+                          "predicateType": "radial",
+                          "negated": false,
+                          "radius": 100,
+                          "lat": 51.9202494,
+                          "lng": 4.4851372
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "notification": {
+            "name": "Markthal",
+            "message": {
+              "type": "push",
+              "title": "Markthal",
+              "body": "Happy Food Shopping",
+              "action": {
+                "url": "https://www.markthal.nl"
+              },
+              "buttons": [
+                {
+                  "title": "Open in app",
+                  "action": {
+                    "url": "https://www.markthal.nl"
+                  }
+                },
+                {
+                  "title": "Open in browser",
+                  "action": {
+                    "url": "https://www.markthal.nl",
+                    "openInBrowser": true
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "reset": {
+        "timer": "1m"
+      }
+    }
+  ]
+}

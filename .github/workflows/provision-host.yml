@@ -1,0 +1,67 @@
+# ---------------------------------------------------------------------------------------------------------------------
+# This workflow handles creation of an AWS EC2 host in the specified member account by calling
+# (.ci_cd/aws/provision_host.sh).
+# You need to be a member of the CI/CD github team to use this
+# ---------------------------------------------------------------------------------------------------------------------
+name: Provision Host
+
+on:
+  workflow_dispatch:
+    inputs:
+      ACCOUNT_NAME:
+        description: 'Account to provision host within'
+        type: string
+        required: true
+      HOST:
+        description: 'Host to provision'
+        required: true
+      INSTANCE_TYPE:
+        description: 'EC2 instance type (only change if you know what you are doing)'
+        default: t4g.small
+        type: choice
+        options:
+          - t4g.small
+          - t4g.medium
+          - t4g.large
+          - m6g.medium
+          - m6g.large
+        required: true
+      PROVISION_S3_BUCKET:
+        description: 'Create S3 bucket for backups'
+        type: boolean
+        default: true
+        required: false
+
+jobs:
+
+  provision:
+    name: Provision
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Check CI/CD team membership
+        uses: tspascoal/get-user-teams-membership@v1
+        id: checkUserMember
+        with:
+          username: ${{ github.actor }}
+          organization: openremote
+          team: CI/CD
+          GITHUB_TOKEN: ${{ secrets._TEMP_ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Provision Host
+        if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
+        run: |
+          chmod +x .ci_cd/aws/*
+          .ci_cd/aws/provision_host.sh "$ACCOUNT_NAME" "$HOST" "$INSTANCE_TYPE" "$PROVISION_S3_BUCKET"
+        env:
+          ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}
+          HOST: ${{ github.event.inputs.HOST }}
+          INSTANCE_TYPE: ${{ github.event.inputs.INSTANCE_TYPE }}
+          PROVISION_S3_BUCKET: ${{ github.event.inputs.PROVISION_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
+          AWS_ROLE_NAME: ${{ secrets._TEMP_AWS_ROLE_NAME }}

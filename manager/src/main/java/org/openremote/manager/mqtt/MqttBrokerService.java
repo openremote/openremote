@@ -32,7 +32,7 @@ import io.netty.handler.codec.mqtt.MqttPublishMessage;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
@@ -57,8 +57,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static java.util.stream.StreamSupport.stream;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.model.syslog.SyslogCategory.API;
@@ -336,9 +336,15 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         try {
             Method closeMethod = session.getClass().getDeclaredMethod("closeImmediately");
             closeMethod.setAccessible(true);
+            Field connectionField = session.getClass().getDeclaredField("mqttConnection");
+            connectionField.setAccessible(true);
             Method disconnectMethod = session.getClass().getDeclaredMethod("disconnect");
             disconnectMethod.setAccessible(true);
-            closeMethod.invoke(session);
+
+            Object sessionConnection = connectionField.get(session);
+            if (sessionConnection != null) {
+                closeMethod.invoke(session);
+            }
             disconnectMethod.invoke(session);
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to force disconnect Moquette session using reflection", e);

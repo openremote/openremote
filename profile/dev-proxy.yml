@@ -6,7 +6,7 @@
 # Your changes will be visible live on browser reload or after restart:
 #
 # - Run the manager in an IDE with the following required environment variables:
-#       WEBSERVER_LISTEN_HOST=0.0.0.0
+#       OR_WEBSERVER_LISTEN_HOST=0.0.0.0
 #
 # Please see deploy.yml for configuration details for each service.
 #
@@ -23,12 +23,8 @@ services:
       service: proxy
     environment:
       MANAGER_HOST: 'host.docker.internal'
-      KEYCLOAK_HOST: 'host.docker.internal'
-      KEYCLOAK_PORT: 8081
-    ports:
-      - "80:80" # HTTP for letsencrypt cert generation and in general it redirects to 443 for HTTPS
-      - "443:443" # HTTPS /auth directs to keycloak and other paths direct to manager
-      - "8883:8883" # MQTTS
+      OR_KEYCLOAK_HOST: 'host.docker.internal'
+      OR_KEYCLOAK_PORT: 8081
 
   keycloak:
     extends:
@@ -46,7 +42,9 @@ services:
         condition: service_healthy
     environment:
       # Use manager dev mode reverse proxy to access keycloak so manager and keycloak hosts match
-      KEYCLOAK_FRONTEND_URL: ${EXTERNAL_URL:-https://localhost}/auth
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}/auth
+      # Use the following if OR_SSL_PORT is not the default 443
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOSTNAME:-localhost}:${OR_SSL_PORT:-443}/auth
 
   postgresql:
     extends:

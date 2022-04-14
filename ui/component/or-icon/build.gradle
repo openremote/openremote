@@ -1,5 +1,11 @@
 buildDir = "dist"
 
+task copyMdiFont(type: Exec) {
+    dependsOn getYarnInstallTask()
+    // Using yarn throws an error relating to node_module resolution
+    commandLine npmCommand("npm"), "run", "copyMdiFont"
+}
+
 task clean() {
     doLast {
         delete "dist"
@@ -12,4 +18,11 @@ task prepareUi() {
 
 task publishUi() {
     dependsOn clean, npmPublish
+}
+
+task installDist(type: Copy) {
+    dependsOn getYarnInstallTask(), copyMdiFont
+    resolveTask(":manager:installDist").dependsOn it
+    from "${buildDir}/Material Design Icons"
+    into "${resolveProject(':manager').projectDir}/src/web/shared/fonts/Material Design Icons"
 }

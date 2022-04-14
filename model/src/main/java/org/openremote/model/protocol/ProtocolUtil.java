@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.Protocol;
 import org.openremote.model.attribute.Attribute;
@@ -55,7 +56,7 @@ public final class ProtocolUtil {
     }
 
     public static String bytesToHexString(byte[] bytes) {
-        return Hex.encodeHexString(bytes);
+        return Hex.encodeHexString(bytes).toUpperCase(Locale.ROOT);
     }
 
     public static byte[] bytesFromHexString(String hex) {
@@ -68,6 +69,8 @@ public final class ProtocolUtil {
     }
 
     public static String bytesToBinaryString(byte[] bytes) {
+        // Need to reverse the array to get a sensible string out
+        ArrayUtils.reverse(bytes);
         return BinaryCodec.toAsciiString(bytes);
     }
 
@@ -164,6 +167,8 @@ public final class ProtocolUtil {
             return ignoreAndConvertedValue;
         }
 
+        valRef.set(ignoreAndConvertedValue.value);
+
         if (valRef.get() == null) {
             return new Pair<>(false, null);
         }
@@ -179,7 +184,6 @@ public final class ProtocolUtil {
             if (valRef.get() == null) {
                 Protocol.LOG.warning("Failed to convert value: " + fromType + " -> " + toType);
                 Protocol.LOG.warning("Cannot send linked attribute update");
-                return new Pair<>(true, null);
             }
         }
 

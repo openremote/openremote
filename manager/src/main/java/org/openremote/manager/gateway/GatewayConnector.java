@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.openremote.model.query.AssetQuery.Select.selectExcludeAll;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
 /**
@@ -273,7 +272,7 @@ public class GatewayConnector {
         expectedSyncResponseName = ASSET_READ_EVENT_NAME_INITIAL;
         sendMessageToGateway(new EventRequestResponseWrapper<>(
             ASSET_READ_EVENT_NAME_INITIAL,
-            new ReadAssetsEvent(new AssetQuery().select(selectExcludeAll()).recursive(true))));
+            new ReadAssetsEvent(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).recursive(true))));
         syncProcessorFuture = executorService.schedule(this::onSyncAssetsTimeout, SYNC_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 
@@ -330,7 +329,6 @@ public class GatewayConnector {
                 expectedSyncResponseName,
                 new ReadAssetsEvent(
                     new AssetQuery()
-                        .select(new AssetQuery.Select().excludeParentInfo(true).excludePath(true))
                         .ids(requestAssetIds)
                 )
             )
@@ -475,7 +473,7 @@ public class GatewayConnector {
         // Find obsolete local assets
         List<Asset<?>> localAssets = assetStorageService.findAll(
             new AssetQuery()
-                .select(selectExcludeAll())
+                .select(new AssetQuery.Select().excludeAttributes())
                 .recursive(true)
                 .parents(gatewayId)
         );

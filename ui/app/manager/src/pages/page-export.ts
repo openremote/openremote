@@ -1,7 +1,7 @@
 import {css, html, unsafeCSS, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import "@openremote/or-rules";
-import {EnhancedStore} from "@reduxjs/toolkit";
+import {Store} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {i18next} from "@openremote/or-translate";
@@ -15,7 +15,7 @@ import {createSelector} from "reselect";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageExportProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageExportProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "export",
         routes: [
@@ -217,7 +217,7 @@ export class PageExport extends Page<AppStateKeyed> {
         return "export";
     }
 
-    constructor(store: EnhancedStore<AppStateKeyed>) {
+    constructor(store: Store<AppStateKeyed>) {
         super(store);
     }
     

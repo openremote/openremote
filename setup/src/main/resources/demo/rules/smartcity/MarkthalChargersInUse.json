@@ -1,0 +1,139 @@
+{
+  "rules": [
+    {
+      "recurrence": {
+        "mins": 10080
+      },
+      "when": {
+        "operator": "OR",
+        "groups": [
+          {
+            "operator": "AND",
+            "items": [
+              {
+                "assets": {
+                  "types": [
+                    "ElectricityChargerAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "2QEKoczoTiOfLKh5UHqEf5"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    "ElectricityChargerAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "6Pgv4HQGmC0EjXg7GmNM6l"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    "ElectricityChargerAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "3KUCNnuNcS2zFAURMpAq0u"
+                  ]
+                }
+              },
+              {
+                "assets": {
+                  "types": [
+                    "ElectricityChargerAsset"
+                  ],
+                  "attributes": {
+                    "items": [
+                      {
+                        "name": {
+                          "predicateType": "string",
+                          "match": "EXACT",
+                          "value": "power"
+                        },
+                        "value": {
+                          "predicateType": "number",
+                          "operator": "GREATER_EQUALS",
+                          "value": 0
+                        }
+                      }
+                    ]
+                  },
+                  "ids": [
+                    "6EaYX7DEAFwxOJr3de4GFf"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "action": "notification",
+          "target": {
+            "custom": "test@testemail.com"
+          },
+          "notification": {
+            "message": {
+              "type": "email",
+              "subject": "%RULESET_NAME%",
+              "html": "%TRIGGER_ASSETS%"
+            }
+          }
+        }
+      ],
+      "name": "Markthal: All chargers in use"
+    }
+  ]
+}

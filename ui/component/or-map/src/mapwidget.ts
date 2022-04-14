@@ -348,17 +348,13 @@ export class MapWidget {
                     this._geocoder._geocode(value);
                   }
                 }, 300);
-                this._mapGl!.addControl(this._geocoder);
+                this._mapGl!.addControl(this._geocoder, 'top-left');
 
                 // There's no callback parameter in the options of the MaplibreGeocoder,
                 // so this is how we get the selected result.
                 this._geocoder._inputEl.addEventListener("change", () => {
                     var selected = this._geocoder._typeahead.selected;
                     this._onGeocodeChange(selected);
-                    if (selected) {
-                        // Set marker by calling _onMapClick and doubleClicked set to true
-                        this._onLongPress(selected.center);
-                    }
                 });                
             }
 
@@ -408,7 +404,7 @@ export class MapWidget {
     }
 
     public addMarker(marker: OrMapMarker) {
-        if (marker.lat && marker.lng) {
+        if (marker.hasPosition()) {
             this._updateMarkerElement(marker, true);
         }
     }
@@ -427,13 +423,12 @@ export class MapWidget {
             case "lat":
             case "lng":
             case "radius":
-                if (marker.lat && marker.lng) {
+                if (marker.hasPosition()) {
                     if (marker._actualMarkerElement) {
                         this._updateMarkerPosition(marker);
                     } else {
                         this._updateMarkerElement(marker, true);
                     }
-
                 } else if (marker._actualMarkerElement) {
                     this._updateMarkerElement(marker, false);
                 }

@@ -23,7 +23,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.model.PersistenceEvent;
 import org.openremote.container.web.ConnectionConstants;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
@@ -60,8 +60,8 @@ import java.util.stream.IntStream;
 
 import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.or;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceService.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceService.isPersistenceEventForEntityType;
 import static org.openremote.manager.gateway.GatewayConnector.mapAssetId;
 import static org.openremote.model.syslog.SyslogCategory.GATEWAY;
 
@@ -206,7 +206,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     .findAll(
                         new AssetQuery()
                             .parents(gateway.getId())
-                            .select(AssetQuery.Select.selectExcludeAll())
+                            .select(new AssetQuery.Select().excludeAttributes())
                             .recursive(true));
 
                 gatewayAssets.forEach(asset -> assetIdGatewayIdMap.put(asset.getId(), gateway.getId()));
@@ -234,11 +234,7 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     PersistenceEvent<Asset<?>> persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
                     Asset<?> eventAsset = persistenceEvent.getEntity();
 
-                    if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
-                        eventAsset = assetStorageService.find(eventAsset.getId(), true);
-                    }
-
-                    if (eventAsset == null) {
+                    if (!(eventAsset instanceof GatewayAsset) && gatewayConnectorMap.isEmpty()) {
                         return;
                     }
 
@@ -246,15 +242,29 @@ public class GatewayService extends RouteBuilder implements ContainerService, As
                     if (eventAsset instanceof GatewayAsset
                         && (isLocallyRegisteredGateway(eventAsset.getId()) || getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId()) == null)) {
 
+                        if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
+                            eventAsset = assetStorageService.find(eventAsset.getId(), true);
+                            if (eventAsset == null) {
+                                return;
+                            }
+                        }
+
                         processGatewayChange((GatewayAsset)eventAsset, persistenceEvent);
 
                     } else {
 
                         String gatewayId = getLocallyRegisteredGatewayId(eventAsset.getId(), eventAsset.getParentId());
                         if (gatewayId != null) {
+
+                            if (persistenceEvent.getCause() != PersistenceEvent.Cause.DELETE) {
+                                eventAsset = assetStorageService.find(eventAsset.getId(), true);
+                                if (eventAsset == null) {
+                                    return;
+                                }
+                            }
+
                             processGatewayChildAssetChange(gatewayId, eventAsset, persistenceEvent);
                         }
-
                     }
                 });
         }

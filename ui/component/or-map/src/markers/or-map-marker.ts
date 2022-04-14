@@ -1,6 +1,7 @@
-import {html, LitElement, PropertyValues} from "lit";
+import {css, CSSResultGroup, html, LitElement, PropertyValues, unsafeCSS} from "lit";
 import {customElement, property, query} from "lit/decorators.js";
 import {markerActiveColorVar, markerColorVar} from "../style";
+import {DefaultBoxShadow} from "@openremote/core";
 
 export class OrMapMarkerChangedEvent extends CustomEvent<OrMapMarkerChangedEventDetail> {
 
@@ -41,6 +42,11 @@ export interface OrMapMarkerChangedEventDetail extends OrMapMarkerEventDetail {
     property: string;
 }
 
+export interface TemplateOptions {
+    displayValue?: string;
+    direction?: string;
+}
+
 declare global {
     export interface HTMLElementEventMap {
         [OrMapMarkerChangedEvent.NAME]: OrMapMarkerChangedEvent;
@@ -56,7 +62,91 @@ declare global {
 @customElement("or-map-marker")
 export class OrMapMarker extends LitElement {
 
-    protected static _defaultTemplate = (icon: string | undefined) => `
+    static get styles(): CSSResultGroup {
+        return css`
+          .label {
+            background-color: white;
+            width: auto;
+            height: 20px;
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            padding: 0 3px;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            border-radius: 3px;
+            -webkit-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+            -moz-box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+            box-shadow: ${unsafeCSS(DefaultBoxShadow)};
+          }
+          .label > span {
+            white-space: nowrap;
+          }
+          
+          .direction-icon-wrapper {
+            position: absolute;
+            top: 11px;
+            left: 16px;
+          }
+          .direction-circle {
+            position: absolute;
+            margin-top: -15px;
+            margin-left: -15px;
+            width: 30px;
+            height: 30px;
+          }
+          .direction-circle circle {
+            cx: 15px;
+            cy: 15px;
+            r: 12px;
+            stroke: white;
+            stroke-width: 3px;
+            fill: transparent;
+          }
+          .direction-icon {
+            position: absolute;
+            top: -25px;
+            left: -16px;
+            transform: scale(0.75) rotate(-90deg);
+          }
+          
+          .active .direction-icon-wrapper {
+            top: 17px;
+            left: 24px;
+          }
+          .active .direction-circle {
+            margin-top: -20px;
+            margin-left: -20px;
+            width: 40px;
+            height: 40px;
+          }
+          .active .direction-icon {
+            top: -36px;
+            left: -23px;
+          }
+          .active .direction-circle circle {
+            cx: 20px;
+            cy: 20px;
+            r: 18px;
+            stroke-width: 4px;
+          }
+        `;
+    }
+
+    protected static _defaultTemplate = (icon: string | undefined, options?: TemplateOptions) => `
+        ${options && options.displayValue !== undefined 
+            ? `<div class="label"><span>${options.displayValue}</span></div>` 
+            : ``
+        }
+        ${options && options.direction
+            ? `<div class="direction-icon-wrapper" style="transform: rotate(${options.direction}deg);">
+                <svg class="direction-circle">
+                 <circle/> 
+                </svg>
+                <or-icon class="direction-icon" icon="play"></or-icon>
+               </div>`
+            : ``
+        }
         <or-icon icon="or:marker"></or-icon>
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
@@ -69,6 +159,12 @@ export class OrMapMarker extends LitElement {
 
     @property({type: Number, reflect: true})
     public radius?: number;
+
+    @property({reflect: true})
+    public displayValue?: string;
+
+    @property({reflect: true})
+    public direction?: string;
 
     @property({type: Boolean})
     public visible: boolean = true;
@@ -151,7 +247,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        if (_changedProperties.has("icon")) {
+        if (_changedProperties.has("icon") || _changedProperties.has("displayValue") || _changedProperties.has("direction")) {
             this.refreshMarkerContent();
         }
 
@@ -268,7 +364,14 @@ export class OrMapMarker extends LitElement {
 
     protected createDefaultMarkerContent(): HTMLElement {
         const div = document.createElement("div");
-        div.innerHTML = OrMapMarker._defaultTemplate(this.icon);
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon, {displayValue: this.displayValue, direction: this.direction});
         return div;
+    }
+
+    public hasPosition(): boolean {
+        return typeof this.lat === "number"
+            && typeof this.lng === "number"
+            && this.lat >= -90 && this.lat < 90
+            && this.lng >= -180 && this.lng < 180;
     }
 }

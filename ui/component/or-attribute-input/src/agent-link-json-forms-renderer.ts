@@ -8,8 +8,8 @@ import {
     uiTypeIs,
     formatIs
 } from "@jsonforms/core";
-import manager, { AssetModelUtil, OREvent } from "@openremote/core";
-import { Agent, AgentDescriptor } from "@openremote/model";
+import manager, { OREvent } from "@openremote/core";
+import { Agent } from "@openremote/model";
 import { JsonFormsStateContext, getTemplateWrapper, JsonFormsRendererRegistryEntry } from "@openremote/or-json-forms";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { html } from "lit";
@@ -65,9 +65,7 @@ export function loadAgents(): PromiseLike<Agent[]> {
             "Agent"
         ],
         select: {
-            excludeParentInfo: true,
-            excludePath: true,
-            excludeAttributes: true
+            attributes: []
         }
     })
         .then(response => response.data as Agent[])

@@ -140,6 +140,7 @@ public abstract class ValueConstraint implements Serializable {
 
         @JsonCreator
         public AllowedValues(@JsonProperty("allowedValueNames") String[] allowedValueNames, @JsonProperty("allowedValues") Object...allowedValues) {
+            this.allowedValueNames = allowedValueNames;
             this.allowedValues = allowedValues;
         }
 
