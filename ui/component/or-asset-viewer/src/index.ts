@@ -571,12 +571,15 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
             return [attr.name, label];
         });
+
         let attrName: string = historyAttrs[0].name!;
         onRenderComplete.addCallback(() => {
-            if (hostElement.shadowRoot) {
+            if (hostElement.shadowRoot && historyAttrs.length > 1 && panelConfig.type === "history") {
                 const historyAttributePicker = hostElement.shadowRoot.getElementById("history-attribute-picker") as OrMwcInput;
-
-                attrName = historyAttributePicker.value;
+                // as callback's are not reset on asset select in asset tree, need to check if history select dom elem exists
+                if (historyAttributePicker) {
+                    attrName = historyAttributePicker.value;
+                }
             }
             attributeChanged(attrName);
         });
