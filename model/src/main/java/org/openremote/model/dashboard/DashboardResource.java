@@ -8,6 +8,8 @@ import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 
+import java.util.List;
+
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Tag(name = "Dashboard")
@@ -32,4 +34,9 @@ public interface DashboardResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
     void update(@BeanParam RequestParams requestParams, @Valid Dashboard dashboard);
+
+    @DELETE
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.WRITE_ASSETS_ROLE})
+    void delete(@BeanParam RequestParams requestParams, @QueryParam("dashboardId") List<String> fields);
 }

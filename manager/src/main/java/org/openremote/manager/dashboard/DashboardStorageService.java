@@ -10,10 +10,12 @@ import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.dashboard.Dashboard;
 
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaQuery;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class DashboardStorageService extends RouteBuilder implements ContainerService {
 
@@ -85,6 +87,22 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
             try { em.merge(dashboard); }
             catch (Exception e) { e.printStackTrace(); }
             return dashboard;
+        });
+    }
+
+    protected boolean delete(List<String> dashboardIds) {
+        return persistenceService.doReturningTransaction(em -> {
+            try {
+                for(String id : dashboardIds) {
+                    Query query = em.createQuery("DELETE FROM Dashboard d WHERE d.id = :id");
+                    query.setParameter("id", id);
+                    query.executeUpdate();
+                }
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
         });
     }
 }

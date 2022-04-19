@@ -11,6 +11,8 @@ import org.openremote.model.util.ValueUtil;
 
 import javax.ws.rs.WebApplicationException;
 
+import java.util.List;
+
 import static javax.ws.rs.core.Response.Status.*;
 
 public class DashboardResourceImpl extends ManagerWebResource implements DashboardResource {
@@ -62,6 +64,16 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
                 throw new WebApplicationException(FORBIDDEN);
             }
             Dashboard updated = this.dashboardStorageService.save(ValueUtil.clone(dashboard));
+        } catch (IllegalStateException ex) {
+            ex.printStackTrace();
+            throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public void delete(RequestParams requestParams, List<String> fields) {
+        try {
+            this.dashboardStorageService.delete(fields);
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             throw new WebApplicationException(ex, INTERNAL_SERVER_ERROR);

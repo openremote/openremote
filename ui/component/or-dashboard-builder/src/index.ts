@@ -244,7 +244,7 @@ export class OrDashboardBuilder extends LitElement {
     selectDashboard(dashboard: Dashboard) {
         if(this.dashboards != null) {
             this.selectedDashboard = this.dashboards.find((x) => { return x.id == dashboard.id; });
-            console.log("Setting initial Dashboard!");
+            console.log("Updating selected Dashboard!");
             this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
             this.initialTemplateJSON = JSON.stringify(this.selectedDashboard?.template);
         }

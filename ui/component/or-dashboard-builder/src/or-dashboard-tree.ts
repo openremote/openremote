@@ -41,12 +41,16 @@ export class OrDashboardTree extends LitElement {
         super();
         this.updateComplete.then(() => {
             if(this.dashboards == undefined) {
-                manager.rest.api.DashboardResource.getAllUserDashboards().then((result) => {
-                    this.dashboards = result.data;
-                    if(this.selected == undefined && this.dashboards?.length > 0) {
-                        this.selectDashboard(this.dashboards[0].id as string); // TODO: might give performance issues since it is also rendering or-dashboard-builder again..
-                    }
-                });
+                this.getAllDashboards();
+            }
+        });
+    }
+
+    private getAllDashboards() {
+        manager.rest.api.DashboardResource.getAllUserDashboards().then((result) => {
+            this.dashboards = result.data;
+            if(this.selected == undefined && this.dashboards?.length > 0) {
+                this.selectDashboard(this.dashboards[0].id as string); // TODO: might give performance issues since it is also rendering or-dashboard-builder again..
             }
         });
     }
@@ -89,6 +93,17 @@ export class OrDashboardTree extends LitElement {
         this.selected = this.dashboards?.find((dashboard) => { return dashboard.id == id; });
     }
 
+    private deleteDashboard(dashboard: Dashboard) {
+        if(dashboard.id != null) {
+            manager.rest.api.DashboardResource.delete({dashboardId: [dashboard.id]}).then((response) => {
+                console.log(response);
+                if(response.status == 204) {
+                    this.getAllDashboards();
+                }
+            })
+        }
+    }
+
     /* ---------------------- */
 
     protected render() {
@@ -107,7 +122,7 @@ export class OrDashboardTree extends LitElement {
                     <span id="title">Dashboards</span>
                 </div>
                 <div style="--internal-or-icon-fill: black">
-                    <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;"></or-mwc-input>
+                    <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;" @click="${() => { if(this.selected != null) { this.deleteDashboard(this.selected); }}}"></or-mwc-input>
                     <span style="--or-icon-fill: black">
                         ${getContentWithMenuTemplate(
                                 html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" style="margin-left: -4px; --or-icon-fill: white;"></or-mwc-input>`,
