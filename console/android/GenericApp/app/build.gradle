@@ -10,7 +10,7 @@ android {
         applicationId "io.openremote.app"
         minSdkVersion 25
         targetSdkVersion 32
-        versionCode 32
+        versionCode 33
         versionName "1.0.10"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -48,4 +48,5 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging-ktx'
     implementation 'com.google.android.material:material:1.5.0'
     implementation project(':ORLib')
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
 }

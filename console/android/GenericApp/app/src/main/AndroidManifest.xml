@@ -18,8 +18,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/OpenRemoteTheme">
-
+        android:theme="@style/OpenRemoteTheme"
+        android:usesCleartextTraffic="true">
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />
@@ -37,6 +37,7 @@
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
@@ -45,16 +46,21 @@
                 android:resource="@xml/shortcuts" />
         </activity>
         <activity
-            android:name=".ui.ProjectActivity"
-            android:exported="true"
-            android:label="@string/title_activity_project"
-            android:screenOrientation="portrait" />
-        <activity
             android:name="io.openremote.orlib.ui.OrMainActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name="io.openremote.orlib.ui.OrPrivacyPolicyActivity"
             android:screenOrientation="portrait" />
+        <activity
+            android:name=".ui.ProjectWizardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ui.ProjectListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:label="@string/Settings"
+            android:theme="@style/OpenRemoteThemeWithBar"/>
 
         <service
             android:name="io.openremote.orlib.service.ORFirebaseMessagingService"

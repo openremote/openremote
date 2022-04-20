@@ -7,4 +7,11 @@
         <item name="colorAccent">@color/light_green</item>
     </style>
 
+    <style name="OpenRemoteThemeWithBar" parent="Theme.AppCompat.Light">
+        <item name="android:actionMenuTextColor">@color/dark_grey</item>
+        <item name="colorPrimary">@color/medium_green</item>
+        <item name="colorPrimaryDark">@color/dark_green</item>
+        <item name="colorAccent">@color/light_green</item>
+    </style>
+
 </resources>

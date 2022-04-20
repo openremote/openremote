@@ -7,34 +7,26 @@ import android.app.DownloadManager
 import android.content.*
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.*
 import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
-import android.view.WindowManager
 import android.webkit.*
 import android.webkit.ConsoleMessage.MessageLevel
 import android.webkit.WebView.WebViewTransport
 import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import android.widget.Toast
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.messaging.FirebaseMessaging
 import io.openremote.orlib.ORConstants
+import io.openremote.orlib.ORConstants.CLEAR_URL
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
-import io.openremote.orlib.models.ORAppConfig
-import io.openremote.orlib.network.ApiManager
 import io.openremote.orlib.service.GeofenceProvider
 import io.openremote.orlib.service.QrScannerProvider
 import org.json.JSONException
@@ -384,18 +376,17 @@ open class OrMainActivity : Activity() {
         }
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
         // Check page load error URL
-        if (baseUrl != null) {
+        if (baseUrl != null && baseUrl != failingUrl) {
             loadUrl(baseUrl)
             Toast.makeText(this, description, Toast.LENGTH_LONG).show()
         } else {
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             if (launchIntent != null) {
+                launchIntent.putExtra(CLEAR_URL, baseUrl)
                 startActivity(launchIntent)
                 finish()
-                Toast.makeText(applicationContext, description, Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(this, description, Toast.LENGTH_LONG).show()
             }
+            Toast.makeText(applicationContext, "The main page couldn't be opened", Toast.LENGTH_LONG).show()
         }
     }
 

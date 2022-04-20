@@ -22,4 +22,6 @@
     <string name="background_location_decline">No</string>
     <string name="background_location_accept">Yes</string>
     <string name="button_accept">Accept</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

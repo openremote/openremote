@@ -10,4 +10,5 @@ object ORConstants {
     const val BASE_URL_KEY = "BASE_URL_KEY"
     const val HOST_KEY = "host"
     const val REALM_KEY = "realm"
+    const val CLEAR_URL = "CLEAR_URL"
 }

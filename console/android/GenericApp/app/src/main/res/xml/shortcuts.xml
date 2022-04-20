@@ -8,11 +8,7 @@
         android:shortcutShortLabel="@string/Settings">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="io.openremote.app.ui.SplashActivity"
-            android:targetPackage="io.openremote.app" />
-        <intent
-            android:action="CLEAR_SETTINGS"
-            android:targetClass="io.openremote.app.ui.ProjectActivity"
+            android:targetClass="io.openremote.app.ui.ProjectListActivity"
             android:targetPackage="io.openremote.app" />
     </shortcut>
 
