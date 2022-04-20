@@ -114,6 +114,12 @@ export class OrDashboardBuilder extends LitElement {
     @property()
     protected readonly config: DashboardBuilderConfig | undefined;
 
+    @property()
+    protected readonly editMode: boolean | undefined;
+
+    @property()
+    protected readonly selectedId: string | undefined;
+
 
     /* ------------------- */
 
@@ -136,6 +142,9 @@ export class OrDashboardBuilder extends LitElement {
     protected currentWidget: DashboardWidget | undefined;
 
     @state()
+    protected isInitializing: boolean;
+
+    @state()
     protected isLoading: boolean;
 
     @state()
@@ -146,6 +155,7 @@ export class OrDashboardBuilder extends LitElement {
 
     constructor() {
         super();
+        this.isInitializing = true;
         this.isLoading = true;
         this.hasChanged = false;
         /*this.getAllDashboards().then((dashboards: Dashboard[]) => {
@@ -164,12 +174,29 @@ export class OrDashboardBuilder extends LitElement {
                     })
                 }
             }
+
+            // Getting dashboards
+            manager.rest.api.DashboardResource.getAllUserDashboards().then((result) => {
+                this.dashboards = result.data;
+            });
+
+            // Setting dashboard if selectedId is given by parent component
+            if(this.selectedId != undefined) {
+                console.log("dashboardId parameter detected! Value is [" + this.selectedId + "]");
+                manager.rest.api.DashboardResource.get(this.selectedId).then((dashboard) => {
+                    console.log(dashboard.data);
+                    console.log(this.dashboards);
+                    /*this.selected = dashboard.data;*/
+                    this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == dashboard.data.id; }));
+                });
+            }
         });
     }
 
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
         this.isLoading = (this.selectedDashboard == undefined); // Update loading state on whether a dashboard is selected
+        this.isInitializing = (this.selectedDashboard == undefined);
         if(changedProperties.has("selectedDashboard")) {
             this.hasChanged = (JSON.stringify(this.selectedDashboard) != JSON.stringify(this.initialDashboardJSON) || JSON.stringify(this.currentTemplate) != JSON.stringify(this.initialTemplateJSON));
             if(this.selectedDashboard != null) {
@@ -180,6 +207,7 @@ export class OrDashboardBuilder extends LitElement {
                 }
             }
             this.currentTemplate = this.selectedDashboard?.template;
+            this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
         }
         if(changedProperties.has("currentTemplate")) {
             this.hasChanged = !(JSON.stringify(this.selectedDashboard) == this.initialDashboardJSON || JSON.stringify(this.currentTemplate) == this.initialTemplateJSON);
@@ -245,6 +273,7 @@ export class OrDashboardBuilder extends LitElement {
         if(this.dashboards != null) {
             this.selectedDashboard = this.dashboards.find((x) => { return x.id == dashboard.id; });
             console.log("Updating selected Dashboard!");
+            console.log(this.selectedDashboard);
             this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
             this.initialTemplateJSON = JSON.stringify(this.selectedDashboard?.template);
         }
@@ -281,9 +310,9 @@ export class OrDashboardBuilder extends LitElement {
 
     // Rendering the page
     render(): any {
-        return html`
+        return (!this.isInitializing) ? html`
             <div id="container">
-                <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"></or-dashboard-tree>
+                <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"></or-dashboard-tree>
                 <div id="container" style="display: table;">
                     <div id="header">
                         <div id="header-wrapper">
@@ -377,7 +406,7 @@ export class OrDashboardBuilder extends LitElement {
                     </div>
                 </div>
             </div>
-        `
+        ` : null
     }
 
     private async getAllDashboards(): Promise<Dashboard[]> {

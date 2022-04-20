@@ -2,14 +2,15 @@ import {css, html, TemplateResult} from "lit";
 import {customElement, property, query, state } from "lit/decorators.js";
 import "@openremote/or-data-viewer";
 import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
-import {Page, PageProvider} from "@openremote/or-app";
+import {Page, PageProvider, router} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
 import "../../../../component/or-dashboard-builder";
-import { DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import {Dashboard, DashboardTemplate, DashboardWidgetType } from "@openremote/model";
+import {getInsightsRoute} from "../routes";
 
 export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
@@ -20,7 +21,8 @@ export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>, config
         name: "insights",
         routes: [
             "insights",
-            "insights/:id"
+            "insights/:editMode",
+            "insights/:editMode/:id"
         ],
         pageCreator: () => {
             const page = new PageInsights(store);
@@ -93,11 +95,22 @@ export class PageInsights extends Page<AppStateKeyed>  {
     @property()
     public config?: PageInsightsConfig;
 
-    @property()
-    protected _assetId;
-
     @query("#data-viewer")
     protected _dataviewer!: OrDataViewer;
+
+    @property()
+    protected _editMode: boolean = true;
+
+    @property()
+    private _dashboardId: string;
+
+    updated(changedProperties: Map<string, any>) {
+        console.log(changedProperties);
+        if(changedProperties.has("_dashboardId")) {
+            console.log("Changed Properties of _dashboardId!")
+            this._updateRoute();
+        }
+    }
 
     protected _realmSelector = (state: AppStateKeyed) => state.app.realm || manager.displayRealm;
 
@@ -109,6 +122,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
         [this._realmSelector],
         async () => {
             if (this._dataviewer) this._dataviewer.refresh();
+            this._updateRoute(true);
         }
     )
 
@@ -145,7 +159,9 @@ export class PageInsights extends Page<AppStateKeyed>  {
             ></or-dashboard-editor>-->
             <!--<or-dashboard-browser style="width: 500px;"></or-dashboard-browser>-->
             <div style="width: 100%;">
-                <or-dashboard-builder id="builder"></or-dashboard-builder>
+                <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}"
+                                      @selected="${(event: CustomEvent) => { console.log(event); this._dashboardId = (event.detail as Dashboard)?.id }}"
+                ></or-dashboard-builder>
             </div>
             <!--<div id="wrapper">
                 <div id="title">
@@ -159,5 +175,15 @@ export class PageInsights extends Page<AppStateKeyed>  {
     stateChanged(state: AppStateKeyed) {
         // State is only utilised for initial loading
         this.getRealmState(state); // Order is important here!
+        this._editMode = (state.app.params && state.app.params.editMode) ? (state.app.params.editMode == "true") : false;
+        this._dashboardId = (state.app.params && state.app.params.id) ? state.app.params.id : undefined;
+    }
+
+    protected _updateRoute(silent: boolean = true) {
+        console.log("Updating the URL Route!");
+        router.navigate(getInsightsRoute(this._editMode, this._dashboardId), {
+            callHooks: !silent,
+            callHandler: !silent
+        });
     }
 }

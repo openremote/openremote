@@ -35,6 +35,11 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
     }
 
     @Override
+    public Dashboard get(RequestParams requestParams, String dashboardId) {
+        return this.dashboardStorageService.get(dashboardId);
+    }
+
+    @Override
     public Dashboard create(RequestParams requestParams, Dashboard dashboard) {
         try {
             System.out.println("Creating a new Dashboard..");

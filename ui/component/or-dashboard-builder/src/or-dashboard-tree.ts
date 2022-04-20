@@ -39,19 +39,17 @@ export class OrDashboardTree extends LitElement {
 
     constructor() {
         super();
-        this.updateComplete.then(() => {
+        this.updateComplete.then(async () => {
             if(this.dashboards == undefined) {
-                this.getAllDashboards();
+                console.log("The list of dashboards was undefined!");
+                await this.getAllDashboards();
             }
         });
     }
 
-    private getAllDashboards() {
-        manager.rest.api.DashboardResource.getAllUserDashboards().then((result) => {
+    private async getAllDashboards() {
+        return manager.rest.api.DashboardResource.getAllUserDashboards().then((result) => {
             this.dashboards = result.data;
-            if(this.selected == undefined && this.dashboards?.length > 0) {
-                this.selectDashboard(this.dashboards[0].id as string); // TODO: might give performance issues since it is also rendering or-dashboard-builder again..
-            }
         });
     }
 
@@ -59,10 +57,10 @@ export class OrDashboardTree extends LitElement {
         console.log(changedProperties);
         if(changedProperties.has("dashboards")) {
             console.log(this.dashboards);
-            this.dispatchEvent(new CustomEvent("updated", { detail: this.dashboards }))
+            this.dispatchEvent(new CustomEvent("updated", { detail: this.dashboards }));
         }
         if(changedProperties.has("selected") && this.selected != undefined) {
-            this.dispatchEvent(new CustomEvent("select", { detail: this.selected }))
+            this.dispatchEvent(new CustomEvent("select", { detail: this.selected }));
         }
     }
 

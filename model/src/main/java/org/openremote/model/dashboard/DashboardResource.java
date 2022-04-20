@@ -22,6 +22,11 @@ public interface DashboardResource {
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
     Dashboard[] getAllUserDashboards(@BeanParam RequestParams requestParams);
 
+    @GET
+    @Path("{dashboardId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({Constants.READ_ASSETS_ROLE})
+    Dashboard get(@BeanParam RequestParams requestParams, @PathParam("dashboardId") String dashboardId);
 
     @POST
     @Consumes(APPLICATION_JSON)

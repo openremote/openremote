@@ -77,6 +77,13 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
     }
 
 
+    protected <T extends Dashboard> Dashboard get(String id) {
+        return persistenceService.doReturningTransaction(em -> {
+            return em.find(Dashboard.class, id);
+        });
+    }
+
+
     // Creation of initial dashboard (so not updating yet)
     protected <T extends Dashboard> T createNew(T dashboard) {
         return persistenceService.doReturningTransaction(em -> em.merge(dashboard));
