@@ -356,6 +356,9 @@ export class OrDashboardBuilder extends LitElement {
     @state()
     protected sidebarMenuIndex: number = 0;
 
+    @state()
+    protected showDashboardTree: boolean = true;
+
     // Rendering the page
     render(): any {
         const menuItems: ListItem[] = [
@@ -364,7 +367,9 @@ export class OrDashboardBuilder extends LitElement {
         ]
         return (!this.isInitializing) ? html`
             <div id="container">
-                <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"></or-dashboard-tree>
+                ${this.showDashboardTree ? html`
+                    <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"></or-dashboard-tree>
+                ` : undefined}
                 <div id="container" style="display: table;">
                     ${this.editMode ? html`
                         <div id="header">
@@ -396,7 +401,7 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="fullscreen-header">
                             <div id="fullscreen-header-wrapper">
                                 <div id="fullscreen-header-title">
-                                    <or-icon icon="view-dashboard"></or-icon>
+                                    <or-mwc-input type="${InputType.BUTTON}" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>
                                     <span>${this.selectedDashboard?.displayName}</span>
                                 </div>
                                 <div id="fullscreen-header-actions">
