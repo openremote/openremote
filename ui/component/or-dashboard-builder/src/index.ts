@@ -11,6 +11,8 @@ import {MDCTabBar} from "@material/tab-bar";
 import {ORGridStackNode} from "./or-dashboard-editor";
 import {Dashboard, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
 import manager from "@openremote/core";
+import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const tabStyle = require("@material/tab/dist/mdc.tab.css");
@@ -339,6 +341,16 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
+    shareUrl(method: string) {
+        console.log(window.location);
+        let url = window.location.href.replace("true", "false"); // TODO: vulnerable to cases where the word 'true' is inside the Dashboard ID.
+        if(method == 'copy') {
+            navigator.clipboard.writeText(url);
+        } else if(method == 'tab') {
+            window.open(url, '_blank')?.focus()
+        }
+    }
+
     /* ----------------- */
 
     @state()
@@ -346,6 +358,10 @@ export class OrDashboardBuilder extends LitElement {
 
     // Rendering the page
     render(): any {
+        const menuItems: ListItem[] = [
+            { icon: "content-copy", text: "Copy URL", value: "copy" },
+            { icon: "open-in-new", text: "Open in new Tab", value: "tab" },
+        ]
         return (!this.isInitializing) ? html`
             <div id="container">
                 <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"></or-dashboard-tree>
@@ -365,7 +381,11 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="header-actions">
                                     <div id="header-actions-content">
-                                        <or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
+                                        <!--<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>-->
+                                        ${getContentWithMenuTemplate(
+                                                html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
+                                                menuItems, "monitor", (method: any) => { this.shareUrl(method); }
+                                        )}
                                         <or-mwc-input id="save-btn" .disabled="${this.isLoading || this.selectedDashboard == null || !this.hasChanged}" type="${InputType.BUTTON}" raised label="Save" @click="${() => { this.saveDashboard(); }}"></or-mwc-input>
                                         <or-mwc-input id="view-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" outlined icon="eye" label="View" @click="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
                                     </div>
@@ -381,7 +401,11 @@ export class OrDashboardBuilder extends LitElement {
                                 </div>
                                 <div id="fullscreen-header-actions">
                                     <div id="fullscreen-header-actions-content">
-                                        <or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>
+                                        <!--<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>-->
+                                        ${getContentWithMenuTemplate(
+                                                html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
+                                                menuItems, "monitor", (method: any) => { this.shareUrl(method); }
+                                        )}
                                         <or-mwc-input id="view-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" outlined icon="pencil" label="Modify" @click="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
                                 </div>

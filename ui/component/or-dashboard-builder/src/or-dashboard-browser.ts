@@ -103,8 +103,8 @@ export class OrDashboardBrowser extends LitElement {
     protected render() {
         return html`
             <div id="sidebar">
-                <div id="sidebarElement" class="grid-stack" style="width: 100%; z-index: 1001"></div>
-                <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 1000"></div>
+                <div id="sidebarElement" class="grid-stack" style="width: 100%; z-index: 6;"></div>
+                <div id="sidebarBgElement" class="grid-stack" style="width: 100%; z-index: 5"></div>
             </div>
         `
     }
