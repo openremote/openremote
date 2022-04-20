@@ -25,7 +25,7 @@ const editorStyling = css`
     #height-input { margin-left: 10px; }
     #rotate-btn { margin-left: 10px; }
     
-    #maingrid {
+    .maingrid {
         border: 3px solid #909090;
         background: #FFFFFF;
         border-radius: 8px;
@@ -34,6 +34,17 @@ const editorStyling = css`
         height: 540px; /* TODO: Should be set according to input */
         width: 960px; /* TODO: Should be set according to input */
         padding: 4px;
+    }
+    .maingrid__fullscreen {
+        border: none;
+        background: transparent;
+        border-radius: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        height: auto;
+        width: 100%;
+        padding: 4px;
+        pointer-events: none;
     }
     .maingrid__disabled {
         pointer-events: none;
@@ -51,10 +62,11 @@ const editorStyling = css`
     }
     .gridItem {
         height: 100%;
+        overflow: hidden;
     }
     
     /* Grid lines on the background of the grid */
-    .grid-stack {
+    .grid-element {
         background-image:
                 linear-gradient(90deg, #E0E0E0, transparent 1px),
                 linear-gradient(90deg, transparent calc(100% - 1px), #E0E0E0),
@@ -84,14 +96,29 @@ export class OrDashboardEditor extends LitElement{
     protected selected: DashboardWidget | undefined;
 
     @property()
+    protected readonly editMode: boolean | undefined;
+
+    @property()
     protected readonly isLoading: boolean | undefined;
+
+    @state()
+    private previewHeight: number | undefined;
+
+    @state()
+    private previewWidth: number | undefined;
 
 
     /* ---------------- */
 
     constructor() {
         super();
+        if(this.editMode == undefined) { this.editMode = true; } // default
         this.isLoading = false;
+
+        if(this.editMode) {
+            if(this.previewHeight == undefined) { this.previewHeight = 540; }
+            if(this.previewWidth == undefined) { this.previewWidth = 940; }
+        }
     }
 
 
@@ -99,7 +126,7 @@ export class OrDashboardEditor extends LitElement{
         console.log(changedProperties);
 
         // Template input changes
-        if(changedProperties.has("template")) {
+        if(changedProperties.has("template") || changedProperties.has("editMode")) {
             this.renderGrid();
         }
 
@@ -143,13 +170,24 @@ export class OrDashboardEditor extends LitElement{
 
             console.log("Rendering the Grid...");
 
+            const mainGridContainer = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
+            if(!this.editMode) {
+                mainGridContainer.classList.add("maingrid__fullscreen");
+            } else {
+                if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
+                    mainGridContainer.classList.remove("maingrid__fullscreen");
+                }
+            }
+
             // Setting up main center Grid
             const gridElement = this.shadowRoot.getElementById("gridElement");
             this.mainGrid = GridStack.init({
-                acceptWidgets: true,
+                acceptWidgets: (this.editMode),
                 animate: true,
                 cellHeight: 'auto',
                 cellHeightThrottle: 100,
+                disableDrag: (!this.editMode),
+                disableResize: (!this.editMode),
                 draggable: {
                     appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
                     scroll: true
@@ -159,7 +197,7 @@ export class OrDashboardEditor extends LitElement{
                 resizable: {
                     handles: 'all'
                 },
-                minRow: 10
+                minRow: (this.editMode ? 10 : undefined)
                 // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
             }, gridElement);
 
@@ -274,20 +312,29 @@ export class OrDashboardEditor extends LitElement{
     // Render
     protected render() {
         return html`
-            <div>
-                <div id="view-options">
-                    <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" outlined label="50%"></or-mwc-input>
-                    <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
-                    <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" value="1920" style="width: 90px"></or-mwc-input>
-                    <or-mwc-input id="height-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Height" min="100" value="1080" style="width: 90px;"></or-mwc-input>
-                    <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"></or-mwc-input>
-                </div>
-                <div id="container" style="display: flex; justify-content: center; height: auto;">
-                    <div id="maingrid">
-                        <!-- Gridstack element on which the Grid will be rendered -->
-                        <div id="gridElement" class="grid-stack"></div>
+            <div style="display: flex; flex-direction: column; height: 100%;">
+                ${this.editMode ? html`
+                    <div id="view-options">
+                        <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" outlined label="50%"></or-mwc-input>
+                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
+                        <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" value="1920" style="width: 90px"></or-mwc-input>
+                        <or-mwc-input id="height-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Height" min="100" value="1080" style="width: 90px;"></or-mwc-input>
+                        <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"></or-mwc-input>
                     </div>
-                </div>
+                    <div id="container" style="display: flex; justify-content: center; height: auto;">
+                        <div class="maingrid">
+                            <!-- Gridstack element on which the Grid will be rendered -->
+                            <div id="gridElement" class="grid-stack grid-element"></div>
+                        </div>
+                    </div>
+                ` : html`
+                    <div id="container" style="display: flex; justify-content: center; height: auto;">
+                        <div class="maingrid">
+                            <!-- Gridstack element on which the Grid will be rendered -->
+                            <div id="gridElement" class="grid-stack"></div>
+                        </div>
+                    </div>
+                `}
             </div>
         `
     }

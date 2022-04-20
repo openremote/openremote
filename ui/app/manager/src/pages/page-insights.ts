@@ -161,6 +161,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
             <div style="width: 100%;">
                 <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}"
                                       @selected="${(event: CustomEvent) => { console.log(event); this._dashboardId = (event.detail as Dashboard)?.id }}"
+                                      @editToggle="${(event: CustomEvent) => { console.log(event); this._editMode = event.detail; this._updateRoute(true); }}"
                 ></or-dashboard-builder>
             </div>
             <!--<div id="wrapper">
