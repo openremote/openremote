@@ -1,10 +1,17 @@
-const { Then } = require('@cucumber/cucumber');
 const { join } = require('path');
+const { Given, When, Then } = require("@cucumber/cucumber");
 
 /**
  * General steps 
  */
+Given('Login to smartcity realm', async function () {
+    await this.navigate('smart')
+})
 
+
+Given('Nevigate to asset page', async function () {
+    await this.click('#desktop-left a:nth-child(2)')
+});
 
 
 

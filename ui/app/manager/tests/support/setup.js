@@ -66,6 +66,10 @@ class CustomWorld {
         await this.page?.locator(button).click()
     }
 
+    async press(key){
+        await this.page?.press(key)
+    }
+
 
     async logout() {
         if (fs.existsSync('storageState.json')) {
