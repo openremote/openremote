@@ -15,12 +15,11 @@ import "./or-header";
 import "@openremote/or-icon";
 import {updateMetadata} from "pwa-helpers/metadata";
 import i18next from "i18next";
-import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, OREvent, normaliseConfig, Manager} from "@openremote/core";
+import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfig, Util, BasicLoginResult, normaliseConfig, Manager} from "@openremote/core";
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
-import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { ORError } from "@openremote/core";
@@ -380,9 +379,11 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         showDialog(new OrMwcDialog()
             .setHeading("language")
             .setDismissAction(null)
+            .setStyles(html`<style>.selected { color: ${unsafeCSS(DefaultColor4)} }</style>`)
             .setActions(Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES).map(([key, value]) => {
+                console.log(key)
                 return {
-                    content: i18next.t(value),
+                    content: html`<span class="${(key === manager.language) ? 'selected' : ''}">${i18next.t(value)}</span>`,
                     actionName: key,
                     action: () => {
                         manager.language = key;
