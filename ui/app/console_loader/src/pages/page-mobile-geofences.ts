@@ -361,7 +361,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
         const vectorMap = map as OrMap;
 
         manager.console.sendProviderMessage({provider: 'geofence', action: "GET_LOCATION"}, true).then(response => {
-            console.log(JSON.stringify(response));
+            console.info(JSON.stringify(response));
             if (response.data) {
                 vectorMap.flyTo({lng: response.data.longitude, lat: response.data.latitude});
             }

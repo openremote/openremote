@@ -177,13 +177,11 @@ export class OrAttributePicker extends OrMwcDialog {
 
         let selectedAttribute: ListItem | undefined = undefined;
         if (!this.multiSelect && this.selectedAttributes.length === 1 && this.selectedAttributes[0].name) {
-            console.log('here');
             selectedAttribute = {
                 text: Util.getAttributeLabel(undefined, this.selectedAttributes[0], undefined, true),
                 value: this.selectedAttributes[0].name
             };
         }
-        console.log(selectedAttribute);
 
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">

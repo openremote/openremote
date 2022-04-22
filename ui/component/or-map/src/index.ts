@@ -296,11 +296,9 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         
             userLocationControl.on('geolocate', (currentLocation: GeolocationPosition) => {
                 setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-                console.log(currentLocation);
             });
             userLocationControl.on('outofmaxbounds', (currentLocation: GeolocationPosition) => {
                 setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-                console.log(currentLocation);
             });
             controls.push([userLocationControl, "bottom-left"]);
         }
