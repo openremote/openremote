@@ -95,6 +95,11 @@ const style = css`
     .add-button-wrapper or-mwc-menu {
         text-transform: capitalize;
     }
+
+    strong {
+        margin: var(--internal-or-panel-heading-margin);
+        font-size: var(--internal-or-panel-heading-font-size);
+    }
 `;
 
 @customElement("or-rule-when")
@@ -194,11 +199,11 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             addTemplate = html`
                 <span class="add-button-wrapper">
                     ${getContentWithMenuTemplate(
-                        html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
+                        html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"
+                                           .label="${i18next.t("rulesEditorAddCondition")}"></or-mwc-input>`,
                         getWhenTypesMenu(this.config, this.assetInfos),
                         undefined,
                         (value) => this.addCondition(group, value as string))}
-                    <span>${i18next.t("rulesEditorAddCondition")}</span>
                 </span>
             `;
         }
@@ -247,13 +252,13 @@ class OrRuleWhen extends translate(i18next)(LitElement) {
             
             ${!showAddGroup ? `` : html`
                 <or-panel>
+                    <strong>${i18next.t(!this.rule.when.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
                     <span class="add-button-wrapper">
                         ${getContentWithMenuTemplate(
                             html`<or-mwc-input class="plus-button" type="${InputType.BUTTON}" icon="plus"></or-mwc-input>`,
                             getWhenTypesMenu(this.config, this.assetInfos),
                             undefined,
                             (value) => this.addGroup(this.rule!.when!, value as string))}
-                        <strong>${i18next.t(!this.rule.when.groups || this.rule.when.groups.length === 0 ? "when" : "orWhen")}...</strong>
                     </span>
                 </or-panel>
             `}
