@@ -109,6 +109,7 @@
   "loading": "Aan het laden...",
   "noAssetsFound": "Geen assets gevonden",
   "location": "Locatie",
+  "longPressSetLoc": "Druk lang op de kaart om locatie in te stellen",
   "hour": "Uur",
   "day": "Dag",
   "week": "Week",
