@@ -83,6 +83,9 @@ export class OrDashboardTree extends LitElement {
                 this.dashboards?.push(response.data as Dashboard);
                 this.requestUpdate("dashboards");
                 this.dispatchEvent(new CustomEvent("created", { detail: response.data }));
+
+                // Select the item that was created
+                this.selected = this.dashboards?.find((x) => { return x.id == response.data.id; });
             }
         }))
     }

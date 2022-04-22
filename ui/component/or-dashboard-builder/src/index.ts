@@ -10,7 +10,7 @@ import {style} from "./style";
 import {MDCTabBar} from "@material/tab-bar";
 import {ORGridStackNode} from "./or-dashboard-editor";
 import {Dashboard, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
-import manager from "@openremote/core";
+import manager, {DefaultColor3 } from "@openremote/core";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 
@@ -76,8 +76,9 @@ const styling = css`
         font-size: 18px;
         font-weight: bold;
     }
-    #fullscreen-header-title > or-icon {
-        margin-right: 10px;
+    #fullscreen-header-title > or-mwc-input {
+        margin-right: 4px;
+        --or-icon-fill: ${unsafeCSS(DefaultColor3)};
     }
     #fullscreen-header-actions {
         flex: 1 1 auto;
@@ -243,6 +244,12 @@ export class OrDashboardBuilder extends LitElement {
                 if(this.selectedDashboard.template != null && this.selectedDashboard.template.widgets == null) {
                     this.selectedDashboard.template.widgets = [];
                 }
+            } else if(this.selectedDashboard == undefined && this.dashboards != null) {
+                if(this.selectedId != null) {
+                    this.selectedDashboard = this.dashboards.find((x) => { return x.id == this.selectedId; })
+                } else {
+                    this.selectedDashboard = this.dashboards[0];
+                }
             }
             this.currentTemplate = this.selectedDashboard?.template;
             this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
@@ -365,7 +372,7 @@ export class OrDashboardBuilder extends LitElement {
             { icon: "content-copy", text: "Copy URL", value: "copy" },
             { icon: "open-in-new", text: "Open in new Tab", value: "tab" },
         ]
-        return (!this.isInitializing) ? html`
+        return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${this.showDashboardTree ? html`
                     <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}" @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"></or-dashboard-tree>
@@ -375,7 +382,7 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="header">
                             <div id="header-wrapper">
                                 <div id="header-title">
-                                    <!--<or-icon icon="view-dashboard"></or-icon>-->
+                                    <or-icon icon="view-dashboard"></or-icon>
                                     <or-mwc-input type="${InputType.TEXT}" min="1" max="1023" comfortable required outlined label="Name" 
                                                   .value="${this.selectedDashboard != null ? this.selectedDashboard.displayName : ' '}"
                                                   .disabled="${this.isLoading || (this.selectedDashboard == null)}" 
@@ -401,7 +408,8 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="fullscreen-header">
                             <div id="fullscreen-header-wrapper">
                                 <div id="fullscreen-header-title">
-                                    <or-mwc-input type="${InputType.BUTTON}" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>
+                                    <!--<or-icon icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-icon>-->
+                                    <or-mwc-input type="${InputType.BUTTON}" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>   
                                     <span>${this.selectedDashboard?.displayName}</span>
                                 </div>
                                 <div id="fullscreen-header-actions">
