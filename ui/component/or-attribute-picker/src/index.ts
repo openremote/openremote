@@ -249,7 +249,8 @@ export class OrAttributePicker extends OrMwcDialog {
             selectedAsset = assetResponse.data;
 
             if (selectedAsset) {
-                this.assetAttributes = Object.values(selectedAsset.attributes!).map(attr => { return {...attr, id: selectedAsset!.id!}; });
+                this.assetAttributes = Object.values(selectedAsset.attributes!).map(attr => { return {...attr, id: selectedAsset!.id!}; })
+                    .sort(Util.sortByString((attribute) => attribute.name!));
 
                 if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
                     this.assetAttributes = this.assetAttributes
