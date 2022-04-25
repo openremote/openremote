@@ -63,4 +63,15 @@ Then('Update {string} to the {string} with type of {string}', async function (va
     await this.click(`#field-${attribute} #send-btn span`)
 })
 
-Then('Update location', async function () { })
+Then('Update {int} and {int}', async function (location_x, location_y) {
+    const { page } = this;
+
+    await this.click('text=location GEO JSON point >> button span')
+    //await page.locator('[aria-label="Map"]').click(1230,500,{delay:300,})
+
+    // location_x and location_y are given by the example data
+    // currently there is no way to drag the map and click on a random place (could be possible in the future)
+    await page.mouse.click(location_x, location_y, { delay: 1000 })
+    await this.click('button:has-text("OK")')
+})
+

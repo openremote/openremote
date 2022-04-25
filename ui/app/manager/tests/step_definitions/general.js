@@ -13,6 +13,9 @@ Given('Nevigate to asset page', async function () {
     await this.click('#desktop-left a:nth-child(2)')
 });
 
+Given('Nevigate to map page', async function () {
+    await this.click('#desktop-left a:nth-child(1)')
+});
 
 
 

@@ -15,9 +15,9 @@ Feature: Assets
         Then Save
 
         Examples:
-            | asset                     | name    | attribute_1       | A1_type            | attribute_2       | A2_type          | value_1 | value_2 |
-            | Electricity battery asset | Battery | efficiencyExport  | Positive integer   | efficiencyImport  | Positive integer | 30      | 50      |
-            | PV solar asset            | Solar   | energyExportTotal | Positive number    | power             | Number           | 30      | 70      |
+            | asset                     | name    | attribute_1       | A1_type          | attribute_2      | A2_type          | value_1 | value_2 |
+            | Electricity battery asset | Battery | efficiencyExport  | Positive integer | efficiencyImport | Positive integer | 30      | 50      |
+            | PV solar asset            | Solar   | energyExportTotal | Positive number  | power            | Number           | 30      | 70      |
 
     @Desktop @select
     Scenario Outline: Select asset
@@ -26,18 +26,21 @@ Feature: Assets
         Then We see the "<name>" page
 
         Examples:
-            | asset                     | name    | 
-            | Electricity battery asset | Battery | 
-            | PV solar asset            | Solar   | 
+            | asset                     | name    |
+            | Electricity battery asset | Battery |
+            | PV solar asset            | Solar   |
 
-     @Desktop @update
-     Scenario Outline: Update asset 
+    @Desktop @update
+    Scenario Outline: Update asset
         When Select the "<name>"
-        Then Update "<value_1>" to the "<attribute_1>" with type of "<A1_type>"
+        Then Update "<value>" to the "<attribute>" with type of "<type>"
         When Go to modify mode
-        Then Update "<location>"
+        Then Update <location_x> and <location_y>
+        Then Save
 
         Examples:
-            | asset                     | name    |  attribute_1    |  A1_type   |  value_1  |
-            | Electricity battery asset | Battery |  powerSetpoint  |  number    |  70       |
-            | PV solar asset            | Solar   |  powerForecast  |  number    |  100      |
+            | asset                     | name    | attribute     | type   | value | location_x | location_y |
+            | Electricity battery asset | Battery | powerSetpoint | number | 70    | 705        | 210        |
+            | PV solar asset            | Solar   | powerForecast | number | 100   | 540        | 110        |
+
+

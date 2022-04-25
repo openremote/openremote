@@ -65,3 +65,20 @@ Then('We see text on the main panel', { timeout: 6000 }, async function () {
 
     await expect(value).toEqual('noAssetSelected')
 })
+
+When('Check markers on map',async function(){
+    const { page } =this;
+    await page.locator('or-icon svg path').first().click();
+    let cardPanel = await page.waitForSelector('or-map-asset-card')
+    await expect(cardPanel).not.toBeNull()
+    
+    //await page.locator('div:nth-child(3) .marker-container div or-icon svg path').click();
+
+
+
+    // const mapBattery = await page.waitForSelector('or-map-asset-card')
+    // await expect(mapBattery).not.toBeNull()
+    // await page.locator('div:nth-child(3) .marker-container div or-icon svg path').click();
+    // const mapSolar = await page.waitForSelector('or-map-asset-card')
+    // await expect(mapSolar).not.toBeNull()
+})
