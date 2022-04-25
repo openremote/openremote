@@ -217,8 +217,6 @@ export class OrDashboardBuilder extends LitElement {
             if(this.selectedId != undefined) {
                 console.log("dashboardId parameter detected! Value is [" + this.selectedId + "]");
                 manager.rest.api.DashboardResource.get(this.selectedId).then((dashboard) => {
-                    console.log(dashboard.data);
-                    console.log(this.dashboards);
                     /*this.selected = dashboard.data;*/
                     this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == dashboard.data.id; }));
                 });
@@ -349,7 +347,6 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     shareUrl(method: string) {
-        console.log(window.location);
         let url = window.location.href.replace("true", "false"); // TODO: vulnerable to cases where the word 'true' is inside the Dashboard ID.
         if(method == 'copy') {
             navigator.clipboard.writeText(url);
@@ -443,19 +440,23 @@ export class OrDashboardBuilder extends LitElement {
                             </div>
                             ${(this.editMode) ? html`
                                 <div id="sidebar">
-                                    <div style="${this.currentWidget == null ? css`display: none` : null}">
-                                        <div id="menu-header">
-                                            <div id="title-container">
-                                                <span id="title">${this.currentWidget?.displayName}:</span>
+                                    ${this.currentWidget != null ? html`
+                                        <div>
+                                            <div id="menu-header">
+                                                <div id="title-container">
+                                                    <span id="title">${this.currentWidget?.displayName}:</span>
+                                                </div>
+                                                <div>
+                                                    <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @click="${(event: CustomEvent) => { this.deselectWidget(); }}"></or-mwc-input>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @click="${(event: CustomEvent) => { this.deselectWidget(); }}"></or-mwc-input>
+                                            <div id="content" style="display: block;">
+                                                <or-dashboard-widgetsettings .selectedWidget="${this.currentWidget}"
+                                                                             @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
+                                                ></or-dashboard-widgetsettings>
                                             </div>
                                         </div>
-                                        <div id="content" style="display: block;">
-                                            <or-dashboard-widgetsettings .selectedWidget="${this.currentWidget}" @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"></or-dashboard-widgetsettings>
-                                        </div>
-                                    </div>
+                                    ` : undefined}
                                     <div style="${this.currentWidget != null ? css`display: none` : null}">
                                         <div id="menu-header">
                                             <div class="mdc-tab-bar" role="tablist" id="tab-bar">
@@ -543,7 +544,7 @@ export class OrDashboardBuilder extends LitElement {
         }
     }
 
-    getWidgetContent(widgetType: DashboardWidgetType, displayName: string): any {
+    getWidgetContent(widgetType: DashboardWidgetType, displayName: string): string {
         switch (widgetType) {
             case DashboardWidgetType.CHART: {
                 return ('<div class="gridItem"><or-chart></or-chart></div>');

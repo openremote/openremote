@@ -338,7 +338,7 @@ export class OrChart extends translate(i18next)(LitElement) {
     private activeAsset?: Asset;
 
     @property({type: Object})
-    public assetAttributes: [number, Attribute<any>][] = []; 
+    public assetAttributes: [number, Attribute<any>][] = [];
 
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
@@ -360,6 +360,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     @property()
     public panelName?: string;
+
+    @property()
+    public showControls: boolean = true;
 
     @property()
     protected _loading: boolean = false;
@@ -399,15 +402,23 @@ export class OrChart extends translate(i18next)(LitElement) {
     }
 
     firstUpdated() {
-        this.loadSettings();
+        this.loadSettings(false);
     }
 
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
 
+        console.log(changedProperties);
+        console.log(this.assets);
+        console.log(this.activeAsset);
+        console.log(this.assetAttributes);
+
         if (changedProperties.has("realm")) {
-            this.assets = [];
-            this.loadSettings();
+            if(changedProperties.get("realm") != undefined) { // Checking whether it was undefined previously, to prevent loading 2 times and resetting attribute properties.
+                console.log("The realm has changed! Delete the list of assets!");
+                this.assets = [];
+                this.loadSettings(true);
+            }
         }
 
         const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp")
@@ -537,69 +548,72 @@ export class OrChart extends translate(i18next)(LitElement) {
                     <canvas id="chart"></canvas>
                 </div>
 
-                <div id="controls">
-                    <div class="interval-controls" style="margin-right: 6px;">
-                        ${getContentWithMenuTemplate(
+                <!-- Checking whether showControls is set to true. Had to do string check as well -->
+                ${(this.showControls && this.showControls.toString() == "true") ? html`
+                    <div id="controls">
+                        <div class="interval-controls" style="margin-right: 6px;">
+                            ${getContentWithMenuTemplate(
                             html`<or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("timeframe")}: ${i18next.t(this.period ? this.period : "-")}"></or-mwc-input>`,
                             this._getPeriodOptions(),
                             this.period,
                             (value) => this.setPeriodOption(value))}
-
-                        ${!!this.compareTimestamp ? html `
-                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
-                        ` : html`
-                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(true)}" icon="plus"></or-mwc-input>
-                        `}
-                    </div>
-                  
-                    <div class="period-controls">
-
-                        ${!!this.compareTimestamp ? html `
-                            <span class="line-label solid"></span>
-                        `: ``}
-                        <or-mwc-input id="ending-date" 
-                            .checkAssetWrite="${false}"
-                            .type="${endDateInputType}" 
-                            ?disabled="${disabled}" 
-                            .value="${this.timestamp}" 
-                            @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
-                        <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
-                        <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
-                    </div>
-                    ${!!this.compareTimestamp ? html `
+    
+                            ${!!this.compareTimestamp ? html `
+                                    <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
+                            ` : html`
+                                    <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(true)}" icon="plus"></or-mwc-input>
+                            `}
+                        </div>
+                      
                         <div class="period-controls">
-                        <span class="line-label dashed"></span>
+    
+                            ${!!this.compareTimestamp ? html `
+                                <span class="line-label solid"></span>
+                            `: ``}
                             <or-mwc-input id="ending-date" 
                                 .checkAssetWrite="${false}"
                                 .type="${endDateInputType}" 
                                 ?disabled="${disabled}" 
-                                .value="${this.compareTimestamp}" 
-                                @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-mwc-input>
-                            <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
-                            <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
+                                .value="${this.timestamp}" 
+                                @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
+                            <or-icon class="button-icon" icon="chevron-left" @click="${() => this._updateTimestamp(this.timestamp!, false, undefined, 0)}"></or-icon>
+                            <or-icon class="button-icon" icon="chevron-right" @click="${() =>this._updateTimestamp(this.timestamp!, true, undefined, 0)}"></or-icon>
                         </div>
-                    ` : html``}
-
-                    <div id="attribute-list">
-                        ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
-                            const colourIndex = index % this.colors.length;
-                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
-                            const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
-                            const bgColor = this.colors[colourIndex] || "";
-                            return html`
-                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
-                                    <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
-                                    <div class="attribute-list-item-label">
-                                        <span>${this.assets[assetIndex].name}</span>
-                                        <span style="font-size:14px; color:grey;">${label}</span>
+                        ${!!this.compareTimestamp ? html `
+                            <div class="period-controls">
+                            <span class="line-label dashed"></span>
+                                <or-mwc-input id="ending-date" 
+                                    .checkAssetWrite="${false}"
+                                    .type="${endDateInputType}" 
+                                    ?disabled="${disabled}" 
+                                    .value="${this.compareTimestamp}" 
+                                    @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._updateTimestamp(moment(evt.detail.value as string).toDate(), undefined, true)}"></or-mwc-input>
+                                <or-icon class="button-icon" icon="chevron-left" @click="${() =>  this._updateTimestamp(this.compareTimestamp!, false, true, 0)}"></or-icon>
+                                <or-icon class="button-icon" icon="chevron-right" @click="${() => this._updateTimestamp(this.compareTimestamp!, true, true, 0)}"></or-icon>
+                            </div>
+                        ` : html``}
+    
+                        <div id="attribute-list">
+                            ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
+                        const colourIndex = index % this.colors.length;
+                        const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
+                        const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
+                        const bgColor = this.colors[colourIndex] || "";
+                        return html`
+                                    <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}">
+                                        <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
+                                        <div class="attribute-list-item-label">
+                                            <span>${this.assets[assetIndex].name}</span>
+                                            <span style="font-size:14px; color:grey;">${label}</span>
+                                        </div>
+                                        <button class="button-clear" @click="${() => this._deleteAttribute(index)}"><or-icon icon="close-circle"></or-icon></button>
                                     </div>
-                                    <button class="button-clear" @click="${() => this._deleteAttribute(index)}"><or-icon icon="close-circle"></or-icon></button>
-                                </div>
-                            `
-                        })}
+                                `
+                    })}
+                        </div>
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
                     </div>
-                    <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
-                </div>
+                ` : undefined}
             </div>
         `;
     }
@@ -632,7 +646,7 @@ export class OrChart extends translate(i18next)(LitElement) {
         this.saveSettings();
         this.requestUpdate();
     }
- 
+
     getInputType() {
         switch (this.period) {
             case "hour":
@@ -674,12 +688,20 @@ export class OrChart extends translate(i18next)(LitElement) {
         }
     }
 
-    async loadSettings() {
+    async loadSettings(reset: boolean) {
 
-        this.assetAttributes = [];
-        this.period = "day";
-        this.timestamp = moment().set('minute', 0).toDate();
-        this.compareTimestamp = undefined;
+        if(this.assetAttributes == undefined || reset) {
+            this.assetAttributes = [];
+        }
+        if(this.period == undefined || reset) {
+            this.period = "day";
+        }
+        if(this.timestamp == undefined || reset) {
+            this.timestamp = moment().set('minute', 0).toDate();
+        }
+        if(this.compareTimestamp == undefined || reset) {
+            this.compareTimestamp = undefined;
+        }
 
         if (!this.realm) {
             this.realm = manager.getRealm();
@@ -761,7 +783,7 @@ export class OrChart extends translate(i18next)(LitElement) {
             return;
         }
 
-        const viewSelector = window.location.hash;        
+        const viewSelector = window.location.hash;
         const allConfigs: OrChartConfig[] = await manager.console.retrieveData("OrChartConfig") || [];
         let config: OrChartConfig | undefined = allConfigs.find(e => e.realm === this.realm);
 
@@ -793,10 +815,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         manager.console.storeData("OrChartConfig", [...allConfigs.filter(e => e.realm !== this.realm), config]);
     }
-    
+
     _openDialog() {
         const dialog = showDialog(new OrAttributePicker()
-            .setShowOnlyDatapointAttrs(true)
+            // .setShowOnlyDatapointAttrs(true) TODO: Temporarily set to false for testing purposes
             .setMultiSelect(true)
             .setSelectedAttributes(this._getSelectedAttributes()));
 
@@ -1043,7 +1065,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
         return newMoment.format();
     }
-    
+
     protected async _loadAttributeData(asset: Asset, attribute: Attribute<any>, color: string | undefined, interval: DatapointInterval, from: number, to: number, predicted: boolean, label: string | undefined): Promise<ChartDataset<"line", ScatterDataPoint[]>> {
 
         const dataset: ChartDataset<"line", ScatterDataPoint[]> = {
@@ -1107,5 +1129,5 @@ export class OrChart extends translate(i18next)(LitElement) {
                 this.saveSettings();
         }, timeout);
     }
-        
+
 }

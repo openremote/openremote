@@ -1,10 +1,11 @@
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
-import {css, html, LitElement, PropertyValues, unsafeCSS } from "lit";
+import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import {style} from "./style";
-import {DefaultColor4} from "@openremote/core";
-import {DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import manager, {DefaultColor4} from "@openremote/core";
+import {Asset, Attribute, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import {OrChartConfig} from "@openremote/or-chart";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -165,7 +166,7 @@ export class OrDashboardEditor extends LitElement{
     /* -------------------------------------------------------- */
 
     // Main large method for rendering the Grid
-    private renderGrid(): void {
+    private async renderGrid(): Promise<void> {
         if(this.shadowRoot != null) {
 
             console.log("Rendering the Grid...");
@@ -209,8 +210,11 @@ export class OrDashboardEditor extends LitElement{
             // Add widgets of template onto the Grid
             if(this.template != null && this.template.widgets != null) {
                 const gridItems: DashboardGridItem[] = [];
-                this.template.widgets.forEach((widget) => { widget.gridItem != null ? gridItems.push(widget.gridItem) : null; })
+                for (const widget of this.template.widgets) {
+                    widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
+                }
                 this.mainGrid.load(gridItems);
+                console.log(gridItems);
             }
 
             // Add event listeners to Grid
@@ -308,6 +312,48 @@ export class OrDashboardEditor extends LitElement{
 
 
     /* ------------------------------ */
+
+    async loadWidget(widget: DashboardWidget): Promise<DashboardWidget> {
+        const _widget = Object.assign({}, widget);
+        if(_widget.gridItem != null) {
+            switch(_widget.widgetType) {
+                case DashboardWidgetType.CHART: {
+/*                    const chartConfig: OrChartConfig = {
+                        chart: {
+                            xLabel: "X Label",
+                            yLabel: "Y Label"
+                        },
+                        realm: manager.displayRealm,
+                        views: {
+                            ["dashboards"]: {
+                                [widget.displayName as string]: {
+                                    attributeRefs: widget.dataConfig?.attributes
+                                }
+                            }
+                        }
+                    }*/
+                    const response = await manager.rest.api.AssetResource.queryAssets({
+                        ids: widget.dataConfig?.attributes?.map((x) => { return x.id; }) as string[]
+                    })
+                    const assets = response.data;
+                    const attributes = widget.dataConfig?.attributes?.map((attrRef) => {
+                        const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
+                        const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
+                        return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
+                    }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
+                    _widget.gridItem.content = "<div class='gridItem'><or-chart assets='" + JSON.stringify(assets) + "' activeAsset='" + JSON.stringify(assets[0]) + "' assetAttributes='" + JSON.stringify(attributes) + "' realm='" + manager.displayRealm + "' showControls='true'></or-chart></div>";
+                    break;
+                }
+
+                // TODO: Should depend on custom properties set in widgetsettings.
+                case DashboardWidgetType.MAP: {
+                    _widget.gridItem.content = "<div class='gridItem'><or-map center='5.454250, 51.445990' zoom='5' style='height: 100%; width: 100%;'></or-map></div>";
+                    break;
+                }
+            }
+        }
+        return _widget;
+    }
 
     // Render
     protected render() {

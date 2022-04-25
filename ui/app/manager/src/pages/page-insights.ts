@@ -146,18 +146,6 @@ export class PageInsights extends Page<AppStateKeyed>  {
             ]
         } as DashboardTemplate;
         return html`
-            <!--<or-dashboard-tree id="tree"
-                               @created="${(event: CustomEvent) => { console.log(event); }}"
-                               @select="${(event: CustomEvent) => { console.log(event); }}"
-                               @updated="${(event: CustomEvent) => { console.log(event); }}">
-            </or-dashboard-tree>-->
-            <!--<or-dashboard-editor style="background: transparent;" .template="${template}"
-                                 @selected="${(event: CustomEvent) => { console.log(event); }}"
-                                 @deselected="${(event: CustomEvent) => { console.log(event); }}"
-                                 @dropped="${(event: CustomEvent) => { console.log(event); }}" 
-                                 @changed="${(event: CustomEvent) => { console.log(event); }}"
-            ></or-dashboard-editor>-->
-            <!--<or-dashboard-browser style="width: 500px;"></or-dashboard-browser>-->
             <div style="width: 100%;">
                 <or-dashboard-builder id="builder" .editMode="${this._editMode}" .selectedId="${this._dashboardId}"
                                       @selected="${(event: CustomEvent) => { console.log(event); this._dashboardId = (event.detail as Dashboard)?.id }}"
