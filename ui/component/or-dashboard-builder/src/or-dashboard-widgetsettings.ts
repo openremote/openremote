@@ -4,7 +4,6 @@ import { customElement, property, state } from "lit/decorators.js";
 import { InputType } from "../../or-mwc-components/lib/or-mwc-input";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
-import {until} from "lit/directives/until.js";
 import {style} from './style';
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import {DefaultColor5, manager } from "@openremote/core";
@@ -135,7 +134,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     openDialog() {
         let dialog: OrAttributePicker;
         if(this.selectedWidget?.dataConfig?.attributes != null) {
-            dialog = showDialog(new OrAttributePicker()) //.setShowOnlyDatapointAttrs(true)) //.setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes))
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes)); //.setShowOnlyDatapointAttrs(true)) //.setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes))
         } else {
             dialog = showDialog(new OrAttributePicker())
         }
@@ -145,10 +144,13 @@ export class OrDashboardWidgetsettings extends LitElement {
     }
 
     setWidgetAttributes(selectedAttrs?: AttributeRef[]) {
-        if(this.selectedWidget?.dataConfig?.attributes != null) {
-            selectedAttrs?.forEach((attr) => {
-                this.selectedWidget?.dataConfig?.attributes?.push(attr);
-            });
+        if(this.selectedWidget?.dataConfig != null) {
+            this.selectedWidget.dataConfig.attributes = selectedAttrs;
+/*            selectedAttrs?.forEach((attr) => {
+                if(this.selectedWidget?.dataConfig?.attributes?.find((x) => { return (x.id == attr.id && x.name == attr.name); }) == undefined) {
+                    this.selectedWidget?.dataConfig?.attributes?.push(attr);
+                }
+            });*/
             this.requestUpdate("selectedWidget");
         }
     }
