@@ -325,6 +325,15 @@ export class OrDashboardBuilder extends LitElement {
     saveDashboard() {
         if(this.selectedDashboard != null) {
             this.isLoading = true;
+
+            // Replace content to not save the long HTML string (which gets generated on each load anyway)
+            this.selectedDashboard.template?.widgets?.forEach((widget) => {
+                if(widget.gridItem != null) {
+                    widget.gridItem.content = "<span>Content</span>";
+                }
+            })
+
+            // Saving object into the database
             manager.rest.api.DashboardResource.update(this.selectedDashboard).then((response) => {
                 console.log(response);
                 if(this.dashboards != null && this.selectedDashboard != null) {
