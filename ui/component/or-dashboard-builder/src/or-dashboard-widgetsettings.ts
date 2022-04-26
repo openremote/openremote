@@ -174,6 +174,9 @@ export class OrDashboardWidgetsettings extends LitElement {
                         <div>
                             ${this.expandedPanels.includes('Attributes') ? html`
                                 <div style="padding: 12px;">
+                                    ${(this.selectedWidget?.dataConfig?.attributes == null || this.selectedWidget.dataConfig.attributes.length == 0) ? html`
+                                        <span>No attributes connected.</span>
+                                    ` : undefined}
                                     <div id="attribute-list">
                                         ${(this.selectedWidget?.dataConfig?.attributes != null && this.loadedAssets != null) ? this.selectedWidget.dataConfig.attributes.map((attributeRef) => {
                                             const asset = this.loadedAssets?.find((x: Asset) => { return x.id == attributeRef.id; }) as Asset;
