@@ -12,9 +12,6 @@ import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc
 
 //language=css
 const treeStyling = css`
-    #content-item {
-        padding: 16px;
-    }
 `;
 enum DashboardSizeOption {
     LARGE, MEDIUM, SMALL
@@ -33,6 +30,9 @@ export class OrDashboardTree extends LitElement {
 
     @property()
     private selected: Dashboard | undefined;
+
+    @property()
+    public editMode: boolean = true;
 
 
     /* --------------- */
@@ -122,15 +122,17 @@ export class OrDashboardTree extends LitElement {
                 <div id="title-container">
                     <span id="title">Dashboards</span>
                 </div>
-                <div style="--internal-or-icon-fill: black">
-                    <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;" @click="${() => { if(this.selected != null) { this.deleteDashboard(this.selected); }}}"></or-mwc-input>
-                    <span style="--or-icon-fill: black">
-                        ${getContentWithMenuTemplate(
+                ${this.editMode ? html`
+                    <div>
+                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;" @click="${() => { if(this.selected != null) { this.deleteDashboard(this.selected); }}}"></or-mwc-input>
+                        <span style="--or-icon-fill: black">
+                            ${getContentWithMenuTemplate(
                                 html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" style="margin-left: -4px; --or-icon-fill: white;"></or-mwc-input>`,
                                 menuItems, "monitor", (value: DashboardSizeOption) => { this.createDashboard(value); }
-                        )}                        
-                    </span>
-                </div>
+                            )}                        
+                        </span>
+                    </div>
+                ` : undefined}
             </div>
             <div id="content">
                 <div>
