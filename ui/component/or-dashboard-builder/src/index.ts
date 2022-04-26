@@ -236,6 +236,7 @@ export class OrDashboardBuilder extends LitElement {
         this.isInitializing = (this.selectedDashboard == undefined);
         if(changedProperties.has("selectedDashboard")) {
             this.hasChanged = (JSON.stringify(this.selectedDashboard) != JSON.stringify(this.initialDashboardJSON) || JSON.stringify(this.currentTemplate) != JSON.stringify(this.initialTemplateJSON));
+            this.currentWidget = undefined;
             if(this.selectedDashboard != null) {
 
                 // Set widgets to an empty array if null for GridStack to work.
