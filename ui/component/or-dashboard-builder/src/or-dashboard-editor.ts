@@ -341,7 +341,7 @@ export class OrDashboardEditor extends LitElement{
                         const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                         return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
                     }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
-                    _widget.gridItem.content = "<div class='gridItem'><or-chart assets='" + JSON.stringify(assets) + "' activeAsset='" + JSON.stringify(assets[0]) + "' assetAttributes='" + JSON.stringify(attributes) + "' realm='" + manager.displayRealm + "' showControls='true'></or-chart></div>";
+                    _widget.gridItem.content = "<div class='gridItem'><or-chart assets='" + JSON.stringify(assets) + "' activeAsset='" + JSON.stringify(assets[0]) + "' assetAttributes='" + JSON.stringify(attributes) + "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";
                     break;
                 }
 

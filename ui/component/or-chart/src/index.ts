@@ -539,6 +539,10 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     }
 
+    shouldShowControls() {
+        return (this.showControls && this.showControls.toString() == "true");
+    }
+
     render() {
         const disabled = this._loading;
         const endDateInputType = this.getInputType();
@@ -549,7 +553,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 </div>
 
                 <!-- Checking whether showControls is set to true. Had to do string check as well -->
-                ${(this.showControls && this.showControls.toString() == "true") ? html`
+                ${this.shouldShowControls() ? html`
                     <div id="controls">
                         <div class="interval-controls" style="margin-right: 6px;">
                             ${getContentWithMenuTemplate(
@@ -613,7 +617,25 @@ export class OrChart extends translate(i18next)(LitElement) {
                         </div>
                         <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
                     </div>
-                ` : undefined}
+                ` : html`
+                    <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
+                        ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
+                            const colourIndex = index % this.colors.length;
+                            const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(this.assets[assetIndex]!.type, attr.name, attr);
+                            const label = Util.getAttributeLabel(attr, descriptors[0], this.assets[assetIndex]!.type, true);
+                            const bgColor = this.colors[colourIndex] || "";
+                            return html`
+                                <div class="attribute-list-item" @mouseover="${()=> this.addDatasetHighlight(bgColor)}" @mouseout="${()=> this.removeDatasetHighlight(bgColor)}" style="cursor: auto;">
+                                    <span style="margin-right: 10px; --or-icon-width: 20px;">${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.assets[assetIndex]!.type!), undefined, undefined, bgColor.split('#')[1])}</span>
+                                    <div class="attribute-list-item-label">
+                                        <span>${this.assets[assetIndex].name}</span>
+                                        <span style="font-size:14px; color:grey;">${label}</span>
+                                    </div>
+                                </div>
+                            `
+                        })}
+                    </div>
+                `}
             </div>
         `;
     }
