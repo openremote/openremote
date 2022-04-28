@@ -1,4 +1,4 @@
-@OpenRemote @Asset
+@OpenRemote @asset
 Feature: Assets
 
     Background: Navigation

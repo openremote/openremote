@@ -1,4 +1,4 @@
-@OpenRemote @Map
+@OpenRemote @map
 Feature: Map
 
     Background: Navigation
@@ -6,6 +6,11 @@ Feature: Map
         Given Nevigate to map page
 
     @Desktop @markers
-    Scenario: check markers on map
-        When Check markers on map
+    Scenario Outline: check markers on map
+        When Check "<asset>" on map
+        Then Click and nevigate to "<asset>" page
 
+        Examples:
+            | asset   |
+            | Battery |
+            | Solar   |
