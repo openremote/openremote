@@ -72,13 +72,15 @@ When('Check markers on map',async function(){
     let cardPanel = await page.waitForSelector('or-map-asset-card')
     await expect(cardPanel).not.toBeNull()
     
+    await page.locator('div:nth-child(3) .marker-container div or-icon svg path').click()
+    cardPanel = await page.waitForSelector('or-map-asset-card')
+    await expect(cardPanel).not.toBeNull()
+    
     //await page.locator('div:nth-child(3) .marker-container div or-icon svg path').click();
-
-
-
     // const mapBattery = await page.waitForSelector('or-map-asset-card')
     // await expect(mapBattery).not.toBeNull()
     // await page.locator('div:nth-child(3) .marker-container div or-icon svg path').click();
     // const mapSolar = await page.waitForSelector('or-map-asset-card')
     // await expect(mapSolar).not.toBeNull()
 })
+
