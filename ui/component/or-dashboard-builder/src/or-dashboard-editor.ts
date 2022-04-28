@@ -4,7 +4,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import {style} from "./style";
 import manager, {DefaultColor4} from "@openremote/core";
-import {Asset, Attribute, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
+import {Asset, Attribute, AttributeRef, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
 import {OrChartConfig} from "@openremote/or-chart";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
@@ -333,15 +333,21 @@ export class OrDashboardEditor extends LitElement{
                         }
                     }*/
                     const response = await manager.rest.api.AssetResource.queryAssets({
-                        ids: widget.dataConfig?.attributes?.map((x) => { return x.id; }) as string[]
+                        ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
                     })
                     const assets = response.data;
-                    const attributes = widget.dataConfig?.attributes?.map((attrRef) => {
+                    const attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
                         const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
                         const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                         return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
-                    }).filter((indexAndAttr) => !!indexAndAttr) as [number, Attribute<any>][];
-                    _widget.gridItem.content = "<div class='gridItem'><or-chart assets='" + JSON.stringify(assets) + "' activeAsset='" + JSON.stringify(assets[0]) + "' assetAttributes='" + JSON.stringify(attributes) + "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";
+                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                    _widget.gridItem.content = "<div class='gridItem'><or-chart assets='" + JSON.stringify(assets) +
+                        "' activeAsset='" + JSON.stringify(assets[0]) +
+                        "' assetAttributes='" + JSON.stringify(attributes) +
+                        "' period='" + widget.widgetConfig?.period +
+                        "' showLegend='" + JSON.stringify(widget.widgetConfig?.showLegend) +
+                        "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";
+                    console.log(_widget.gridItem.content);
                     break;
                 }
 

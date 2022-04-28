@@ -365,6 +365,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     public showControls: boolean = true;
 
     @property()
+    public showLegend: boolean = true;
+
+    @property()
     protected _loading: boolean = false;
 
     @property()
@@ -542,6 +545,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     shouldShowControls() {
         return (this.showControls && this.showControls.toString() == "true");
     }
+    shouldShowLegend() {
+        return (this.showLegend && this.showLegend.toString() == "true");
+    }
 
     render() {
         const disabled = this._loading;
@@ -617,7 +623,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                         </div>
                         <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
                     </div>
-                ` : html`
+                ` : (this.shouldShowLegend() ? html`
                     <div id="attribute-list" style="min-height: 50px; min-width: 150px; flex: 0 1 0px; padding: 12px;">
                         ${this.assetAttributes && this.assetAttributes.map(([assetIndex, attr], index) => {
                             const colourIndex = index % this.colors.length;
@@ -635,7 +641,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             `
                         })}
                     </div>
-                `}
+                ` : undefined)}
             </div>
         `;
     }
