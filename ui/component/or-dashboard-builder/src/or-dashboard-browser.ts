@@ -1,6 +1,6 @@
 import { GridStack } from "gridstack";
 import {css, html, LitElement, unsafeCSS } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement} from "lit/decorators.js";
 import {style} from "./style";
 import { DashboardWidgetType } from "@openremote/model";
 

@@ -467,6 +467,7 @@ export class OrDashboardBuilder extends LitElement {
                                             <div id="content" style="display: block;">
                                                 <or-dashboard-widgetsettings .selectedWidget="${this.currentWidget}"
                                                                              @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
+                                                                             @update="${(event: CustomEvent) => { console.log(event); this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
                                                 ></or-dashboard-widgetsettings>
                                             </div>
                                         </div>

@@ -1,11 +1,10 @@
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
-import {css, html, LitElement, PropertyValues, TemplateResult, unsafeCSS } from "lit";
+import {css, html, LitElement, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import {style} from "./style";
 import manager, {DefaultColor4} from "@openremote/core";
-import {Asset, Attribute, AttributeRef, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
-import {OrChartConfig} from "@openremote/or-chart";
+import {Attribute, AttributeRef, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');

@@ -5,16 +5,16 @@ import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "../../or-mwc-components/lib/or-mwc-input";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
-import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import {style} from './style';
 import { getAssetDescriptorIconTemplate } from "@openremote/or-icon";
 import {DefaultColor5, manager } from "@openremote/core";
-import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
 //language=css
 const widgetSettingsStyling = css`
+    
+    /* ------------------------------- */
     .expandableHeader {
         display: flex;
         align-items: center;
@@ -23,6 +23,12 @@ const widgetSettingsStyling = css`
         width: 100%;
         border: none;
     }
+    .switchMwcInputContainer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    /* ---------------------------- */
     #attribute-list {
         overflow: auto;
         flex: 1 1 0;
@@ -39,25 +45,6 @@ const widgetSettingsStyling = css`
         align-items: center;
         padding: 0;
         min-height: 50px;
-    }
-
-    .button-clear {
-        background: none;
-        visibility: hidden;
-        color: ${unsafeCSS(DefaultColor5)};
-        --or-icon-fill: ${unsafeCSS(DefaultColor5)};
-        display: inline-block;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-    }
-
-    .attribute-list-item:hover .button-clear {
-        visibility: visible;
-    }
-
-    .button-clear:hover {
-        --or-icon-fill: var(--or-app-color4);
     }
 
     .attribute-list-item-label {
@@ -81,11 +68,34 @@ const widgetSettingsStyling = css`
     .attribute-list-item:hover .button.delete {
         display: block;
     }
+
+    /* ---------------------------- */
+    .button-clear {
+        background: none;
+        visibility: hidden;
+        color: ${unsafeCSS(DefaultColor5)};
+        --or-icon-fill: ${unsafeCSS(DefaultColor5)};
+        display: inline-block;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .attribute-list-item:hover .button-clear {
+        visibility: visible;
+    }
+
+    .button-clear:hover {
+        --or-icon-fill: var(--or-app-color4);
+    }
+    /* ---------------------------- */
 `
-interface WidgetConfig<T> {
 
-}
+/* ------------------------------------ */
 
+// Interfaces that contain Configurations of each Widget Type.
+// The database stores them in any type, however these can be used
+// for type checking.
 
 interface ChartWidgetConfig {
     displayName: string;
@@ -104,6 +114,8 @@ interface MapWidgetConfig {
     zoom?: number;
 }
 
+/* ------------------------------------ */
+
 @customElement("or-dashboard-widgetsettings")
 export class OrDashboardWidgetsettings extends LitElement {
 
@@ -114,7 +126,7 @@ export class OrDashboardWidgetsettings extends LitElement {
     @property({type: Object})
     protected selectedWidget: DashboardWidget | undefined;
 
-    @state()
+    @state() // list of assets that are loaded in the list
     protected loadedAssets: Asset[] | undefined;
 
     @state()
@@ -124,6 +136,8 @@ export class OrDashboardWidgetsettings extends LitElement {
         super();
         this.expandedPanels = [];
         this.updateComplete.then(() => {
+
+            // Setting what panels are expanded, depending on WidgetType
             switch (this.selectedWidget?.widgetType) {
                 case DashboardWidgetType.CHART: {
                     this.expandedPanels = ['Attributes', 'Display']; break;
@@ -143,14 +157,15 @@ export class OrDashboardWidgetsettings extends LitElement {
                 if(this.selectedWidget.widgetConfig == null) {
                     this.selectedWidget.widgetConfig = this.generateWidgetConfig(this.selectedWidget);
                 }
-                /*if(this.selectedWidget.widgetConfig.attributes == null) {
-                    this.selectedWidget.dataConfig.attributes = [];
-                }*/
-                this.loadAssets();
+                this.fetchAssets();
             }
         }
     }
 
+    /* ------------------------------------ */
+
+    // Default values that are used when no config is specified.
+    // This is always the case when a new Widget has been created.
     generateWidgetConfig(widget: DashboardWidget): Object {
         switch (widget.widgetType) {
             case DashboardWidgetType.CHART: {
@@ -176,7 +191,21 @@ export class OrDashboardWidgetsettings extends LitElement {
         }
     }
 
-    loadAssets() {
+    /* ------------------------------ */
+
+    // Method to update the Grid. For example after changing a setting.
+    forceParentUpdate() {
+        this.dispatchEvent(new CustomEvent('update'));
+    }
+
+    deleteSelectedWidget() {
+        this.dispatchEvent(new CustomEvent("delete", {detail: this.selectedWidget }));
+    }
+
+    /* --------------------------------------- */
+
+    // Fetching the assets according to the AttributeRef[] input in DashboardWidget if required.
+    fetchAssets() {
         if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
             manager.rest.api.AssetResource.queryAssets({
                 ids: this.selectedWidget?.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
@@ -186,72 +215,26 @@ export class OrDashboardWidgetsettings extends LitElement {
         }
     }
 
-    expandPanel(panelName: string): void {
-        if(this.expandedPanels.includes(panelName)) {
-            const indexOf = this.expandedPanels.indexOf(panelName, 0);
-            if(indexOf > -1) { this.expandedPanels.splice(indexOf, 1); }
-        } else {
-            this.expandedPanels.push(panelName);
+    protected render() {
+        if(this.selectedWidget?.widgetType != null && this.selectedWidget.widgetConfig != null) {
+            return this.generateHTML(this.selectedWidget.widgetType, this.selectedWidget.widgetConfig);
         }
-        this.requestUpdate();
+        return html`<span>Unknown Error</span>`
     }
 
-    deleteSelected() {
-        this.dispatchEvent(new CustomEvent("delete", {detail: this.selectedWidget }));
-    }
 
-    openDialog() {
-        let dialog: OrAttributePicker;
-        if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.widgetConfig?.attributeRefs)); //.setShowOnlyDatapointAttrs(true)) //.setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes))
-        } else {
-            dialog = showDialog(new OrAttributePicker().setMultiSelect(true))
-        }
-        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
-            this.setWidgetAttributes(event.detail);
-        })
-    }
 
-    setWidgetAttributes(selectedAttrs?: AttributeRef[]) {
-        if(this.selectedWidget?.widgetConfig != null) {
-            this.selectedWidget.widgetConfig.attributeRefs = selectedAttrs;
-            console.log(this.selectedWidget);
-/*            selectedAttrs?.forEach((attr) => {
-                if(this.selectedWidget?.dataConfig?.attributes?.find((x) => { return (x.id == attr.id && x.name == attr.name); }) == undefined) {
-                    this.selectedWidget?.dataConfig?.attributes?.push(attr);
-                }
-            });*/
-            this.requestUpdate("selectedWidget");
-        }
-    }
 
-    removeWidgetAttribute(attributeRef: AttributeRef) {
-        if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
-            this.selectedWidget.widgetConfig.attributeRefs.splice(this.selectedWidget.widgetConfig.attributeRefs.indexOf(attributeRef), 1);
-            this.requestUpdate("selectedWidget");
-        }
-    }
+    /* ----------------------------------- */
 
-    generateSettingField(field: any) {
-
-    }
-
-    generateExpandableHeader(name: string): TemplateResult {
-        return html`
-            <button class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
-                <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
-                <span style="margin-left: 6px;">${name}</span>
-            </button>
-        `
-    }
-
+    // UI generation of all settings fields. Depending on the WidgetType it will
+    // return different HTML containing different settings.
     generateHTML(widgetType: DashboardWidgetType, widgetConfig: any): TemplateResult {
         let htmlContent: TemplateResult;
         switch (widgetType) {
 
             case DashboardWidgetType.CHART: {
                 const chartConfig = widgetConfig as ChartWidgetConfig;
-                console.log(widgetConfig);
                 htmlContent = html`
                     <div>
                         ${this.generateExpandableHeader('Attributes')}
@@ -291,19 +274,19 @@ export class OrDashboardWidgetsettings extends LitElement {
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
                                     <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['year', 'month', 'week', 'day', 'hour', 'minute', 'second']}" .value="${chartConfig.period}" label="Default timeframe"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).period = event.detail.value; }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).period = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
-                                <div style="margin-top: 18px; display: flex; align-items: center; justify-content: space-between;">
+                                <div class="switchMwcInputContainer" style="margin-top: 18px;">
                                     <span>Show Timestamp Controls</span>
                                     <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;" .value="${chartConfig.showTimestampControls}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showTimestampControls = event.detail.value; }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showTimestampControls = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="switchMwcInputContainer">
                                     <span>Show Legend</span>
                                     <or-mwc-input .type="${InputType.SWITCH}" style="width: 70px;" .value="${chartConfig.showLegend}"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showLegend = event.detail.value; }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).showLegend = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                             </div>
@@ -317,12 +300,12 @@ export class OrDashboardWidgetsettings extends LitElement {
                             <div style="padding: 24px 24px 48px 24px;">
                                 <div>
                                     <or-mwc-input .type="${InputType.SELECT}" style="width: 100%;" .options="${['absolute', 'percentage']}" .value="${chartConfig.deltaFormat}" label="Show value as"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).deltaFormat = event.detail.value; }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).deltaFormat = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                                 <div style="margin-top: 18px;">
                                     <or-mwc-input .type="${InputType.NUMBER}" style="width: 100%;" .value="${chartConfig.decimals}" label="Decimals"
-                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).decimals = event.detail.value; }}"
+                                                  @or-mwc-input-changed="${(event: OrInputChangedEvent) => { (this.selectedWidget?.widgetConfig as ChartWidgetConfig).decimals = event.detail.value; this.forceParentUpdate(); }}"
                                     ></or-mwc-input>
                                 </div>
                             </div>
@@ -331,6 +314,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                 `
                 break;
             }
+
             case DashboardWidgetType.MAP: {
                 htmlContent = html`
                     <div>
@@ -356,15 +340,71 @@ export class OrDashboardWidgetsettings extends LitElement {
         return html`
             ${htmlContent}
             <div id="actions" style="position: absolute; bottom: 20px; right: 20px;">
-                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="Delete Component" @click="${() => { this.deleteSelected(); }}"></or-mwc-input>
+                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="Delete Component" @click="${() => { this.deleteSelectedWidget(); }}"></or-mwc-input>
             </div>
         `
     }
 
-    protected render() {
-        if(this.selectedWidget?.widgetType != null && this.selectedWidget.widgetConfig != null) {
-            return this.generateHTML(this.selectedWidget.widgetType, this.selectedWidget.widgetConfig);
+
+    // UI generation of an expandable panel header.
+    generateExpandableHeader(name: string): TemplateResult {
+        return html`
+            <button class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
+                <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
+                <span style="margin-left: 6px;">${name}</span>
+            </button>
+        `
+    }
+
+
+
+    /* -------------------------------------------- */
+
+    // Methods for changing the list of attributes. They get triggered when
+    // the attribute picker returns a new list of attributes, or someone
+    // removes an item from the list.
+
+    setWidgetAttributes(selectedAttrs?: AttributeRef[]) {
+        if(this.selectedWidget?.widgetConfig != null) {
+            this.selectedWidget.widgetConfig.attributeRefs = selectedAttrs;
+            this.requestUpdate("selectedWidget");
+            this.forceParentUpdate();
         }
-        return html`<span>Unknown Error</span>`
+    }
+
+    removeWidgetAttribute(attributeRef: AttributeRef) {
+        if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
+            this.selectedWidget.widgetConfig.attributeRefs.splice(this.selectedWidget.widgetConfig.attributeRefs.indexOf(attributeRef), 1);
+            this.requestUpdate("selectedWidget");
+            this.forceParentUpdate();
+        }
+    }
+
+
+
+    /* ---------------------------------------- */
+
+    // Method when a user opens or closes a expansion panel. (UI related)
+    expandPanel(panelName: string): void {
+        if(this.expandedPanels.includes(panelName)) {
+            const indexOf = this.expandedPanels.indexOf(panelName, 0);
+            if(indexOf > -1) { this.expandedPanels.splice(indexOf, 1); }
+        } else {
+            this.expandedPanels.push(panelName);
+        }
+        this.requestUpdate();
+    }
+
+    // Opening the attribute picker dialog, and listening to its result. (UI related)
+    openDialog() {
+        let dialog: OrAttributePicker;
+        if(this.selectedWidget?.widgetConfig?.attributeRefs != null) {
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.widgetConfig?.attributeRefs)); //.setShowOnlyDatapointAttrs(true)) //.setMultiSelect(true).setSelectedAttributes(this.selectedWidget?.dataConfig?.attributes))
+        } else {
+            dialog = showDialog(new OrAttributePicker().setMultiSelect(true))
+        }
+        dialog.addEventListener(OrAttributePickerPickedEvent.NAME, (event: CustomEvent) => {
+            this.setWidgetAttributes(event.detail);
+        })
     }
 }
