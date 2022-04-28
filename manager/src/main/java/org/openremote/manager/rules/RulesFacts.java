@@ -247,10 +247,6 @@ public class RulesFacts extends Facts implements RuleListener {
         return this;
     }
 
-    public RulesFacts insertAssetEvent(String expires, AssetState<?> assetState) {
-        return insertAssetEvent(TimeUtil.parseTimeDuration(expires), assetState);
-    }
-
     public RulesFacts insertAssetEvent(long expiresMilliSeconds, AssetState<?> assetState) {
         TemporaryFact<AssetState<?>> fact = new TemporaryFact<>(assetState.getTimestamp(), expiresMilliSeconds, assetState);
         if (LOG.isLoggable(Level.FINEST)) {

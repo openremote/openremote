@@ -553,7 +553,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         given: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
-        def container = startContainer(defaultConfig() << [(OR_EMAIL_X_HEADERS): "Test 1=Hello World 1\nTest2=Hello World 2"], defaultServices())
+        def container = startContainer(defaultConfig() << [(OR_EMAIL_X_HEADERS): "Test 1: Hello World 1\nTest2: Hello World 2"], defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def keycloakTestSetup = container.getService(SetupService.class).getTaskOfType(KeycloakTestSetup.class)
         def notificationService = container.getService(NotificationService.class)
