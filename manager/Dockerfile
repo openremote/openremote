@@ -72,5 +72,5 @@ ADD map /opt/map
 EXPOSE 8080
 EXPOSE 1883
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
+HEALTHCHECK --interval=3s --timeout=60s --start-period=30s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
 ENTRYPOINT java $OR_JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
