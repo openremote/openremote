@@ -179,6 +179,8 @@ export class OrHeader extends LitElement {
             
             #menu-btn-mobile {
                 margin-left: auto;
+                --or-icon-height: calc(var(--internal-or-header-item-size) - 8px);
+                --or-icon-width: calc(var(--internal-or-header-item-size) - 8px);
             }
     
             #menu-btn-desktop {
@@ -191,7 +193,7 @@ export class OrHeader extends LitElement {
                 display: none;
             }
     
-            #mobile-bottom {
+            .mobile-bottom-border {
                 border-top: 1px solid var(--internal-or-header-drawer-separator-color);
                 margin-top: 16px;
                 padding-top: 8px;
@@ -422,12 +424,12 @@ export class OrHeader extends LitElement {
                     </div>
                     
                     ${secondaryItems ? html`
-                        <div id="mobile-bottom">
-                                ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
-                                    return html`
-                                        <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
-                                    `;
-                                })}
+                        <div id="mobile-bottom" class="${mainItems.length > 0 ? 'mobile-bottom-border' : ''}">
+                            ${secondaryItems.filter((option) => !option.hideMobile && hasRequiredRole(option)).map((headerItem) => {
+                                return html`
+                                    <a class="menu-item" @click="${(e: MouseEvent) => this._onHeaderItemSelect(headerItem)}" ?selected="${this.activeMenu === headerItem.href}"><or-icon icon="${headerItem.icon}"></or-icon><or-translate value="${headerItem.text}"></or-translate></a>
+                                `;
+                            })}
                         </div>` : ``}
                 </div>
             </div>

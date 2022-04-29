@@ -914,7 +914,7 @@ export class Manager implements EventProviderFactory {
             console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
         } catch (e) {
             // Refresh token expired (either SSO max session duration or offline idle timeout), see
-            // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
+            // OR_IDENTITY_SESSION_MAX_MINUTES and OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
             console.info("Access token update failed, refresh token expired, login required");
             this._keycloak!.clearToken();
             this._keycloak!.login();

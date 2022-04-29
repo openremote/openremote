@@ -28,7 +28,7 @@ dependencies {
 }
 
 tasks.withType(Test) {
-    environment("LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
+    environment("OR_LOGGING_CONFIG_FILE", "test/src/logging-test.properties")
 }
 
 test {

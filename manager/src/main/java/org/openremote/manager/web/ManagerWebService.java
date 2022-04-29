@@ -74,12 +74,12 @@ public class ManagerWebService extends WebService {
     }
 
     public static final int PRIORITY = LOW_PRIORITY + 100;
-    public static final String APP_DOCROOT = "APP_DOCROOT";
-    public static final String APP_DOCROOT_DEFAULT = "manager/src/web";
-    public static final String CUSTOM_APP_DOCROOT = "CUSTOM_APP_DOCROOT";
-    public static final String CUSTOM_APP_DOCROOT_DEFAULT = "ui/app";
-    public static final String ROOT_REDIRECT_PATH = "ROOT_REDIRECT_PATH";
-    public static final String ROOT_REDIRECT_PATH_DEFAULT = "/manager";
+    public static final String OR_APP_DOCROOT = "OR_APP_DOCROOT";
+    public static final String OR_APP_DOCROOT_DEFAULT = "manager/src/web";
+    public static final String OR_CUSTOM_APP_DOCROOT = "OR_CUSTOM_APP_DOCROOT";
+    public static final String OR_CUSTOM_APP_DOCROOT_DEFAULT = "ui/app";
+    public static final String OR_ROOT_REDIRECT_PATH = "OR_ROOT_REDIRECT_PATH";
+    public static final String OR_ROOT_REDIRECT_PATH_DEFAULT = "/manager";
     public static final String API_PATH = "/api";
     public static final String MANAGER_APP_PATH = "/manager";
     public static final String SWAGGER_APP_PATH = "/swagger";
@@ -105,7 +105,7 @@ public class ManagerWebService extends WebService {
     public void init(Container container) throws Exception {
         super.init(container);
 
-        String rootRedirectPath = getString(container.getConfig(), ROOT_REDIRECT_PATH, ROOT_REDIRECT_PATH_DEFAULT);
+        String rootRedirectPath = getString(container.getConfig(), OR_ROOT_REDIRECT_PATH, OR_ROOT_REDIRECT_PATH_DEFAULT);
 
         // Modify swagger object mapper to match ours
         configureObjectMapper(Json.mapper());
@@ -181,8 +181,8 @@ public class ManagerWebService extends WebService {
         }
 
         // Serve deployment files unsecured (explicitly map deployment folders to request paths)
-        builtInAppDocRoot = Paths.get(getString(container.getConfig(), APP_DOCROOT, APP_DOCROOT_DEFAULT));
-        customAppDocRoot = Paths.get(getString(container.getConfig(), CUSTOM_APP_DOCROOT, CUSTOM_APP_DOCROOT_DEFAULT));
+        builtInAppDocRoot = Paths.get(getString(container.getConfig(), OR_APP_DOCROOT, OR_APP_DOCROOT_DEFAULT));
+        customAppDocRoot = Paths.get(getString(container.getConfig(), OR_CUSTOM_APP_DOCROOT, OR_CUSTOM_APP_DOCROOT_DEFAULT));
 
         HttpHandler defaultHandler = null;
 

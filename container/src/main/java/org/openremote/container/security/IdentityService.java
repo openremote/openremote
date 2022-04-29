@@ -43,8 +43,8 @@ public abstract class IdentityService implements ContainerService {
 
     public static final int PRIORITY = PersistenceService.PRIORITY - 10;
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
-    public static final String IDENTITY_PROVIDER = "IDENTITY_PROVIDER";
-    public static final String IDENTITY_PROVIDER_DEFAULT = "keycloak";
+    public static final String OR_IDENTITY_PROVIDER = "OR_IDENTITY_PROVIDER";
+    public static final String OR_IDENTITY_PROVIDER_DEFAULT = "keycloak";
 
     // The externally visible address of this installation
     protected IdentityProvider identityProvider;
@@ -58,7 +58,7 @@ public abstract class IdentityService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         devMode = container.isDevMode();
-        String identityProviderType = getString(container.getConfig(), IDENTITY_PROVIDER, IDENTITY_PROVIDER_DEFAULT);
+        String identityProviderType = getString(container.getConfig(), OR_IDENTITY_PROVIDER, OR_IDENTITY_PROVIDER_DEFAULT);
         identityProvider = createIdentityProvider(container, identityProviderType);
         identityProvider.init(container);
     }

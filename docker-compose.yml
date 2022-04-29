@@ -1,9 +1,9 @@
 # OpenRemote v3
 #
 # Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
-# but optionally on https://$HOST with an auto generated SSL certificate from Letsencrypt.
+# but optionally on https://$OR_HOST with an auto generated SSL certificate from Letsencrypt.
 #
-# It is possible to specify SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
+# It is possible to specify OR_SETUP_TYPE=demo to pre-populate the system with a set of demo assets, rules, etc. (as
 # is shown at https://demo.openremote.io)
 # with username 'admin' and password 'secret'. There is no map data available in the vanilla
 # system so the map tile server will not function. Persistent data is stored in a docker
@@ -23,20 +23,20 @@ volumes:
 services:
 
   proxy:
-    image: openremote/proxy:${PROXY_VERSION:-2.5.0.1}
+    image: openremote/proxy:${PROXY_VERSION:-2.5.0.3}
     restart: always
     depends_on:
       manager:
         condition: service_healthy
     ports:
       - "80:80"
-      - "443:443"
+      - "${OR_SSL_PORT:-443}:443"
       - "8883:8883"
     volumes:
       - proxy-data:/deployment
     environment:
-      LE_EMAIL: ${SETUP_EMAIL_ADMIN:-}
-      DOMAINNAME: ${HOST:-localhost}
+      LE_EMAIL: ${OR_EMAIL_ADMIN:-}
+      DOMAINNAME: ${OR_HOST:-localhost}
       # USE A CUSTOM PROXY CONFIG - COPY FROM https://github.com/openremote/proxy/blob/main/haproxy.cfg
       #HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
       
@@ -56,8 +56,10 @@ services:
     volumes:
       - ./deployment:/deployment
     environment:
-      KEYCLOAK_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
-      KEYCLOAK_FRONTEND_URL: https://${HOST:-localhost}/auth
+      KEYCLOAK_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
+      KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}/auth
+      # Use the following if OR_SSL_PORT is not the default 443
+      #KEYCLOAK_FRONTEND_URL: https://${OR_HOST:-localhost}:${OR_SSL_PORT:-443}/auth
       
   manager:
 #    privileged: true
@@ -67,22 +69,23 @@ services:
       keycloak:
         condition: service_healthy
     environment:
-      # Set this variable `demo` to auto provision demo assets etc.
-      SETUP_TYPE:
-      SETUP_ADMIN_PASSWORD:
-      SETUP_WIPE_CLEAN_INSTALL:
-      SETUP_EMAIL_HOST:
-      SETUP_EMAIL_USER:
-      SETUP_EMAIL_PASSWORD:
-      SETUP_EMAIL_FROM:
-      SETUP_EMAIL_ADMIN:
-      EXTERNAL_URL: https://${HOST:-localhost}
-      DEV_MODE:
+      # Set this variable to `demo` to auto provision demo assets etc.
+      OR_SETUP_TYPE:
+      OR_ADMIN_PASSWORD:
+      OR_SETUP_RUN_ON_RESTART:
+      OR_EMAIL_HOST:
+      OR_EMAIL_USER:
+      OR_EMAIL_PASSWORD:
+      OR_EMAIL_FROM:
+      OR_EMAIL_ADMIN:
+      OR_HOST: ${OR_HOST:-localhost}
+      OR_SSL_PORT: ${OR_SSL_PORT:-443}
+      OR_DEV_MODE: ${OR_DEV_MODE:-false}
       # The following variables will configure the demo
-      FORECAST_SOLAR_API_KEY:
-      OPEN_WEATHER_API_APP_ID:
-      SETUP_IMPORT_DEMO_AGENT_KNX:
-      SETUP_IMPORT_DEMO_AGENT_VELBUS:
+      OR_FORECAST_SOLAR_API_KEY:
+      OR_OPEN_WEATHER_API_APP_ID:
+      OR_SETUP_IMPORT_DEMO_AGENT_KNX:
+      OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
     volumes:
       - temp-data:/tmp
 #      - /var/run/dbus:/var/run/dbus

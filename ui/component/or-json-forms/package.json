@@ -24,7 +24,7 @@
     "lit": "^2.0.2"
   },
   "devDependencies": {
-    "@openremote/util": "^1.0.4"
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

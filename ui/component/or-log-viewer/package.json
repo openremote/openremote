@@ -17,7 +17,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@material/data-table": "^9.0.0",
-    "@openremote/core": "^1.0.4",
+    "@openremote/core": "workspace:*",
     "@openremote/or-mwc-components": "^1.0.4",
     "lit": "^2.0.2",
     "moment": "^2.24.0",
@@ -25,7 +25,7 @@
     "url": "^0.11.0"
   },
   "devDependencies": {
-    "@openremote/util": "^1.0.4"
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
