@@ -230,8 +230,8 @@ if [ \$? -ne 0 ]; then
 fi
 
 # Attempt docker compose down
-CONTAINER_IDS=$(docker ps -q)
-if [ -n "$CONTAINER_IDS" ]; then
+CONTAINER_IDS=\$(docker ps -q)
+if [ -n "\$CONTAINER_IDS" ]; then
   echo "Stopping existing stack"
   docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
 
