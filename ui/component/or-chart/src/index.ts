@@ -411,11 +411,6 @@ export class OrChart extends translate(i18next)(LitElement) {
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
 
-        console.log(changedProperties);
-        console.log(this.assets);
-        console.log(this.activeAsset);
-        console.log(this.assetAttributes);
-
         if (changedProperties.has("realm")) {
             if(changedProperties.get("realm") != undefined) { // Checking whether it was undefined previously, to prevent loading 2 times and resetting attribute properties.
                 console.log("The realm has changed! Delete the list of assets!");

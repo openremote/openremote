@@ -215,7 +215,6 @@ export class OrDashboardBuilder extends LitElement {
 
             // Setting dashboard if selectedId is given by parent component
             if(this.selectedId != undefined) {
-                console.log("dashboardId parameter detected! Value is [" + this.selectedId + "]");
                 manager.rest.api.DashboardResource.get(this.selectedId).then((dashboard) => {
                     /*this.selected = dashboard.data;*/
                     this.selectedDashboard = Object.assign({}, this.dashboards?.find(x => { return x.id == dashboard.data.id; }));
@@ -259,9 +258,6 @@ export class OrDashboardBuilder extends LitElement {
                 this.selectedDashboard.template = this.currentTemplate;
             }
         }
-        if(changedProperties.has("dashboards")) {
-            console.log(this.dashboards);
-        }
     }
 
     /* ----------------- */
@@ -303,7 +299,6 @@ export class OrDashboardBuilder extends LitElement {
     selectWidget(widget: DashboardWidget): void {
         const foundWidget = this.currentTemplate?.widgets?.find((x) => { return x.gridItem?.id == widget.gridItem?.id; });
         if(foundWidget != null) {
-            console.log("Selected a new Widget! [" + foundWidget.displayName + "]");
             this.currentWidget = foundWidget;
         }
     }
@@ -316,8 +311,6 @@ export class OrDashboardBuilder extends LitElement {
     selectDashboard(dashboard: Dashboard) {
         if(this.dashboards != null) {
             this.selectedDashboard = this.dashboards.find((x) => { return x.id == dashboard.id; });
-            console.log("Updating selected Dashboard!");
-            console.log(this.selectedDashboard);
             this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
             this.initialTemplateJSON = JSON.stringify(this.selectedDashboard?.template);
         }
@@ -441,10 +434,10 @@ export class OrDashboardBuilder extends LitElement {
                             <div id="builder">
                                 ${(this.selectedDashboard != null) ? html`
                                     <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.currentWidget}" .editMode="${this.editMode}" .isLoading="${this.isLoading}"
-                                                         @selected="${(event: CustomEvent) => { console.log(event); this.selectWidget(event.detail); }}"
-                                                         @deselected="${(event: CustomEvent) => { console.log(event); this.deselectWidget(); }}"
-                                                         @dropped="${(event: CustomEvent) => { console.log(event); this.createWidget(event.detail); }}"
-                                                         @changed="${(event: CustomEvent) => { console.log(event); this.currentTemplate = Object.assign({}, event.detail.template); }}"
+                                                         @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
+                                                         @deselected="${(event: CustomEvent) => { this.deselectWidget(); }}"
+                                                         @dropped="${(event: CustomEvent) => { this.createWidget(event.detail); }}"
+                                                         @changed="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, event.detail.template); }}"
                                     ></or-dashboard-editor>
                                 ` : html`
                                     <div style="justify-content: center; display: flex; align-items: center; height: 100%;">
@@ -467,7 +460,7 @@ export class OrDashboardBuilder extends LitElement {
                                             <div id="content" style="display: block;">
                                                 <or-dashboard-widgetsettings .selectedWidget="${this.currentWidget}"
                                                                              @delete="${(event: CustomEvent) => { this.deleteWidget(event.detail); }}"
-                                                                             @update="${(event: CustomEvent) => { console.log(event); this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
+                                                                             @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
                                                 ></or-dashboard-widgetsettings>
                                             </div>
                                         </div>

@@ -41,7 +41,6 @@ export class OrDashboardTree extends LitElement {
         super();
         this.updateComplete.then(async () => {
             if(this.dashboards == undefined) {
-                console.log("The list of dashboards was undefined!");
                 await this.getAllDashboards();
             }
         });
@@ -56,7 +55,6 @@ export class OrDashboardTree extends LitElement {
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
         if(changedProperties.has("dashboards")) {
-            console.log(this.dashboards);
             this.dispatchEvent(new CustomEvent("updated", { detail: this.dashboards }));
         }
         if(changedProperties.has("selected") && this.selected != undefined) {

@@ -213,7 +213,6 @@ export class OrDashboardEditor extends LitElement{
                     widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
                 }
                 this.mainGrid.load(gridItems);
-                console.log(gridItems);
             }
 
             // Add event listeners to Grid
@@ -340,13 +339,13 @@ export class OrDashboardEditor extends LitElement{
                         const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
                         return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
                     }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                    _widget.gridItem.content = "<div class='gridItem'><or-chart assets='" + JSON.stringify(assets) +
+                    _widget.gridItem.content = "<div class='gridItem'><or-chart" +
+                        " assets='" + JSON.stringify(assets) +
                         "' activeAsset='" + JSON.stringify(assets[0]) +
                         "' assetAttributes='" + JSON.stringify(attributes) +
                         "' period='" + widget.widgetConfig?.period +
                         "' showLegend='" + JSON.stringify(widget.widgetConfig?.showLegend) +
                         "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";
-                    console.log(_widget.gridItem.content);
                     break;
                 }
 
