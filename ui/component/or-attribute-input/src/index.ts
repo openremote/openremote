@@ -289,6 +289,10 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
             #wrapper or-map {
                 min-height: 250px;
             }
+
+            #wrapper .long-press-msg {
+                display: none;
+            }
             
             #wrapper {
                 display: flex;
