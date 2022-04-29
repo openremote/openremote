@@ -287,7 +287,7 @@ services:
 
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
-      # DATA_POINTS_MAX_AGE_DAYS = 30
+      # OR_DATA_POINTS_MAX_AGE_DAYS = 30
 
       # App id for the API of OpenWeather: https://openweathermap.org
       # OR_OPEN_WEATHER_API_APP_ID
