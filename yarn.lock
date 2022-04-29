@@ -3108,6 +3108,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@openremote/dashboard@workspace:ui/app/dashboard":
+  version: 0.0.0-use.local
+  resolution: "@openremote/dashboard@workspace:ui/app/dashboard"
+  dependencies:
+    "@openremote/or-app": ^1.0.4
+    "@openremote/util": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@openremote/demo-core@^1.0.4, @openremote/demo-core@workspace:ui/demo/demo-core":
   version: 0.0.0-use.local
   resolution: "@openremote/demo-core@workspace:ui/demo/demo-core"
