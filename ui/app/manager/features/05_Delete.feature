@@ -5,11 +5,16 @@ Feature: Delete
         Given Login to smartcity realm
 
     @Desktop @delete_assets
-    Scenario Outline: delete_assets
+    Scenario Outline: delete assets
         Given Nevigate to asset page
-        Then delete asset named "<name>"
+        Then Delete asset named "<name>"
 
         Examples:
             |   name    |
             |   Battery |
             |   Solar   |
+    
+    @Desktop @delete_role
+    Scenario: delete role
+        Given Nevigate to role page
+        Then Delete role

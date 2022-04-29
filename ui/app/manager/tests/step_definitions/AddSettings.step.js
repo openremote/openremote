@@ -102,10 +102,15 @@ Then('Create a new role', async function () {
     const { page } = this;
 
     await this.click('text=Add Role')
-    await page.locator('#attribute-meta-row-2 input[type="text"]').first().fill('asset');
-    await page.locator('#attribute-meta-row-2 input[type="text"]').nth(1).fill('read:asset, write:asset');
-    await page.locator('#attribute-meta-row-2 td .meta-item-container div:nth-child(2) div or-mwc-input:nth-child(3) #field #component #elem').first().check();
-    await page.locator('#attribute-meta-row-2 td .meta-item-container div:nth-child(2) div:nth-child(2) or-mwc-input:nth-child(3) #field #component #elem').check();
+
+    // get total number of current roles
+    var rows = await page.$$('.mdc-data-table__row')
+    const count = await rows.length
+
+    await page.locator(`#attribute-meta-row-${count - 1} input[type="text"]`).first().fill('asset');
+    await page.locator(`#attribute-meta-row-${count - 1} input[type="text"]`).nth(1).fill('read:asset, write:asset');
+    await page.locator(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div or-mwc-input:nth-child(3) #field #component #elem`).first().check();
+    await page.locator(`#attribute-meta-row-${count - 1} td .meta-item-container div:nth-child(2) div:nth-child(2) or-mwc-input:nth-child(3) #field #component #elem`).check();
     await this.click('button:has-text("create")')
 })
 

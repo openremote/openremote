@@ -17,6 +17,10 @@ Given('Nevigate to map page', async function () {
     await this.click('#desktop-left a:nth-child(1)')
 });
 
+Given('Nevigate to role page',async function(){
+    await this.click('#menu-btn-desktop');
+    await this.click('text=Roles');
+})
 
 
 /**
