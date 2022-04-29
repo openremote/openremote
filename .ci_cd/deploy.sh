@@ -18,6 +18,7 @@
 revoke_ssh () {
   if [ "$SSH_GRANTED" == 'true' ]; then
       if [ -n "$CIDR" ]; then
+        source temp/aws/set_github-da_account_arn.sh
         "temp/aws/ssh_revoke.sh" "$CIDR" "github-da"
       fi
   fi
