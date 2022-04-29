@@ -448,7 +448,10 @@ export class OrChart extends translate(i18next)(LitElement) {
                             intersect: false,
                             xPadding: 10,
                             yPadding: 10,
-                            titleMarginBottom: 10
+                            titleMarginBottom: 10,
+                            callbacks: {
+                                label: (tooltipItem: any) => tooltipItem.dataset.label + ': ' + tooltipItem.formattedValue + tooltipItem.dataset.unit,
+                            }
                         },
                         annotation: {
                             annotations: [
@@ -986,10 +989,12 @@ export class OrChart extends translate(i18next)(LitElement) {
             const asset = this.assets[assetIndex];
             const descriptors = AssetModelUtil.getAttributeAndValueDescriptors(asset.type, attribute.name, attribute);
             const label = Util.getAttributeLabel(attribute, descriptors[0], asset.type, false);
+            const unit = Util.resolveUnits(Util.getAttributeUnits(attribute, descriptors[0], asset.type));
             const colourIndex = index % this.colors.length;
             let dataset = await this._loadAttributeData(asset, attribute, this.colors[colourIndex], interval, this._startOfPeriod!, this._endOfPeriod!, false, asset.name + " " + label);
             (dataset as any).assetId = asset.id;
             (dataset as any).attrName = attribute.name;
+            (dataset as any).unit = unit;
             data.push(dataset);
 
             dataset =  await this._loadAttributeData(this.assets[assetIndex], attribute, this.colors[colourIndex], interval, predictedFromTimestamp, this._endOfPeriod!, true, asset.name + " " + label + " " + i18next.t("predicted"));
