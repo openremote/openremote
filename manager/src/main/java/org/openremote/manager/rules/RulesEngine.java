@@ -37,6 +37,7 @@ import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.TimeUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -560,8 +561,8 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void insertAssetEvent(String expires, AssetState<?> assetState) {
-        facts.insertAssetEvent(expires, assetState);
+    public void insertAssetEvent(long expiresMillis, AssetState<?> assetState) {
+        facts.insertAssetEvent(expiresMillis, assetState);
         if (running) {
             scheduleFire();
         }
