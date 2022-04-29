@@ -66,6 +66,12 @@ Given('Login OpenRemote demo website', { timeout: 10000 }, async function () {
 //     await expect(value).toEqual('noAssetSelected')
 // })
 
+
+// There should be a better way to decide on clicking which marker 
+
+// Like using parameters to decide
+// Reason why it's not using this approach is that the selectors for the markers are not unified
+
 When('Check {string} on map', async function (asset) {
     const { page } = this;
 
