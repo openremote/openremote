@@ -1392,6 +1392,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                         }
                     });
                 }
+
+                grid.addEventListener('scroll', (event: any) => {
+                    const header = shadowRoot.querySelector('#asset-header');
+                    if (header) {
+                        if (event.target.scrollTop > 0) {
+                            header.classList.add('scrolled')
+                        } else {
+                            header.classList.remove('scrolled')
+                        }
+                    }
+                });
             }
         }
     }
