@@ -381,7 +381,6 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
             .setDismissAction(null)
             .setStyles(html`<style>.selected { color: ${unsafeCSS(DefaultColor4)} }</style>`)
             .setActions(Object.entries(this.appConfig!.languages || DEFAULT_LANGUAGES).map(([key, value]) => {
-                console.log(key)
                 return {
                     content: html`<span class="${(key === manager.language) ? 'selected' : ''}">${i18next.t(value)}</span>`,
                     actionName: key,
