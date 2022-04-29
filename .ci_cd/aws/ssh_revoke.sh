@@ -15,12 +15,6 @@ else
   awsDir=./
 fi
 
-source "${awsDir}login.sh"
-
-if [ "$AWS_ENABLED" != 'true' ]; then
-  exit 1
-fi
-
 if [ -n "$AWS_PROFILE" ]; then
   PROFILE="--profile $AWS_PROFILE"
 fi
