@@ -14,9 +14,12 @@ Then('delete asset named {string}', async function (name) {
 })
 
 Then('Delete role', async function () {
-  
-  // not correct
-  await this.click('#mdc-data-table-icon-2 span')
-  await this.click('#attribute-meta-row-2 button:has-text("Delete")')
+  const { page } = this
+  await page.locator('td:has-text("asset")').first().click()
+
+  // click on the button that in the first row
+  // not a smart way 
+  // if it's not inside the first row then will have error
+  await this.click('#attribute-meta-row-0 button:has-text("Delete")')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
 })

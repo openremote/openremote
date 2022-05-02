@@ -1,6 +1,5 @@
 const { Given, When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
-const { runInThisContext } = require("vm");
 
 Given('Login OpenRemote local website as admin', { timeout: 10000 }, async function () {
     await this.navigate("admin", "admin")
@@ -67,13 +66,6 @@ Then("Add a new user", { timeout: 10000 }, async function () {
     // await page.locator('input[type="text"]').first().click();
     await page.locator('input[type="text"]').first().fill('smartcity');
 
-    // type in password
-    // for (i = 0; i < 4; i++) {
-    //     await page.keyboard.press("Tab")
-    // }
-    // await page.keyboard.type("smartcity")
-    // await page.keyboard.press("Tab")
-    // await page.keyboard.type("smartcity")
 
     // type in password
     await page.locator('#password-user0 input[type="password"]').fill('smartcity');
@@ -125,7 +117,7 @@ Then('Select the new role and unselect others', async function () {
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
     await this.click('li[role="menuitem"]:has-text("Asset")')
-    await page.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
+    await page.keyboard.press("Enter")
 })
 
 Then('We should see assets permission are selected', async function () {
@@ -155,7 +147,7 @@ Then('Switch back to origin', async function () {
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
     await this.click('li[role="menuitem"]:has-text("Asset")')
-    await page.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
+    await page.keyboard.press("Enter")
 })
 
 /**
