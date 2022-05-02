@@ -24,9 +24,9 @@ Then('Go to modify mode', async function () {
 })
 
 Then('Give {string} to the {string} with type of {string}', async function (value, attribute, type) {
-    const { page } = this;
 
-    await page.locator(`text=${attribute} ${type} >> input[type="number"]`).fill(value);
+    await this.fill(`text=${attribute} ${type} >> input[type="number"]`, value)
+    //await page.locator(`text=${attribute} ${type} >> input[type="number"]`).fill(value);
 })
 
 Then('Save', async function () {
@@ -41,8 +41,9 @@ Then('Save', async function () {
 
 // select an asset
 When('Search for the {string}', async function (name) {
-    const { page } = this;
-    await page.locator('input[type="text"]').fill(name);
+
+    await this.fill('input[type="text"]', name)
+    //await page.locator('input[type="text"]').fill(name);
 })
 
 When('Select the {string}', async function (name) {
@@ -58,8 +59,9 @@ Then('We see the {string} page', async function (name) {
 
 // update
 Then('Update {string} to the {string} with type of {string}', async function (value, attribute, type) {
-    const { page } = this;
-    await page.locator(`#field-${attribute} input[type="${type}"]`).fill(value)
+    
+    await this.fill(`#field-${attribute} input[type="${type}"]`, value)
+    //await page.locator(`#field-${attribute} input[type="${type}"]`).fill(value)
     await this.click(`#field-${attribute} #send-btn span`)
 })
 

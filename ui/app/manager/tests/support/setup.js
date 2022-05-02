@@ -25,23 +25,18 @@ class CustomWorld {
 
     async navigate(realm, user) {
         var context
+        var URL = realm == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
                 storageState: 'storageState.json',
             });
             this.page = await context.newPage();
-            if (realm == "admin")
-                await this.page.goto(process.env.LOCAL_URL);
-            else
-                await this.page.goto(process.env.SMARTCITY_URL)
+            await this.page.goto(URL);
         }
         else {
             context = await global.browser.newContext();
             this.page = await context.newPage();
-            if (realm == "admin")
-                await this.page.goto(process.env.LOCAL_URL);
-            else
-                await this.page.goto(process.env.SMARTCITY_URL)
+            await this.page.goto(URL);
             this.login(user)
         }
     }
@@ -66,7 +61,7 @@ class CustomWorld {
         await this.page?.locator(button).click()
     }
 
-    async press(key){
+    async press(key) {
         await this.page?.press(key)
     }
 
@@ -75,6 +70,10 @@ class CustomWorld {
         if (fs.existsSync('storageState.json')) {
             fs.unlinkSync('storageState.json')
         }
+    }
+
+    async fill(locate,value){
+        await this.page?.locator(locate).fill(value)
     }
 
 }

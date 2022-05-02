@@ -1,5 +1,6 @@
 const { Given, When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
+const { toUnicode } = require("punycode");
 
 Given('Login OpenRemote local website as admin', { timeout: 10000 }, async function () {
     await this.navigate("admin", "admin")
@@ -16,7 +17,9 @@ Then('Add a new Realm', async function () {
     const { page } = this;
 
     await this.click('text=Add Realm');
-    await page.locator('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]').fill('smartcity');
+
+    await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', 'smartcity')
+    //await page.locator('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]').fill('smartcity');
     await page.locator('input[type="text"]').nth(3).fill('smartcity');
     await Promise.all([
         page.waitForNavigation(`${process.env.LOCAL_URL}/manager/#/realms`),
@@ -64,12 +67,15 @@ Then("Add a new user", { timeout: 10000 }, async function () {
     // type in username
     await page.locator('.mdi-plus').first().click();
     // await page.locator('input[type="text"]').first().click();
+    //await this.fill('input[type="text"]', 'smartcity')
     await page.locator('input[type="text"]').first().fill('smartcity');
 
 
     // type in password
-    await page.locator('#password-user0 input[type="password"]').fill('smartcity');
-    await page.locator('#repeatPassword-user0 input[type="password"]').fill('smartcity');
+    await this.fill('#password-user0 input[type="password"]', 'smartcity')
+    await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
+    //await page.locator('#password-user0 input[type="password"]').fill('smartcity');
+    //await page.locator('#repeatPassword-user0 input[type="password"]').fill('smartcity');
 
     // select permissions
     await this.click('div[role="button"]:has-text("Roles")');
@@ -78,7 +84,8 @@ Then("Add a new user", { timeout: 10000 }, async function () {
     await page.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
 
     //create
-    await page.locator('button:has-text("create")').click();
+    await this.click('button:has-text("create")')
+    //await page.locator('button:has-text("create")').click();
 })
 
 /**
@@ -166,3 +173,6 @@ Then('Go to new Realm and login', async function () {
     await this.login("smartcity")
 })
 
+
+// TODO: add steps to check if there is any element (like asset, realm, user) having the same name. 
+// If yes, then skip
