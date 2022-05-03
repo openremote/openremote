@@ -1,4 +1,4 @@
-import {html, css, LitElement, PropertyValues, TemplateResult} from "lit";
+import {html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-mwc-components/or-mwc-input";
 import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
@@ -8,20 +8,20 @@ import {
     AssetDescriptor,
     AssetEvent,
     AssetEventCause,
+    AssetModelUtil,
     AssetQuery,
-    StringPredicate,
-    LogicGroup,
-    AttributePredicate,
-    LogicGroupOperator,
     AssetQueryMatch,
     AssetsEvent,
     AssetTreeNode,
     AssetTypeInfo,
     Attribute,
+    AttributePredicate,
     ClientRole,
+    LogicGroup,
+    LogicGroupOperator,
     SharedEvent,
-    WellknownAssets,
-    AssetModelUtil
+    StringPredicate,
+    WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -1044,9 +1044,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         const query: AssetQuery = {
             select: {
-                excludePath: true,
-                excludeAttributes: attributeCond ? false : true,
-                excludeParentInfo: true
+                attributes: attributeCond ? undefined : []
             },
             names: assetCond,
             types: assetTypeCond,
