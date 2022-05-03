@@ -425,5 +425,13 @@
     "keyAlreadyExists": "A chave já existe"
   },
   "yes": "Sim",
-  "no": "Não"
+  "no": "Não",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
+  }
 }

@@ -463,5 +463,13 @@
     }
   },
   "yes": "Ja",
-  "no": "Nein"
+  "no": "Nein",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
+  }
 }

@@ -197,7 +197,7 @@ export function getItemTemplate(item: ListItem | null, index: number, selectedVa
     }
 
     return html`
-        <li @click="${(e: MouseEvent) => itemClickCallback && itemClickCallback(e, item)}" style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item ${isSelected ? selectedClassName : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}" data-value="${value}">
+        <li @click="${(e: MouseEvent) => { itemClickCallback && itemClickCallback(e, item)}}" style="${listItem.styleMap ? styleMap(listItem.styleMap) : ""}" class="mdc-list-item ${isSelected ? selectedClassName : ""}" role="${ifDefined(role)}" tabindex="${ifDefined(tabIndex)}" aria-checked="${ifDefined(ariaChecked)}" aria-selected="${ifDefined(ariaSelected)}" data-value="${value}">
             <span class="mdc-list-item__ripple"></span>
             ${leftTemplate}
             ${textTemplate}
