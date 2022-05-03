@@ -174,5 +174,5 @@ Then('Go to new Realm and login', async function () {
 })
 
 
-// TODO: add steps to check if there is any element (like asset, realm, user) having the same name. 
-// If yes, then skip
+// TODO: add steps to check if there is any element (like asset, realm, user) having the same name.
+// If yes, then skip. Low priority

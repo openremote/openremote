@@ -43,4 +43,30 @@ Feature: Assets
             | Electricity battery asset | Battery | powerSetpoint | number | 70    | 705        | 210        |
             | PV solar asset            | Solar   | powerForecast | number | 100   | 540        | 110        |
 
+    @Desktop @readonly
+    Scenario Outline: Set and cancel read-only
+        When Go to asset "<name>" info page
+        Then Go to modify mode
+        Then Uncheck on readonly of "<attribute_1>"
+        Then Check on readonly of "<attribute_2>"
+        Then Save
+        When Go to panel page
+        Then We should see a button on the right of "<attribute_1>" 
+        And No button on the right of "<attribute_2>"
+       
+        Examples:
+            | name    | attribute_1     | attribute_2        |
+            | Battery | energyLevel     | efficiencyExport   |
+            | Solar   | power           | panelPitch         |
 
+
+   @Desktop @set_conf_item
+   Scenario Outline: Set configure item for Insight and Rule
+        When Go to asset "<name>" info page
+        Then Go to modify mode
+        Then Check on "<item_1>" and "<item_2>" on "<attribute>"
+
+        Examples:
+            | name    | attribute     | item_1       | item_2            |
+            | Battery | energyLevel   | Rule state   | Store data points |
+            | Solar   | power         | Rule state   | Store data points |
