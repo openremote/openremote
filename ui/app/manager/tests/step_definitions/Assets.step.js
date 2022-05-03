@@ -137,3 +137,6 @@ Then('Check on {string} and {string} on {string}', async function (item1, item2,
     await page.locator('li:nth-child(20) .mdc-checkbox .mdc-checkbox__native-control').check() // No.20 is the store data points
     await this.click('div[role="alertdialog"] button:has-text("Add")')
 })
+
+
+// TODO: improve the code on detecting element

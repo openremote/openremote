@@ -50,5 +50,6 @@ Then('Delete {string} on {string}', async function (item, attribute) {
   const { page } = this;
 
   await this.click(`td:has-text("${attribute}")`)
+  await page.locator('#input').first().hover()
   await page.locator('.mdi-close-circle').first().click();
 })

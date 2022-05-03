@@ -10,9 +10,10 @@ Feature: Delete
         When Go to asset "<name>" info page
         Then Go to modify mode
         Then Delete "<item>" on "<attribute>"
+        Then Save
 
         Examples:
-            | name    | attribute        | item_1     |
+            | name    | attribute        | item     |
             | Battery | efficiencyExport | Read only  |
 
 
@@ -38,3 +39,4 @@ Feature: Delete
         When Select smartcity realm
         When Navigate to user page
         Then Delete user
+        
