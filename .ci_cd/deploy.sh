@@ -195,7 +195,7 @@ if [ "$ROLLBACK_ON_ERROR" == 'true' ]; then
   rm -fr temp_old
   mv temp temp_old
   # Tag existing manager image with previous tag (current tag might not be available in docker hub anymore or it could have been overwritten)
-  docker tag `docker images openremote/manager -q | head -1` openremote/manager:previous
+  docker tag '`docker images openremote/manager -q | head -1`' openremote/manager:previous
 else
   echo "Removing old temp deployment dir"
   rm -fr temp

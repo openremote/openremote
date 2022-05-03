@@ -2,7 +2,7 @@ import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import i18next from "i18next";
 import "@openremote/or-components/or-panel";
-import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
+import {ClientRole, ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
 import manager, {DefaultColor1, OREvent} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Page, PageProvider} from "@openremote/or-app";
@@ -139,7 +139,7 @@ export class PageGateway extends Page<AppStateKeyed>  {
 
     connectedCallback() {
         super.connectedCallback();
-        this._readonly = !manager.hasRole("write:admin");
+        this._readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
         this._subscribeEvents();
     }
 
