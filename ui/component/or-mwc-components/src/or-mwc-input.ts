@@ -1132,7 +1132,9 @@ export class OrMwcInput extends LitElement {
                                                 @change="${(e: Event) => {
                                                     let val: any[] = this.value;
                                                     if ((e.target as HTMLInputElement).checked) {
-                                                        val = [optValue,...val];
+                                                        if (!val.includes(optValue)) {
+                                                            val = [optValue,...val];
+                                                        }
                                                     } else {
                                                         val = val.filter((v: any) => v !== optValue);
                                                     }
@@ -1582,7 +1584,6 @@ export class OrMwcInput extends LitElement {
     }
 
     protected onValueChange(elem: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined, newValue: any | undefined, enterPressed?: boolean) {
-
         let previousValue = this.value;
         let errorMsg: string | undefined;
 
@@ -1636,7 +1637,7 @@ export class OrMwcInput extends LitElement {
         this.setCustomValidity(errorMsg);
         this.reportValidity();
 
-        if (newValue !== previousValue) {
+        if (this.type !== InputType.CHECKBOX_LIST && newValue !== previousValue) {
             if (this.type === InputType.RANGE) {
                 (this._mdcComponent as MDCSlider).setValue(newValue);
                 if (this._mdcComponent2) {
@@ -1652,6 +1653,10 @@ export class OrMwcInput extends LitElement {
                 this.searchableValue = undefined;
                 (searchableElement as HTMLInputElement).value = "";
             }
+        }
+
+        if (this.type === InputType.CHECKBOX_LIST && !Util.objectsEqual(newValue, previousValue, true)) {
+            this.dispatchEvent(new OrInputChangedEvent(newValue, previousValue, enterPressed));
         }
     }
 
