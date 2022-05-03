@@ -44,14 +44,14 @@ public interface UserResource {
     @Path("{realm}/roles")
     @Produces(APPLICATION_JSON)
     @SuppressWarnings("unusable-by-js")
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @GET
     @Path("{realm}/{clientId}/roles")
     @Produces(APPLICATION_JSON)
     @SuppressWarnings("unusable-by-js")
-    @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
+    @RolesAllowed(Constants.READ_ADMIN_ROLE)
     Role[] getClientRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
     @PUT
