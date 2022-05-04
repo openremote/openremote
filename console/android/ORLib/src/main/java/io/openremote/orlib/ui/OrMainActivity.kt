@@ -65,6 +65,7 @@ open class OrMainActivity : Activity() {
     private var consoleId: String? = null
     private var appConfig: ORAppConfig? = null
     private var baseUrl: String? = null
+
     private var onDownloadCompleteReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
             val action = intent.action
@@ -90,6 +91,7 @@ open class OrMainActivity : Activity() {
                     }
                 }
             }
+
 
             sharedPreferences.let { pref ->
                 pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
@@ -139,6 +141,7 @@ open class OrMainActivity : Activity() {
                 ORAppConfig::class.java
             )
         }
+
         if (intent.hasExtra(ORConstants.BASE_URL_KEY)) {
             baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
         }
@@ -503,6 +506,7 @@ open class OrMainActivity : Activity() {
         failingUrl: String?
     ) {
         LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
+
         //TODO should we always ignore image errors and locale json files?
         if (failingUrl != null && (failingUrl.endsWith("png")
                     || failingUrl.endsWith("jpg")

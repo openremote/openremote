@@ -298,7 +298,11 @@ export class OrEditAssetPanel extends LitElement {
                 <td class="padded-cell mdc-data-table__cell expander-cell"><or-icon icon="chevron-right"></or-icon><span>${attribute.name}</span></td>
                 <td class="padded-cell mdc-data-table__cell">${Util.getValueDescriptorLabel(attribute.type!)}</td>
                 <td class="padded-cell overflow-visible mdc-data-table__cell">
-                    <or-attribute-input ${ref(attributeInputRef)} compact .comfortable="${true}" .assetType="${assetType}" .label=${null} .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" disableWrite disableSubscribe disableButton @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
+                    <or-attribute-input ${ref(attributeInputRef)} 
+                                        .comfortable="${true}" .assetType="${assetType}" .label=${null} 
+                                        .readonly="${false}" .attribute="${attribute}" .assetId="${this.asset.id!}" 
+                                        disableWrite disableSubscribe disableButton compact 
+                                        @or-attribute-input-changed="${(e: OrAttributeInputChangedEvent) => this._onAttributeModified(attribute, e.detail.value)}"></or-attribute-input>
                 </td>
                 <td class="padded-cell mdc-data-table__cell actions-cell">${canDelete ? html`<or-mwc-input type="${InputType.BUTTON}" icon="delete" @click="${deleteAttribute}">` : ``}</td>
             </tr>

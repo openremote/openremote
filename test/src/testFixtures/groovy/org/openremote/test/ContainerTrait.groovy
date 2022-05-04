@@ -69,7 +69,7 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
+import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
 
 trait ContainerTrait {
 
@@ -90,7 +90,7 @@ trait ContainerTrait {
                 if (currentConfig.size() == config.size()) {
                     configsMatch = currentConfig.entrySet().stream().allMatch{entry ->
                         // ignore webserver port config
-                        if (entry.key == WEBSERVER_LISTEN_PORT) {
+                        if (entry.key == OR_WEBSERVER_LISTEN_PORT) {
                             return true
                         }
                         entry.value == config.get(entry.key)
@@ -422,7 +422,7 @@ trait ContainerTrait {
 
     int getServerPort() {
         if (container != null) {
-            return MapAccess.getInteger(container.getConfig(), WEBSERVER_LISTEN_PORT, 0)
+            return MapAccess.getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, 0)
         }
         return 0
     }

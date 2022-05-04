@@ -18,13 +18,12 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 public class CORSFilter extends HttpFilter {
-    private static final Logger LOG = Logger.getLogger(CORSFilter.class.getName());
     protected boolean allowCredentials = true;
     protected String allowedMethods;
     protected String allowedHeaders;
     protected String exposedHeaders;
     protected int corsMaxAge = -1;
-    protected Set<String> allowedOrigins = new HashSet<String>();
+    protected Set<String> allowedOrigins = new HashSet<>();
 
     public boolean isAllowCredentials() {
         return allowCredentials;
@@ -144,7 +143,8 @@ public class CORSFilter extends HttpFilter {
     }
 
     protected boolean originOk(String origin) {
-        return allowedOrigins.contains("*") || allowedOrigins.contains(origin);
+        // startsWith test allows for host matching without explicit port mapping
+        return allowedOrigins.contains("*") || allowedOrigins.contains(origin) || allowedOrigins.stream().anyMatch(origin::startsWith);
     }
 
 }

@@ -1,0 +1,43 @@
+# ---------------------------------------------------------------------------------------------
+#
+# Creates CLI user with permission to send emails.
+#
+# ---------------------------------------------------------------------------------------------
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'IAM User SMTP'
+Parameters:
+  UserName:
+    Description: User name for smtp user
+    Type: String
+    #AllowedPattern: "^\S{4,}$"
+
+Resources:
+
+  SMTPUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Ref UserName
+      Policies:
+        - PolicyName: SESSendEmailAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource:
+                  - '*'
+
+  SMTPCredentials:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref SMTPUser
+
+Outputs:
+  SMTPUserKey:
+    Description: SMTP server username
+    Value: !Ref SMTPCredentials
+  SMTPUserSecret:
+    Description: SMTP server password
+    Value: !GetAtt SMTPCredentials.SecretAccessKey

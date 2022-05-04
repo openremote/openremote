@@ -2,14 +2,14 @@ import {css, html, PropertyValues, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
 import i18next from "i18next";
 import "@openremote/or-components/or-panel";
-import {ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
+import {ClientRole, ConnectionStatus, GatewayConnection, GatewayConnectionStatusEvent} from "@openremote/model";
 import manager, {DefaultColor1, OREvent} from "@openremote/core";
 import {InputType, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
-import {EnhancedStore} from "@reduxjs/toolkit";
+import {Store} from "@reduxjs/toolkit";
 
-export function pageGatewayProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageGatewayProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "gateway",
         routes: [
@@ -133,13 +133,13 @@ export class PageGateway extends Page<AppStateKeyed>  {
         return "gatewayConnection";
     }
 
-    constructor(store: EnhancedStore<AppStateKeyed>) {
+    constructor(store: Store<AppStateKeyed>) {
         super(store);
     }
 
     connectedCallback() {
         super.connectedCallback();
-        this._readonly = !manager.hasRole("write:admin");
+        this._readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
         this._subscribeEvents();
     }
 

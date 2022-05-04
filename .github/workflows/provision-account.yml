@@ -46,21 +46,22 @@ jobs:
           username: ${{ github.actor }}
           organization: openremote
           team: CI/CD
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
+          GITHUB_TOKEN: ${{ secrets._TEMP_ACCESS_TOKEN_FOR_READING_ORG_TEAMS }} # Personal access token used to query github (Requires scope: `read:org`)
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Provision Account
         if: ${{ steps.checkUserMember.outputs.isTeamMember == 'true' }}
         run: |
           chmod +x .ci_cd/aws/*
-          .ci_cd/aws/provision_account.sh "$OU" "$ACCOUNT_NAME" "$PARENT_DNS_ZONE" "HOSTED_DNS" "PROVISION_EFS"
+          .ci_cd/aws/provision_account.sh "$OU" "$ACCOUNT_NAME" "$PARENT_DNS_ZONE" "$HOSTED_DNS" "$PROVISION_EFS"
         env:
           OU: ${{ github.event.inputs.OU }}
           ACCOUNT_NAME: ${{ github.event.inputs.ACCOUNT_NAME }}
           PARENT_DNS_ZONE: ${{ github.event.inputs.PARENT_DNS_ZONE }}
           HOSTED_DNS: ${{ github.event.inputs.HOSTED_DNS }}
           PROVISION_EFS: ${{ github.event.inputs.PROVISION_EFS }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets._TEMP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets._TEMP_AWS_SECRET_ACCESS_KEY }}
+          AWS_ROLE_NAME: ${{ secrets._TEMP_AWS_ROLE_NAME }}
