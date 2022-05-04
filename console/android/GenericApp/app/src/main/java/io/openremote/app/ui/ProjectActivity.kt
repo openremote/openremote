@@ -59,6 +59,7 @@ class ProjectActivity : Activity() {
                 sharedPreferences?.edit()?.putString("realm", realm)?.apply()
                 val intent = Intent(this@ProjectActivity, OrMainActivity::class.java)
                 intent.putExtra(OrMainActivity.APP_CONFIG_KEY, jacksonObjectMapper().writeValueAsString(appConfig))
+                intent.putExtra(OrMainActivity.BASE_URL_KEY, host)
                 startActivity(intent)
                 finish()
             } else {

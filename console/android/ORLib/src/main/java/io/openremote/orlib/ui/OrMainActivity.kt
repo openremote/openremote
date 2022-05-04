@@ -57,7 +57,8 @@ open class OrMainActivity : Activity() {
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
     private var consoleId: String? = null
-    protected var appConfig: ORAppConfig? = null
+    private var appConfig: ORAppConfig? = null
+    private var baseUrl: String? = null
     private var onDownloadCompleteReciever: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
             val action = intent.action
@@ -72,10 +73,22 @@ open class OrMainActivity : Activity() {
         get() {
             var returnValue: String? = null
 
+            if (appConfig != null) {
+                if (URLUtil.isValidUrl(appConfig!!.initialUrl)) {
+                    return appConfig!!.initialUrl
+                } else {
+                    sharedPreferences?.let { pref ->
+                        pref.getString("host", null)?.let { host ->
+                            return host.plus(appConfig!!.initialUrl)
+                        }
+                    }
+                }
+            }
+
             sharedPreferences?.let { pref ->
-                pref.getString("project", null)?.let { projectName ->
-                    pref.getString("realm", null)?.let { realmName ->
-                        returnValue = "https://${projectName}.openremote.io/api/$realmName"
+                pref.getString("host", null)?.let { host ->
+                    pref.getString("realm", null)?.let { realm ->
+                        returnValue = host.plus("/api/${realm}")
                     }
                 }
             }
@@ -120,15 +133,19 @@ open class OrMainActivity : Activity() {
                 ORAppConfig::class.java
             )
         }
+        if (intent.hasExtra(BASE_URL_KEY)) {
+            baseUrl = intent.getStringExtra(BASE_URL_KEY)
+        }
 
         if (appConfig == null) {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val project = sharedPreferences!!.getString("project", null)
+            val host = sharedPreferences!!.getString("host", null)
             val realm = sharedPreferences!!.getString("realm", null)
 
-            if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
-                val apiManager = ApiManager("https://${project}.openremote.io/api/$realm")
+            if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
+                val url = host.plus("/api/${realm}")
+                val apiManager = ApiManager(url)
                 apiManager.getAppConfig(realm) { statusCode, appConfig, error ->
                     if (statusCode in 200..299) {
                         this.appConfig = appConfig
@@ -239,10 +256,6 @@ open class OrMainActivity : Activity() {
                 LOG.fine("Loading web view: $url")
                 loadUrl(url)
             }
-            appConfig != null -> {
-                LOG.fine("Loading web view: ${appConfig!!.initialUrl}")
-                loadUrl(appConfig!!.initialUrl)
-            }
             else -> {
                 var url = clientUrl
                 val intentUrl = intent.getStringExtra("appUrl")
@@ -311,7 +324,6 @@ open class OrMainActivity : Activity() {
         LOG.fine("Initializing web view")
         val webAppInterface = WebAppInterface(this)
         binding.webView.apply {
-            clearCache(true)
             addJavascriptInterface(webAppInterface, "MobileInterface")
             settings.javaScriptEnabled = true
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
@@ -336,8 +348,7 @@ open class OrMainActivity : Activity() {
                     handleError(
                         errorResponse.statusCode,
                         errorResponse.reasonPhrase,
-                        request.url.toString(),
-                        request.isForMainFrame
+                        request.url.toString()
                     )
                 }
 
@@ -356,8 +367,7 @@ open class OrMainActivity : Activity() {
                     handleError(
                         error.errorCode,
                         error.description.toString(),
-                        request.url.toString(),
-                        request.isForMainFrame
+                        request.url.toString()
                     )
                 }
 
@@ -365,7 +375,7 @@ open class OrMainActivity : Activity() {
                     progressBar!!.visibility = View.VISIBLE
                     timeOutRunnable = Runnable {
                         if (!webViewLoaded) {
-                            handleError(ERROR_TIMEOUT, "Connection timed out", url, true)
+                            handleError(ERROR_TIMEOUT, "Connection timed out", url)
                         }
                     }
                     timeOutHandler = Looper.myLooper()?.let { Handler(it) }
@@ -390,6 +400,11 @@ open class OrMainActivity : Activity() {
                         startActivity(i)
                         return true
                     }
+                    if (!request.url.isAbsolute && baseUrl?.isNotEmpty()!!) {
+                        view.loadUrl("${baseUrl}/${request.url}")
+                        return true
+                    }
+
                     return super.shouldOverrideUrlLoading(view, request)
                 }
             }
@@ -479,33 +494,30 @@ open class OrMainActivity : Activity() {
     private fun handleError(
         errorCode: Int,
         description: String,
-        failingUrl: String?,
-        isForMainFrame: Boolean
+        failingUrl: String?
     ) {
         LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
-
+        //TODO should we always ignore image errors?
+        if (failingUrl != null && (failingUrl.endsWith("png")
+                    || failingUrl.endsWith("jpg")
+                    || failingUrl.endsWith("ico"))
+        ) {
+            LOG.info("Ignoring error loading image resource")
+            return
+        }
         // This will be the URL loaded into the webview itself (false for images etc. of the main page)
-        if (isForMainFrame) {
-
-            // Check page load error URL
-            val errorUrl = getString(R.string.OR_CONSOLE_LOAD_ERROR_URL)
-            if (!TextUtils.isEmpty(errorUrl) && failingUrl != errorUrl) {
-                LOG.info("Loading error URL: $errorUrl")
-                loadUrl(errorUrl)
-                return
-            }
+        // Check page load error URL
+        if (clientUrl != null) {
+            loadUrl(clientUrl)
+            Toast.makeText(this, description, Toast.LENGTH_LONG).show()
         } else {
-            if (java.lang.Boolean.parseBoolean(getString(R.string.OR_CONSOLE_IGNORE_PAGE_ERRORS))) {
-                return
-            }
-
-            //TODO should we always ignore image errors?
-            if (failingUrl != null && (failingUrl.endsWith("png")
-                        || failingUrl.endsWith("jpg")
-                        || failingUrl.endsWith("ico"))
-            ) {
-                LOG.info("Ignoring error loading image resource")
-                return
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                startActivity(launchIntent)
+                finish()
+                Toast.makeText(applicationContext, description, Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, description, Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -757,10 +769,10 @@ open class OrMainActivity : Activity() {
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
 
                     qrScannerProvider?.enable(object : QrScannerProvider.ScannerCallback {
-                            override fun accept(responseData: Map<String, Any>) {
-                                notifyClient(responseData)
-                            }
-                        })
+                        override fun accept(responseData: Map<String, Any>) {
+                            notifyClient(responseData)
+                        }
+                    })
                 }
                 action.equals("PROVIDER_DISABLE", ignoreCase = true) -> {
                     val response = qrScannerProvider?.disable()
@@ -842,5 +854,6 @@ open class OrMainActivity : Activity() {
         const val PUSH_PROVIDER_DISABLED_KEY = "PushProviderDisabled"
         const val CONSOLE_ID_KEY = "consoleId"
         const val APP_CONFIG_KEY = "APP_CONFIG_KEY"
+        const val BASE_URL_KEY = "BASE_URL_KEY"
     }
 }

@@ -73,7 +73,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
     }
 
     func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
-        if shortcutItem.type == "projects" {
+        if shortcutItem.type == "settings" {
             let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement)
             userDefaults?.removeObject(forKey: DefaultsKey.projectKey)
             userDefaults?.removeObject(forKey: DefaultsKey.realmKey)

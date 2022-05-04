@@ -233,17 +233,23 @@ open class ORViewcontroller : UIViewController {
         let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
         alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
 
-        self.present(alertView, animated: true, completion: nil)
-
         if let applicationConfig = appConfig {
+            self.present(alertView, animated: true, completion: nil)
             var url = applicationConfig.url
             if !url.starts(with: "http") {
                 url = baseUrl!.appending(url)
             }
             self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
+        } else {
+            if self.presentingViewController != nil {
+                self.dismiss(animated: true) {
+                    self.presentingViewController!.present(alertView, animated: true, completion: nil)
+                }
+            } else {
+                self.present(alertView, animated: true, completion: nil)
+            }
         }
     }
-
 }
 
 extension ORViewcontroller: UITableViewDelegate {
