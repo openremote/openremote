@@ -233,17 +233,17 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
         let userInfo = response.notification.request.content.userInfo
         var notificationId : Int64? = nil
         var consoleId : String?
-        var project: String?
-        var realm: String?
+        var urlString: String?
 
         if let notificationIdString = userInfo[ActionType.notificationId] as? String{
             notificationId = Int64(notificationIdString)
         }
 
-        if let defaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
-            consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey)
-            project = defaults.string(forKey: DefaultsKey.projectKey)
-            realm = defaults.string(forKey: DefaultsKey.realmKey)
+        if let userDefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement) {
+            consoleId = userDefaults.string(forKey: GeofenceProvider.consoleIdKey)
+            let host = userDefaults.string(forKey: DefaultsKey.hostKey)
+            let realm = userDefaults.string(forKey: DefaultsKey.realmKey)
+            urlString = host!.appending("/api/\(realm!)")
         }
 
         NSLog("%@", "Action chosen: \(response.actionIdentifier)")
@@ -255,8 +255,8 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
                 if urlTo.hasPrefix("http") || urlTo.hasPrefix("https") {
                     urlRequest = URL(string:urlTo)
                 } else {
-                    if let projectName = project, let realmName = realm {
-                        urlRequest = URL(string: "https://\(projectName).remote.io/\(realmName)/console/\(urlTo)")
+                    if let url = urlString {
+                        urlRequest = URL(string: "\(url)/console/\(urlTo)")
                     }
                 }
                 if let url = urlRequest{
@@ -288,8 +288,8 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
                                     if action.url.hasPrefix("http") || action.url.hasPrefix("https") {
                                         urlRequest = URL(string:action.url)
                                     } else {
-                                        if let projectName = project, let realmName = realm {
-                                            urlRequest = URL(string: "https://\(projectName).remote.io/\(realmName)/console/\(action.url)")
+                                        if let url = urlString {
+                                            urlRequest = URL(string: "\(url)/console/\(action.url)")
                                         }
                                     }
                                     if let url = urlRequest {

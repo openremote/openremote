@@ -13,7 +13,6 @@ import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.*
-import android.text.TextUtils
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -31,6 +30,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.messaging.FirebaseMessaging
+import io.openremote.orlib.ORConstants
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
 import io.openremote.orlib.models.ORAppConfig
@@ -44,22 +44,29 @@ import java.util.logging.Logger
 
 open class OrMainActivity : Activity() {
 
+    private val LOG = Logger.getLogger(
+        OrMainActivity::class.java.name
+    )
+
     private lateinit var binding: ActivityOrMainBinding
+    private lateinit var sharedPreferences: SharedPreferences
+
+
     private var mapper = jacksonObjectMapper()
     private val connectivityChangeReceiver: ConnectivityChangeReceiver =
         ConnectivityChangeReceiver()
     private var timeOutHandler: Handler? = null
     private var timeOutRunnable: Runnable? = null
     private var progressBar: ProgressBar? = null
-    private var webViewTimeout = WEBVIEW_LOAD_TIMEOUT_DEFAULT
+    private var webViewTimeout = ORConstants.WEBVIEW_LOAD_TIMEOUT_DEFAULT
     private var webViewLoaded = false
-    private var sharedPreferences: SharedPreferences? = null
     private var geofenceProvider: GeofenceProvider? = null
     private var qrScannerProvider: QrScannerProvider? = null
     private var consoleId: String? = null
     private var appConfig: ORAppConfig? = null
     private var baseUrl: String? = null
-    private var onDownloadCompleteReciever: BroadcastReceiver = object : BroadcastReceiver() {
+
+    private var onDownloadCompleteReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctxt: Context, intent: Intent) {
             val action = intent.action
             if (DownloadManager.ACTION_DOWNLOAD_COMPLETE == action) {
@@ -77,17 +84,18 @@ open class OrMainActivity : Activity() {
                 if (URLUtil.isValidUrl(appConfig!!.initialUrl)) {
                     return appConfig!!.initialUrl
                 } else {
-                    sharedPreferences?.let { pref ->
-                        pref.getString("host", null)?.let { host ->
+                    sharedPreferences.let { pref ->
+                        pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
                             return host.plus(appConfig!!.initialUrl)
                         }
                     }
                 }
             }
 
-            sharedPreferences?.let { pref ->
-                pref.getString("host", null)?.let { host ->
-                    pref.getString("realm", null)?.let { realm ->
+
+            sharedPreferences.let { pref ->
+                pref.getString(ORConstants.HOST_KEY, null)?.let { host ->
+                    pref.getString(ORConstants.REALM_KEY, null)?.let { realm ->
                         returnValue = host.plus("/api/${realm}")
                     }
                 }
@@ -127,21 +135,22 @@ open class OrMainActivity : Activity() {
         progressBar?.max = 100
         progressBar?.progress = 1
 
-        if (intent.hasExtra(APP_CONFIG_KEY)) {
+        if (intent.hasExtra(ORConstants.APP_CONFIG_KEY)) {
             appConfig = mapper.readValue(
-                intent.getStringExtra(APP_CONFIG_KEY),
+                intent.getStringExtra(ORConstants.APP_CONFIG_KEY),
                 ORAppConfig::class.java
             )
         }
-        if (intent.hasExtra(BASE_URL_KEY)) {
-            baseUrl = intent.getStringExtra(BASE_URL_KEY)
+
+        if (intent.hasExtra(ORConstants.BASE_URL_KEY)) {
+            baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
         }
 
         if (appConfig == null) {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-            val host = sharedPreferences!!.getString("host", null)
-            val realm = sharedPreferences!!.getString("realm", null)
+            val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
+            val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
 
             if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
                 val url = host.plus("/api/${realm}")
@@ -279,7 +288,7 @@ open class OrMainActivity : Activity() {
             IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         )
         registerReceiver(
-            onDownloadCompleteReciever,
+            onDownloadCompleteReceiver,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         )
     }
@@ -287,7 +296,7 @@ open class OrMainActivity : Activity() {
     override fun onPause() {
         super.onPause()
         unregisterReceiver(connectivityChangeReceiver)
-        unregisterReceiver(onDownloadCompleteReciever)
+        unregisterReceiver(onDownloadCompleteReceiver)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -457,7 +466,7 @@ open class OrMainActivity : Activity() {
                     // Write permission has not been granted yet, request it.
                     requestPermissions(
                         arrayOf(writePermission),
-                        WRITE_PERMISSION_FOR_DOWNLOAD
+                        ORConstants.WRITE_PERMISSION_FOR_DOWNLOAD
                     )
                 } else {
                     val request = DownloadManager.Request(Uri.parse(url))
@@ -497,10 +506,12 @@ open class OrMainActivity : Activity() {
         failingUrl: String?
     ) {
         LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
-        //TODO should we always ignore image errors?
+
+        //TODO should we always ignore image errors and locale json files?
         if (failingUrl != null && (failingUrl.endsWith("png")
                     || failingUrl.endsWith("jpg")
-                    || failingUrl.endsWith("ico"))
+                    || failingUrl.endsWith("ico") ||
+                    failingUrl.contains("locales"))
         ) {
             LOG.info("Ignoring error loading image resource")
             return
@@ -533,7 +544,7 @@ open class OrMainActivity : Activity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        if (requestCode == WRITE_PERMISSION_FOR_DOWNLOAD) {
+        if (requestCode == ORConstants.WRITE_PERMISSION_FOR_DOWNLOAD) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(applicationContext, R.string.downloading_file, Toast.LENGTH_LONG)
                     .show()
@@ -618,14 +629,7 @@ open class OrMainActivity : Activity() {
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     val consoleId = data.getString("consoleId")
                     (activity as OrMainActivity).consoleId = consoleId
-                    val baseUrl = sharedPreferences?.let { pref ->
-                        pref.getString("project", null)?.let { projectName ->
-                            pref.getString("realm", null)?.let { realmName ->
-                                "https://${projectName}.openremote.io/api/$realmName"
-                            }
-                        }
-                    } ?: ""
-                    geofenceProvider?.enable(this@OrMainActivity, baseUrl,
+                    geofenceProvider?.enable(this@OrMainActivity, clientUrl ?: "",
                         consoleId, object : GeofenceProvider.GeofenceCallback {
                             override fun accept(responseData: Map<String, Any>) {
                                 notifyClient(responseData)
@@ -665,7 +669,7 @@ open class OrMainActivity : Activity() {
                     response["provider"] = "push"
                     response["version"] = "fcm"
                     response["enabled"] = false
-                    response["disabled"] = sharedPreferences!!.contains(PUSH_PROVIDER_DISABLED_KEY)
+                    response["disabled"] = sharedPreferences.contains(ORConstants.PUSH_PROVIDER_DISABLED_KEY)
                     response["requiresPermission"] = false
                     response["hasPermission"] = true
                     response["success"] = true
@@ -673,9 +677,9 @@ open class OrMainActivity : Activity() {
                 }
                 action.equals("PROVIDER_ENABLE", ignoreCase = true) -> {
                     val consoleId = data.getString("consoleId")
-                    sharedPreferences!!.edit()
-                        .putString(GeofenceProvider.Companion.consoleIdKey, consoleId)
-                        .remove(PUSH_PROVIDER_DISABLED_KEY)
+                    sharedPreferences.edit()
+                        .putString(ORConstants.CONSOLE_ID_KEY, consoleId)
+                        .remove(ORConstants.PUSH_PROVIDER_DISABLED_KEY)
                         .apply()
                     // TODO: Implement topic support
                     FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
@@ -699,7 +703,7 @@ open class OrMainActivity : Activity() {
                     val response: MutableMap<String, Any?> = HashMap()
                     response["action"] = "PROVIDER_DISABLE"
                     response["provider"] = "push"
-                    sharedPreferences!!.edit().putBoolean(PUSH_PROVIDER_DISABLED_KEY, true).apply()
+                    sharedPreferences.edit().putBoolean(ORConstants.PUSH_PROVIDER_DISABLED_KEY, true).apply()
                     notifyClient(response)
                 }
             }
@@ -807,7 +811,7 @@ open class OrMainActivity : Activity() {
     }
 
     private fun storeData(key: String?, data: String?) {
-        val editor = sharedPreferences!!.edit()
+        val editor = sharedPreferences.edit()
         if (data == null) {
             editor.remove(key)
         } else {
@@ -817,7 +821,7 @@ open class OrMainActivity : Activity() {
     }
 
     private fun retrieveData(key: String?): Any? {
-        var str = sharedPreferences!!.getString(key, null) ?: return null
+        val str = sharedPreferences.getString(key, null) ?: return null
         // Parse data JSON
         return try {
             mapper.readTree(str)
@@ -841,19 +845,5 @@ open class OrMainActivity : Activity() {
             val activeNetwork = cm.activeNetworkInfo
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting)
         }
-    }
-
-    companion object {
-        private val LOG = Logger.getLogger(
-            OrMainActivity::class.java.name
-        )
-        private const val WRITE_PERMISSION_FOR_DOWNLOAD = 999
-        private const val WRITE_PERMISSION_FOR_LOGGING = 1000
-        private const val WEBVIEW_LOAD_TIMEOUT_DEFAULT = 5000
-        const val ACTION_BROADCAST = "ACTION_BROADCAST"
-        const val PUSH_PROVIDER_DISABLED_KEY = "PushProviderDisabled"
-        const val CONSOLE_ID_KEY = "consoleId"
-        const val APP_CONFIG_KEY = "APP_CONFIG_KEY"
-        const val BASE_URL_KEY = "BASE_URL_KEY"
     }
 }

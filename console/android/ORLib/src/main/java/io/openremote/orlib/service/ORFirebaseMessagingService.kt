@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.firebase.messaging.RemoteMessage
+import io.openremote.orlib.ORConstants
 import io.openremote.orlib.R
 import io.openremote.orlib.models.ORAlertAction
 import io.openremote.orlib.models.ORAlertButton
@@ -90,7 +91,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
                         geofenceProvider.refreshGeofences()
                     }
                     else -> {
-                        val broadCastIntent = Intent(OrMainActivity.ACTION_BROADCAST)
+                        val broadCastIntent = Intent(ORConstants.ACTION_BROADCAST)
                         broadCastIntent.putExtra("action", action)
                         sendBroadcast(broadCastIntent)
                     }
