@@ -43,11 +43,13 @@ if [ "$DAILY_BACKUP" != 'false' ]; then
 
   username=$(id -u -n)
   if [ -n "$SUDO_USER" ]; then
-    username=$SUDO_USER
+    dir=$(eval echo "~$SUDO_USER")
+  else
+    dir=~
   fi
-  dir=~
+
   echo '#!/bin/bash' > /etc/cron.d/or-backup
-  echo "0 4 * * * $username $dir/temp/host_init/backup.sh" >> /etc/cron.d/or-backup
+  echo "0 4 * * * root $dir/temp/host_init/backup.sh" >> /etc/cron.d/or-backup
 else
   echo "Removing any existing daily backup cron job"
   rm -f /etc/cron.d/or-backup &>/dev/null

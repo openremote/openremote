@@ -28,26 +28,26 @@ if [ -f "temp/env" ]; then
   echo "Loading environment variables: 'temp/env'"
   set -a
   . ./temp/env
-  set +x
+  set +a
 
   echo "Environment variables loaded:"
   cat temp/env
 fi
 
+# Load temp environment variables into this session
+if [ -f "temp.env" ]; then
+  echo "Loading temp environment variables: 'temp.env'"
+  set -a
+  . ./temp.env
+  set +a
+fi
+
 # Check host is defined
-if [ -z "$OR_HOST" ]; then
+if [ -z "$OR_HOSTNAME" ]; then
  echo "Host is not set"
  exit 1
 fi
-HOST="$OR_HOST"
-
-# Load SSH environment variables into this session
-if [ -f "ssh.env" ]; then
-  echo "Loading SSH password environment variable: 'ssh.env'"
-  set -a
-  . ./ssh.env
-  set +x
-fi
+HOST="$OR_HOSTNAME"
 
 # Copy CI/CD files into temp dir
 echo "Copying CI/CD files into temp dir"
@@ -62,8 +62,7 @@ if [ -d ".ci_cd/aws" ]; then
   cp -r .ci_cd/aws temp/
 fi
 
-chmod +x temp/aws/*
-chmod +x temp/host_int/*
+chmod -R +rx temp/
 
 # Determine compose file to use and copy to temp dir (do this here as all env variables are loaded)
 if [ -z "$ENV_COMPOSE_FILE" ]; then
@@ -95,38 +94,23 @@ if [ -f "ssh.key" ]; then
   sshCommandPrefix="$sshCommandPrefix -i ssh.key"
   scpCommandPrefix="$scpCommandPrefix -i ssh.key"
 fi
-hostStr="$OR_HOST"
+hostStr="$OR_HOSTNAME"
 if [ -n "$SSH_USER" ]; then
   hostStr="${SSH_USER}@$hostStr"
 fi
 
-# Cannot ping from github runners so commenting this out
-# Check host is reachable (ping must be enabled)
-#if [ "$SKIP_HOST_PING" != 'true' ]; then
-#  echo "Attempting to ping host"
-#  ping -c1 -W1 -q $OR_HOST &>/dev/null
-#  if [ $? -ne 0 ]; then
-#    echo "Host is not reachable by PING"
-#    if [ "$SKIP_AWS_EC2_START" != 'true' ] && [ "$AWS_ENABLED" == 'true' ]; then
-#      "temp/aws/start_stop_host.sh" "START" "$OR_HOST"
-#      if [ $? -ne 0 ]; then
-#        # Don't exit as it might just not be reachable by PING we'll fail later on
-#        echo "EC2 instance start failed"
-#      else
-#        echo "EC2 instance start succeeded"
-#      fi
-#    fi
-#  fi
-#fi
-
 # Grant SSH access to this runner's public IP on AWS
 if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
+
+  source temp/aws/login.sh
+
   if [ -n "$CIDR" ]; then
-    if [ -z "$ACCOUNT_NAME" ] && [ -z "$ACCOUNT_ID" ]; then
+    if [ -z "$AWS_ACCOUNT_NAME" ] && [ -z "$AWS_ACCOUNT_ID" ]; then
+
       echo "Account ID or name is not set so searching for it"
       source temp/aws/get_account_id_from_host.sh
 
-      if [ -z "$ACCOUNT_ID" ]; then
+      if [ -z "$AWS_ACCOUNT_ID" ]; then
         echo "Unable to determine account for host '$HOST'"
         exit 1
       fi
@@ -135,7 +119,7 @@ if [ "$SKIP_SSH_WHITELIST" != 'true' ]; then
     source temp/aws/set_github-da_account_arn.sh
 
     echo "Attempting to add runner to AWS SSH whitelist"
-    "temp/aws/ssh_whitelist.sh" "$CIDR" "github-da"
+    "temp/aws/ssh_whitelist.sh" "$CIDR" "github-runner" "github-da"
     if [ $? -eq 0 ]; then
       SSH_GRANTED=true
     fi
@@ -144,7 +128,7 @@ fi
 
 # Determine host platform via ssh for deployment image building (can't export/import manifests)
 PLATFORM=$($sshCommandPrefix $hostStr -- uname -m)
-if [ "$?" != 0 -o -z "$PLATFORM" ]; then
+if [ $? -ne 0 ] || [ -z "$PLATFORM" ]; then
   echo "Failed to determine host platform, most likely SSH credentials and/or settings are invalid"
   revoke_ssh
   exit 1
@@ -208,9 +192,10 @@ $sshCommandPrefix ${hostStr} << EOF
 
 if [ "$ROLLBACK_ON_ERROR" == 'true' ]; then
   echo "Moving old temp dir to temp_old"
+  rm -fr temp_old
   mv temp temp_old
   # Tag existing manager image with previous tag (current tag might not be available in docker hub anymore or it could have been overwritten)
-  docker tag `docker images openremote/manager -q | head -1` openremote/manager:previous
+  docker tag '`docker images openremote/manager -q | head -1`' openremote/manager:previous
 else
   echo "Removing old temp deployment dir"
   rm -fr temp
@@ -223,12 +208,6 @@ chmod +x -R temp/
 set -a
 . ./temp/env
 set +a
-
-# Login to AWS if credentials provided
-AWS_KEY=$AWS_KEY
-AWS_SECRET=$AWS_SECRET
-AWS_REGION=$AWS_REGION
-source temp/aws/login.sh
 
 if [ -f "temp/manager.tar.gz" ]; then
   echo "Loading manager docker image"
@@ -250,12 +229,15 @@ if [ \$? -ne 0 ]; then
 fi
 
 # Attempt docker compose down
-echo "Stopping existing stack"
-docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+CONTAINER_IDS=\$(docker ps -q)
+if [ -n "\$CONTAINER_IDS" ]; then
+  echo "Stopping existing stack"
+  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
 
-if [ \$? -ne 0 ]; then
-  echo "Deployment failed to stop the existing stack"
-  exit 1
+  if [ \$? -ne 0 ]; then
+    echo "Deployment failed to stop the existing stack"
+    exit 1
+  fi
 fi
 
 # Run host init
@@ -273,7 +255,7 @@ elif [ -f "temp/host_init/init.sh" ]; then
 fi
 if [ -n "\$hostInitCmd" ]; then
   echo "Running host init script: '\$hostInitCmd'"
-  sudo \$hostInitCmd
+  sudo -E \$hostInitCmd
 else
   echo "No host init script"
 fi
@@ -332,7 +314,7 @@ elif [ -f "temp/host_init/post_init.sh" ]; then
 fi
 if [ -n "\$hostPostInitCmd" ]; then
   echo "Running host post init script: '\$hostPostInitCmd'"
-  sudo \$hostPostInitCmd
+  sudo -E \$hostPostInitCmd
 else
   echo "No host post init script"
 fi
@@ -341,8 +323,8 @@ fi
 docker image inspect \$(docker image ls -aq) > temp/image-info.txt
 docker inspect \$(docker ps -aq) > temp/container-info.txt
 
-aws s3 cp temp/image-info.txt s3://${OR_HOST}/image-info.txt &>/dev/null
-aws s3 cp temp/container-info.txt s3://${OR_HOST}/container-info.txt &>/dev/null
+aws s3 cp temp/image-info.txt s3://${OR_HOSTNAME}/image-info.txt &>/dev/null
+aws s3 cp temp/container-info.txt s3://${OR_HOSTNAME}/container-info.txt &>/dev/null
 exit 0
 EOF
 
@@ -408,7 +390,7 @@ elif [ -f "temp/host_init/init.sh" ]; then
 fi
 if [ -n "\$hostInitCmd" ]; then
   echo "Running host init script: '\$hostInitCmd'"
-  sudo \$hostInitCmd
+  sudo -E \$hostInitCmd
 else
   echo "No host init script"
 fi
@@ -467,7 +449,7 @@ elif [ -f "temp/host_init/post_init.sh" ]; then
 fi
 if [ -n "\$hostPostInitCmd" ]; then
   echo "Running host post init script: '\$hostPostInitCmd'"
-  sudo \$hostPostInitCmd
+  sudo -E \$hostPostInitCmd
 else
   echo "No host post init script"
 fi
@@ -475,10 +457,17 @@ fi
 EOF
 fi
 
-echo "Testing manager web server https://$OR_HOST..."
-response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOST/manager/)
+echo "Testing manager web server https://$OR_HOSTNAME..."
+response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+count=0
+while [[ $response -ne 200 ]] && [ $count -lt 12 ]; do
+  echo "https://$OR_HOSTNAME/manager/ RESPONSE CODE: $response...Sleeping 5 seconds"
+  sleep 5
+  response=$(curl --output /dev/null --silent --head --write-out "%{http_code}" https://$OR_HOSTNAME/manager/)
+  count=$((count+1))
+done
+
 if [ $response -ne 200 ]; then
-  echo "Response code = $response"
   revoke_ssh
   exit 1
 fi

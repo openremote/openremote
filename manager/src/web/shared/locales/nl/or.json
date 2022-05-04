@@ -177,6 +177,7 @@
   "matchedOfType": "Hetzelfde type: {{type}}",
   "unmatched": "Niet dezelfde",
   "wait": "Wacht",
+  "linkedUsers": "Gekoppelde gebruikers",
   "setup": "Instellingen",
   "selectFile": "Kies bestand",
   "discoverAssets": "Haal assets op",
@@ -462,5 +463,15 @@
     "title": {
       "indexedItem": "Item {{index}}"
     }
+  },
+  "yes": "Ja",
+  "no": "Nee",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

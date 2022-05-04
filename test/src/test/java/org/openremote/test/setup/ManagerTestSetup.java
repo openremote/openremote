@@ -41,7 +41,7 @@ import org.openremote.model.value.impl.ColourRGB;
 
 import java.util.Arrays;
 
-import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
+import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT;
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.value.MetaItemType.*;
 import static org.openremote.model.value.ValueType.*;
@@ -169,7 +169,7 @@ public class ManagerTestSetup extends ManagerSetup {
                                 true),
                         new MetaItem<>(
                                 DATA_POINTS_MAX_AGE_DAYS,
-                                DATA_POINTS_MAX_AGE_DAYS_DEFAULT*7
+                                OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT *7
                         ),
                         new MetaItem<>(
                                 AGENT_LINK,
@@ -448,7 +448,7 @@ public class ManagerTestSetup extends ManagerSetup {
                         .addMeta(
                                 new MetaItem<>(LABEL, "All Lights Off Switch"),
                                 new MetaItem<>(RULE_EVENT, true),
-                                new MetaItem<>(OR_RULE_EVENT_EXPIRES, "PT3S")
+                                new MetaItem<>(RULE_EVENT_EXPIRES, "PT3S")
                         )
         );
         apartment2 = assetStorageService.merge(apartment2);

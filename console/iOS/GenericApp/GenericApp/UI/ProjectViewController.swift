@@ -71,8 +71,8 @@ extension ProjectViewController: UITextFieldDelegate {
     }
 
     fileprivate func requestAppConfig(_ project: String, _ realm: String) {
-        host = project.isUrl() ? project : "https://\(project).openremote.io/"
-        let url = project.isUrl() ? project.appending("/api/\(realm)") : "https://\(project).openremote.io/api/\(realm)"
+        host = project.isUrl() ? project : "https://\(project).openremote.app/"
+        let url = project.isUrl() ? project.appending("/api/\(realm)") : "https://\(project).openremote.app/api/\(realm)"
         
         let apiManager = ApiManager(baseUrl: url)
         apiManager.getAppConfig(realm: realm, callback: { statusCode, orAppConfig, error in

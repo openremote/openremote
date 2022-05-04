@@ -8,16 +8,20 @@ import {
     AssetDescriptor,
     AssetEvent,
     AssetEventCause,
+    AssetModelUtil,
     AssetQuery,
     AssetQueryMatch,
     AssetsEvent,
     AssetTreeNode,
     AssetTypeInfo,
     Attribute,
+    AttributePredicate,
     ClientRole,
+    LogicGroup,
+    LogicGroupOperator,
     SharedEvent,
-    WellknownAssets,
-    AssetModelUtil
+    StringPredicate,
+    WellknownAssets
 } from "@openremote/model";
 import "@openremote/or-translate";
 import {style} from "./style";
@@ -112,6 +116,10 @@ export class OrAssetTreeSelectionEvent extends CustomEvent<NodeSelectEventDetail
     }
 }
 
+enum FilterElementType {
+    SEARCH_FILTER, ASSET_TYPE,ATTRIBUTE_NAME, ATTRIBUTE_VALUE
+}
+
 export type AddEventDetail = {
     sourceAsset?: Asset;
     asset: Asset;
@@ -172,6 +180,20 @@ export class OrAssetTreeAssetEvent extends CustomEvent<AssetEvent> {
             composed: true,
             detail: assetEvent
         });
+    }
+}
+
+export class OrAssetTreeFilter {
+    asset: string | undefined;
+    assetType: string[];
+    attribute: string[];
+    attributeValue: string[];
+
+    constructor() {
+        this.asset = undefined;
+        this.assetType = [];
+        this.attribute = [];
+        this.attributeValue = [];
     }
 }
 
@@ -271,12 +293,24 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
     protected _expandedNodes: UiAssetTreeNode[] = [];
     protected _initCallback?: EventCallback;
 
-    protected _filterValue?: string;
+    @state()
+    protected _filter: OrAssetTreeFilter = new OrAssetTreeFilter();
     protected _searchInputTimer?: number = undefined;
-    @query("#clearIcon")
-    protected _clearIcon!: HTMLElement;
+    @query("#clearIconContainer")
+    protected _clearIconContainer!: HTMLElement;
     @query("#filterInput")
     protected _filterInput!: OrMwcInput;
+    @query("#asset-tree-filter-setting")
+    protected _filterSetting!: HTMLElement;
+    @state()
+    protected _assetTypes: AssetDescriptor[] = [];
+    @query("#attributeNameFilter")
+    protected _attributeNameFilter!: OrMwcInput;
+    @query("#attributeValueFilter")
+    protected _attributeValueFilter!: OrMwcInput;
+    @state()
+    protected _assetTypeFilter!: string;
+    protected _uniqueAssetTypes: string[] = [];
 
     public get selectedNodes(): UiAssetTreeNode[] {
         return this._selectedNodes ? [...this._selectedNodes] : [];
@@ -314,6 +348,60 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         return false;
     }
 
+    protected mapDescriptors(descriptors: (AssetDescriptor)[], withNoneValue?: ListItem): ListItem[] {
+        let items: ListItem[] = descriptors.map((descriptor) => {
+            return {
+                styleMap: {
+                    "--or-icon-fill": descriptor.colour ? "#" + descriptor.colour : "unset"
+                },
+                icon: descriptor.icon,
+                text: Util.getAssetTypeLabel(descriptor),
+                value: descriptor.name!,
+                data: descriptor
+            }
+        }).sort(Util.sortByString((listItem) => listItem.text));
+
+        if (withNoneValue) {
+            items.splice(0,0, withNoneValue);
+        }
+
+        return items;
+    }
+
+
+
+    protected getSelectHeader(): TemplateResult {
+        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" iconTrailing="menu-down" iconColor="rgba(0, 0, 0, 0.87)" icon="selection-ellipse" value="${i18next.t("filter.assetTypeNone")}"></or-mwc-input>`;
+    }
+
+    protected getSelectedHeader(descriptor: AssetDescriptor): TemplateResult {
+        return html `<or-mwc-input style="width:100%;" ?disabled="${this._loading}" type="${InputType.TEXT}" .label="${i18next.t("filter.assetTypeLabel")}" .iconColor="${descriptor.colour}" iconTrailing="menu-down" icon="${descriptor.icon}" value="${Util.getAssetTypeLabel(descriptor)}"></or-mwc-input>`;
+    }
+
+    protected assetTypeSelect(): TemplateResult {
+        if (this._assetTypeFilter) {
+            const descriptor: AssetDescriptor | undefined = this._assetTypes.find((at: AssetDescriptor) => { return at.name === this._assetTypeFilter });
+            if (descriptor) {
+                return this.getSelectedHeader(descriptor);
+            } else {
+                return this.getSelectHeader();
+            }
+        } else {
+            return this.getSelectHeader();
+        }
+    }
+
+
+    protected atLeastOneNodeToBeShown(): boolean {
+        let atLeastOne: boolean = false;
+        this._nodes?.forEach((value: UiAssetTreeNode) => {
+            if (!value.hidden) {
+                atLeastOne = true;
+            }
+        });
+        return atLeastOne;
+    }
+
     protected render() {
         return html`
             <div id="header">
@@ -346,27 +434,102 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                               outlined="true"
                               @input="${(e: KeyboardEvent) => {
                                   // Means some input is occurring so delay filter
-                                  this._onFilterInput(e);                                  
+                                  this._onFilterInputEvent(e);                                  
                               }}"
                               @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
                                   // Means field has lost focus so do filter immediately
-                                  this._doFiltering((e.detail.value as string) || undefined);
-                              }}">
+                                  this._onFilterInput((e.detail.value as string) || undefined, true);
+                              }}"
+                              trailingSpace="true">
                               </or-mwc-input>
-                <or-icon id="clearIcon" icon="close" @click="${() => {
-                    // Wipe the current value and hide the clear button
-                    this._filterInput.value = undefined;
-                    this._clearIcon.classList.remove("visible");
-                    
-                    // Call filtering
-                    this._doFiltering(undefined);
+                <div id="clearIconContainer">
+                    <or-icon id="clearIcon" icon="close" @click="${() => {
+                        // Wipe the current value and hide the clear button
+                        this._filterInput.value = undefined;
+                        this._clearIconContainer.classList.remove("visible");
+                        
+                        this._attributeValueFilter.value = undefined;
+                        this._attributeNameFilter.value = undefined;
+    
+                        this._attributeValueFilter.disabled = true;
+                        
+                        this._assetTypeFilter = '';
+                        
+                        this._filter = new OrAssetTreeFilter();
+                        
+                        // Call filtering
+                        this._doFiltering();
+                    }}"></or-icon>
+                </div>
+                <or-icon id="filterSettingsIcon" icon="tune" @click="${() => {
+                    if ( this._filterSetting.classList.contains("visible") ) {
+                        this._filterSetting.classList.remove("visible");
+                    } else {
+                        this._filterSetting.classList.add("visible");
+                        // Avoid to build again the types
+                        if ( this._assetTypes.length === 0 ) {
+                            let usedTypes: string[] = [];
+                            const types = this._getAllowedChildTypes(this._selectedNodes[0]);
+                            this._assetTypes = types.filter((t) => t.descriptorType === "asset");
+                        }
+                        
+                        if (this._filter.attribute.length > 0) {
+                            this._attributeNameFilter.value = this._filter.attribute[0];
+                        }
+                        
+                        if (this._filter.attributeValue.length > 0 && this._filter.attribute.length > 0) {
+                            this._attributeValueFilter.disabled = false;
+                            this._attributeValueFilter.value = this._filter.attributeValue[0];
+                        }
+                        
+                        if (this._filter.assetType.length > 0) {
+                            this._assetTypeFilter = this._filter.assetType[0];
+                        }
+                    }
                 }}"></or-icon>
+            </div>
+            <div id="asset-tree-filter-setting">
+                <div class="advanced-filter">
+                    ${this._assetTypes.length > 0 ? getContentWithMenuTemplate(
+                        this.assetTypeSelect(), 
+                        this.mapDescriptors(this._assetTypes, { text: i18next.t("filter.assetTypeMenuNone"), value: "", icon: "selection-ellipse" }),
+                        undefined,
+                        (v: string[] | string) => {
+                            this._assetTypeFilter = (v as string);
+                        },
+                    undefined,
+                    false,
+                    true,
+                    true) : html ``
+                    }
+                    <or-mwc-input id="attributeNameFilter" .label="${i18next.t("filter.attributeLabel")}"
+                                  
+                                  .type="${InputType.TEXT}"
+                                  style="margin-top: 14px;"
+                                  ?disabled="${this._loading}"
+                                  @input="${(e: KeyboardEvent) => {
+                                      this._shouldEnableAttrTypeEvent(e);
+                                  }}"
+                                  @or-mwc-input-changed="${ (e: OrInputChangedEvent) => {
+                                      this._shouldEnableAttrType((e.detail.value as string) || undefined);
+                                  }}"></or-mwc-input>
+                    <or-mwc-input id="attributeValueFilter" .label="${i18next.t("filter.attributeValueLabel")}"
+                                  
+                                  .type="${InputType.TEXT}"
+                                  style="margin-top: 14px;"
+                                  disabled></or-mwc-input>
+                    <div>
+                        <or-mwc-input style="float: right;" style="margin-top: 14px;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.action")}" raised @click="${() => {
+                            this._filterFromSettings();
+                        }}"></or-mwc-input>
+                    </div>
+                </div>
             </div>
             
             ${!this._nodes
                 ? html`
                     <span id="loading"><or-translate value="loading"></or-translate></span>`
-                : (this._nodes.length === 0
+                : ((this._nodes.length === 0 || !this.atLeastOneNodeToBeShown())
                             ? html `<span id="noAssetsFound"><or-translate value="noAssetsFound"></or-translate></span>` 
                             : html`
                     <div id="list-container">
@@ -575,30 +738,212 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         this._onNodeClicked(null, null);
     }
 
-    protected _onFilterInput(e: KeyboardEvent) {
-        // Use composed path to get event source within shadow DOM
+    protected parseFromInputFilter(inputValue?: string): OrAssetTreeFilter {
+        let searchValue: string | undefined = this._filterInput.value;
+        if (inputValue) {
+            searchValue = inputValue;
+        }
+        let resultingFilter: OrAssetTreeFilter = new OrAssetTreeFilter();
+
+        if (searchValue) {
+            let asset: string = searchValue;
+            let matchingResult: RegExpMatchArray | null = searchValue.match(/(attribute\:)(\"[^"]+\")\S*/g);
+            if (matchingResult) {
+                if (matchingResult.length > 0) {
+                    matchingResult.forEach((value: string, index: number) => {
+                        asset = asset.replace(value, '');
+
+                        const startIndex: number = value.toString().indexOf('attribute:');
+
+                        const matchingVal: string = value.toString().substring(startIndex + 'attribute:'.length + 1, value.toString().length-1);
+
+                        resultingFilter.attribute.push(matchingVal);
+                    });
+                }
+
+                this._attributeValueFilter.disabled = false;
+            }
+
+            matchingResult = searchValue.match(/(type\:)\S+/g);
+            if (matchingResult) {
+                if (matchingResult.length > 0) {
+                    matchingResult.forEach((value: string, index: number) => {
+                        asset = asset.replace(value, '');
+
+                        const startIndex: number = value.toString().indexOf('type:');
+
+                        const matchingVal: string = value.toString().substring(startIndex + 'type:'.length);
+
+                        resultingFilter.assetType.push(matchingVal);
+                    });
+                }
+            }
+
+            matchingResult = searchValue.match(/(\"[^\s]+\")\:\S+/g);
+            if (matchingResult) {
+                if (matchingResult.length > 0) {
+                    matchingResult.forEach((value: string, index: number) => {
+                        asset = asset.replace(value, '');
+
+                        const startIndex: number = value.toString().indexOf('":');
+                        // Adding 2 to remove the ": matched before
+                        const matchingVal: string = value.toString().substring(startIndex + 2);
+                        // Starting from position 1 to remove first "
+                        const matchingName: string = value.toString().substring(1, startIndex);
+
+                        resultingFilter.attribute.push(matchingName);
+                        resultingFilter.attributeValue.push(matchingVal);
+                    });
+                }
+            }
+            resultingFilter.asset = (asset && asset.length > 0) ? asset.trim() : undefined;
+        }
+
+        return resultingFilter;
+    }
+
+    protected formatFilter(newFilter: OrAssetTreeFilter): string {
+        let searchInput: string = newFilter.asset ? newFilter.asset : '';
+
+        let prefix: string = newFilter.asset ? ' ' : '';
+
+        let handledAttributeForValues: string[] = [];
+
+        if (newFilter.assetType.length > 0) {
+            newFilter.assetType.forEach((assetType: string) => {
+                searchInput += prefix + 'type:' + assetType;
+                prefix = ' ';
+            });
+        }
+
+        if (newFilter.attribute.length > 0 && newFilter.attributeValue.length > 0) {
+            newFilter.attributeValue.forEach((attributeValue: string, index: number) => {
+                handledAttributeForValues.push(newFilter.attribute[index]);
+                searchInput += prefix + '"' + newFilter.attribute[index] + '":' + attributeValue;
+                prefix = ' ';
+            });
+        }
+
+        if (newFilter.attribute.length > 0 && newFilter.attributeValue.length === 0) {
+            newFilter.attribute.forEach((attributeName: string) => {
+                if (!handledAttributeForValues.includes(attributeName)) {
+                    searchInput += prefix + 'attribute:"' + attributeName + '"';
+                    prefix = ' ';
+                }
+            });
+        }
+
+        return searchInput;
+    }
+
+    protected _shouldEnableAttrTypeEvent(e: KeyboardEvent): void {
+        let value: string | undefined;
+
+        if (e.composedPath()) {
+            value = ((e.composedPath()[0] as HTMLInputElement).value) || undefined;
+        }
+
+        this._shouldEnableAttrType(value);
+    }
+
+    protected _shouldEnableAttrType(value: string | undefined): void {
+        if (value) {
+            this._attributeValueFilter.disabled = false;
+        } else {
+            this._attributeValueFilter.disabled = true;
+        }
+    }
+
+    protected applySettingFields(filter: OrAssetTreeFilter): OrAssetTreeFilter {
+        if ( this._assetTypeFilter ) {
+            filter.assetType = [ this._assetTypeFilter ];
+        } else {
+            filter.assetType = [];
+        }
+
+        if ( this._attributeNameFilter.value ) {
+            filter.attribute = [ this._attributeNameFilter.value ];
+        } else {
+            filter.attribute = [];
+        }
+
+        if ( this._attributeNameFilter.value && this._attributeValueFilter.value ) {
+            const attributeValueValue: string = this._attributeValueFilter.value.replace(' ', '');
+            filter.attributeValue = [ attributeValueValue ];
+        } else {
+            filter.attributeValue = [];
+        }
+
+        return filter;
+    }
+
+    protected _filterFromSettings(): void {
+        let filterFromSearchInput: OrAssetTreeFilter = this.parseFromInputFilter();
+
+        let filterFromSearchInputWithSettings: OrAssetTreeFilter = this.applySettingFields(filterFromSearchInput);
+
+        this._filter = filterFromSearchInputWithSettings;
+
+        let newFilterForSearchInput: string = this.formatFilter(this._filter);
+
+        if (newFilterForSearchInput) {
+            this._clearIconContainer.classList.add("visible");
+        } else {
+            this._clearIconContainer.classList.remove("visible");
+        }
+
+        this._filterInput.value = newFilterForSearchInput;
+
+        this._filterSetting.classList.remove("visible");
+
+        this._doFiltering();
+    }
+
+    protected _onFilterInputEvent(e: KeyboardEvent) {
         let value: string | undefined;
 
         if (e.composedPath()) {
             value = ((e.composedPath()[0] as HTMLInputElement).value) || undefined;
 
             if (value) {
-                this._clearIcon.classList.add("visible");
+                this._clearIconContainer.classList.add("visible");
             } else {
-                this._clearIcon.classList.remove("visible");
+                this._clearIconContainer.classList.remove("visible");
             }
         }
+
+        this._onFilterInput(value, false);
+    }
+
+    protected _onFilterInput(newValue: string | undefined, force: boolean): void {
+        if (newValue) {
+            this._clearIconContainer.classList.add("visible");
+        } else {
+            this._clearIconContainer.classList.remove("visible");
+        }
+
+        let currentFilter: OrAssetTreeFilter = this.parseFromInputFilter(newValue);
+
+        if (Util.objectsEqual(this._filter, currentFilter,true)) {
+            return;
+        }
+
+        this._filter = currentFilter;
 
         if (this._searchInputTimer) {
             clearTimeout(this._searchInputTimer);
         }
 
-        this._searchInputTimer = window.setTimeout(() => {
-            this._doFiltering(value);
-        }, 300);
+        if (!force) {
+            this._searchInputTimer = window.setTimeout(() => {
+                this._doFiltering();
+            }, 1500);
+        } else {
+            this._doFiltering();
+        }
     }
 
-    protected async _doFiltering(value?: string) {
+    protected async _doFiltering() {
         // Clear timeout in case we got here from value change
         if (this._searchInputTimer) {
             clearTimeout(this._searchInputTimer);
@@ -607,14 +952,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
         if (this.isConnected && this._nodes) {
 
-            if (this._filterValue === value) {
-                // This value has already been filtered so ignore or is not having the minimal number of characters
-                return;
-            }
-
-            this._filterValue = value;
-
-            if (!this._filterValue) {
+            if (!this._filter.asset && !this._filter.attribute && !this._filter.assetType && !this._filter.attributeValue) {
                 // Clear the filter
                 OrAssetTree._forEachNodeRecursive(this._nodes!, (node) => {
                     node.notMatchingFilter = false;
@@ -628,14 +966,22 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
             // Use a matcher function - this can be altered independent of the filtering logic
             // Maybe we should just filter in memory for basic matches like name
-            this.getMatcher(false).then((matcher: (asset: Asset) => boolean) => {
-                if (this._nodes) {
-                    this._nodes.forEach((node: UiAssetTreeNode) => {
-                        this.filterTreeNode(node, matcher);
-                    });
-                    this.disabled = false;
+            if (this._filter.asset || this._filter.assetType || this._filter.attribute) {
+                let queryRequired: boolean = false;
+
+                if (this._filter.attribute) {
+                    queryRequired = true;
                 }
-            });
+
+                this.getMatcher(queryRequired).then((matcher: (asset: Asset) => boolean) => {
+                    if (this._nodes) {
+                        this._nodes.forEach((node: UiAssetTreeNode) => {
+                            this.filterTreeNode(node, matcher);
+                        });
+                        this.disabled = false;
+                    }
+                });
+            }
         }
     }
 
@@ -649,42 +995,143 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
 
     protected async getSimpleNameMatcher(): Promise<((asset: Asset) => boolean)> {
         return (asset) => {
-            return asset.name!.toLowerCase().includes(this._filterValue!.toLowerCase());
+            let match: boolean = true;
+            if (this._filter.asset) {
+                match = match && asset.name!.toLowerCase().includes(this._filter.asset.toLowerCase());
+            }
+
+            if (this._filter.assetType.length > 0) {
+                match = match && (asset.type!.toLowerCase() === this._filter.assetType[0].toLowerCase());
+            }
+            return match;
         };
     }
 
     protected async getMatcherFromQuery(): Promise<((asset: Asset) => boolean)> {
-        const query: AssetQuery = {
-            select: {
-                attributes: []
-            },
-            names: [{
+        let assetCond: StringPredicate[] | undefined = undefined;
+        let attributeCond: LogicGroup<AttributePredicate> | undefined = undefined;
+        let assetTypeCond: string[] | undefined = undefined;
+
+        if (this._filter.asset) {
+            assetCond = [{
                 predicateType: "string",
                 match: AssetQueryMatch.CONTAINS,
-                value: this._filterValue,
+                value: this._filter.asset,
                 caseSensitive: false
-            }]
+            }];
+        }
+
+        if (this._filter.assetType.length > 0) {
+            assetTypeCond = this._filter.assetType;
+        }
+
+        if (this._filter.attribute.length > 0) {
+            attributeCond = {
+                operator: LogicGroupOperator.AND,
+                items:
+                    this._filter.attribute.map((attributeName: string) => {
+                        return {
+                            name: {
+                                predicateType: "string",
+                                match: AssetQueryMatch.EXACT,
+                                value: Util.sentenceCaseToCamelCase(attributeName),
+                                caseSensitive: false
+                            }
+                        };
+                    })
+            }
+        }
+
+        const query: AssetQuery = {
+            select: {
+                attributes: attributeCond ? undefined : []
+            },
+            names: assetCond,
+            types: assetTypeCond,
+            attributes: attributeCond
         };
 
         const response = await manager.rest.api.AssetResource.queryAssets(query);
+
         const foundAssetIds: string[] = response.data.map((asset: Asset) => asset.id!);
 
         return (asset) => {
-            return foundAssetIds.includes(asset.id!);
+            let attrValueCheck = true;
+
+            if (this._filter.attribute.length > 0 && this._filter.attributeValue.length > 0 && foundAssetIds.includes(asset.id!)) {
+                let attributeVal: [string, string][] = this._filter.attributeValue.map((value: string, index: number) => {
+                    return [this._filter.attribute[index], value];
+                });
+                let matchingAsset: Asset | undefined = response.data.find((a: Asset) => a.id === asset.id );
+
+                if (matchingAsset && matchingAsset.attributes) {
+                    for (let attributeValIndex = 0; attributeValIndex < attributeVal.length; attributeValIndex++ ) {
+                        let currentAttributeVal = attributeVal[attributeValIndex];
+
+                        let atLeastOneAttributeMatchValue: boolean = false;
+                        Object.keys(matchingAsset.attributes).forEach((key: string) => {
+                            let attr: Attribute<any> = matchingAsset!.attributes![key];
+
+                            // attr.value check to avoid to compare with empty/non existing value
+                            if (attr.name!.toLowerCase() === currentAttributeVal[0].toLowerCase() && attr.value) {
+                                switch (attr.type!) {
+                                    case "number":
+                                    case "integer":
+                                    case "long":
+                                    case "bigInteger":
+                                    case "bigNumber":
+                                    case "positiveInteger":
+                                    case "negativeInteger":
+                                    case "positiveNumber":
+                                    case "negativeNumber":
+                                        let value: string = currentAttributeVal[1];
+                                        if (currentAttributeVal[1].startsWith('=') && currentAttributeVal[1][1] !== '=') {
+                                            value = '=' + value;
+                                        }
+                                        const resultNumberEval: boolean = eval(attr.value + value);
+
+                                        if (resultNumberEval) {
+                                            atLeastOneAttributeMatchValue = true;
+                                        }
+                                        break;
+                                    case "text":
+                                        if (attr.value) {
+                                            let unparsedValue: string = currentAttributeVal[1];
+                                            const multicharString: string = '*';
+
+                                            let parsedValue: string = unparsedValue.replace(multicharString, '.*');
+
+                                            let valueFromAttribute: string = attr.value as string;
+                                            let answer = valueFromAttribute.match(parsedValue);
+                                            if (answer && answer.length > 0) {
+                                                atLeastOneAttributeMatchValue = true;
+                                            }
+                                        }
+                                        break;
+                                }
+                            }
+                        });
+
+                        attrValueCheck = atLeastOneAttributeMatchValue;
+                    }
+                }
+            }
+
+            return foundAssetIds.includes(asset.id!) && attrValueCheck;
         };
     }
 
-    protected filterTreeNode(currentNode: UiAssetTreeNode, matcher: (asset: Asset) => boolean): boolean {
+    protected filterTreeNode(currentNode: UiAssetTreeNode, matcher: (asset: Asset) => boolean, parentMatching: boolean = false): boolean {
         let nodeOrDescendantMatches = matcher(currentNode.asset!);
         currentNode.notMatchingFilter = !nodeOrDescendantMatches;
 
         const childOrDescendantMatches = currentNode.children.map((childNode) => {
-            return this.filterTreeNode(childNode, matcher);
+            return this.filterTreeNode(childNode, matcher, nodeOrDescendantMatches);
         });
 
         nodeOrDescendantMatches = nodeOrDescendantMatches || childOrDescendantMatches.some(m => m);
         currentNode.expanded = nodeOrDescendantMatches && currentNode.children.length > 0;
-        currentNode.hidden = !nodeOrDescendantMatches;
+        currentNode.hidden = !nodeOrDescendantMatches && !parentMatching;
         return nodeOrDescendantMatches;
     }
 
@@ -1042,7 +1489,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                     assets.push(node.asset!);
                 }
             });
-            this._buildTreeNodes(assets, this._getSortFunction());
+
+            // In case of filter already active, do not override the actual state of assetTree
+            if ( !this._filterInput.value ) {
+                this._buildTreeNodes(assets, this._getSortFunction());
+            }
             this.dispatchEvent(new OrAssetTreeAssetEvent(assetEvent));
         }
     }

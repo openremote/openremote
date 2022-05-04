@@ -316,9 +316,10 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                 case Actions.providerEnable:
                                     if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
                                         if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-                                           let project = userdefaults.string(forKey: DefaultsKey.projectKey),
+                                           let host = userdefaults.string(forKey: DefaultsKey.hostKey),
                                            let realm = userdefaults.string(forKey: DefaultsKey.realmKey) {
-                                            geofenceProvider?.enable(baseUrl: "https://\(project).openremote.io/api/\(realm)", consoleId: consoleId,  callback: { enableData in
+                                            let baseUrl = host.appending("/api/\(realm)")
+                                            geofenceProvider?.enable(baseUrl: baseUrl, consoleId: consoleId,  callback: { enableData in
                                                 self.sendData(data: enableData)
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
                                                     self.geofenceProvider?.fetchGeofences()
