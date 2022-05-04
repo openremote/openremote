@@ -20,6 +20,7 @@ import io.openremote.orlib.ui.OrMainActivity
 import java.util.logging.Level
 import java.util.logging.Logger
 
+
 class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagingService() {
 
     private var notificationResource: NotificationResource? = null
@@ -161,6 +162,10 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
         actionOR: ORAlertAction?,
         buttonORS: Array<ORAlertButton>?
     ) {
+        val pm = packageManager
+        val notificationIntent = pm.getLaunchIntentForPackage(packageName)
+        notificationIntent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0)
 
         val notificationBuilder = NotificationCompat.Builder(
             this,
@@ -169,7 +174,8 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
             .setContentTitle(title)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentText(body)
-            .setSmallIcon(R.drawable.notification_icon)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(pendingIntent)
             .setDeleteIntent(createActionIntent(notificationId, "\"CLOSED\"", null))
         if (actionOR != null) {
             notificationBuilder.setContentIntent(createActionIntent(notificationId, null, actionOR))

@@ -35,7 +35,7 @@ while [ $COUNT -le $MAX ]; do
     if [ "$accName" == "$NAME" ]; then
       echo "Possible account match '$accName'"
       # Look for host in this account
-      ACCOUNT_ID=$accId
+      AWS_ACCOUNT_ID=$accId
       source "${awsDir}set_github-da_account_arn.sh"
       instanceId=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$HOST" --output text --query 'Reservations[*].Instances[*].InstanceId' --profile github-da)
       if [ -n "$instanceId" ]; then
@@ -43,7 +43,7 @@ while [ $COUNT -le $MAX ]; do
         return
       else
         echo "Account doesn't contain an instance named '$HOST'"
-        unset ACCOUNT_ID
+        unset AWS_ACCOUNT_ID
       fi
     fi
   done

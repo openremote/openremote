@@ -49,6 +49,9 @@ public interface Constants {
     String PERSISTENCE_STRING_ARRAY_TYPE = "string-array";
     String PERSISTENCE_LTREE_TYPE = "ltree";
 
+    String OR_HOSTNAME = "OR_HOSTNAME";
+    String OR_ADDITIONAL_HOSTNAMES = "OR_ADDITIONAL_HOSTNAMES";
+    String OR_SSL_PORT = "OR_SSL_PORT";
     String OR_EMAIL_USER = "OR_EMAIL_USER";
     String OR_EMAIL_HOST = "OR_EMAIL_HOST";
     String OR_EMAIL_PASSWORD = "OR_EMAIL_PASSWORD";
@@ -56,6 +59,7 @@ public interface Constants {
     int OR_EMAIL_PORT_DEFAULT = 587;
     String OR_EMAIL_TLS = "OR_EMAIL_TLS";
     boolean OR_EMAIL_TLS_DEFAULT = true;
+    String OR_EMAIL_X_HEADERS = "OR_EMAIL_X_HEADERS";
     String OR_EMAIL_FROM = "OR_EMAIL_FROM";
     String OR_EMAIL_FROM_DEFAULT = "no-reply@localhost";
     String OR_EMAIL_ADMIN = "OR_EMAIL_ADMIN";

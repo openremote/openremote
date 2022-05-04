@@ -9,7 +9,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import { EnhancedStore } from "@reduxjs/toolkit";
+import { Store } from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Role } from "@openremote/model";
@@ -20,7 +20,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageRolesProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageRolesProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "roles",
         routes: ["roles"],
@@ -405,16 +405,18 @@ export class PageRoles extends Page<AppStateKeyed> {
                                         })}
                                       </div>
                                   </div>
-
-                                  <div class="row" style="margin-bottom: 0;">
-                                  ${role.id && !readonly ? html`
-                                      <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role, index)}"></or-mwc-input>          
-                                      <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>   
-                                  ` : html`
-                                    <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._compositeRoles.splice(-1,1); this._compositeRoles = [...this._compositeRoles]}}"></or-mwc-input>            
-                                    <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>   
-                                  `}    
-                                  </div>
+                                  
+                                  ${readonly ? html`` : html`
+                                      <div class="row" style="margin-bottom: 0;">
+                                      ${role.id ? html`
+                                          <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" @click="${() => this._deleteRole(role, index)}"></or-mwc-input>          
+                                          <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>   
+                                      ` : html`
+                                        <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._compositeRoles.splice(-1,1); this._compositeRoles = [...this._compositeRoles]}}"></or-mwc-input>            
+                                        <or-mwc-input ?disabled="${this._compositeRoles.some(role => role.compositeRoleIds.length === 0)}" style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._updateRoles()}"></or-mwc-input>   
+                                      `}    
+                                      </div>
+                                  `}
                               </div>
                             </td>
                           </tr>
