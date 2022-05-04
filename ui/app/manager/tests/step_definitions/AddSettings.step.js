@@ -2,7 +2,7 @@ const { Given, When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
 const { toUnicode } = require("punycode");
 
-Given('Login OpenRemote local website as admin', { timeout: 10000 }, async function () {
+Given('Login OpenRemote as admin', { timeout: 10000 }, async function () {
     await this.navigate("admin", "admin")
 })
 

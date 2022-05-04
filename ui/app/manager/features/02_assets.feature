@@ -15,9 +15,9 @@ Feature: Assets
         Then Save
 
         Examples:
-            | asset                     | name    | attribute_1       | A1_type          | attribute_2      | A2_type          | value_1 | value_2 |
-            | Electricity battery asset | Battery | efficiencyExport  | Positive integer | efficiencyImport | Positive integer | 30      | 50      |
-            | PV solar asset            | Solar   | energyExportTotal | Positive number  | power            | Number           | 30      | 70      |
+            | asset                     | name    | attribute_1   | A1_type          | attribute_2  | A2_type    | value_1 | value_2 |
+            | Electricity battery asset | Battery | energyLevel   | Positive number  | power        | Number     | 30      | 50      |
+            | PV solar asset            | Solar   | panelPitch    | Positive integer | power        | Number     | 30      | 70      |
 
     @Desktop @select
     Scenario Outline: Select asset
@@ -64,7 +64,8 @@ Feature: Assets
    Scenario Outline: Set configure item for Insight and Rule
         When Go to asset "<name>" info page
         Then Go to modify mode
-        Then Check on "<item_1>" and "<item_2>" on "<attribute>"
+        Then Select "<item_1>" and "<item_2>" on "<attribute>"
+        Then Save
 
         Examples:
             | name    | attribute     | item_1       | item_2            |

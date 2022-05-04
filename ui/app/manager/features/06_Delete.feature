@@ -35,7 +35,7 @@ Feature: Delete
 
     @Desktop @delete_user
     Scenario: Delete user
-        Given Login OpenRemote local website as admin
+        Given Login OpenRemote as admin
         When Select smartcity realm
         When Navigate to user page
         Then Delete user

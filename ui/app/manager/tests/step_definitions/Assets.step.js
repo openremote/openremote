@@ -128,7 +128,7 @@ Then('No button on the right of {string}', async function (attribute) {
 /**
  * set configure item
  */
-Then('Check on {string} and {string} on {string}', async function (item1, item2, attribute) {
+Then('Select {string} and {string} on {string}', async function (item1, item2, attribute) {
     const { page } = this;
 
     await page.locator(`td:has-text("${attribute}")`).first().click()

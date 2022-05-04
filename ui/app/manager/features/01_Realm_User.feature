@@ -1,8 +1,8 @@
-@OpenRemote @add_settings
+@OpenRemote @settings
 Feature: Add_Settings
 
     Background: Navigation
-        Given Login OpenRemote local website as admin
+        Given Login OpenRemote as admin
 
     @Desktop @add_realm 
       Scenario: Add new Realm

@@ -10,5 +10,8 @@ module.exports = {
     --format @cucumber/pretty-formatter
     --format-options ${JSON.stringify({ snippetInterface: 'async-await' })}
     --publish-quiet  
-    `
+    `,
+    use: {
+        screenshot: 'only-on-failure',
+    },
 }
