@@ -20,9 +20,6 @@
 package org.openremote.manager.system;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.openremote.container.security.IdentityService;
-import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.Container;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
 import org.openremote.model.util.ValueUtil;
@@ -38,17 +35,10 @@ public class StatusResourceImpl implements StatusResource {
 
     private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
     protected List<HealthStatusProvider> healthStatusProviderList;
-    protected ObjectNode serverInfo;
+    protected Properties versionProps = new Properties();
 
-    public StatusResourceImpl(Container container, List<HealthStatusProvider> healthStatusProviderList) {
+    public StatusResourceImpl(List<HealthStatusProvider> healthStatusProviderList) {
         this.healthStatusProviderList = healthStatusProviderList;
-        Properties versionProps = new Properties();
-        String authServerUrl = null;
-
-        ManagerIdentityService identityService = container.getService(ManagerIdentityService.class);
-        if (identityService != null) {
-            authServerUrl = identityService.getIdentityProvider().getFrontendUrl();
-        }
 
         try(InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("system.properties")) {
             versionProps.load(resourceStream);
@@ -56,11 +46,6 @@ public class StatusResourceImpl implements StatusResource {
             LOG.log(Level.SEVERE, "Failed to load manager version properties file: system.properties");
             throw new IllegalStateException("Missing manager system.properties file");
         }
-
-        String version = versionProps.getProperty("version");
-        serverInfo = ValueUtil.JSON.createObjectNode();
-        serverInfo.put("version", version);
-        serverInfo.put("authServerUrl", authServerUrl);
     }
 
     @Override
@@ -80,6 +65,9 @@ public class StatusResourceImpl implements StatusResource {
 
     @Override
     public ObjectNode getInfo() {
-        return serverInfo;
+        String version = versionProps.getProperty("version");
+        ObjectNode objectValue = ValueUtil.JSON.createObjectNode();
+        objectValue.put("version", version);
+        return objectValue;
     }
 }

@@ -7,7 +7,6 @@ import android.util.Pair
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
-import io.openremote.orlib.ORConstants
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
@@ -39,7 +38,7 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
             return
         }
 
-        val baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
+        val baseUrl = intent.getStringExtra(GeofenceProvider.baseUrlKey)
         val geofenceTransition = geofencingEvent.geofenceTransition
         val trans = if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) "ENTER" else "EXIT"
 

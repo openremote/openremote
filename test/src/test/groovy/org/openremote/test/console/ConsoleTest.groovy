@@ -428,8 +428,6 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         ///////////////////////////////////////
 
         when: "the geofences of a user linked console are requested by the authenticated user"
-        notificationIds.clear()
-        messages.clear()
         def geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console1.id)
         def expectedLocationPredicate = new RadialGeofencePredicate(100, SMART_BUILDING_LOCATION.y, SMART_BUILDING_LOCATION.x)
 

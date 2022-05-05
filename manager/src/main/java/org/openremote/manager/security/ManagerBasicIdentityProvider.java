@@ -47,7 +47,7 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     public void init(Container container) {
         super.init(container);
         this.identityService = container.getService(ManagerIdentityService.class);
-        adminPassword = container.getConfig().getOrDefault(OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT);
+        adminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
     }
 
     @Override
@@ -255,11 +255,6 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     public boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles) {
         // TODO Doesn't really respect the description of the interface
         return auth.isSuperUser();
-    }
-
-    @Override
-    public String getFrontendUrl() {
-        return null;
     }
 
     @Override

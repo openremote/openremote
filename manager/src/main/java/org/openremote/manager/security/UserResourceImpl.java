@@ -22,7 +22,6 @@ package org.openremote.manager.security;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.TenantPredicate;
@@ -84,10 +83,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public User get(RequestParams requestParams, String realm, String userId) {
-        boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
-
-        if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
-            throw new ForbiddenException("Can only retrieve own user info unless you have role '" + ClientRole.READ_ADMIN + "'");
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
         }
 
         try {
@@ -192,10 +189,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public Role[] getUserClientRoles(@BeanParam RequestParams requestParams, String realm, String userId, String clientId) {
-        boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
-
-        if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
-            throw new ForbiddenException("Can only retrieve own user roles unless you have role '" + ClientRole.READ_ADMIN + "'");
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
         }
 
         try {
@@ -211,10 +206,8 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
     @Override
     public Role[] getUserRealmRoles(RequestParams requestParams, String realm, String userId) {
-        boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
-
-        if (!hasAdminReadRole && !Objects.equals(getUserId(), userId)) {
-            throw new ForbiddenException("Can only retrieve own user roles unless you have role '" + ClientRole.READ_ADMIN + "'");
+        if (!isSuperUser() && !Objects.equals(getUserId(), userId)) {
+            throw new ForbiddenException("Regular users can only retrieve their own roles");
         }
 
         try {

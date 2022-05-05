@@ -5,7 +5,7 @@
         android:enabled="true"
         android:icon="@drawable/cog"
         android:shortcutId="project"
-        android:shortcutShortLabel="@string/Settings">
+        android:shortcutShortLabel="@string/Project">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetClass="io.openremote.app.ui.SplashActivity"

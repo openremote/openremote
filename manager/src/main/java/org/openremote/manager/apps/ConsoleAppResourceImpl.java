@@ -21,7 +21,7 @@ package org.openremote.manager.apps;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.model.apps.ConsoleAppConfig;
-import org.openremote.model.apps.AppResource;
+import org.openremote.model.apps.ConsoleAppResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.ValueUtil;
 
@@ -32,7 +32,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class ConsoleAppResourceImpl extends WebResource implements AppResource {
+public class ConsoleAppResourceImpl extends WebResource implements ConsoleAppResource {
 
     final protected ConsoleAppService consoleAppService;
 
@@ -41,7 +41,7 @@ public class ConsoleAppResourceImpl extends WebResource implements AppResource {
     }
 
     @Override
-    public String[] getApps(@BeanParam RequestParams requestParams) {
+    public String[] getInstalledApps(@BeanParam RequestParams requestParams) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
@@ -50,6 +50,12 @@ public class ConsoleAppResourceImpl extends WebResource implements AppResource {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    // Left here as android console stops working once this is removed and it won't follow redirects
+    @Override
+    public ConsoleAppConfig getAppConfig(RequestParams requestParams) {
+        return getAppConfig(getRequestRealm());
     }
 
     @Deprecated

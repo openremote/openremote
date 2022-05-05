@@ -1,9 +1,10 @@
 import {HeaderConfig, Languages} from "./or-header";
 import {AppStateKeyed} from "./app";
-import {LitElement, TemplateResult} from "lit";
+import { TemplateResult, LitElement } from "lit";
 import i18next from "i18next";
-import {translate} from "@openremote/or-translate";
-import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
+import { translate } from "@openremote/or-translate";
+import { EnhancedStore, AnyAction, Unsubscribe } from "@reduxjs/toolkit";
+import {ThunkMiddleware} from "redux-thunk";
 import Navigo from "navigo";
 
 // Configure routing
@@ -40,11 +41,11 @@ export abstract class Page<S extends AppStateKeyed> extends translate(i18next)(L
 
     abstract get name(): string;
 
-    protected _store: Store<S, AnyAction>;
+    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
 
     protected _storeUnsubscribe!: Unsubscribe;
 
-    constructor(store: Store<S, AnyAction>) {
+    constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>) {
         super();
         this._store = store;
     }

@@ -461,15 +461,5 @@
     "title": {
       "indexedItem": "Item {{index}}"
     }
-  },
-  "yes": "Ja",
-  "no": "Nein",
-  "filter": {
-    "action": "FILTER",
-    "assetTypeLabel": "Asset type",
-    "assetTypeNone": "None",
-    "assetTypeMenuNone": "None",
-    "attributeLabel": "Attribute",
-    "attributeValueLabel": "Attribute value"
   }
 }

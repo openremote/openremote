@@ -201,10 +201,8 @@ export class OrMapAssetCard extends subscribe(manager)(LitElement) {
         if (this.asset) {
             const descriptor = AssetModelUtil.getAssetDescriptor(this.asset.type);
             const color = getMarkerIconAndColorFromAssetType(descriptor)?.color;
-            if (color) {
-                // check if range
-                return (typeof color === 'string') ? color : color![0].colour;
-            }
+            // check if range
+            return (typeof color === 'string') ? color : color![0].colour;
         }
     }
 }

@@ -48,15 +48,15 @@ import static org.openremote.model.value.MetaItemType.STORE_DATA_POINTS;
 /**
  * Store and retrieve datapoints for asset attributes and periodically purge data points based on
  * {@link MetaItemType#DATA_POINTS_MAX_AGE_DAYS} {@link org.openremote.model.attribute.MetaItem}
- * and {@link #OR_DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
+ * and {@link #DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
  * days.
  */
 public class AssetDatapointService extends AbstractDatapointService<AssetDatapoint> implements AssetUpdateProcessor {
 
-    public static final String OR_DATA_POINTS_MAX_AGE_DAYS = "OR_DATA_POINTS_MAX_AGE_DAYS";
-    public static final int OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
-    public static final String OR_DATA_POINTS_EXPORT_DIR = "OR_DATA_POINTS_EXPORT_DIR";
-    public static final String OR_DATA_POINTS_EXPORT_DIR_DEFAULT = "/tmp";
+    public static final String DATA_POINTS_MAX_AGE_DAYS = "DATA_POINTS_MAX_AGE_DAYS";
+    public static final int DATA_POINTS_MAX_AGE_DAYS_DEFAULT = 31;
+    public static final String DATA_POINTS_EXPORT_DIR = "DATA_POINTS_EXPORT_DIR";
+    public static final String DATA_POINTS_EXPORT_DIR_DEFAULT = "/tmp";
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
     protected int maxDatapointAgeDays;
     protected Path exportPath;
@@ -74,13 +74,13 @@ public class AssetDatapointService extends AbstractDatapointService<AssetDatapoi
             )
         );
 
-        maxDatapointAgeDays = getInteger(container.getConfig(), OR_DATA_POINTS_MAX_AGE_DAYS, OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
+        maxDatapointAgeDays = getInteger(container.getConfig(), DATA_POINTS_MAX_AGE_DAYS, DATA_POINTS_MAX_AGE_DAYS_DEFAULT);
 
         if (maxDatapointAgeDays <= 0) {
-            LOG.warning(OR_DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
+            LOG.warning(DATA_POINTS_MAX_AGE_DAYS + " value is not a valid value so data points won't be auto purged");
         }
 
-        exportPath = Paths.get(getString(container.getConfig(), OR_DATA_POINTS_EXPORT_DIR, OR_DATA_POINTS_EXPORT_DIR_DEFAULT));
+        exportPath = Paths.get(getString(container.getConfig(), DATA_POINTS_EXPORT_DIR, DATA_POINTS_EXPORT_DIR_DEFAULT));
     }
 
     @Override

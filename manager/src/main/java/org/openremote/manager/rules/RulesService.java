@@ -51,8 +51,6 @@ import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
 import org.openremote.model.util.ValueUtil;
 import org.openremote.model.value.MetaItemType;
 
@@ -60,12 +58,12 @@ import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiFunction;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.logging.Level.*;
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.SEVERE;
 import static java.util.stream.Collectors.toList;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
@@ -86,7 +84,7 @@ import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttribu
  * <p>
  * If an updated attribute's {@link MetaItemType#RULE_EVENT} is true, another temporary {@link AssetState} fact is
  * inserted in the rules engines in scope. This fact expires automatically if the lifetime set in {@link
- * RulesService#OR_RULE_EVENT_EXPIRES} is reached, or if the lifetime set in the attribute {@link
+ * RulesService#RULE_EVENT_EXPIRES} is reached, or if the lifetime set in the attribute {@link
  * MetaItemType#RULE_EVENT_EXPIRES} is reached.
  * <p>
  * Each asset attribute update is processed in the following order:
@@ -100,8 +98,8 @@ import static org.openremote.model.attribute.Attribute.getAddedOrModifiedAttribu
 public class RulesService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
     public static final int PRIORITY = LOW_PRIORITY;
-    public static final String OR_RULE_EVENT_EXPIRES = "OR_RULE_EVENT_EXPIRES";
-    public static final String OR_RULE_EVENT_EXPIRES_DEFAULT = "PT1H";
+    public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
+    public static final String RULE_EVENT_EXPIRES_DEFAULT = "PT1H";
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected final Map<String, RulesEngine<TenantRuleset>> tenantEngines = new HashMap<>();
     protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
@@ -128,7 +126,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     // here means we can quickly insert facts into newly started engines
     protected Set<AssetState<?>> assetStates = new HashSet<>();
     protected Set<AssetState<?>> preInitassetStates = new HashSet<>();
-    protected long defaultEventExpiresMillis = 1000*60*60;
+    protected String configEventExpires;
     protected boolean initDone;
     protected boolean startDone;
 
@@ -189,15 +187,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         geofenceAssetAdapters.addAll(container.getServices(GeofenceAssetAdapter.class));
         geofenceAssetAdapters.sort(Comparator.comparingInt(GeofenceAssetAdapter::getPriority));
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
-        String defaultEventExpires = getString(container.getConfig(), OR_RULE_EVENT_EXPIRES, OR_RULE_EVENT_EXPIRES_DEFAULT);
-
-        if (!TextUtil.isNullOrEmpty(defaultEventExpires)) {
-            try {
-                defaultEventExpiresMillis = TimeUtil.parseTimeDuration(defaultEventExpires);
-            } catch (RuntimeException exception) {
-                LOG.log(Level.WARNING, "Failed to parse " + OR_RULE_EVENT_EXPIRES, exception);
-            }
-        }
+        configEventExpires = getString(container.getConfig(), RULE_EVENT_EXPIRES, RULE_EVENT_EXPIRES_DEFAULT);
 
         container.getService(ManagerWebService.class).addApiSingleton(
             new FlowResourceImpl(
@@ -373,19 +363,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         // Then as asset event (if there wasn't an error), this will also fire the rules engines
         if (assetState.getMetaValue(MetaItemType.RULE_EVENT).orElse(false)) {
-
-            long expireMillis = assetState.getMetaValue(MetaItemType.RULE_EVENT_EXPIRES).map(expires -> {
-                long expMillis = defaultEventExpiresMillis;
-
-                try {
-                    expMillis = TimeUtil.parseTimeDuration(expires);
-                } catch (RuntimeException exception) {
-                    LOG.log(Level.WARNING, "Failed to parse '" + MetaItemType.RULE_EVENT_EXPIRES.getName() + "' value '" + expires + "' for attribute: " + assetState, exception);
-                }
-                return expMillis;
-            }).orElse(defaultEventExpiresMillis);
-
-            insertAssetEvent(assetState, expireMillis);
+            insertAssetEvent(
+                    assetState,
+                    assetState.getMetaValue(MetaItemType.RULE_EVENT_EXPIRES).orElse(configEventExpires)
+            );
         }
     }
 
@@ -791,7 +772,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         });
     }
 
-    protected void insertAssetEvent(AssetState<?> assetState, long expiresMillis) {
+    protected void insertAssetEvent(AssetState<?> assetState, String expires) {
         withLock(getClass().getSimpleName() + "::insertAssetEvent", () -> {
             // Get the chain of rule engines that we need to pass through
             List<RulesEngine<?>> rulesEngines = getEnginesInScope(assetState.getRealm(), assetState.getPath());
@@ -811,7 +792,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             // Pass through each engine
             for (RulesEngine<?> rulesEngine : rulesEngines) {
-                rulesEngine.insertAssetEvent(expiresMillis, assetState);
+                rulesEngine.insertAssetEvent(expires, assetState);
             }
         });
     }

@@ -43,4 +43,4 @@ services:
     volumes:
       - temp-data:/tmp
     environment:
-      OR_IDENTITY_PROVIDER: basic
+      IDENTITY_PROVIDER: basic

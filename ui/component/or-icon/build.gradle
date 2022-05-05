@@ -1,7 +1,6 @@
 buildDir = "dist"
 
 task copyMdiFont(type: Exec) {
-    dependsOn getYarnInstallTask()
     // Using yarn throws an error relating to node_module resolution
     commandLine npmCommand("npm"), "run", "copyMdiFont"
 }

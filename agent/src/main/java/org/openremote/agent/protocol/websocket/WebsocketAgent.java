@@ -67,7 +67,7 @@ public class WebsocketAgent extends IOAgent<WebsocketAgent, WebsocketAgentProtoc
         return getAttributes().getValue(CONNECT_URL);
     }
 
-    public WebsocketAgent setConnectURI(String value) {
+    public WebsocketAgent setConnectUri(String value) {
         getAttributes().getOrCreate(CONNECT_URL).setValue(value);
         return this;
     }

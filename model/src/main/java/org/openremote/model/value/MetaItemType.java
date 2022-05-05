@@ -23,6 +23,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.TemporaryFact;

@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
+import {EnhancedStore} from "@reduxjs/toolkit";
 import manager from "@openremote/core";
 
 export interface ConsoleProvider {
@@ -22,7 +22,7 @@ export interface OnboardingConfig {
     redirect: string;
 }
 
-export function pageMobileOnboardingProvider(store: Store<AppStateKeyed>, config?: OnboardingConfig): PageProvider<AppStateKeyed> {
+export function pageMobileOnboardingProvider(store: EnhancedStore<AppStateKeyed>, config?: OnboardingConfig): PageProvider<AppStateKeyed> {
     return {
         name: "onboarding",
         routes: [
@@ -92,7 +92,7 @@ export class PageMobileOnboarding extends Page<AppStateKeyed> {
         return "mobile-onboarding";
     }
 
-    constructor(store: Store<AppStateKeyed>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 

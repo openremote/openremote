@@ -65,7 +65,7 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         protected Map<String, Double> watts;
     }
 
-    public static final String OR_FORECAST_SOLAR_API_KEY = "OR_FORECAST_SOLAR_API_KEY";
+    public static final String FORECAST_SOLAR_API_KEY = "FORECAST_SOLAR_API_KEY";
 
     protected static final DateTimeFormatter ISO_LOCAL_DATE_TIME_WITHOUT_T = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
@@ -116,13 +116,13 @@ public class ForecastSolarService extends RouteBuilder implements ContainerServi
         rulesService = container.getService(RulesService.class);
         timerService = container.getService(TimerService.class);
 
-        forecastSolarApiKey = getString(container.getConfig(), OR_FORECAST_SOLAR_API_KEY, null);
+        forecastSolarApiKey = getString(container.getConfig(), FORECAST_SOLAR_API_KEY, null);
     }
 
     @Override
     public void start(Container container) throws Exception {
         if (forecastSolarApiKey == null) {
-            LOG.info("No value found for OR_FORECAST_SOLAR_API_KEY, ForecastSolarService won't start");
+            LOG.info("No value found for FORECAST_SOLAR_API_KEY, ForecastSolarService won't start");
             return;
         }
 

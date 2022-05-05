@@ -9,6 +9,7 @@
       "es2017",
       "es2019"
     ],
+    "noEmitOnError": true,
     "strict": true,
     "declaration": true,
     "sourceMap": true,

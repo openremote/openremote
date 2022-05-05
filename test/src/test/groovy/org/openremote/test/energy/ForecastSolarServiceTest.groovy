@@ -25,7 +25,7 @@ import javax.ws.rs.core.Response
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
-import static org.openremote.manager.energy.ForecastSolarService.OR_FORECAST_SOLAR_API_KEY
+import static org.openremote.manager.energy.ForecastSolarService.FORECAST_SOLAR_API_KEY
 
 @Ignore
 class ForecastSolarServiceTest extends Specification implements ManagerContainerTrait {
@@ -130,7 +130,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
         def config = defaultConfig()
-        config << [(OR_FORECAST_SOLAR_API_KEY): "test-key"]
+        config << [(FORECAST_SOLAR_API_KEY): "test-key"]
 
         if (!ForecastSolarService.resteasyClient.configuration.isRegistered(mockServer)) {
             ForecastSolarService.resteasyClient.register(mockServer, Integer.MAX_VALUE)

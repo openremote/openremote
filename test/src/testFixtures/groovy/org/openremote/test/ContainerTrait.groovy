@@ -27,7 +27,6 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.message.MessageBrokerService
-import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.PasswordAuthForm
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
@@ -57,7 +56,6 @@ import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.security.User
 
-import javax.persistence.TypedQuery
 import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
 import javax.websocket.Session
@@ -69,7 +67,7 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.container.web.WebService.OR_WEBSERVER_LISTEN_PORT
+import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
 
 trait ContainerTrait {
 
@@ -90,7 +88,7 @@ trait ContainerTrait {
                 if (currentConfig.size() == config.size()) {
                     configsMatch = currentConfig.entrySet().stream().allMatch{entry ->
                         // ignore webserver port config
-                        if (entry.key == OR_WEBSERVER_LISTEN_PORT) {
+                        if (entry.key == WEBSERVER_LISTEN_PORT) {
                             return true
                         }
                         entry.value == config.get(entry.key)
@@ -387,10 +385,7 @@ trait ContainerTrait {
         if (!container.hasService(AssetStorageService.class)) {
             return Collections.emptyList()
         }
-        return container.getService(PersistenceService.class).doReturningTransaction {
-            TypedQuery<UserAssetLink> query = it.createQuery("select ua from UserAssetLink ua", UserAssetLink.class)
-            return query.getResultList()
-        }
+        container.getService(AssetStorageService.class).findUserAssetLinks(null, null, null)
     }
 
     List<GatewayConnection> getGatewayConnections() {
@@ -422,7 +417,7 @@ trait ContainerTrait {
 
     int getServerPort() {
         if (container != null) {
-            return MapAccess.getInteger(container.getConfig(), OR_WEBSERVER_LISTEN_PORT, 0)
+            return MapAccess.getInteger(container.getConfig(), WEBSERVER_LISTEN_PORT, 0)
         }
         return 0
     }

@@ -1,7 +1,7 @@
 import {css, html} from "lit";
 import {customElement, property} from "lit/decorators.js";
 import {Page, PageProvider, AppStateKeyed} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
+import {EnhancedStore} from "@reduxjs/toolkit";
 
 export interface SplashConfig {
     redirect: string;
@@ -9,7 +9,7 @@ export interface SplashConfig {
     logoMobile?: HTMLTemplateElement | string;
 }
 
-export function pageMobileSplashProvider(store: Store<AppStateKeyed>, config?: SplashConfig): PageProvider<AppStateKeyed> {
+export function pageMobileSplashProvider(store: EnhancedStore<AppStateKeyed>, config?: SplashConfig): PageProvider<AppStateKeyed> {
     return {
         name: "splash",
         routes: [
@@ -42,7 +42,7 @@ export class PageMobileSplash extends Page<AppStateKeyed> {
         return "mobile-splash";
     }
 
-    constructor(store: Store<AppStateKeyed>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 

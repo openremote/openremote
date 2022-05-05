@@ -4,7 +4,7 @@ import "@openremote/or-data-viewer";
 import {DataViewerConfig, OrDataViewer} from "@openremote/or-data-viewer";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
+import {EnhancedStore} from "@reduxjs/toolkit";
 import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
@@ -13,7 +13,7 @@ export interface PageInsightsConfig {
     dataViewer?: DataViewerConfig
 }
 
-export function pageInsightsProvider(store: Store<AppStateKeyed>, config?: PageInsightsConfig): PageProvider<AppStateKeyed> {
+export function pageInsightsProvider(store: EnhancedStore<AppStateKeyed>, config?: PageInsightsConfig): PageProvider<AppStateKeyed> {
     return {
         name: "insights",
         routes: [
@@ -104,7 +104,7 @@ export class PageInsights extends Page<AppStateKeyed>  {
         }
     )
 
-    constructor(store: Store<AppStateKeyed>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 

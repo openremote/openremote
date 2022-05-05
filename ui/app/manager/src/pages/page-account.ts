@@ -3,11 +3,11 @@ import {customElement} from "lit/decorators.js";
 import manager from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import {Store} from "@reduxjs/toolkit";
+import {EnhancedStore} from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 
-export function pageAccountProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageAccountProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
     return {
         name: "account",
         routes: [
@@ -36,7 +36,7 @@ export class PageAccount extends Page<AppStateKeyed>  {
         return "account";
     }
 
-    constructor(store: Store<AppStateKeyed>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 

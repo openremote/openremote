@@ -28,7 +28,6 @@ manager/.factorypath/
 Pods/
 bower_components/
 node_modules/
-manager/src/web/shared/fonts/Material Design Icons/
 .pnp.*
 .yarn/*
 !.yarn/patches

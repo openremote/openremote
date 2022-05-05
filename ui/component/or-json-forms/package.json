@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-json-forms",
-  "version": "1.1.0",
+  "version": "1.0.4",
   "description": "Renders a JSON schema and provides instance editing",
   "main": "dist/umd/index.bundle.js",
   "module": "lib/index.js",
@@ -18,7 +18,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@jsonforms/core": "^3.0.0-beta.1",
-    "@openremote/or-mwc-components": "^1.1.0",
+    "@openremote/or-mwc-components": "^1.0.4",
     "@polymer/polymer": "^3.3.1",
     "ajv": "^8.8.2",
     "lit": "^2.0.2"

@@ -31,7 +31,7 @@ public interface SetupTasks {
     /**
      * Can be used by setup tasks to have different configurable setups (e.g. production/staging/test/etc.)
      */
-    String OR_SETUP_TYPE = "OR_SETUP_TYPE";
+    String SETUP_TYPE = "SETUP_TYPE";
 
     List<Setup> createTasks(Container container, String setupType, boolean keycloakEnabled);
 }

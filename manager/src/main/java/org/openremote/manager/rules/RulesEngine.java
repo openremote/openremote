@@ -37,7 +37,6 @@ import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.TimeUtil;
 
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -492,8 +491,10 @@ public class RulesEngine<T extends Ruleset> {
                     RULES_LOG.fine("Executing rules @" + clock + " of: " + deployment);
 
                     // If full detail logging is enabled
-                    // Log asset states and events before firing
-                    facts.logFacts(RULES_LOG, Level.FINEST);
+                    if (RULES_LOG.isLoggable(Level.FINEST)) {
+                        // Log asset states and events before firing (note that this will log at INFO)
+                        facts.logFacts(RULES_LOG);
+                    }
 
                     // Reset facts for this firing (loop detection etc.)
                     facts.reset();
@@ -561,8 +562,8 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public void insertAssetEvent(long expiresMillis, AssetState<?> assetState) {
-        facts.insertAssetEvent(expiresMillis, assetState);
+    public void insertAssetEvent(String expires, AssetState<?> assetState) {
+        facts.insertAssetEvent(expires, assetState);
         if (running) {
             scheduleFire();
         }
@@ -592,7 +593,9 @@ public class RulesEngine<T extends Ruleset> {
                 + ", Temporary: " + temporaryFactsCount);
 
             // Additional details if FINEST is enabled
-            facts.logFacts(STATS_LOG, Level.FINEST);
+            if (STATS_LOG.isLoggable(Level.FINEST)) {
+                facts.logFacts(STATS_LOG);
+            }
         });
     }
 

@@ -9,6 +9,7 @@
     "ui/demo/*"
   ],
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "lerna": "^4.0.0"
   }
 }

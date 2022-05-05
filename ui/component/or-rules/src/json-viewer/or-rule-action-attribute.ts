@@ -117,7 +117,7 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         let attributes: [string, string][] = [];
 
         if (asset && asset.attributes) {
-            attributes = Object.values(asset.attributes)
+            attributes = Object.values(asset.attributes).filter((attr) => !Util.getMetaValue(WellknownMetaItems.READONLY, attr))
                 .map((attr) => {
                     const label = Util.getAttributeLabel(attr, descriptors[0], assetType, false);
                     return [attr.name!, label];
@@ -125,10 +125,8 @@ export class OrRuleActionAttribute extends translate(i18next)(LitElement) {
         } else if (assetDescriptor) {
             const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(assetDescriptor);
 
-            attributes =
-                !assetTypeInfo || !assetTypeInfo.attributeDescriptors
-                    ? []
-                    : assetTypeInfo.attributeDescriptors.map((ad) => {
+            attributes = !assetTypeInfo || !assetTypeInfo.attributeDescriptors ? [] : assetTypeInfo.attributeDescriptors.filter((ad) => !Util.hasMetaItem(WellknownMetaItems.READONLY, ad))
+                    .map((ad) => {
                         const label = Util.getAttributeLabel(ad, descriptors[0], assetType, false);
                         return [ad.name!, label];
                     });

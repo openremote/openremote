@@ -13,14 +13,12 @@ import androidx.core.app.NotificationCompat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.firebase.messaging.RemoteMessage
-import io.openremote.orlib.ORConstants
 import io.openremote.orlib.R
 import io.openremote.orlib.models.ORAlertAction
 import io.openremote.orlib.models.ORAlertButton
 import io.openremote.orlib.ui.OrMainActivity
 import java.util.logging.Level
 import java.util.logging.Logger
-
 
 class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagingService() {
 
@@ -91,7 +89,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
                         geofenceProvider.refreshGeofences()
                     }
                     else -> {
-                        val broadCastIntent = Intent(ORConstants.ACTION_BROADCAST)
+                        val broadCastIntent = Intent(OrMainActivity.ACTION_BROADCAST)
                         broadCastIntent.putExtra("action", action)
                         sendBroadcast(broadCastIntent)
                     }
@@ -163,10 +161,6 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
         actionOR: ORAlertAction?,
         buttonORS: Array<ORAlertButton>?
     ) {
-        val pm = packageManager
-        val notificationIntent = pm.getLaunchIntentForPackage(packageName)
-        notificationIntent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0)
 
         val notificationBuilder = NotificationCompat.Builder(
             this,
@@ -175,8 +169,7 @@ class ORFirebaseMessagingService : com.google.firebase.messaging.FirebaseMessagi
             .setContentTitle(title)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentText(body)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
+            .setSmallIcon(R.drawable.notification_icon)
             .setDeleteIntent(createActionIntent(notificationId, "\"CLOSED\"", null))
         if (actionOR != null) {
             notificationBuilder.setContentIntent(createActionIntent(notificationId, null, actionOR))

@@ -5,6 +5,6 @@ task installDist(type: Copy) {
 
     into("image") {
         from projectDir
-        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore", "**/*.encrypted"
+        exclude "build.gradle", "Dockerfile", "build", "**/*.mbtiles", "src", "**/*.md", ".gitignore"
     }
 }

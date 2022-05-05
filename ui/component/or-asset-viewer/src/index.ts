@@ -14,7 +14,7 @@ import "@openremote/or-mwc-components/or-mwc-dialog";
 import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import "@openremote/or-mwc-components/or-mwc-list";
 import {OrTranslate, translate} from "@openremote/or-translate";
-import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-components/or-mwc-input";
+import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
 import manager, {subscribe, Util} from "@openremote/core";
 import {OrMwcTable} from "@openremote/or-mwc-components/or-mwc-table";
 import {OrChartConfig, OrChartEvent} from "@openremote/or-chart";
@@ -23,22 +23,21 @@ import {
     AgentDescriptor,
     Asset,
     AssetEvent,
-    AssetModelUtil,
     Attribute,
     AttributeEvent,
     ClientRole,
     FileInfo,
     SharedEvent,
-    UserAssetLink,
     WellknownAssets,
     WellknownAttributes,
     WellknownMetaItems,
+    AssetModelUtil
 } from "@openremote/model";
 import {panelStyles, style} from "./style";
-import i18next, {InitOptions, TOptions} from "i18next";
+import i18next, {TOptions, InitOptions} from "i18next";
 import {styleMap} from "lit/directives/style-map.js";
 import {classMap} from "lit/directives/class-map.js";
-import {GenericAxiosResponse} from "axios";
+import { GenericAxiosResponse } from "axios";
 import {OrIcon} from "@openremote/or-icon";
 import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
@@ -46,7 +45,7 @@ import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 
 export interface PanelConfig {
-    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers";
+    type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results";
     title?: string;
     hide?: boolean;
     hideOnMobile?: boolean;
@@ -292,9 +291,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         }
     }
 
-    if (!panelConfig) return undefined;
-
-    if (panelConfig.type === "info") {
+    if (panelConfig && panelConfig.type === "info") {
 
         // This type of panel shows attributes and/or properties of the asset
         const infoConfig = panelConfig as InfoPanelConfig;
@@ -362,10 +359,10 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         })}`;
     }
 
-    if (panelConfig.type === "setup") {
+    if (panelConfig && panelConfig.type === "setup") {
 
         const descriptor = AssetModelUtil.getAssetDescriptor(asset.type) as AgentDescriptor;
-
+        
         if (!descriptor || !asset.id || descriptor.descriptorType !== "agent" || !descriptor.assetDiscovery && !descriptor.assetImport) {
             return;
         }
@@ -375,13 +372,13 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                 fileNameElem = hostElement.shadowRoot!.getElementById('filename-elem') as HTMLInputElement,
                 fileUploadBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("fileupload-btn") as OrMwcInput,
                 str = fileInputElem.value;
-
+            
             if (!str) {
                 return;
             }
-
+            
             fileUploadBtn.disabled = false;
-
+            
             let i;
             if (str.lastIndexOf('\\')) {
                 i = str.lastIndexOf('\\') + 1;
@@ -394,7 +391,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         const discoverAssets = () => {
             const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
                 cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
-
+            
             if (!discoverBtn || !cancelBtn) {
                 return false;
             }
@@ -402,7 +399,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             cancelBtn.hidden = false;
             discoverBtn.disabled = true;
             discoverBtn.label = i18next.t("discovering") + '...';
-
+            
             manager.rest.api.AgentResource.doProtocolAssetDiscovery(asset.id!)
                 .then(response => {
                     if (response.status !== 200) {
@@ -422,15 +419,15 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                     discoverBtn.label = i18next.t("discoverAssets");
                 });
         }
-
+        
         const cancelDiscovery = () => {
             const discoverBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("discover-btn") as OrMwcInput,
                 cancelBtn: OrMwcInput = hostElement.shadowRoot!.getElementById("cancel-discover-btn") as OrMwcInput;
-
+            
             discoverBtn.disabled = false;
             discoverBtn.label = i18next.t("discoverAssets");
             cancelBtn.hidden = true;
-
+            
             // TODO: cancel the request to the manager
         }
 
@@ -442,14 +439,14 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             }
 
             fileUploadBtn.disabled = true;
-
+            
             const fileInputElem = hostElement.shadowRoot!.getElementById('fileupload-elem') as HTMLInputElement;
             if (fileInputElem) {
                 const reader = new FileReader();
                 if (fileInputElem.files && fileInputElem.files.length) {
                     reader.readAsDataURL(fileInputElem.files[0]); //convert to base64
                 }
-
+                
                 reader.onload = () => {
                     if (!reader.result) {
                         showSnackbar(undefined, "Something went wrong, please try again", i18next.t("dismiss"));
@@ -481,12 +478,12 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
                             .finally(() => {
                                 fileUploadBtn.disabled = false;
                             });
-
+                  
                     }
                 }
             }
         }
-
+        
         let content: TemplateResult = html``;
 
         if (descriptor.assetImport) {
@@ -508,7 +505,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         } else {
             showSnackbar(undefined, "agent type doesn't support a known protocol to add assets", i18next.t("dismiss"));
         }
-
+        
         return html`
             <style>
                 [hidden] {
@@ -517,11 +514,11 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             </style>
             ${content}
         `;
-
+        
     }
 
     // This is not something that should be part of the standard asset-viewer
-    if (panelConfig.type === "survey") {
+    if (panelConfig && panelConfig.type === "survey") {
         return html``;
         // return html`
         //     <or-survey id="survey" .surveyId="${asset.id}"></or-survey>
@@ -529,14 +526,14 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
     }
 
     // This is not something that should be part of the standard asset-viewer
-    if (panelConfig.type === "survey-results") {
+    if (panelConfig && panelConfig.type === "survey-results") {
         return html``;
         // return html`
         //     <or-survey-results id="survey-results" .survey="${asset}"></or-survey-results>
         // `;
     }
 
-    if (panelConfig.type === "history") {
+    if (panelConfig && panelConfig.type === "history") {
         // Special handling for history panel which shows an attribute selector and a graph/data table of historical values
         const historyConfig = panelConfig as HistoryPanelConfig;
         const includedAttributes = historyConfig.include ? historyConfig.include : undefined;
@@ -572,18 +569,8 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             const label = Util.getAttributeLabel(attr, descriptors[0], asset.type, true);
             return [attr.name, label];
         });
-
-        let attrName: string = historyAttrs[0].name!;
-        onRenderComplete.addCallback(() => {
-            if (hostElement.shadowRoot && historyAttrs.length > 1 && panelConfig.type === "history") {
-                const historyAttributePicker = hostElement.shadowRoot.getElementById("history-attribute-picker") as OrMwcInput;
-                // as callback's are not reset on asset select in asset tree, need to check if history select dom elem exists
-                if (historyAttributePicker) {
-                    attrName = historyAttributePicker.value;
-                }
-            }
-            attributeChanged(attrName);
-        });
+        const attrName: string = historyAttrs[0].name!;
+        onRenderComplete.addCallback(() => attributeChanged(attrName));
         return html`
             <style>
                or-attribute-history{
@@ -624,7 +611,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         `;
     }
 
-    if (panelConfig.type === "group") {
+    if (panelConfig && panelConfig.type === "group") {
 
         if (asset.type !== "GroupAsset") {
             return;
@@ -644,7 +631,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
         let availableAttributes: string[] = [];
         let selectedAttributes: string[] = [];
 
-
+      
         if (groupConfig.childAssetTypes && groupConfig.childAssetTypes[childAssetType]) {
             availableAttributes = groupConfig.childAssetTypes[childAssetType].availableAttributes ? groupConfig.childAssetTypes[childAssetType].availableAttributes! : [];
             selectedAttributes = groupConfig.childAssetTypes[childAssetType].selectedAttributes ? groupConfig.childAssetTypes[childAssetType].selectedAttributes! : [];
@@ -776,43 +763,7 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
             `;
     }
 
-    if (panelConfig.type === "linkedUsers") {
-
-        const hasReadAdminRole = manager.hasRole(ClientRole.READ_ADMIN);
-
-        // Hide the panel if user doesn't have permission
-        const panelElem = hostElement.shadowRoot!.getElementById('linkedUsers-panel');
-        if (panelElem) {
-            panelElem.hidden = !hasReadAdminRole;
-        }
-
-        if (!hasReadAdminRole) {
-            return;
-        }
-
-        getLinkedUsers(asset).then((assetLinkInfos) => {
-            const panelElem = hostElement.shadowRoot!.getElementById('linkedUsers-panel');
-            const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName + "-user-table") as OrMwcTable;
-            userTable.options = {stickyFirstColumn:false};
-            userTable.headers = ["Username", "Roles", "Restricted user"];
-            userTable.rows = assetLinkInfos.sort(Util.sortByString(u => u.usernameAndId)).map(assetLinkInfo => {
-                return [
-                    assetLinkInfo.usernameAndId,
-                    assetLinkInfo.roles.join(", "),
-                    assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
-                ];
-            });
-
-            if (panelElem) {
-                panelElem.hidden = assetLinkInfos.length === 0;
-                onRenderComplete.startCallbacks().then(() => {
-                    OrAssetViewer.generateGrid(hostElement.shadowRoot);
-                });
-            }
-        });
-
-        return html`<or-mwc-table .id="${panelName}-user-table"></or-mwc-table>`;
-    }
+    return undefined;
 }
 
 export function getAttributeTemplate(asset: Asset, attribute: Attribute<any>, hostElement: LitElement, viewerConfig: AssetViewerConfig, panelConfig: PanelConfig, itemConfig: InfoPanelItemConfig) {
@@ -940,57 +891,6 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
-interface UserAssetLinkInfo {
-    usernameAndId: string;
-    roles: string[];
-    restrictedUser: boolean;
-}
-
-async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAssetLinkInfo> {
-    const userId = userAssetLink.id!.userId!;
-    const username = userAssetLink.userFullName!;
-
-    const roleNames = await manager.rest.api.UserResource.getUserRoles(manager.displayRealm, userId)
-        .then((response) => {
-            return response.data.filter(role => role.composite).map(r => r.name!);
-        })
-        .catch((err) => {
-            console.info('User not allowed to get roles', err);
-            return [];
-        });
-
-    const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
-        .then((rolesRes) => {
-            return rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
-        });
-
-    return {
-        usernameAndId: username,
-        roles: roleNames,
-        restrictedUser: isRestrictedUser
-    };
-}
-
-async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
-
-    try {
-        return await manager.rest.api.AssetResource.getUserAssetLinks(
-            {realm: manager.displayRealm, assetId: asset.id}
-        ).then((response) => {
-            const userAssetLinks = response.data;
-            const infoPromises = userAssetLinks.map(userAssetLink => {
-                return getLinkedUserInfo(userAssetLink)
-            });
-
-            return Promise.all(infoPromises);
-        });
-
-    } catch (e) {
-        console.log("Failed to get child assets: " + e);
-        return [];
-    }
-}
-
 export async function saveAsset(asset: Asset): Promise<SaveResult> {
 
     const isUpdate = !!asset.id && asset.version !== undefined;
@@ -1080,10 +980,6 @@ export const DEFAULT_VIEWER_CONFIG: AssetViewerConfig = {
         },
         history: {
             type: "history"
-        },
-        linkedUsers: {
-            type: "linkedUsers",
-            title: "linkedUsers",
         }
     }
 };
@@ -1118,10 +1014,8 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     protected _loading: boolean = false;
 
     @state()
-    protected _assetModified = false;
-
-    @state()
     protected _validationResults: ValidatorResult[] = [];
+    protected _assetModified = false;
     protected _viewerConfig?: AssetViewerConfig;
     protected _attributes?: { [index: string]: Attribute<any> };
     protected resizeHandler = () => OrAssetViewer.generateGrid(this.shadowRoot);
@@ -1144,7 +1038,6 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         this.addEventListener(OrChartEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrAttributeHistoryEvent.NAME, () => OrAssetViewer.generateGrid(this.shadowRoot));
         this.addEventListener(OrEditAssetModifiedEvent.NAME, (ev: OrEditAssetModifiedEvent) => this._onAssetModified(ev.detail));
-        this.addEventListener('keyup', () => this._assetModified = true)
     }
 
     public isModified() {
@@ -1255,6 +1148,7 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
                 content = html`                
                     <div id="view-container" style="${this._viewerConfig.viewerStyles ? styleMap(this._viewerConfig.viewerStyles) : ""}">
                         ${Object.entries(this._viewerConfig.panels).map(([name, panelConfig]) => {
+        
                             if (panelConfig.hide) {
                                 return ``;
                             }

@@ -4,13 +4,13 @@ import "@openremote/or-log-viewer";
 import {ViewerConfig} from "@openremote/or-log-viewer";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
-import {Store} from "@reduxjs/toolkit";
+import {EnhancedStore} from "@reduxjs/toolkit";
 
 export interface PageLogsConfig {
     viewer?: ViewerConfig
 }
 
-export function pageLogsProvider(store: Store<AppStateKeyed>, config?: PageLogsConfig): PageProvider<AppStateKeyed> {
+export function pageLogsProvider(store: EnhancedStore<AppStateKeyed>, config?: PageLogsConfig): PageProvider<AppStateKeyed> {
     return {
         name: "logs",
         routes: [
@@ -48,7 +48,7 @@ export class PageLogs extends Page<AppStateKeyed> {
         return "logs";
     }
 
-    constructor(store: Store<AppStateKeyed>) {
+    constructor(store: EnhancedStore<AppStateKeyed>) {
         super(store);
     }
 

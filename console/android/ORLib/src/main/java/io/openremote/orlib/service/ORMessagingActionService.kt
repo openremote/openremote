@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.net.Uri
 import io.openremote.orlib.R
 import android.text.TextUtils
-import io.openremote.orlib.ORConstants
 import io.openremote.orlib.ui.OrMainActivity
 
 class ORMessagingActionService : IntentService("org.openremote.android.ORMessagingActionService") {
@@ -26,7 +25,7 @@ class ORMessagingActionService : IntentService("org.openremote.android.ORMessagi
         val consoleId = getSharedPreferences(
             applicationContext.getString(R.string.app_name),
             MODE_PRIVATE
-        ).getString(ORConstants.CONSOLE_ID_KEY, "")
+        ).getString("consoleId", "")
         if (!TextUtils.isEmpty(consoleId)) {
             notificationResource!!.notificationAcknowledged(
                 notificationId,

@@ -12,10 +12,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.*
-import io.openremote.orlib.ORConstants
 import io.openremote.orlib.R
 import io.openremote.orlib.ui.OrMainActivity
-import java.lang.invoke.ConstantCallSite
 import java.net.URL
 import java.util.*
 import java.util.logging.Level
@@ -42,10 +40,12 @@ class GeofenceProvider(val context: Context) {
     }
 
     companion object {
-        const val locationPermissionAskedKey = "LocationPermissionAsked"
-        const val geofencesKey = "geofences"
-        const val geofenceDisabledKey = "geofenceDisabled"
-        const val locationResponseCode = 101
+        val locationPermissionAskedKey = "LocationPermissionAsked"
+        val baseUrlKey = "baseUrl"
+        val consoleIdKey = OrMainActivity.CONSOLE_ID_KEY
+        val geofencesKey = "geofences"
+        val geofenceDisabledKey = "geofenceDisabled"
+        val locationResponseCode = 101
 
         val JSON = ObjectMapper()
         val LOG = Logger.getLogger(GeofenceProvider::class.java.name)
@@ -128,7 +128,7 @@ class GeofenceProvider(val context: Context) {
 
         private fun getGeofencePendingIntent(context: Context, baseURL: String): PendingIntent {
             val intent = Intent(context, GeofenceTransitionsIntentService::class.java)
-            intent.putExtra(ORConstants.BASE_URL_KEY, baseURL)
+            intent.putExtra(baseUrlKey, baseURL)
             // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
             // addGeofences() and removeGeofences().
             return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -139,7 +139,7 @@ class GeofenceProvider(val context: Context) {
                 context.getString(R.string.app_name),
                 Context.MODE_PRIVATE
             )
-            return sharedPreferences.getString(ORConstants.BASE_URL_KEY, null)
+            return sharedPreferences.getString(baseUrlKey, null)
         }
 
         private fun getConsoleId(context: Context): String? {
@@ -147,7 +147,7 @@ class GeofenceProvider(val context: Context) {
                 context.getString(R.string.app_name),
                 Context.MODE_PRIVATE
             )
-            return sharedPreferences.getString(ORConstants.CONSOLE_ID_KEY, null)
+            return sharedPreferences.getString(consoleIdKey, null)
         }
     }
 
@@ -213,8 +213,8 @@ class GeofenceProvider(val context: Context) {
             context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
 
         sharedPreferences.edit()
-            .putString(ORConstants.BASE_URL_KEY, baseUrl)
-            .putString(ORConstants.CONSOLE_ID_KEY, consoleId)
+            .putString(baseUrlKey, baseUrl)
+            .putString(consoleIdKey, consoleId)
             .remove(geofenceDisabledKey)
             .apply()
 
@@ -251,8 +251,8 @@ class GeofenceProvider(val context: Context) {
         removeGeofences(getGeofences(context))
 
         sharedPreferences.edit()
-            .remove(ORConstants.BASE_URL_KEY)
-            .remove(ORConstants.CONSOLE_ID_KEY)
+            .remove(baseUrlKey)
+            .remove(consoleIdKey)
             .remove(geofencesKey)
             .putBoolean(geofenceDisabledKey, true)
             .apply()

@@ -95,7 +95,7 @@ export function headerItemUsers<S extends AppStateKeyed, A extends AnyAction>(or
         value: "users",
         href: "users",
         text: "user_plural",
-        roles: ["read:admin", "write:admin"]
+        roles: ["write:admin"]
     };
 }
 export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {
@@ -104,7 +104,7 @@ export function headerItemRoles<S extends AppStateKeyed, A extends AnyAction>(or
         value: "roles",
         href: "roles",
         text: "role_plural",
-        roles: ["read:admin", "write:admin"]
+        roles: ["write:admin"]
     };
 }
 export function headerItemRealms<S extends AppStateKeyed, A extends AnyAction>(orApp: OrApp<S>): HeaderItem {

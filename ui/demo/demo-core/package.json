@@ -15,8 +15,8 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "workspace:*",
-    "@openremote/or-icon": "^1.1.0",
-    "@openremote/or-translate": "^1.1.0",
+    "@openremote/or-icon": "^1.0.4",
+    "@openremote/or-translate": "^1.0.4",
     "i18next": "^21.5.3",
     "lit": "^2.0.2"
   },

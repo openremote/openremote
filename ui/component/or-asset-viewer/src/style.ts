@@ -56,10 +56,6 @@ export const panelStyles = css`
             border-left: none;
         }
     }
-    
-    #linkedUsers-panel {
-        min-height: 200px;
-    }
 `;
 
 // language=CSS
