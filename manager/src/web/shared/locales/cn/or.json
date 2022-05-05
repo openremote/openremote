@@ -96,6 +96,8 @@
   "path": "路径",
   "showOnMap": "在地图显示",
   "noAssetSelected": "请选择左列资源",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "加载中...",
   "noAssetsFound": "No assets found",
   "location": "位置",

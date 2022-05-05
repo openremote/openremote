@@ -105,6 +105,8 @@
   "path": "Pad",
   "showOnMap": "Tonen op kaart",
   "noAssetSelected": "Kies een asset uit de lijst aan de linkerkant",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "noAssetTypeSelected": "Kies een asset type uit de lijst aan de linkerkant",
   "loading": "Aan het laden...",
   "noAssetsFound": "Geen assets gevonden",

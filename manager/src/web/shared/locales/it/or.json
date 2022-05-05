@@ -96,6 +96,8 @@
   "path": "Percorso",
   "showOnMap": "Mostra sulla mappa",
   "noAssetSelected": "Seleziona un asset sulla sinistra",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "In caricamento...",
   "noAssetsFound": "No assets found",
   "location": "Posizione",

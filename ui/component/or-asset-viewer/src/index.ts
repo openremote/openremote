@@ -1105,6 +1105,9 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
     @property({type: String})
     public assetId?: string;
 
+    @property({type: Array})
+    public assetsIds: string[] = [];
+
     @property({type: Object})
     public config?: ViewerConfig;
 
@@ -1220,6 +1223,17 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         if (this._loading) {
             return html`
                 <div class="msg"><or-translate value="loading"></or-translate></div>
+            `;
+        }
+
+         if (!this.asset && !this.assetId && this.assetsIds.length > 1) {
+            return html `
+                <div class="msg">
+                    <div class="multipleAssetsView">
+                        <or-translate value="multiAssetSelected" options="${ { assetNbr: this.assetsIds.length } }"></or-translate>
+                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("changeParent")}" outlined></or-mwc-input>
+                    </div>
+                </div>
             `;
         }
 

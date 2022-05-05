@@ -96,6 +96,8 @@
   "path": "Chemin",
   "showOnMap": "Montrer sur la carte",
   "noAssetSelected": "Veuillez sélectionner une ressource à gauche",
+  "multiAssetSelected": "{{assetNbr}} ressources sélectionnées",
+  "changeParent": "Change Parent",
   "loading": "Chargement...",
   "noAssetsFound": "Aucune ressource trouvée",
   "location": "Position",

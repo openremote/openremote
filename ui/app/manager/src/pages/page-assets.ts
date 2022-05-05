@@ -185,15 +185,18 @@ export class PageAssets extends Page<AppStateKeyed>  {
             } else {
                 this._assetIds = nodes.map((node) => node.asset.id!);
                 this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
+                this._viewer.assetsIds = nodes.length > 1 ? this._assetIds : [];
                 this._updateRoute(true);
             }
         });
     }
 
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
+        console.log('chanded selection !');
         const nodes = event.detail.newNodes;
         this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
         this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
+        this._viewer.assetsIds = nodes.length > 1 ? this._assetIds : [];
         this._updateRoute(true);
     }
 

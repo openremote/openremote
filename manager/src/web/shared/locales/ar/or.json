@@ -96,6 +96,8 @@
   "path": "المسار",
   "showOnMap": "إظهار على الخريطة",
   "noAssetSelected": "الرجاء إختيار مكون من اليسار",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "جاري التحميل",
   "noAssetsFound": "No assets found",
   "location": "الموقع",

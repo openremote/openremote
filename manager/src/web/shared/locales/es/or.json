@@ -96,6 +96,8 @@
   "path": "Ruta",
   "showOnMap": "Mostrar en el mapa",
   "noAssetSelected": "Seleccione un activo a la izquierda",
+  "multiAssetSelected": "{{assetNbr}} assets selected",
+  "changeParent": "Change Parent",
   "loading": "Cargando...",
   "noAssetsFound": "No assets found",
   "location": "Posición",

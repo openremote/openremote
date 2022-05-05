@@ -242,6 +242,15 @@ export const style = css`
         cursor: pointer;
     }
     
+    .multipleAssetsView {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .multipleAssetsView > *:first-child {
+        margin: 30px;
+    }
+    
     @media screen and (max-width: 1200px) {
         #name-input {
             width: 150px;
