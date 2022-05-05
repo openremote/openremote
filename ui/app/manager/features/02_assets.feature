@@ -64,10 +64,23 @@ Feature: Assets
    Scenario Outline: Set configure item for Insight and Rule
         When Go to asset "<name>" info page
         Then Go to modify mode
-        Then Select "<item_1>" and "<item_2>" on "<attribute>"
+        Then Select "<item_1>" and "<item_2>" on "<attribute_1>"
+        Then Select "<item_1>" and "<item_2>" on "<attribute_2>"
         Then Save
 
         Examples:
-            | name    | attribute     | item_1       | item_2            |
-            | Battery | energyLevel   | Rule state   | Store data points |
-            | Solar   | power         | Rule state   | Store data points |
+            | name    | attribute_1   | attribute_2   | item_1       | item_2            |
+            | Battery | energyLevel   | power         | Rule state   | Store data points |
+            | Solar   | power         | powerForecast | Rule state   | Store data points |
+
+     @Desktop @low_priority @sorting
+     Scenario Outline: Sort the assets
+        When Change the sorting method to "<sorting>"
+        Then We should the assets are sorted as the sorting method
+
+        Examples:
+            | sorting    | 
+            | Name       |
+            | Type       |
+            | Create on  |
+            | Status     |

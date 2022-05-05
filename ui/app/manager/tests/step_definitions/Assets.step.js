@@ -133,9 +133,10 @@ Then('Select {string} and {string} on {string}', async function (item1, item2, a
 
     await page.locator(`td:has-text("${attribute}")`).first().click()
     await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
-    await page.locator('li:nth-child(17) .mdc-checkbox .mdc-checkbox__native-control').check() // No.17 is the rule state
-    await page.locator('li:nth-child(20) .mdc-checkbox .mdc-checkbox__native-control').check() // No.20 is the store data points
+    await this.click(`li[role="checkbox"]:has-text("${item1}")`)
+    await this.click(`li[role="checkbox"]:has-text("${item2}")`)
     await this.click('div[role="alertdialog"] button:has-text("Add")')
+    await page.locator(`td:has-text("${attribute}")`).first().click()
 })
 
 
