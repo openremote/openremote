@@ -192,7 +192,6 @@ export class PageAssets extends Page<AppStateKeyed>  {
     }
 
     protected _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
-        console.log('chanded selection !');
         const nodes = event.detail.newNodes;
         this._assetIds = event.detail.newNodes.map((node) => node.asset.id!);
         this._viewer.assetId = nodes.length === 1 ? nodes[0].asset!.id : undefined;
