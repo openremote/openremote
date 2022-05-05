@@ -570,19 +570,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         add().name(rule.name)
                 .description(rule.description)
                 .priority(rule.priority)
-                .when(facts -> {
-                    Object result;
-                    try {
-                        result = condition.evaluate(facts);
-                    } catch (Exception ex) {
-                        throw new RuntimeException("Error evaluating condition of rule '" + rule.name + "': " + ex.getMessage(), ex);
-                    }
-                    if (result instanceof Boolean) {
-                        return result;
-                    } else {
-                        throw new IllegalArgumentException("Error evaluating condition of rule '" + rule.name + "': result is not boolean but " + result);
-                    }
-                })
+                .when(condition::evaluate)
                 .then(action);
 
         return this;
