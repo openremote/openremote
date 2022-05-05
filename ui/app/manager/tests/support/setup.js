@@ -18,7 +18,7 @@ require('dotenv').config();
  */
 
 var global = {
-    browser: ChromiumBroswer
+    browser: ChromiumBroswer,
 }
 
 class CustomWorld {
@@ -72,7 +72,7 @@ class CustomWorld {
         }
     }
 
-    async fill(locate,value){
+    async fill(locate, value) {
         await this.page?.locator(locate).fill(value)
     }
 
