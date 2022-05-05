@@ -1,6 +1,6 @@
 import {css, html} from "lit";
 import {customElement, property, query, state} from "lit/decorators.js";
-import {createSlice, EnhancedStore, PayloadAction} from "@reduxjs/toolkit";
+import {createSlice, Store, PayloadAction} from "@reduxjs/toolkit";
 import "@openremote/or-map";
 import {
     MapAssetCardConfig,
@@ -110,7 +110,7 @@ export interface PageMapConfig {
     markers?: MapMarkerAssetConfig
 }
 
-export function pageMapProvider(store: EnhancedStore<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
+export function pageMapProvider(store: Store<MapStateKeyed>, config?: PageMapConfig): PageProvider<MapStateKeyed> {
     return {
         name: "map",
         routes: [
@@ -151,7 +151,7 @@ export class PageMap extends Page<MapStateKeyed> {
             @media only screen and (min-width: 415px){
                 or-map-asset-card {
                     position: absolute;
-                    top: 20px;
+                    top: 10px;
                     right: 50px;
                     width: 320px;
                     margin: 0;
@@ -335,7 +335,7 @@ export class PageMap extends Page<MapStateKeyed> {
         return "map";
     }
 
-    constructor(store: EnhancedStore<MapStateKeyed>) {
+    constructor(store: Store<MapStateKeyed>) {
         super(store);
         this.addEventListener(OrMapAssetCardLoadAssetEvent.NAME, this.onLoadAssetEvent);
     }

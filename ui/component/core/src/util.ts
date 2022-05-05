@@ -269,6 +269,19 @@ export function arrayRemove<T>(arr: T[], item: T) {
     }
 }
 
+export function sentenceCaseToCamelCase(str: string | undefined): string {
+    if (str === undefined || str === null) {
+        return "";
+    }
+
+    return str.split(' ').map((value: string, index: number): string => {
+        if (index === 0) {
+            return value[0].toLowerCase() + value.substring(1);
+        }
+        return value[0].toUpperCase() + value.substring(1);
+    }).join('');
+}
+
 export function camelCaseToSentenceCase(str: string | undefined): string {
     if (str === undefined || str === null) {
         return "";
@@ -514,7 +527,7 @@ export function getValueAsString(value: any, formatProvider: () => ValueFormat |
 
             const format = formatProvider && formatProvider();
 
-            if (format) {
+            if (format && Object.keys(format).length !== 0) {
                 if (typeof(value) === "number") {
                     if (format.asBoolean) {
                         value = !!value;

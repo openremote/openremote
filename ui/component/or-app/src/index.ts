@@ -19,7 +19,7 @@ import manager, {Auth, DefaultColor2, DefaultColor3, DefaultColor4, ManagerConfi
 import {DEFAULT_LANGUAGES, HeaderConfig} from "./or-header";
 import {OrMwcDialog, showErrorDialog, showDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrMwcSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
-import {AnyAction, EnhancedStore, Unsubscribe} from "@reduxjs/toolkit";
+import {AnyAction, Store, Unsubscribe} from "@reduxjs/toolkit";
 import {ThunkMiddleware} from "redux-thunk";
 import {AppStateKeyed, updatePage, updateRealm} from "./app";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -98,7 +98,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
     protected _activeMenu?: string;
 
     protected _realms!: Tenant[];
-    protected _store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>;
+    protected _store: Store<S, AnyAction>;
     protected _storeUnsubscribe!: Unsubscribe;
 
     // language=CSS
@@ -150,7 +150,7 @@ export class OrApp<S extends AppStateKeyed> extends LitElement {
         `;
     }
 
-    constructor(store: EnhancedStore<S, AnyAction, ReadonlyArray<ThunkMiddleware<S>>>) {
+    constructor(store: Store<S, AnyAction>) {
         super();
         this._store = store;
 

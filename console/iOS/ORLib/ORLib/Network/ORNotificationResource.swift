@@ -17,9 +17,10 @@ public class ORNotificationResource: NSObject, URLSessionDelegate {
 
     public func notificationDelivered(notificationId : Int64, targetId : String) {
         if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-           let project = userdefaults.string(forKey: DefaultsKey.projectKey),
+           let host = userdefaults.string(forKey: DefaultsKey.hostKey),
            let realm = userdefaults.string(forKey: DefaultsKey.realmKey) {
-            guard let urlRequest = URL(string: "https://\(project).openremote.io/\(realm)/notification/\(notificationId)/delivered?targetId=\(targetId)") else { return }
+            let url = host.appending("/api/\(realm)")
+            guard let urlRequest = URL(string: "\(url)/notification/\(notificationId)/delivered?targetId=\(targetId)") else { return }
             let request = NSMutableURLRequest(url: urlRequest)
             request.httpMethod = "PUT"
             let sessionConfiguration = URLSessionConfiguration.default
@@ -41,9 +42,10 @@ public class ORNotificationResource: NSObject, URLSessionDelegate {
 
     public func notificationAcknowledged(notificationId : Int64, targetId : String, acknowledgement: String) {
         if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-           let project = userdefaults.string(forKey: DefaultsKey.projectKey),
+           let host = userdefaults.string(forKey: DefaultsKey.hostKey),
            let realm = userdefaults.string(forKey: DefaultsKey.realmKey) {
-            guard let urlRequest = URL(string: "https://\(project).openremote.io/\(realm)/notification/\(notificationId)/acknowledged?targetId=\(targetId)") else { return }
+            let url = host.appending("/api/\(realm)")
+            guard let urlRequest = URL(string: "\(url)/notification/\(notificationId)/acknowledged?targetId=\(targetId)") else { return }
             let request = NSMutableURLRequest(url: urlRequest)
             request.httpMethod = "PUT"
 

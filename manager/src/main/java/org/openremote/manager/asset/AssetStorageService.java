@@ -1225,6 +1225,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (query.access == null)
             query.access = PRIVATE;
 
+        // Do some sanity checks on query values and return empty result set if empty query parameters
+        if (query.ids != null && query.ids.length == 0) {
+            return Collections.emptyList();
+        }
+        if (query.paths != null && query.paths.length == 0) {
+            return Collections.emptyList();
+        }
+        if (query.types != null && query.types.length == 0) {
+            return Collections.emptyList();
+        }
+        if (query.names != null && query.names.length == 0) {
+            return Collections.emptyList();
+        }
+        if (query.userIds != null && query.userIds.length == 0) {
+            return Collections.emptyList();
+        }
+        if (query.parents != null && query.parents.length == 0) {
+            return Collections.emptyList();
+        }
+
         // Default to order by creation date if the query may return multiple results
         if (query.orderBy == null && query.ids == null)
             query.orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
@@ -1573,7 +1593,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(" from top_level_assets A ");
         }
 
-        if ((!recursive || level == 3) && query.userIds != null && query.userIds.length > 0) {
+        if ((!recursive || level == 3) && query.userIds != null) {
             sb.append("right join USER_ASSET_LINK UA on A.ID = UA.ASSET_ID ");
         }
 
@@ -1633,7 +1653,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             return false;
         }
 
-        if (level == 1 && query.ids != null && query.ids.length > 0) {
+        if (level == 1 && query.ids != null) {
             final int pos = binders.size() + 1;
             sb.append(" and A.ID = ANY(?")
                 .append(pos)
@@ -1641,7 +1661,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             binders.add((em, st) -> st.setParameter(pos, query.ids, StringArrayType.INSTANCE));
         }
 
-        if (level == 1 && query.names != null && query.names.length > 0) {
+        if (level == 1 && query.names != null) {
 
             sb.append(" and (");
             boolean isFirst = true;
@@ -1659,7 +1679,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(")");
         }
 
-        if (query.parents != null && query.parents.length > 0) {
+        if (query.parents != null) {
 
             sb.append(" and (");
             boolean isFirst = true;
@@ -1688,7 +1708,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(")");
         }
 
-        if (level == 1 && query.paths != null && query.paths.length > 0) {
+        if (level == 1 && query.paths != null) {
             sb.append(" and (");
             Arrays.stream(query.paths)
                 .map(p -> String.join(".", p.path))
@@ -1708,7 +1728,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add((em, st) -> st.setParameter(pos, query.tenant.realm));
             }
 
-            if (query.userIds != null && query.userIds.length > 0) {
+            if (query.userIds != null) {
                 final int pos = binders.size() + 1;
                 sb.append(" and UA.USER_ID = ANY(?")
                     .append(pos)
@@ -1720,7 +1740,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
-            if (query.types != null && query.types.length > 0) {
+            if (query.types != null) {
                 String[] resolvedTypes = getResolvedAssetTypes(query.types);
                 final int pos = binders.size() + 1;
                 sb.append(" and A.TYPE = ANY(?")

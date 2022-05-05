@@ -20,6 +20,7 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BaseJsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
@@ -84,6 +85,8 @@ public final class ValueType {
     public static final ValueDescriptor<MultivaluedStringMap> MULTIVALUED_TEXT_MAP = new ValueDescriptor<>("multivaluedTextMap", MultivaluedStringMap.class);
 
     public static final ValueDescriptor<ObjectNode> JSON_OBJECT = new ValueDescriptor<>("JSONObject", ObjectNode.class);
+
+    public static final ValueDescriptor<ArrayNode> JSON_ARRAY = new ValueDescriptor<>("JSONArray", ArrayNode.class);
 
     public static final ValueDescriptor<BaseJsonNode> JSON = new ValueDescriptor<>("JSON", BaseJsonNode.class);
 

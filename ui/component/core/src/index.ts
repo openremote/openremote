@@ -137,10 +137,10 @@ export function normaliseConfig(config: ManagerConfig): ManagerConfig {
         if (!normalisedConfig.keycloakUrl || normalisedConfig.keycloakUrl === "") {
             // Assume keycloak is running on same host as the manager
             normalisedConfig.keycloakUrl = normalisedConfig.managerUrl + "/auth";
-        } else {
-            // Normalise by stripping any trailing slashes
-            normalisedConfig.keycloakUrl = normalisedConfig.keycloakUrl.replace(/\/+$/, "");
         }
+
+        // Normalise by stripping any trailing slashes
+        normalisedConfig.keycloakUrl = normalisedConfig.keycloakUrl.replace(/\/+$/, "");
     }
 
     if (normalisedConfig.consoleAutoEnable === undefined) {
@@ -310,6 +310,7 @@ export class Manager implements EventProviderFactory {
     };
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
+    public _authServerUrl: string = "";
     private _listeners: EventCallback[] = [];
     private _console!: Console;
     private _consoleAppConfig?: ConsoleAppConfig;
@@ -347,14 +348,20 @@ export class Manager implements EventProviderFactory {
             console.log("Already initialised");
         }
 
-        let success = false;
         this._config = normaliseConfig(config);
 
+        let success = await this.loadManagerInfo();
+
         if (this._config.auth === Auth.BASIC) {
-            // BASIC auth will likely require UI so let's init translation at least
+            // BASIC auth will likely require UI so lets init translation at least
             success = await this.doTranslateInit() && success;
             success = await this.doAuthInit();
         } else {
+
+            if (this._authServerUrl) {
+                this.config.keycloakUrl = this._authServerUrl;
+            }
+
             success = await this.doAuthInit();
 
             // If failed then we can assume keycloak auth requested but unavailable
@@ -364,10 +371,6 @@ export class Manager implements EventProviderFactory {
                 this._config.auth = Auth.BASIC;
                 success = await this.doAuthInit();
             }
-        }
-
-        if (success) {
-            success = await this.doInit();
         }
 
         if (success) {
@@ -382,6 +385,8 @@ export class Manager implements EventProviderFactory {
             success = await this.doDescriptorsInit();
             success = await this.getConsoleAppConfig();
         }
+
+        this.doIconInit();
 
         // TODO: Reinstate this once websocket supports anonymous connections
         // if (success) {
@@ -403,7 +408,7 @@ export class Manager implements EventProviderFactory {
         return success;
     }
 
-    protected async doInit(): Promise<boolean> {
+    protected async loadManagerInfo(): Promise<boolean> {
         // Check manager exists by calling the info endpoint
         try {
             const json = await new Promise<any>((resolve, reject) => {
@@ -418,18 +423,7 @@ export class Manager implements EventProviderFactory {
                 oReq.send();
             });
             this._managerVersion = json && json.version ? json.version : "";
-
-            // Load material design and OR icon sets if requested
-            if (this._config.loadIcons) {
-                IconSets.addIconSet(
-                    "mdi",
-                    createMdiIconSet(manager.config.managerUrl!)
-                );
-                IconSets.addIconSet(
-                    "or",
-                    createSvgIconSet(OrIconSet.size, OrIconSet.icons)
-                );
-            }
+            this._authServerUrl = json && json.authServerUrl ? json.authServerUrl : "";
 
             return true;
         } catch (e) {
@@ -609,6 +603,20 @@ export class Manager implements EventProviderFactory {
         } catch (e) {
             this._setError(ORError.CONSOLE_ERROR);
             return false;
+        }
+    }
+
+    protected doIconInit() {
+        // Load material design and OR icon sets if requested
+        if (this._config.loadIcons) {
+            IconSets.addIconSet(
+                "mdi",
+                createMdiIconSet(manager.config.managerUrl!)
+            );
+            IconSets.addIconSet(
+                "or",
+                createSvgIconSet(OrIconSet.size, OrIconSet.icons)
+            );
         }
     }
 
@@ -914,7 +922,7 @@ export class Manager implements EventProviderFactory {
             console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
         } catch (e) {
             // Refresh token expired (either SSO max session duration or offline idle timeout), see
-            // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
+            // OR_IDENTITY_SESSION_MAX_MINUTES and OR_IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
             console.info("Access token update failed, refresh token expired, login required");
             this._keycloak!.clearToken();
             this._keycloak!.login();

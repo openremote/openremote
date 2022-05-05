@@ -29,21 +29,21 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.logging.LogManager;
 
-import static org.openremote.model.Container.DEV_MODE;
+import static org.openremote.model.Container.OR_DEV_MODE;
 
 public class LogUtil {
 
-    public static final String LOGGING_CONFIG_FILE = "LOGGING_CONFIG_FILE";
+    public static final String OR_LOGGING_CONFIG_FILE = "OR_LOGGING_CONFIG_FILE";
 
     protected LogUtil() {
     }
 
     /**
      * If system property <code>java.util.logging.config.file</code> has not been set, try to load the
-     * logging configuration specified in environment variable <code>LOGGING_CONFIG_FILE</code> as a file.
+     * logging configuration specified in environment variable <code>OR_LOGGING_CONFIG_FILE</code> as a file.
      * If this wasn't set, try to find the file <code>/deployment/manager/logging.properties</code>.
      * If this also wasn't found, load the given default logging configuration from the classpath
-     * (logging-dev.properties when DEV_MODE=true otherwise logging.properties).
+     * (logging-dev.properties when OR_DEV_MODE=true otherwise logging.properties).
      * <p>
      * This method should be called in a <code>static { ... }</code> block in the "first" class of your
      * application (typically where your <code>main()</code> method is located).
@@ -52,10 +52,10 @@ public class LogUtil {
         // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
             // Load the logging configuration file specified with an environment variable
-            if (!TextUtil.isNullOrEmpty(System.getenv(LOGGING_CONFIG_FILE))) {
-                Path loggingConfigFile = Paths.get(System.getenv(LOGGING_CONFIG_FILE));
+            if (!TextUtil.isNullOrEmpty(System.getenv(OR_LOGGING_CONFIG_FILE))) {
+                Path loggingConfigFile = Paths.get(System.getenv(OR_LOGGING_CONFIG_FILE));
                 if (!Files.isReadable(loggingConfigFile)) {
-                    throw new ExceptionInInitializerError("LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile.toAbsolutePath());
+                    throw new ExceptionInInitializerError("OR_LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile.toAbsolutePath());
                 }
                 try (InputStream is = Files.newInputStream(loggingConfigFile)) {
                     System.out.println("Using logging configuration: " + loggingConfigFile.toAbsolutePath());
@@ -74,7 +74,7 @@ public class LogUtil {
                     }
                 } else {
                     // Or load a default configuration from the classpath
-                    String devModeStr = System.getenv(DEV_MODE);
+                    String devModeStr = System.getenv(OR_DEV_MODE);
                     boolean isDevMode = devModeStr == null || "TRUE".equals(devModeStr.toUpperCase(Locale.ROOT));
                     String loggingFile = isDevMode ? "logging-dev.properties" : "logging.properties";
                     try (InputStream is = Container.class.getClassLoader().getResourceAsStream(loggingFile)) {

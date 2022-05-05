@@ -9,7 +9,7 @@ import {customElement, property} from "lit/decorators.js";
 import manager, { OREvent, DefaultColor3 } from "@openremote/core";
 import "@openremote/or-components/or-panel";
 import "@openremote/or-translate";
-import { EnhancedStore } from "@reduxjs/toolkit";
+import { Store } from "@reduxjs/toolkit";
 import {Page, PageProvider} from "@openremote/or-app";
 import {AppStateKeyed} from "@openremote/or-app";
 import { ClientRole, Tenant } from "@openremote/model";
@@ -20,7 +20,7 @@ import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
-export function pageRealmsProvider(store: EnhancedStore<AppStateKeyed>): PageProvider<AppStateKeyed> {
+export function pageRealmsProvider(store: Store<AppStateKeyed>): PageProvider<AppStateKeyed> {
   return {
     name: "realms",
     routes: ["realms"],
@@ -222,7 +222,7 @@ export class PageRealms extends Page<AppStateKeyed> {
     return "realm_plural";
   }
 
-  constructor(store: EnhancedStore<AppStateKeyed>) {
+  constructor(store: Store<AppStateKeyed>) {
     super(store);
     this._getTenants();
   }

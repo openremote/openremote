@@ -435,5 +435,15 @@
     "invalidJSON": "Invalid JSON",
     "invalidDate": "Invalid date",
     "keyAlreadyExists": "Key already exists"
+  },
+  "yes": "是的",
+  "no": "不",
+  "filter": {
+    "action": "FILTER",
+    "assetTypeLabel": "Asset type",
+    "assetTypeNone": "None",
+    "assetTypeMenuNone": "None",
+    "attributeLabel": "Attribute",
+    "attributeValueLabel": "Attribute value"
   }
 }

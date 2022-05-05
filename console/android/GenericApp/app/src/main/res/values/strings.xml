@@ -3,6 +3,7 @@
     <string name="app_name">OpenRemote</string>
     <string name="title_activity_project">Project</string>
     <string name="Project">Project</string>
+    <string name="Settings">Settings</string>
     <string name="OR_CONSOLE_LOAD_ERROR_URL"></string>
     <string name="OR_CONSOLE_LOAD_TIMEOUT">5000</string>
     <string name="OR_CONSOLE_IGNORE_PAGE_ERRORS">true</string>

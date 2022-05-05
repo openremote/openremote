@@ -33,10 +33,10 @@
         <activity
             android:name=".ui.SplashActivity"
             android:exported="true"
-            android:label="@string/app_name">
+            android:label="@string/app_name"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
@@ -47,11 +47,17 @@
         <activity
             android:name=".ui.ProjectActivity"
             android:exported="true"
-            android:label="@string/title_activity_project" />
-        <activity android:name="io.openremote.orlib.ui.OrMainActivity" />
-        <activity android:name="io.openremote.orlib.ui.OrPrivacyPolicyActivity" />
+            android:label="@string/title_activity_project"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="io.openremote.orlib.ui.OrMainActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="io.openremote.orlib.ui.OrPrivacyPolicyActivity"
+            android:screenOrientation="portrait" />
 
-        <service android:name="io.openremote.orlib.service.ORFirebaseMessagingService"
+        <service
+            android:name="io.openremote.orlib.service.ORFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -59,7 +65,8 @@
         </service>
         <service android:name="io.openremote.orlib.service.ORMessagingActionService" />
 
-        <receiver android:name="io.openremote.orlib.service.GeofenceBootCompleteReceiver"
+        <receiver
+            android:name="io.openremote.orlib.service.GeofenceBootCompleteReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

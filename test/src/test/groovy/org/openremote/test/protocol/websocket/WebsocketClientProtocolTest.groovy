@@ -62,8 +62,8 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.security.ManagerIdentityProvider.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD
+import static org.openremote.manager.security.ManagerIdentityProvider.OR_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 import static org.openremote.model.value.MetaItemType.AGENT_LINK
@@ -141,13 +141,13 @@ class WebsocketClientProtocolTest extends Specification implements ManagerContai
         and: "a Websocket client agent is created to connect to this tests manager"
         def agent = new WebsocketAgent("Test agent")
             .setRealm(Constants.MASTER_REALM)
-            .setConnectUri("ws://127.0.0.1:$serverPort/websocket/events?Realm=master")
+            .setConnectURI("ws://127.0.0.1:$serverPort/websocket/events?Realm=master")
             .setOAuthGrant(new OAuthPasswordGrant("http://127.0.0.1:$serverPort/auth/realms/master/protocol/openid-connect/token",
                 KEYCLOAK_CLIENT_ID,
                 null,
                 null,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)))
+                getString(container.getConfig(), OR_ADMIN_PASSWORD, OR_ADMIN_PASSWORD_DEFAULT)))
             .setConnectSubscriptions([
                 new WebsocketSubscriptionImpl().body(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + ValueUtil.asJSON(
                     new EventSubscription(
