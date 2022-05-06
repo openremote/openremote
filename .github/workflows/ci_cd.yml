@@ -598,7 +598,7 @@ jobs:
         if: steps.test-backend-command.outputs.value != ''
         run: ${{ steps.test-backend-command.outputs.value }}
         timeout-minutes: 20
-        continue-on-error: true
+        #continue-on-error: true
         
       - name: Start docker frontend test services
         if: steps.test-ui-command.outputs.value != ''
