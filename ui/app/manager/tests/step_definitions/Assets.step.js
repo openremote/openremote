@@ -10,7 +10,7 @@ Then('Create a {string} with name of {string}', async function (asset, name) {
 
     await this.click('.mdi-plus')
     await this.click(`text=${asset}`)
-    await page.locator('#name-input input[type="text"]').fill(name);
+    await this.fill('#name-input input[type="text"]',name)
     await this.click('#add-btn')
 })
 

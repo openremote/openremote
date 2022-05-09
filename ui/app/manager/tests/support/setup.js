@@ -21,9 +21,30 @@ var global = {
     browser: ChromiumBroswer,
 }
 
+const assets = [
+    {
+        asset: "Electricity battery asset",
+        name: "Battery",
+    },
+    {
+        asset: "PV solar asset",
+        name: "Solar",
+    }
+]
+
 const DEFAULT_TIMEOUT = 10000;
 
 class CustomWorld {
+
+    /**
+     *  CUSTOM METHODS
+     */
+
+    /**
+     * 
+     * @param { } realm String : Realm type (admin or other)
+     * @param { } user String : User type (admin or other)
+     */
 
     async navigate(realm, user) {
         var context
@@ -43,31 +64,44 @@ class CustomWorld {
         }
     }
 
+    /**
+     * 
+     * @param { } user String : User type (admin or other)
+     */
 
     async login(user) {
         if (user == "admin") {
-            await this.page?.fill('#username', process.env.USER_LOCAL_ID)
-            await this.page?.fill('#password', process.env.LOCAL_PASSWORD)
+            await this.page?.fill('input[name="username"]', process.env.USER_LOCAL_ID)
+            await this.page?.fill('input[name="password"]', process.env.LOCAL_PASSWORD)
         }
         else {
-            await this.page?.fill('#username', process.env.SMARTCITY)
-            await this.page?.fill('#password', process.env.SMARTCITY)
+            await this.page?.fill('input[name="username"]', process.env.SMARTCITY)
+            await this.page?.fill('input[name="password"]', process.env.SMARTCITY)
         }
-
         await this.page?.keyboard.press('Enter');
         await this.page?.context().storageState({ path: 'storageState.json' });
     }
 
+    /**
+     * 
+     * @param {location selector as STRING} button 
+     */
 
     async click(button) {
         await this.page?.locator(button).click()
     }
 
+    /**
+     * 
+     * @param { } key String: location of selector
+     */
     async press(key) {
         await this.page?.press(key)
     }
 
-
+    /**
+     * Logout and delete login certification
+     */
     async logout() {
         await this.click('#menu-btn-desktop');
         await this.click('text=Log out');
@@ -76,14 +110,34 @@ class CustomWorld {
         }
     }
 
+    /**
+     * 
+     * @param {} locate String : location of selector 
+     * @param { } value String : value
+     */
     async fill(locate, value) {
         await this.page?.locator(locate).fill(value)
     }
 
+
+    /**
+     *          *******         ********      ***********        *           *           * * * *
+     *         *                *                  *             *           *           *      *
+     *        *                 *                  *             *           *           *       *
+     *         *                *                  *             *           *           *       *
+     *          *******         ********           *             *           *           * * * *
+     *                 *        *                  *             *           *           * 
+     *                  *       *                  *              *         *            *
+     *                 *        *                  *               *       *             *
+     *          *******         ********           *                 * * *               *
+     * 
+     *               
+     */               
+
+    /**
+     *  create Realm
+     */
     async addRealm() {
-        /**
-         * add realm
-         */
         // go to realm page
         await this.click('button[id="menu-btn-desktop"]');
         await this.click('text=Realms');
@@ -97,6 +151,10 @@ class CustomWorld {
         ]);
     }
 
+    /**
+     *  Create User
+     * @param { } isRealmAdded Boolen
+     */
     async addUser(isRealmAdded) {
         if (!isRealmAdded)
             await this.addRealm()
@@ -124,7 +182,33 @@ class CustomWorld {
         await this.click('button:has-text("create")')
     }
 
-    // basic only contains realms and users
+    /**
+     * Create empty asset
+     */
+    async addAssets() {
+
+        await this.page.waitForTimeout(1000)
+
+        // Goes to asset page
+        await this.click('#desktop-left a:nth-child(2)')
+
+        // create assets accroding to assets array
+        for (let asset of assets) {
+            try {
+                await this.click('.mdi-plus')
+                await this.click(`text=${asset.asset}`)
+                await this.fill('#name-input input[type="text"]', asset.name)
+                await this.click('#add-btn')
+            }
+            catch (error) {
+                console.log('error' + error);
+            }
+        }
+    }
+
+    /**
+     *  basic setup: only contains realm and user
+     */
     async basicSetup() {
 
         let isRealmAdded = false
@@ -132,6 +216,7 @@ class CustomWorld {
         await this.navigate("admin", "admin")
         // wait for the button to be visible
         await this.page.waitForTimeout(1000)
+        // set isRealmAdded to true only when smartcity realm is there
         if (await this.page?.locator('#realm-picker').isVisible()) {
             await this.click('#realm-picker');
             if (await this.page?.locator('li[role="menuitem"]:has-text("smartcity")').count() > 0) {
@@ -140,6 +225,25 @@ class CustomWorld {
             }
         }
         await this.addUser(isRealmAdded)
+    }
+
+    /**
+     * convention setup: contains realm, user and emtpy assets
+     */
+    async conventionSetup() {
+
+        // create realm and user
+        await this.basicSetup();
+
+        // logout
+        await this.logout();
+
+        // nevigate to smartcity
+        await this.page?.goto(process.env.SMARTCITY_URL)
+        await this.login("smartcity")
+
+        // create assets
+        await this.addAssets()
     }
 
 

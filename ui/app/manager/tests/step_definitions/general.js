@@ -17,8 +17,8 @@ Given('Setup for {string}', { timeout: 20000 }, async function (section) {
             await this.basicSetup()
             break;
 
-        case "":
-            await this.navigate()
+        case "convention":
+            await this.conventionSetup()
             break;
 
         default:

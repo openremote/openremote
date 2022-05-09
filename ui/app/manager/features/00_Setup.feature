@@ -2,9 +2,10 @@
 Feature: Setup
 
     Background: Setup
-        Given Setup for "basic"
+        Given Setup for "convention"
     
     @Desktop
     Scenario: Random test
         When Random
         Then Test
+
