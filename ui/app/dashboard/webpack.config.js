@@ -10,8 +10,6 @@ module.exports = (env, argv) => {
   const port = env.port;
   const IS_DEV_SERVER = !!process.argv.find(arg => arg.includes("serve"));
 
-  console.log("Loading dev server on port: [" + port + "]");
-
 
   const config = util.getAppConfig(argv.mode, IS_DEV_SERVER, __dirname, managerUrl, keycloakUrl, port);
 

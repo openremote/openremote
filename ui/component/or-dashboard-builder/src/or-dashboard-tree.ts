@@ -75,6 +75,7 @@ export class OrDashboardTree extends LitElement {
                 screenPresets: this.getDefaultScreenPresets(size),
             }
         } as Dashboard
+        console.log(dashboard);
         manager.rest.api.DashboardResource.create(dashboard).then((response => {
             if(response.status == 200) {
                 console.log(response); // expects a dashboard response
@@ -126,7 +127,10 @@ export class OrDashboardTree extends LitElement {
                         <span style="--or-icon-fill: black">
                             ${getContentWithMenuTemplate(
                                 html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" style="margin-left: -4px; --or-icon-fill: white;"></or-mwc-input>`,
-                                menuItems, "monitor", (value: DashboardSizeOption) => { this.createDashboard(value); }
+                                menuItems, "monitor", (value: string | string[]) => {
+                                    const size: DashboardSizeOption = +value;
+                                    this.createDashboard(size);
+                                }
                             )}                        
                         </span>
                     </div>

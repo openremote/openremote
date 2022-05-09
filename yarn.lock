@@ -2152,7 +2152,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/dashboard@workspace:ui/app/dashboard"
   dependencies:
-    "@openremote/or-app": ^1.0.4
+    "@openremote/or-app": ^1.1.0
     "@openremote/util": "workspace:*"
   languageName: unknown
   linkType: soft
@@ -2247,7 +2247,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-app@^1.0.4, @openremote/or-app@^1.1.0, @openremote/or-app@workspace:ui/component/or-app":
+"@openremote/or-app@^1.1.0, @openremote/or-app@workspace:ui/component/or-app":
   version: 0.0.0-use.local
   resolution: "@openremote/or-app@workspace:ui/component/or-app"
   dependencies:
@@ -2257,6 +2257,7 @@ __metadata:
     "@openremote/or-attribute-input": ^1.1.0
     "@openremote/or-attribute-picker": ^1.1.0
     "@openremote/or-chart": ^1.1.0
+    "@openremote/or-dashboard-builder": ^1.0.0
     "@openremote/or-map": ^1.1.0
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/or-rules": ^1.1.0
@@ -2417,7 +2418,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder":
+"@openremote/or-dashboard-builder@^1.0.0, @openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder":
   version: 0.0.0-use.local
   resolution: "@openremote/or-dashboard-builder@workspace:ui/component/or-dashboard-builder"
   dependencies:

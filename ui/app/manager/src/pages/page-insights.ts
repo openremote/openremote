@@ -8,7 +8,7 @@ import {Store} from "@reduxjs/toolkit";
 import i18next from "i18next";
 import {createSelector} from "reselect";
 import { manager } from "@openremote/core";
-import "../../../../component/or-dashboard-builder";
+import "@openremote/or-dashboard-builder";
 import {Dashboard, DashboardTemplate, DashboardWidgetType } from "@openremote/model";
 import {getInsightsRoute} from "../routes";
 
