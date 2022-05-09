@@ -29,14 +29,32 @@ export class PageDashboard extends Page<AppStateKeyed> {
     @state()
     private dashboardId: string;
 
+    @state()
+    private isLoading: boolean = true;
+
 
     get name(): string {
         return "dashboard"
     }
 
+    static get styles() {
+        // language=CSS
+        return [css`
+            .text {
+                height: 100%;
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+        `]
+    }
+
     fetchDashboard(dashboardId: string) {
         manager.rest.api.DashboardResource.get(dashboardId).then((dashboard) => {
             this.template = (dashboard.data as Dashboard).template;
+            this.isLoading = false;
+            console.log(this.template);
         });
     }
 
@@ -50,7 +68,13 @@ export class PageDashboard extends Page<AppStateKeyed> {
 
     protected render(): TemplateResult {
         return html`
-            <or-dashboard-editor .editMode="${false}" .template="${this.template}"></or-dashboard-editor>
+            ${this.template != undefined ? html`
+                <or-dashboard-editor .editMode="${false}" .template="${this.template}"></or-dashboard-editor>
+            ` : (this.isLoading ? html`
+                <span class="text">Loading..</span>
+            ` : html`
+                <span class="text">No dashboard found..</span>
+            `)}
         `
     }
 
