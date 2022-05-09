@@ -1,4 +1,5 @@
-const { When, Then } = require("@cucumber/cucumber");
+const { Given,When, Then } = require("@cucumber/cucumber");
+require('dotenv').config();
 
 /**
  * delete assets
@@ -35,7 +36,12 @@ Then('Delete role', async function () {
 /**
  * delete user
  * only admin user has the rights to delete user
+ * NEED IMPROVEMENT!
+ * Sometimes will break when navigate to master realm
+ * Login as admin user may have conflict 
  */
+
+
 Then('Delete user', async function () {
   const { page } = this;
 

@@ -2,7 +2,7 @@
 Feature: Delete
 
     Background: Navigation
-        Given Login to smartcity realm
+        Given Login OpenRemote as "smartcity"
 
     @Desktop @delete_conf_item
     Scenario Outline: Delete configure item
@@ -35,7 +35,7 @@ Feature: Delete
 
     @Desktop @delete_user
     Scenario: Delete user
-        Given Login OpenRemote as admin
+        Given Login OpenRemote as "admin"
         When Select smartcity realm
         When Navigate to user page
         Then Delete user

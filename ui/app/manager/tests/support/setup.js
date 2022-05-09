@@ -1,4 +1,4 @@
-const { setWorldConstructor, BeforeAll, AfterAll, After, Before } = require("@cucumber/cucumber");
+const { setWorldConstructor, BeforeAll, AfterAll, After, Before, setDefaultTimeout } = require("@cucumber/cucumber");
 const { ChromiumBroswer } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
@@ -20,6 +20,8 @@ require('dotenv').config();
 var global = {
     browser: ChromiumBroswer,
 }
+
+const DEFAULT_TIMEOUT = 10000;
 
 class CustomWorld {
 
@@ -67,6 +69,8 @@ class CustomWorld {
 
 
     async logout() {
+        await this.click('#menu-btn-desktop');
+        await this.click('text=Log out');
         if (fs.existsSync('storageState.json')) {
             fs.unlinkSync('storageState.json')
         }
@@ -75,6 +79,69 @@ class CustomWorld {
     async fill(locate, value) {
         await this.page?.locator(locate).fill(value)
     }
+
+    async addRealm() {
+        /**
+         * add realm
+         */
+        // go to realm page
+        await this.click('button[id="menu-btn-desktop"]');
+        await this.click('text=Realms');
+        // add realm
+        await this.click('text=Add Realm');
+        await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', 'smartcity')
+        await this.page?.locator('input[type="text"]').nth(3).fill('smartcity');
+        await Promise.all([
+            this.page?.waitForNavigation(`${process.env.LOCAL_URL}/manager/#/realms`),
+            this.click('button:has-text("create")')
+        ]);
+    }
+
+    async addUser(isRealmAdded) {
+        if (!isRealmAdded)
+            await this.addRealm()
+        /**
+         * add user
+         */
+        // swithch to smartcity realm
+        await this.click('#realm-picker');
+        await this.click('li[role="menuitem"]:has-text("smartcity")');
+        // go to user page
+        await this.click('#menu-btn-desktop');
+        await this.click('text=Users');
+        // add user
+        await this.page?.locator('.mdi-plus').first().click();
+        await this.page?.locator('input[type="text"]').first().fill('smartcity');
+        // type in password
+        await this.fill('#password-user0 input[type="password"]', 'smartcity')
+        await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
+        // select permissions
+        await this.click('div[role="button"]:has-text("Roles")');
+        await this.click('li[role="menuitem"]:has-text("Read")');
+        await this.click('li[role="menuitem"]:has-text("Write")');
+        await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
+        // create user
+        await this.click('button:has-text("create")')
+    }
+
+    // basic only contains realms and users
+    async basicSetup() {
+
+        let isRealmAdded = false
+
+        await this.navigate("admin", "admin")
+        // wait for the button to be visible
+        await this.page.waitForTimeout(1000)
+        if (await this.page?.locator('#realm-picker').isVisible()) {
+            await this.click('#realm-picker');
+            if (await this.page?.locator('li[role="menuitem"]:has-text("smartcity")').count() > 0) {
+                await this.click('li[role="menuitem"]:has-text("smartcity")')
+                isRealmAdded = true
+            }
+        }
+        await this.addUser(isRealmAdded)
+    }
+
 
 }
 
@@ -101,4 +168,6 @@ AfterAll(async function () {
     }
 })
 
+
+//setDefaultTimeout(DEFAULT_TIMEOUT)
 setWorldConstructor(CustomWorld);
