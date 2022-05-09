@@ -233,17 +233,23 @@ open class ORViewcontroller : UIViewController {
         let alertView = UIAlertController(title: "Error", message: "Error requesting '\(failingUrl)': \(errorCode) (\(description))", preferredStyle: .alert)
         alertView.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
 
-        self.present(alertView, animated: true, completion: nil)
-
         if let applicationConfig = appConfig {
+            self.present(alertView, animated: true, completion: nil)
             var url = applicationConfig.url
             if !url.starts(with: "http") {
                 url = baseUrl!.appending(url)
             }
             self.myWebView?.load(URLRequest(url: URL(string: url.stringByURLEncoding()!)!))
+        } else {
+            if self.presentingViewController != nil {
+                self.dismiss(animated: true) {
+                    self.presentingViewController!.present(alertView, animated: true, completion: nil)
+                }
+            } else {
+                self.present(alertView, animated: true, completion: nil)
+            }
         }
     }
-
 }
 
 extension ORViewcontroller: UITableViewDelegate {
@@ -310,9 +316,10 @@ extension ORViewcontroller: WKScriptMessageHandler {
                                 case Actions.providerEnable:
                                     if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
                                         if let userdefaults = UserDefaults(suiteName: DefaultsKey.groupEntitlement),
-                                           let project = userdefaults.string(forKey: DefaultsKey.projectKey),
+                                           let host = userdefaults.string(forKey: DefaultsKey.hostKey),
                                            let realm = userdefaults.string(forKey: DefaultsKey.realmKey) {
-                                            geofenceProvider?.enable(baseUrl: "https://\(project).openremote.io/api/\(realm)", consoleId: consoleId,  callback: { enableData in
+                                            let baseUrl = host.appending("/api/\(realm)")
+                                            geofenceProvider?.enable(baseUrl: baseUrl, consoleId: consoleId,  callback: { enableData in
                                                 self.sendData(data: enableData)
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
                                                     self.geofenceProvider?.fetchGeofences()

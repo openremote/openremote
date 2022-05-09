@@ -16,7 +16,8 @@ import {
     ValueDescriptor,
     WellknownMetaItems,
     WellknownValueTypes,
-    AssetModelUtil
+    AssetModelUtil,
+    ClientRole
 } from "@openremote/model";
 import manager, {DefaultColor4, subscribe, Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -718,8 +719,8 @@ export class OrAttributeInput extends subscribe(manager)(translate(i18next)(LitE
     }
 
     public isReadonly(): boolean {
-        if(!manager.hasRole("write:attributes")) {
-            this.readonly = !manager.hasRole("write:attributes");
+        if(!manager.hasRole(ClientRole.WRITE_ATTRIBUTES)) {
+            this.readonly = !manager.hasRole(ClientRole.WRITE_ATTRIBUTES);
             return this.readonly;
         }
 

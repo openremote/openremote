@@ -137,6 +137,9 @@ public class RadialGeofencePredicate extends GeofencePredicate {
                 return false;
             }
 
+            coordinate.x = Math.min(180d, Math.max(-180d, coordinate.x));
+            coordinate.y = Math.min(90d, Math.max(-90d, coordinate.y));
+
             GeodeticCalculator calculator = new GeodeticCalculator();
             calculator.setStartingGeographicPoint(lng, lat);
             calculator.setDestinationGeographicPoint(coordinate.x, coordinate.y);

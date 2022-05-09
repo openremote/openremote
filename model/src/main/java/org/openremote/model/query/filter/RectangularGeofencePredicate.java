@@ -132,6 +132,9 @@ public class RectangularGeofencePredicate extends GeofencePredicate {
                 return false;
             }
 
+            coordinate.x = Math.min(180d, Math.max(-180d, coordinate.x));
+            coordinate.y = Math.min(90d, Math.max(-90d, coordinate.y));
+
             Envelope envelope = new Envelope(lngMin,
                 lngMax,
                 latMin,

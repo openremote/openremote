@@ -31,7 +31,7 @@ AWS_PROFILE=github
 export AWS_PROFILE=$AWS_PROFILE
 
 echo "Validating AWS credentials"
-aws sts get-caller-identity 1>/dev/null 2>/dev/null
+aws sts get-caller-identity
 
 if [ $? -ne 0 ]; then
   echo "Failed to login to AWS"

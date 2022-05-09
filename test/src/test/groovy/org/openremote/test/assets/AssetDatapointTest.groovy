@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.MINUTES
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.manager.datapoint.AssetDatapointService.DATA_POINTS_MAX_AGE_DAYS_DEFAULT
+import static org.openremote.manager.datapoint.AssetDatapointService.OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
 import static org.openremote.test.setup.ManagerTestSetup.thingLightToggleAttributeName
 import static spock.util.matcher.HamcrestMatchers.closeTo
 
@@ -35,7 +35,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         def conditions = new PollingConditions(timeout: 10, delay: 0.2)
 
         when: "the demo agent and thing have been deployed"
-        def datapointPurgeDays = DATA_POINTS_MAX_AGE_DAYS_DEFAULT
+        def datapointPurgeDays = OR_DATA_POINTS_MAX_AGE_DAYS_DEFAULT
         def container = startContainer(defaultConfig(), defaultServices())
         def managerTestSetup = container.getService(SetupService.class).getTaskOfType(ManagerTestSetup.class)
         def agentService = container.getService(AgentService.class)

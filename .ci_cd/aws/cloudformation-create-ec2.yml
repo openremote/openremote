@@ -7,6 +7,8 @@
 # A standard access security group is also created for the standard OpenRemote stack services; the ssh-access security
 # group is also linked to the EC2 instance and this security group must already exist within the account.
 #
+# Optionally assign an Elastic IP address by setting the ElasticIP parameter to true.
+#
 # Systemd services are also created to:
 #
 # - Mount EFS volume named 'hosts-filesystem' at /deployment.local/efs on restart
@@ -27,7 +29,7 @@ Parameters:
     Description: FQDN for host
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
-    ConstraintDescription: Must be a valid FQDN
+    Default: ""
   InstanceType:
     Description: EC2 instance type (don't change it unless you know what you are doing)
     Type: String
@@ -36,6 +38,7 @@ Parameters:
     # then we need to be flexible here and bear in mind use case and acceptable cost.
     Default: t4g.small
     AllowedValues:
+      - t4g.micro
       - t4g.small
       - t4g.medium
       - t4g.large
@@ -47,37 +50,44 @@ Parameters:
     Type: String
     #AllowedPattern: "^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
     ConstraintDescription: Must be a valid FQDN
+    Default: ""
   DNSHostedZoneRoleArn:
     Description: Role ARN that can be assumed for updating DNS A record (if Hosted Zone in another account)
     Type: String
+    Default: ""
+  ElasticIP:
+    Description: Assign elastic IP address
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: false
+  SMTPHost:
+    Type: String
+    Default: ""
+  SMTPUser:
+    Type: String
+    Default: ""
+  SMTPPassword:
+    Type: String
+    Default: ""
+  SMTPSecret:
+    Type: String
+    Description: SMTP CLI user secret (used to generate an SMTP password from)
+    Default: ""
+  SMTPRegion:
+    Type: String
+    Description: SMTP CLI user region (used to generate an SMTP password from)
+    Default: ""
   SMTPORArn:
     Description: SES Verified identity trust policy ARN for SMTP X-Headers
     Type: String
-  SMTPKey:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SMTP-User-Key
-  SMTPSecret:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SMTP-User-Secret
-  SShWhitelistRoleArn:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SSH-Whitelist-Access-Role-Arn
+    Default: ""
 
 Conditions:
-  CreateDNSRecord: !Equals [!Ref DNSHostedZoneRoleArn, ""]
+  AssignElasticIP: !Equals [!Ref ElasticIP, "true"]
 
 Resources:
-
-  DNSRecord:
-    Type: AWS::Route53::RecordSet
-    Condition: CreateDNSRecord
-    Properties:
-      HostedZoneName: !Sub "${DNSHostedZoneName}."
-      Name: !Ref Host
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
-      TTL: '60'
-      Type: A
 
   InstanceRoleProfile:
     Type: AWS::IAM::InstanceProfile
@@ -89,6 +99,7 @@ Resources:
   CloudFormationLogs:
     Type: AWS::Logs::LogGroup
     Properties:
+      LogGroupName: !Ref Host
       RetentionInDays: 7
 
   StandardSecurityGroup:
@@ -96,6 +107,9 @@ Resources:
     Properties:
       GroupDescription: "Access OpenRemote stack services"
       GroupName: !Ref Host
+      Tags:
+        - Key: Name
+          Value: !Ref Host
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '80'
@@ -159,8 +173,7 @@ Resources:
         configSets:
           default:
             - 01_setupCfnHup
-            - 02_config-amazon-cloudwatch-agent
-            - 03_restart_amazon-cloudwatch-agent
+            - 02_restart_amazon-cloudwatch-agent
             - docker_setup
             - cron_setup
             - env_vars
@@ -169,9 +182,6 @@ Resources:
             - s3_backup_service
             - deployment_local_dir
             - daily_cleanup
-          UpdateEnvironment:
-            - 02_config-amazon-cloudwatch-agent
-            - 03_restart_amazon-cloudwatch-agent
 
         daily_cleanup:
           files:
@@ -219,7 +229,7 @@ Resources:
 
                 [Service]
                 Type=oneshot
-                RandomizedDelaySec=30min
+                RandomizedDelaySec=1800
                 ExecStart=/usr/local/bin/s3-backup
 
                 [Install]
@@ -267,8 +277,9 @@ Resources:
                   exit 0
                 fi
                 
-                echo "Running DNS A record update"
-                PUBLIC_IP=$(curl ident.me)
+                echo "Running DNS record update"
+                PUBLIC_IPV4=$(curl v4.ident.me 2>/dev/null)
+                PUBLIC_IPV6=$(curl v6.ident.me 2>/dev/null)
                 
                 if [ -n "${DNSHostedZoneRoleArn}" ]; then
                   echo "Assuming role '${DNSHostedZoneRoleArn}' for DNS A record update"
@@ -294,21 +305,55 @@ Resources:
 
                 read -r -d '' RECORDSET << EOF
                 {
-                  "Comment": "Creating NS record for '${Host}' subdomain",
+                  "Comment": "Creating NS record(s) for '${Host}' subdomain",
                   "Changes": [
+                EOF
+
+                if [ -n "$PUBLIC_IPV4" ]; then
+                
+                read -r -d '' RECORDSET << EOF
+                $RECORDSET
                     {
                       "Action": "UPSERT",
                       "ResourceRecordSet": {
                           "Name": "${Host}.",
                           "Type": "A",
                           "TTL": 300,
-                        "ResourceRecords": [{ "Value": "$PUBLIC_IP"}]
+                        "ResourceRecords": [{ "Value": "$PUBLIC_IPV4"}]
                       }
                     }
+                EOF
+
+                fi
+                
+                
+                if [ -n "$PUBLIC_IPV6" ]; then
+                
+                  if [ -n "$PUBLIC_IPV4" ]; then
+                    RECORDSET="$RECORDSET,"
+                  fi
+                
+                read -r -d '' RECORDSET << EOF
+                $RECORDSET
+                    {
+                      "Action": "UPSERT",
+                      "ResourceRecordSet": {
+                          "Name": "${Host}.",
+                          "Type": "AAAA",
+                          "TTL": 300,
+                        "ResourceRecords": [{ "Value": "$PUBLIC_IPV6"}]
+                      }
+                    }
+                EOF
+                fi
+                
+                read -r -d '' RECORDSET << EOF
+                $RECORDSET
                   ]
                 }
                 EOF
-
+                
+                echo "$RECORDSET"
                 aws route53 change-resource-record-sets --hosted-zone-id $HOSTED_ZONE_ID --change-batch "$RECORDSET"
 
             "/lib/systemd/system/dns-updater.service":
@@ -453,11 +498,22 @@ Resources:
           commands:
             01_output_smtp_credentials:
               command: !Sub |
-                PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${AWS::Region})
-                echo "OR_EMAIL_HOST=email-smtp.${AWS::Region}.amazonaws.com" >> /etc/environment
-                echo "OR_EMAIL_USER=${SMTPKey}" >> /etc/environment
-                echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
-                echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
+                echo "AWS_REGION=${AWS::Region}" > /etc/environment
+                if [ -n "${SMTPHost}" ]; then
+                  echo "OR_EMAIL_HOST=${SMTPHost}" >> /etc/environment
+                fi
+                if [ -n "${SMTPUser}" ]; then
+                  echo "OR_EMAIL_USER=${SMTPUser}" >> /etc/environment
+                fi
+                if [ -n "${SMTPPassword}" ]; then
+                  echo "OR_EMAIL_PASSWORD=${SMTPPassword}" >> /etc/environment
+                elif [ -n "${SMTPSecret}" ] && [ -n "${SMTPRegion}" ]; then
+                  PASS=$(python3 /home/ec2-user/smtp_credentials_generate.py ${SMTPSecret} ${SMTPRegion})
+                  echo "OR_EMAIL_PASSWORD=$PASS" >> /etc/environment
+                fi
+                if [ -n "${SMTPORArn}" ]; then
+                  echo 'OR_EMAIL_X_HEADERS="X-SES-SOURCE-ARN: ${SMTPORArn}"' >> /etc/environment
+                fi
 
         docker_setup:
           packages:
@@ -470,7 +526,7 @@ Resources:
                 chkconfig docker on
                 curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose && chmod +x /usr/bin/docker-compose && docker-compose --version
           services:
-            sysvinit:
+            systemd:
               docker:
                 enabled: "true"
                 ensureRunning: "true"
@@ -483,20 +539,12 @@ Resources:
             01_configure:
               command: chkconfig yum-cron on
           services:
-            sysvinit:
+            systemd:
               yum-cron:
                 enabled: "true"
                 ensureRunning: "true"
 
-        # Definition of a dummy file, that change the contents of the dummy file can trigger the agent to reload the configuration from SSM parameter store.
-        02_config-amazon-cloudwatch-agent:
-          files:
-            '/opt/aws/amazon-cloudwatch-agent/etc/dummy.version':
-              content: !Sub |
-                "You can change the VERSION below to to simulate the update of metadata"
-                "VERSION=1.0"
-        # Invoke amazon-cloudwatch-agent-ctl to restart the AmazonCloudWatchAgent.
-        03_restart_amazon-cloudwatch-agent:
+        02_restart_amazon-cloudwatch-agent:
           commands:
             01_stop_service:
               command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
@@ -510,7 +558,7 @@ Resources:
                 [main]
                 stack=${AWS::StackId}
                 region=${AWS::Region}
-                interval=1
+                interval=10
               mode: 000400
               owner: root
               group: root
@@ -519,15 +567,15 @@ Resources:
               content: !Sub |
                 [cfn-auto-reloader-hook]
                 triggers=post.update
-                path=Resources.EC2Instance.Metadata.AWS::CloudFormation::Init.02_config-amazon-cloudwatch-agent
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets UpdateEnvironment
+                path=Resources.EC2Instance.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets default
                 runas=root
               mode: '000400'
               owner: root
               group: root
 
           services:
-            sysvinit:
+            systemd:
               cfn-hup:
                 enabled: true
                 ensureRunning: true
@@ -541,13 +589,13 @@ Resources:
       KeyName:
         "developers"
       ImageId:
-        "ami-032afb7a6d14ab941"
+        "ami-0042fede24cb86d5c"
       SecurityGroups:
         - "ssh-access"
         - Ref: StandardSecurityGroup
       Ipv6AddressCount: 1
       Tags:
-        - Key: "Name"
+        - Key: Name
           Value: !Ref Host
       IamInstanceProfile: !Ref 'InstanceRoleProfile'
       UserData:
@@ -571,3 +619,18 @@ Resources:
           
           # All done so signal success
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
+
+  IPAddress:
+    Type: AWS::EC2::EIP
+    Condition: AssignElasticIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref Host
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Condition: AssignElasticIP
+    Properties:
+      InstanceId: !Ref EC2Instance
+      EIP: !Ref IPAddress

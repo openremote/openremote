@@ -32,12 +32,14 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import javax.persistence.OptimisticLockException;
 import javax.validation.ConstraintViolationException;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -100,6 +102,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     public UserAssetLink[] getUserAssetLinks(RequestParams requestParams, String realm, String userId, String assetId) {
         try {
             realm = TextUtil.isNullOrEmpty(realm) ? getAuthenticatedRealm() : realm;
+            boolean hasAdminReadRole = hasResourceRole(ClientRole.READ_ADMIN.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
             if (realm == null)
                 throw new WebApplicationException(BAD_REQUEST);
@@ -107,8 +110,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!(isSuperUser() || getAuthenticatedRealm().equals(realm)))
                 throw new WebApplicationException(FORBIDDEN);
 
-            if (!isSuperUser() && userId != null && !userId.equals(getAuthContext().getUserId())) {
-                throw new WebApplicationException(FORBIDDEN);
+            if (!hasAdminReadRole && userId != null && !Objects.equals(getUserId(), userId)) {
+                throw new ForbiddenException("Can only retrieve own asset links unless you have role '" + ClientRole.READ_ADMIN + "'");
             }
 
             if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realm))

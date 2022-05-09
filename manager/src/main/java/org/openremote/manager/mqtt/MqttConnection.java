@@ -32,6 +32,7 @@ public class MqttConnection {
     protected Supplier<String> tokenSupplier;
     protected ManagerKeycloakIdentityProvider identityProvider;
     protected long connectionTime;
+    protected boolean obsolete;
 
     public MqttConnection(ManagerKeycloakIdentityProvider identityProvider, String clientId, String realm, String username, String password, boolean cleanSession, long connectionTime) {
         this.cleanSession = cleanSession;
@@ -118,6 +119,10 @@ public class MqttConnection {
         }
     }
 
+    protected void setObsolete() {
+        this.obsolete = true;
+    }
+
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "{" +
@@ -125,6 +130,7 @@ public class MqttConnection {
             ", realm='" + realm + '\'' +
             ", username='" + username + '\'' +
             ", clientId='" + clientId + '\'' +
+            ", obsolete='" + obsolete + '\'' +
             '}';
     }
 
