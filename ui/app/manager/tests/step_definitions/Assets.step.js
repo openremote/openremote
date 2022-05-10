@@ -49,8 +49,7 @@ When('Search for the {string}', async function (name) {
 })
 
 When('Select the {string}', async function (name) {
-    const { page } = this;
-    await page.locator(`text=${name}`).click()
+    await this.click(`text=${name}`)
 })
 
 Then('We see the {string} page', async function (name) {

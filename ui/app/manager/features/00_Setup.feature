@@ -2,7 +2,7 @@
 Feature: Setup
 
     Background: Setup
-        Given Setup for "convention"
+        Given Setup for "thorough"
     
     @Desktop
     Scenario: Random test

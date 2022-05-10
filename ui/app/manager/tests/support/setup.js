@@ -25,10 +25,36 @@ const assets = [
     {
         asset: "Electricity battery asset",
         name: "Battery",
+        attr_1: "energyLevel",
+        attr_2: "power",
+        attr_3: "powerSetpoint",
+        a1_type: "Positive number",
+        a2_type: "Number",
+        a3_type: "number",
+        v1: "30",
+        v2: "50",
+        v3: "70",
+        location_x: 705,
+        location_y: 210,
+        config_item_1: "Rule state",
+        config_item_2: "Store data points"
     },
     {
         asset: "PV solar asset",
         name: "Solar",
+        attr_1: "panelPitch",
+        attr_2: "power",
+        attr_3: "powerForecast",
+        a1_type: "Positive integer",
+        a2_type: "Number",
+        a3_type: "number",
+        v1: "30",
+        v2: "70",
+        v3: "100",
+        location_x: 540,
+        location_y: 110,
+        config_item_1: "Rule state",
+        config_item_2: "Store data points"
     }
 ]
 
@@ -119,20 +145,9 @@ class CustomWorld {
         await this.page?.locator(locate).fill(value)
     }
 
-
     /**
-     *          *******         ********      ***********        *           *           * * * *
-     *         *                *                  *             *           *           *      *
-     *        *                 *                  *             *           *           *       *
-     *         *                *                  *             *           *           *       *
-     *          *******         ********           *             *           *           * * * *
-     *                 *        *                  *             *           *           * 
-     *                  *       *                  *              *         *            *
-     *                 *        *                  *               *       *             *
-     *          *******         ********           *                 * * *               *
-     * 
-     *               
-     */               
+     *  Repeatable actions
+     */
 
     /**
      *  create Realm
@@ -184,6 +199,7 @@ class CustomWorld {
 
     /**
      * Create empty asset
+     * TODO: set optional parameter
      */
     async addAssets() {
 
@@ -199,6 +215,7 @@ class CustomWorld {
                 await this.click(`text=${asset.asset}`)
                 await this.fill('#name-input input[type="text"]', asset.name)
                 await this.click('#add-btn')
+                await this.unSelectAll()
             }
             catch (error) {
                 console.log('error' + error);
@@ -206,6 +223,126 @@ class CustomWorld {
         }
     }
 
+    /**
+     * unselect the asset
+     */
+    async unSelectAll() {
+
+        // leave modify mode
+        if (await this.page?.locator('button:has-text("View")').isVisible()) {
+            await this.click('button:has-text("View")')
+            console.log("view clicked")
+        }
+
+        // unselect the asset
+        if (await this.page?.locator('.mdi-close').first().isVisible()) {
+            await this.page?.locator('.mdi-close').first().click()
+            console.log("unselected")
+        }
+
+    }
+
+    /**
+     *  Select assets
+     */
+    async selectAssets(name) {
+        await this.click(`text=${name}`)
+
+        console.log(name + " select succeed")
+    }
+
+
+    /**
+     * update asset in the general panel
+     * @param {*} attr STRING
+     * @param {*} type STRING
+     * @param {*} value STRING
+     */
+    async updateAssets(attr, type, value) {
+        await this.fill(`#field-${attr} input[type="${type}"]`, value)
+        await this.click(`#field-${attr} #send-btn span`)
+
+        console.log(attr + " update succeed")
+    }
+
+    /**
+     * update the data in the modify mode
+     * @param {*} attr STRING
+     * @param {*} type STRING
+     * @param {*} value STRING
+     */
+    async updateInModify(attr, type, value) {
+
+        await this.fill(`text=${attr} ${type} >> input[type="number"]`, value)
+        console.log(attr + " modify succeed")
+    }
+
+    /**
+     * update location so we can see in the map
+     * @param {*} location_x int
+     * @param {*} location_y int
+     */
+    async updateLocation(location_x, location_y) {
+        await this.click('text=location GEO JSON point >> button span')
+        await this.page?.mouse.click(location_x, location_y, { delay: 1000 })
+        await this.click('button:has-text("OK")')
+        console.log("location succeed")
+    }
+
+    async configItem(item_1, item_2, attr) {
+        await this.page.locator(`td:has-text("${attr} ")`).first().click()
+        await this.page.waitForTimeout(500)
+        console.log(attr + " opened")
+        await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
+        await this.click(`li[role="checkbox"]:has-text("${item_1}")`)
+        await this.click(`li[role="checkbox"]:has-text("${item_2}")`)
+        await this.click('div[role="alertdialog"] button:has-text("Add")')
+        await this.page.locator(`td:has-text("${attr}")`).first().click()
+    }
+
+    /**
+     * set config item for rule and insight to use
+     * @param {*} item1 STRING
+     * @param {*} item2 STRING
+     * @param {*} attr STRING
+     */
+    async setConfigItem(item_1, item_2, attr_1, attr_2) {
+        await this.configItem(item_1, item_2, attr_1)
+        await this.configItem(item_1, item_2, attr_2)
+    }
+
+
+    /**
+     * Save
+     */
+    async save() {
+        await this.click('#edit-container')
+        await this.click('button:has-text("Save")')
+    }
+
+
+
+    /**
+     *  fundamental setup: only contains realm
+     */
+    async fundamentalSetup() {
+        await this.addRealm()
+    }
+
+
+    /**
+     *          *******          ********       ***********        *           *           * * * *
+     *         *                 *                   *             *           *           *      *
+     *        *                  *                   *             *           *           *       *
+     *         *                 *                   *             *           *           *       *
+     *          *******          ********            *             *           *           * * * *
+     *                 *         *                   *             *           *           * 
+     *                  *        *                   *              *         *            *
+     *                 *         *                   *               *       *             *
+     *          *******          ********            *                 * * *               *
+     * 
+     *               
+     */
     /**
      *  basic setup: only contains realm and user
      */
@@ -215,7 +352,7 @@ class CustomWorld {
 
         await this.navigate("admin", "admin")
         // wait for the button to be visible
-        await this.page.waitForTimeout(1000)
+        await this.page.waitForTimeout(500)
         // set isRealmAdded to true only when smartcity realm is there
         if (await this.page?.locator('#realm-picker').isVisible()) {
             await this.click('#realm-picker');
@@ -246,6 +383,35 @@ class CustomWorld {
         await this.addAssets()
     }
 
+    /**
+     *  thorough setup: contains realm, user and assets with data and configuration items
+     */
+    async thoroughSetup() {
+        await this.conventionSetup();
+
+        for (let asset of assets) {
+
+            await this.unSelectAll()
+            // select assets
+            await this.selectAssets(asset.name)
+
+            // update value in general panel
+            await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3)
+
+            // update in modify mode
+            await this.click('button:has-text("Modify")')
+            await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1)
+            await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
+            await this.updateLocation(asset.location_x, asset.location_y)
+            await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.attr_1, asset.attr_2)
+            await this.save()
+
+            await this.page.waitForTimeout(500)
+            console.log("item set")
+        }
+
+    }
+
 
 }
 
@@ -253,7 +419,6 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
-        slowMo: 100
     });
 })
 

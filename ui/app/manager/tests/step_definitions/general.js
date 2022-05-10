@@ -5,22 +5,32 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  * Setup
  */
 
-Given('Setup for {string}', { timeout: 20000 }, async function (section) {
+Given('Setup for {string}', { timeout: 50000 }, async function (section) {
     /**
      *  most of cases need the setup of: realm, user and assets
      *  for rules, "rule state" as the the configure item should selected
      */
     switch (section) {
 
-        // basic will only delete assets and users(and realms)
+        // contains realm
+        case "fundamental":
+            await this.fundamentalSetup()
+            break;
+
+        // contains realm and user
         case "basic":
             await this.basicSetup()
             break;
 
+        // contians realm, user and empty assets
         case "convention":
             await this.conventionSetup()
             break;
 
+        // contains realm, user and assets with data
+        case "thorough":
+            await this.thoroughSetup()
+            break;
         default:
             break;
 
