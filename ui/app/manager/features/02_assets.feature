@@ -2,8 +2,8 @@
 Feature: Assets
 
     Background: Navigation
-        Given Login to smartcity realm
-        Given Nevigate to asset page
+        Given Login OpenRemote as "smartcity"
+        Then Nevigate to asset page
 
     @Desktop @add_asset
     Scenario Outline: Add new asset

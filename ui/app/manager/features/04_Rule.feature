@@ -3,7 +3,7 @@ Feature: Rules
 
     Background: Navigation
         Given Login to smartcity realm
-        Given Nevigate to rule page
+        Then Nevigate to rule page
 
     @Desktop @create_whenthen_rule
     Scenario Outline: Create a When-Then rule

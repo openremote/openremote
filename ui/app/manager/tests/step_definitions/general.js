@@ -12,9 +12,14 @@ Given('Setup for {string}', { timeout: 30000 }, async function (section) {
      */
     switch (section) {
 
+        case "none":
+            await this.navigate("admin")
+            await this.login("admin")
+            break;
+
         // contains realm
         case "fundamental":
-            await this.fundamentalSetup()
+            await this.fundamentalSetup("smartcity")
             break;
 
         // contains realm and user
@@ -73,23 +78,27 @@ Given('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) 
     await this.login(user)
 })
 
+When('Navigate to {string} page', async function (name) {
+    await this.navigateTo(name)
+})
+
 /**
  * Tab menu
  */
-Given('Nevigate to map page', async function () {
-    await this.click('#desktop-left a:nth-child(1)')
+Then('Nevigate to map page', async function () {
+    await this.click('#dessktop-left a:nth-child(1)')
 });
 
-Given('Nevigate to asset page', async function () {
+Then('Nevigate to asset page', async function () {
     await this.click('#desktop-left a:nth-child(2)')
 });
 
 
-Given('Nevigate to rule page', async function () {
+Then('Nevigate to rule page', async function () {
     await this.click('#desktop-left a:nth-child(3)')
 });
 
-Given('Nevigate to insight page', async function () {
+Then('Nevigate to insight page', async function () {
     await this.click('#desktop-left a:nth-child(4)')
 });
 
@@ -97,7 +106,7 @@ Given('Nevigate to insight page', async function () {
 /**
  * Setting menu
  */
-Given('Nevigate to role page', async function () {
+Then('Nevigate to role page', async function () {
     await this.click('#menu-btn-desktop');
     await this.click('text=Roles');
 })

@@ -96,16 +96,18 @@ class CustomWorld {
      */
 
     async login(user) {
-        if (user == "admin") {
-            await this.page?.fill('input[name="username"]', process.env.USER_LOCAL_ID)
-            await this.page?.fill('input[name="password"]', process.env.LOCAL_PASSWORD)
+        if (!fs.existsSync('storageState.json')) {
+            if (user == "admin") {
+                await this.page?.fill('input[name="username"]', process.env.USER_LOCAL_ID)
+                await this.page?.fill('input[name="password"]', process.env.LOCAL_PASSWORD)
+            }
+            else {
+                await this.page?.fill('input[name="username"]', process.env.SMARTCITY)
+                await this.page?.fill('input[name="password"]', process.env.SMARTCITY)
+            }
+            await this.page?.keyboard.press('Enter');
+            await this.page?.context().storageState({ path: 'storageState.json' });
         }
-        else {
-            await this.page?.fill('input[name="username"]', process.env.SMARTCITY)
-            await this.page?.fill('input[name="password"]', process.env.SMARTCITY)
-        }
-        await this.page?.keyboard.press('Enter');
-        await this.page?.context().storageState({ path: 'storageState.json' });
     }
 
     /**
@@ -150,20 +152,31 @@ class CustomWorld {
      */
 
     /**
+     * navigation
+     */
+    async navigateTo(setting) {
+        await this.click('button[id="menu-btn-desktop"]');
+        await this.click(`text=${setting}`);
+    }
+
+    /**
      *  create Realm
      */
-    async addRealm() {
-        // go to realm page
-        await this.click('button[id="menu-btn-desktop"]');
-        await this.click('text=Realms');
+    async addRealm(name) {
+
         // add realm
         await this.click('text=Add Realm');
-        await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', 'smartcity')
-        await this.page?.locator('input[type="text"]').nth(3).fill('smartcity');
+        await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
+        await this.page?.locator('input[type="text"]').nth(3).fill(name);
         await Promise.all([
             this.page?.waitForNavigation(`${process.env.LOCAL_URL}/manager/#/realms`),
             this.click('button:has-text("create")')
         ]);
+    }
+
+    async switichToRealm(name) {
+        await this.click('#realm-picker');
+        await this.click(`li[role="menuitem"]:has-text("${name}")`);
     }
 
     /**
@@ -172,7 +185,7 @@ class CustomWorld {
      */
     async addUser(isRealmAdded) {
         if (!isRealmAdded)
-            await this.addRealm()
+            await this.addRealm("smartcity")
         /**
          * add user
          */
@@ -289,6 +302,12 @@ class CustomWorld {
         console.log("location succeed")
     }
 
+    /**
+     * select two config items for an attribute
+     * @param {*} item_1 STRING
+     * @param {*} item_2 STRING
+     * @param {*} attr STRING
+     */
     async configItem(item_1, item_2, attr) {
         await this.page.locator(`td:has-text("${attr} ")`).first().click()
         await this.page.waitForTimeout(500)
@@ -357,15 +376,24 @@ class CustomWorld {
         *                  *        *                   *              *         *            *
         *                 *         *                   *               *       *             *
         *          *******          ********            *                 * * *               *
-        * 
-        *               
+        *              
         */
 
     /**
      *  fundamental setup: only contains realm
      */
-    async fundamentalSetup() {
-        await this.addRealm()
+    async fundamentalSetup(name) {
+
+        await this.navigate("admin")
+        await this.login("admin")
+
+        await this.page.waitForTimeout(1000)
+        if (!await this.page?.locator('#realm-picker').isVisible()) {
+            await console.log("cant be seen")
+            await this.navigateTo("Realms")
+            await this.addRealm(name)
+        }
+        await this.switichToRealm(name)
     }
 
 
@@ -381,8 +409,7 @@ class CustomWorld {
         // wait for the button to be visible
         await this.page.waitForTimeout(500)
         // set isRealmAdded to true only when smartcity realm is there
-        if (this.page?.locator('#realm-picker').isVisible()) {
-            await console.log("here")
+        if (await this.page?.locator('#realm-picker').isVisible()) {
             await this.click('#realm-picker');
             if (await this.page?.locator('li[role="menuitem"]:has-text("smartcity")').count() > 0) {
                 await this.click('li[role="menuitem"]:has-text("smartcity")')
@@ -442,13 +469,13 @@ class CustomWorld {
     }
 
     /**
-     *        *****     *           ******            *             *       *
-     *       *          *           *                * *            * *     *
-     *      *           *           *               *   *           *  *    *
-     *      *           *           ******         *  *  *          *   *   *
-     *      *           *           *             *       *         *    *  *
-     *       *          *           *            *         *        *     * *  
-     *        *****     ******      ******      *           *       *       *
+     *        *****       *           ******            *             *       *
+     *       *            *           *                * *            * *     *
+     *      *             *           *               *   *           *  *    *
+     *      *             *           ******         *  *  *          *   *   *
+     *      *             *           *             *       *         *    *  *
+     *       *            *           *            *         *        *     * *  
+     *        *****       ******      ******      *           *       *       *
      *   
      */
 
@@ -496,7 +523,7 @@ class CustomWorld {
     async thoroughClean() {
         await this.conventionClean()
         await this.deleteRules()
-        
+
         // insights are not there yet
     }
 }
