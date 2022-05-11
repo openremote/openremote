@@ -2,10 +2,10 @@
 Feature: Setup
 
     Background: Setup
-        Given Setup for "thorough"
+        Given Setup for "basic"
     
-    @Desktop
+    @Desktop @clean
     Scenario: Random test
-        When Random
-        Then Test
+        When Clean up "thorough"
 
+    

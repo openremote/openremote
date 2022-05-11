@@ -58,6 +58,9 @@ const assets = [
     }
 ]
 
+const rules = [{ name: "Energy" }, { name: "Solar" }]
+
+
 const DEFAULT_TIMEOUT = 10000;
 
 class CustomWorld {
@@ -69,25 +72,22 @@ class CustomWorld {
     /**
      * 
      * @param { } realm String : Realm type (admin or other)
-     * @param { } user String : User type (admin or other)
      */
 
-    async navigate(realm, user) {
+    async navigate(realm) {
         var context
         var URL = realm == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
                 storageState: 'storageState.json',
             });
-            this.page = await context.newPage();
-            await this.page.goto(URL);
         }
         else {
             context = await global.browser.newContext();
-            this.page = await context.newPage();
-            await this.page.goto(URL);
-            this.login(user)
+
         }
+        this.page = await context.newPage();
+        await this.page.goto(URL);
     }
 
     /**
@@ -311,6 +311,33 @@ class CustomWorld {
         await this.configItem(item_1, item_2, attr_2)
     }
 
+    /**
+     * delete all the assets
+     */
+    async deleteAssets() {
+        await this.click('#desktop-left a:nth-child(2)')
+
+        for (let asset of assets) {
+            if (this.page?.locator(`text=${asset.name}`).count() > 0) {
+                await this.click(`text=${asset.name}`)
+                await this.click('.mdi-delete')
+                await Promise.all([
+                    this.click('button:has-text("Delete")')
+                ]);
+            }
+        }
+    }
+
+    async deleteRules() {
+        await this.click('#desktop-left a:nth-child(3)')
+
+        for (let rule of rules) {
+            await this.click(`text=${rule.name}`)
+            await this.click('.mdi-delete')
+            await this.click('button:has-text("Delete")')
+        }
+    }
+
 
     /**
      * Save
@@ -320,7 +347,19 @@ class CustomWorld {
         await this.click('button:has-text("Save")')
     }
 
-
+    /**
+        *          *******          ********       ***********        *           *           * * * *
+        *         *                 *                   *             *           *           *      *
+        *        *                  *                   *             *           *           *       *
+        *         *                 *                   *             *           *           *       *
+        *          *******          ********            *             *           *           * * * *
+        *                 *         *                   *             *           *           * 
+        *                  *        *                   *              *         *            *
+        *                 *         *                   *               *       *             *
+        *          *******          ********            *                 * * *               *
+        * 
+        *               
+        */
 
     /**
      *  fundamental setup: only contains realm
@@ -331,36 +370,26 @@ class CustomWorld {
 
 
     /**
-     *          *******          ********       ***********        *           *           * * * *
-     *         *                 *                   *             *           *           *      *
-     *        *                  *                   *             *           *           *       *
-     *         *                 *                   *             *           *           *       *
-     *          *******          ********            *             *           *           * * * *
-     *                 *         *                   *             *           *           * 
-     *                  *        *                   *              *         *            *
-     *                 *         *                   *               *       *             *
-     *          *******          ********            *                 * * *               *
-     * 
-     *               
-     */
-    /**
      *  basic setup: only contains realm and user
      */
     async basicSetup() {
 
         let isRealmAdded = false
 
-        await this.navigate("admin", "admin")
+        await this.navigate("admin")
+        await this.login("admin")
         // wait for the button to be visible
         await this.page.waitForTimeout(500)
         // set isRealmAdded to true only when smartcity realm is there
-        if (await this.page?.locator('#realm-picker').isVisible()) {
+        if (this.page?.locator('#realm-picker').isVisible()) {
+            await console.log("here")
             await this.click('#realm-picker');
             if (await this.page?.locator('li[role="menuitem"]:has-text("smartcity")').count() > 0) {
                 await this.click('li[role="menuitem"]:has-text("smartcity")')
                 isRealmAdded = true
             }
         }
+
         await this.addUser(isRealmAdded)
     }
 
@@ -412,13 +441,71 @@ class CustomWorld {
 
     }
 
+    /**
+     *        *****     *           ******            *             *       *
+     *       *          *           *                * *            * *     *
+     *      *           *           *               *   *           *  *    *
+     *      *           *           ******         *  *  *          *   *   *
+     *      *           *           *             *       *         *    *  *
+     *       *          *           *            *         *        *     * *  
+     *        *****     ******      ******      *           *       *       *
+     *   
+     */
 
+    /**
+     * Delete realm
+     * not possible right now since there is no way to delete a realm in graphic UI
+     */
+    async fundamentalClean() {
+
+    }
+
+    /**
+     * Delete user
+     */
+    async basicClean() {
+
+        await this.navigate("admin")
+        if (!fs.existsSync('storageState.json')) {
+            await this.login("admin")
+        }
+
+        await this.click('#realm-picker');
+        await this.click('li[role="menuitem"]:has-text("smartcity")')
+
+        await this.click('#menu-btn-desktop');
+        await this.click('text=Users');
+
+        await this.click('td:has-text("smartcity")')
+        await this.click('button:has-text("Delete")')
+        await this.click('div[role="alertdialog"] button:has-text("Delete")')
+    }
+
+    /**
+     *  Delete user and assets
+     */
+    async conventionClean() {
+        await this.basicClean()
+        await this.deleteAssets()
+    }
+
+
+    /**
+     * Delete user, assets, rules and insights
+     */
+    async thoroughClean() {
+        await this.conventionClean()
+        await this.deleteRules()
+        
+        // insights are not there yet
+    }
 }
 
 // launch broswer
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
+        slowMo: 100
     });
 })
 

@@ -5,7 +5,7 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  * Setup
  */
 
-Given('Setup for {string}', { timeout: 50000 }, async function (section) {
+Given('Setup for {string}', { timeout: 30000 }, async function (section) {
     /**
      *  most of cases need the setup of: realm, user and assets
      *  for rules, "rule state" as the the configure item should selected
@@ -41,9 +41,19 @@ Given('Setup for {string}', { timeout: 50000 }, async function (section) {
 /**
  *  Clean up
  */
-When('Clean up {string}', async function (section) {
+When('Clean up {string}', { timeout: 10000 }, async function (section) {
     switch (section) {
-        case "general":
+        case "fundamental":
+            await this.fundamentalClean()
+            break;
+        case "basic":
+            await this.basicClean()
+            break;
+        case "convention":
+            await this.conventionClean()
+            break;
+        case "thorough":
+            await this.thoroughClean()
             break;
         default:
             break;
@@ -59,7 +69,8 @@ When('Clean up {string}', async function (section) {
  */
 
 Given('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) {
-    await this.navigate(user, user)
+    await this.navigate(user)
+    await this.login(user)
 })
 
 /**
