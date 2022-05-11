@@ -602,4 +602,38 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         return new AttributeWriteResult(ref, failure);
     }
+
+    @Override
+    public void updateParent(RequestParams requestParams, String parentId, List<String> assetIds) {
+        AssetQuery query = new AssetQuery();
+        query.ids = assetIds.stream().toArray(String[]::new);
+
+        List<Asset<?>> assets = this.assetStorageService.findAll(query);
+        LOG.info("Get " + assets.size() + " assets from query");
+
+        for (Asset asset : assets) {
+            asset.setParentId(parentId);
+
+            LOG.info("Set asset " + asset.getId() + " new parent " + parentId);
+
+            assetStorageService.merge(asset);
+        }
+    }
+
+    @Override
+    public void updateNoneParent(RequestParams requestParams, List<String> assetIds) {
+        AssetQuery query = new AssetQuery();
+        query.ids = assetIds.stream().toArray(String[]::new);
+
+        List<Asset<?>> assets = this.assetStorageService.findAll(query);
+        LOG.info("Get " + assets.size() + " assets from query");
+
+        for (Asset asset : assets) {
+            asset.setParentId(null);
+
+            LOG.info("Set asset " + asset.getId() + " with no parent");
+
+            assetStorageService.merge(asset);
+        }
+    }
 }

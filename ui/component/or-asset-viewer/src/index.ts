@@ -44,6 +44,8 @@ import "./or-edit-asset-panel";
 import {OrEditAssetModifiedEvent, OrEditAssetPanel, ValidatorResult} from "./or-edit-asset-panel";
 import "@openremote/or-mwc-components/or-mwc-snackbar";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
+import {showDialog, OrMwcDialog, DialogAction} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { OrAssetTree } from "@openremote/or-asset-tree";
 
 export interface PanelConfig {
     type?: "info" | "setup" | "history" | "group" | "survey" | "survey-results" | "linkedUsers";
@@ -221,6 +223,19 @@ export class OrAssetViewerSaveEvent extends CustomEvent<SaveResult> {
     }
 }
 
+export class OrAssetViewerChangeParentEvent extends CustomEvent<string | undefined> {
+
+    public static readonly NAME = "or-asset-viewer-change-parent";
+
+    constructor(parent: string | undefined) {
+        super(OrAssetViewerChangeParentEvent.NAME, {
+            bubbles: true,
+            composed: true,
+            detail: parent
+        });
+    }
+}
+
 export class OrAssetViewerRequestEditToggleEvent extends CustomEvent<Util.RequestEventDetail<boolean>> {
 
     public static readonly NAME = "or-asset-viewer-request-edit-toggle";
@@ -257,6 +272,7 @@ declare global {
         [OrAssetViewerSaveEvent.NAME]: OrAssetViewerSaveEvent;
         [OrAssetViewerRequestEditToggleEvent.NAME]: OrAssetViewerRequestEditToggleEvent;
         [OrAssetViewerEditToggleEvent.NAME]: OrAssetViewerEditToggleEvent;
+        [OrAssetViewerChangeParentEvent.NAME]: OrAssetViewerChangeParentEvent;
     }
 }
 
@@ -1218,6 +1234,70 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
         }
     }
 
+    protected _onParentChangeClick() {
+        let dialog: OrMwcDialog;
+
+        const blockEvent = (ev: Event) => {
+            ev.stopPropagation();
+        };
+
+        const dialogContent = html`<or-asset-tree id="parent-asset-tree" disableSubscribe readonly .selectedIds="${[]}" @or-asset-tree-request-select="${blockEvent}" @or-asset-tree-selection-changed="${blockEvent}"></or-asset-tree>`;
+
+        const setParent = () => {
+            const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
+            let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
+
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd));
+        };
+
+        const clearParent = () => {
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined));
+        };
+
+        const dialogActions: DialogAction[] = [
+            {
+                actionName: "clear",
+                content: i18next.t("none"),
+                action: clearParent
+            },
+            {
+                actionName: "ok",
+                content: i18next.t("ok"),
+                action: setParent
+            },
+            {
+                default: true,
+                actionName: "cancel",
+                content: i18next.t("cancel")
+            }
+        ];
+
+        dialog = showDialog(new OrMwcDialog()
+            .setContent(dialogContent)
+            .setActions(dialogActions)
+            .setStyles(html`
+                        <style>
+                            .mdc-dialog__surface {
+                                width: 400px;
+                                height: 800px;
+                                display: flex;
+                                overflow: visible;
+                                overflow-x: visible !important;
+                                overflow-y: visible !important;
+                            }
+                            #dialog-content {
+                                flex: 1;    
+                                overflow: visible;
+                                min-height: 0;
+                            }
+                            or-asset-tree {
+                                height: 100%;
+                            }
+                        </style>
+                    `)
+            .setDismissAction(null));
+    }
+
     protected render(): TemplateResult | void {
 
         if (this._loading) {
@@ -1226,12 +1306,12 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             `;
         }
 
-         if (!this.asset && !this.assetId && this.assetsIds.length > 1) {
+        if (!this.asset && !this.assetId && this.assetsIds.length > 1) {
             return html `
                 <div class="msg">
                     <div class="multipleAssetsView">
-                        <or-translate value="multiAssetSelected" options="${ { assetNbr: this.assetsIds.length } }"></or-translate>
-                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("changeParent")}" outlined></or-mwc-input>
+                        <or-translate value="multiAssetSelected" .options="${ { assetNbr: this.assetsIds.length } }"></or-translate>
+                        <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("changeParent")}" @click="${() => this._onParentChangeClick()}" outlined></or-mwc-input>
                     </div>
                 </div>
             `;

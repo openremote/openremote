@@ -1,12 +1,12 @@
 import {css, html, TemplateResult, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import "@openremote/or-asset-tree";
+import {customElement, property, query, state} from "lit/decorators.js";
 import "@openremote/or-asset-viewer";
 import {
     OrAssetViewer,
     OrAssetViewerEditToggleEvent,
     OrAssetViewerRequestEditToggleEvent,
     OrAssetViewerSaveEvent,
+    OrAssetViewerChangeParentEvent,
     saveAsset,
     SaveResult,
     ViewerConfig
@@ -150,6 +150,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
         this.addEventListener(OrAssetTreeAddEvent.NAME, this._onAssetAdd);
         this.addEventListener(OrAssetViewerSaveEvent.NAME, (ev) => this._onAssetSave(ev.detail));
         this.addEventListener(OrAssetTreeAssetEvent.NAME, this._onAssetTreeAssetEvent);
+        this.addEventListener(OrAssetViewerChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
     }
 
     protected render(): TemplateResult | void {
@@ -253,6 +254,15 @@ export class PageAssets extends Page<AppStateKeyed>  {
 
         if (result.isNew) {
             this._addedAssetId = result.assetId!;
+        }
+    }
+
+    protected async _onAssetParentChange(newParentId: string | undefined) {
+        if (newParentId) {
+            await manager.rest.api.AssetResource.updateParent(newParentId, { assetIds : this._assetIds });
+        } else {
+            //So need to remove parent from all the selected assets
+            await manager.rest.api.AssetResource.updateNoneParent({ assetIds : this._assetIds });
         }
     }
 
