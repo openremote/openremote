@@ -24,7 +24,7 @@ const tabScrollerStyle = require("@material/tab-scroller/dist/mdc.tab-scroller.c
 const styling = css`
 
     #tree {
-        flex-grow: 1;
+        flex-shrink: 0;
         align-items: stretch;
         z-index: 1;
         max-width: 300px;
@@ -104,10 +104,12 @@ const styling = css`
     /* Sidebar related styling (drag and drop widgets / configuration) */
     #sidebar {
         display: flex;
+        flex-shrink: 0;
         flex-direction: column;
         width: 300px;
         background: white;
         border-left: 1px solid #E0E0E0;
+        z-index: 0;
     }
     #browser {
         flex-grow: 1;

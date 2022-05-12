@@ -39,6 +39,10 @@ export class PageInsights extends Page<AppStateKeyed>  {
         // language=CSS
         return css`
 
+            :host {
+                overflow: hidden; 
+            }
+            
             #builder {
                 z-index: 0;
                 background: transparent;
