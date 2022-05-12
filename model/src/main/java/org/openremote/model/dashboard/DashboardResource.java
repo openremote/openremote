@@ -17,10 +17,10 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface DashboardResource {
 
     @GET
-    @Path("user/all")
+    @Path("all/{realm}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({Constants.READ_ASSETS_ROLE})
-    Dashboard[] getAllUserDashboards(@BeanParam RequestParams requestParams);
+    Dashboard[] getAllRealmDashboards(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @GET
     @Path("{dashboardId}")

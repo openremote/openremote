@@ -28,10 +28,18 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
 
     @Override
-    public Dashboard[] getAllUserDashboards(RequestParams requestParams) {
+    public Dashboard[] getAllRealmDashboards(RequestParams requestParams, String realm) {
 
         System.out.println("Getting all User Dashboards...");
-        return this.dashboardStorageService.getAll();
+        try {
+            if(!isTenantActiveAndAccessible(realm)) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+            return this.dashboardStorageService.findAllOfRealm(realm);
+
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
+        }
     }
 
     @Override

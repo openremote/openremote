@@ -12,7 +12,9 @@ import org.openremote.model.dashboard.Dashboard;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,12 +60,14 @@ public class DashboardStorageService extends RouteBuilder implements ContainerSe
 
     /* --------------------------  */
 
-    // Getting ALL dashboards (so currently not even user specific, ALL of them)
-    protected <T extends Dashboard> Dashboard[] getAll() {
+    // Getting ALL dashboards from a realm
+    protected <T extends Dashboard> Dashboard[] findAllOfRealm(String realm) {
         Object[] result = persistenceService.doReturningTransaction(em -> {
             try {
-                CriteriaQuery<Dashboard> cq = em.getCriteriaBuilder().createQuery(Dashboard.class);
-                CriteriaQuery<Dashboard> all = cq.select(cq.from(Dashboard.class));
+                CriteriaBuilder cb = em.getCriteriaBuilder();
+                CriteriaQuery<Dashboard> cq = cb.createQuery(Dashboard.class);
+                Root<Dashboard> root = cq.from(Dashboard.class);
+                CriteriaQuery<Dashboard> all = cq.select(root).where(cb.like(root.get("realm"), realm));
                 TypedQuery<Dashboard> allQuery = em.createQuery(all);
                 return allQuery.getResultList().toArray();
 

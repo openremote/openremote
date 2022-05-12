@@ -47,7 +47,7 @@ export class OrDashboardTree extends LitElement {
     }
 
     private async getAllDashboards() {
-        return manager.rest.api.DashboardResource.getAllUserDashboards().then((result) => {
+        return manager.rest.api.DashboardResource.getAllRealmDashboards(manager.displayRealm).then((result) => {
             this.dashboards = result.data;
         });
     }

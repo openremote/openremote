@@ -209,7 +209,7 @@ export class OrDashboardBuilder extends LitElement {
             }
 
             // Getting dashboards
-            await manager.rest.api.DashboardResource.getAllUserDashboards().then((result) => {
+            await manager.rest.api.DashboardResource.getAllRealmDashboards(manager.displayRealm).then((result) => {
                 this.dashboards = result.data;
             });
 
@@ -511,7 +511,7 @@ export class OrDashboardBuilder extends LitElement {
     }
 
     private async getAllDashboards(): Promise<Dashboard[]> {
-        return manager.rest.api.DashboardResource.getAllUserDashboards().then((response) => {
+        return manager.rest.api.DashboardResource.getAllRealmDashboards(manager.displayRealm).then((response) => {
             return response.data as Dashboard[];
         });
     }
