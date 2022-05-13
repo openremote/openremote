@@ -145,8 +145,10 @@ export class OrDashboardEditor extends LitElement{
                 const gridHTML = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
                 gridHTML.style.width = (this.width + 'px');
                 gridHTML.style.height = (this.height + 'px');
-                this.renderGrid();
-                // this.updateGridSize(gridHTML);
+                // this.renderGrid();
+                if(this.mainGrid != null) {
+                    this.updateGridSize(true);
+                }
             }
         }
 
@@ -244,15 +246,15 @@ export class OrDashboardEditor extends LitElement{
             // Render a CSS border raster on the background, and update it on resize.
             if(gridElement != null) {
                 gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
-                let previousWidth = gridElement.getBoundingClientRect().width;
+/*                let previousWidth = gridElement.getBoundingClientRect().width;
                 let resizeObserver = new ResizeObserver((entries) => {
                     const width = entries[0].borderBoxSize?.[0].inlineSize;
                     if (width !== previousWidth) {
                         previousWidth = width;
-                        this.updateGridSize(gridElement);
+                        this.updateGridSize(gridElement,true, width);
                     }
                 });
-                resizeObserver.observe(gridElement);
+                resizeObserver.observe(gridElement);*/
             }
 
             // Handling dropping of new items
@@ -296,8 +298,21 @@ export class OrDashboardEditor extends LitElement{
         }
     }
 
-    updateGridSize(gridElement: HTMLElement) {
-        gridElement.style.backgroundSize = "" + this.mainGrid?.cellWidth() + "px " + this.mainGrid?.getCellHeight() + "px";
+    updateGridSize(doResize: boolean, size?: number) {
+        if(this.shadowRoot != null) {
+            const gridElement = this.shadowRoot.querySelector("#gridElement") as HTMLElement;
+            if(doResize && gridElement != null && this.mainGrid != null) {
+                if(size != undefined) {
+                    // this.mainGrid.cellHeight(size);
+                    gridElement.style.backgroundSize = "" + size + "px " + size + "px";
+                } else {
+                    /*console.log(this.mainGrid.cellWidth());
+                    this.mainGrid.cellHeight(this.mainGrid.cellWidth(), true);
+                    console.log("cellHeight is now [" + this.mainGrid.getCellHeight() + "]");*/
+                    gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
+                }
+            }
+        }
     }
 
 
