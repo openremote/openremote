@@ -67,7 +67,7 @@ Then('Save rule', async function () {
 /**
  *  Flow editor
  */
-Then('Drag in the elements', async function () {
+Then('Drag in the elements', { timeout: 10000 }, async function () {
     const { page } = this
 
     // page.dragAndDrop(source, target[, options]) is an alternative 
@@ -109,12 +109,12 @@ Then('Set value', async function () {
     await this.click('or-translate:has-text("Power forecast")')
     await this.click('button:has-text("Add")')
 
-    await this.fill('[placeholder="value"] >> nth=0','50')
-    await this.fill('[placeholder="value"] >> nth=1','60')
-    await this.fill('[placeholder="value"] >> nth=2','40')
+    await this.fill('[placeholder="value"] >> nth=0', '50')
+    await this.fill('[placeholder="value"] >> nth=1', '60')
+    await this.fill('[placeholder="value"] >> nth=2', '40')
 })
 
-Then('Connect elements', async function () {
+Then('Connect elements', {timeout:10000},async function () {
     const { page } = this
     // connect elements
     await page.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
@@ -123,7 +123,6 @@ Then('Connect elements', async function () {
     await page.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
     await page.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
     await page.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
-
     await page.waitForTimeout(1000)
 })
 

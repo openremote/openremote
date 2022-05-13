@@ -36,6 +36,7 @@ Given('Setup for {string}', { timeout: 32000 }, async function (section) {
         case "thorough":
             await this.thoroughSetup()
             break;
+            
         default:
             break;
 

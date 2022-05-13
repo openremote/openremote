@@ -74,7 +74,7 @@ class CustomWorld {
      */
 
     /**
-     * 
+     * navigate to a page where if for the desired realm
      * @param { } realm String : Realm type (admin or other)
      */
 
@@ -98,7 +98,6 @@ class CustomWorld {
      * 
      * @param { } user String : User type (admin or other)
      */
-
     async login(user) {
         if (!fs.existsSync('storageState.json')) {
             if (user == "admin") {
@@ -162,7 +161,7 @@ class CustomWorld {
      */
 
     /**
-     * navigation
+     * navigation to a page inside the manager
      */
     async navigateTo(setting) {
         await this.click('button[id="menu-btn-desktop"]');
@@ -251,7 +250,7 @@ class CustomWorld {
      * unselect the asset
      */
     async unSelectAll() {
-
+        await this.page.waitForTimeout(200)
         // leave modify mode
         if (await this.page?.locator('button:has-text("View")').isVisible()) {
             await this.click('button:has-text("View")')
@@ -497,7 +496,7 @@ class CustomWorld {
     }
 
     /**
-     * Delete user
+     * Delete realm and user
      */
     async basicClean() {
 
@@ -518,7 +517,7 @@ class CustomWorld {
     }
 
     /**
-     *  Delete user and assets
+     *  Delete realm, user and assets
      */
     async conventionClean() {
         await this.basicClean()
@@ -527,7 +526,7 @@ class CustomWorld {
 
 
     /**
-     * Delete user, assets, rules and insights
+     * Delete realm, user, assets, rules and insights
      */
     async thoroughClean() {
         await this.conventionClean()
@@ -546,7 +545,7 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
-        slowMo: 100
+        slowMo: 50
     });
 })
 

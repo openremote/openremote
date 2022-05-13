@@ -14,6 +14,7 @@ Feature: Add_Settings
         When Navigate to "Roles" page
         Then Create a new role
 
+
     @Desktop @apply_role
     Scenario: Apply new role
         When Navigate to "Users" page
