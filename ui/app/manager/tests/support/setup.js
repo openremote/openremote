@@ -1,4 +1,4 @@
-const { setWorldConstructor, BeforeAll, AfterAll, After, Before, setDefaultTimeout } = require("@cucumber/cucumber");
+const { setWorldConstructor, BeforeAll, AfterAll, After } = require("@cucumber/cucumber");
 const { ChromiumBroswer } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
@@ -37,7 +37,9 @@ const assets = [
         location_x: 705,
         location_y: 210,
         config_item_1: "Rule state",
-        config_item_2: "Store data points"
+        config_item_2: "Store data points",
+        config_attr_1: "energyLevel",
+        config_attr_2: "power"
     },
     {
         asset: "PV solar asset",
@@ -51,10 +53,12 @@ const assets = [
         v1: "30",
         v2: "70",
         v3: "100",
-        location_x: 540,
-        location_y: 110,
+        location_x: 600,
+        location_y: 200,
         config_item_1: "Rule state",
-        config_item_2: "Store data points"
+        config_item_2: "Store data points",
+        config_attr_1: "power",
+        config_attr_2: "powerForecast"
     }
 ]
 
@@ -112,7 +116,7 @@ class CustomWorld {
 
     /**
      * 
-     * @param {location selector as STRING} button 
+     * @param { } button STRING, selector for an element
      */
 
     async click(button) {
@@ -147,6 +151,12 @@ class CustomWorld {
         await this.page?.locator(locate).fill(value)
     }
 
+    async drag(position_x, position_y) {
+        await this.page.mouse.down()
+        await this.page.mouse.move(position_x, position_y)
+        await this.page.mouse.up()
+    }
+
     /**
      *  Repeatable actions
      */
@@ -163,6 +173,7 @@ class CustomWorld {
      *  create Realm
      */
     async addRealm(name) {
+        await this.navigateTo("Realms")
 
         // add realm
         await this.click('text=Add Realm');
@@ -252,7 +263,6 @@ class CustomWorld {
             await this.page?.locator('.mdi-close').first().click()
             console.log("unselected")
         }
-
     }
 
     /**
@@ -260,8 +270,6 @@ class CustomWorld {
      */
     async selectAssets(name) {
         await this.click(`text=${name}`)
-
-        console.log(name + " select succeed")
     }
 
 
@@ -274,8 +282,6 @@ class CustomWorld {
     async updateAssets(attr, type, value) {
         await this.fill(`#field-${attr} input[type="${type}"]`, value)
         await this.click(`#field-${attr} #send-btn span`)
-
-        console.log(attr + " update succeed")
     }
 
     /**
@@ -287,7 +293,6 @@ class CustomWorld {
     async updateInModify(attr, type, value) {
 
         await this.fill(`text=${attr} ${type} >> input[type="number"]`, value)
-        console.log(attr + " modify succeed")
     }
 
     /**
@@ -299,7 +304,6 @@ class CustomWorld {
         await this.click('text=location GEO JSON point >> button span')
         await this.page?.mouse.click(location_x, location_y, { delay: 1000 })
         await this.click('button:has-text("OK")')
-        console.log("location succeed")
     }
 
     /**
@@ -311,7 +315,6 @@ class CustomWorld {
     async configItem(item_1, item_2, attr) {
         await this.page.locator(`td:has-text("${attr} ")`).first().click()
         await this.page.waitForTimeout(500)
-        console.log(attr + " opened")
         await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
         await this.click(`li[role="checkbox"]:has-text("${item_1}")`)
         await this.click(`li[role="checkbox"]:has-text("${item_2}")`)
@@ -332,6 +335,7 @@ class CustomWorld {
 
     /**
      * delete all the assets
+     * right now it's deleting all the assets in the array
      */
     async deleteAssets() {
         await this.click('#desktop-left a:nth-child(2)')
@@ -347,6 +351,13 @@ class CustomWorld {
         }
     }
 
+
+    /**
+     * delete all the rule
+     * right now it's deleting all the rules in the array
+     * i expect it to be possible to delete accroding to the UI 
+     * (like detect all the rules in the rule tree and then delete)
+     */
     async deleteRules() {
         await this.click('#desktop-left a:nth-child(3)')
 
@@ -389,7 +400,6 @@ class CustomWorld {
 
         await this.page.waitForTimeout(1000)
         if (!await this.page?.locator('#realm-picker').isVisible()) {
-            await console.log("cant be seen")
             await this.navigateTo("Realms")
             await this.addRealm(name)
         }
@@ -407,7 +417,7 @@ class CustomWorld {
         await this.navigate("admin")
         await this.login("admin")
         // wait for the button to be visible
-        await this.page.waitForTimeout(500)
+        await this.page.waitForTimeout(300)
         // set isRealmAdded to true only when smartcity realm is there
         if (await this.page?.locator('#realm-picker').isVisible()) {
             await this.click('#realm-picker');
@@ -459,11 +469,10 @@ class CustomWorld {
             await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1)
             await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
             await this.updateLocation(asset.location_x, asset.location_y)
-            await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.attr_1, asset.attr_2)
+            await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
             await this.save()
 
-            await this.page.waitForTimeout(500)
-            console.log("item set")
+            await this.page.waitForTimeout(300)
         }
 
     }
@@ -527,6 +536,11 @@ class CustomWorld {
         // insights are not there yet
     }
 }
+
+
+/**
+ * broswer setting
+ */
 
 // launch broswer
 BeforeAll(async function () {

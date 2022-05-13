@@ -2,7 +2,7 @@
 Feature: Insight
 
     Background: Navigation
-        Given Login to smartcity realm
+        Given Login OpenRemote as "smartcity"
     
      @Desktop @insert_attribute
      Scenario Outline: Insert attributes

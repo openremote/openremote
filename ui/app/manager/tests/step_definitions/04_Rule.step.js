@@ -1,4 +1,5 @@
 const { When, Then } = require("@cucumber/cucumber");
+const { default: TestStepHookDefinition } = require("@cucumber/cucumber/lib/models/test_step_hook_definition");
 const { test, expect } = require('@playwright/test');
 
 /**
@@ -50,7 +51,7 @@ Then('Create Then action on {string} of {string} of {string} with threshold {str
     await this.click(`#matchSelect li[role="option"]:has-text("${asset}")`)
 
     // select attribute
-    await this.click('text=Attribute Efficiency import Energy capacity Energy level Energy level percentage >> div[role="button"]')
+    await this.click('text=Attribute Efficiency export Efficiency import Energy capacity Energy level perce >> div[role="button"]')
     await this.click(`li[role="option"]:has-text("${attribute_then}")`)
 
     // set value
@@ -70,8 +71,59 @@ Then('Drag in the elements', async function () {
     const { page } = this
 
     // page.dragAndDrop(source, target[, options]) is an alternative 
+    // move all the elements
     await page.locator('text=Read attribute').hover()
-    await page.mouse.down()
-    await page.waitForTimeout(2000)
+    await this.drag(450, 250)
+
+    await page.locator('text=Number').first().hover()
+    await this.drag(450, 350)
+
+    await page.locator('text=Number').first().hover()
+    await this.drag(450, 500)
+
+    await page.locator('text=Number').first().hover()
+    await this.drag(450, 600)
+
+    await page.locator('text=>').hover()
+    await this.drag(650, 300)
+
+    await page.locator('text=Number switch').hover()
+    await this.drag(800, 425)
+
+    await page.locator('text=Write attribute').hover()
+    await this.drag(1000, 425)
+})
+
+Then('Set value', async function () {
+    // set read and write
+    //await page.locator('button:has-text("Attribute")').first().click(); 
+    await this.click('button:has-text("Attribute") >> nth=0')   // read 
+    await this.click('div[role="alertdialog"] >> text=Solar')
+    //await page.locator('or-translate:has-text("Power")').nth(1).click();
+    await this.click('or-translate:has-text("Power") >> nth=1')
+    await this.click('button:has-text("Add")')
+
+    //await page.locator('button:has-text("Attribute")').first().click();     // write
+    await this.click('button:has-text("Attribute") >> nth=0')
+    await this.click('div[role="alertdialog"] >> text=Solar')
+    await this.click('or-translate:has-text("Power forecast")')
+    await this.click('button:has-text("Add")')
+
+    await this.fill('[placeholder="value"] >> nth=0','50')
+    await this.fill('[placeholder="value"] >> nth=1','60')
+    await this.fill('[placeholder="value"] >> nth=2','40')
+})
+
+Then('Connect elements', async function () {
+    const { page } = this
+    // connect elements
+    await page.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
+    await page.dragAndDrop('flow-node:nth-child(2) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(2) .socket')
+    await page.dragAndDrop('div:nth-child(3) flow-node-socket .socket', ' flow-node:nth-child(6) .socket-side.inputs flow-node-socket .socket >> nth=0')
+    await page.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
+    await page.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
+    await page.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
+
+    await page.waitForTimeout(1000)
 })
 

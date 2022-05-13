@@ -2,7 +2,7 @@
 Feature: Rules
 
     Background: Navigation
-        Given Login to smartcity realm
+        Given Login OpenRemote as "smartcity"
         Then Nevigate to rule page
 
     @Desktop @create_whenthen_rule
@@ -23,8 +23,9 @@ Feature: Rules
         When Create a new "Flow" rule
         Then Name new rule "Solar"
         Then Drag in the elements
-        Then Select the attributes in the reader and writer
+        Then Set value
         Then Connect elements
+        Then Snapshot "flow"
         Then Save rule
 
 

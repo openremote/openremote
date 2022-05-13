@@ -5,7 +5,7 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  * Setup
  */
 
-Given('Setup for {string}', { timeout: 30000 }, async function (section) {
+Given('Setup for {string}', { timeout: 32000 }, async function (section) {
     /**
      *  most of cases need the setup of: realm, user and assets
      *  for rules, "rule state" as the the configure item should selected

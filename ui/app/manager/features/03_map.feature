@@ -2,7 +2,7 @@
 Feature: Map
 
     Background: Navigation
-        Given Login to smartcity realm
+        Given Login OpenRemote as "smartcity"
         Then Nevigate to map page
 
     @Desktop @markers

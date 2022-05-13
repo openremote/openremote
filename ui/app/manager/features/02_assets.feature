@@ -41,7 +41,7 @@ Feature: Assets
         Examples:
             | asset                     | name    | attribute     | type   | value | location_x | location_y |
             | Electricity battery asset | Battery | powerSetpoint | number | 70    | 705        | 210        |
-            | PV solar asset            | Solar   | powerForecast | number | 100   | 540        | 110        |
+            | PV solar asset            | Solar   | powerForecast | number | 100   | 600        | 200        |
 
     @Desktop @readonly
     Scenario Outline: Set and cancel read-only

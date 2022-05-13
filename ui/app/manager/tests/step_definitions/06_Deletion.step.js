@@ -1,5 +1,10 @@
-const { Given,When, Then } = require("@cucumber/cucumber");
-require('dotenv').config();
+const { Then } = require("@cucumber/cucumber");
+
+
+// Customworld is not working here.
+// I suppose to have the method in auto hint but this do not help
+// It does not effect the running of the tests
+//setWorldConstructor(CustomWorld)
 
 /**
  * delete assets

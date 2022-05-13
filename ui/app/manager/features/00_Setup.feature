@@ -12,3 +12,8 @@ Feature: Setup
         Then We see the smartcity realm
 
 
+    @Desktop @clean
+    Scenario: Clean up
+        When Clean up the test environment as "fundamental"
+
+
