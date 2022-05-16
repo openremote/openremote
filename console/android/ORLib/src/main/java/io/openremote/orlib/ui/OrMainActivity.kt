@@ -31,6 +31,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.messaging.FirebaseMessaging
 import io.openremote.orlib.ORConstants
+import io.openremote.orlib.ORConstants.BASE_URL_KEY
 import io.openremote.orlib.R
 import io.openremote.orlib.databinding.ActivityOrMainBinding
 import io.openremote.orlib.models.ORAppConfig
@@ -141,9 +142,9 @@ open class OrMainActivity : Activity() {
                 ORAppConfig::class.java
             )
         }
-
-        if (intent.hasExtra(ORConstants.BASE_URL_KEY)) {
-            baseUrl = intent.getStringExtra(ORConstants.BASE_URL_KEY)
+        
+        if (intent.hasExtra(BASE_URL_KEY)) {
+            baseUrl = intent.getStringExtra(BASE_URL_KEY)
         }
 
         if (appConfig == null) {
@@ -506,7 +507,14 @@ open class OrMainActivity : Activity() {
         failingUrl: String?
     ) {
         LOG.warning("Error requesting '$failingUrl': $errorCode($description)")
-
+        //TODO should we always ignore image errors?
+        if (failingUrl != null && (failingUrl.endsWith("png")
+                    || failingUrl.endsWith("jpg")
+                    || failingUrl.endsWith("ico"))
+        ) {
+            LOG.info("Ignoring error loading image resource")
+            return
+        }
         //TODO should we always ignore image errors and locale json files?
         if (failingUrl != null && (failingUrl.endsWith("png")
                     || failingUrl.endsWith("jpg")
