@@ -634,3 +634,23 @@ Resources:
     Properties:
       InstanceId: !Ref EC2Instance
       EIP: !Ref IPAddress
+
+# Alarms
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: support@openremote.io
+      Protocol: email
+      TopicArn: !Ref SnsTopic
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref Host
+
+  SystemStatusAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
