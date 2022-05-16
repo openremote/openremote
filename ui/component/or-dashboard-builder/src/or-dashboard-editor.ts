@@ -108,13 +108,10 @@ export class OrDashboardEditor extends LitElement{
     protected height: number = 540;
 
     @property()
+    protected previewSize: "Large" | "Medium" | "Small" | "Custom Size" = "Large";
+
+    @property()
     protected readonly isLoading: boolean | undefined;
-
-    @state()
-    private previewHeight: number | undefined;
-
-    @state()
-    private previewWidth: number | undefined;
 
 
     /* ---------------- */
@@ -123,11 +120,6 @@ export class OrDashboardEditor extends LitElement{
         super();
         if(this.editMode == undefined) { this.editMode = true; } // default
         this.isLoading = false;
-
-        if(this.editMode) {
-            if(this.previewHeight == undefined) { this.previewHeight = 540; }
-            if(this.previewWidth == undefined) { this.previewWidth = 940; }
-        }
     }
 
 
@@ -149,6 +141,19 @@ export class OrDashboardEditor extends LitElement{
                 if(this.mainGrid != null) {
                     this.updateGridSize(true);
                 }
+            }
+            if(this.width == 1920 && this.height == 1080) { this.previewSize = "Large"; }
+            else if(this.width == 1280 && this.height == 720) { this.previewSize = "Medium"; }
+            else if(this.width == 480 && this.height == 853) { this.previewSize = "Small"; }
+            else { this.previewSize = "Custom Size"; }
+        }
+
+        if(changedProperties.has("previewSize")) {
+            switch (this.previewSize) {
+                case "Large": { this.width = 1920; this.height = 1080; break; }
+                case "Medium": { this.width = 1280; this.height = 720; break; }
+                case "Small": { this.width = 480; this.height = 853; break; }
+                case "Custom Size": { break; }
             }
         }
 
@@ -216,21 +221,12 @@ export class OrDashboardEditor extends LitElement{
 
                 this.mainGrid = grid;
 
-                // Add widgets of template onto the Grid
-                if(this.template != null && this.template.widgets != null) {
-                    const gridItems: DashboardGridItem[] = [];
-                    for (const widget of this.template.widgets) {
-                        widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
-                    }
-                }
-
-                // Render a CSS border raster on the background, and update it on resize.
+                // Render a CSS border raster on the background
                 if(gridElement != null) {
                     gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
                     gridElement.style.height = "100%";
                     gridElement.style.minHeight = "100%";
                 }
-
 
             } else {
                 console.log("Could not render initial Grid! Could not find gridElement!");
@@ -436,14 +432,17 @@ export class OrDashboardEditor extends LitElement{
                 ${this.editMode ? html`
                     <div id="view-options">
                         <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
-                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
+                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" .value="${this.previewSize}" .options="${['Large', 'Medium', 'Small', 'Custom Size']}" style="min-width: 220px;"
+                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = event.detail.value; }}"
+                        ></or-mwc-input>
                         <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" .value="${this.width}" style="width: 90px"
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.width = event.detail.value as number; }}"
                         ></or-mwc-input>
                         <or-mwc-input id="height-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Height" min="100" .value="${this.height}" style="width: 90px;"
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.height = event.detail.value as number; }}"
                         ></or-mwc-input>
-                        <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"></or-mwc-input>
+                        <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"
+                                      @or-mwc-input-changed="${() => { const newWidth = this.height; const newHeight = this.width; this.width = newWidth; this.height = newHeight; }}"></or-mwc-input>
                     </div>
                     <div id="container" style="display: flex; justify-content: center; height: auto;">
                         <div class="maingrid">
