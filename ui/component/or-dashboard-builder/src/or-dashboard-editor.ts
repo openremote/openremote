@@ -202,99 +202,130 @@ export class OrDashboardEditor extends LitElement{
             }
 
             // Setting up main center Grid
-            const gridElement = this.shadowRoot.getElementById("gridElement");
-            this.mainGrid = GridStack.init({
-                acceptWidgets: (this.editMode),
-                animate: true,
-                cellHeight: 'auto',
-                cellHeightThrottle: 100,
-                disableDrag: (!this.editMode),
-                disableResize: (!this.editMode),
-                draggable: {
-                    appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
-                    scroll: true
-                },
-                float: true,
-                margin: 4,
-                resizable: {
-                    handles: 'all'
-                },
-                minRow: (this.editMode ? 10 : undefined)
-                // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
-            }, gridElement);
-
-            // Set amount of columns if different from default (which is 12)
-            if(this.template?.columns != null) {
-                this.mainGrid.column(this.template.columns);
-            }
-
-            // Add widgets of template onto the Grid
+            let gridElement; let grid;
             if(this.template != null && this.template.widgets != null) {
+                gridElement = this.shadowRoot.getElementById("gridElement");
                 const gridItems: DashboardGridItem[] = [];
                 for (const widget of this.template.widgets) {
                     widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
                 }
-                this.mainGrid.load(gridItems);
+                grid = this.createGrid(gridElement, gridItems);
             }
 
-            // Add event listeners to Grid
-            this.mainGrid.getGridItems().forEach((htmlElement) => {
+            if(grid != null) {
+
+                this.mainGrid = grid;
+
+                // Add widgets of template onto the Grid
+                if(this.template != null && this.template.widgets != null) {
+                    const gridItems: DashboardGridItem[] = [];
+                    for (const widget of this.template.widgets) {
+                        widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
+                    }
+                }
+
+                // Render a CSS border raster on the background, and update it on resize.
+                if(gridElement != null) {
+                    gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
+                    gridElement.style.height = "100%";
+                    gridElement.style.minHeight = "100%";
+                }
+
+
+            } else {
+                console.log("Could not render initial Grid! Could not find gridElement!");
+            }
+        }
+    }
+
+    createGrid(gridElement?: HTMLElement | null, gridItems?: DashboardGridItem[]): GridStack | null {
+        console.log("Creating a new Grid..");
+        if(gridElement == null && this.shadowRoot != null) {
+            gridElement = this.shadowRoot.getElementById("gridElement");
+            if(gridElement == null) {
+                console.log("Grid could not be created, because the gridElement does not exist!");
+                return null;
+            }
+        }
+        const grid = GridStack.init({
+            acceptWidgets: (this.editMode),
+            animate: true,
+            cellHeight: 'auto',
+            cellHeightThrottle: 100,
+            column: (this.template?.columns != null ? this.template.columns : 12),
+            disableDrag: (!this.editMode),
+            disableResize: (!this.editMode),
+            disableOneColumnMode: true,
+            draggable: {
+                appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
+                scroll: true
+            },
+            float: true,
+            margin: 4,
+            resizable: {
+                handles: 'all'
+            },
+            styleInHead: false
+            // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
+        }, gridElement);
+
+        if(gridItems != null) {
+            grid.load(gridItems);
+            grid.getGridItems().forEach((htmlElement) => {
                 const gridItem = htmlElement.gridstackNode as DashboardGridItem;
                 this.addWidgetEventListeners(gridItem, htmlElement);
             });
+        }
 
-            // Render a CSS border raster on the background, and update it on resize.
-            if(gridElement != null) {
-                gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
-/*                let previousWidth = gridElement.getBoundingClientRect().width;
-                let resizeObserver = new ResizeObserver((entries) => {
-                    const width = entries[0].borderBoxSize?.[0].inlineSize;
-                    if (width !== previousWidth) {
-                        previousWidth = width;
-                        this.updateGridSize(gridElement,true, width);
+        grid.on('dropped', (event: Event, previousWidget: any, newWidget: GridStackNode | undefined) => {
+            if(this.mainGrid != null && newWidget != null) {
+                this.mainGrid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
+                this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget }));
+            }
+        });
+
+        // Handling changes of items (resizing, moving around etc)
+        grid.on('change', (event: Event, items: any) => {
+            if(this.template != null && this.template.widgets != null) {
+                (items as GridStackNode[]).forEach(node => {
+                    const widget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
+                    if(widget != null && widget.gridItem != null) {
+                        console.log("Updating properties of " + widget.displayName);
+                        widget.gridItem.x = node.x;
+                        widget.gridItem.y = node.y;
+                        widget.gridItem.w = node.w;
+                        widget.gridItem.h = node.h;
+                        widget.gridItem.content = node.content;
                     }
                 });
-                resizeObserver.observe(gridElement);*/
+                this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
             }
+        });
 
-            // Handling dropping of new items
-            this.mainGrid.on('dropped', (event: Event, previousWidget: any, newWidget: GridStackNode | undefined) => {
-                if(this.mainGrid != null && newWidget != null) {
-                    this.mainGrid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
-                    this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget }));
-                }
-            });
+        // Making all GridStack events dispatch on this component as well.
+        grid.on("added", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("added", {detail: { event: event, items: items }})); });
+        grid.on("change", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("change", { detail: { event: event, items: items }})); });
+        grid.on("disable", (event: Event) => { this.dispatchEvent(new CustomEvent("disable", { detail: { event: event }})); });
+        grid.on("dragstart", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("dragstart", { detail: { event: event, el: el }})); });
+        grid.on("drag", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("drag", { detail: { event: event, el: el }})); });
+        grid.on("dragstop", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("dragstop", { detail: { event: event, el: el }})); });
+        grid.on("enable", (event: Event) => { this.dispatchEvent(new CustomEvent("enable", { detail: { event: event }})); });
+        grid.on("removed", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("removed", { detail: { event: event, items: items }})); });
+        grid.on("resizestart", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resizestart", { detail: { event: event, el: el }})); });
+        grid.on("resize", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resize", { detail: { event: event, el: el }})); });
+        grid.on("resizestop", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resizestop", { detail: { event: event, el: el }})); });
 
-            // Handling changes of items (resizing, moving around etc)
-            this.mainGrid.on('change', (event: Event, items: any) => {
-                if(this.template != null && this.template.widgets != null) {
-                    (items as GridStackNode[]).forEach(node => {
-                        const widget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
-                        if(widget != null && widget.gridItem != null) {
-                            console.log("Updating properties of " + widget.displayName);
-                            widget.gridItem.x = node.x;
-                            widget.gridItem.y = node.y;
-                            widget.gridItem.w = node.w;
-                            widget.gridItem.h = node.h;
-                            widget.gridItem.content = node.content;
-                        }
-                    });
-                    this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
-                }
-            });
+        return grid;
+    }
 
-            // Making all GridStack events dispatch on this component as well.
-            this.mainGrid.on("added", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("added", {detail: { event: event, items: items }})); });
-            this.mainGrid.on("change", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("change", { detail: { event: event, items: items }})); });
-            this.mainGrid.on("disable", (event: Event) => { this.dispatchEvent(new CustomEvent("disable", { detail: { event: event }})); });
-            this.mainGrid.on("dragstart", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("dragstart", { detail: { event: event, el: el }})); });
-            this.mainGrid.on("drag", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("drag", { detail: { event: event, el: el }})); });
-            this.mainGrid.on("dragstop", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("dragstop", { detail: { event: event, el: el }})); });
-            this.mainGrid.on("enable", (event: Event) => { this.dispatchEvent(new CustomEvent("enable", { detail: { event: event }})); });
-            this.mainGrid.on("removed", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("removed", { detail: { event: event, items: items }})); });
-            this.mainGrid.on("resizestart", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resizestart", { detail: { event: event, el: el }})); });
-            this.mainGrid.on("resize", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resize", { detail: { event: event, el: el }})); });
-            this.mainGrid.on("resizestop", (event: Event, el: any) => { this.dispatchEvent(new CustomEvent("resizestop", { detail: { event: event, el: el }})); });
+    rerenderGrid(gridItems: GridItemHTMLElement[], force: boolean = false) {
+        console.log("Rerendering the Grid..");
+        if(this.mainGrid != null) {
+            this.mainGrid.destroy(force);
+            const newGrid = this.createGrid();
+            if(newGrid != null) { this.mainGrid = newGrid; }
+        } else {
+            console.log("Grid could not be destroyed, because it does not exist!");
         }
     }
 
@@ -302,14 +333,14 @@ export class OrDashboardEditor extends LitElement{
         if(this.shadowRoot != null) {
             const gridElement = this.shadowRoot.querySelector("#gridElement") as HTMLElement;
             if(doResize && gridElement != null && this.mainGrid != null) {
+                console.log("Updating the Grid Size...");
                 if(size != undefined) {
-                    // this.mainGrid.cellHeight(size);
                     gridElement.style.backgroundSize = "" + size + "px " + size + "px";
                 } else {
-                    /*console.log(this.mainGrid.cellWidth());
-                    this.mainGrid.cellHeight(this.mainGrid.cellWidth(), true);
-                    console.log("cellHeight is now [" + this.mainGrid.getCellHeight() + "]");*/
+                    this.mainGrid.cellHeight(this.mainGrid.cellWidth())
                     gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
+                    const gridItems = this.mainGrid.getGridItems();
+                    this.rerenderGrid(gridItems);
                 }
             }
         }
@@ -404,7 +435,7 @@ export class OrDashboardEditor extends LitElement{
             <div style="display: flex; flex-direction: column; height: 100%;">
                 ${this.editMode ? html`
                     <div id="view-options">
-                        <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" outlined label="50%"></or-mwc-input>
+                        <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
                         <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" value="Large" .options="${['Large', 'Medium', 'Small']}" style="min-width: 220px;"></or-mwc-input>
                         <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" .value="${this.width}" style="width: 90px"
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.width = event.detail.value as number; }}"
