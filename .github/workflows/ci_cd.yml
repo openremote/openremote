@@ -60,10 +60,6 @@ on:
         - '**'
     tags-ignore:
       - '*.*'
-    paths-ignore:
-      - '.github/**'
-      - '.ci_cd/**'
-      - '**/*.md'
 
   # When a release is published
   release:
@@ -102,10 +98,26 @@ jobs:
 
     steps:
     
-      - name: Cancel Previous Runs
+      - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
+          
+      # We use this to exit workflow if only CI/CD files are changed
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v20
+        with:
+          files_ignore: |
+            .github/**
+            .ci_cd/**
+            **/*.md
+            **/*.yml
+
+      - name: Finish if only CI/CD files have changed
+        if: github.event_name == 'push' && steps.changed-files.outputs.any_changed != 'true'
+        run: |
+          exit 0
           
       - name: Get inputs and secrets
         id: inputs-and-secrets
