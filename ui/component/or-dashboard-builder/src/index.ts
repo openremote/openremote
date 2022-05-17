@@ -4,21 +4,23 @@ import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-editor";
 import "./or-dashboard-widgetsettings";
+import "./or-dashboard-boardsettings";
 import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 import "@openremote/or-icon";
 import {style} from "./style";
-import {MDCTabBar} from "@material/tab-bar";
 import {ORGridStackNode} from "./or-dashboard-editor";
 import {Dashboard, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
-import manager, {DefaultColor3 } from "@openremote/core";
+import manager, {DefaultColor3, DefaultColor5 } from "@openremote/core";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
+import { OrMwcTabItem } from "@openremote/or-mwc-components/or-mwc-tabs";
+import "@openremote/or-mwc-components/or-mwc-tabs";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
-const tabStyle = require("@material/tab/dist/mdc.tab.css");
+/*const tabStyle = require("@material/tab/dist/mdc.tab.css");
 const tabbarStyle = require("@material/tab-bar/dist/mdc.tab-bar.css");
 const tabIndicatorStyle = require("@material/tab-indicator/dist/mdc.tab-indicator.css");
-const tabScrollerStyle = require("@material/tab-scroller/dist/mdc.tab-scroller.css");
+const tabScrollerStyle = require("@material/tab-scroller/dist/mdc.tab-scroller.css");*/
 
 // language=CSS
 const styling = css`
@@ -143,7 +145,7 @@ export class OrDashboardBuilder extends LitElement {
 
     // Importing Styles; the unsafe GridStack css, and all custom css
     static get styles() {
-        return [unsafeCSS(tabStyle), unsafeCSS(tabbarStyle), unsafeCSS(tabIndicatorStyle), unsafeCSS(tabScrollerStyle), styling, style]
+        return [styling, style]
     }
 
     @property()
@@ -197,18 +199,6 @@ export class OrDashboardBuilder extends LitElement {
             this.dashboards = dashboards;
         });*/
         this.updateComplete.then(async () => {
-            if(this.shadowRoot != null) {
-
-                // Setting up tabs (widgets/settings) in sidebar.
-                const tabBar = this.shadowRoot.getElementById("tab-bar");
-                if (tabBar != null) {
-                    const mdcTabBar = new MDCTabBar(tabBar);
-                    mdcTabBar.activateTab(this.sidebarMenuIndex); // Activate initial tab
-                    mdcTabBar.listen("MDCTabBar:activated", (event: CustomEvent) => {
-                        this.sidebarMenuIndex = event.detail.index; // 0 = Widget Browser, and 1 = Settings menu.
-                    })
-                }
-            }
 
             // Getting dashboards
             await manager.rest.api.DashboardResource.getAllRealmDashboards(manager.displayRealm).then((result) => {
@@ -373,7 +363,10 @@ export class OrDashboardBuilder extends LitElement {
         const menuItems: ListItem[] = [
             { icon: "content-copy", text: "Copy URL", value: "copy" },
             { icon: "open-in-new", text: "Open in new Tab", value: "tab" },
-        ]
+        ];
+        const tabItems: OrMwcTabItem[] = [
+            { name: "WIDGETS" }, { name: "SETTINGS"}
+        ];
         return (!this.isInitializing || (this.dashboards != null && this.dashboards.length == 0)) ? html`
             <div id="container">
                 ${this.showDashboardTree ? html`
@@ -435,7 +428,7 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="container">
                             <div id="builder">
                                 ${(this.selectedDashboard != null) ? html`
-                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.currentWidget}" .editMode="${this.editMode}" .isLoading="${this.isLoading}"
+                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.currentWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}" .isLoading="${this.isLoading}"
                                                          @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                          @deselected="${(event: CustomEvent) => { this.deselectWidget(); }}"
                                                          @dropped="${(event: CustomEvent) => { this.createWidget(event.detail); }}"
@@ -468,38 +461,13 @@ export class OrDashboardBuilder extends LitElement {
                                         </div>
                                     ` : undefined}
                                     <div style="${this.currentWidget != null ? css`display: none` : null}">
-                                        <div id="menu-header">
-                                            <div class="mdc-tab-bar" role="tablist" id="tab-bar">
-                                                <div class="mdc-tab-scroller">
-                                                    <div class="mdc-tab-scroller__scroll-area">
-                                                        <div class="mdc-tab-scroller__scroll-content">
-                                                            <button class="mdc-tab" role="tab" aria-selected="false" tabindex="0">
-                                                                <span class="mdc-tab__content">
-                                                                    <span class="mdc-tab__text-label">WIDGETS</span>
-                                                                </span>
-                                                                <span class="mdc-tab-indicator">
-                                                                    <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
-                                                                </span>
-                                                                <span class="mdc-tab__ripple"></span>
-                                                            </button>
-                                                            <button class="mdc-tab" role="tab" aria-selected="false" tabindex="1">
-                                                                <span class="mdc-tab__content">
-                                                                    <span class="mdc-tab__text-label">SETTINGS</span>
-                                                                </span>
-                                                                <span class="mdc-tab-indicator">
-                                                                    <span class="mdc-tab-indicator__content mdc-tab-indicator__content--underline"></span>
-                                                                </span>
-                                                                <span class="mdc-tab__ripple"></span>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div style="border-bottom: 1px solid ${unsafeCSS(DefaultColor5)};">
+                                            <or-mwc-tabs .items="${tabItems}" @activated="${(event: CustomEvent) => { this.sidebarMenuIndex = event.detail.index; }}"></or-mwc-tabs>
                                         </div>
                                         <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
                                             <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                             <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
-                                                <span>Settings to display here.</span>
+                                                <or-dashboard-boardsettings .template="${this.currentTemplate}"></or-dashboard-boardsettings>
                                             </div>
                                         </div>
                                     </div>

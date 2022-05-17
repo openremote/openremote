@@ -47,7 +47,9 @@ const editorStyling = css`
         height: auto;
         width: 100%;
         padding: 4px;
-        pointer-events: none;
+        /*pointer-events: none;*/
+        position: relative;
+        z-index: 0;
     }
     .maingrid__disabled {
         pointer-events: none;
@@ -99,7 +101,10 @@ export class OrDashboardEditor extends LitElement{
     protected selected: DashboardWidget | undefined;
 
     @property()
-    protected readonly editMode: boolean | undefined;
+    protected readonly editMode: boolean | undefined = true;
+
+    @property()
+    protected readonly fullscreen: boolean | undefined = false;
 
     @property()
     protected width: number = 960;
@@ -118,8 +123,16 @@ export class OrDashboardEditor extends LitElement{
 
     constructor() {
         super();
-        if(this.editMode == undefined) { this.editMode = true; } // default
         this.isLoading = false;
+        this.updateComplete.then(() => {
+            if(this.fullscreen) {
+                const element = this.shadowRoot?.firstElementChild as HTMLElement;
+                console.log(this.shadowRoot?.firstElementChild as HTMLElement);
+                console.log("[" + element.clientWidth + "/" + element.clientHeight + "]");
+                this.width = element.clientWidth - 8; // -8px of padding
+                this.height = element.clientHeight - 8; // -8px of padding
+            }
+        })
     }
 
 
@@ -131,12 +144,18 @@ export class OrDashboardEditor extends LitElement{
             this.renderGrid();
         }
 
+        if(changedProperties.has("fullscreen")) {
+            if((changedProperties.get("fullscreen") as boolean) && this.fullscreen == false) {
+                this.width = 960; this.height = 540;
+            }
+        }
+
         // Width or height input changes
         if(changedProperties.has("width") || changedProperties.has("height")) {
             if(this.shadowRoot != null) {
                 const gridHTML = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
                 gridHTML.style.width = (this.width + 'px');
-                gridHTML.style.height = (this.height + 'px');
+                gridHTML.style.height = (this.fullscreen ? 'auto' : (this.height + 'px'));
                 // this.renderGrid();
                 if(this.mainGrid != null) {
                     this.updateGridSize(true);
@@ -249,8 +268,6 @@ export class OrDashboardEditor extends LitElement{
             cellHeight: 'auto',
             cellHeightThrottle: 100,
             column: (this.template?.columns != null ? this.template.columns : 12),
-            disableDrag: (!this.editMode),
-            disableResize: (!this.editMode),
             disableOneColumnMode: true,
             draggable: {
                 appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
@@ -261,42 +278,47 @@ export class OrDashboardEditor extends LitElement{
             resizable: {
                 handles: 'all'
             },
+            staticGrid: (!this.editMode),
             styleInHead: false
             // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
         }, gridElement);
 
         if(gridItems != null) {
             grid.load(gridItems);
-            grid.getGridItems().forEach((htmlElement) => {
-                const gridItem = htmlElement.gridstackNode as DashboardGridItem;
-                this.addWidgetEventListeners(gridItem, htmlElement);
-            });
+            if(this.editMode) {
+                grid.getGridItems().forEach((htmlElement) => {
+                    const gridItem = htmlElement.gridstackNode as DashboardGridItem;
+                    this.addWidgetEventListeners(gridItem, htmlElement);
+                });
+            }
         }
 
-        grid.on('dropped', (event: Event, previousWidget: any, newWidget: GridStackNode | undefined) => {
-            if(this.mainGrid != null && newWidget != null) {
-                this.mainGrid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
-                this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget }));
-            }
-        });
+        if(this.editMode) {
+            grid.on('dropped', (event: Event, previousWidget: any, newWidget: GridStackNode | undefined) => {
+                if(this.mainGrid != null && newWidget != null) {
+                    this.mainGrid.removeWidget((newWidget.el) as GridStackElement, true, false); // Removes dragged widget first
+                    this.dispatchEvent(new CustomEvent("dropped", { detail: newWidget }));
+                }
+            });
 
-        // Handling changes of items (resizing, moving around etc)
-        grid.on('change', (event: Event, items: any) => {
-            if(this.template != null && this.template.widgets != null) {
-                (items as GridStackNode[]).forEach(node => {
-                    const widget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
-                    if(widget != null && widget.gridItem != null) {
-                        console.log("Updating properties of " + widget.displayName);
-                        widget.gridItem.x = node.x;
-                        widget.gridItem.y = node.y;
-                        widget.gridItem.w = node.w;
-                        widget.gridItem.h = node.h;
-                        widget.gridItem.content = node.content;
-                    }
-                });
-                this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
-            }
-        });
+            // Handling changes of items (resizing, moving around etc)
+            grid.on('change', (event: Event, items: any) => {
+                if(this.template != null && this.template.widgets != null) {
+                    (items as GridStackNode[]).forEach(node => {
+                        const widget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
+                        if(widget != null && widget.gridItem != null) {
+                            console.log("Updating properties of " + widget.displayName);
+                            widget.gridItem.x = node.x;
+                            widget.gridItem.y = node.y;
+                            widget.gridItem.w = node.w;
+                            widget.gridItem.h = node.h;
+                            widget.gridItem.content = node.content;
+                        }
+                    });
+                    this.dispatchEvent(new CustomEvent("changed", {detail: { template: this.template }}));
+                }
+            });
+        }
 
         // Making all GridStack events dispatch on this component as well.
         grid.on("added", (event: Event, items: any) => { this.dispatchEvent(new CustomEvent("added", {detail: { event: event, items: items }})); });
@@ -444,14 +466,14 @@ export class OrDashboardEditor extends LitElement{
                         <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"
                                       @or-mwc-input-changed="${() => { const newWidth = this.height; const newHeight = this.width; this.width = newWidth; this.height = newHeight; }}"></or-mwc-input>
                     </div>
-                    <div id="container" style="display: flex; justify-content: center; height: auto;">
+                    <div id="container" style="display: flex; justify-content: center; height: 100%;">
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
                             <div id="gridElement" class="grid-stack grid-element"></div>
                         </div>
                     </div>
                 ` : html`
-                    <div id="container" style="display: flex; justify-content: center; height: auto;">
+                    <div id="container" style="display: flex; justify-content: center; height: 100%;">
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
                             <div id="gridElement" class="grid-stack"></div>

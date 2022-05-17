@@ -2,7 +2,7 @@ import {LngLatLike} from "maplibre-gl";
 import {Asset, AssetModelUtil, AttributeRef, DashboardWidget, DashboardWidgetType } from "@openremote/model";
 import {css, html, LitElement, TemplateResult, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { InputType, OrInputChangedEvent } from "../../or-mwc-components/lib/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import { showDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 import {OrAttributePicker, OrAttributePickerPickedEvent } from "@openremote/or-attribute-picker";
 import {style} from './style';
