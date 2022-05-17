@@ -103,22 +103,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
           
-      # We use this to exit workflow if only CI/CD files are changed
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v20
-        with:
-          files_ignore: |
-            .github/**
-            .ci_cd/**
-            **/*.md
-            **/*.yml
-
-      - name: Finish if only CI/CD files have changed
-        if: github.event_name == 'push' && steps.changed-files.outputs.any_changed != 'true'
-        run: |
-          exit 0
-          
       - name: Get inputs and secrets
         id: inputs-and-secrets
         shell: python
@@ -179,8 +163,25 @@ jobs:
         with:
           # This will only be available when run by workflow_dispatch otherwise will checkout branch/commit that triggered the workflow
           ref: ${{ steps.inputs-and-secrets.outputs.COMMIT }}
+          fetch-depth: 0
           submodules: recursive
-        
+
+      # We use this to exit workflow if only CI/CD files are changed
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v20
+        with:
+          files_ignore: |
+            .github/**
+            .ci_cd/**
+            **/*.md
+            **/*.yml
+
+      - name: Finish if only CI/CD files have changed
+        if: github.event_name == 'push' && steps.changed-files.outputs.any_changed != 'true'
+        run: |
+          exit 0
+
       - name: Make cache dirs and set file permissions
         run: |
           chmod +x gradlew
