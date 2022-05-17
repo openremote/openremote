@@ -117,7 +117,6 @@ class CustomWorld {
      * 
      * @param { } button STRING, selector for an element
      */
-
     async click(button) {
         await this.page?.locator(button).click()
     }
@@ -161,7 +160,9 @@ class CustomWorld {
      */
 
     /**
-     * navigation to a page inside the manager
+     * navigate to a setting page inside the manager 
+     * for the setting list menu at the top right
+     * @param {*} setting STRING, name of the setting menu item
      */
     async navigateTo(setting) {
         await this.click('button[id="menu-btn-desktop"]');
@@ -169,12 +170,18 @@ class CustomWorld {
     }
 
     /**
+     * navigate to a ceratin tab page
+     * @param {*} tab STRING, tab name
+     */
+    async navigateToTab(tab) {
+        await this.click(`#desktop-left a:has-text("${tab}")`)
+    }
+
+    /**
      *  create Realm
      */
     async addRealm(name) {
-        await this.navigateTo("Realms")
 
-        // add realm
         await this.click('text=Add Realm');
         await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
         await this.page?.locator('input[type="text"]').nth(3).fill(name);
@@ -497,23 +504,52 @@ class CustomWorld {
 
     /**
      * Delete realm and user
+     * having problems at deleting roles
      */
     async basicClean() {
-
-        await this.navigate("admin")
-        if (!fs.existsSync('storageState.json')) {
-            await this.login("admin")
+        // await this.navigate("admin")
+        // if (!fs.existsSync('storageState.json')) {
+        //     await this.login("admin")
+        // }
+        const {page} = this
+        if (!await this.page?.locator('#realm-picker >> text=smartcity').isVisible()) {
+            await this.click('#realm-picker');
+            await this.click('li[role="menuitem"]:has-text("smartcity")')
         }
 
-        await this.click('#realm-picker');
-        await this.click('li[role="menuitem"]:has-text("smartcity")')
+        // back to map page to avoid any same naming conflicts
+        await this.navigateToTab("Map")
 
-        await this.click('#menu-btn-desktop');
-        await this.click('text=Users');
+        // navigate to user page
+        await this.navigateTo("Users")
 
         await this.click('td:has-text("smartcity")')
         await this.click('button:has-text("Delete")')
         await this.click('div[role="alertdialog"] button:has-text("Delete")')
+
+        // delete roles
+
+        // navigate to role page
+        await this.navigateTo("Roles")
+
+        // delete all roles
+        await page.locator('td:has-text("asset")').first().click()
+
+        await page.waitForTimeout(1000)
+
+
+        // await this.click('td:has-text("asset") >> nth=0 >> button:has-text("Delete")')
+        // await this.click('div[role="alertdialog"] button:has-text("Delete")')
+
+
+        // var rows = await this.page.locator('.mdc-data-table__row').count();
+        // var assetRow
+        // for (let i = 0; i < rows - 1; i++) {
+
+        // }
+        // await this.click(`#mdc-data-table-row-${i}`)
+        // await this.click(`#attribute-meta-row-0 button:has-text("Delete")`)
+        // await this.click('div[role="alertdialog"] button:has-text("Delete")')
     }
 
     /**
@@ -545,7 +581,7 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
-        slowMo: 50
+        slowMo: 100
     });
 })
 

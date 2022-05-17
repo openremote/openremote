@@ -2,9 +2,10 @@
 Feature: Setup
 
     Background: Setup
-        Given Setup for "thorough"
+        Given Setup for "convention"
     
+    @clean_up
     Scenario: test
-        When random test
+        When Clean up "convention"
 
     

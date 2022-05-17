@@ -10,10 +10,7 @@ Feature: Setup
         Then Add a new Realm
         When Select smartcity realm
         Then We see the smartcity realm
+        Then Clean up "fundamental"
 
-
-    @Desktop @clean
-    Scenario: Clean up
-        When Clean up the test environment as "fundamental"
 
 

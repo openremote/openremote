@@ -2,11 +2,11 @@
 Feature: Delete
 
     Background: Navigation
-        Given Login OpenRemote as "smartcity"
+        Given Login OpenRemote as "admin"
 
     @Desktop @delete_conf_item
     Scenario Outline: Delete configure item
-        Given Nevigate to asset page
+        When Nevigate to "Asset" tab
         When Go to asset "<name>" info page
         Then Go to modify mode
         Then Delete "<item>" on "<attribute>"
@@ -20,7 +20,7 @@ Feature: Delete
 
     @Desktop @delete_assets
     Scenario Outline: Delete assets
-        Given Nevigate to asset page
+        When Nevigate to "Asset" tab
         Then Delete asset named "<name>"
 
         Examples:
@@ -30,13 +30,13 @@ Feature: Delete
 
     @Desktop @delete_role
     Scenario: Delete role
-        Given Nevigate to role page
+        When Navigate to "Roles" page
         Then Delete role
 
     @Desktop @delete_user
     Scenario: Delete user
-        Given Login OpenRemote as "admin"
+        When Login OpenRemote as "admin"
         When Select smartcity realm
-        When Navigate to user page
+        When Navigate to "Users" page
         Then Delete user
         

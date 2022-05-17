@@ -3,7 +3,7 @@ Feature: Rules
 
     Background: Navigation
         Given Login OpenRemote as "smartcity"
-        Then Nevigate to rule page
+        Then Nevigate to "Rule" tab
 
     @Desktop @create_whenthen_rule
     Scenario Outline: Create a When-Then rule

@@ -36,7 +36,7 @@ Given('Setup for {string}', { timeout: 32000 }, async function (section) {
         case "thorough":
             await this.thoroughSetup()
             break;
-            
+
         default:
             break;
 
@@ -74,11 +74,17 @@ When('Clean up {string}', { timeout: 10000 }, async function (section) {
  * General steps 
  */
 
+/**
+ * Login to a realm as expected user
+ */
 Given('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) {
     await this.navigate(user)
     await this.login(user)
 })
 
+/**
+ * Setting menu
+ */
 When('Navigate to {string} page', async function (name) {
     await this.navigateTo(name)
 })
@@ -86,33 +92,9 @@ When('Navigate to {string} page', async function (name) {
 /**
  * Tab menu
  */
-Then('Nevigate to map page', async function () {
-    await this.click('#dessktop-left a:nth-child(1)')
+When('Nevigate to {string} tab', async function (tab) {
+    await this.navigateToTab(tab)
 });
-
-Then('Nevigate to asset page', async function () {
-    await this.click('#desktop-left a:nth-child(2)')
-});
-
-
-Then('Nevigate to rule page', async function () {
-    await this.click('#desktop-left a:nth-child(3)')
-});
-
-Then('Nevigate to insight page', async function () {
-    await this.click('#desktop-left a:nth-child(4)')
-});
-
-
-/**
- * Setting menu
- */
-Then('Nevigate to role page', async function () {
-    await this.click('#menu-btn-desktop');
-    await this.click('text=Roles');
-})
-
-
 
 
 /**

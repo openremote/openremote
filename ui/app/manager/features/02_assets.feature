@@ -3,7 +3,7 @@ Feature: Assets
 
     Background: Navigation
         Given Login OpenRemote as "smartcity"
-        Then Nevigate to asset page
+        Then Nevigate to "Asset" tab
 
     @Desktop @add_asset
     Scenario Outline: Add new asset

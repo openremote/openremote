@@ -8,6 +8,7 @@ Feature: Add_Settings
     Scenario: Add new user
         When Navigate to "Users" page
         Then Add a new user
+        Then Clean up "basic"
 
     @Desktop @add_role
     Scenario: Add new role
@@ -22,8 +23,3 @@ Feature: Add_Settings
         Then We should see assets permission are selected
         Then Switch back to origin
 
-    @Desktop @switch_user
-    Scenario: Switch user
-        When Logout
-        Then Go to new Realm and login
-        Then Snapshot "smartcity and user"

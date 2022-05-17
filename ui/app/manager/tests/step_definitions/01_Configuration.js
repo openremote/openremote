@@ -14,12 +14,10 @@ Then("Add a new user", async function () {
     // type in username
     await page.locator('.mdi-plus').first().click();
     await page.locator('input[type="text"]').first().fill('smartcity');
-    await console.log("username")
 
     // type in password
     await this.fill('#password-user0 input[type="password"]', 'smartcity')
     await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
-    await console.log("password")
 
     // select permissions
     await this.click('div[role="button"]:has-text("Roles")');
@@ -27,7 +25,6 @@ Then("Add a new user", async function () {
     await this.click('li[role="menuitem"]:has-text("Write")');
     await this.click('div[role="button"]:has-text("Roles")')
     await page.waitForTimeout(500)
-    await console.log("roles")
 
     //create
     await this.click('button:has-text("create")')

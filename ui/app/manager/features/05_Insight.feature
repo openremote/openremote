@@ -6,7 +6,7 @@ Feature: Insight
     
      @Desktop @insert_attribute
      Scenario Outline: Insert attributes
-        Given Nevigate to insight page
+        Given Nevigate to "Insight" tab
         When Select "<attribute>" from "<asset>"
         Then We should see the graph
 

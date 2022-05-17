@@ -3,7 +3,7 @@ Feature: Map
 
     Background: Navigation
         Given Login OpenRemote as "smartcity"
-        Then Nevigate to map page
+        Then Nevigate to "Map" tab
 
     @Desktop @markers
     Scenario Outline: check markers on map
