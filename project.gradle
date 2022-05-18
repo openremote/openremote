@@ -1,6 +1,4 @@
 // Common configuration applied to all projects
-
-
 import java.nio.file.*
 import java.nio.file.attribute.*
 import java.util.Set
