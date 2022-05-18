@@ -179,15 +179,13 @@ jobs:
 
       - name: Set skip flag if only CI/CD files have changed
         id: skip-cicd
-        if: github.event_name == 'push' && steps.changed-files.outputs.other_changed_files != ''
+        if: github.event_name == 'push'
         run: |
-          echo "OTHER: $OTHER"
           echo "ALL: $ALL"
           echo "::set-output name=value::true"
           exit 1
         env:
-          OTHER: ${{ steps.changed-files.outputs.other_changed_files }}
-          ALL: ${{ steps.changed-files.outputs.all_changed_files }}
+          ALL: ${{ steps.changed-files.outputs.only_modified }}
 
       - name: Make cache dirs and set file permissions
         run: |
