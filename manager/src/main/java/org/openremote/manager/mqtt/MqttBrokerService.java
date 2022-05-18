@@ -78,7 +78,9 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
     protected MessageBrokerService messageBrokerService;
     protected ScheduledExecutorService executorService;
     protected TimerService timerService;
-    protected final Map<String, MqttConnection> clientIdConnectionMap = new HashMap<>();
+    // We store connections that get 'pushed' out by a re-connect which can occur before we are notified of the disconnect
+    private final Map<String, MqttConnection> obsoleteConnectionMap = new HashMap<>();
+    private final Map<String, MqttConnection> clientIdConnectionMap = new HashMap<>();
     protected List<MQTTHandler> customHandlers = new ArrayList<>();
 
     protected boolean active;
@@ -261,7 +263,16 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
         }
 
         synchronized (clientIdConnectionMap) {
-            MqttConnection connection = clientIdConnectionMap.remove(clientId);
+            MqttConnection connection = obsoleteConnectionMap.remove(clientId);
+
+            if (connection == null) {
+                connection = clientIdConnectionMap.remove(clientId);
+            }
+
+            if (connection != null && LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Removing connection: " + connection);
+            }
+
             if (connection != null && !connection.isCleanSession()) {
                 try {
                     SessionRegistry sessionRegistry = getSessionRegistry();
@@ -353,6 +364,14 @@ public class MqttBrokerService extends RouteBuilder implements ContainerService,
 
     public void addConnection(String clientId, MqttConnection connection) {
         synchronized (clientIdConnectionMap) {
+            MqttConnection obsoleteConnection = clientIdConnectionMap.remove(clientId);
+            if (obsoleteConnection != null) {
+                obsoleteConnection.setObsolete();
+                obsoleteConnectionMap.put(clientId, obsoleteConnection);
+            }
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Adding connection: " + connection);
+            }
             clientIdConnectionMap.put(clientId, connection);
         }
     }

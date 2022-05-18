@@ -29,6 +29,7 @@ import {
     ClientRole,
     FileInfo,
     SharedEvent,
+    UserAssetLink,
     WellknownAssets,
     WellknownAttributes,
     WellknownMetaItems,
@@ -777,22 +778,37 @@ export function getPanelContent(panelName: string, asset: Asset, attributes: { [
 
     if (panelConfig.type === "linkedUsers") {
 
-        const createUserTable = (rows: string[][]) => {
-            const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName+"-user-table") as OrMwcTable;
-            userTable.options = {stickyFirstColumn:false};
-            userTable.headers = ['Username', 'Roles', 'Restricted user'];
-            userTable.rows = rows.sort(Util.sortByString(u => u[0]));
-        };
+        const hasReadAdminRole = manager.hasRole(ClientRole.READ_ADMIN);
 
-        // Load users and rights, then update the table
-        getLinkedUsers(asset, hostElement).then((linkedUsers) => {
-            Promise.all(linkedUsers).then(res => {
-                if (!res || res.length === 0) {
-                    hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
-                    return;
-                }
-                createUserTable(res);
-            })
+        // Hide the panel if user doesn't have permission
+        const panelElem = hostElement.shadowRoot!.getElementById('linkedUsers-panel');
+        if (panelElem) {
+            panelElem.hidden = !hasReadAdminRole;
+        }
+
+        if (!hasReadAdminRole) {
+            return;
+        }
+
+        getLinkedUsers(asset).then((assetLinkInfos) => {
+            const panelElem = hostElement.shadowRoot!.getElementById('linkedUsers-panel');
+            const userTable: OrMwcTable = hostElement.shadowRoot!.getElementById(panelName + "-user-table") as OrMwcTable;
+            userTable.options = {stickyFirstColumn:false};
+            userTable.headers = ["Username", "Roles", "Restricted user"];
+            userTable.rows = assetLinkInfos.sort(Util.sortByString(u => u.usernameAndId)).map(assetLinkInfo => {
+                return [
+                    assetLinkInfo.usernameAndId,
+                    assetLinkInfo.roles.join(", "),
+                    assetLinkInfo.restrictedUser ? i18next.t("yes") : i18next.t("no")
+                ];
+            });
+
+            if (panelElem) {
+                panelElem.hidden = assetLinkInfos.length === 0;
+                onRenderComplete.startCallbacks().then(() => {
+                    OrAssetViewer.generateGrid(hostElement.shadowRoot);
+                });
+            }
         });
 
         return html`<or-mwc-table .id="${panelName}-user-table"></or-mwc-table>`;
@@ -924,62 +940,55 @@ async function getAssetChildren(id: string, childAssetType: string): Promise<Ass
     return response.data.filter((asset) => asset.type === childAssetType);
 }
 
-async function getLinkedUsers(asset: Asset, hostElement: LitElement): Promise<Promise<string[]>[]> {
-    let response: Promise<string[]>[];
+interface UserAssetLinkInfo {
+    usernameAndId: string;
+    roles: string[];
+    restrictedUser: boolean;
+}
+
+async function getLinkedUserInfo(userAssetLink: UserAssetLink): Promise<UserAssetLinkInfo> {
+    const userId = userAssetLink.id!.userId!;
+    const username = userAssetLink.userFullName!;
+
+    const roleNames = await manager.rest.api.UserResource.getUserRoles(manager.displayRealm, userId)
+        .then((response) => {
+            return response.data.filter(role => role.composite).map(r => r.name!);
+        })
+        .catch((err) => {
+            console.info('User not allowed to get roles', err);
+            return [];
+        });
+
+    const isRestrictedUser = await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
+        .then((rolesRes) => {
+            return rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
+        });
+
+    return {
+        usernameAndId: username,
+        roles: roleNames,
+        restrictedUser: isRestrictedUser
+    };
+}
+
+async function getLinkedUsers(asset: Asset): Promise<UserAssetLinkInfo[]> {
 
     try {
-        response = await manager.rest.api.AssetResource.getUserAssetLinks(
+        return await manager.rest.api.AssetResource.getUserAssetLinks(
             {realm: manager.displayRealm, assetId: asset.id}
-        ).then((userAssetLinksRes) => {
-            const userIds = userAssetLinksRes.data.map(e => e.id!.userId) as string[];
-            return userIds.map(async (userId) => {
-
-                let row: string[] = [];
-
-                await manager.rest.api.UserResource.get(manager.displayRealm, userId!)
-                    .then((usersRes) => {
-                        row.push(usersRes.data.username!);
-                    });
-
-                await manager.rest.api.UserResource.getRoles(manager.displayRealm)
-                    .then((rolesRes) => {
-                        const roles = rolesRes.data.filter(role => !role.composite);
-                        if (!manager.isSuperUser() && !roles.some(r => r.name === 'write:admin') && !roles.some(r => r.name === 'read:admin')) {
-                            hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
-                            return;
-                        }
-                        const compositeRoles = rolesRes.data.filter(role => role.composite).map(r => r.name);
-                        const roleNames = compositeRoles.join(', ');
-                        row.push(roleNames!);
-                    })
-                    .catch((err) => {
-                        console.info('User not allowed to get roles', err);
-                        hostElement.shadowRoot!.getElementById('linkedUsers-panel')!.hidden = true;
-                        return;
-                    });
-
-                await manager.rest.api.UserResource.getUserRealmRoles(manager.displayRealm, userId)
-                    .then((rolesRes) => {
-                        const hasRestrictedUser = rolesRes.data ? !!rolesRes.data.find(r => r.assigned && r.name === "restricted_user") : false;
-
-                        let restrictedUser = hasRestrictedUser ? i18next.t('yes') : i18next.t('no');
-                        row.push(restrictedUser);
-                    });
-
-                return row;
+        ).then((response) => {
+            const userAssetLinks = response.data;
+            const infoPromises = userAssetLinks.map(userAssetLink => {
+                return getLinkedUserInfo(userAssetLink)
             });
+
+            return Promise.all(infoPromises);
         });
 
     } catch (e) {
         console.log("Failed to get child assets: " + e);
         return [];
     }
-
-    if (!response) {
-        return [];
-    }
-
-    return response;
 }
 
 export async function saveAsset(asset: Asset): Promise<SaveResult> {

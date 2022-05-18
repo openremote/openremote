@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import com.vividsolutions.jts.geom.Coordinate;
 
+import java.util.Objects;
+
 import static org.openremote.model.geo.GeoJSONPoint.TYPE;
 
 @JsonTypeName(TYPE)
@@ -49,6 +51,9 @@ public class GeoJSONPoint extends GeoJSONGeometry {
     @JsonCreator
     public GeoJSONPoint(@JsonProperty("coordinates") Coordinate coordinates) {
         super(TYPE);
+        Objects.requireNonNull(coordinates);
+        coordinates.x = Math.min(180d, Math.max(-180d, coordinates.x));
+        coordinates.y = Math.min(90d, Math.max(-90d, coordinates.y));
         this.coordinates = coordinates;
     }
 

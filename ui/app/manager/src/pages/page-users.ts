@@ -12,7 +12,7 @@ import {InputType, OrInputChangedEvent, OrMwcInput} from "@openremote/or-mwc-com
 import {OrMwcDialog, showDialog, showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import {AxiosError, isAxiosError, GenericAxiosResponse} from "@openremote/rest";
-import {OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
+import {OrAssetTreeRequestSelectionEvent, OrAssetTreeSelectionEvent} from "@openremote/or-asset-tree";
 
 const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 
@@ -428,7 +428,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
 
         const compositeRoleOptions: string[] = this._compositeRoles.map(cr => cr.name);
-        const readonly = !manager.hasRole(ClientRole.WRITE_USER);
+        const readonly = !manager.hasRole(ClientRole.WRITE_ADMIN);
 
         return html`
             <div id="wrapper">
@@ -588,7 +588,7 @@ export class PageUsers extends Page<AppStateKeyed> {
         }
     }
 
-    protected _openAssetSelector(ev: MouseEvent, user: UserModel) {
+    protected _openAssetSelector(ev: MouseEvent, user: UserModel, readonly: boolean) {
         const openBtn = ev.target as OrMwcInput;
         openBtn.disabled = true;
         user.previousAssetLinks = [...user.userAssetLinks];
@@ -612,7 +612,16 @@ export class PageUsers extends Page<AppStateKeyed> {
                 <or-asset-tree 
                     id="chart-asset-tree" readonly .selectedIds="${user.userAssetLinks.map(ual => ual.id.assetId)}"
                     .showSortBtn="${false}" expandNodes checkboxes
-                    @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => onAssetSelectionChanged(e)}"></or-asset-tree>
+                    @or-asset-tree-request-selection="${(e: OrAssetTreeRequestSelectionEvent) => {
+                        if (readonly) {
+                            e.detail.allow = false;
+                        }
+                    }}"
+                    @or-asset-tree-selection="${(e: OrAssetTreeSelectionEvent) => {
+                        if (!readonly) {
+                            onAssetSelectionChanged(e);
+                        }
+            }}"></or-asset-tree>
             `)
             .setActions([
                 {
@@ -840,6 +849,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                         <or-mwc-input
                                                 id="${user.id}-restricted"
                                                 .type="${InputType.CHECKBOX}"
+                                                ?readonly="${readonly}"
                                                 .label="${i18next.t("restrictedAccessToAssets") + ':'}"
                                                 @or-mwc-input-changed="${(ev: OrInputChangedEvent) => this._addRemoveRealmRole(user, RESTRICTED_USER_REALM_ROLE, ev.detail.value as boolean)}"
                                                 .value="${user.realmRoles ? !!user.realmRoles.find(r => r.name === RESTRICTED_USER_REALM_ROLE) : undefined}"></or-mwc-input>
@@ -847,7 +857,7 @@ export class PageUsers extends Page<AppStateKeyed> {
                                         <or-mwc-input outlined
                                                       .type="${InputType.BUTTON}"
                                                       .label="${i18next.t("selectRestrictedAssets", {number: user.userAssetLinks.length})}"
-                                                      @click="${(ev: MouseEvent) => this._openAssetSelector(ev, user)}"></or-mwc-input>
+                                                      @click="${(ev: MouseEvent) => this._openAssetSelector(ev, user, readonly)}"></or-mwc-input>
                                     </div>
                                 </div>
                             </div>

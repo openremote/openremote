@@ -195,7 +195,7 @@ if [ "$ROLLBACK_ON_ERROR" == 'true' ]; then
   rm -fr temp_old
   mv temp temp_old
   # Tag existing manager image with previous tag (current tag might not be available in docker hub anymore or it could have been overwritten)
-  docker tag `docker images openremote/manager -q | head -1` openremote/manager:previous
+  docker tag '`docker images openremote/manager -q | head -1`' openremote/manager:previous
 else
   echo "Removing old temp deployment dir"
   rm -fr temp
@@ -229,12 +229,15 @@ if [ \$? -ne 0 ]; then
 fi
 
 # Attempt docker compose down
-echo "Stopping existing stack"
-docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
+CONTAINER_IDS=\$(docker ps -q)
+if [ -n "\$CONTAINER_IDS" ]; then
+  echo "Stopping existing stack"
+  docker-compose -f temp/docker-compose.yml -p or down 2> /dev/null
 
-if [ \$? -ne 0 ]; then
-  echo "Deployment failed to stop the existing stack"
-  exit 1
+  if [ \$? -ne 0 ]; then
+    echo "Deployment failed to stop the existing stack"
+    exit 1
+  fi
 fi
 
 # Run host init

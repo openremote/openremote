@@ -3,6 +3,7 @@ package io.openremote.orlib.service
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
+import io.openremote.orlib.ORConstants
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
@@ -13,41 +14,37 @@ class NotificationResource(context: Context) {
         PreferenceManager.getDefaultSharedPreferences(context)
 
     fun executeRequest(httpMethod: String, appUrl: String, data: String?) {
-        val project = sharedPreferences.getString("project", null)
-        val realm = sharedPreferences.getString("realm", null)
+        Executors.newCachedThreadPool().execute {
+            URL(appUrl)
+                .openConnection()
+                .let {
+                    it as HttpURLConnection
+                }.apply {
+                    requestMethod = httpMethod
+                    setRequestProperty("Accept", "application/json")
 
-        if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
-            Executors.newCachedThreadPool().execute {
-                URL(appUrl)
-                    .openConnection()
-                    .let {
-                        it as HttpURLConnection
-                    }.apply {
-                        requestMethod = httpMethod
-                        setRequestProperty("Accept", "application/json")
+                    if (!data.isNullOrBlank()) {
+                        setRequestProperty("Content-Type", "application/json")
+                        doOutput = true
 
-                        if (!data.isNullOrBlank()) {
-                            setRequestProperty("Content-Type", "application/json")
-                            doOutput = true
-
-                            val outputWriter = outputStream.bufferedWriter()
-                            outputWriter.write(data)
-                            outputWriter.flush()
-                        }
+                        val outputWriter = outputStream.bufferedWriter()
+                        outputWriter.write(data)
+                        outputWriter.flush()
                     }
-            }
+                }
         }
     }
 
     fun notificationDelivered(notificationId: Long, fcmToken: String?) {
         LOG.info("Notification status update 'delivered': $notificationId")
 
-        val project = sharedPreferences.getString("project", null)
-        val realm = sharedPreferences.getString("realm", null)
+        val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
+        val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
 
-        if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
+        if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
+            val url = host.plus("/api/${realm}")
             Executors.newCachedThreadPool().execute {
-                URL("https://${project}.openremote.io/api/$realm/notification/${notificationId}/delivered?targetId=$fcmToken")
+                URL("${url}/notification/${notificationId}/delivered?targetId=$fcmToken")
                     .openConnection()
                     .let {
                         it as HttpURLConnection
@@ -68,12 +65,13 @@ class NotificationResource(context: Context) {
         fcmToken: String?,
         acknowledgement: String?
     ) {
-        val project = sharedPreferences.getString("project", null)
-        val realm = sharedPreferences.getString("realm", null)
+        val host = sharedPreferences.getString(ORConstants.HOST_KEY, null)
+        val realm = sharedPreferences.getString(ORConstants.REALM_KEY, null)
 
-        if (!project.isNullOrBlank() && !realm.isNullOrBlank()) {
+        if (!host.isNullOrBlank() && !realm.isNullOrBlank()) {
+            val url = host.plus("/api/${realm}")
             Executors.newCachedThreadPool().execute {
-                URL("https://${project}.openremote.io/api/$realm/notification/${notificationId}/acknowledged?targetId=$fcmToken")
+                URL("${url}/notification/${notificationId}/acknowledged?targetId=$fcmToken")
                     .openConnection()
                     .let {
                         it as HttpURLConnection

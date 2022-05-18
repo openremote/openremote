@@ -42,9 +42,9 @@
 			<key>UIApplicationShortcutItemIconFile</key>
 			<string>ic_settings</string>
 			<key>UIApplicationShortcutItemTitle</key>
-			<string>Projects</string>
+			<string>Settings</string>
 			<key>UIApplicationShortcutItemType</key>
-			<string>projects</string>
+			<string>settings</string>
 		</dict>
 	</array>
 	<key>UIBackgroundModes</key>

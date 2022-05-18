@@ -10,7 +10,7 @@
 
 CIDR=$1
 DESCRIPTION=$2
-PROFILE=$3
+AWS_PROFILE=$3
 
 if [[ $BASH_SOURCE = */* ]]; then
  awsDir=${BASH_SOURCE%/*}/
@@ -18,14 +18,8 @@ else
   awsDir=./
 fi
 
-source "${awsDir}login.sh"
-
-if [ "$AWS_ENABLED" != 'true' ]; then
-  exit 1
-fi
-
-if [ -n "$PROFILE" ]; then
-  PROFILE="--profile $PROFILE"
+if [ -n "$AWS_PROFILE" ]; then
+  PROFILE="--profile $AWS_PROFILE"
 fi
 
 if [ -n "$CIDR" ]; then

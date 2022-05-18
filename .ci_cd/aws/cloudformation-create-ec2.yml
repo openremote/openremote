@@ -589,7 +589,7 @@ Resources:
       KeyName:
         "developers"
       ImageId:
-        "ami-032afb7a6d14ab941"
+        "ami-0042fede24cb86d5c"
       SecurityGroups:
         - "ssh-access"
         - Ref: StandardSecurityGroup
