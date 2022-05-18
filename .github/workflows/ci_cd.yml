@@ -178,7 +178,7 @@ jobs:
 
       - name: Set skip flag if only CI/CD files have changed
         id: skip-cicd
-        if: github.event_name == 'push' && steps.changed-files.outputs.only_modified != 'true'
+        if: github.event_name == 'push' && steps.changed-files.outputs.any_modified != 'true'
         run: echo "::set-output name=value::true"
 
       - name: Make cache dirs and set file permissions
