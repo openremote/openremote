@@ -497,6 +497,10 @@ export class OrEditAssetPanel extends LitElement {
                     #meta-creator > or-mwc-list {
                         height: 100%;
                     }
+
+                    .mdc-dialog .mdc-dialog__content {
+                        padding: 0 !important;
+                    }
                 </style>
             `)
             .setHeading(i18next.t("addMetaItems"))
