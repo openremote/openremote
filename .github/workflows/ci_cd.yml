@@ -181,10 +181,13 @@ jobs:
         id: skip-cicd
         if: github.event_name == 'push' && steps.changed-files.outputs.other_changed_files != ''
         run: |
-          echo "CHANGES: $CHANGES"
+          echo "OTHER: $OTHER"
+          echo "ALL: $ALL"
           echo "::set-output name=value::true"
+          exit 1
         env:
-          CHANGES: ${{ steps.changed-files.outputs.all_changed_files }}
+          OTHER: ${{ steps.changed-files.outputs.other_changed_files }}
+          ALL: ${{ steps.changed-files.outputs.all_changed_files }}
 
       - name: Make cache dirs and set file permissions
         run: |
