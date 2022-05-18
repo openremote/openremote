@@ -166,7 +166,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      # We use this to exit workflow if only CI/CD files are changed
+      # We use this to exit workflow if only CI/CD files have changed
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v20
@@ -177,7 +177,7 @@ jobs:
             **/*.md
             **/*.yml
 
-      - name: Finish if only CI/CD files have changed
+      - name: Set skip flag if only CI/CD files have changed
         id: skip-cicd
         if: github.event_name == 'push' && steps.changed-files.outputs.any_changed != 'true'
         run: echo "::set-output name=value::true"
@@ -193,7 +193,7 @@ jobs:
         id: is_main_repo
         run: |
           if [ $REPO_NAME == 'openremote/openremote' ]; then
-            
+            echo "::set-output name=value::true"
           fi
         env:
           REPO_NAME: ${{ github.repository }}
