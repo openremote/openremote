@@ -296,25 +296,18 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
         
             userLocationControl.on('geolocate', (currentLocation: GeolocationPosition) => {
                 setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-                console.log(currentLocation);
             });
             userLocationControl.on('outofmaxbounds', (currentLocation: GeolocationPosition) => {
                 setPos(new LngLat(currentLocation.coords.longitude, currentLocation.coords.latitude));
-                console.log(currentLocation);
             });
             controls.push([userLocationControl, "bottom-left"]);
         }
 
         let content = html`
-            <style>
-                or-map {
-                    border: #e5e5e5 1px solid;
-                    margin: 3px 0;
-                }
-            </style>
             <or-map id="geo-json-point-map" class="or-map" @or-map-long-press="${(ev: OrMapLongPressEvent) => {setPos(ev.detail.lngLat);}}" .center="${center}" .controls="${controls}" .showGeoCodingControl=${!readonly}>
                 <or-map-marker id="geo-json-point-marker" active .lng="${pos ? pos.lng : undefined}" .lat="${pos ? pos.lat : undefined}" .icon="${iconAndColor ? iconAndColor.icon : undefined}" .activeColor="${iconAndColor ? "#" + iconAndColor.color : undefined}" .colour="${iconAndColor ? "#" + iconAndColor.color : undefined}"></or-map-marker>
             </or-map>
+            <span class="long-press-msg">${i18next.t('longPressSetLoc')}</span>
         `;
 
         if (compact) {
@@ -327,9 +320,16 @@ export const geoJsonPointInputTemplateProvider: ValueInputProviderGenerator = (a
                         .setContent(mapContent)
                         .setStyles(html`
                             <style>
+                                .dialog-container {
+                                    flex-direction: column !important;
+                                }
+                                .dialog-container .long-press-msg {
+                                    display: block;
+                                    text-align: center;
+                                }
                                 or-map {
                                     width: 600px !important;
-                                    height: 600px !important;
+                                    min-height: 600px !important;
                                 }
                             </style>
                         `)
