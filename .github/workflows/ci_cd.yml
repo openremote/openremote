@@ -174,16 +174,12 @@ jobs:
           files_ignore: |
             .ci_cd/**
             **/*.md
+            **/*.yml
 
       - name: Set skip flag if only CI/CD files have changed
         id: skip-cicd
-        if: github.event_name == 'push'
-        run: |
-          echo "ALL: $ALL"
-          echo "::set-output name=value::true"
-          exit 1
-        env:
-          ALL: ${{ steps.changed-files.outputs.only_modified }}
+        if: github.event_name == 'push' && steps.changed-files.outputs.only_modified != 'true'
+        run: echo "::set-output name=value::true"
 
       - name: Make cache dirs and set file permissions
         run: |
@@ -392,7 +388,7 @@ jobs:
           cp -r . ~/manager-tags-old/
           
       - name: Sanitize deployments value
-        if: steps.skip_cicd.outputs.value != 'true'
+        if: steps.skip-cicd.outputs.value != 'true'
         id: deployments
         run: |
           deployments=$DEPLOYMENTS
@@ -413,17 +409,17 @@ jobs:
 
       - name: Define backend test command
         id: test-backend-command
-        if: ${{ github.event_name == 'push' && steps.skip_cicd.outputs.value != 'true' }}
+        if: ${{ github.event_name == 'push' && steps.skip-cicd.outputs.value != 'true' }}
         run: echo "::set-output name=value::./gradlew -p test test"
           
       - name: Define UI test command
         id: test-ui-command
-        if: ${{ github.event_name == 'push' && steps.skip_cicd.outputs.value != 'true' }}
+        if: ${{ github.event_name == 'push' && steps.skip-cicd.outputs.value != 'true' }}
         run: echo ""
       
       - name: Define manager docker build command
         id: manager-docker-command
-        if: ${{ steps.skip_cicd.outputs.value != 'true' }}
+        if: ${{ steps.skip-cicd.outputs.value != 'true' }}
         shell: bash
         run: |
           if [ $IS_CUSTOM_PROJECT == 'true' ]; then
@@ -457,7 +453,7 @@ jobs:
           
       - name: Define deployment docker build command
         id: deployment-docker-command
-        if: ${{ steps.skip_cicd.outputs.value != 'true' }}
+        if: ${{ steps.skip-cicd.outputs.value != 'true' }}
         shell: bash
         run: |
           if [ "$DEPLOYMENT_DOCKERFILE_EXISTS" == 'true' ]; then
@@ -484,7 +480,7 @@ jobs:
           
       - name: Define installDist command
         id: install-command
-        if: steps.skip_cicd.outputs.value != 'true'
+        if: steps.skip-cicd.outputs.value != 'true'
         shell: bash
         run: |
           if [ -n "$MANAGER_DOCKER_CMD" ]; then
@@ -532,7 +528,7 @@ jobs:
 
       - name: Set up JDK 17 and gradle cache
         id: java
-        if: steps.skip_cicd.outputs.value != 'true'
+        if: steps.skip-cicd.outputs.value != 'true'
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
@@ -545,7 +541,7 @@ jobs:
 
       - name: Yarn cache
         uses: actions/cache@v3.0.2
-        if: steps.skip_cicd.outputs.value != 'true'
+        if: steps.skip-cicd.outputs.value != 'true'
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -572,7 +568,7 @@ jobs:
 
 
       - name: Output info
-        if: steps.skip_cicd.outputs.value != 'true'
+        if: steps.skip-cicd.outputs.value != 'true'
         run: |
           echo "************************************************************"
           echo "**************            INFO           *******************"
