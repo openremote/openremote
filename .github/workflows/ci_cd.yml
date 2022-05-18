@@ -172,10 +172,8 @@ jobs:
         uses: tj-actions/changed-files@v20
         with:
           files_ignore: |
-            .github/**
             .ci_cd/**
             **/*.md
-            **/*.yml
 
       - name: Set skip flag if only CI/CD files have changed
         id: skip-cicd
