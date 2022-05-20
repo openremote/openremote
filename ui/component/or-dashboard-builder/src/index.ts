@@ -467,7 +467,9 @@ export class OrDashboardBuilder extends LitElement {
                                         <div id="content" style="border: 1px solid #E0E0E0; height: 100%; display: contents;">
                                             <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                             <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
-                                                <or-dashboard-boardsettings .template="${this.currentTemplate}"></or-dashboard-boardsettings>
+                                                <or-dashboard-boardsettings .template="${this.currentTemplate}"
+                                                                            @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
+                                                ></or-dashboard-boardsettings>
                                             </div>
                                         </div>
                                     </div>

@@ -148,12 +148,6 @@ export class OrDashboardEditor extends LitElement{
             if(maingrid != null) {
                 const observer = new ResizeObserver((entries) => {
 
-                    /*if(this.mainGrid != null) {
-                        this.updateGridSize(true);
-                    }*/
-
-                    console.log(entries);
-
                     if(this.template?.screenPresets != null) {
                         // const activePresets = this.template.screenPresets.filter((preset) => { return (preset.breakpoint != null && this.width < preset.breakpoint); });
                         let presets: DashboardScreenPreset[] = this.template.screenPresets;
@@ -200,7 +194,7 @@ export class OrDashboardEditor extends LitElement{
 
         // Template input changes
         if(changedProperties.has("template") || changedProperties.has("editMode")) {
-            this.renderGrid(this.activePreset);
+            this.rerenderGrid(this.activePreset);
         }
 
         if(changedProperties.has("fullscreen")) {
@@ -420,10 +414,12 @@ export class OrDashboardEditor extends LitElement{
         return grid;
     }
 
-    async rerenderGrid(gridItems: GridItemHTMLElement[], activePreset: DashboardScreenPreset, force: boolean = true) {
+    async rerenderGrid(activePreset: DashboardScreenPreset, force: boolean = true) {
         console.log("Rerendering the Grid..");
-        if(this.mainGrid != null && this.template?.widgets != null) {
+        if(this.mainGrid != null) {
             this.mainGrid.destroy(force);
+        }
+        if(this.template?.widgets != null) {
             const gridItems: DashboardGridItem[] = [];
             for (const widget of this.template.widgets) {
                 widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
@@ -446,7 +442,7 @@ export class OrDashboardEditor extends LitElement{
                     this.mainGrid.cellHeight(this.mainGrid.cellWidth())
                     gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
                     const gridItems = this.mainGrid.getGridItems();
-                    this.rerenderGrid(gridItems, activePreset);
+                    this.rerenderGrid(activePreset);
                 }
             }
         }
