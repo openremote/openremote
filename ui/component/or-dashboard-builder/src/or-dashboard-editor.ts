@@ -252,9 +252,10 @@ export class OrDashboardEditor extends LitElement{
                 this.dispatchEvent(new CustomEvent("selected", { detail: this.selected }));
 
             } else {
-                this.mainGrid?.getGridItems().forEach(item => {
-                    this.deselectGridItem(item);
-                });
+                // Checking whether the mainGrid is not destroyed and there are Items to deselect..
+                if(this.mainGrid?.el != undefined && this.mainGrid?.getGridItems() != null) {
+                    this.deselectGridItems(this.mainGrid.getGridItems());
+                }
                 this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selected") as DashboardWidget }));
             }
         }
@@ -419,6 +420,7 @@ export class OrDashboardEditor extends LitElement{
         if(this.mainGrid != null) {
             this.mainGrid.destroy(force);
         }
+        this.selected = undefined;
         if(this.template?.widgets != null) {
             const gridItems: DashboardGridItem[] = [];
             for (const widget of this.template.widgets) {
@@ -468,7 +470,7 @@ export class OrDashboardEditor extends LitElement{
 
     selectGridItem(gridItem: GridItemHTMLElement) {
         if(this.mainGrid != null) {
-            this.mainGrid.getGridItems().forEach(item => { this.deselectGridItem(item); }); // deselecting all other items
+            this.deselectGridItems(this.mainGrid.getGridItems()); // deselecting all other items
             gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
                 item.classList.add('grid-stack-item-content__active'); // Apply active CSS class
             });
@@ -478,6 +480,12 @@ export class OrDashboardEditor extends LitElement{
         gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
             item.classList.remove('grid-stack-item-content__active'); // Remove active CSS class
         });
+    }
+
+    deselectGridItems(gridItems: GridItemHTMLElement[]) {
+        gridItems.forEach(item => {
+            this.deselectGridItem(item);
+        })
     }
 
 
@@ -534,7 +542,7 @@ export class OrDashboardEditor extends LitElement{
     // Render
     protected render() {
         return html`
-            <div style="display: flex; flex-direction: column; height: 100%;">
+            <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selected = undefined; }}}">
                 ${this.editMode ? html`
                     <div id="view-options">
                         <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
