@@ -122,6 +122,9 @@ export class OrDashboardEditor extends LitElement{
     @state()
     protected activePreset: DashboardScreenPreset;
 
+    @state()
+    protected resizeObserver: ResizeObserver | undefined;
+
 
     /* ---------------- */
 
@@ -135,66 +138,40 @@ export class OrDashboardEditor extends LitElement{
             breakpoint: 1920,
         } as DashboardScreenPreset
 
+
+        // Tasks to execute after all rendering is done.
         this.updateComplete.then(() => {
+
+            // If fullscreen, make sure it takes all available space
             if(this.fullscreen) {
                 const element = this.shadowRoot?.firstElementChild as HTMLElement;
-                console.log(this.shadowRoot?.firstElementChild as HTMLElement);
-                console.log("[" + element.clientWidth + "/" + element.clientHeight + "]");
                 this.width = element.clientWidth; // - 8; // -8px of padding
                 this.height = element.clientHeight; // - 8; // -8px of padding
             }
 
             const maingrid = this.shadowRoot?.querySelector(".maingrid");
             if(maingrid != null) {
-                const observer = new ResizeObserver((entries) => {
-
-                    if(this.template?.screenPresets != null) {
-                        // const activePresets = this.template.screenPresets.filter((preset) => { return (preset.breakpoint != null && this.width < preset.breakpoint); });
-                        let presets: DashboardScreenPreset[] = this.template.screenPresets;
-                        presets.sort((a, b) => {
-                            if(a.breakpoint != null && b.breakpoint != null) {
-                                if(a.breakpoint > b.breakpoint) {
-                                    return 1;
-                                }
-                                if(a.breakpoint < b.breakpoint) {
-                                    return -1;
-                                }
-                            }
-                            return 0;
-                        });
-
-                        console.log(presets);
-
-                        // Getting the active Preset based on breakpoint
-                        let activePreset: DashboardScreenPreset | undefined;
-                        presets.forEach((preset) => {
-                            if(activePreset == undefined && preset.breakpoint != null && this.width <= preset.breakpoint) {
-                                activePreset = preset;
-                            }
-                        });
-
-                        console.log("Active preset is the following:");
-                        console.log(activePreset);
-
-                        if(activePreset != undefined) {
-                            this.activePreset = activePreset;
-                            this.updateGridSize(activePreset, true);
-                        }
-                    }
-                });
-                observer.observe(maingrid);
-                console.log("Set up the resizeObserver on MainGrid!");
+                this.setupResizeObserver(maingrid);
             }
         })
     }
 
+    /* ------------------------------------- */
 
+
+    // Listening to property changes (main controller method)
     updated(changedProperties: Map<string, any>) {
         console.log(changedProperties);
 
         // Template input changes
         if(changedProperties.has("template") || changedProperties.has("editMode")) {
-            this.rerenderGrid(this.activePreset);
+            this.rerenderGrid(this.activePreset, true);
+        }
+        if(changedProperties.has("editMode")) {
+            const maingrid = this.shadowRoot?.querySelector(".maingrid");
+            if(maingrid != null) {
+                this.setupResizeObserver(maingrid);
+            }
         }
 
         if(changedProperties.has("fullscreen")) {
@@ -323,7 +300,11 @@ export class OrDashboardEditor extends LitElement{
             if(gridElement == null) {
                 const maingrid = this.shadowRoot.querySelector(".maingrid");
                 if(maingrid != null) {
-                    maingrid.innerHTML = '<div id="gridElement" class="grid-stack grid-element"></div>';
+                    if(this.fullscreen) {
+                        maingrid.innerHTML = '<div id="gridElement" class="grid-stack"></div>';
+                    } else {
+                        maingrid.innerHTML = '<div id="gridElement" class="grid-stack grid-element"></div>';
+                    }
                     gridElement = this.shadowRoot.getElementById("gridElement");
                 } else {
                     console.log("Grid could not be created, because the gridElement does not exist!");
@@ -416,19 +397,43 @@ export class OrDashboardEditor extends LitElement{
         return grid;
     }
 
-    async rerenderGrid(activePreset: DashboardScreenPreset, force: boolean = true) {
+    async rerenderGrid(activePreset: DashboardScreenPreset, rerender: boolean = true, force: boolean = true) {
         console.log("Rerendering the Grid..");
-        if(this.mainGrid != null) {
+        if(this.mainGrid != null && rerender) {
             this.mainGrid.destroy(force);
         }
         this.selected = undefined;
-        if(this.template?.widgets != null) {
+
+        if(this.shadowRoot != null) {
+            const mainGridContainer = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
+            if(!this.editMode) {
+                mainGridContainer.classList.add("maingrid__fullscreen");
+            } else {
+                if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
+                    mainGridContainer.classList.remove("maingrid__fullscreen");
+                }
+            }
+        }
+
+        if(this.template?.widgets != null && this.shadowRoot != null) {
             const gridItems: DashboardGridItem[] = [];
             for (const widget of this.template.widgets) {
                 widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
             }
             const newGrid = this.createGrid(activePreset, undefined, gridItems);
             if(newGrid != null) { this.mainGrid = newGrid; }
+
+            const gridElement = this.shadowRoot.getElementById("gridElement");
+
+            // Render a CSS border raster on the background
+            if(gridElement != null) {
+                gridElement.style.backgroundSize = "" + this.mainGrid?.cellWidth() + "px " + this.mainGrid?.getCellHeight() + "px";
+                gridElement.style.height = "100%";
+                gridElement.style.minHeight = "100%";
+                gridElement.style.maxHeight = "100%";
+                gridElement.style.overflow = "visible";
+            }
+
         } else {
             console.log("Grid could not be destroyed, because it does not exist!");
         }
@@ -444,7 +449,6 @@ export class OrDashboardEditor extends LitElement{
                 } else {
                     this.mainGrid.cellHeight(this.mainGrid.cellWidth())
                     gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
-                    this.rerenderGrid(activePreset);
                 }
             }
         }
@@ -578,5 +582,53 @@ export class OrDashboardEditor extends LitElement{
                 `}
             </div>
         `
+    }
+
+    setupResizeObserver(element: Element): ResizeObserver {
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = new ResizeObserver((entries) => {
+
+            console.log("Noticed a Dashboard resize! Updating the grid..");
+
+            if(this.template?.screenPresets != null) {
+                // const activePresets = this.template.screenPresets.filter((preset) => { return (preset.breakpoint != null && this.width < preset.breakpoint); });
+                let presets: DashboardScreenPreset[] = this.template.screenPresets;
+                presets.sort((a, b) => {
+                    if(a.breakpoint != null && b.breakpoint != null) {
+                        if(a.breakpoint > b.breakpoint) {
+                            return 1;
+                        }
+                        if(a.breakpoint < b.breakpoint) {
+                            return -1;
+                        }
+                    }
+                    return 0;
+                });
+
+                console.log(presets);
+
+                // Getting the active Preset based on breakpoint
+                let activePreset: DashboardScreenPreset | undefined;
+                presets.forEach((preset) => {
+                    if(activePreset == undefined && preset.breakpoint != null && this.width <= preset.breakpoint) {
+                        activePreset = preset;
+                    }
+                });
+
+                console.log("Active preset is the following:");
+                console.log(activePreset);
+
+                if(activePreset != undefined) {
+                    this.activePreset = activePreset;
+                    this.rerenderGrid(activePreset).then(() => {
+                        if(activePreset != null) {
+                            this.updateGridSize(activePreset, true);
+                        }
+                    });
+                }
+            }
+        });
+        this.resizeObserver.observe(element);
+        return this.resizeObserver;
     }
 }
