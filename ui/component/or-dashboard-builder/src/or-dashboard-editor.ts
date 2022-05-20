@@ -344,6 +344,7 @@ export class OrDashboardEditor extends LitElement{
             },
             float: true,
             margin: 4,
+            minWidth: (activePreset.breakpoint),
             resizable: {
                 handles: 'all'
             },
@@ -443,7 +444,6 @@ export class OrDashboardEditor extends LitElement{
                 } else {
                     this.mainGrid.cellHeight(this.mainGrid.cellWidth())
                     gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
-                    const gridItems = this.mainGrid.getGridItems();
                     this.rerenderGrid(activePreset);
                 }
             }
