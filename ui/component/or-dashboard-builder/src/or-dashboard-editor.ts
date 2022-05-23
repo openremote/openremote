@@ -568,7 +568,7 @@ export class OrDashboardEditor extends LitElement{
                 ${this.fullscreen ? html`
                     <div id="container" style="display: flex; justify-content: center; height: 100%;">
                         ${this.activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
-                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px"><span>This dashboard does not support your device.</span></div>
+                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
                         ` : undefined}
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
@@ -576,9 +576,9 @@ export class OrDashboardEditor extends LitElement{
                         </div>
                     </div>
                 ` : html`
-                    <div id="container" style="display: flex; justify-content: center; height: 100%;">
+                    <div id="container" style="display: flex; justify-content: center; height: 100%;">  
                         ${this.activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
-                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px"><span>This dashboard does not support your device.</span></div>
+                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
                         ` : undefined}
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
