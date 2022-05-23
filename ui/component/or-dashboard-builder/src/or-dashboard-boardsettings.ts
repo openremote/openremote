@@ -1,4 +1,4 @@
-import {DashboardScalingPreset, DashboardTemplate } from "@openremote/model";
+import {DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate } from "@openremote/model";
 import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
@@ -79,8 +79,8 @@ export class OrDashboardBoardsettings extends LitElement {
             switch (scalingPreset) {
                 case DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN: {
                     return "Wrap widgets to one column";
-                } case DashboardScalingPreset.RESIZE_WIDGETS: {
-                    return "Resize the Widgets";
+                } case DashboardScalingPreset.KEEP_LAYOUT: {
+                    return "Keep layout";
                 } case DashboardScalingPreset.BLOCK_DEVICE: {
                     return "Block this device";
                 } case DashboardScalingPreset.REDIRECT: {
@@ -94,10 +94,10 @@ export class OrDashboardBoardsettings extends LitElement {
     stringToScalingPreset(scalingPreset: string): DashboardScalingPreset {
         switch (scalingPreset) {
             case "Wrap widgets to one column": { return DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN; }
-            case "Resize the Widgets": { return DashboardScalingPreset.RESIZE_WIDGETS; }
+            case "Keep layout": { return DashboardScalingPreset.KEEP_LAYOUT; }
             case "Block this device": { return DashboardScalingPreset.BLOCK_DEVICE; }
             case "Redirect to a different Dashboard..": { return DashboardScalingPreset.REDIRECT; }
-            default: { return DashboardScalingPreset.RESIZE_WIDGETS; }
+            default: { return DashboardScalingPreset.KEEP_LAYOUT; }
         }
 
     }
@@ -105,7 +105,13 @@ export class OrDashboardBoardsettings extends LitElement {
     /* -------------------------------- */
 
     protected render() {
-        if(this.template != null) {
+        if(this.template != null && this.template.screenPresets != null) {
+            const screenPresets = this.template.screenPresets.sort((a: DashboardScreenPreset, b: DashboardScreenPreset) => {
+                if(a.breakpoint != null && b.breakpoint != null) {
+                    return ((a.breakpoint < b.breakpoint) ? 1 : -1);
+                }
+                return 1;
+            })
             return html`
                 <div>
                     ${this.generateExpandableHeader('Permissions')}
@@ -133,8 +139,8 @@ export class OrDashboardBoardsettings extends LitElement {
                 <div>
                     ${this.expandedPanels.includes('Display') ? html`
                         <div style="padding: 24px 24px 48px 24px;">
-                            ${this.template.screenPresets?.map((preset) => {
-                                const scalingPresets = [DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, DashboardScalingPreset.RESIZE_WIDGETS, DashboardScalingPreset.REDIRECT, DashboardScalingPreset.BLOCK_DEVICE];
+                            ${screenPresets.map((preset) => {
+                                const scalingPresets = [DashboardScalingPreset.KEEP_LAYOUT, DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN, DashboardScalingPreset.REDIRECT, DashboardScalingPreset.BLOCK_DEVICE];
                                 return html`
                                     <div style="margin-bottom: 24px;">
                                         <div>

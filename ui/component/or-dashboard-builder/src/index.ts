@@ -562,13 +562,13 @@ export class OrDashboardBuilder extends LitElement {
                         id: ((Math.random() + 1).toString(36).substring(2)),
                         displayName: "Medium",
                         breakpoint: 1024,
-                        scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                        scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                     },
                     {
                         id: ((Math.random() + 1).toString(36).substring(2)),
                         displayName: "Large",
                         breakpoint: 1080,
-                        scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                        scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                     }
                 ],
                 widgets: []

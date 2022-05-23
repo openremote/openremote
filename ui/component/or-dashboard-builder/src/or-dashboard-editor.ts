@@ -137,7 +137,7 @@ export class OrDashboardEditor extends LitElement{
         this.activePreset = {
             id: 'defaultPresetWithRandomId',
             displayName: 'defaultPreset',
-            scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS,
+            scalingPreset: DashboardScalingPreset.KEEP_LAYOUT,
             breakpoint: 1920,
         } as DashboardScreenPreset
 

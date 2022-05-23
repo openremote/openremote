@@ -170,12 +170,12 @@ export class OrDashboardTree extends LitElement {
                     id: "large",
                     displayName: "Large",
                     breakpoint: 1000000, // TODO: change this
-                    scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "medium",
                     displayName: "Medium",
                     breakpoint: 1280,
-                    scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "small",
                     displayName: "Small",
@@ -188,12 +188,12 @@ export class OrDashboardTree extends LitElement {
                     id: "large",
                     displayName: "Large",
                     breakpoint: 1000000,
-                    scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "medium",
                     displayName: "Medium",
                     breakpoint: 1280,
-                    scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "small",
                     displayName: "Small",
@@ -206,12 +206,12 @@ export class OrDashboardTree extends LitElement {
                     id: "large",
                     displayName: "Large",
                     breakpoint: 1000000,
-                    scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "medium",
                     displayName: "Medium",
                     breakpoint: 1280,
-                    scalingPreset: DashboardScalingPreset.RESIZE_WIDGETS
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
                 }, {
                     id: "small",
                     displayName: "Small",
