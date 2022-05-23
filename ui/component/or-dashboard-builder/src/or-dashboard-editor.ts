@@ -413,38 +413,44 @@ export class OrDashboardEditor extends LitElement{
         }
         this.selected = undefined;
 
-        if(this.shadowRoot != null) {
-            const mainGridContainer = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
-            if(!this.editMode) {
-                mainGridContainer.classList.add("maingrid__fullscreen");
-            } else {
-                if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
-                    mainGridContainer.classList.remove("maingrid__fullscreen");
+        // If not blocked by scaling preset, start rerendering..
+        if(this.activePreset.scalingPreset != DashboardScalingPreset.BLOCK_DEVICE) {
+
+            if(this.shadowRoot != null) {
+                const mainGridContainer = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
+                if(mainGridContainer != null) {
+                    if(!this.editMode) {
+                        mainGridContainer.classList.add("maingrid__fullscreen");
+                    } else {
+                        if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
+                            mainGridContainer.classList.remove("maingrid__fullscreen");
+                        }
+                    }
                 }
             }
-        }
 
-        if(this.template?.widgets != null && this.shadowRoot != null) {
-            const gridItems: DashboardGridItem[] = [];
-            for (const widget of this.template.widgets) {
-                widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
+            if(this.template?.widgets != null && this.shadowRoot != null) {
+                const gridItems: DashboardGridItem[] = [];
+                for (const widget of this.template.widgets) {
+                    widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
+                }
+                const newGrid = this.createGrid(activePreset, undefined, gridItems);
+                if(newGrid != null) { this.mainGrid = newGrid; }
+
+                const gridElement = this.shadowRoot.getElementById("gridElement");
+
+                // Render a CSS border raster on the background
+                if(gridElement != null) {
+                    gridElement.style.backgroundSize = "" + this.mainGrid?.cellWidth() + "px " + this.mainGrid?.getCellHeight() + "px";
+                    gridElement.style.height = "100%";
+                    gridElement.style.minHeight = "100%";
+                    gridElement.style.maxHeight = "100%";
+                    gridElement.style.overflow = "visible";
+                }
+
+            } else {
+                console.log("Grid could not be destroyed, because it does not exist!");
             }
-            const newGrid = this.createGrid(activePreset, undefined, gridItems);
-            if(newGrid != null) { this.mainGrid = newGrid; }
-
-            const gridElement = this.shadowRoot.getElementById("gridElement");
-
-            // Render a CSS border raster on the background
-            if(gridElement != null) {
-                gridElement.style.backgroundSize = "" + this.mainGrid?.cellWidth() + "px " + this.mainGrid?.getCellHeight() + "px";
-                gridElement.style.height = "100%";
-                gridElement.style.minHeight = "100%";
-                gridElement.style.maxHeight = "100%";
-                gridElement.style.overflow = "visible";
-            }
-
-        } else {
-            console.log("Grid could not be destroyed, because it does not exist!");
         }
     }
 
@@ -557,21 +563,26 @@ export class OrDashboardEditor extends LitElement{
                         <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"
                                       @or-mwc-input-changed="${() => { const newWidth = this.height; const newHeight = this.width; this.width = newWidth; this.height = newHeight; }}">
                         </or-mwc-input>
-                        <or-mwc-input id="test-btn" type="${InputType.BUTTON}" icon="home"
-                                      @or-mwc-input-changed="${() => { this.mainGrid?.getColumn() == 1 ? this.mainGrid?.column(12) : this.mainGrid?.column(1); }}">
-                        </or-mwc-input>
                     </div>
+                ` : undefined}
+                ${this.fullscreen ? html`
                     <div id="container" style="display: flex; justify-content: center; height: 100%;">
+                        ${this.activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px"><span>This dashboard does not support your device.</span></div>
+                        ` : undefined}
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
-                            <div id="gridElement" class="grid-stack grid-element"></div>
+                            <div id="gridElement" class="grid-stack"></div>
                         </div>
                     </div>
                 ` : html`
                     <div id="container" style="display: flex; justify-content: center; height: 100%;">
+                        ${this.activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px"><span>This dashboard does not support your device.</span></div>
+                        ` : undefined}
                         <div class="maingrid">
                             <!-- Gridstack element on which the Grid will be rendered -->
-                            <div id="gridElement" class="grid-stack"></div>
+                            <div id="gridElement" class="grid-stack grid-element"></div>
                         </div>
                     </div>
                 `}
@@ -580,6 +591,7 @@ export class OrDashboardEditor extends LitElement{
     }
 
     setupResizeObserver(element: Element): ResizeObserver {
+        console.log("Setting up ResizeObserver..");
         this.resizeObserver?.disconnect();
         this.resizeObserver = new ResizeObserver((entries) => {
 
