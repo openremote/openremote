@@ -2,11 +2,12 @@
 Feature: Map
 
     Background: Navigation
-        Given Login OpenRemote as "smartcity"
-        Then Nevigate to "Map" tab
+        Given Setup "lv4"
 
     @Desktop @markers
     Scenario Outline: check markers on map
+        When Login OpenRemote as "smartcity"
+        Then Navigate to "map" tab
         When Check "<asset>" on map
         Then Click and nevigate to "<asset>" page
 

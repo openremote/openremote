@@ -16,12 +16,15 @@ Feature: Assets
         Then Save
 
         Examples:
-            | asset                     | name    | attribute_1   | A1_type          | attribute_2  | A2_type    | value_1 | value_2 |
-            | Electricity battery asset | Battery | energyLevel   | Positive number  | power        | Number     | 30      | 50      |
-            | PV solar asset            | Solar   | panelPitch    | Positive integer | power        | Number     | 30      | 70      |
+            | asset                     | name    | attribute_1 | A1_type          | attribute_2 | A2_type | value_1 | value_2 |
+            | Electricity battery asset | Battery | energyLevel | Positive number  | power       | Number  | 30      | 50      |
+            | PV solar asset            | Solar   | panelPitch  | Positive integer | power       | Number  | 30      | 70      |
 
     @Desktop @select
     Scenario Outline: Select asset
+        Given Setup "lv3"
+        When Login OpenRemote as "smartcity"
+        Then Navigate to "asset" tab
         When Search for the "<name>"
         When Select the "<name>"
         Then We see the "<name>" page
@@ -33,6 +36,9 @@ Feature: Assets
 
     @Desktop @update
     Scenario Outline: Update asset
+        Given Setup "lv3"
+        When Login OpenRemote as "smartcity"
+        Then Navigate to "asset" tab
         When Select the "<name>"
         Then Update "<value>" to the "<attribute>" with type of "<type>"
         When Go to modify mode
@@ -46,23 +52,29 @@ Feature: Assets
 
     @Desktop @readonly
     Scenario Outline: Set and cancel read-only
+        Given Setup "lv3"
+        When Login OpenRemote as "smartcity"
+        Then Navigate to "asset" tab
         When Go to asset "<name>" info page
         Then Go to modify mode
         Then Uncheck on readonly of "<attribute_1>"
         Then Check on readonly of "<attribute_2>"
         Then Save
         When Go to panel page
-        Then We should see a button on the right of "<attribute_1>" 
+        Then We should see a button on the right of "<attribute_1>"
         And No button on the right of "<attribute_2>"
-       
+
         Examples:
-            | name    | attribute_1     | attribute_2        |
-            | Battery | energyLevel     | efficiencyExport   |
-            | Solar   | power           | panelPitch         |
+            | name    | attribute_1 | attribute_2      |
+            | Battery | energyLevel | efficiencyExport |
+            | Solar   | power       | panelPitch       |
 
 
-   @Desktop @set_conf_item
-   Scenario Outline: Set configure item for Insight and Rule
+    @Desktop @set_conf_item
+    Scenario Outline: Set configure item for Insight and Rule
+        Given Setup "lv3"
+        When Login OpenRemote as "smartcity"
+        Then Navigate to "asset" tab
         When Go to asset "<name>" info page
         Then Go to modify mode
         Then Select "<item_1>" and "<item_2>" on "<attribute_1>"
@@ -70,18 +82,18 @@ Feature: Assets
         Then Save
 
         Examples:
-            | name    | attribute_1   | attribute_2   | item_1       | item_2            |
-            | Battery | energyLevel   | power         | Rule state   | Store data points |
-            | Solar   | power         | powerForecast | Rule state   | Store data points |
+            | name    | attribute_1 | attribute_2   | item_1     | item_2            |
+            | Battery | energyLevel | power         | Rule state | Store data points |
+            | Solar   | power       | powerForecast | Rule state | Store data points |
 
-     @Desktop @low_priority @sorting
-     Scenario Outline: Sort the assets
+    @Desktop @low_priority @sorting
+    Scenario Outline: Sort the assets
         When Change the sorting method to "<sorting>"
         Then We should the assets are sorted as the sorting method
 
         Examples:
-            | sorting    | 
-            | Name       |
-            | Type       |
-            | Create on  |
-            | Status     |
+            | sorting   |
+            | Name      |
+            | Type      |
+            | Create on |
+            | Status    |

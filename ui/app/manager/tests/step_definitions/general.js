@@ -5,7 +5,7 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  * Setup
  */
 
-Given('Setup {string}', { timeout: 32000 }, async function (section) {
+Given('Setup {string}', { timeout: 50000 }, async function (section) {
 
     const { page } = this
     /**

@@ -26,7 +26,7 @@ Then("Add a new user", async function () {
     await this.click('li[role="menuitem"]:has-text("Read")');
     await this.click('li[role="menuitem"]:has-text("Write")');
     await this.click('div[role="button"]:has-text("Roles")')
-    await page.waitForTimeout(500)
+    await this.wait(400)
 
     //create
     await this.click('button:has-text("create")')

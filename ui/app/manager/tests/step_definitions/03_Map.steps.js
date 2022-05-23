@@ -1,11 +1,6 @@
 const { Given, When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
 
-/**   Map attribute  **/
-Given('Login OpenRemote demo website', { timeout: 10000 }, async function () {
-    await this.navigate()
-})
-
 
 // not a good way to select a certain marker on the map
 // now it's using nth decorater to select item

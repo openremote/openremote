@@ -268,7 +268,7 @@ class CustomWorld {
      * Create empty asset
      * TODO: set optional parameter to have customized assets' name
      */
-    async addAssets() {
+    async addAssets(update) {
 
         await this.wait(1000)
 
@@ -278,11 +278,27 @@ class CustomWorld {
         // create assets accroding to assets array
         for (let asset of assets) {
             try {
-                await this.click('.mdi-plus')
-                await this.click(`text=${asset.asset}`)
-                await this.fill('#name-input input[type="text"]', asset.name)
-                await this.click('#add-btn')
-                await this.unSelectAll()
+                if (!await this.page?.locator(`text=${asset.name}`).isVisible()) {
+                    await this.click('.mdi-plus')
+                    await this.click(`text=${asset.asset}`)
+                    await this.fill('#name-input input[type="text"]', asset.name)
+                    await this.click('#add-btn')
+                    if (update) {
+                        // update value in general panel
+                        await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3)
+
+                        // update in modify mode
+                        await this.click('button:has-text("Modify")')
+                        await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1)
+                        await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
+                        await this.updateLocation(asset.location_x, asset.location_y)
+                        await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
+                        await this.save()
+
+                        await this.wait(400)
+                    }
+                    await this.unSelectAll()
+                }
             }
             catch (error) {
                 console.log('error' + error);
@@ -294,7 +310,7 @@ class CustomWorld {
      * unselect the asset
      */
     async unSelectAll() {
-        await this.page.waitForTimeout(200)
+        await this.wait(200)
         // leave modify mode
         if (await this.page?.locator('button:has-text("View")').isVisible()) {
             await this.click('button:has-text("View")')
@@ -354,13 +370,16 @@ class CustomWorld {
      * @param {*} attr STRING
      */
     async configItem(item_1, item_2, attr) {
-        await this.page.locator(`td:has-text("${attr} ")`).first().click()
-        await this.page.waitForTimeout(500)
+
+        await this.click(`td:has-text("${attr} ") >> nth=0`)
+        //await this.page.locator(`td:has-text("${attr} ")`).first().click()
+        await this.wait(400)
         await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
         await this.click(`li[role="checkbox"]:has-text("${item_1}")`)
         await this.click(`li[role="checkbox"]:has-text("${item_2}")`)
         await this.click('div[role="alertdialog"] button:has-text("Add")')
-        await this.page.locator(`td:has-text("${attr}")`).first().click()
+        //await this.page.locator(`td:has-text("${attr}")`).first().click()
+        await this.click(`td:has-text("${attr}") >> nth=0`)
     }
 
     /**
@@ -436,7 +455,7 @@ class CustomWorld {
         if (fs.existsSync('storageState.json')) {
             fs.unlinkSync('storageState.json')
         }
-        
+
         // add realm
         await this.navigate("admin")
         await this.login("admin")
@@ -448,13 +467,14 @@ class CustomWorld {
         }
         await this.switchToRealm(realm)
 
-        // add userd
-        if (level == 'lv2') {
+        const update = level == "lv4" ? true : false
+        // add user
+        if (level >= 'lv2') {
             await this.addUser()
             // add assets
-            if (level == 'lv3') {
+            if (level >= 'lv3') {
                 await this.switchRealm(realm)
-                await this.addAssets()
+                await this.addAssets(update)
             }
         }
         await this.logout()

@@ -114,7 +114,7 @@ Then('Set value', async function () {
     await this.fill('[placeholder="value"] >> nth=2', '40')
 })
 
-Then('Connect elements', {timeout:10000},async function () {
+Then('Connect elements', { timeout: 10000 }, async function () {
     const { page } = this
     // connect elements
     await page.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
@@ -123,6 +123,6 @@ Then('Connect elements', {timeout:10000},async function () {
     await page.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
     await page.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
     await page.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
-    await page.waitForTimeout(1000)
+    await this.wait(600)
 })
 

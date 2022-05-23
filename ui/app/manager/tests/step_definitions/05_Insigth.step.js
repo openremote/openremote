@@ -11,7 +11,7 @@ When('Select {string} from {string}', async function (attribute, asset) {
 
     await page.reload()
 
-    await page.waitForTimeout(1000);
+    await this.wait(5000);
 })
 
 // Then('We should see the graph',async function(){
