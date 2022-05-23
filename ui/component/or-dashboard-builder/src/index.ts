@@ -270,7 +270,7 @@ export class OrDashboardBuilder extends LitElement {
 
         const tempTemplate = this.currentTemplate;
         tempTemplate?.widgets?.push(widget);
-        this.currentTemplate = Object.assign({}, tempTemplate);
+        this.currentTemplate = Object.assign({}, tempTemplate); // Force property update
         return widget;
     }
 

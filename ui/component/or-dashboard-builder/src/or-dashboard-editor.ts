@@ -165,7 +165,7 @@ export class OrDashboardEditor extends LitElement{
 
         // Template input changes
         if(changedProperties.has("template") || changedProperties.has("editMode")) {
-            this.rerenderGrid(this.activePreset, true);
+            this.rerenderGrid(this.activePreset, false);
         }
         if(changedProperties.has("editMode")) {
             const maingrid = this.shadowRoot?.querySelector(".maingrid");
@@ -500,20 +500,6 @@ export class OrDashboardEditor extends LitElement{
         if(_widget.gridItem != null) {
             switch(_widget.widgetType) {
                 case DashboardWidgetType.CHART: {
-/*                    const chartConfig: OrChartConfig = {
-                        chart: {
-                            xLabel: "X Label",
-                            yLabel: "Y Label"
-                        },
-                        realm: manager.displayRealm,
-                        views: {
-                            ["dashboards"]: {
-                                [widget.displayName as string]: {
-                                    attributeRefs: widget.dataConfig?.attributes
-                                }
-                            }
-                        }
-                    }*/
                     const response = await manager.rest.api.AssetResource.queryAssets({
                         ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
                     })
