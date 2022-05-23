@@ -17,7 +17,7 @@ require('dotenv').config();
  * command for more.....
  */
 
-var global = {
+const global = {
     browser: ChromiumBroswer,
 }
 
@@ -65,8 +65,6 @@ const assets = [
 const rules = [{ name: "Energy" }, { name: "Solar" }]
 
 
-const DEFAULT_TIMEOUT = 10000;
-
 class CustomWorld {
 
     /**
@@ -79,8 +77,8 @@ class CustomWorld {
      */
 
     async navigate(realm) {
-        var context
-        var URL = realm == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
+        let context
+        let URL = realm == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
                 storageState: 'storageState.json',
@@ -126,7 +124,7 @@ class CustomWorld {
      * @param { } key String: location of selector
      */
     async press(key) {
-        await this.page?.press(key)
+        await this.page?.keyboard.press(key)
     }
 
     /**
@@ -142,17 +140,30 @@ class CustomWorld {
 
     /**
      * 
-     * @param {} locate String : location of selector 
+     * @param { } locate String : location of selector 
      * @param { } value String : value
      */
     async fill(locate, value) {
         await this.page?.locator(locate).fill(value)
     }
 
+    /**
+     * drag to position_x and position_y
+     * @param {*} position_x coordinator of screen pixel
+     * @param {*} position_y coordinator of screen pixel
+     */
     async drag(position_x, position_y) {
         await this.page.mouse.down()
         await this.page.mouse.move(position_x, position_y)
         await this.page.mouse.up()
+    }
+
+    /**
+     * wait for millisecond
+     * @param {*} millisecond number
+     */
+    async wait(millisecond) {
+        await this.page?.waitForTimeout(millisecond)
     }
 
     /**
@@ -191,6 +202,10 @@ class CustomWorld {
         ]);
     }
 
+    /**
+     * switch to a realm
+     * @param {*} name 
+     */
     async switichToRealm(name) {
         await this.click('#realm-picker');
         await this.click(`li[role="menuitem"]:has-text("${name}")`);
@@ -200,9 +215,7 @@ class CustomWorld {
      *  Create User
      * @param { } isRealmAdded Boolen
      */
-    async addUser(isRealmAdded) {
-        if (!isRealmAdded)
-            await this.addRealm("smartcity")
+    async addUser() {
         /**
          * add user
          */
@@ -229,7 +242,7 @@ class CustomWorld {
 
     /**
      * Create empty asset
-     * TODO: set optional parameter
+     * TODO: set optional parameter to have customized assets' name
      */
     async addAssets() {
 
@@ -278,7 +291,6 @@ class CustomWorld {
         await this.click(`text=${name}`)
     }
 
-
     /**
      * update asset in the general panel
      * @param {*} attr STRING
@@ -297,7 +309,6 @@ class CustomWorld {
      * @param {*} value STRING
      */
     async updateInModify(attr, type, value) {
-
         await this.fill(`text=${attr} ${type} >> input[type="number"]`, value)
     }
 
@@ -397,14 +408,14 @@ class CustomWorld {
         */
 
     /**
-     *  fundamental setup: only contains realm
+     *  lv1 Setup: only contains realm
      */
-    async fundamentalSetup(name) {
+    async lv1_Setup(name) {
 
         await this.navigate("admin")
         await this.login("admin")
 
-        await this.page.waitForTimeout(1000)
+        await this.wait(1000)
         if (!await this.page?.locator('#realm-picker').isVisible()) {
             await this.navigateTo("Realms")
             await this.addRealm(name)
@@ -414,35 +425,22 @@ class CustomWorld {
 
 
     /**
-     *  basic setup: only contains realm and user
+     *  lv2 Setup: only contains realm and user
      */
-    async basicSetup() {
+    async lv2_Setup() {
 
-        let isRealmAdded = false
+        await this.lv1_Setup
 
-        await this.navigate("admin")
-        await this.login("admin")
-        // wait for the button to be visible
-        await this.page.waitForTimeout(300)
-        // set isRealmAdded to true only when smartcity realm is there
-        if (await this.page?.locator('#realm-picker').isVisible()) {
-            await this.click('#realm-picker');
-            if (await this.page?.locator('li[role="menuitem"]:has-text("smartcity")').count() > 0) {
-                await this.click('li[role="menuitem"]:has-text("smartcity")')
-                isRealmAdded = true
-            }
-        }
-
-        await this.addUser(isRealmAdded)
+        await this.addUser()
     }
 
     /**
-     * convention setup: contains realm, user and emtpy assets
+     * lv3 Setup: contains realm, user and emtpy assets
      */
-    async conventionSetup() {
+    async lv3_Setup() {
 
         // create realm and user
-        await this.basicSetup();
+        await this.lv2_Setup();
 
         // logout
         await this.logout();
@@ -456,10 +454,10 @@ class CustomWorld {
     }
 
     /**
-     *  thorough setup: contains realm, user and assets with data and configuration items
+     *  lv4 Setup: contains realm, user and assets with data and configuration items
      */
-    async thoroughSetup() {
-        await this.conventionSetup();
+    async lv4_Setup() {
+        await this.lv3_Setup();
 
         for (let asset of assets) {
 
@@ -478,7 +476,7 @@ class CustomWorld {
             await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
             await this.save()
 
-            await this.page.waitForTimeout(300)
+            await this.wait(400)
         }
 
     }
@@ -495,10 +493,18 @@ class CustomWorld {
      */
 
     /**
+     *  Clean up the enviroment
+     *  Called in After() 
+     */
+    async cleanup() {
+
+    }
+
+    /**
      * Delete realm
      * not possible right now since there is no way to delete a realm in graphic UI
      */
-    async fundamentalClean() {
+    async lv1_Cleanup() {
 
     }
 
@@ -506,12 +512,12 @@ class CustomWorld {
      * Delete realm and user
      * having problems at deleting roles
      */
-    async basicClean() {
+    async lv2_Cleanup() {
         // await this.navigate("admin")
         // if (!fs.existsSync('storageState.json')) {
         //     await this.login("admin")
         // }
-        const {page} = this
+        await this.wait(400)
         if (!await this.page?.locator('#realm-picker >> text=smartcity').isVisible()) {
             await this.click('#realm-picker');
             await this.click('li[role="menuitem"]:has-text("smartcity")')
@@ -521,42 +527,40 @@ class CustomWorld {
         await this.navigateToTab("Map")
 
         // navigate to user page
-        await this.navigateTo("Users")
+        this.navigateTo("Users")
 
+        // delete users
         await this.click('td:has-text("smartcity")')
         await this.click('button:has-text("Delete")')
         await this.click('div[role="alertdialog"] button:has-text("Delete")')
 
         // delete roles
-
         // navigate to role page
         await this.navigateTo("Roles")
 
-        // delete all roles
-        await page.locator('td:has-text("asset")').first().click()
+        // delete roles
+        await this.click('td:has-text("Custom") >> nth=0')
 
-        await page.waitForTimeout(1000)
+        // can't find a way to locate the delete button 
+        // since the sorting of the role is random everytime 
+        // the html tag is in form of "#attribute-meta-row-2" in which number inside is decided by order
+        // if the order is random then then number of html may change every time
+        // then the delete button is not being able to been determined
 
-
-        // await this.click('td:has-text("asset") >> nth=0 >> button:has-text("Delete")')
-        // await this.click('div[role="alertdialog"] button:has-text("Delete")')
-
-
-        // var rows = await this.page.locator('.mdc-data-table__row').count();
-        // var assetRow
-        // for (let i = 0; i < rows - 1; i++) {
-
-        // }
-        // await this.click(`#mdc-data-table-row-${i}`)
-        // await this.click(`#attribute-meta-row-0 button:has-text("Delete")`)
-        // await this.click('div[role="alertdialog"] button:has-text("Delete")')
+        // instead i will use tab key to move to the delete button
+        // it's not a decent solution but that's the only way i can come up with
+        for (let i = 0; i < 15; i++){
+            await this.press('Tab')
+        }
+        await this.press('Enter')
+        await this.click('div[role="alertdialog"] button:has-text("Delete")')
     }
 
     /**
      *  Delete realm, user and assets
      */
-    async conventionClean() {
-        await this.basicClean()
+    async lv3_Cleanup() {
+        await this.lv2_Cleanup()
         await this.deleteAssets()
     }
 
@@ -564,8 +568,8 @@ class CustomWorld {
     /**
      * Delete realm, user, assets, rules and insights
      */
-    async thoroughClean() {
-        await this.conventionClean()
+    async lv4_Cleanup() {
+        await this.lv3_Cleanup()
         await this.deleteRules()
 
         // insights are not there yet
@@ -585,12 +589,11 @@ BeforeAll(async function () {
     });
 })
 
-
 // close page
 After(async function () {
+    await this.cleanup()
     await this.page.close()
 })
-
 
 // close browser and delete authentication file
 AfterAll(async function () {
@@ -600,6 +603,4 @@ AfterAll(async function () {
     }
 })
 
-
-//setDefaultTimeout(DEFAULT_TIMEOUT)
 setWorldConstructor(CustomWorld);

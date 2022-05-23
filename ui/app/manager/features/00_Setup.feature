@@ -2,7 +2,7 @@
 Feature: Setup
 
     Background: Setup
-        Given Setup for "none"
+        Given Setup "none"
 
     @Desktop
     Scenario: Add new Realm
@@ -10,7 +10,7 @@ Feature: Setup
         Then Add a new Realm
         When Select smartcity realm
         Then We see the smartcity realm
-        Then Clean up "fundamental"
+        Then Clean up "lv1"
 
 
 

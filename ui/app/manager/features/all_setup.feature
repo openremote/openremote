@@ -2,10 +2,9 @@
 Feature: Setup
 
     Background: Setup
-        Given Setup for "convention"
+        Given Login OpenRemote as "admin"
     
-    @clean_up
-    Scenario: test
-        When Clean up "convention"
+    Scenario: 1
+        When Clean up "lv2"
 
     

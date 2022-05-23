@@ -5,7 +5,7 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  * Setup
  */
 
-Given('Setup for {string}', { timeout: 32000 }, async function (section) {
+Given('Setup {string}', { timeout: 32000 }, async function (section) {
     /**
      *  most of cases need the setup of: realm, user and assets
      *  for rules, "rule state" as the the configure item should selected
@@ -18,23 +18,23 @@ Given('Setup for {string}', { timeout: 32000 }, async function (section) {
             break;
 
         // contains realm
-        case "fundamental":
-            await this.fundamentalSetup("smartcity")
+        case "lv1":
+            await this.lv1_Setup("smartcity")
             break;
 
         // contains realm and user
-        case "basic":
-            await this.basicSetup()
+        case "lv2":
+            await this.lv2_Setup()
             break;
 
         // contians realm, user and empty assets
-        case "convention":
-            await this.conventionSetup()
+        case "lv3":
+            await this.lv3_Setup()
             break;
 
         // contains realm, user and assets with data
-        case "thorough":
-            await this.thoroughSetup()
+        case "lv4":
+            await this.lv4_Setup()
             break;
 
         default:
@@ -49,17 +49,17 @@ Given('Setup for {string}', { timeout: 32000 }, async function (section) {
  */
 When('Clean up {string}', { timeout: 10000 }, async function (section) {
     switch (section) {
-        case "fundamental":
-            await this.fundamentalClean()
+        case "lv1":
+            await this.lv1_Cleanup()
             break;
-        case "basic":
-            await this.basicClean()
+        case "lv2":
+            await this.lv2_Cleanup()
             break;
-        case "convention":
-            await this.conventionClean()
+        case "lv3":
+            await this.lv3_Cleanup()
             break;
-        case "thorough":
-            await this.thoroughClean()
+        case "lv4":
+            await this.lv4_Cleanup()
             break;
         default:
             break;
@@ -87,13 +87,15 @@ Given('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) 
  */
 When('Navigate to {string} page', async function (name) {
     await this.navigateTo(name)
+    await this.wait(200)
 })
 
 /**
  * Tab menu
  */
-When('Nevigate to {string} tab', async function (tab) {
+When('Navigate to {string} tab', async function (tab) {
     await this.navigateToTab(tab)
+    await this.wait(200)
 });
 
 
