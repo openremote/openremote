@@ -190,7 +190,7 @@ export class OrDashboardEditor extends LitElement{
         }
 
         // Width or height input changes
-        if(changedProperties.has("width") || changedProperties.has("height")) {
+        if(!this.fullscreen && (changedProperties.has("width") || changedProperties.has("height"))) {
             if(this.shadowRoot != null) {
                 const gridHTML = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
                 gridHTML.style.width = (this.width + 'px');
@@ -205,7 +205,7 @@ export class OrDashboardEditor extends LitElement{
             else { this.previewSize = "Custom Size"; }
         }
 
-        if(changedProperties.has("previewSize")) {
+        if(!this.fullscreen && changedProperties.has("previewSize")) {
             switch (this.previewSize) {
                 case "Large": { this.width = 1920; this.height = 1080; break; }
                 case "Medium": { this.width = 1280; this.height = 720; break; }
