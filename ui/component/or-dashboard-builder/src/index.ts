@@ -325,7 +325,7 @@ export class OrDashboardBuilder extends LitElement {
 
             // Saving object into the database
             manager.rest.api.DashboardResource.update(this.selectedDashboard).then((response) => {
-                console.log(response);
+                // console.log(response);
                 if(this.dashboards != null && this.selectedDashboard != null) {
                     this.initialDashboardJSON = JSON.stringify(this.selectedDashboard);
                     this.initialTemplateJSON = JSON.stringify(this.selectedDashboard.template);

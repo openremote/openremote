@@ -30,7 +30,7 @@ export class OrDashboardBoardsettings extends LitElement {
         super();
         this.updateComplete.then(() => {
             if(this.shadowRoot != null) {
-                console.log(this.shadowRoot);
+                // console.log(this.shadowRoot);
                 this.shadowRoot.querySelectorAll(".displayInput").forEach(element => {
                     (element.shadowRoot?.querySelector(".mdc-menu") as HTMLElement).style.minWidth = "250px";
                 })

@@ -342,7 +342,7 @@ export class OrDashboardEditor extends LitElement{
             styleInHead: false
             // @ts-ignore typechecking, because we can only provide an HTMLElement (which GridHTMLElement inherits)
         }, gridElement)
-        console.log(grid);
+        // console.log(grid);
 
         if(gridElement != null) {
             gridElement.style.backgroundSize = "" + grid.cellWidth() + "px " + grid.getCellHeight() + "px";
@@ -377,7 +377,7 @@ export class OrDashboardEditor extends LitElement{
                     (items as GridStackNode[]).forEach(node => {
                         const widget: DashboardWidget | undefined = this.template?.widgets?.find(widget => { return widget.gridItem?.id == node.id; });
                         if(widget != null && widget.gridItem != null) {
-                            console.log("Updating properties of " + widget.displayName);
+                            // console.log("Updating properties of " + widget.displayName);
                             widget.gridItem.x = node.x;
                             widget.gridItem.y = node.y;
                             widget.gridItem.w = node.w;
@@ -600,18 +600,22 @@ export class OrDashboardEditor extends LitElement{
                     return 0;
                 });
 
-                console.log(presets);
+                // console.log(presets);
+
+                const width = (this.fullscreen ? element.clientWidth : this.width);
+                const height = (this.fullscreen ? element.clientHeight : this.height);
+                // console.log("New grid size is: [" + width + "x" + height + "]")
 
                 // Getting the active Preset based on breakpoint
                 let activePreset: DashboardScreenPreset | undefined;
                 presets.forEach((preset) => {
-                    if(activePreset == undefined && preset.breakpoint != null && this.width <= preset.breakpoint) {
+                    if(activePreset == undefined && preset.breakpoint != null && width <= preset.breakpoint) {
                         activePreset = preset;
                     }
                 });
 
-                console.log("Active preset is the following:");
-                console.log(activePreset);
+                // console.log("Active preset is the following:");
+                // console.log(activePreset);
 
                 if(activePreset != undefined) {
                     this.activePreset = activePreset;
