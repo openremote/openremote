@@ -2,6 +2,11 @@ const { When, Then } = require("@cucumber/cucumber");
 const { expect } = require("@playwright/test");
 const { expectExtension } = require("../support/expect_extension")
 
+
+When('Switch to {string}', async function (string) {
+    // Write code here that turns the phrase above into concrete actions
+    await this.switchRealm("smartcity")
+});
 /**
  * add new asset
  */
@@ -10,14 +15,15 @@ Then('Create a {string} with name of {string}', async function (asset, name) {
 
     await this.click('.mdi-plus')
     await this.click(`text=${asset}`)
-    await this.fill('#name-input input[type="text"]',name)
+    await this.fill('#name-input input[type="text"]', name)
     await this.click('#add-btn')
 })
 
 When('Go to asset {string} info page', async function (name) {
     const { page } = this;
 
-    await page.locator(`#list-container div:has-text("${name}")`).nth(1).click()
+    await this.click(`#list-container >> text=${name}`)
+    //await page.locator(`#list-container div:has-text("${name}")`).nth(1).click()
 })
 
 Then('Go to modify mode', async function () {

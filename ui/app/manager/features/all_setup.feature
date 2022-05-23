@@ -1,10 +1,11 @@
-@OpenRemote @setup_test
+@OpenRemote 
 Feature: Setup
 
     Background: Setup
-        Given Login OpenRemote as "admin"
-    
+        Given Setup "lv2"
+        
+    @setup_test
     Scenario: 1
-        When Clean up "lv2"
-
+        When Start to type your Then step here
+        Then Clean up "lv3"
     

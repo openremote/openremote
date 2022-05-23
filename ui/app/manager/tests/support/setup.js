@@ -128,6 +128,17 @@ class CustomWorld {
     }
 
     /**
+     * Check and uncheck
+     * @param {*} checkbox String: location of checkbox
+     */
+    async check(checkbox) {
+        await this.page?.check(checkbox)
+    }
+    async uncheck(checkbox) {
+        await this.page?.uncheck(checkbox)
+    }
+
+    /**
      * Logout and delete login certification
      */
     async logout() {
@@ -201,12 +212,18 @@ class CustomWorld {
             this.click('button:has-text("create")')
         ]);
     }
+    async switchRealm(name) {
+        await this.logout()
+        let URL = name == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
+        await this.page?.goto(URL)
+        await this.login(name)
+    }
 
     /**
-     * switch to a realm
+     * switch to a realm in the manager
      * @param {*} name 
      */
-    async switichToRealm(name) {
+    async switchToRealm(name) {
         await this.click('#realm-picker');
         await this.click(`li[role="menuitem"]:has-text("${name}")`);
     }
@@ -219,25 +236,32 @@ class CustomWorld {
         /**
          * add user
          */
-        // swithch to smartcity realm
-        await this.click('#realm-picker');
-        await this.click('li[role="menuitem"]:has-text("smartcity")');
+        await this.wait(100)
         // go to user page
         await this.click('#menu-btn-desktop');
         await this.click('text=Users');
-        // add user
-        await this.page?.locator('.mdi-plus').first().click();
-        await this.page?.locator('input[type="text"]').first().fill('smartcity');
-        // type in password
-        await this.fill('#password-user0 input[type="password"]', 'smartcity')
-        await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
-        // select permissions
-        await this.click('div[role="button"]:has-text("Roles")');
-        await this.click('li[role="menuitem"]:has-text("Read")');
-        await this.click('li[role="menuitem"]:has-text("Write")');
-        await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
-        // create user
-        await this.click('button:has-text("create")')
+        await this.wait(400)
+        // add user if not exsit
+        if (!await this.page?.locator('main[role="main"] >> text=smartcity').isVisible()) {
+
+            await this.click('.mdi-plus >> nth=0')
+            await this.fill('input[type="text"] >> nth=0', 'smartcity')
+            // await this.page?.locator('.mdi-plus').first().click();
+            // await this.page?.locator('input[type="text"]').first().fill('smartcity');
+            // type in password
+            await this.fill('#password-user0 input[type="password"]', 'smartcity')
+            await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
+            // select permissions
+            await this.click('div[role="button"]:has-text("Roles")');
+            await this.click('li[role="menuitem"]:has-text("Read")');
+            await this.click('li[role="menuitem"]:has-text("Write")');
+            await this.page?.locator('div[role="button"]:has-text("Roles")').click({ timeout: 1000 });
+            // create user
+            await this.click('button:has-text("create")')
+        }
+        else {
+            console.log("exsits")
+        }
     }
 
     /**
@@ -246,7 +270,7 @@ class CustomWorld {
      */
     async addAssets() {
 
-        await this.page.waitForTimeout(1000)
+        await this.wait(1000)
 
         // Goes to asset page
         await this.click('#desktop-left a:nth-child(2)')
@@ -406,48 +430,75 @@ class CustomWorld {
         *          *******          ********            *                 * * *               *
         *              
         */
+    async setup(realm, level) {
 
+        // clean storage
+        if (fs.existsSync('storageState.json')) {
+            fs.unlinkSync('storageState.json')
+        }
+        
+        // add realm
+        await this.navigate("admin")
+        await this.login("admin")
+
+        await this.wait(600)
+        if (!await this.page?.locator('#realm-picker').isVisible()) {
+            await this.navigateTo("Realms")
+            await this.addRealm(realm)
+        }
+        await this.switchToRealm(realm)
+
+        // add userd
+        if (level == 'lv2') {
+            await this.addUser()
+            // add assets
+            if (level == 'lv3') {
+                await this.switchRealm(realm)
+                await this.addAssets()
+            }
+        }
+        await this.logout()
+        await this.page.close()
+    }
     /**
      *  lv1 Setup: only contains realm
      */
-    async lv1_Setup(name) {
+    async lv1_Setup(realm) {
 
         await this.navigate("admin")
         await this.login("admin")
 
-        await this.wait(1000)
+        await this.wait(6000)
         if (!await this.page?.locator('#realm-picker').isVisible()) {
             await this.navigateTo("Realms")
-            await this.addRealm(name)
+            await this.addRealm(realm)
         }
-        await this.switichToRealm(name)
+        await this.switchToRealm(realm)
     }
 
 
     /**
      *  lv2 Setup: only contains realm and user
      */
-    async lv2_Setup() {
+    async lv2_Setup(realm) {
 
-        await this.lv1_Setup
+        await this.lv1_Setup(realm)
 
         await this.addUser()
+
+        await this.navigateToTab("Map")
     }
 
     /**
      * lv3 Setup: contains realm, user and emtpy assets
      */
-    async lv3_Setup() {
+    async lv3_Setup(realm) {
 
         // create realm and user
-        await this.lv2_Setup();
+        await this.lv2_Setup(realm);
 
-        // logout
-        await this.logout();
-
-        // nevigate to smartcity
-        await this.page?.goto(process.env.SMARTCITY_URL)
-        await this.login("smartcity")
+        // switch realm to smartcity in URL
+        await this.switchRealm(realm)
 
         // create assets
         await this.addAssets()
@@ -456,8 +507,8 @@ class CustomWorld {
     /**
      *  lv4 Setup: contains realm, user and assets with data and configuration items
      */
-    async lv4_Setup() {
-        await this.lv3_Setup();
+    async lv4_Setup(realm) {
+        await this.lv3_Setup(realm);
 
         for (let asset of assets) {
 
@@ -549,7 +600,7 @@ class CustomWorld {
 
         // instead i will use tab key to move to the delete button
         // it's not a decent solution but that's the only way i can come up with
-        for (let i = 0; i < 15; i++){
+        for (let i = 0; i < 15; i++) {
             await this.press('Tab')
         }
         await this.press('Enter')
@@ -591,8 +642,7 @@ BeforeAll(async function () {
 
 // close page
 After(async function () {
-    await this.cleanup()
-    await this.page.close()
+    await this.page?.close()
 })
 
 // close browser and delete authentication file

@@ -6,42 +6,43 @@ const { Given, When, Then } = require("@cucumber/cucumber");
  */
 
 Given('Setup {string}', { timeout: 32000 }, async function (section) {
+
+    const { page } = this
     /**
      *  most of cases need the setup of: realm, user and assets
      *  for rules, "rule state" as the the configure item should selected
      */
-    switch (section) {
+    await this.setup("smartcity", section)
+    // switch (section) {
 
-        case "none":
-            await this.navigate("admin")
-            await this.login("admin")
-            break;
+    //     case "none":
+    //         await this.navigate("admin")
+    //         await this.login("admin")
+    //         break;
 
-        // contains realm
-        case "lv1":
-            await this.lv1_Setup("smartcity")
-            break;
+    //     // contains realm
+    //     case "lv1":
+    //         await this.lv1_Setup("smartcity")
+    //         break;
 
-        // contains realm and user
-        case "lv2":
-            await this.lv2_Setup()
-            break;
+    //     // contains realm and user
+    //     case "lv2":
+    //         await this.lv2_Setup("smartcity")
+    //         break;
 
-        // contians realm, user and empty assets
-        case "lv3":
-            await this.lv3_Setup()
-            break;
+    //     // contians realm, user and empty assets
+    //     case "lv3":
+    //         await this.lv3_Setup("smartcity")
+    //         break;
 
-        // contains realm, user and assets with data
-        case "lv4":
-            await this.lv4_Setup()
-            break;
+    //     // contains realm, user and assets with data
+    //     case "lv4":
+    //         await this.lv4_Setup("smartcity")
+    //         break;
 
-        default:
-            break;
-
-    }
-
+    //     default:
+    //         break;
+    // }
 })
 
 /**
@@ -77,7 +78,7 @@ When('Clean up {string}', { timeout: 10000 }, async function (section) {
 /**
  * Login to a realm as expected user
  */
-Given('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) {
+When('Login OpenRemote as {string}', { timeout: 10000 }, async function (user) {
     await this.navigate(user)
     await this.login(user)
 })

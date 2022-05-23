@@ -2,11 +2,12 @@
 Feature: Assets
 
     Background: Navigation
-        Given Login OpenRemote as "smartcity"
-        Then Nevigate to "Asset" tab
+        Given Setup "lv2"
 
     @Desktop @add_asset
     Scenario Outline: Add new asset
+        When Login OpenRemote as "smartcity"
+        Then Navigate to "asset" tab
         Then Create a "<asset>" with name of "<name>"
         When Go to asset "<name>" info page
         Then Go to modify mode

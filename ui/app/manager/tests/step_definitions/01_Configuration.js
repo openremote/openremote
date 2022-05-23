@@ -5,7 +5,9 @@ require('dotenv').config();
 /**
  * add new user
  */
-
+Then('Switch to {string} realm', async function (realm) {
+    await this.switchToRealm(realm)
+})
 
 Then("Add a new user", async function () {
 
@@ -99,13 +101,6 @@ Then('Switch back to origin', async function () {
  */
 When('Logout', async function () {
     await this.logout();
-})
-
-Then('Go to new Realm and login', async function () {
-    const { page } = this;
-
-    await page.goto(process.env.SMARTCITY_URL)
-    await this.login("smartcity")
 })
 
 
