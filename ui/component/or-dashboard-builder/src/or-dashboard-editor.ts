@@ -119,6 +119,9 @@ export class OrDashboardEditor extends LitElement{
     @property()
     protected readonly isLoading: boolean | undefined;
 
+    @property()
+    protected readonly rerenderPending: boolean | undefined;
+
     @state()
     protected activePreset: DashboardScreenPreset;
 
@@ -171,6 +174,12 @@ export class OrDashboardEditor extends LitElement{
             const maingrid = this.shadowRoot?.querySelector(".maingrid");
             if(maingrid != null) {
                 this.setupResizeObserver(maingrid);
+            }
+        }
+        if(changedProperties.has("rerenderPending")) {
+            if(this.rerenderPending) {
+                this.rerenderGrid(this.activePreset, true);
+                this.dispatchEvent(new CustomEvent("rerender"));
             }
         }
 

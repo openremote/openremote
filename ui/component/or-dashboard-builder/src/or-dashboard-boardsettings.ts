@@ -44,7 +44,10 @@ export class OrDashboardBoardsettings extends LitElement {
     }
 
     forceParentUpdate() {
-        this.dispatchEvent(new CustomEvent('update'));
+        this.dispatchEvent(new CustomEvent('minorupdate'));
+    }
+    forceParentRerender() {
+        this.dispatchEvent(new CustomEvent('majorupdate'));
     }
 
     // UI generation of an expandable panel header.
@@ -142,7 +145,7 @@ export class OrDashboardBoardsettings extends LitElement {
                                         <or-mwc-input class="displayInput" type="${InputType.SELECT}" style="width: 250px;"
                                                       .options="${scalingPresets.map((x) => this.scalingPresetToString(x))}"
                                                       .value="${this.scalingPresetToString(preset.scalingPreset)}"
-                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { preset.scalingPreset = this.stringToScalingPreset(event.detail.value); this.forceParentUpdate(); }}"
+                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { preset.scalingPreset = this.stringToScalingPreset(event.detail.value); this.forceParentRerender(); }}"
                                         ></or-mwc-input>
                                     </div>
                                 `

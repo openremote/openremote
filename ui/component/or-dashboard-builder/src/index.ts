@@ -187,6 +187,9 @@ export class OrDashboardBuilder extends LitElement {
     @state()
     protected hasChanged: boolean;
 
+    @state()
+    protected rerenderPending: boolean;
+
 
     /* ------------- */
 
@@ -195,6 +198,7 @@ export class OrDashboardBuilder extends LitElement {
         this.isInitializing = true;
         this.isLoading = true;
         this.hasChanged = false;
+        this.rerenderPending = false;
         /*this.getAllDashboards().then((dashboards: Dashboard[]) => {
             this.dashboards = dashboards;
         });*/
@@ -428,11 +432,12 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="container">
                             <div id="builder">
                                 ${(this.selectedDashboard != null) ? html`
-                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.currentWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}" .isLoading="${this.isLoading}"
+                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.currentWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}" .isLoading="${this.isLoading}" .rerenderPending="${this.rerenderPending}"
                                                          @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                          @deselected="${(event: CustomEvent) => { this.deselectWidget(); }}"
                                                          @dropped="${(event: CustomEvent) => { this.createWidget(event.detail); }}"
                                                          @changed="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, event.detail.template); }}"
+                                                         @rerender="${(event: CustomEvent) => { this.rerenderPending = false; }}"
                                     ></or-dashboard-editor>
                                 ` : html`
                                     <div style="justify-content: center; display: flex; align-items: center; height: 100%;">
@@ -468,7 +473,8 @@ export class OrDashboardBuilder extends LitElement {
                                             <or-dashboard-browser id="browser" style="${this.sidebarMenuIndex != 0 ? css`display: none` : null}"></or-dashboard-browser>
                                             <div id="item" style="${this.sidebarMenuIndex != 1 ? css`display: none` : null}"> <!-- Setting display to none instead of not rendering it. -->
                                                 <or-dashboard-boardsettings .template="${this.currentTemplate}"
-                                                                            @update="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
+                                                                            @minorupdate="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, this.selectedDashboard?.template); }}"
+                                                                            @majorupdate="${(event: CustomEvent) => { this.currentTemplate = this.selectedDashboard?.template; this.rerenderPending = true; }}"
                                                 ></or-dashboard-boardsettings>
                                             </div>
                                         </div>
