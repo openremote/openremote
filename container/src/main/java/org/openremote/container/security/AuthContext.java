@@ -26,7 +26,7 @@ import org.openremote.model.Constants;
  */
 public interface AuthContext {
 
-    String getAuthenticatedRealm();
+    String getAuthenticatedRealmName();
 
     String getUsername();
 
@@ -38,7 +38,7 @@ public interface AuthContext {
      * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
      */
     default boolean isSuperUser() {
-        return Constants.MASTER_REALM.equals(getAuthenticatedRealm()) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
+        return Constants.MASTER_REALM.equals(getAuthenticatedRealmName()) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
     }
 
     boolean hasRealmRole(String role);
@@ -53,6 +53,6 @@ public interface AuthContext {
      * @return <code>true</code> if the user is authenticated in the same realm or if the user is the superuser (admin).
      */
     default boolean isRealmAccessibleByUser(String realm) {
-        return realm != null && realm.length() > 0 && (realm.equals(getAuthenticatedRealm()) || isSuperUser());
+        return realm != null && realm.length() > 0 && (realm.equals(getAuthenticatedRealmName()) || isSuperUser());
     }
 }

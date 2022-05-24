@@ -770,6 +770,12 @@ export class OrMwcInput extends LitElement {
     @property({type: Boolean})
     public trailingSpace: boolean = false;
 
+    public get nativeValue(): any {
+        if (this._mdcComponent) {
+            return (this._mdcComponent as any).value;
+        }
+    }
+
     /* TEXT INPUT STYLES END */
 
     protected _mdcComponent?: MDCComponent<any>;

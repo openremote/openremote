@@ -183,7 +183,7 @@ public class AssetQuery implements Serializable {
     public StringPredicate[] names;
     public ParentPredicate[] parents;
     public PathPredicate[] paths;
-    public TenantPredicate tenant;
+    public RealmPredicate realm;
     public String[] userIds;
     @JsonSerialize(contentConverter = AssetClassToStringConverter.class)
     @JsonDeserialize(contentConverter = StringToAssetClassConverter.class)
@@ -277,8 +277,8 @@ public class AssetQuery implements Serializable {
         return this;
     }
 
-    public AssetQuery tenant(TenantPredicate tenantPredicate) {
-        this.tenant = tenantPredicate;
+    public AssetQuery realm(RealmPredicate realmPredicate) {
+        this.realm = realmPredicate;
         return this;
     }
 
@@ -388,7 +388,7 @@ public class AssetQuery implements Serializable {
                 ", name=" + Arrays.toString(names) +
                 ", parent=" + Arrays.toString(parents) +
                 ", path=" + Arrays.toString(paths) +
-                ", tenant=" + tenant +
+                ", realm=" + realm +
                 ", userId='" + Arrays.toString(userIds) + '\'' +
                 ", type=" + Arrays.toString(types) +
                 ", attribute=" + (attributes != null ? attributes.toString() : "null") +

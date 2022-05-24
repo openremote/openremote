@@ -21,10 +21,12 @@ package org.openremote.manager.security;
 
 import io.undertow.util.Headers;
 import org.apache.commons.io.IOUtils;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
+import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
@@ -32,19 +34,26 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.apps.ConsoleAppService;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.Container;
 import org.openremote.model.PersistenceEvent;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.auth.OAuthGrant;
-import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.RealmFilter;
+import org.openremote.model.gateway.GatewayConnection;
+import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
+import javax.persistence.Query;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAllowedException;
@@ -88,6 +97,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     public static final String KEYCLOAK_FRONTEND_URL = "KEYCLOAK_FRONTEND_URL";
 
     protected PersistenceService persistenceService;
+    protected AssetStorageService assetStorageService;
     protected TimerService timerService;
     protected MessageBrokerService messageBrokerService;
     protected ClientEventService clientEventService;
@@ -115,6 +125,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         consoleAppService = container.getService(ConsoleAppService.class);
+        assetStorageService = container.getService(AssetStorageService.class);
 
         // Allow all external hostnames with wildcard and same host with wildcard
         validRedirectUris = new ArrayList<>();
@@ -737,68 +748,68 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Tenant[] getTenants() {
-        return ManagerIdentityProvider.getTenantsFromDb(persistenceService);
+    public Realm[] getRealms() {
+        return ManagerIdentityProvider.getRealmsFromDb(persistenceService);
     }
 
     @Override
-    public Tenant getTenant(String realm) {
+    public Realm getRealm(String realm) {
         try {
-            return ManagerIdentityProvider.getTenantFromDb(persistenceService, realm);
+            return ManagerIdentityProvider.getRealmFromDb(persistenceService, realm);
         } catch (Exception ex) {
-            LOG.log(Level.INFO, "Failed to get tenant for realm: " + realm, ex);
+            LOG.log(Level.INFO, "Failed to get realm by name: " + realm, ex);
         }
         return null;
     }
 
     @Override
-    public void updateTenant(Tenant tenant) {
-        LOG.fine("Update tenant: " + tenant);
+    public void updateRealm(Realm realm) {
+        LOG.fine("Update realm: " + realm);
         getRealms(realmsResource -> {
 
-            if (TextUtil.isNullOrEmpty(tenant.getId())) {
-                throw new IllegalStateException("Tenant must already exist, ID does not match an existing tenant");
+            if (TextUtil.isNullOrEmpty(realm.getId())) {
+                throw new IllegalStateException("Realm must already exist, ID does not match an existing realm");
             }
 
             // Force realm to lowercase
-            tenant.setRealm(tenant.getRealm().toLowerCase(Locale.ROOT));
+            realm.setName(realm.getName().toLowerCase(Locale.ROOT));
 
             // Find existing realm by ID as realm name could have been changed
-            RealmRepresentation realmRepresentation = realmsResource.findAll().stream().filter(r -> r.getId().equals(tenant.getId())).findFirst().orElse(null);
+            RealmRepresentation realmRepresentation = realmsResource.findAll().stream().filter(r -> r.getId().equals(realm.getId())).findFirst().orElse(null);
 
             if (realmRepresentation == null) {
-                throw new IllegalStateException("Tenant must already exist, ID does not match an existing tenant");
+                throw new IllegalStateException("Realm must already exist, ID does not match an existing realm");
             }
 
-            String realm = realmRepresentation.getRealm();
-            RealmResource realmResource = realmsResource.realm(realm);
-            Tenant existingTenant = getTenant(realm);
+            String realmName = realmRepresentation.getRealm();
+            RealmResource realmResource = realmsResource.realm(realmName);
+            Realm existingRealm = getRealm(realmName);
 
-            // Tenant only has a subset of realm representation so overlay on actual realm representation
-            realmRepresentation.setDisplayName(tenant.getDisplayName());
-            realmRepresentation.setAccountTheme(tenant.getAccountTheme());
-            realmRepresentation.setAdminTheme(tenant.getAdminTheme());
-            realmRepresentation.setEmailTheme(tenant.getEmailTheme());
-            realmRepresentation.setLoginTheme(tenant.getLoginTheme());
-            realmRepresentation.setRememberMe(tenant.getRememberMe());
-            realmRepresentation.setVerifyEmail(tenant.getVerifyEmail());
-            realmRepresentation.setLoginWithEmailAllowed(tenant.getLoginWithEmail());
-            realmRepresentation.setRegistrationAllowed(tenant.getRegistrationAllowed());
-            realmRepresentation.setRegistrationEmailAsUsername(tenant.getRegistrationEmailAsUsername());
-            realmRepresentation.setEnabled(tenant.getEnabled());
-            realmRepresentation.setDuplicateEmailsAllowed(tenant.getDuplicateEmailsAllowed());
-            realmRepresentation.setResetPasswordAllowed(tenant.getResetPasswordAllowed());
-            realmRepresentation.setNotBefore(tenant.getNotBefore() != null ? tenant.getNotBefore().intValue() : null);
+            // Realm only has a subset of realm representation so overlay on actual realm representation
+            realmRepresentation.setDisplayName(realm.getDisplayName());
+            realmRepresentation.setAccountTheme(realm.getAccountTheme());
+            realmRepresentation.setAdminTheme(realm.getAdminTheme());
+            realmRepresentation.setEmailTheme(realm.getEmailTheme());
+            realmRepresentation.setLoginTheme(realm.getLoginTheme());
+            realmRepresentation.setRememberMe(realm.getRememberMe());
+            realmRepresentation.setVerifyEmail(realm.getVerifyEmail());
+            realmRepresentation.setLoginWithEmailAllowed(realm.getLoginWithEmail());
+            realmRepresentation.setRegistrationAllowed(realm.getRegistrationAllowed());
+            realmRepresentation.setRegistrationEmailAsUsername(realm.getRegistrationEmailAsUsername());
+            realmRepresentation.setEnabled(realm.getEnabled());
+            realmRepresentation.setDuplicateEmailsAllowed(realm.getDuplicateEmailsAllowed());
+            realmRepresentation.setResetPasswordAllowed(realm.getResetPasswordAllowed());
+            realmRepresentation.setNotBefore(realm.getNotBefore() != null ? realm.getNotBefore().intValue() : null);
             configureRealm(realmRepresentation);
             realmResource.update(realmRepresentation);
 
-            Set<RealmRole> existingRealmRoles = existingTenant.getRealmRoles();
-            existingTenant.setRealmRoles(existingRealmRoles);
+            Set<RealmRole> existingRealmRoles = existingRealm.getRealmRoles();
+            existingRealm.setRealmRoles(existingRealmRoles);
 
             // Update realm roles if required
-            if (tenant.getRealmRoles() != null) {
+            if (realm.getRealmRoles() != null) {
 
-                Set<RealmRole> realmRoles = tenant.getNormalisedRealmRoles();
+                Set<RealmRole> realmRoles = realm.getNormalisedRealmRoles();
                 RolesResource rolesResource = realmResource.roles();
 
                 // Handle removed roles
@@ -813,26 +824,29 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 });
             }
 
-            Tenant updatedTenant = convert(realmRepresentation, Tenant.class);
-            updatedTenant.setRealmRoles((tenant.getRealmRoles() == null) ? existingRealmRoles : tenant.getNormalisedRealmRoles());
-            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.UPDATE, updatedTenant, existingTenant, Tenant.getPropertyFields());
+            Realm updatedRealm = convert(realmRepresentation, Realm.class);
+            updatedRealm.setName(realmRepresentation.getRealm());
+            updatedRealm.setRealmRoles((realm.getRealmRoles() == null) ? existingRealmRoles : realm.getNormalisedRealmRoles());
+            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.UPDATE, updatedRealm, existingRealm, Realm.getPropertyFields());
             return null;
         });
     }
 
     @Override
-    public Tenant createTenant(Tenant tenant) {
-        LOG.fine("Create tenant: " + tenant);
+    public Realm createRealm(Realm realm) {
+        LOG.fine("Create realm: " + realm);
         return getRealms(realmsResource -> {
 
             // Force realm to lowercase
-            tenant.setRealm(tenant.getRealm().toLowerCase(Locale.ROOT));
+            realm.setName(realm.getName().toLowerCase(Locale.ROOT));
 
-            RealmRepresentation realmRepresentation = convert(tenant, RealmRepresentation.class);
+            RealmRepresentation realmRepresentation = convert(realm, RealmRepresentation.class);
+            // Inject name as it is called realm in the realmRepresentation
+            realmRepresentation.setRealm(realm.getName());
 
             try {
                 realmsResource.create(realmRepresentation);
-                RealmResource realmResource = realmsResource.realm(tenant.getRealm());
+                RealmResource realmResource = realmsResource.realm(realm.getName());
                 realmRepresentation = realmResource.toRepresentation();
 
                 // Need a committed realmRepresentation to update the security
@@ -842,7 +856,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 // Set realm roles
                 RolesResource rolesResource = realmResource.roles();
                 List<RoleRepresentation> existingRealmRoles = rolesResource.list();
-                tenant.getNormalisedRealmRoles().stream().filter(realmRole -> existingRealmRoles.stream().noneMatch(roleRepresentation -> roleRepresentation.getName().equals(realmRole.getName())))
+                realm.getNormalisedRealmRoles().stream().filter(realmRole -> existingRealmRoles.stream().noneMatch(roleRepresentation -> roleRepresentation.getName().equals(realmRole.getName())))
                 .forEach(realmRole -> {
                     LOG.finer("Adding realm role + " + realmRole);
                     rolesResource.create(new RoleRepresentation(realmRole.getName(), realmRole.getDescription(), false));
@@ -850,31 +864,64 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
                 // Auto create the standard openremote client
                 ClientRepresentation clientRepresentation = generateOpenRemoteClientRepresentation();
-                createUpdateClient(tenant.getRealm(), clientRepresentation);
+                createUpdateClient(realm.getName(), clientRepresentation);
 
-                Tenant createdTenant = convert(realmRepresentation, Tenant.class);
-                createdTenant.setRealmRoles(tenant.getRealmRoles());
-                persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.CREATE, tenant, null, Tenant.getPropertyFields());
-                return createdTenant;
+                Realm createdRealm = convert(realmRepresentation, Realm.class);
+                createdRealm.setName(realmRepresentation.getRealm());
+                createdRealm.setRealmRoles(realm.getRealmRoles());
+                persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.CREATE, realm, null, Realm.getPropertyFields());
+                return createdRealm;
             } catch (Exception e) {
-                LOG.log(Level.INFO, "Failed to create tenant: " + tenant, e);
+                LOG.log(Level.INFO, "Failed to create realm: " + realm, e);
                 throw e;
             }
         });
     }
 
     @Override
-    public void deleteTenant(String realm) {
-        Tenant tenant = getTenant(realm);
+    public void deleteRealm(String realmName) {
+        Realm realm = getRealm(realmName);
 
-        if (tenant != null) {
-            LOG.fine("Delete tenant: " + realm);
+        if (realm == null) {
+            throw new NotFoundException("Realm does not exist: " + realmName);
+        }
+
+        // TODO: This should be de-centralised and use a realm lock to prevent any resources being added to the realm during deletion
+        GlobalLock.withLock("RealmDeletion", () -> {
+            persistenceService.doTransaction(entityManager -> {
+
+                // Delete gateway connections
+                Query query = entityManager.createQuery("delete from " + GatewayConnection.class.getSimpleName() + " gc " +
+                    "where gc.localRealm = ?0");
+
+                query.setParameter(0, realmName);
+                query.executeUpdate();
+
+                // Delete provisioning configs
+                query = entityManager.createQuery("delete from " + ProvisioningConfig.class.getSimpleName() + " pc " +
+                    "where pc.realm = ?0");
+
+                query.setParameter(0, realmName);
+                query.executeUpdate();
+
+                // Delete Rules
+                query = entityManager.createQuery("delete from " + RealmRuleset.class.getSimpleName() + " rs " +
+                    "where rs.realm = ?0");
+                query.setParameter(0, realmName);
+                query.executeUpdate();
+
+                // Delete Assets
+                List<String> assetIds = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select().excludeAttributes()).realm(new RealmPredicate(realmName))).stream().map(Asset::getId).toList();
+                assetStorageService.delete(assetIds);
+            });
+
+            LOG.fine("Deleting realm: " + realmName);
             getRealms(realmsResource -> {
-                realmsResource.realm(realm).remove();
+                realmsResource.realm(realmName).remove();
                 return null;
             });
-            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, tenant, Tenant.getPropertyFields());
-        }
+            persistenceService.publishPersistenceEvent(PersistenceEvent.Cause.DELETE, null, realm, Realm.getPropertyFields());
+        });
     }
 
     /**
@@ -1012,32 +1059,32 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     /**
      * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
-     * in the same realm as the tenant and the tenant is active.
+     * in the same realm as the realm and the realm is active.
      */
     @Override
-    public boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant) {
-        if (tenant == null) {
+    public boolean isRealmActiveAndAccessible(AuthContext authContext, Realm realm) {
+        if (realm == null) {
             return false;
         }
 
         boolean isSuperUser = authContext != null && authContext.isSuperUser();
-        boolean isUsersRealm = isSuperUser || authContext == null || authContext.isRealmAccessibleByUser(tenant.getRealm());
+        boolean isUsersRealm = isSuperUser || authContext == null || authContext.isRealmAccessibleByUser(realm.getName());
 
-        return isSuperUser || (isUsersRealm && tenant.isActive(timerService.getCurrentTimeMillis()));
+        return isSuperUser || (isUsersRealm && realm.isActive(timerService.getCurrentTimeMillis()));
     }
 
     /**
      * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
-     * in the same tenant and the tenant is active.
+     * in the same realm and the realm is active.
      */
     @Override
-    public boolean isTenantActiveAndAccessible(AuthContext authContext, String realm) {
-        return isTenantActiveAndAccessible(authContext, getTenant(realm));
+    public boolean isRealmActiveAndAccessible(AuthContext authContext, String realm) {
+        return isRealmActiveAndAccessible(authContext, getRealm(realm));
     }
 
     @Override
-    public boolean tenantExists(String realm) {
-        return ManagerIdentityProvider.tenantExistsFromDb(persistenceService, realm);
+    public boolean realmExists(String realm) {
+        return ManagerIdentityProvider.realmExistsFromDb(persistenceService, realm);
     }
 
     @Override
@@ -1046,12 +1093,12 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public boolean isUserInTenant(String userId, String realm) {
-        return ManagerIdentityProvider.userInTenantFromDb(persistenceService, userId, realm);
+    public boolean isUserInRealm(String userId, String realm) {
+        return ManagerIdentityProvider.userInRealmFromDb(persistenceService, userId, realm);
     }
 
     @Override
-    public boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles) {
+    public boolean canSubscribeWith(AuthContext auth, RealmFilter<?> filter, ClientRole... requiredRoles) {
         // Superuser can always subscribe
         if (auth.isSuperUser())
             return true;
@@ -1071,11 +1118,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         // Ensure filter matches authenticated realm
         if (filter != null) {
-            String authenticatedRealm = auth.getAuthenticatedRealm();
+            String authenticatedRealm = auth.getAuthenticatedRealmName();
 
             if (TextUtil.isNullOrEmpty(authenticatedRealm))
                 return false;
-            if (authenticatedRealm.equals(filter.getRealm()))
+            if (authenticatedRealm.equals(filter.getName()))
                 return true;
         }
 

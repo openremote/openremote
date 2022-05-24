@@ -34,7 +34,7 @@ import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.geo.GeoJSONPoint;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 import org.openremote.model.simulator.SimulatorReplayDatapoint;
 import org.openremote.model.value.*;
 
@@ -49,8 +49,8 @@ import static org.openremote.model.value.ValueType.MultivaluedStringMap;
 public class ManagerDemoSetup extends ManagerSetup {
 
     public static GeoJSONPoint STATIONSPLEIN_LOCATION = new GeoJSONPoint(4.470175, 51.923464);
-    public String masterRealm;
-    public String realmCityTenant;
+    public String realmMasterName;
+    public String realmCityName;
     public String area1Id;
     public String smartcitySimulatorAgentId;
     public String energyManagementId;
@@ -75,10 +75,10 @@ public class ManagerDemoSetup extends ManagerSetup {
         super.onStart();
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
-        Tenant masterTenant = keycloakDemoSetup.masterTenant;
-        Tenant tenantCity = keycloakDemoSetup.tenantCity;
-        masterRealm = masterTenant.getRealm();
-        this.realmCityTenant = tenantCity.getRealm();
+        Realm realmMaster = keycloakDemoSetup.realmMaster;
+        Realm realmCity = keycloakDemoSetup.realmCity;
+        realmMasterName = realmMaster.getName();
+        this.realmCityName = realmCity.getName();
 
         // ################################ Demo assets for 'master' realm ###################################
 
@@ -92,7 +92,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         // ################################ Realm smartcity ###################################
 
         SimulatorAgent smartcitySimulatorAgent = new SimulatorAgent("Simulator agent");
-        smartcitySimulatorAgent.setRealm(this.realmCityTenant);
+        smartcitySimulatorAgent.setRealm(this.realmCityName);
 
         smartcitySimulatorAgent = assetStorageService.merge(smartcitySimulatorAgent);
         smartcitySimulatorAgentId = smartcitySimulatorAgent.getId();
@@ -102,7 +102,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         // ################################ Realm smartcity - Energy Management ###################################
 
         ThingAsset energyManagement = new ThingAsset("Energy management");
-        energyManagement.setRealm(this.realmCityTenant);
+        energyManagement.setRealm(this.realmCityName);
         energyManagement.getAttributes().addOrReplace(
                 new Attribute<>("powerTotalProducers", ValueType.NUMBER)
                     .addOrReplaceMeta(
@@ -789,7 +789,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         // ################################ Realm smartcity - Environment monitor ###################################
 
         Asset<?> environmentMonitor = new ThingAsset("Environment monitor");
-        environmentMonitor.setRealm(this.realmCityTenant);
+        environmentMonitor.setRealm(this.realmCityName);
         environmentMonitor.setId(UniqueIdentifierGenerator.generateId(environmentMonitor.getName()));
         environmentMonitor = assetStorageService.merge(environmentMonitor);
 
@@ -930,7 +930,7 @@ public class ManagerDemoSetup extends ManagerSetup {
         // ################################ Realm smartcity - Mobility and Safety ###################################
 
         Asset<?> mobilityAndSafety = new ThingAsset("Mobility and safety");
-        mobilityAndSafety.setRealm(this.realmCityTenant);
+        mobilityAndSafety.setRealm(this.realmCityName);
         mobilityAndSafety.setId(UniqueIdentifierGenerator.generateId(mobilityAndSafety.getName()));
         mobilityAndSafety = assetStorageService.merge(mobilityAndSafety);
 

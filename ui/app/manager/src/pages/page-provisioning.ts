@@ -293,7 +293,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
             return true;
         };
 
-        const realmResponse = await manager.rest.api.TenantResource.getAll();
+        const realmResponse = await manager.rest.api.RealmResource.getAll();
 
         if (!responseAndStateOK(realmResponse, i18next.t("loadFailedRealms"))) {
             return;
@@ -311,7 +311,7 @@ export class PageProvisioning extends Page<AppStateKeyed> {
             return;
         }
 
-        this._realmOptions = realmResponse.data.map(r => r.realm);
+        this._realmOptions = realmResponse.data.map(r => r.name);
         this._roleOptions = rolesResponse.data.filter(role => !role.composite).map(r => [r.name, r.name] as [string, string]).sort();
         this._configs = provisioningResponse.data;
     }

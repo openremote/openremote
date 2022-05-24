@@ -36,13 +36,13 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * <p>
  * TODO Relax permissions to allow regular users to maintain their own realm
  */
-@Tag(name = "Tenant")
-@Path("tenant")
-public interface TenantResource {
+@Tag(name = "Realm")
+@Path("realm")
+public interface RealmResource {
 
     @GET
     @Produces(APPLICATION_JSON)
-    Tenant[] getAll(@BeanParam RequestParams requestParams);
+    Realm[] getAll(@BeanParam RequestParams requestParams);
 
     /**
      * Will return realm and display names for accessible realms by authenticated user
@@ -50,32 +50,32 @@ public interface TenantResource {
     @GET
     @Path("accessible")
     @Produces(APPLICATION_JSON)
-    Tenant[] getAccessible(@BeanParam RequestParams requestParams);
+    Realm[] getAccessible(@BeanParam RequestParams requestParams);
 
     /**
      * Regular users can call this, but only to obtain details about their currently authenticated and active realm.
      */
     @GET
-    @Path("{realm}")
+    @Path("{name}")
     @Produces(APPLICATION_JSON)
-    Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    Realm get(@BeanParam RequestParams requestParams, @PathParam("name") String realm);
 
     @PUT
-    @Path("{realm}")
+    @Path("{name}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid Tenant tenant);
+    void update(@BeanParam RequestParams requestParams, @PathParam("name") String realmName, @Valid Realm realm);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    void create(@BeanParam RequestParams requestParams, @Valid Tenant tenant);
+    void create(@BeanParam RequestParams requestParams, @Valid Realm realm);
 
     @DELETE
-    @Path("{realm}")
+    @Path("{name}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed(Constants.WRITE_ADMIN_ROLE)
-    void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    void delete(@BeanParam RequestParams requestParams, @PathParam("name") String realm);
 }

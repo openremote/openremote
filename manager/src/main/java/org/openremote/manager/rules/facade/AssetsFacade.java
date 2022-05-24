@@ -23,14 +23,13 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.PathPredicate;
-import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.RealmPredicate;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.RealmRuleset;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -57,14 +56,14 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
     @Override
     public Stream<Asset<?>> getResults(AssetQuery assetQuery) {
 
-        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+        if (RealmRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             // Realm is restricted to rules
-            assetQuery.tenant = new TenantPredicate(
+            assetQuery.realm = new RealmPredicate(
                 rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId))
             );
         } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             // Realm is restricted to assets'
-            assetQuery.tenant = new TenantPredicate(
+            assetQuery.realm = new RealmPredicate(
                 rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm missing: " + rulesEngineId))
             );
 
