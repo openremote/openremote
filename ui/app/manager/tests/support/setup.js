@@ -169,6 +169,10 @@ class CustomWorld {
         await this.page.mouse.up()
     }
 
+    async dragAndDrop(origin, destination) {
+        await this.page.dragAndDrop(origin, destination)
+    }
+
     /**
      * wait for millisecond
      * @param {*} millisecond number

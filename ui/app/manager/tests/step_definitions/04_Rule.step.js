@@ -115,14 +115,22 @@ Then('Set value', async function () {
 })
 
 Then('Connect elements', { timeout: 10000 }, async function () {
-    const { page } = this
+    //const { page } = this
+    // await page.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
+    // await page.dragAndDrop('flow-node:nth-child(2) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(2) .socket')
+    // await page.dragAndDrop('div:nth-child(3) flow-node-socket .socket', ' flow-node:nth-child(6) .socket-side.inputs flow-node-socket .socket >> nth=0')
+    // await page.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
+    // await page.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
+    // await page.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
+    
+    
     // connect elements
-    await page.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
-    await page.dragAndDrop('flow-node:nth-child(2) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(2) .socket')
-    await page.dragAndDrop('div:nth-child(3) flow-node-socket .socket', ' flow-node:nth-child(6) .socket-side.inputs flow-node-socket .socket >> nth=0')
-    await page.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
-    await page.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
-    await page.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
+    await this.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
+    await this.dragAndDrop('flow-node:nth-child(2) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(2) .socket')
+    await this.dragAndDrop('div:nth-child(3) flow-node-socket .socket', ' flow-node:nth-child(6) .socket-side.inputs flow-node-socket .socket >> nth=0')
+    await this.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
+    await this.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
+    await this.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
     await this.wait(600)
 })
 
