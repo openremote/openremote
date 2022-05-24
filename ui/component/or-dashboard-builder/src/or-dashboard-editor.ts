@@ -1,12 +1,21 @@
-import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode, GridStackWidget} from "gridstack";
-import {css, html, LitElement, unsafeCSS } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
+import {css, html, LitElement, unsafeCSS} from "lit";
+import {customElement, property, state} from "lit/decorators.js";
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import {style} from "./style";
 import manager, {DefaultColor4} from "@openremote/core";
-import {Attribute, AttributeRef, DashboardGridItem,
-    DashboardScalingPreset, DashboardScreenPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType } from "@openremote/model";
-import { OrInputChangedEvent } from "../../or-mwc-components/lib/or-mwc-input";
+import {
+    Attribute,
+    AttributeRef,
+    DashboardGridItem,
+    DashboardScalingPreset,
+    DashboardScreenPreset,
+    DashboardTemplate,
+    DashboardWidget,
+    DashboardWidgetType
+} from "@openremote/model";
+import {OrInputChangedEvent} from "../../or-mwc-components/lib/or-mwc-input";
+import {DashboardSizeOption, sizeOptionToString, stringToSizeOption} from "./index";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -114,7 +123,7 @@ export class OrDashboardEditor extends LitElement{
     protected height: number = 540;
 
     @property()
-    protected previewSize: "Large" | "Medium" | "Small" | "Custom Size" = "Large";
+    protected previewSize: DashboardSizeOption = DashboardSizeOption.MEDIUM;
 
     @property()
     protected readonly isLoading: boolean | undefined;
@@ -199,18 +208,18 @@ export class OrDashboardEditor extends LitElement{
                     this.updateGridSize(true);
                 }*/
             }
-            if(this.width == 1920 && this.height == 1080) { this.previewSize = "Large"; }
-            else if(this.width == 1280 && this.height == 720) { this.previewSize = "Medium"; }
-            else if(this.width == 480 && this.height == 853) { this.previewSize = "Small"; }
-            else { this.previewSize = "Custom Size"; }
+            if(this.width == 1920 && this.height == 1080) { this.previewSize = DashboardSizeOption.LARGE; }
+            else if(this.width == 1280 && this.height == 720) { this.previewSize = DashboardSizeOption.MEDIUM; }
+            else if(this.width == 480 && this.height == 853) { this.previewSize = DashboardSizeOption.SMALL; }
+            else { this.previewSize = DashboardSizeOption.CUSTOM; }
         }
 
         if(!this.fullscreen && changedProperties.has("previewSize")) {
             switch (this.previewSize) {
-                case "Large": { this.width = 1920; this.height = 1080; break; }
-                case "Medium": { this.width = 1280; this.height = 720; break; }
-                case "Small": { this.width = 480; this.height = 853; break; }
-                case "Custom Size": { break; }
+                case DashboardSizeOption.LARGE: { this.width = 1920; this.height = 1080; break; }
+                case DashboardSizeOption.MEDIUM: { this.width = 1280; this.height = 720; break; }
+                case DashboardSizeOption.SMALL: { this.width = 480; this.height = 853; break; }
+                default: { break; }
             }
         }
 
@@ -551,8 +560,8 @@ export class OrDashboardEditor extends LitElement{
                 ${this.editMode ? html`
                     <div id="view-options">
                         <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
-                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" .value="${this.previewSize}" .options="${['Large', 'Medium', 'Small', 'Custom Size']}" style="min-width: 220px;"
-                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = event.detail.value; }}"
+                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize)}" .options="${[sizeOptionToString(DashboardSizeOption.LARGE), sizeOptionToString(DashboardSizeOption.MEDIUM), sizeOptionToString(DashboardSizeOption.SMALL), sizeOptionToString(DashboardSizeOption.CUSTOM)]}" style="min-width: 220px;"
+                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = stringToSizeOption(event.detail.value); }}"
                         ></or-mwc-input>
                         <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" .value="${this.width}" style="width: 90px"
                                       @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.width = event.detail.value as number; }}"

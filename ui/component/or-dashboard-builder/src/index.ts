@@ -9,7 +9,7 @@ import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-
 import "@openremote/or-icon";
 import {style} from "./style";
 import {ORGridStackNode} from "./or-dashboard-editor";
-import {Dashboard, DashboardGridItem, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
+import {Dashboard, DashboardGridItem, DashboardScalingPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5 } from "@openremote/core";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
@@ -121,6 +121,56 @@ const styling = css`
 export interface DashboardBuilderConfig {
     // no configuration built yet
 }
+export enum DashboardSizeOption {
+    LARGE, MEDIUM, SMALL, CUSTOM
+}
+
+// Enum to Menu String method
+export function scalingPresetToString(scalingPreset: DashboardScalingPreset | undefined): string {
+    if(scalingPreset != null) {
+        switch (scalingPreset) {
+            case DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN: {
+                return "Wrap widgets to one column";
+            } case DashboardScalingPreset.KEEP_LAYOUT: {
+                return "Keep layout";
+            } case DashboardScalingPreset.BLOCK_DEVICE: {
+                return "Block this device";
+            } case DashboardScalingPreset.REDIRECT: {
+                return "Redirect to a different Dashboard.."
+            }
+        }
+    }
+    return "undefined";
+}
+
+// Menu String to enum method
+export function stringToScalingPreset(scalingPreset: string): DashboardScalingPreset {
+    switch (scalingPreset) {
+        case "Wrap widgets to one column": { return DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN; }
+        case "Keep layout": { return DashboardScalingPreset.KEEP_LAYOUT; }
+        case "Block this device": { return DashboardScalingPreset.BLOCK_DEVICE; }
+        case "Redirect to a different Dashboard..": { return DashboardScalingPreset.REDIRECT; }
+        default: { return DashboardScalingPreset.KEEP_LAYOUT; }
+    }
+
+}
+
+export function stringToSizeOption(sizeOption: string): DashboardSizeOption {
+    switch (sizeOption) {
+        case "Large": { return DashboardSizeOption.LARGE; }
+        case "Medium": { return DashboardSizeOption.MEDIUM; }
+        case "Small": { return DashboardSizeOption.SMALL; }
+        default: { return DashboardSizeOption.MEDIUM; }
+    }
+}
+export function sizeOptionToString(sizeOption: DashboardSizeOption): string {
+    switch (sizeOption) {
+        case DashboardSizeOption.LARGE: { return "Large"; }
+        case DashboardSizeOption.MEDIUM: { return "Medium"; }
+        case DashboardSizeOption.SMALL: { return "Small"; }
+        case DashboardSizeOption.CUSTOM: { return "Custom Size"; }
+    }
+}
 
 @customElement("or-dashboard-builder")
 export class OrDashboardBuilder extends LitElement {
@@ -170,6 +220,9 @@ export class OrDashboardBuilder extends LitElement {
     protected hasChanged: boolean;
 
     @state()
+    protected previewSize: DashboardSizeOption; // DashboardSizeOption
+
+    @state()
     protected rerenderPending: boolean;
 
 
@@ -180,6 +233,7 @@ export class OrDashboardBuilder extends LitElement {
         this.isInitializing = true;
         this.isLoading = true;
         this.hasChanged = false;
+        this.previewSize = DashboardSizeOption.MEDIUM; // default, almost never used
         this.rerenderPending = false;
         this.updateComplete.then(async () => {
 
@@ -360,6 +414,7 @@ export class OrDashboardBuilder extends LitElement {
             <div id="container">
                 ${this.showDashboardTree ? html`
                     <or-dashboard-tree id="tree" .selected="${this.selectedDashboard}" .dashboards="${this.dashboards}" .editMode="${this.editMode}"
+                                       @created="${(event: CustomEvent) => { this.previewSize = event.detail.size; }}"
                                        @updated="${(event: CustomEvent) => { this.dashboards = event.detail; this.selectedDashboard = undefined; }}"
                                        @select="${(event: CustomEvent) => { this.selectDashboard(event.detail); }}"
                     ></or-dashboard-tree>
@@ -413,7 +468,8 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="container">
                             <div id="builder">
                                 ${(this.selectedDashboard != null) ? html`
-                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}" .isLoading="${this.isLoading}" .rerenderPending="${this.rerenderPending}"
+                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
+                                                         .previewSize="${this.previewSize}" .isLoading="${this.isLoading}" .rerenderPending="${this.rerenderPending}"
                                                          @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                          @deselected="${(event: CustomEvent) => { this.deselectWidget(); }}"
                                                          @dropped="${(event: CustomEvent) => { this.createWidget(event.detail); }}"

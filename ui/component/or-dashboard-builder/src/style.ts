@@ -62,4 +62,13 @@ export const style = css`
         font-weight: 500;
         font-size: 16px;
     }
+
+    .expandableHeader {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        background: #F0F0F0;
+        width: 100%;
+        border: none;
+    }
 `

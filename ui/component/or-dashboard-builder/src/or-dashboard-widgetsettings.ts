@@ -15,14 +15,6 @@ const tableStyle = require("@material/data-table/dist/mdc.data-table.css");
 const widgetSettingsStyling = css`
     
     /* ------------------------------- */
-    .expandableHeader {
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        background: #F0F0F0;
-        width: 100%;
-        border: none;
-    }
     .switchMwcInputContainer {
         display: flex;
         align-items: center;

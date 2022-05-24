@@ -9,13 +9,11 @@ import manager from "@openremote/core";
 import {ListItem} from "@openremote/or-mwc-components/or-mwc-list";
 import "@openremote/or-mwc-components/or-mwc-menu";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
+import { DashboardSizeOption } from ".";
 
 //language=css
 const treeStyling = css`
 `;
-enum DashboardSizeOption {
-    LARGE, MEDIUM, SMALL
-}
 
 @customElement("or-dashboard-tree")
 export class OrDashboardTree extends LitElement {
@@ -81,7 +79,7 @@ export class OrDashboardTree extends LitElement {
                 console.log(response); // expects a dashboard response
                 this.dashboards?.push(response.data as Dashboard);
                 this.requestUpdate("dashboards");
-                this.dispatchEvent(new CustomEvent("created", { detail: response.data }));
+                this.dispatchEvent(new CustomEvent("created", { detail: { dashboard: response.data, size: size }}));
 
                 // Select the item that was created
                 this.selected = this.dashboards?.find((x) => { return x.id == response.data.id; });
@@ -159,6 +157,7 @@ export class OrDashboardTree extends LitElement {
             case DashboardSizeOption.SMALL: { return 4; }
             case DashboardSizeOption.MEDIUM: { return 8; }
             case DashboardSizeOption.LARGE: { return 12; }
+            default: { return 12; }
         }
     }
 
@@ -180,7 +179,7 @@ export class OrDashboardTree extends LitElement {
                     id: "small",
                     displayName: "Small",
                     breakpoint: 640,
-                    scalingPreset: DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN
+                    scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
                 }];
             }
             case DashboardSizeOption.MEDIUM: {
@@ -202,6 +201,24 @@ export class OrDashboardTree extends LitElement {
                 }];
             }
             case DashboardSizeOption.SMALL: {
+                return [{
+                    id: "large",
+                    displayName: "Large",
+                    breakpoint: 1000000,
+                    scalingPreset: DashboardScalingPreset.BLOCK_DEVICE
+                }, {
+                    id: "medium",
+                    displayName: "Medium",
+                    breakpoint: 1280,
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
+                }, {
+                    id: "small",
+                    displayName: "Small",
+                    breakpoint: 640,
+                    scalingPreset: DashboardScalingPreset.KEEP_LAYOUT
+                }];
+            }
+            default: {
                 return [{
                     id: "large",
                     displayName: "Large",

@@ -3,18 +3,10 @@ import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {style} from './style';
+import {scalingPresetToString, stringToScalingPreset} from ".";
 
 //language=css
 const boardSettingsStyling = css`
-    
-    .expandableHeader {
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        background: #F0F0F0;
-        width: 100%;
-        border: none;
-    }
 `
 
 @customElement("or-dashboard-boardsettings")
@@ -30,9 +22,8 @@ export class OrDashboardBoardsettings extends LitElement {
         super();
         this.updateComplete.then(() => {
             if(this.shadowRoot != null) {
-                // console.log(this.shadowRoot);
                 this.shadowRoot.querySelectorAll(".displayInput").forEach(element => {
-                    (element.shadowRoot?.querySelector(".mdc-menu") as HTMLElement).style.minWidth = "250px";
+                    (element.shadowRoot?.querySelector(".mdc-menu") as HTMLElement).style.minWidth = "250px"; // small fix for dropdown menu's to be the correct width
                 })
             }
         })
@@ -50,17 +41,9 @@ export class OrDashboardBoardsettings extends LitElement {
         this.dispatchEvent(new CustomEvent('majorupdate'));
     }
 
-    // UI generation of an expandable panel header.
-    generateExpandableHeader(name: string): TemplateResult {
-        return html`
-            <button class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
-                <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
-                <span style="margin-left: 6px;">${name}</span>
-            </button>
-        `
-    }
+    /* ------------------------- */
 
-    // Method when a user opens or closes a expansion panel. (UI related)
+    // Method when a user opens or closes an expansion panel. (UI related)
     expandPanel(panelName: string): void {
         if(this.expandedPanels.includes(panelName)) {
             const indexOf = this.expandedPanels.indexOf(panelName, 0);
@@ -69,37 +52,6 @@ export class OrDashboardBoardsettings extends LitElement {
             this.expandedPanels.push(panelName);
         }
         this.requestUpdate();
-    }
-
-
-    /* -------------------------------- */
-
-    scalingPresetToString(scalingPreset: DashboardScalingPreset | undefined): string {
-        if(scalingPreset != null) {
-            switch (scalingPreset) {
-                case DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN: {
-                    return "Wrap widgets to one column";
-                } case DashboardScalingPreset.KEEP_LAYOUT: {
-                    return "Keep layout";
-                } case DashboardScalingPreset.BLOCK_DEVICE: {
-                    return "Block this device";
-                } case DashboardScalingPreset.REDIRECT: {
-                    return "Redirect to a different Dashboard.."
-                }
-            }
-        }
-        return "undefined";
-    }
-
-    stringToScalingPreset(scalingPreset: string): DashboardScalingPreset {
-        switch (scalingPreset) {
-            case "Wrap widgets to one column": { return DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN; }
-            case "Keep layout": { return DashboardScalingPreset.KEEP_LAYOUT; }
-            case "Block this device": { return DashboardScalingPreset.BLOCK_DEVICE; }
-            case "Redirect to a different Dashboard..": { return DashboardScalingPreset.REDIRECT; }
-            default: { return DashboardScalingPreset.KEEP_LAYOUT; }
-        }
-
     }
 
     /* -------------------------------- */
@@ -113,9 +65,8 @@ export class OrDashboardBoardsettings extends LitElement {
                 return 1;
             })
             return html`
-                <div>
-                    ${this.generateExpandableHeader('Permissions')}
-                </div>
+                <!-------------------->
+                <div>${this.generateExpandableHeader('Permissions')}</div>
                 <div>
                     ${this.expandedPanels.includes('Permissions') ? html`
                         <div style="padding: 24px 24px 48px 24px;">
@@ -123,9 +74,8 @@ export class OrDashboardBoardsettings extends LitElement {
                         </div>
                     ` : null}
                 </div>
-                <div>
-                    ${this.generateExpandableHeader('Layout')}
-                </div>
+                <!-------------------->
+                <div>${this.generateExpandableHeader('Layout')}</div>
                 <div>
                     ${this.expandedPanels.includes('Layout') ? html`
                         <div style="padding: 24px 24px 48px 24px;">
@@ -133,9 +83,8 @@ export class OrDashboardBoardsettings extends LitElement {
                         </div>
                     ` : null}
                 </div>
-                <div>
-                    ${this.generateExpandableHeader('Display')}
-                </div>
+                <!-------------------->
+                <div>${this.generateExpandableHeader('Display')}</div>
                 <div>
                     ${this.expandedPanels.includes('Display') ? html`
                         <div style="padding: 24px 24px 48px 24px;">
@@ -149,9 +98,9 @@ export class OrDashboardBoardsettings extends LitElement {
                                             <span>Screen my board should:</span>
                                         </div>
                                         <or-mwc-input class="displayInput" type="${InputType.SELECT}" style="width: 250px;"
-                                                      .options="${scalingPresets.map((x) => this.scalingPresetToString(x))}"
-                                                      .value="${this.scalingPresetToString(preset.scalingPreset)}"
-                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { preset.scalingPreset = this.stringToScalingPreset(event.detail.value); this.forceParentRerender(); }}"
+                                                      .options="${scalingPresets.map((x) => scalingPresetToString(x))}"
+                                                      .value="${scalingPresetToString(preset.scalingPreset)}"
+                                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { preset.scalingPreset = stringToScalingPreset(event.detail.value); this.forceParentRerender(); }}"
                                         ></or-mwc-input>
                                     </div>
                                 `
@@ -159,9 +108,8 @@ export class OrDashboardBoardsettings extends LitElement {
                         </div>
                     ` : null}
                 </div>
-                <div>
-                    ${this.generateExpandableHeader('Breakpoints')}
-                </div>
+                <!-------------------->
+                <div>${this.generateExpandableHeader('Breakpoints')}</div>
                 <div>
                     ${this.expandedPanels.includes('Breakpoints') ? html`
                         <div style="padding: 24px 24px 48px 24px;">
@@ -169,6 +117,7 @@ export class OrDashboardBoardsettings extends LitElement {
                         </div>
                     ` : null}
                 </div>
+                <!-------------------->
             `
         } else {
             return html`
@@ -180,5 +129,23 @@ export class OrDashboardBoardsettings extends LitElement {
             `
         }
     }
+
+
+
+
+    /* ======================== */
+
+    // UI generation of an expandable panel header.
+    generateExpandableHeader(name: string): TemplateResult {
+        return html`
+            <button class="expandableHeader" @click="${() => { this.expandPanel(name); }}">
+                <or-icon icon="${this.expandedPanels.includes(name) ? 'chevron-down' : 'chevron-right'}"></or-icon>
+                <span style="margin-left: 6px;">${name}</span>
+            </button>
+        `
+    }
+
+
+    /* ------------------------- */
 
 }
