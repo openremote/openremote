@@ -326,7 +326,7 @@ export class OrDashboardEditor extends LitElement{
             animate: true,
             cellHeight: (activePreset.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? (this.width / 4) : 'auto'),
             cellHeightThrottle: 100,
-            column: (this.template?.columns != null ? this.template.columns : 12),
+            column: this.template?.columns,
             disableOneColumnMode: (activePreset.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN ? false : true),
             draggable: {
                 appendTo: 'parent', // Required to work, seems to be Shadow DOM related.
