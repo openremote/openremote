@@ -2271,6 +2271,7 @@ __metadata:
     "@mdi/js": ^5.9.55
     "@openremote/core": "workspace:*"
     "@openremote/model": "workspace:*"
+    "@openremote/or-asset-viewer": ^1.1.0
     "@openremote/or-icon": ^1.1.0
     "@openremote/or-mwc-components": ^1.1.0
     "@openremote/or-translate": ^1.1.0

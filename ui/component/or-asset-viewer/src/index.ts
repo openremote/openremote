@@ -223,15 +223,18 @@ export class OrAssetViewerSaveEvent extends CustomEvent<SaveResult> {
     }
 }
 
-export class OrAssetViewerChangeParentEvent extends CustomEvent<string | undefined> {
+export class OrAssetViewerChangeParentEvent extends CustomEvent<any> {
 
     public static readonly NAME = "or-asset-viewer-change-parent";
 
-    constructor(parent: string | undefined) {
+    constructor(parent: string | undefined, assetsIds: string[]) {
         super(OrAssetViewerChangeParentEvent.NAME, {
             bubbles: true,
             composed: true,
-            detail: parent
+            detail: {
+                parentId: parent,
+                assetsIds: assetsIds
+            }
         });
     }
 }
@@ -1247,11 +1250,11 @@ export class OrAssetViewer extends subscribe(manager)(translate(i18next)(LitElem
             const assetTree = dialog.shadowRoot!.getElementById("parent-asset-tree") as OrAssetTree;
             let idd = assetTree.selectedIds!.length === 1 ? assetTree.selectedIds![0] : undefined;
 
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd));
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(idd, this.assetsIds));
         };
 
         const clearParent = () => {
-            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined));
+            this.dispatchEvent(new OrAssetViewerChangeParentEvent(undefined, this.assetsIds));
         };
 
         const dialogActions: DialogAction[] = [

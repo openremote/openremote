@@ -17,7 +17,8 @@ import {
     OrAssetTreeAddEvent,
     OrAssetTreeAssetEvent,
     OrAssetTreeRequestSelectionEvent,
-    OrAssetTreeSelectionEvent
+    OrAssetTreeSelectionEvent,
+    OrAssetTreeChangeParentEvent
 } from "@openremote/or-asset-tree";
 import manager, {DefaultBoxShadow, Util} from "@openremote/core";
 import {AppStateKeyed, Page, PageProvider, router} from "@openremote/or-app";
@@ -151,6 +152,7 @@ export class PageAssets extends Page<AppStateKeyed>  {
         this.addEventListener(OrAssetViewerSaveEvent.NAME, (ev) => this._onAssetSave(ev.detail));
         this.addEventListener(OrAssetTreeAssetEvent.NAME, this._onAssetTreeAssetEvent);
         this.addEventListener(OrAssetViewerChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
+        this.addEventListener(OrAssetTreeChangeParentEvent.NAME, (ev) => this._onAssetParentChange(ev.detail));
     }
 
     protected render(): TemplateResult | void {
@@ -257,12 +259,15 @@ export class PageAssets extends Page<AppStateKeyed>  {
         }
     }
 
-    protected async _onAssetParentChange(newParentId: string | undefined) {
+    protected async _onAssetParentChange(newParentId: any) {
+        let parentId: string | undefined = newParentId.parentId;
+        let assetsIds: string[] = newParentId.assetsIds;
+
         if (newParentId) {
-            await manager.rest.api.AssetResource.updateParent(newParentId, { assetIds : this._assetIds });
+            await manager.rest.api.AssetResource.updateParent(parentId, { assetIds : assetsIds });
         } else {
             //So need to remove parent from all the selected assets
-            await manager.rest.api.AssetResource.updateNoneParent({ assetIds : this._assetIds });
+            await manager.rest.api.AssetResource.updateNoneParent({ assetIds : assetsIds });
         }
     }
 

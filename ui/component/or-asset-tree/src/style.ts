@@ -119,7 +119,11 @@ export const style = css`
     #list li[data-selected] > .node-container {
         border-left-color: var(--internal-or-asset-tree-selected-color);
     }
-            
+          
+    .asset-list-element .over {
+        background-color: ${unsafeCSS(DefaultColor5)};
+    }
+    
     .node-container {
         display: flex;
         border-left: 4px solid transparent;
