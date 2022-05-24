@@ -58,8 +58,8 @@ export function loadAgents(): PromiseLike<Agent[]> {
     }
 
     loadingPromise = manager.rest.api.AssetResource.queryAssets({
-        tenant: {
-            realm: manager.displayRealm
+        realm: {
+            name: manager.displayRealm
         },
         types: [
             "Agent"

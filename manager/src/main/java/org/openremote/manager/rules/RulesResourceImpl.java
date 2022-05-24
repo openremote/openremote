@@ -32,7 +32,7 @@ import org.openremote.model.query.RulesetQuery;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
@@ -74,12 +74,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public RulesEngineInfo getTenantEngineInfo(RequestParams requestParams, String realm) {
+    public RulesEngineInfo getRealmEngineInfo(RequestParams requestParams, String realm) {
         if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        RulesEngine<TenantRuleset> engine = rulesService.tenantEngines.get(realm);
+        RulesEngine<RealmRuleset> engine = rulesService.realmEngines.get(realm);
         return getEngineInfo(engine);
     }
 
@@ -139,7 +139,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, String realm, List<Ruleset.Lang> languages, boolean fullyPopulate) {
+    public RealmRuleset[] getRealmRulesets(@BeanParam RequestParams requestParams, String realm, List<Ruleset.Lang> languages, boolean fullyPopulate) {
 
         if (isAuthenticated() && !isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -147,8 +147,8 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         boolean publicOnly = !isAuthenticated() || isRestrictedUser() | !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
-        List<TenantRuleset> result = rulesetStorageService.findAll(
-            TenantRuleset.class,
+        List<RealmRuleset> result = rulesetStorageService.findAll(
+            RealmRuleset.class,
             new RulesetQuery().
                 setRealm(realm)
                 .setLanguages(languages.toArray(new Ruleset.Lang[0]))
@@ -165,7 +165,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
                 })
         );
 
-        return result.toArray(new TenantRuleset[0]);
+        return result.toArray(new RealmRuleset[0]);
     }
 
     @Override
@@ -246,13 +246,13 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     /* ################################################################################################# */
 
     @Override
-    public long createTenantRuleset(@BeanParam RequestParams requestParams, TenantRuleset ruleset) {
-        Tenant tenant = identityService.getIdentityProvider().getTenant(ruleset.getRealm());
-        if (tenant == null) {
+    public long createRealmRuleset(@BeanParam RequestParams requestParams, RealmRuleset ruleset) {
+        Realm realm = identityService.getIdentityProvider().getRealm(ruleset.getRealm());
+        if (realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
-            LOG.info("Forbidden access for user '" + getUsername() + "': " + tenant);
+        if (!isRealmActiveAndAccessible(realm) || isRestrictedUser()) {
+            LOG.info("Forbidden access for user '" + getUsername() + "': " + realm);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         ruleset = rulesetStorageService.merge(ruleset);
@@ -260,34 +260,34 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
-        TenantRuleset ruleset = rulesetStorageService.find(TenantRuleset.class, id);
+    public RealmRuleset getRealmRuleset(@BeanParam RequestParams requestParams, Long id) {
+        RealmRuleset ruleset = rulesetStorageService.find(RealmRuleset.class, id);
         if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getIdentityProvider().getTenant(ruleset.getRealm());
-        if (tenant == null) {
+        Realm realm = identityService.getIdentityProvider().getRealm(ruleset.getRealm());
+        if (realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
+        if (!isRealmActiveAndAccessible(realm) || isRestrictedUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "': " + realm);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         return ruleset;
     }
 
     @Override
-    public void updateTenantRuleset(@BeanParam RequestParams requestParams, Long id, TenantRuleset ruleset) {
-        TenantRuleset existingRuleset = rulesetStorageService.find(TenantRuleset.class, id);
+    public void updateRealmRuleset(@BeanParam RequestParams requestParams, Long id, RealmRuleset ruleset) {
+        RealmRuleset existingRuleset = rulesetStorageService.find(RealmRuleset.class, id);
         if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getIdentityProvider().getTenant(existingRuleset.getRealm());
-        if (tenant == null) {
+        Realm realm = identityService.getIdentityProvider().getRealm(existingRuleset.getRealm());
+        if (realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
+        if (!isRealmActiveAndAccessible(realm) || isRestrictedUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "': " + realm);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (!id.equals(ruleset.getId())) {
@@ -300,19 +300,19 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public void deleteTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
-        TenantRuleset ruleset = rulesetStorageService.find(TenantRuleset.class, id);
+    public void deleteRealmRuleset(@BeanParam RequestParams requestParams, Long id) {
+        RealmRuleset ruleset = rulesetStorageService.find(RealmRuleset.class, id);
         if (ruleset == null) {
             return;
         }
-        Tenant tenant = identityService.getIdentityProvider().getTenant(ruleset.getRealm());
-        if (tenant == null) {
+        Realm realm = identityService.getIdentityProvider().getRealm(ruleset.getRealm());
+        if (realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
+        if (!isRealmActiveAndAccessible(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesetStorageService.delete(TenantRuleset.class, id);
+        rulesetStorageService.delete(RealmRuleset.class, id);
     }
 
     /* ################################################################################################# */

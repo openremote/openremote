@@ -304,7 +304,7 @@ export class PageMobileGeofences extends Page<AppStateKeyed> {
     }
 
     protected getGeoNotifications() {
-        manager.rest.api.RulesResource.getTenantRulesets(manager.config.realm, {fullyPopulate: true}).then((response: any) => {
+        manager.rest.api.RulesResource.getRealmRulesets(manager.config.realm, {fullyPopulate: true}).then((response: any) => {
             const mapItemDefinition: JsonRulesetDefinition = {
                 rules: []
             };

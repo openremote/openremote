@@ -1,6 +1,6 @@
 import {css, html, LitElement, PropertyValues, TemplateResult} from "lit";
 import {customElement, property} from "lit/decorators.js";
-import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, TenantRuleset, WellknownRulesetMetaItems} from "@openremote/model";
+import {CalendarEvent, ClientRole, RulesetLang, RulesetUnion, RealmRuleset, WellknownRulesetMetaItems} from "@openremote/model";
 import "@openremote/or-translate";
 import manager, {Util} from "@openremote/core";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -445,7 +445,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
     }
 
     protected _onAddClicked(lang: RulesetLang) {
-        const type = this._globalRulesets ? "global": "tenant";
+        const type = this._globalRulesets ? "global": "realm";
         const realm = manager.isSuperUser() ? manager.displayRealm : manager.config.realm;
         const ruleset: RulesetUnion = {
             id: 0,
@@ -467,8 +467,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
 
         // Ensure config hasn't messed with certain values
-        if (type === "tenant") {
-            (ruleset as TenantRuleset).realm = realm;
+        if (type === "realm") {
+            (ruleset as RealmRuleset).realm = realm;
         }
 
         const detail = {
@@ -519,8 +519,8 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                         case "asset":
                             response = await manager.rest.api.RulesResource.deleteAssetRuleset(ruleset.id!);
                             break;
-                        case "tenant":
-                            response = await manager.rest.api.RulesResource.deleteTenantRuleset(ruleset.id!);
+                        case "realm":
+                            response = await manager.rest.api.RulesResource.deleteRealmRuleset(ruleset.id!);
                             break;
                         case "global":
                             response = await manager.rest.api.RulesResource.deleteGlobalRuleset(ruleset.id!);
@@ -596,7 +596,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                 language:  this._allowedLanguages
             }
             try {
-                const response = await manager.rest.api.RulesResource.getTenantRulesets(this._getRealm() || manager.displayRealm, params);
+                const response = await manager.rest.api.RulesResource.getRealmRulesets(this._getRealm() || manager.displayRealm, params);
                 if (response && response.data) {
                     this._buildTreeNodes(response.data, sortFunction);
                 }
@@ -606,7 +606,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
         }
     }
 
-    protected _buildTreeNodes(rulesets: TenantRuleset[], sortFunction: (a: RulesetNode, b: RulesetNode) => number) {
+    protected _buildTreeNodes(rulesets: RealmRuleset[], sortFunction: (a: RulesetNode, b: RulesetNode) => number) {
         if (!rulesets || rulesets.length === 0) {
             this._nodes = [];
         } else {

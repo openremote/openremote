@@ -58,7 +58,7 @@ trait ManagerContainerTrait extends ContainerTrait {
 
         def rulesService = this.container.getService(RulesService.class)
 
-        return (rulesService.globalEngine == null || rulesService.globalEngine.fireTimer == null) && rulesService.tenantEngines.values().every {it.fireTimer == null} && rulesService.assetEngines.values().every {it.fireTimer == null}
+        return (rulesService.globalEngine == null || rulesService.globalEngine.fireTimer == null) && rulesService.realmEngines.values().every {it.fireTimer == null} && rulesService.assetEngines.values().every {it.fireTimer == null}
     }
 
     /**

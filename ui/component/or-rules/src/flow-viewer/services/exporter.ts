@@ -11,7 +11,7 @@ export class Exporter {
         return JSON.parse(json);
     }
 
-    public collectionToRuleset(collection: NodeCollection, type: "global" | "asset" | "tenant") {
+    public collectionToRuleset(collection: NodeCollection, type: "global" | "asset" | "realm") {
         const ruleset: Ruleset = {
             lang: RulesetLang.FLOW,
             name: collection.name,

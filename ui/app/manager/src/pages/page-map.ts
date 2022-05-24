@@ -202,8 +202,8 @@ export class PageMap extends Page<MapStateKeyed> {
         let response: GenericAxiosResponse<Asset[]>;
         const attrsOfInterest = this.getAttributesOfInterest();
         const assetQuery: AssetQuery = this.config && this.config.assetQuery ? this.config.assetQuery : {
-            tenant: {
-                realm: realm
+            realm: {
+                name: realm
             },
             select: {
                 attributes: attrsOfInterest,

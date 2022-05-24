@@ -19,26 +19,37 @@
  */
 package org.openremote.model.event.shared;
 
-/**
- * An event that carries information about the realm it occurred in.
- */
-public abstract class TenantScopedEvent extends SharedEvent {
+public class RealmFilter<T extends RealmScopedEvent> extends EventFilter<T> {
 
-    public String realm;
+    public static final String FILTER_TYPE = "realm";
 
-    public TenantScopedEvent(long timestamp, String realm) {
-        super(timestamp);
-        this.realm = realm;
+    protected String name;
+
+    protected RealmFilter() {
     }
 
-    public TenantScopedEvent(String realm) {
-        this.realm = realm;
+    public RealmFilter(String name) {
+        this.name = name;
     }
 
-    protected TenantScopedEvent() {
+    public String getName() {
+        return name;
     }
 
-    public String getRealm() {
-        return realm;
+    @Override
+    public String getFilterType() {
+        return FILTER_TYPE;
+    }
+
+    @Override
+    public boolean apply(RealmScopedEvent event) {
+        return getName().equals(event.getRealm());
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "realm='" + name + '\'' +
+            '}';
     }
 }

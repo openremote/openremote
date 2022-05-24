@@ -25,7 +25,6 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 
-import javax.persistence.EntityManager;
 import java.util.Locale;
 import java.util.logging.Logger;
 
@@ -42,7 +41,7 @@ public class ManagerIdentityService extends IdentityService {
         persistenceService = container.getService(PersistenceService.class);
 
         container.getService(ManagerWebService.class).addApiSingleton(
-            new TenantResourceImpl(container.getService(TimerService.class), this, container)
+            new RealmResourceImpl(container.getService(TimerService.class), this, container)
         );
         container.getService(ManagerWebService.class).addApiSingleton(
             new UserResourceImpl(container.getService(TimerService.class), this)

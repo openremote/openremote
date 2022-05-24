@@ -373,7 +373,7 @@ export const getAssetTypes: () => Promise<string[]> = async () => {
     //     select: {
     //         attributes: []
     //     },
-    //     tenant: {
+    //     realm: {
     //         realm: manager.displayRealm
     //     },
     //     recursive: true

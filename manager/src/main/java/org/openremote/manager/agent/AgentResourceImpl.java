@@ -71,7 +71,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     public Agent<?, ?, ?>[] doProtocolInstanceDiscovery(RequestParams requestParams, String parentId, String agentType, String realm) {
 
         if (!isSuperUser()) {
-            realm = getAuthenticatedRealm();
+            realm = getAuthenticatedRealmName();
         }
 
         if (parentId != null) {
@@ -109,7 +109,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     public AssetTreeNode[] doProtocolAssetDiscovery(RequestParams requestParams, String agentId, String realm) {
 
         if (!isSuperUser()) {
-            realm = getAuthenticatedRealm();
+            realm = getAuthenticatedRealmName();
         }
 
         Agent<?, ?, ?> agent = agentService.getAgent(agentId);
@@ -149,7 +149,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     public AssetTreeNode[] doProtocolAssetImport(RequestParams requestParams, String agentId, String realm, FileInfo fileInfo) {
 
         if (!isSuperUser()) {
-            realm = getAuthenticatedRealm();
+            realm = getAuthenticatedRealmName();
         }
 
         Agent<?, ?, ?> agent = agentService.getAgent(agentId);
@@ -234,7 +234,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     }
 
     protected Asset<?> getParent(String parentId, String realm) throws WebApplicationException {
-        if (!isSuperUser() && !realm.equals(getAuthenticatedRealm())) {
+        if (!isSuperUser() && !realm.equals(getAuthenticatedRealmName())) {
             throw new ForbiddenException();
         }
 

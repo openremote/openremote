@@ -21,14 +21,14 @@ package org.openremote.model.protocol;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.Agent;
-import org.openremote.model.event.shared.TenantScopedEvent;
+import org.openremote.model.event.shared.RealmScopedEvent;
 
 /**
  * Initiates a protocol discovery process (either instance or asset discovery depending on {@link #isAssetDiscovery()});
  * for a given client only one discovery process can be running at a time so any already running discovery process will
  * be stopped.
  */
-public class ProtocolDiscoveryStartRequestEvent extends TenantScopedEvent {
+public class ProtocolDiscoveryStartRequestEvent extends RealmScopedEvent {
 
     protected String agentDescriptor;
     protected String assetId;

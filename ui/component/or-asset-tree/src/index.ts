@@ -1402,8 +1402,8 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
             this._loading = true;
 
             const query: AssetQuery = {
-                tenant: {
-                    realm: manager.displayRealm
+                realm: {
+                    name: manager.displayRealm
                 },
                 select: { // Just need the basic asset info
                     attributes: []

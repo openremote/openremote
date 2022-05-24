@@ -26,7 +26,7 @@ import org.openremote.model.asset.UserAssetLink;
 import org.openremote.model.gateway.GatewayConnection;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.RealmRuleset;
 import org.openremote.model.security.User;
 import org.spockframework.runtime.extension.IGlobalExtension;
 
@@ -40,7 +40,7 @@ public class TestFixture implements IGlobalExtension {
     // Store the container here to allow stopping it after all tests run
     protected static Container container;
     public static List<GlobalRuleset> globalRulesets;
-    public static List<TenantRuleset> tenantRulesets;
+    public static List<RealmRuleset> realmRulesets;
     public static List<AssetRuleset> assetRulesets;
     public static List<GatewayConnection> gatewayConnections;
     public static List<Asset<?>> assets;

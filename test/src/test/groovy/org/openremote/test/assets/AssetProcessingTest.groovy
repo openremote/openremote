@@ -99,7 +99,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         when: "a mock agent that uses the mock protocol is created"
         def mockAgent = new MockAgent("Mock agent")
-            .setRealm(keycloakTestSetup.masterTenant.realm)
+            .setRealm(keycloakTestSetup.realmMaster.name)
             .setRequired(true)
         mockAgent = assetStorageService.merge(mockAgent)
 

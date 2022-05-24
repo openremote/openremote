@@ -19,6 +19,7 @@
  */
 package org.openremote.model.provisioning;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.openremote.model.http.RequestParams;
 
 import javax.validation.Valid;
@@ -26,6 +27,7 @@ import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+@Tag(name = "Provisioning")
 @Path("provisioning")
 public interface ProvisioningResource {
 
