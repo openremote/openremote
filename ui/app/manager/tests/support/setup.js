@@ -325,13 +325,11 @@ class CustomWorld {
         // leave modify mode
         if (await this.page?.locator('button:has-text("View")').isVisible()) {
             await this.click('button:has-text("View")')
-            console.log("view clicked")
         }
 
         // unselect the asset
         if (await this.page?.locator('.mdi-close').first().isVisible()) {
             await this.page?.locator('.mdi-close').first().click()
-            console.log("unselected")
         }
     }
 
