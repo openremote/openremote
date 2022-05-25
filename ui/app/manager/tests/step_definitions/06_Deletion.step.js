@@ -1,69 +1,77 @@
 const { Then } = require("@cucumber/cucumber");
-
-
-// Customworld is not working here.
-// I suppose to have the method in auto hint but this do not help
-// It does not effect the running of the tests
-//setWorldConstructor(CustomWorld)
+const { expect } = require("@playwright/test");
 
 /**
- * delete assets
+ * delete realm
  */
-Then('Delete asset named {string}', async function (name) {
+
+Then('Delete realm', async function () {
+  await this.switchToRealmBySelector("master")
+  await this.deleteRealm()
+})
+
+Then('We should not see the Realm selector', async function () {
   const { page } = this
-
-  await this.click(`text=${name}`)
-  await this.click('.mdi-delete')
-  // await page.locator(`text=${name}`).click()
-
-  // await page.locator('.mdi-delete').click();
-
-  await Promise.all([
-    page.locator('button:has-text("Delete")').click()
-  ]);
+  await page.reload()
+  expect(await this.page?.locator('#realm-picker').isVisible()).toBeFalsy()
 })
 
 /**
  * delete role
- * having problems
  */
 Then('Delete role', async function () {
-  const { page } = this
-  await page.locator('td:has-text("asset")').first().click()
 
-  // click on the button that in the first row
-  // not a smart way 
-  // if it's not the first row then will have error
-  await this.click('#attribute-meta-row-0 button:has-text("Delete")')
+  // delete roles
+  await this.click('td:has-text("Custom") >> nth=0')
+
+  // can't find a way to locate the delete button 
+  // since the sorting of the role is random everytime 
+  // the html tag is in form of "#attribute-meta-row-2" in which number inside is decided by order
+  // if the order is random then then number of html may change every time
+  // then the delete button is not being able to been determined
+
+  // instead i will use tab key to move to the delete button
+  // it's not a decent solution but that's the only way i can come up with
+  for (let i = 0; i < 15; i++) {
+    await this.press('Tab')
+  }
+  await this.press('Enter')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
+})
+
+Then('We should not see the Custom role', async function () {
+  const { page } = this
+  await expect.null(page.waitForSelector('td:has-text("Custom") >> nth=0'))
 })
 
 
 /**
  * delete user
  * only admin user has the rights to delete user
- * NEED IMPROVEMENT!
- * Sometimes will break when navigate to master realm
- * Login as admin user may have conflict 
  */
-
-
 Then('Delete user', async function () {
-  const { page } = this;
 
   await this.click('td:has-text("smartcity")')
   await this.click('button:has-text("delete")')
   await this.click('div[role="alertdialog"] button:has-text("Delete")')
 })
 
+Then('We should see an empty use page',async function(){
+  const { page } = this
+  await expect.null(page.waitForSelector('td:has-text("smartcity")'))
+})
 
 /**
- * delete configure item
+ * delete assets
  */
-Then('Delete {string} on {string}', async function (item, attribute) {
-  const { page } = this;
-
-  await this.click(`td:has-text("${attribute}")`)
-  await page.locator('#input').first().hover()
-  await page.locator('.mdi-close-circle').first().click();
+Then('Delete assets', async function () {
+  await this.deleteAssets()
 })
+
+Then('We should see an empty asset column',async function(){
+  const { page } = this
+  await expect.null(page.waitForSelector('text=Solar'))
+  await expect.null(page.waitForSelector('text=Battery'))
+})
+
+

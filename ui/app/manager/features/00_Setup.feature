@@ -1,16 +1,16 @@
-@OpenRemote @add_realm
+@OpenRemote @setup
 Feature: Setup
 
     Background: Setup
-        Given Setup "none"
+        Given Setup "lv0"
 
-    @Desktop
+    @Desktop @add_realm
     Scenario: Add new Realm
-        When Nevigate to "Realm" page
+        When Login OpenRemote as "admin"
+        When Navigate to "Realms" page
         Then Add a new Realm
         When Select smartcity realm
         Then We see the smartcity realm
-        Then Clean up "lv1"
 
 
 

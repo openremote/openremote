@@ -5,13 +5,9 @@ Feature: Map
         Given Setup "lv4"
 
     @Desktop @markers
-    Scenario Outline: check markers on map
+    Scenario: check markers on map
         When Login OpenRemote as "smartcity"
         Then Navigate to "map" tab
-        When Check "<asset>" on map
-        Then Click and nevigate to "<asset>" page
-
-        Examples:
-            | asset   |
-            | Battery |
-            | Solar   |
+        When Check "Battery" on map
+        Then Click and nevigate to "Battery" page
+        Then We are at "Battery" page

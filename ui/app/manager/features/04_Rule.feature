@@ -7,7 +7,7 @@ Feature: Rules
     @Desktop @create_whenthen_rule
     Scenario Outline: Create a When-Then rule
         When Login OpenRemote as "smartcity"
-        Then Nevigate to "Rule" tab
+        Then Navigate to "Rule" tab
         When Create a new "When-Then" rule
         Then Name new rule "<name>"
         Then Create When condition on "<attribute_when>" of "<asset>" of "<attribute_type>" with threshold "<value>"
@@ -22,7 +22,7 @@ Feature: Rules
     @Desktop @create_flow_rule
     Scenario: Create a Flow rule
         When Login OpenRemote as "smartcity"
-        Then Nevigate to "Rule" tab
+        Then Navigate to "Rule" tab
         When Create a new "Flow" rule
         Then Name new rule "Solar"
         Then Drag in the elements
@@ -31,8 +31,4 @@ Feature: Rules
         Then Snapshot "flow"
         Then Save rule
 
-
-
-    @Desktop @check_rule_result
-    Scenario: Check the rule result from API
 

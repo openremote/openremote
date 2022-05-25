@@ -5,7 +5,7 @@ const { expect } = require("@playwright/test");
 
 Then('Add a new Realm', async function () {
 
-    await this.addRealm()
+    await this.addRealm("smartcity")
 })
 
 /**

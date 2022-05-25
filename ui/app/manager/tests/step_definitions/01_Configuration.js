@@ -6,7 +6,7 @@ require('dotenv').config();
  * add new user
  */
 Then('Switch to {string} realm', async function (realm) {
-    await this.switchToRealm(realm)
+    await this.switchToRealmBySelector(realm)
 })
 
 Then("Add a new user", async function () {

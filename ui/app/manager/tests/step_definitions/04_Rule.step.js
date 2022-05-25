@@ -43,7 +43,7 @@ Then('Create When condition on {string} of {string} of {string} with threshold {
 Then('Create Then action on {string} of {string} of {string} with threshold {string}', async function (attribute_then, asset, attribute_type, value) {
 
     // create a new action
-    await this.click('or-rule-then-otherwise div or-panel .add-button-wrapper span span .plus-button #component or-icon .mdi-plus')
+    await this.click('button:has-text("Add action")')
     await this.click(`or-rule-then-otherwise li[role="menuitem"]:has-text("${attribute_type}")`)
 
     // select asset
@@ -51,7 +51,7 @@ Then('Create Then action on {string} of {string} of {string} with threshold {str
     await this.click(`#matchSelect li[role="option"]:has-text("${asset}")`)
 
     // select attribute
-    await this.click('text=Attribute Efficiency export Efficiency import Energy capacity Energy level perce >> div[role="button"]')
+    await this.click('text=Attribute Efficiency export Efficiency import Energy capacity Energy export tota >> div[role="button"]')
     await this.click(`li[role="option"]:has-text("${attribute_then}")`)
 
     // set value
@@ -96,15 +96,12 @@ Then('Drag in the elements', { timeout: 10000 }, async function () {
 
 Then('Set value', async function () {
     // set read and write
-    //await page.locator('button:has-text("Attribute")').first().click(); 
     await this.click('button:has-text("Attribute") >> nth=0')   // read 
     await this.click('div[role="alertdialog"] >> text=Solar')
-    //await page.locator('or-translate:has-text("Power")').nth(1).click();
     await this.click('or-translate:has-text("Power") >> nth=1')
     await this.click('button:has-text("Add")')
-
-    //await page.locator('button:has-text("Attribute")').first().click();     // write
-    await this.click('button:has-text("Attribute") >> nth=0')
+    
+    await this.click('button:has-text("Attribute") >> nth=0')   // write
     await this.click('div[role="alertdialog"] >> text=Solar')
     await this.click('or-translate:has-text("Power forecast")')
     await this.click('button:has-text("Add")')
@@ -115,15 +112,6 @@ Then('Set value', async function () {
 })
 
 Then('Connect elements', { timeout: 10000 }, async function () {
-    //const { page } = this
-    // await page.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
-    // await page.dragAndDrop('flow-node:nth-child(2) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(2) .socket')
-    // await page.dragAndDrop('div:nth-child(3) flow-node-socket .socket', ' flow-node:nth-child(6) .socket-side.inputs flow-node-socket .socket >> nth=0')
-    // await page.dragAndDrop('flow-node:nth-child(3) .socket-side flow-node-socket .socket', 'flow-node:nth-child(6) .socket-side.inputs flow-node-socket:nth-child(2)')
-    // await page.dragAndDrop('flow-node:nth-child(4) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(3) .socket')
-    // await page.dragAndDrop('flow-node:nth-child(6) .socket-side.outputs flow-node-socket .socket', 'flow-node:nth-child(7) .socket-side flow-node-socket .socket')
-    
-    
     // connect elements
     await this.dragAndDrop('.socket >> nth=0', '.socket-side.inputs flow-node-socket .socket >> nth=0')
     await this.dragAndDrop('flow-node:nth-child(2) .socket-side flow-node-socket .socket', 'flow-node-socket:nth-child(2) .socket')

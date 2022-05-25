@@ -85,15 +85,3 @@ Feature: Assets
             | name    | attribute_1 | attribute_2   | item_1     | item_2            |
             | Battery | energyLevel | power         | Rule state | Store data points |
             | Solar   | power       | powerForecast | Rule state | Store data points |
-
-    @Desktop @low_priority @sorting
-    Scenario Outline: Sort the assets
-        When Change the sorting method to "<sorting>"
-        Then We should the assets are sorted as the sorting method
-
-        Examples:
-            | sorting   |
-            | Name      |
-            | Type      |
-            | Create on |
-            | Status    |

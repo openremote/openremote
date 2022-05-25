@@ -2,6 +2,7 @@ const { setWorldConstructor, BeforeAll, AfterAll, After } = require("@cucumber/c
 const { ChromiumBroswer } = require("playwright");
 const playwright = require('playwright');
 const fs = require('fs');
+const { env } = require("process");
 require('dotenv').config();
 
 /**
@@ -142,10 +143,12 @@ class CustomWorld {
      * Logout and delete login certification
      */
     async logout() {
-        await this.click('#menu-btn-desktop');
-        await this.click('text=Log out');
         if (fs.existsSync('storageState.json')) {
             fs.unlinkSync('storageState.json')
+        }
+        if (await this.page?.locator('#menu-btn-desktop').isVisible()) {
+            await this.click('#menu-btn-desktop');
+            await this.click('text=Log out');
         }
     }
 
@@ -207,16 +210,22 @@ class CustomWorld {
      *  create Realm
      */
     async addRealm(name) {
-
-        await this.click('text=Add Realm');
-        await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
-        await this.page?.locator('input[type="text"]').nth(3).fill(name);
-        await Promise.all([
-            this.page?.waitForNavigation(`${process.env.LOCAL_URL}/manager/#/realms`),
-            this.click('button:has-text("create")')
-        ]);
+        if (!await this.page?.locator('[aria-label="attribute list"] span:has-text("smartcity")').isVisible()) {
+            await this.click('text=Add Realm');
+            await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
+            await this.page?.locator('input[type="text"]').nth(3).fill(name);
+            await Promise.all([
+                this.page?.waitForNavigation(`${process.env.LOCAL_URL}/manager/#/realms`),
+                this.click('button:has-text("create")')
+            ]);
+        }
     }
-    async switchRealm(name) {
+
+    /**
+     * switch to a new manager realms by giving URL
+     * @param {*} name String: name of custom realm
+     */
+    async switchRealmByURL(name) {
         await this.logout()
         let URL = name == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
         await this.page?.goto(URL)
@@ -224,10 +233,10 @@ class CustomWorld {
     }
 
     /**
-     * switch to a realm in the manager
-     * @param {*} name 
+     * switch to a realm in the manager's realm picker
+     * @param {*} name String: name of custom realm
      */
-    async switchToRealm(name) {
+    async switchToRealmBySelector(name) {
         await this.click('#realm-picker');
         await this.click(`li[role="menuitem"]:has-text("${name}")`);
     }
@@ -250,8 +259,6 @@ class CustomWorld {
 
             await this.click('.mdi-plus >> nth=0')
             await this.fill('input[type="text"] >> nth=0', 'smartcity')
-            // await this.page?.locator('.mdi-plus').first().click();
-            // await this.page?.locator('input[type="text"]').first().fill('smartcity');
             // type in password
             await this.fill('#password-user0 input[type="password"]', 'smartcity')
             await this.fill('#repeatPassword-user0 input[type="password"]', 'smartcity')
@@ -264,13 +271,13 @@ class CustomWorld {
             await this.click('button:has-text("create")')
         }
         else {
-            console.log("exsits")
+            console.log("user exsits")
         }
     }
 
     /**
-     * Create empty asset
-     * TODO: set optional parameter to have customized assets' name
+     * create new empty assets
+     * @param {*} update Boolean: for checking if updating values is needed
      */
     async addAssets(update) {
 
@@ -376,13 +383,11 @@ class CustomWorld {
     async configItem(item_1, item_2, attr) {
 
         await this.click(`td:has-text("${attr} ") >> nth=0`)
-        //await this.page.locator(`td:has-text("${attr} ")`).first().click()
         await this.wait(400)
         await this.click('.attribute-meta-row.expanded td .meta-item-container div .item-add or-mwc-input #component')
         await this.click(`li[role="checkbox"]:has-text("${item_1}")`)
         await this.click(`li[role="checkbox"]:has-text("${item_2}")`)
         await this.click('div[role="alertdialog"] button:has-text("Add")')
-        //await this.page.locator(`td:has-text("${attr}")`).first().click()
         await this.click(`td:has-text("${attr}") >> nth=0`)
     }
 
@@ -397,6 +402,16 @@ class CustomWorld {
         await this.configItem(item_1, item_2, attr_2)
     }
 
+    async deleteRealm() {
+        await this.click('[aria-label="attribute list"] span:has-text("smartcity")')
+        await this.click('button:has-text("Delete")')
+        await this.fill('div[role="alertdialog"] input[type="text"]', 'smartcity')
+        await Promise.all([
+            await this.click('button:has-text("OK")')
+        ])
+        await this.wait(100)
+    }
+
     /**
      * delete all the assets
      * right now it's deleting all the assets in the array
@@ -405,7 +420,7 @@ class CustomWorld {
         await this.click('#desktop-left a:nth-child(2)')
 
         for (let asset of assets) {
-            if (this.page?.locator(`text=${asset.name}`).count() > 0) {
+            if (await this.page?.locator(`text=${asset.name}`).count() > 0) {
                 await this.click(`text=${asset.name}`)
                 await this.click('.mdi-delete')
                 await Promise.all([
@@ -460,101 +475,37 @@ class CustomWorld {
             fs.unlinkSync('storageState.json')
         }
 
-        // add realm
-        await this.navigate("admin")
-        await this.login("admin")
-
-        await this.wait(600)
-        if (!await this.page?.locator('#realm-picker').isVisible()) {
-            await this.navigateTo("Realms")
-            await this.addRealm(realm)
-        }
-        await this.switchToRealm(realm)
-
-        const update = level == "lv4" ? true : false
-        // add user
-        if (level >= 'lv2') {
-            await this.addUser()
-            // add assets
-            if (level >= 'lv3') {
-                await this.switchRealm(realm)
-                await this.addAssets(update)
-            }
-        }
-        await this.logout()
-        await this.page.close()
-    }
-    /**
-     *  lv1 Setup: only contains realm
-     */
-    async lv1_Setup(realm) {
-
-        await this.navigate("admin")
-        await this.login("admin")
-
-        await this.wait(6000)
-        if (!await this.page?.locator('#realm-picker').isVisible()) {
-            await this.navigateTo("Realms")
-            await this.addRealm(realm)
-        }
-        await this.switchToRealm(realm)
-    }
-
-
-    /**
-     *  lv2 Setup: only contains realm and user
-     */
-    async lv2_Setup(realm) {
-
-        await this.lv1_Setup(realm)
-
-        await this.addUser()
-
-        await this.navigateToTab("Map")
-    }
-
-    /**
-     * lv3 Setup: contains realm, user and emtpy assets
-     */
-    async lv3_Setup(realm) {
-
-        // create realm and user
-        await this.lv2_Setup(realm);
-
-        // switch realm to smartcity in URL
-        await this.switchRealm(realm)
-
-        // create assets
-        await this.addAssets()
-    }
-
-    /**
-     *  lv4 Setup: contains realm, user and assets with data and configuration items
-     */
-    async lv4_Setup(realm) {
-        await this.lv3_Setup(realm);
-
-        for (let asset of assets) {
-
-            await this.unSelectAll()
-            // select assets
-            await this.selectAssets(asset.name)
-
-            // update value in general panel
-            await this.updateAssets(asset.attr_3, asset.a3_type, asset.v3)
-
-            // update in modify mode
-            await this.click('button:has-text("Modify")')
-            await this.updateInModify(asset.attr_1, asset.a1_type, asset.v1)
-            await this.updateInModify(asset.attr_2, asset.a2_type, asset.v2)
-            await this.updateLocation(asset.location_x, asset.location_y)
-            await this.setConfigItem(asset.config_item_1, asset.config_item_2, asset.config_attr_1, asset.config_attr_2)
-            await this.save()
-
+        // lv0 is no setup at all
+        // lv1 is to create a realm
+        // lv2 is to create a user
+        // lv3 is to create empty assets
+        // lv4 is to set the values for assets
+        if (!(level === "lv0")) {
+            await this.navigate("admin")
+            await this.login("admin")
+            // add realm
             await this.wait(400)
-        }
+            if (!await this.page?.locator('#realm-picker').isVisible()) {
+                await this.navigateTo("Realms")
+                await this.addRealm(realm)
+            }
+            await this.switchToRealmBySelector(realm)
 
+            const update = level == "lv4" ? true : false
+            // add user
+            if (level >= 'lv2') {
+                await this.addUser()
+                // add assets
+                if (level >= 'lv3') {
+                    await this.switchRealmByURL(realm)
+                    await this.addAssets(update)
+                }
+            }
+            await this.logout()
+            await this.page.close()
+        }
     }
+
 
     /**
      *        *****       *           ******            *             *       *
@@ -571,84 +522,22 @@ class CustomWorld {
      *  Clean up the enviroment
      *  Called in After() 
      */
-    async cleanup() {
+    async cleanUp() {
 
-    }
-
-    /**
-     * Delete realm
-     * not possible right now since there is no way to delete a realm in graphic UI
-     */
-    async lv1_Cleanup() {
-
-    }
-
-    /**
-     * Delete realm and user
-     * having problems at deleting roles
-     */
-    async lv2_Cleanup() {
-        // await this.navigate("admin")
-        // if (!fs.existsSync('storageState.json')) {
-        //     await this.login("admin")
-        // }
+        // ensure login as admin into master
+        await this.logout()
+        await this.page.goto(process.env.LOCAL_URL);
+        await this.login("admin")
         await this.wait(400)
-        if (!await this.page?.locator('#realm-picker >> text=smartcity').isVisible()) {
-            await this.click('#realm-picker');
-            await this.click('li[role="menuitem"]:has-text("smartcity")')
-        }
+        // switch to master realm to ensure being able to delete custom realm
+        await this.switchToRealmBySelector("master")
 
-        // back to map page to avoid any same naming conflicts
-        await this.navigateToTab("Map")
-
-        // navigate to user page
-        this.navigateTo("Users")
-
-        // delete users
-        await this.click('td:has-text("smartcity")')
-        await this.click('button:has-text("Delete")')
-        await this.click('div[role="alertdialog"] button:has-text("Delete")')
-
-        // delete roles
-        // navigate to role page
-        await this.navigateTo("Roles")
-
-        // delete roles
-        await this.click('td:has-text("Custom") >> nth=0')
-
-        // can't find a way to locate the delete button 
-        // since the sorting of the role is random everytime 
-        // the html tag is in form of "#attribute-meta-row-2" in which number inside is decided by order
-        // if the order is random then then number of html may change every time
-        // then the delete button is not being able to been determined
-
-        // instead i will use tab key to move to the delete button
-        // it's not a decent solution but that's the only way i can come up with
-        for (let i = 0; i < 15; i++) {
-            await this.press('Tab')
-        }
-        await this.press('Enter')
-        await this.click('div[role="alertdialog"] button:has-text("Delete")')
+        // delete realms
+        // should delete everything and set the envrioment to beginning
+        await this.navigateTo("Realms")
+        await this.deleteRealm()
     }
 
-    /**
-     *  Delete realm, user and assets
-     */
-    async lv3_Cleanup() {
-        await this.lv2_Cleanup()
-        await this.deleteAssets()
-    }
-
-
-    /**
-     * Delete realm, user, assets, rules and insights
-     */
-    async lv4_Cleanup() {
-        await this.lv3_Cleanup()
-        await this.deleteRules()
-
-        // insights are not there yet
-    }
 }
 
 
@@ -660,12 +549,15 @@ class CustomWorld {
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
         headless: false,
-        slowMo: 100
+        slowMo: 50
     });
 })
 
+// delete realm when a senario ends
+// delete a realm should be able to delete everything inside
 // close page
-After(async function () {
+After({ timeout: 10000 }, async function () {
+    await this.cleanUp()
     await this.page?.close()
 })
 

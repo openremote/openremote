@@ -4,7 +4,6 @@ const { expectExtension } = require("../support/expect_extension")
 
 
 When('Switch to {string}', async function (string) {
-    // Write code here that turns the phrase above into concrete actions
     await this.switchRealm("smartcity")
 });
 /**
@@ -20,10 +19,8 @@ Then('Create a {string} with name of {string}', async function (asset, name) {
 })
 
 When('Go to asset {string} info page', async function (name) {
-    const { page } = this;
-
-    await this.click(`#list-container >> text=${name}`)
-    //await page.locator(`#list-container div:has-text("${name}")`).nth(1).click()
+    await this.unSelectAll()
+    await this.click(`text=${name}`)
 })
 
 Then('Go to modify mode', async function () {
@@ -33,13 +30,11 @@ Then('Go to modify mode', async function () {
 Then('Give {string} to the {string} with type of {string}', async function (value, attribute, type) {
 
     await this.fill(`text=${attribute} ${type} >> input[type="number"]`, value)
-    //await page.locator(`text=${attribute} ${type} >> input[type="number"]`).fill(value);
 })
 
 Then('Save', async function () {
 
     // press enter to enable the save button (could be any other action) (or this will be fixed then no pre-action needed)
-    // await this.press('Enter')
     await this.click('#edit-container')
 
     await this.click('button:has-text("Save")')
@@ -50,8 +45,7 @@ Then('Save', async function () {
  */
 When('Search for the {string}', async function (name) {
 
-    await this.fill('input[type="text"]', name)
-    //await page.locator('input[type="text"]').fill(name);
+    await this.fill('#filterInput input[type="text"]', name)
 })
 
 When('Select the {string}', async function (name) {
@@ -76,11 +70,10 @@ Then('Update {int} and {int}', async function (location_x, location_y) {
     const { page } = this;
 
     await this.click('text=location GEO JSON point >> button span')
-    //await page.locator('[aria-label="Map"]').click(1230,500,{delay:300,})
 
     // location_x and location_y are given by the example data
     // currently it's not implmented as dragging the map and clicking on a random place (could be possible in the future)
-    await page.mouse.click(location_x, location_y, { delay: 1000 })
+    await page.mouse.click(location_x, location_y, { delay: 7000 })
     await this.click('button:has-text("OK")')
 })
 
@@ -127,7 +120,6 @@ Then('No button on the right of {string}', async function (attribute) {
     const { page } = this;
 
     await expect.null(page.waitForSelector(`#field-${attribute} button`))
-    //await expect(page.waitForSelector(`#field-${attribute} button`)).toBeNull()
 })
 
 /**
