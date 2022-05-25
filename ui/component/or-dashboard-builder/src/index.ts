@@ -282,7 +282,7 @@ export class OrDashboardBuilder extends LitElement {
                 }
             }
             this.currentTemplate = this.selectedDashboard?.template;
-            this.rerenderPending = true;
+            // this.rerenderPending = true;
             this.dispatchEvent(new CustomEvent("selected", { detail: this.selectedDashboard }))
         }
         if(changedProperties.has("currentTemplate")) {

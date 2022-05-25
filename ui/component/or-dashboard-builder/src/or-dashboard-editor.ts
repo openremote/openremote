@@ -132,9 +132,6 @@ export class OrDashboardEditor extends LitElement{
     protected readonly rerenderPending: boolean | undefined;
 
     @state()
-    protected activePreset: DashboardScreenPreset;
-
-    @state()
     protected resizeObserver: ResizeObserver | undefined;
 
 
@@ -143,12 +140,6 @@ export class OrDashboardEditor extends LitElement{
     constructor() {
         super();
         this.isLoading = false;
-        this.activePreset = {
-            id: 'defaultPresetWithRandomId',
-            displayName: 'defaultPreset',
-            scalingPreset: DashboardScalingPreset.KEEP_LAYOUT,
-            breakpoint: 1920,
-        } as DashboardScreenPreset
 
 
         // Tasks to execute after all rendering is done.
@@ -177,7 +168,22 @@ export class OrDashboardEditor extends LitElement{
 
         // Template input changes
         if(changedProperties.has("template") || changedProperties.has("editMode")) {
-            this.rerenderGrid(this.activePreset, false);
+            const width = (this.fullscreen ? this.clientWidth : this.width);
+            if(width != null && this.template?.screenPresets != null) {
+                const activePreset = this.getActivePreset(width, this.template.screenPresets);
+                if(activePreset != null) {
+                    if(this.template?.columns != null && (changedProperties.get("template") as DashboardTemplate) != null && (changedProperties.get("template") as DashboardTemplate).columns != this.template.columns) {
+                        this.rerenderGrid(activePreset, true);
+                    } else {
+                        this.rerenderGrid(activePreset, false);
+                    }
+                } else {
+                    console.error("The active preview preset could not be found.")
+                }
+            } else {
+                console.error("Could not get the Grid width.");
+                console.log(this.shadowRoot?.querySelector(".maingrid"));
+            }
         }
         if(changedProperties.has("editMode")) {
             const maingrid = this.shadowRoot?.querySelector(".maingrid");
@@ -187,8 +193,18 @@ export class OrDashboardEditor extends LitElement{
         }
         if(changedProperties.has("rerenderPending")) {
             if(this.rerenderPending) {
-                this.rerenderGrid(this.activePreset, true);
-                this.dispatchEvent(new CustomEvent("rerender"));
+                const width = (this.fullscreen ? this.shadowRoot?.querySelector(".maingrid")?.clientWidth : this.width);
+                if(width != null && this.template?.screenPresets != null) {
+                    const activePreset = this.getActivePreset(width, this.template.screenPresets);
+                    if(activePreset != null) {
+                        this.rerenderGrid(activePreset, true);
+                        this.dispatchEvent(new CustomEvent("rerender"));
+                    } else {
+                        console.error("The active preview preset could not be found.")
+                    }
+                } else {
+                    console.error("The maingrid element could not be found.")
+                }
             }
         }
 
@@ -257,51 +273,6 @@ export class OrDashboardEditor extends LitElement{
     }
 
     /* -------------------------------------------------------- */
-
-    // Main large method for rendering the Grid
-    private async renderGrid(activePreset: DashboardScreenPreset): Promise<void> {
-        if(this.shadowRoot != null) {
-
-            console.log("Rendering the Grid...");
-
-            const mainGridContainer = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
-            if(!this.editMode) {
-                mainGridContainer.classList.add("maingrid__fullscreen");
-            } else {
-                if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
-                    mainGridContainer.classList.remove("maingrid__fullscreen");
-                }
-            }
-
-            // Setting up main center Grid
-            let gridElement; let grid;
-            if(this.template != null && this.template.widgets != null) {
-                gridElement = this.shadowRoot.getElementById("gridElement");
-                const gridItems: DashboardGridItem[] = [];
-                for (const widget of this.template.widgets) {
-                    widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
-                }
-                grid = this.createGrid(activePreset, gridElement, gridItems);
-            }
-
-            if(grid != null) {
-
-                this.mainGrid = grid;
-
-                // Render a CSS border raster on the background
-                if(gridElement != null) {
-                    gridElement.style.backgroundSize = "" + this.mainGrid.cellWidth() + "px " + this.mainGrid.getCellHeight() + "px";
-                    gridElement.style.height = "100%";
-                    gridElement.style.minHeight = "100%";
-                    gridElement.style.maxHeight = "100%";
-                    gridElement.style.overflow = "visible";
-                }
-
-            } else {
-                console.log("Could not render initial Grid! Could not find gridElement!");
-            }
-        }
-    }
 
     /*getColumns(activePreset: DashboardScreenPreset, columns?: number): number {
         if(activePreset.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) {
@@ -423,42 +394,49 @@ export class OrDashboardEditor extends LitElement{
         this.selected = undefined;
 
         // If not blocked by scaling preset, start rerendering..
-        if(this.activePreset.scalingPreset != DashboardScalingPreset.BLOCK_DEVICE) {
+        const width = (this.fullscreen ? this.clientWidth : this.width);
+        if(width != null && this.template?.screenPresets != null) {
+            const activePreset = this.getActivePreset(width, this.template.screenPresets);
+            if(activePreset != null && activePreset != DashboardScalingPreset.BLOCK_DEVICE) {
 
-            if(this.shadowRoot != null) {
-                const mainGridContainer = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
-                if(mainGridContainer != null) {
-                    if(!this.editMode) {
-                        mainGridContainer.classList.add("maingrid__fullscreen");
-                    } else {
-                        if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
-                            mainGridContainer.classList.remove("maingrid__fullscreen");
+                // Adding fullscreen CSS properties
+                if(this.shadowRoot != null) {
+                    const mainGridContainer = this.shadowRoot.querySelector(".maingrid") as HTMLElement;
+                    if(mainGridContainer != null) {
+                        if(!this.editMode) {
+                            mainGridContainer.classList.add("maingrid__fullscreen");
+                        } else {
+                            if(mainGridContainer.classList.contains("maingrid__fullscreen")) {
+                                mainGridContainer.classList.remove("maingrid__fullscreen");
+                            }
                         }
                     }
                 }
-            }
 
-            if(this.template?.widgets != null && this.shadowRoot != null) {
-                const gridItems: DashboardGridItem[] = [];
-                for (const widget of this.template.widgets) {
-                    widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
+                if(this.template?.widgets != null && this.shadowRoot != null) {
+                    const gridItems: DashboardGridItem[] = [];
+                    for (const widget of this.template.widgets) {
+                        widget.gridItem != null ? gridItems.push((await this.loadWidget(widget)).gridItem as DashboardGridItem) : null;
+                    }
+                    const newGrid = this.createGrid(activePreset, undefined, gridItems);
+                    if(newGrid != null) { this.mainGrid = newGrid; }
+
+                    const gridElement = this.shadowRoot.getElementById("gridElement");
+
+                    // Render a CSS border raster on the background
+                    if(gridElement != null) {
+                        gridElement.style.backgroundSize = "" + this.mainGrid?.cellWidth() + "px " + this.mainGrid?.getCellHeight() + "px";
+                        gridElement.style.height = "100%";
+                        gridElement.style.minHeight = "100%";
+                        gridElement.style.maxHeight = "100%";
+                        gridElement.style.overflow = "visible";
+                    }
+
+                } else {
+                    console.log("Grid could not be destroyed, because it does not exist!");
                 }
-                const newGrid = this.createGrid(activePreset, undefined, gridItems);
-                if(newGrid != null) { this.mainGrid = newGrid; }
-
-                const gridElement = this.shadowRoot.getElementById("gridElement");
-
-                // Render a CSS border raster on the background
-                if(gridElement != null) {
-                    gridElement.style.backgroundSize = "" + this.mainGrid?.cellWidth() + "px " + this.mainGrid?.getCellHeight() + "px";
-                    gridElement.style.height = "100%";
-                    gridElement.style.minHeight = "100%";
-                    gridElement.style.maxHeight = "100%";
-                    gridElement.style.overflow = "visible";
-                }
-
             } else {
-                console.log("Grid could not be destroyed, because it does not exist!");
+                console.error("The active preview preset could not be found.")
             }
         }
     }
@@ -555,48 +533,59 @@ export class OrDashboardEditor extends LitElement{
 
     // Render
     protected render() {
-        return html`
-            <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selected = undefined; }}}">
-                ${this.editMode ? html`
-                    <div id="view-options">
-                        <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
-                        <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize)}" .options="${[sizeOptionToString(DashboardSizeOption.LARGE), sizeOptionToString(DashboardSizeOption.MEDIUM), sizeOptionToString(DashboardSizeOption.SMALL), sizeOptionToString(DashboardSizeOption.CUSTOM)]}" style="min-width: 220px;"
-                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = stringToSizeOption(event.detail.value); }}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" .value="${this.width}" style="width: 90px"
-                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.width = event.detail.value as number; }}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="height-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Height" min="100" .value="${this.height}" style="width: 90px;"
-                                      @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.height = event.detail.value as number; }}"
-                        ></or-mwc-input>
-                        <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"
-                                      @or-mwc-input-changed="${() => { const newWidth = this.height; const newHeight = this.width; this.width = newWidth; this.height = newHeight; }}">
-                        </or-mwc-input>
-                    </div>
-                ` : undefined}
-                ${this.fullscreen ? html`
-                    <div id="container" style="display: flex; justify-content: center; height: 100%;">
-                        ${this.activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
-                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
-                        ` : undefined}
-                        <div class="maingrid">
-                            <!-- Gridstack element on which the Grid will be rendered -->
-                            <div id="gridElement" class="grid-stack"></div>
+        const width = (this.fullscreen ? this.clientWidth : this.width);
+        let activePreset: DashboardScreenPreset | undefined;
+        if(width != null && this.template?.screenPresets != null) {
+            activePreset = this.getActivePreset(width, this.sortScreenPresets(this.template.screenPresets));
+        }
+        if(activePreset != null) {
+            return html`
+                <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selected = undefined; }}}">
+                    ${this.editMode ? html`
+                        <div id="view-options">
+                            <or-mwc-input id="zoom-btn" type="${InputType.BUTTON}" disabled outlined label="50%"></or-mwc-input>
+                            <or-mwc-input id="view-preset-select" type="${InputType.SELECT}" .disabled="${this.isLoading}" outlined label="Preset size" .value="${sizeOptionToString(this.previewSize)}" .options="${[sizeOptionToString(DashboardSizeOption.LARGE), sizeOptionToString(DashboardSizeOption.MEDIUM), sizeOptionToString(DashboardSizeOption.SMALL), sizeOptionToString(DashboardSizeOption.CUSTOM)]}" style="min-width: 220px;"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.previewSize = stringToSizeOption(event.detail.value); }}"
+                            ></or-mwc-input>
+                            <or-mwc-input id="width-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Width" min="100" .value="${this.width}" style="width: 90px"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.width = event.detail.value as number; }}"
+                            ></or-mwc-input>
+                            <or-mwc-input id="height-input" type="${InputType.NUMBER}" .disabled="${this.isLoading}" outlined label="Height" min="100" .value="${this.height}" style="width: 90px;"
+                                          @or-mwc-input-changed="${(event: OrInputChangedEvent) => { this.height = event.detail.value as number; }}"
+                            ></or-mwc-input>
+                            <or-mwc-input id="rotate-btn" type="${InputType.BUTTON}" .disabled="${this.isLoading}" icon="screen-rotation"
+                                          @or-mwc-input-changed="${() => { const newWidth = this.height; const newHeight = this.width; this.width = newWidth; this.height = newHeight; }}">
+                            </or-mwc-input>
                         </div>
-                    </div>
-                ` : html`
-                    <div id="container" style="display: flex; justify-content: center; height: 100%;">  
-                        ${this.activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
-                            <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
-                        ` : undefined}
-                        <div class="maingrid">
-                            <!-- Gridstack element on which the Grid will be rendered -->
-                            <div id="gridElement" class="grid-stack grid-element"></div>
+                    ` : undefined}
+                    ${this.fullscreen ? html`
+                        <div id="container" style="display: flex; justify-content: center; height: 100%;">
+                            ${activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                                <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
+                            ` : undefined}
+                            <div class="maingrid" style="visibility: ${activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}">
+                                <!-- Gridstack element on which the Grid will be rendered -->
+                                <div id="gridElement" class="grid-stack"></div>
+                            </div>
                         </div>
-                    </div>
-                `}
-            </div>
-        `
+                    ` : html`
+                        <div id="container" style="display: flex; justify-content: center; height: 100%;">  
+                            ${activePreset?.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? html`
+                                <div style="position: absolute; z-index: 3; height: ${this.height}px; line-height: ${this.height}px; user-select: none;"><span>This dashboard does not support your device.</span></div>
+                            ` : undefined}
+                            <div class="maingrid" style="visibility: ${activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}">
+                                <!-- Gridstack element on which the Grid will be rendered -->
+                                <div id="gridElement" class="grid-stack grid-element"></div>
+                            </div>
+                        </div>
+                    `}
+                </div>
+            `
+        } else {
+            return html`
+                <span>Error! Your active preset could not be found. Try to reload the page.</span>
+            `
+        }
     }
 
     setupResizeObserver(element: Element): ResizeObserver {
@@ -621,34 +610,51 @@ export class OrDashboardEditor extends LitElement{
                     return 0;
                 });
 
-                // console.log(presets);
-
                 const width = (this.fullscreen ? element.clientWidth : this.width);
-                const height = (this.fullscreen ? element.clientHeight : this.height);
-                // console.log("New grid size is: [" + width + "x" + height + "]")
-
-                // Getting the active Preset based on breakpoint
-                let activePreset: DashboardScreenPreset | undefined;
-                presets.forEach((preset) => {
-                    if(activePreset == undefined && preset.breakpoint != null && width <= preset.breakpoint) {
-                        activePreset = preset;
-                    }
-                });
-
-                // console.log("Active preset is the following:");
-                // console.log(activePreset);
+                const activePreset = this.getActivePreset(width, presets);
 
                 if(activePreset != undefined) {
-                    this.activePreset = activePreset;
                     this.rerenderGrid(activePreset).then(() => {
                         if(activePreset != null) {
                             this.updateGridSize(activePreset, true);
                         }
                     });
                 }
+                if(this.fullscreen) {
+                    this.requestUpdate();
+                }
             }
         });
         this.resizeObserver.observe(element);
         return this.resizeObserver;
+    }
+
+
+
+
+    getActivePreset(gridWidth: number, presets: DashboardScreenPreset[]): DashboardScreenPreset | undefined {
+
+        // Getting the active Preset based on breakpoint
+        let activePreset: DashboardScreenPreset | undefined;
+        presets.forEach((preset) => {
+            if(activePreset == undefined && preset.breakpoint != null && gridWidth <= preset.breakpoint) {
+                activePreset = preset;
+            }
+        });
+        return activePreset;
+    }
+
+    sortScreenPresets(presets: DashboardScreenPreset[]): DashboardScreenPreset[] {
+        return presets.sort((a, b) => {
+            if(a.breakpoint != null && b.breakpoint != null) {
+                if(a.breakpoint > b.breakpoint) {
+                    return 1;
+                }
+                if(a.breakpoint < b.breakpoint) {
+                    return -1;
+                }
+            }
+            return 0;
+        });
     }
 }
