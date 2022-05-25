@@ -442,8 +442,8 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="save-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="Save" @click="${() => { this.saveDashboard(); }}"></or-mwc-input>
-                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="View" @click="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
+                                        <or-mwc-input id="save-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" raised label="Save" @or-mwc-input-changed="${() => { this.saveDashboard(); }}"></or-mwc-input>
+                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="eye" label="View" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: false })); }}"></or-mwc-input>
                                     </div>
                                 </div>
                             </div>
@@ -452,7 +452,7 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="fullscreen-header">
                             <div id="fullscreen-header-wrapper">
                                 <div id="fullscreen-header-title">
-                                    <or-mwc-input type="${InputType.BUTTON}" icon="menu" @click="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>   
+                                    <or-mwc-input type="${InputType.BUTTON}" icon="menu" @or-mwc-input-changed="${() => { this.showDashboardTree = !this.showDashboardTree; }}"></or-mwc-input>   
                                     <span>${this.selectedDashboard?.displayName}</span>
                                 </div>
                                 <div id="fullscreen-header-actions">
@@ -461,7 +461,7 @@ export class OrDashboardBuilder extends LitElement {
                                                 html`<or-mwc-input id="share-btn" .disabled="${this.isLoading || (this.selectedDashboard == null)}" type="${InputType.BUTTON}" icon="share-variant"></or-mwc-input>`,
                                                 menuItems, "monitor", (method: any) => { this.shareUrl(method); }
                                         )}
-                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="pencil" label="Modify" @click="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
+                                        <or-mwc-input id="view-btn" type="${InputType.BUTTON}" outlined icon="pencil" label="Modify" @or-mwc-input-changed="${() => { this.dispatchEvent(new CustomEvent('editToggle', { detail: true })); }}"></or-mwc-input>
                                     </div>
                                 </div>
                             </div>
@@ -494,7 +494,7 @@ export class OrDashboardBuilder extends LitElement {
                                                     <span id="title">${this.selectedWidget?.displayName}:</span>
                                                 </div>
                                                 <div>
-                                                    <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @click="${(event: CustomEvent) => { this.deselectWidget(); }}"></or-mwc-input>
+                                                    <or-mwc-input type="${InputType.BUTTON}" icon="close" style="" @or-mwc-input-changed="${(event: CustomEvent) => { this.deselectWidget(); }}"></or-mwc-input>
                                                 </div>
                                             </div>
                                             <div id="content" style="display: block;">

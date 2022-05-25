@@ -121,7 +121,7 @@ export class OrDashboardTree extends LitElement {
                 </div>
                 ${this.editMode ? html`
                     <div>
-                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;" @click="${() => { if(this.selected != null) { this.deleteDashboard(this.selected); }}}"></or-mwc-input>
+                        <or-mwc-input type="${InputType.BUTTON}" icon="delete" style="margin-right: -4px;" @or-mwc-input-changed="${() => { if(this.selected != null) { this.deleteDashboard(this.selected); }}}"></or-mwc-input>
                         <span style="--or-icon-fill: black">
                             ${getContentWithMenuTemplate(
                                 html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" style="margin-left: -4px; --or-icon-fill: white;"></or-mwc-input>`,

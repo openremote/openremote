@@ -254,7 +254,7 @@ export class OrDashboardWidgetsettings extends LitElement {
                                         ` : undefined;
                                     }) : undefined}
                                 </div>
-                                <or-mwc-input .type="${InputType.BUTTON}" label="Attribute" icon="plus" style="margin-top: 16px;" @click="${() => this.openDialog()}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" label="Attribute" icon="plus" style="margin-top: 16px;" @or-mwc-input-changed="${() => this.openDialog()}"></or-mwc-input>
                             </div>
                         ` : null}
                     </div>
@@ -332,7 +332,7 @@ export class OrDashboardWidgetsettings extends LitElement {
         return html`
             ${htmlContent}
             <div id="actions" style="position: absolute; bottom: 20px; right: 20px;">
-                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="Delete Component" @click="${() => { this.deleteSelectedWidget(); }}"></or-mwc-input>
+                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" label="Delete Component" @or-mwc-input-changed="${() => { this.deleteSelectedWidget(); }}"></or-mwc-input>
             </div>
         `
     }
