@@ -299,18 +299,18 @@ export class OrLogViewer extends translate(i18next)(LitElement) {
                         <or-mwc-input .type="${ InputType.SELECT}" id="limit-select" ?disabled="${disabled}" .label="${i18next.t("limit")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLimitChanged(evt.detail.value)}" .value="${"" + this.getLimit()}" .options="${this._getLimitOptions()}"></or-mwc-input>
                     </div>
                     <div id="page-controls" ?hidden="${isLive || !this._pageCount || !this._data || this._data.length === 0}">
-                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === 1}" icon="chevron-left" @click="${() => this._updatePage(false)}"></or-mwc-input>
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === 1}" icon="chevron-left" @or-mwc-input-changed="${() => this._updatePage(false)}"></or-mwc-input>
                         <span>${this._currentPage}</span><or-translate value="of"></or-translate><span>${this._pageCount}</span>
-                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < this.getLimit())}" icon="chevron-right" @click="${() => this._updatePage(true)}"></or-mwc-input>
+                        <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive || this._currentPage === this._pageCount || (this._data && this._data.length < this.getLimit())}" icon="chevron-right" @or-mwc-input-changed="${() => this._updatePage(true)}"></or-mwc-input>
                     </div>
                     <div id="time-controls">
                         <or-mwc-input id="live-button" .type="${InputType.CHECKBOX}" ?disabled="${disabled}" .label="${i18next.t("live")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this._onLiveChanged(evt.detail.value)}" .value="${this.live}"></or-mwc-input>
                         <or-mwc-input .type="${InputType.SELECT}" id="period-select" ?disabled="${disabled || isLive}" .label="${i18next.t("period")}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.interval = evt.detail.value}" .value="${this.interval}" .options="${this._getIntervalOptions()}"></or-mwc-input>
                         <div id="ending-controls">
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-left" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}"></or-mwc-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-left" @or-mwc-input-changed="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, false)}"></or-mwc-input>
                             <or-mwc-input id="ending-date" .type="${InputType.DATETIME}" ?disabled="${disabled || isLive}" label="${i18next.t("ending")}" .value="${this.timestamp}" @or-mwc-input-changed="${(evt: OrInputChangedEvent) => this.timestamp = this._calculateTimestamp(moment(evt.detail.value as string).toDate())}"></or-mwc-input>
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-right" @click="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}"></or-mwc-input>
-                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-double-right" @click="${() => this.timestamp = this._calculateTimestamp(new Date())}"></or-mwc-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-right" @or-mwc-input-changed="${() => this.timestamp = this._calculateTimestamp(this.timestamp!, true)}"></or-mwc-input>
+                            <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled || isLive}" icon="chevron-double-right" @or-mwc-input-changed="${() => this.timestamp = this._calculateTimestamp(new Date())}"></or-mwc-input>
                         </div>
                     </div>
                 </div>

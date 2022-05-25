@@ -309,12 +309,12 @@ export class PageRealms extends Page<AppStateKeyed> {
                                   <div class="row" style="margin-bottom: 0;">
                                   ${realm.id && !readonly ? html`
                                       ${realm.name !== "master" && manager.isSuperUser() ? html`
-                                        <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" .disabled="${manager.displayRealm === realm.name}" @click="${() => this._deleteRealm(realm)}"></or-mwc-input>  
+                                        <or-mwc-input .label="${i18next.t("delete")}" .type="${InputType.BUTTON}" .disabled="${manager.displayRealm === realm.name}" @or-mwc-input-changed="${() => this._deleteRealm(realm)}"></or-mwc-input>  
                                       ` : ``}
-                                      <or-mwc-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @click="${() => this._updateRealm(realm)}"></or-mwc-input>   
+                                      <or-mwc-input style="margin-left: auto;" .label="${i18next.t("save")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._updateRealm(realm)}"></or-mwc-input>   
                                   ` : html`
-                                    <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @click="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
-                                    <or-mwc-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @click="${() => this._createRealm(realm)}"></or-mwc-input>   
+                                    <or-mwc-input .label="${i18next.t("cancel")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => {this._realms.splice(-1,1); this._realms = [...this._realms]}}"></or-mwc-input>            
+                                    <or-mwc-input style="margin-left: auto;" .label="${i18next.t("create")}" .type="${InputType.BUTTON}" @or-mwc-input-changed="${() => this._createRealm(realm)}"></or-mwc-input>   
                                   `}    
                                   </div>
                               </div>
@@ -397,7 +397,7 @@ export class PageRealms extends Page<AppStateKeyed> {
           {
               actionName: "ok",
               disabled: true,
-              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @click="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled .label="${i18next.t("ok")}"></or-mwc-input>`,
+              content: html`<or-mwc-input .type="${InputType.BUTTON}" ${ref(okBtnRef)} @or-mwc-input-changed="${(ev: MouseEvent) => {if ((ev.currentTarget as OrMwcInput).disabled) ev.stopPropagation()}}" disabled .label="${i18next.t("ok")}"></or-mwc-input>`,
               action: doDelete
           },
           {
