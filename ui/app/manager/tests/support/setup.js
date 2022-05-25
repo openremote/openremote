@@ -547,7 +547,7 @@ class CustomWorld {
 // launch broswer
 BeforeAll(async function () {
     global.browser = await playwright.chromium.launch({
-        headless: false,
+        headless: true,
         slowMo: 50
     });
 })
