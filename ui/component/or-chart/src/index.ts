@@ -549,9 +549,9 @@ export class OrChart extends translate(i18next)(LitElement) {
                             (value) => this.setPeriodOption(value))}
 
                         ${!!this.compareTimestamp ? html `
-                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
+                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @or-mwc-input-changed="${() => this.setPeriodCompare(false)}" icon="minus"></or-mwc-input>
                         ` : html`
-                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @click="${() => this.setPeriodCompare(true)}" icon="plus"></or-mwc-input>
+                                <or-mwc-input style="margin-left:auto;" .type="${InputType.BUTTON}" .label="${i18next.t("period")}" @or-mwc-input-changed="${() => this.setPeriodCompare(true)}" icon="plus"></or-mwc-input>
                         `}
                     </div>
                   
@@ -601,7 +601,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                             `
                         })}
                     </div>
-                    <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @click="${() => this._openDialog()}"></or-mwc-input>
+                    <or-mwc-input class="button" .type="${InputType.BUTTON}" ?disabled="${disabled}" label="${i18next.t("selectAttributes")}" icon="plus" @or-mwc-input-changed="${() => this._openDialog()}"></or-mwc-input>
                 </div>
             </div>
         `;

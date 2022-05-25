@@ -410,11 +410,11 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                 </div>
 
                 <div id="header-btns">
-                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @click="${() => this._onDeselectClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-mwc-input>
-                    <or-mwc-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked()}"></or-mwc-input>
-                    <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${!this.selectedIds || this.selectedIds.length === 0 || !this.showDeselectBtn}" type="${InputType.BUTTON}" icon="close" @or-mwc-input-changed="${() => this._onDeselectClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length !== 1}" type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0 || this.selectedNodes.some((node) => this.isAncestorSelected(node))}" type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
+                    <or-mwc-input ?hidden="${this._isReadonly() || !this._canAdd()}" type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked()}"></or-mwc-input>
+                    <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @or-mwc-input-changed="${() => this._onSearchClicked()}"></or-mwc-input>
                     
                     ${getContentWithMenuTemplate(
                             html`<or-mwc-input type="${InputType.BUTTON}" ?hidden="${!this.showSortBtn}" icon="sort-variant"></or-mwc-input>`,
@@ -519,7 +519,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
                                   style="margin-top: 14px;"
                                   disabled></or-mwc-input>
                     <div>
-                        <or-mwc-input style="float: right;" style="margin-top: 14px;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.action")}" raised @click="${() => {
+                        <or-mwc-input style="float: right;" style="margin-top: 14px;" type="${ InputType.BUTTON }" .label="${i18next.t("filter.action")}" raised @or-mwc-input-changed="${() => {
                             this._filterFromSettings();
                         }}"></or-mwc-input>
                     </div>

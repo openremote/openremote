@@ -245,7 +245,7 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     this.language,
                     (v) => this._onAddClicked(v as RulesetLang));
             } else {
-                addTemplate = html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" @click="${() => this._onAddClicked(this.language!)}"></or-mwc-input>`;
+                addTemplate = html`<or-mwc-input type="${InputType.BUTTON}" icon="plus" @or-mwc-input-changed="${() => this._onAddClicked(this.language!)}"></or-mwc-input>`;
             }
         }
         return html`
@@ -268,10 +268,10 @@ export class OrRuleList extends translate(i18next)(LitElement) {
                     </div>
         
                     <div id="header-btns">
-                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @click="${() => this._onCopyClicked()}"></or-mwc-input>
-                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @click="${() => this._onDeleteClicked()}"></or-mwc-input>
+                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="content-copy" @or-mwc-input-changed="${() => this._onCopyClicked()}"></or-mwc-input>
+                        <or-mwc-input ?hidden="${this._isReadonly() || !this.selectedIds || this.selectedIds.length === 0}" type="${InputType.BUTTON}" icon="delete" @or-mwc-input-changed="${() => this._onDeleteClicked()}"></or-mwc-input>
                         ${addTemplate}
-                        <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @click="${() => this._onSearchClicked()}"></or-mwc-input>
+                        <or-mwc-input hidden type="${InputType.BUTTON}" icon="magnify" @or-mwc-input-changed="${() => this._onSearchClicked()}"></or-mwc-input>
                         
                         ${getContentWithMenuTemplate(
             html`<or-mwc-input type="${InputType.BUTTON}" icon="sort-variant" ></or-mwc-input>`,
