@@ -15,7 +15,7 @@ import {
     DashboardWidgetType
 } from "@openremote/model";
 import {OrInputChangedEvent} from "../../or-mwc-components/lib/or-mwc-input";
-import {DashboardSizeOption, sizeOptionToString, stringToSizeOption} from "./index";
+import {DashboardSizeOption, sizeOptionToString, sortScreenPresets, stringToSizeOption} from "./index";
 
 // TODO: Add webpack/rollup to build so consumers aren't forced to use the same tooling
 const gridcss = require('gridstack/dist/gridstack.min.css');
@@ -119,7 +119,6 @@ export class OrDashboardEditor extends LitElement{
     @property()
     protected width: number = 960;
 
-    @property()
     protected height: number = 540;
 
     @property()
@@ -536,7 +535,7 @@ export class OrDashboardEditor extends LitElement{
         const width = (this.fullscreen ? this.clientWidth : this.width);
         let activePreset: DashboardScreenPreset | undefined;
         if(width != null && this.template?.screenPresets != null) {
-            activePreset = this.getActivePreset(width, this.sortScreenPresets(this.template.screenPresets));
+            activePreset = this.getActivePreset(width, sortScreenPresets(this.template.screenPresets));
         }
         if(activePreset != null) {
             return html`
@@ -642,19 +641,5 @@ export class OrDashboardEditor extends LitElement{
             }
         });
         return activePreset;
-    }
-
-    sortScreenPresets(presets: DashboardScreenPreset[]): DashboardScreenPreset[] {
-        return presets.sort((a, b) => {
-            if(a.breakpoint != null && b.breakpoint != null) {
-                if(a.breakpoint > b.breakpoint) {
-                    return 1;
-                }
-                if(a.breakpoint < b.breakpoint) {
-                    return -1;
-                }
-            }
-            return 0;
-        });
     }
 }

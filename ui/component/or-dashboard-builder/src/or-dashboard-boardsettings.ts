@@ -3,7 +3,7 @@ import {css, html, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import {style} from './style';
-import {scalingPresetToString, stringToScalingPreset} from ".";
+import {scalingPresetToString, sortScreenPresets, stringToScalingPreset} from ".";
 
 //language=css
 const boardSettingsStyling = css`
@@ -16,7 +16,7 @@ export class OrDashboardBoardsettings extends LitElement {
     protected readonly template?: DashboardTemplate;
 
     @state()
-    protected expandedPanels: string[] = ["Permissions", "Layout", "Display"];
+    protected expandedPanels: string[] = ["Permissions", "Layout", "Display", "Breakpoints"];
 
     constructor() {
         super();
@@ -58,12 +58,7 @@ export class OrDashboardBoardsettings extends LitElement {
 
     protected render() {
         if(this.template != null && this.template.screenPresets != null) {
-            const screenPresets = this.template.screenPresets.sort((a: DashboardScreenPreset, b: DashboardScreenPreset) => {
-                if(a.breakpoint != null && b.breakpoint != null) {
-                    return ((a.breakpoint < b.breakpoint) ? 1 : -1);
-                }
-                return 1;
-            })
+            const screenPresets = sortScreenPresets(this.template.screenPresets, true);
             return html`
                 <!-------------------->
                 <div>${this.generateExpandableHeader('Permissions')}</div>
@@ -79,7 +74,17 @@ export class OrDashboardBoardsettings extends LitElement {
                 <div>
                     ${this.expandedPanels.includes('Layout') ? html`
                         <div style="padding: 24px 24px 48px 24px;">
-                            <span>Not created yet.</span>
+                            <!-- Number of Columns control -->
+                            <div style="margin-bottom: 12px; display: flex; align-items: center;">
+                                <span style="min-width: 180px;">Number of Columns</span>
+                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.template.columns}" max="12" @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.template != null) { this.template.columns = event.detail.value as number; this.forceParentRerender(); }}}"></or-mwc-input>
+                            </div>
+                            <!-- Max Screen Width control-->
+                            <div style="margin-bottom: 24px; display: flex; align-items: center;">
+                                <span style="min-width: 150px;">Max Screen Width</span>
+                                <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${this.template.maxScreenWidth}" disabled @or-mwc-input-changed="${(event: OrInputChangedEvent) => { if(this.template != null) { this.template.maxScreenWidth = event.detail.value as number; this.forceParentUpdate(); }}}"></or-mwc-input>
+                                <span style="margin-left: 8px;">px</span>
+                            </div>
                         </div>
                     ` : null}
                 </div>
@@ -113,7 +118,16 @@ export class OrDashboardBoardsettings extends LitElement {
                 <div>
                     ${this.expandedPanels.includes('Breakpoints') ? html`
                         <div style="padding: 24px 24px 48px 24px;">
-                            <span>Not created yet.</span>
+                            ${screenPresets.map((preset) => {
+                                return html`
+                                    <div style="margin-bottom: 12px; display: flex; align-items: center;">
+                                        <span style="min-width: 140px;">${preset.displayName} screen</span>
+                                        <span style="margin-right: 8px;">${(screenPresets.indexOf(preset) == 0) ? '>' : '<'}</span>
+                                        <or-mwc-input type="${InputType.NUMBER}" compact outlined .value="${(screenPresets.indexOf(preset) == 0 ? screenPresets[1].breakpoint : preset.breakpoint)}" .disabled="${(screenPresets.indexOf(preset) == 0 ? true : true)}"></or-mwc-input>
+                                        <span style="margin-left: 8px;">px</span>
+                                    </div>
+                                `
+                            })}
                         </div>
                     ` : null}
                 </div>

@@ -9,7 +9,8 @@ import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-
 import "@openremote/or-icon";
 import {style} from "./style";
 import {ORGridStackNode} from "./or-dashboard-editor";
-import {Dashboard, DashboardGridItem, DashboardScalingPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
+import {Dashboard, DashboardGridItem, DashboardScalingPreset,
+    DashboardScreenPreset, DashboardTemplate, DashboardWidget, DashboardWidgetType} from "@openremote/model";
 import manager, {DefaultColor3, DefaultColor5 } from "@openremote/core";
 import { getContentWithMenuTemplate } from "@openremote/or-mwc-components/or-mwc-menu";
 import { ListItem } from "@openremote/or-mwc-components/or-mwc-list";
@@ -170,6 +171,20 @@ export function sizeOptionToString(sizeOption: DashboardSizeOption): string {
         case DashboardSizeOption.SMALL: { return "Small"; }
         case DashboardSizeOption.CUSTOM: { return "Custom Size"; }
     }
+}
+
+export function sortScreenPresets(presets: DashboardScreenPreset[], largetosmall?: boolean): DashboardScreenPreset[] {
+    return presets.sort((a, b) => {
+        if(a.breakpoint != null && b.breakpoint != null) {
+            if(a.breakpoint > b.breakpoint) {
+                return (largetosmall ? -1 : 1);
+            }
+            if(a.breakpoint < b.breakpoint) {
+                return (largetosmall? -1 : 1);
+            }
+        }
+        return 0;
+    });
 }
 
 @customElement("or-dashboard-builder")
