@@ -250,7 +250,7 @@ export class OrEditAssetPanel extends LitElement {
                         <tr class="mdc-data-table__row">
                             <td colspan="4">
                                 <div class="item-add-attribute">
-                                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @click="${() => this._addAttribute()}"></or-mwc-input>
+                                    <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addAttribute")}" icon="plus" @or-mwc-input-changed="${() => this._addAttribute()}"></or-mwc-input>
                                 </div>
                             </td>
                         </tr>
@@ -314,7 +314,7 @@ export class OrEditAssetPanel extends LitElement {
                                 ${metaTemplatesAndValidators.map((metaTemplateAndValidator) => metaTemplateAndValidator.template)}
                             </div>
                             <div class="item-add">
-                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @click="${() => this._addMetaItems(attribute)}"></or-mwc-input>
+                                <or-mwc-input .type="${InputType.BUTTON}" .label="${i18next.t("addMetaItems")}" icon="plus" @or-mwc-input-changed="${() => this._addMetaItems(attribute)}"></or-mwc-input>
                             </div>
                         </div>
                     </div>                     
@@ -456,7 +456,7 @@ export class OrEditAssetPanel extends LitElement {
                         }
                     },
                     content: html`<or-mwc-input id="add-btn" .type="${InputType.BUTTON}" disabled .label="${i18next.t("add")}"
-                                    @click="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
+                                    @or-mwc-input-changed="${(ev: Event) => { if (isDisabled(attr)) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`
                 }
             ])
             .setDismissAction(null));

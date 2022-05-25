@@ -147,7 +147,7 @@ export class OrAttributePicker extends OrMwcDialog {
                 actionName: "add",
                 content: html`<or-mwc-input id="add-btn" class="button" label="${i18next.t("add")}"
                                             .type="${InputType.BUTTON}" ?disabled="${!this.selectedAttributes.length}"
-                                            @click="${(ev: MouseEvent) => { if (!this.selectedAttributes.length) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`,
+                                            @or-mwc-input-changed="${(ev: Event) => { if (!this.selectedAttributes.length) { ev.stopPropagation(); return false; } } }"></or-mwc-input>`,
                 action: () => {
 
                     if (!this.selectedAttributes.length) {

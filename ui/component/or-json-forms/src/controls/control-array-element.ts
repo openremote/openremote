@@ -147,7 +147,7 @@ export class ControlArrayElement extends ControlBaseElement {
                 <div id="errors">
                     ${!this.errors ? `` : html`<or-icon icon="alert"></or-icon><span>${this.errors}</span>`}
                 </div>
-                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @click="${(ev: MouseEvent) => this._showJson(ev)}"></or-mwc-input></div>
+                <div id="header-buttons"><or-mwc-input .type="${InputType.BUTTON}" outlined .label="${i18next.t("json")}" icon="pencil" @or-mwc-input-changed="${(ev: Event) => this._showJson(ev)}"></or-mwc-input></div>
             </div>
         `;
 
@@ -173,7 +173,7 @@ export class ControlArrayElement extends ControlBaseElement {
                 </div>
                 ${this.errors ? `` : html`
                     <div id="footer">
-                        <or-mwc-input .disabled="${itemCount && itemCount >= maxItems}" .type="${InputType.BUTTON}" .label="${i18next.t("addItem")}" icon="plus" @click="${() => this.doAddItem()}"></or-mwc-input>
+                        <or-mwc-input .disabled="${itemCount && itemCount >= maxItems}" .type="${InputType.BUTTON}" .label="${i18next.t("addItem")}" icon="plus" @or-mwc-input-changed="${() => this.doAddItem()}"></or-mwc-input>
                     </div>
                 `}
             </div>
@@ -256,7 +256,7 @@ export class ControlArrayElement extends ControlBaseElement {
         }
     }
 
-    protected _showJson(ev: MouseEvent) {
+    protected _showJson(ev: Event) {
         ev.stopPropagation();
 
         showJsonEditor(this.title || this.schema.title || "", this.data, ((newValue) => {
