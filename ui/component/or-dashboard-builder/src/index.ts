@@ -291,6 +291,9 @@ export class OrDashboardBuilder extends LitElement {
                 this.selectedDashboard.template = this.currentTemplate;
             }
         }
+        if(changedProperties.has("editMode")) {
+            this.showDashboardTree = true;
+        }
     }
 
     /* ----------------- */
