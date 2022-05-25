@@ -157,14 +157,14 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         when: "an asset is added with includeForecastSolarService set to true"
         def newSolarAsset = new ElectricityProducerSolarAsset("SolarAsset")
         newSolarAsset.setParentId(managerTestSetup.electricityOptimisationAssetId)
-        newSolarAsset.setRealm(managerTestSetup.realmEnergyTenant)
-        newSolarAsset.setPanelAzimuth(0);
-        newSolarAsset.setPanelPitch(30);
-        newSolarAsset.setEfficiencyExport(100);
-        newSolarAsset.setPowerExportMax(2.5);
-        newSolarAsset.setLocation(new GeoJSONPoint(9.195295, 48.787418));
-        newSolarAsset.setSetActualSolarValueWithForecast(true);
-        newSolarAsset.setIncludeForecastSolarService(true);
+        newSolarAsset.setRealm(managerTestSetup.realmEnergyName)
+        newSolarAsset.setPanelAzimuth(0)
+        newSolarAsset.setPanelPitch(30)
+        newSolarAsset.setEfficiencyExport(100)
+        newSolarAsset.setPowerExportMax(2.5)
+        newSolarAsset.setLocation(new GeoJSONPoint(9.195295, 48.787418))
+        newSolarAsset.setSetActualSolarValueWithForecast(true)
+        newSolarAsset.setIncludeForecastSolarService(true)
         newSolarAsset = assetStorageService.merge(newSolarAsset)
 
         then: "the assetId should be present in the calculationFutures"
@@ -180,7 +180,7 @@ class ForecastSolarServiceTest extends Specification implements ManagerContainer
         when: "an asset is added with includeForecastSolarService set to false"
         def newSolarAsset2 = new ElectricityProducerSolarAsset("SolarAsset2")
         newSolarAsset2.setParentId(managerTestSetup.electricityOptimisationAssetId)
-        newSolarAsset2.setRealm(managerTestSetup.realmEnergyTenant)
+        newSolarAsset2.setRealm(managerTestSetup.realmEnergyName)
         newSolarAsset2.setPanelAzimuth(0);
         newSolarAsset2.setPanelPitch(30);
         newSolarAsset2.setEfficiencyExport(100);

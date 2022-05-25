@@ -17,24 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.query.filter;
+package org.openremote.model.event.shared;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-public class TenantPredicate {
+/**
+ * An event that carries information about the realm it occurred in.
+ */
+public abstract class RealmScopedEvent extends SharedEvent {
 
     public String realm;
 
-    @JsonCreator
-    public TenantPredicate(@JsonProperty("realm") String realm) {
+    public RealmScopedEvent(long timestamp, String realm) {
+        super(timestamp);
         this.realm = realm;
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            ", realm='" + realm + '\'' +
-            '}';
+    public RealmScopedEvent(String realm) {
+        this.realm = realm;
+    }
+
+    protected RealmScopedEvent() {
+    }
+
+    public String getRealm() {
+        return realm;
     }
 }

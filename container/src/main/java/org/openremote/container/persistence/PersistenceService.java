@@ -45,9 +45,9 @@ import org.openremote.model.provisioning.ProvisioningConfig;
 import org.openremote.model.provisioning.X509ProvisioningConfig;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.RealmRuleset;
+import org.openremote.model.security.Realm;
 import org.openremote.model.security.RealmRole;
-import org.openremote.model.security.Tenant;
 import org.openremote.model.security.User;
 import org.openremote.model.security.UserAttribute;
 import org.openremote.model.syslog.SyslogEvent;
@@ -297,13 +297,13 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
         entityClasses.add(AssetDatapoint.class.getName());
         entityClasses.add(SentNotification.class.getName());
         entityClasses.add(AssetPredictedDatapoint.class.getName());
-        entityClasses.add(Tenant.class.getName());
+        entityClasses.add(Realm.class.getName());
         entityClasses.add(User.class.getName());
         entityClasses.add(UserAttribute.class.getName());
         entityClasses.add(RealmRole.class.getName());
         entityClasses.add(GlobalRuleset.class.getName());
         entityClasses.add(AssetRuleset.class.getName());
-        entityClasses.add(TenantRuleset.class.getName());
+        entityClasses.add(RealmRuleset.class.getName());
         entityClasses.add(SyslogEvent.class.getName());
         entityClasses.add(GatewayConnection.class.getName());
         entityClasses.add(ConsoleAppConfig.class.getName());
@@ -450,7 +450,7 @@ public class PersistenceService implements ContainerService, Consumer<Persistenc
      * Generate {@link PersistenceEvent}s for entities not managed by JPA (i.e. Keycloak entities)
      */
     public void publishPersistenceEvent(PersistenceEvent.Cause cause, Object entity, String[] propertyNames, Object[] currentState, Object[] previousState) {
-        // Fire persistence event although we don't use database for Tenant CUD but call Keycloak API
+        // Fire persistence event although we don't use database for Realm CUD but call Keycloak API
         PersistenceEvent<?> persistenceEvent = new PersistenceEvent<>(cause, entity, propertyNames, currentState, previousState);
 
         if (messageBrokerService.getProducerTemplate() != null) {

@@ -17,39 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.model.query.filter;
 
-public class TenantFilter<T extends TenantScopedEvent> extends EventFilter<T> {
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    public static final String FILTER_TYPE = "tenant";
+public class RealmPredicate {
 
-    protected String realm;
+    public String name;
 
-    protected TenantFilter() {
-    }
-
-    public TenantFilter(String realm) {
-        this.realm = realm;
-    }
-
-    public String getRealm() {
-        return realm;
-    }
-
-    @Override
-    public String getFilterType() {
-        return FILTER_TYPE;
-    }
-
-    @Override
-    public boolean apply(TenantScopedEvent event) {
-        return getRealm().equals(event.getRealm());
+    @JsonCreator
+    public RealmPredicate(@JsonProperty("name") String name) {
+        this.name = name;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
+            ", name='" + name + '\'' +
             '}';
     }
 }

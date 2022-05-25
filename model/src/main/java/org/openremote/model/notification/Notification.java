@@ -31,12 +31,12 @@ public class Notification {
         INTERNAL,
         CLIENT,
         GLOBAL_RULESET,
-        TENANT_RULESET,
+        REALM_RULESET,
         ASSET_RULESET
     }
 
     public enum TargetType {
-        TENANT,
+        REALM,
         USER,
         ASSET,
         CUSTOM

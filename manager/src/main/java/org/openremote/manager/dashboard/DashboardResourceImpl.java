@@ -32,7 +32,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
 
         System.out.println("Getting all User Dashboards...");
         try {
-            if(!isTenantActiveAndAccessible(realm)) {
+            if(!isRealmActiveAndAccessible(realm)) {
                 throw new WebApplicationException(FORBIDDEN);
             }
             return this.dashboardStorageService.findAllOfRealm(realm);
@@ -53,7 +53,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             System.out.println("Creating a new Dashboard..");
 
             // Check if access to realm
-            if(!isTenantActiveAndAccessible(dashboard.getRealm())) {
+            if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
             dashboard.setOwnerId(getUserId());
@@ -73,7 +73,7 @@ public class DashboardResourceImpl extends ManagerWebResource implements Dashboa
             System.out.println("Updating a Dashboard..");
 
             // Check if access to realm
-            if(!isTenantActiveAndAccessible(dashboard.getRealm())) {
+            if(!isRealmActiveAndAccessible(dashboard.getRealm())) {
                 throw new WebApplicationException(FORBIDDEN);
             }
             Dashboard updated = this.dashboardStorageService.save(ValueUtil.clone(dashboard));

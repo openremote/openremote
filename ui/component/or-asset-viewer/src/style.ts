@@ -163,12 +163,16 @@ export const style = css`
         flex: 0 0 auto;
         align-items: center;
         justify-content: space-between;
+        z-index: 1;
     }
 
     #asset-header.editmode {
         padding: 14px 30px;
         background-color: var(--internal-or-asset-viewer-panel-color);
         border-bottom: solid 1px #e5e5e5;
+    }
+    #asset-header.scrolled {
+        box-shadow: rgb(0 0 0 / 15%) 0 0 5px 0;
     }
 
     #title {

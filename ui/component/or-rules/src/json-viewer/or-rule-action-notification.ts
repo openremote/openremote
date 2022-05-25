@@ -67,7 +67,7 @@ export class OrRuleActionNotification extends LitElement {
         let allowedTargetTypes: [NotificationTargetType, string][] = [
             [NotificationTargetType.USER, i18next.t("user_plural")],
             [NotificationTargetType.ASSET, i18next.t("asset_plural")],
-            [NotificationTargetType.TENANT, i18next.t("tenant_plural")],
+            [NotificationTargetType.REALM, i18next.t("realm_plural")],
             [NotificationTargetType.CUSTOM, i18next.t("custom")]
         ];
 
@@ -122,7 +122,7 @@ export class OrRuleActionNotification extends LitElement {
             let value: string | undefined;
 
             if (targetType === NotificationTargetType.USER) {
-                targetValuesGenerator = manager.rest.api.UserResource.query({tenant: manager.displayRealm} as UserQuery).then(
+                targetValuesGenerator = manager.rest.api.UserResource.query({realm: manager.displayRealm} as UserQuery).then(
                     (usersResponse) => usersResponse.data.map((user) => [user.id!, user.username!])
                 );
                 label = i18next.t("user_plural");
@@ -135,7 +135,7 @@ export class OrRuleActionNotification extends LitElement {
                         || userQuery.assetPredicate
                         || userQuery.limit
                         || userQuery.pathPredicate
-                        || userQuery.tenantPredicate) {
+                        || userQuery.realmPredicate) {
                         console.warn("Rule action user target query is unsupported: " + JSON.stringify(userQuery, null, 2));
                         return;
                     }

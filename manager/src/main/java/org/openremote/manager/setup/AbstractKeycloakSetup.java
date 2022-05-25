@@ -22,12 +22,11 @@ package org.openremote.manager.setup;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.ClientRepresentation;
-import org.openremote.manager.security.ManagerIdentityProvider;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.Container;
 import org.openremote.model.security.ClientRole;
-import org.openremote.model.security.Tenant;
+import org.openremote.model.security.Realm;
 import org.openremote.model.security.User;
 import org.openremote.model.setup.Setup;
 
@@ -71,15 +70,15 @@ public abstract class AbstractKeycloakSetup implements Setup {
         return keycloakProvider;
     }
 
-    protected Tenant createTenant(String realm, String displayName, boolean rememberMe) {
-        Tenant tenant = new Tenant();
-        tenant.setRealm(realm);
-        tenant.setDisplayName(displayName);
-        tenant.setEnabled(true);
-        tenant.setDuplicateEmailsAllowed(true);
-        tenant.setRememberMe(rememberMe);
-        tenant = keycloakProvider.createTenant(tenant);
-        return tenant;
+    protected Realm createRealm(String realmName, String displayName, boolean rememberMe) {
+        Realm realm = new Realm();
+        realm.setName(realmName);
+        realm.setDisplayName(displayName);
+        realm.setEnabled(true);
+        realm.setDuplicateEmailsAllowed(true);
+        realm.setRememberMe(rememberMe);
+        realm = keycloakProvider.createRealm(realm);
+        return realm;
     }
 
     protected User createUser(String realm, String username, String password, String firstName, String lastName, String email, boolean enabled, ClientRole[] roles) {

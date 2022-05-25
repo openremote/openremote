@@ -22,8 +22,7 @@ package org.openremote.manager.security;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityProvider;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.RealmFilter;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.StringPredicate;
 import org.openremote.model.security.*;
@@ -40,7 +39,7 @@ import static org.openremote.model.Constants.MASTER_REALM;
 // TODO: Normalise interface for Basic and Keycloak providers and add client CRUD
 /**
  * SPI for implementations used by {@link ManagerIdentityService}, provides CRUD of
- * {@link User} and {@link Tenant}.
+ * {@link User} and {@link Realm}.
  */
 public interface ManagerIdentityProvider extends IdentityProvider {
 
@@ -78,23 +77,23 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     boolean isRestrictedUser(AuthContext authContext);
 
-    boolean isUserInTenant(String userId, String realm);
+    boolean isUserInRealm(String userId, String realm);
 
-    Tenant[] getTenants();
+    Realm[] getRealms();
 
-    Tenant getTenant(String realm);
+    Realm getRealm(String realm);
 
-    void updateTenant(Tenant tenant);
+    void updateRealm(Realm realm);
 
-    Tenant createTenant(Tenant tenant);
+    Realm createRealm(Realm realm);
 
-    void deleteTenant(String realm);
+    void deleteRealm(String realm);
 
-    boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant);
+    boolean isRealmActiveAndAccessible(AuthContext authContext, Realm realm);
 
-    boolean isTenantActiveAndAccessible(AuthContext authContext, String realm);
+    boolean isRealmActiveAndAccessible(AuthContext authContext, String realm);
 
-    boolean tenantExists(String realm);
+    boolean realmExists(String realm);
 
     /**
      * Superusers can subscribe to all events, regular users must be in the same realm as the filter and any
@@ -102,7 +101,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
      *
      * @return <code>true</code> if the authenticated party can subscribe to events with the given filter.
      */
-    boolean canSubscribeWith(AuthContext auth, TenantFilter<?> filter, ClientRole... requiredRoles);
+    boolean canSubscribeWith(AuthContext auth, RealmFilter<?> filter, ClientRole... requiredRoles);
 
     /**
      * Returns the frontend URL to be used for frontend apps to authenticate
@@ -135,9 +134,9 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
         // BUILD WHERE
         sb.append(" WHERE 1=1");
-        if (userQuery.tenantPredicate != null && !TextUtil.isNullOrEmpty(userQuery.tenantPredicate.realm)) {
+        if (userQuery.realmPredicate != null && !TextUtil.isNullOrEmpty(userQuery.realmPredicate.name)) {
             sb.append(" AND u.realm = ?").append(parameters.size() + 1);
-            parameters.add(userQuery.tenantPredicate.realm);
+            parameters.add(userQuery.realmPredicate.name);
         }
         if (userQuery.assetPredicate != null) {
             sb.append(" AND ua.id.assetId = ?").append(parameters.size() + 1);
@@ -263,46 +262,46 @@ public interface ManagerIdentityProvider extends IdentityProvider {
         });
     }
 
-    static Tenant[] getTenantsFromDb(PersistenceService persistenceService) {
+    static Realm[] getRealmsFromDb(PersistenceService persistenceService) {
         return persistenceService.doReturningTransaction(entityManager -> {
-            List<Tenant> realms = entityManager.createQuery(
-                "select t from Tenant t where t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now()"
-                , Tenant.class).getResultList();
+            List<Realm> realms = entityManager.createQuery(
+                "select r from Realm r where r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now()"
+                , Realm.class).getResultList();
 
-            // Make sure the master tenant is always on top
+            // Make sure the master realm is always on top
             realms.sort((o1, o2) -> {
-                if (o1.getRealm().equals(MASTER_REALM))
+                if (o1.getName().equals(MASTER_REALM))
                     return -1;
-                if (o2.getRealm().equals(MASTER_REALM))
+                if (o2.getName().equals(MASTER_REALM))
                     return 1;
-                return o1.getRealm().compareTo(o2.getRealm());
+                return o1.getName().compareTo(o2.getName());
             });
 
-            return realms.toArray(new Tenant[realms.size()]);
+            return realms.toArray(new Realm[realms.size()]);
         });
     }
 
-    static Tenant getTenantFromDb(PersistenceService persistenceService, String realm) {
+    static Realm getRealmFromDb(PersistenceService persistenceService, String realm) {
         return persistenceService.doReturningTransaction(em -> {
-                List<Tenant> tenants = em.createQuery("select t from Tenant t where t.realm = :realm", Tenant.class)
+                List<Realm> realms = em.createQuery("select r from Realm r where r.name = :realm", Realm.class)
                     .setParameter("realm", realm).getResultList();
-                return tenants.size() == 1 ? tenants.get(0) : null;
+                return realms.size() == 1 ? realms.get(0) : null;
             }
         );
     }
 
-    static boolean tenantExistsFromDb(PersistenceService persistenceService, String realm) {
+    static boolean realmExistsFromDb(PersistenceService persistenceService, String realm) {
         return persistenceService.doReturningTransaction(em -> {
 
             long count = em.createQuery(
-                "select count(t) from Tenant t where t.realm = :realm and t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())",
+                "select count(r) from Realm r where r.name = :realm and r.enabled = true and (r.notBefore is null or r.notBefore = 0 or to_timestamp(r.notBefore) <= now())",
                 Long.class).setParameter("realm", realm).getSingleResult();
 
             return count > 0;
         });
     }
 
-    static boolean userInTenantFromDb(PersistenceService persistenceService, String userId, String realm) {
+    static boolean userInRealmFromDb(PersistenceService persistenceService, String userId, String realm) {
         return persistenceService.doReturningTransaction(em -> {
             User user = em.find(User.class, userId);
             return (user != null && realm.equals(user.getRealm()));
