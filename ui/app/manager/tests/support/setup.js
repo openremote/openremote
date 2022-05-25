@@ -79,7 +79,7 @@ class CustomWorld {
 
     async navigate(realm) {
         let context
-        let URL = realm == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
+        let URL = realm == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity"
         if (fs.existsSync('storageState.json')) {
             context = await global.browser.newContext({
                 storageState: 'storageState.json',
@@ -100,8 +100,8 @@ class CustomWorld {
     async login(user) {
         if (!fs.existsSync('storageState.json')) {
             if (user == "admin") {
-                await this.page?.fill('input[name="username"]', process.env.USER_LOCAL_ID)
-                await this.page?.fill('input[name="password"]', process.env.LOCAL_PASSWORD)
+                await this.page?.fill('input[name="username"]', process.env.MASTER_ID)
+                await this.page?.fill('input[name="password"]', process.env.MASTER_PASSWORD)
             }
             else {
                 await this.page?.fill('input[name="username"]', process.env.SMARTCITY)
@@ -215,7 +215,7 @@ class CustomWorld {
             await this.fill('#attribute-meta-row-1 >> text=Realm Enabled >> input[type="text"]', name)
             await this.page?.locator('input[type="text"]').nth(3).fill(name);
             await Promise.all([
-                this.page?.waitForNavigation(`${process.env.LOCAL_URL}/manager/#/realms`),
+                this.page?.waitForNavigation(`${process.env.URL.slice(0, -7)}#/realms`),
                 this.click('button:has-text("create")')
             ]);
         }
@@ -227,7 +227,7 @@ class CustomWorld {
      */
     async switchRealmByURL(name) {
         await this.logout()
-        let URL = name == "admin" ? process.env.LOCAL_URL : process.env.SMARTCITY_URL
+        let URL = name == "admin" ? process.env.URL + "master" : process.env.URL + "smartcity"
         await this.page?.goto(URL)
         await this.login(name)
     }
@@ -405,9 +405,10 @@ class CustomWorld {
         await this.click('button:has-text("Delete")')
         await this.fill('div[role="alertdialog"] input[type="text"]', 'smartcity')
         await Promise.all([
-            await this.click('button:has-text("OK")')
+            await this.click('button:has-text("OK")'),
         ])
         await this.wait(100)
+        await this.page.reload()
     }
 
     /**
@@ -524,7 +525,7 @@ class CustomWorld {
 
         // ensure login as admin into master
         await this.logout()
-        await this.page.goto(process.env.LOCAL_URL);
+        await this.page.goto(process.env.URL + "master");
         await this.login("admin")
         await this.wait(400)
         // switch to master realm to ensure being able to delete custom realm
