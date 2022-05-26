@@ -170,7 +170,7 @@ jobs:
       # We use this to exit workflow if only CI/CD files have changed
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v20
+        uses: tj-actions/changed-files@v21
         with:
           files_ignore: |
             .ci_cd/**
