@@ -1,10 +1,13 @@
 import {GridItemHTMLElement, GridStack, GridStackElement, GridStackNode} from "gridstack";
-import {css, html, LitElement, unsafeCSS} from "lit";
+import {css, html, LitElement, TemplateResult, unsafeCSS} from "lit";
 import {customElement, property, state} from "lit/decorators.js";
+import {until} from "lit/directives/until.js";
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {InputType} from '@openremote/or-mwc-components/or-mwc-input';
 import {style} from "./style";
 import manager, {DefaultColor4} from "@openremote/core";
 import {
+    Asset,
     Attribute,
     AttributeRef,
     DashboardGridItem,
@@ -153,7 +156,10 @@ export class OrDashboardEditor extends LitElement{
 
             const maingrid = this.shadowRoot?.querySelector(".maingrid");
             if(maingrid != null) {
-                this.setupResizeObserver(maingrid);
+                // this.setupResizeObserver(maingrid);
+                /*this.mainGrid?.getGridItems().forEach((gridItem) => {
+                    console.log(gridItem);
+                })*/
             }
         })
     }
@@ -172,9 +178,11 @@ export class OrDashboardEditor extends LitElement{
                 const activePreset = this.getActivePreset(width, this.template.screenPresets);
                 if(activePreset != null) {
                     if(this.template?.columns != null && (changedProperties.get("template") as DashboardTemplate) != null && (changedProperties.get("template") as DashboardTemplate).columns != this.template.columns) {
-                        this.rerenderGrid(activePreset, true);
+                        console.log("Rerendering due to Template change!");
+                        this.renderGrid(activePreset, (changedProperties.get("editMode") != null));
                     } else {
-                        this.rerenderGrid(activePreset, false);
+                        console.log("Rendering due to different reasons!");
+                        this.renderGrid(activePreset, false);
                     }
                 } else {
                     console.error("The active preview preset could not be found.")
@@ -196,7 +204,7 @@ export class OrDashboardEditor extends LitElement{
                 if(width != null && this.template?.screenPresets != null) {
                     const activePreset = this.getActivePreset(width, this.template.screenPresets);
                     if(activePreset != null) {
-                        this.rerenderGrid(activePreset, true);
+                        this.renderGrid(activePreset, true);
                         this.dispatchEvent(new CustomEvent("rerender"));
                     } else {
                         console.error("The active preview preset could not be found.")
@@ -255,7 +263,8 @@ export class OrDashboardEditor extends LitElement{
                 if(changedProperties.get("selected") != undefined) { // if previous selected state was a different widget
                     this.dispatchEvent(new CustomEvent("deselected", { detail: changedProperties.get("selected") as DashboardWidget }));
                 }
-                const foundItem = this.mainGrid?.getGridItems().find((item) => { return item.gridstackNode?.id == this.selected?.gridItem?.id});
+                const foundItem = this.mainGrid?.getGridItems().find((item) => { console.log(item); console.log(this.selected); return item.gridstackNode?.id == this.selected?.gridItem?.id});
+                console.log(foundItem);
                 if(foundItem != null) {
                     this.selectGridItem(foundItem);
                 }
@@ -330,7 +339,8 @@ export class OrDashboardEditor extends LitElement{
         }
 
         if(gridItems != null) {
-            grid.load(gridItems);
+            // console.log(gridItems);
+            /*grid.load(gridItems);
             if(this.editMode && activePreset.scalingPreset != DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) {
                 grid.getGridItems().forEach((htmlElement) => {
                     const gridItem = htmlElement.gridstackNode as DashboardGridItem;
@@ -339,7 +349,7 @@ export class OrDashboardEditor extends LitElement{
             }
             if(activePreset.scalingPreset == DashboardScalingPreset.WRAP_TO_SINGLE_COLUMN) {
                 grid.compact();
-            }
+            }*/
         }
 
         if(this.editMode) {
@@ -385,8 +395,8 @@ export class OrDashboardEditor extends LitElement{
         return grid;
     }
 
-    async rerenderGrid(activePreset: DashboardScreenPreset, rerender: boolean = true, force: boolean = true) {
-        console.log("Rerendering the Grid..");
+    async renderGrid(activePreset: DashboardScreenPreset, rerender: boolean = true, force: boolean = true) {
+        console.log((rerender ? "Rerendering the Grid" : "Rendering the grid") + ((force && rerender) ? " with force.." : ".."));
         if(this.mainGrid != null && rerender) {
             this.mainGrid.destroy(force);
         }
@@ -460,23 +470,36 @@ export class OrDashboardEditor extends LitElement{
 
 
     // Adding HTML event listeners (for example selecting/deselecting)
-    addWidgetEventListeners(gridItem: DashboardGridItem, htmlElement: GridItemHTMLElement) {
+    addWidgetEventListeners(gridItem: DashboardGridItem, htmlElement: HTMLElement) {
         if(htmlElement.onclick == null) {
             htmlElement.onclick = (event) => {
-                if(this.selected?.gridItem?.id == gridItem.id) {
+                this.itemSelect(gridItem);
+                /*if(this.selected?.gridItem?.id == gridItem.id) {
                     this.selected = undefined;
                 } else {
                     this.selected = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
-                }
+                }*/
             };
         }
+    }
+
+    itemSelect(gridItem: DashboardGridItem) {
+        if(this.selected?.gridItem?.id == gridItem.id) {
+            this.selected = undefined;
+        } else {
+            this.selected = this.template?.widgets?.find(widget => { return widget.gridItem?.id == gridItem.id; });
+        }
+        console.log(this.selected);
+        this.requestUpdate();
     }
 
 
     selectGridItem(gridItem: GridItemHTMLElement) {
         if(this.mainGrid != null) {
             this.deselectGridItems(this.mainGrid.getGridItems()); // deselecting all other items
+            console.log(gridItem);
             gridItem.querySelectorAll<HTMLElement>(".grid-stack-item-content").forEach((item: HTMLElement) => {
+                console.log(item);
                 item.classList.add('grid-stack-item-content__active'); // Apply active CSS class
             });
         }
@@ -501,22 +524,45 @@ export class OrDashboardEditor extends LitElement{
         if(_widget.gridItem != null) {
             switch(_widget.widgetType) {
                 case DashboardWidgetType.CHART: {
-                    const response = await manager.rest.api.AssetResource.queryAssets({
-                        ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
-                    })
-                    const assets = response.data;
-                    const attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
-                        const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
-                        const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
-                        return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
-                    }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
-                    _widget.gridItem.content = "<div class='gridItem'><or-chart" +
+                    let assets: Asset[] = [];
+                    let attributes: [number, Attribute<any>][] = [];
+                    if(!this.editMode) {
+                        const response = await manager.rest.api.AssetResource.queryAssets({
+                            ids: widget.widgetConfig?.attributeRefs?.map((x: AttributeRef) => { return x.id; }) as string[]
+                        });
+                        assets = response.data;
+                        attributes = widget.widgetConfig?.attributeRefs?.map((attrRef: AttributeRef) => {
+                            const assetIndex = assets.findIndex((asset) => asset.id === attrRef.id);
+                            const asset = assetIndex >= 0 ? assets[assetIndex] : undefined;
+                            return asset && asset.attributes ? [assetIndex!, asset.attributes[attrRef.name!]] : undefined;
+                        }).filter((indexAndAttr: any) => !!indexAndAttr) as [number, Attribute<any>][];
+                    }
+                    const mockData: any[] = [];
+                    widget.widgetConfig?.attributeRefs?.forEach((attrRef: AttributeRef) => {
+                        mockData.push({
+                            backgroundColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][mockData.length],
+                            borderColor: ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"][mockData.length],
+                            data: this.generateMockData(20),
+                            fill: false,
+                            label: 'Test label 1',
+                            pointRadius: 2
+                        });
+                    });
+                    _widget.gridItem.content = html`
+                        <div class="gridItem">
+                            <or-chart .assets="${assets}" .activeAsset="${assets[0]}" .period="${widget.widgetConfig?.period}" ._data="${(this.editMode ? mockData : undefined)}"
+                                      showLegend="${widget.widgetConfig?.showLegend}" .realm="${manager.displayRealm}" .showControls="${widget.widgetConfig?.showTimestampControls}" style="height: 100%"
+                            ></or-chart>
+                        </div>
+                    `
+                    console.log(_widget.gridItem.content);
+                    /*_widget.gridItem.content = "<div class='gridItem'><or-chart" +
                         " assets='" + JSON.stringify(assets) +
                         "' activeAsset='" + JSON.stringify(assets[0]) +
                         "' assetAttributes='" + JSON.stringify(attributes) +
                         "' period='" + widget.widgetConfig?.period +
                         "' showLegend='" + JSON.stringify(widget.widgetConfig?.showLegend) +
-                        "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";
+                        "' realm='" + manager.displayRealm + "' showControls='false' style='height: 100%;'></or-chart></div>";*/
                     break;
                 }
 
@@ -530,6 +576,21 @@ export class OrDashboardEditor extends LitElement{
         return _widget;
     }
 
+    protected generateMockData(amount: number): any[] {
+        const mockTime: number = Date.now();
+        let data: any[] = [];
+        let prevValue: number = 100;
+        for(let i = 0; i < amount; i++) {
+            const value = Math.floor(Math.random() * ((prevValue + 2) - (prevValue - 2)) + (prevValue - 2))
+            data.push({
+                x: (mockTime - (i * 5 * 60000)),
+                y: value
+            });
+            prevValue = value;
+        }
+        return data;
+    }
+
     // Render
     protected render() {
         const width = (this.fullscreen ? this.clientWidth : this.width);
@@ -538,6 +599,7 @@ export class OrDashboardEditor extends LitElement{
             activePreset = this.getActivePreset(width, sortScreenPresets(this.template.screenPresets));
         }
         if(activePreset != null) {
+            console.log(this.template);
             return html`
                 <div id="buildingArea" style="display: flex; flex-direction: column; height: 100%;" @click="${(event: PointerEvent) => { if((event.composedPath()[1] as HTMLElement).id === 'buildingArea') { this.selected = undefined; }}}">
                     ${this.editMode ? html`
@@ -574,7 +636,22 @@ export class OrDashboardEditor extends LitElement{
                             ` : undefined}
                             <div class="maingrid" style="visibility: ${activePreset.scalingPreset == DashboardScalingPreset.BLOCK_DEVICE ? 'hidden' : 'visible'}">
                                 <!-- Gridstack element on which the Grid will be rendered -->
-                                <div id="gridElement" class="grid-stack grid-element"></div>
+                                <div id="gridElement" class="grid-stack grid-element">
+                                    ${this.template?.widgets?.map((widget) => {
+                                        console.log(widget.gridItem?.w + "x" + widget.gridItem?.h);
+                                        console.log(widget.gridItem?.content);
+                                        return html`
+                                            <div class="grid-stack-item" gs-id="${widget.gridItem?.id}" gs-x="${widget.gridItem?.x}" gs-y="${widget.gridItem?.y}" gs-w="${widget.gridItem?.w}" gs-h="${widget.gridItem?.h}" @click="${(event: MouseEvent) => { this.itemSelect(widget.gridItem!); }}">
+                                                <div class="grid-stack-item-content">
+                                                    ${until(this.loadWidget(widget).then(() => {
+                                                        console.log(widget.gridItem?.content as string);
+                                                        return html`${widget.gridItem?.content}`;
+                                                    }))}
+                                                </div>
+                                            </div>
+                                        `
+                                    })}
+                                </div>
                             </div>
                         </div>
                     `}
@@ -613,7 +690,7 @@ export class OrDashboardEditor extends LitElement{
                 const activePreset = this.getActivePreset(width, presets);
 
                 if(activePreset != undefined) {
-                    this.rerenderGrid(activePreset).then(() => {
+                    this.renderGrid(activePreset).then(() => {
                         if(activePreset != null) {
                             this.updateGridSize(activePreset, true);
                         }

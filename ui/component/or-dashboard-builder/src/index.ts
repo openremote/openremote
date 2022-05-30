@@ -3,6 +3,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import "./or-dashboard-tree";
 import "./or-dashboard-browser";
 import "./or-dashboard-editor";
+import "./or-dashboard-preview";
 import "./or-dashboard-widgetsettings";
 import "./or-dashboard-boardsettings";
 import {InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
@@ -186,6 +187,37 @@ export function sortScreenPresets(presets: DashboardScreenPreset[], largetosmall
         return 0;
     });
 }
+
+export function getWidthByPreviewSize(sizeOption?: DashboardSizeOption): number {
+    switch (sizeOption) {
+        case DashboardSizeOption.LARGE: return 1920;
+        case DashboardSizeOption.MEDIUM: return 1280;
+        case DashboardSizeOption.SMALL: return 480;
+        default: return 900;
+    }
+}
+
+export function getHeightByPreviewSize(sizeOption?: DashboardSizeOption): number {
+    switch (sizeOption) {
+        case DashboardSizeOption.LARGE: return 1080;
+        case DashboardSizeOption.MEDIUM: return 720;
+        case DashboardSizeOption.SMALL: return 640;
+        default: return 540;
+    }
+}
+
+export function getPreviewSizeByPx(width?: number, height?: number, previewSize?: DashboardSizeOption): DashboardSizeOption {
+    console.log(previewSize);
+    if(width == null && height == null) {
+        console.error("Neither the previewWidth, nor previewHeight, nor previewSize attributes have been specified!"); return DashboardSizeOption.CUSTOM;
+    } else {
+        if(width == 1920 && height == 1080) { return DashboardSizeOption.LARGE; }
+        else if(width == 1280 && height == 720) { return DashboardSizeOption.MEDIUM; }
+        else if(width == 480 && height == 640) { return DashboardSizeOption.SMALL; }
+        else { return DashboardSizeOption.CUSTOM; }
+    }
+}
+
 
 @customElement("or-dashboard-builder")
 export class OrDashboardBuilder extends LitElement {
@@ -486,14 +518,18 @@ export class OrDashboardBuilder extends LitElement {
                         <div id="container">
                             <div id="builder">
                                 ${(this.selectedDashboard != null) ? html`
-                                    <or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
+                                    <!--<or-dashboard-editor class="editor" style="background: transparent;" .template="${this.currentTemplate}" .selected="${this.selectedWidget}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
                                                          .previewSize="${this.previewSize}" .isLoading="${this.isLoading}" .rerenderPending="${this.rerenderPending}"
                                                          @selected="${(event: CustomEvent) => { this.selectWidget(event.detail); }}"
                                                          @deselected="${(event: CustomEvent) => { this.deselectWidget(); }}"
                                                          @dropped="${(event: CustomEvent) => { this.createWidget(event.detail); }}"
                                                          @changed="${(event: CustomEvent) => { this.currentTemplate = Object.assign({}, event.detail.template); }}"
                                                          @rerender="${(event: CustomEvent) => { this.rerenderPending = false; }}"
-                                    ></or-dashboard-editor>
+                                    ></or-dashboard-editor>-->
+                                    <or-dashboard-preview class="editor" style="background: transparent;"
+                                                          .template="${this.currentTemplate}" .editMode="${this.editMode}" .fullscreen="${!this.editMode}"
+                                                          .previewSize="${this.previewSize}"
+                                    ></or-dashboard-preview>
                                 ` : html`
                                     <div style="justify-content: center; display: flex; align-items: center; height: 100%;">
                                         <span>Please select a Dashboard from the left.</span>

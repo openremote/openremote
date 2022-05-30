@@ -340,6 +340,9 @@ export class OrChart extends translate(i18next)(LitElement) {
     @property({type: Object})
     public assetAttributes: [number, Attribute<any>][] = [];
 
+    @property()
+    public dataProvider?: (startOfPeriod: number, endOfPeriod: number, timeUnits: TimeUnit, stepSize: number) => Promise<ChartDataset<"line", ScatterDataPoint[]>[]>
+
     @property({type: Array})
     public colors: string[] = ["#3869B1", "#DA7E30", "#3F9852", "#CC2428", "#6B4C9A", "#922427", "#958C3D", "#535055"];
 
@@ -360,6 +363,9 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     @property()
     public panelName?: string;
+
+    @property()
+    public containsMockData: boolean = false;
 
     @property()
     public showControls: boolean = true;
@@ -410,6 +416,7 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     updated(changedProperties: PropertyValues) {
         super.updated(changedProperties);
+        console.log(changedProperties);
 
         if (changedProperties.has("realm")) {
             if(changedProperties.get("realm") != undefined) { // Checking whether it was undefined previously, to prevent loading 2 times and resetting attribute properties.
@@ -422,7 +429,8 @@ export class OrChart extends translate(i18next)(LitElement) {
         const reloadData = changedProperties.has("period") || changedProperties.has("compareTimestamp")
             || changedProperties.has("timestamp") || changedProperties.has("assetAttributes") || changedProperties.has("realm");
 
-        if (reloadData) {
+        if (reloadData && !this.shouldUseMockData()) {
+            console.log("Reloading data!");
             this._data = undefined;
             if (this._chart) {
                 this._chart.destroy();
@@ -431,13 +439,16 @@ export class OrChart extends translate(i18next)(LitElement) {
             this._loadData();
         }
 
-        if (!this._data) {
+        if (!this._data && !this.shouldUseMockData()) {
+            console.log("No data! Returning...")
+            console.log(this._data);
             return;
         }
 
         const now = moment().toDate().getTime();
 
         if (!this._chart) {
+            console.log("Creating options..");
             const options = {
                 type: "line",
                 data: {
@@ -520,6 +531,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                     }
                 }
             } as ChartConfiguration<"line", ScatterDataPoint[]>;
+            console.log(options);
 
             this._chart = new Chart<"line", ScatterDataPoint[]>(this._chartElem.getContext("2d")!, options);
         } else {
@@ -530,7 +542,7 @@ export class OrChart extends translate(i18next)(LitElement) {
                 (this._chart.options!.scales!.x! as TimeScaleOptions).time!.stepSize = this._stepSize!;
                 (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMin = now;
                 (this._chart.options!.plugins!.annotation!.annotations! as AnnotationOptions<"line">[])[0].xMax = now;
-                this._chart.data.datasets = this._data;
+                // this._chart.data.datasets = this._data;
                 this._chart.update();
             }
         }
@@ -540,11 +552,17 @@ export class OrChart extends translate(i18next)(LitElement) {
 
     }
 
-    shouldShowControls() {
+    shouldShowControls(): boolean {
+        // console.log((this.showControls && this.showControls.toString() == "true"));
         return (this.showControls && this.showControls.toString() == "true");
     }
-    shouldShowLegend() {
+    shouldShowLegend(): boolean {
+        // console.log((this.showLegend && this.showLegend.toString() == "true"));
         return (this.showLegend && this.showLegend.toString() == "true");
+    }
+    shouldUseMockData(): boolean {
+        // console.log(this.useMockData);
+        return (this.containsMockData && this.containsMockData.toString() == "true");
     }
 
     render() {

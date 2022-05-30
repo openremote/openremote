@@ -20,7 +20,5 @@ public class DashboardGridItem {
     protected boolean noResize;
     protected boolean noMove;
     protected boolean locked;
-
-    @NotBlank(message = "{Dashboard.gridItem.content.NotBlank}")
-    protected String content;
+    protected Object content;
 }
